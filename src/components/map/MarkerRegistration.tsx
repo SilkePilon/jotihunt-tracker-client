@@ -2,13 +2,13 @@ import { GlassesIcon, LocateFixedIcon, PinIcon } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
 import { MarkerType } from '@/types/MarkerType';
-import { useState } from 'react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { useId, useState } from 'react';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { areaOptions, capitalizeFirstLetter } from '@/lib/utils';
 import { z } from 'zod';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../ui/form';
+import { Field, FieldError, FieldGroup, FieldLabel } from '../ui/field';
 import { Input } from '../ui/input';
 import { Marker } from '@/types/Marker';
 import { useMarkers } from '@/hooks/markers.hook';
@@ -27,6 +27,7 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
   const [dialogOpen, setDialogOpen] = useState(false);
   const [markerType, setMarkerType] = useState<MarkerType>();
   const { createMarker } = useMarkers();
+  const fieldId = useId();
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
@@ -120,109 +121,107 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
   }
 
   const renderForm = () => (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)}>
-        <div className="flex flex-col gap-4">
-          <div className="flex gap-4 w-full">
-            <FormField
-              control={form.control}
-              name="area"
-              render={({ field }) => (
-                <FormItem className="w-full">
-                  <FormLabel>Deelgebied</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Kies deelgebied..." />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
+    <form onSubmit={form.handleSubmit(onSubmit)}>
+      <FieldGroup className="gap-4">
+        <div className="flex gap-4 w-full">
+          <Controller
+            control={form.control}
+            name="area"
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid}>
+                <FieldLabel htmlFor={`${fieldId}-area`}>Deelgebied</FieldLabel>
+                <Select name={field.name} onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger id={`${fieldId}-area`} aria-invalid={fieldState.invalid}>
+                    <SelectValue placeholder="Kies deelgebied..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
                       {areaOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
                         </SelectItem>
                       ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            {/* Select with all days */}
-          </div>
-          <div className="flex gap-4 w-full">
-            <FormField
-              control={form.control}
-              name="day"
-              render={({ field }) => {
-                const dateValue = field.value instanceof Date ? field.value : new Date(field.value); // Ensure it's a Date
-                return (
-                  <FormItem className="w-full">
-                    <FormLabel>Dag</FormLabel>
-                    <Select onValueChange={(value) => field.onChange(new Date(value))} defaultValue={dateValue.toDateString()} value={dateValue.toDateString()}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Kies dag..." />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+                {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+              </Field>
+            )}
+          />
+        </div>
+        <div className="flex gap-4 w-full">
+          {/* Select with all days */}
+          <Controller
+            control={form.control}
+            name="day"
+            render={({ field, fieldState }) => {
+              const dateValue = field.value instanceof Date ? field.value : new Date(field.value); // Ensure it's a Date
+              return (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor={`${fieldId}-day`}>Dag</FieldLabel>
+                  <Select name={field.name} onValueChange={(value) => field.onChange(new Date(value))} value={dateValue.toDateString()}>
+                    <SelectTrigger id={`${fieldId}-day`} aria-invalid={fieldState.invalid}>
+                      <SelectValue placeholder="Kies dag..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
                         {getDays().map((day) => (
                           <SelectItem key={day.toDateString()} value={day.toDateString()}>
                             {day.toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' })}
                           </SelectItem>
                         ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                );
-              }}
-            />
-            {/* Time select input */}
-            <FormField
-              control={form.control}
-              name="time"
-              render={({ field }) => {
-                const timeValue =
-                  field.value instanceof Date
-                    ? field.value.toTimeString().substring(0, 5) // Convert Date to HH:MM format
-                    : ''; // Ensure it's a time string in HH:MM
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              );
+            }}
+          />
+          {/* Time select input */}
+          <Controller
+            control={form.control}
+            name="time"
+            render={({ field, fieldState }) => {
+              const timeValue =
+                field.value instanceof Date
+                  ? field.value.toTimeString().substring(0, 5) // Convert Date to HH:MM format
+                  : ''; // Ensure it's a time string in HH:MM
 
-                return (
-                  <FormItem className="w-full">
-                    <FormLabel>Tijd</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="time"
-                        value={timeValue}
-                        onChange={(e) => {
-                          const [hours, minutes] = e.target.value.split(':');
-                          const updatedDate = new Date(field.value);
-                          updatedDate.setHours(parseInt(hours, 10));
-                          updatedDate.setMinutes(parseInt(minutes, 10));
-                          field.onChange(updatedDate); // Update the form field value with the selected time
-                        }}
-                        className="border p-2 rounded w-full"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                );
-              }}
-            />
-          </div>
-          <DialogFooter className="gap-2">
-            <Button variant="outline" type="button" onClick={() => handleOpenChange(false)}>
-              Annuleren
-            </Button>
-            <Button variant="default" type="submit" disabled={!form.formState.isValid}>
-              <PinIcon />
-              Opslaan
-            </Button>
-          </DialogFooter>
+              return (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel htmlFor={`${fieldId}-time`}>Tijd</FieldLabel>
+                  <Input
+                    id={`${fieldId}-time`}
+                    type="time"
+                    value={timeValue}
+                    aria-invalid={fieldState.invalid}
+                    onChange={(e) => {
+                      const [hours, minutes] = e.target.value.split(':');
+                      const updatedDate = new Date(field.value);
+                      updatedDate.setHours(parseInt(hours, 10));
+                      updatedDate.setMinutes(parseInt(minutes, 10));
+                      field.onChange(updatedDate); // Update the form field value with the selected time
+                    }}
+                    className="border p-2 rounded w-full"
+                  />
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              );
+            }}
+          />
         </div>
-      </form>
-    </Form>
+        <DialogFooter className="gap-2">
+          <Button variant="outline" type="button" onClick={() => handleOpenChange(false)}>
+            Annuleren
+          </Button>
+          <Button variant="default" type="submit" disabled={!form.formState.isValid}>
+            <PinIcon data-icon="inline-start" />
+            Opslaan
+          </Button>
+        </DialogFooter>
+      </FieldGroup>
+    </form>
   );
 
   const dialog = () => (
@@ -242,10 +241,10 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
       {dialog()}
       <div className="flex gap-2 w-full">
         <Button variant="default" size="sm" className="w-full" onClick={() => openDialog(MarkerType.Hunt)}>
-          <LocateFixedIcon /> Vos hunt
+          <LocateFixedIcon data-icon="inline-start" /> Vos hunt
         </Button>
         <Button variant="default" size="sm" className="w-full" onClick={() => openDialog(MarkerType.Spot)}>
-          <GlassesIcon /> Vos spot
+          <GlassesIcon data-icon="inline-start" /> Vos spot
         </Button>
       </div>
     </>

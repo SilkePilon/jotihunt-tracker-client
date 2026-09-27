@@ -5,14 +5,13 @@ import {Card, CardContent} from '../components/ui/card';
 import {useAuth} from '../hooks/auth.hook';
 import {z} from 'zod';
 import {zodResolver} from '@hookform/resolvers/zod';
-import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from '../components/ui/form';
-import {useForm} from 'react-hook-form';
+import {Controller, useForm} from 'react-hook-form';
 import {useNavigate} from 'react-router';
 import usePWA from 'react-pwa-install-prompt';
 import {isMobile} from 'react-device-detect';
 import {useTheme} from "@/hooks/theme.hook.ts";
 import {cn} from "@/lib/utils.ts";
-import {Field, FieldDescription, FieldGroup} from "@/components/ui/field.tsx";
+import {Field, FieldDescription, FieldError, FieldGroup, FieldLabel} from "@/components/ui/field.tsx";
 import backgroundImage from '@/assets/images/background.webp';
 import {GlobeIcon} from "lucide-react";
 import {siGithub} from "simple-icons";
@@ -63,51 +62,47 @@ export default function Login() {
                 <div className={"flex flex-col gap-6"}>
                     <Card className="overflow-hidden p-0">
                         <CardContent className="grid p-0 md:grid-cols-2">
-                            <Form {...form}>
-                                <form className="p-6 md:p-8" onSubmit={form.handleSubmit(handleLogin)}>
-                                    <FieldGroup>
-                                        <div className="flex flex-col items-center gap-2 text-center">
-                                            <h1 className="text-2xl font-bold">🦊 Jotihunt Tracker</h1>
-                                            <p className="text-muted-foreground text-balance">
-                                                Inloggen op je Jotihunt Tracker account
-                                            </p>
-                                        </div>
-                                        <FormField
-                                            control={form.control}
-                                            name="email"
-                                            render={({field}) => (
-                                                <FormItem>
-                                                    <FormLabel>E-mailadres</FormLabel>
-                                                    <FormControl>
-                                                        <Input {...field} type="email" required
-                                                               placeholder="jouwnaam@emailadres.nl"/>
-                                                    </FormControl>
-                                                    <FormMessage/>
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <FormField
-                                            control={form.control}
-                                            name="password"
-                                            render={({field}) => (
-                                                <FormItem>
-                                                    <FormLabel>Wachtwoord</FormLabel>
-                                                    <FormControl>
-                                                        <Input {...field} type="password" required/>
-                                                    </FormControl>
-                                                    <FormMessage/>
-                                                </FormItem>
-                                            )}
-                                        />
-                                        <Field>
-                                            <Button type="submit">Login</Button>
-                                        </Field>
-                                        <FieldDescription className="text-center text-balance">
-                                            Geen account? Vraag de organisatie er een te maken!
-                                        </FieldDescription>
-                                    </FieldGroup>
-                                </form>
-                            </Form>
+                            <form className="p-6 md:p-8" onSubmit={form.handleSubmit(handleLogin)}>
+                                <FieldGroup>
+                                    <div className="flex flex-col items-center gap-2 text-center">
+                                        <h1 className="text-2xl font-bold">🦊 Jotihunt Tracker</h1>
+                                        <p className="text-muted-foreground text-balance">
+                                            Inloggen op je Jotihunt Tracker account
+                                        </p>
+                                    </div>
+                                    <Controller
+                                        control={form.control}
+                                        name="email"
+                                        render={({field, fieldState}) => (
+                                            <Field data-invalid={fieldState.invalid}>
+                                                <FieldLabel htmlFor="login-email">E-mailadres</FieldLabel>
+                                                <Input {...field} id="login-email" type="email" required
+                                                       aria-invalid={fieldState.invalid}
+                                                       placeholder="jouwnaam@emailadres.nl"/>
+                                                {fieldState.invalid && <FieldError errors={[fieldState.error]}/>}
+                                            </Field>
+                                        )}
+                                    />
+                                    <Controller
+                                        control={form.control}
+                                        name="password"
+                                        render={({field, fieldState}) => (
+                                            <Field data-invalid={fieldState.invalid}>
+                                                <FieldLabel htmlFor="login-password">Wachtwoord</FieldLabel>
+                                                <Input {...field} id="login-password" type="password" required
+                                                       aria-invalid={fieldState.invalid}/>
+                                                {fieldState.invalid && <FieldError errors={[fieldState.error]}/>}
+                                            </Field>
+                                        )}
+                                    />
+                                    <Field>
+                                        <Button type="submit">Login</Button>
+                                    </Field>
+                                    <FieldDescription className="text-center text-balance">
+                                        Geen account? Vraag de organisatie er een te maken!
+                                    </FieldDescription>
+                                </FieldGroup>
+                            </form>
                             <div className="bg-muted relative hidden md:block">
                                 <img
                                     src={backgroundImage}
@@ -123,11 +118,11 @@ export default function Login() {
                         Ontwikkeling door Scouting Scherpenzeel e.o.<br/>
                         <a href={"https://scoutingscherpenzeel.nl"} target={"_blank"} rel={"noreferrer"}
                            className={cn("ml-2 underline underline-offset-2 inline-flex items-center gap-1")}>
-                            <GlobeIcon className={"h-3 w-3"}/>
+                            <GlobeIcon className={"size-3"}/>
                             Website</a>
                         <a href={"https://github.com/ScoutingScherpenzeel"} target={"_blank"} rel={"noreferrer"}
                            className={cn("ml-2 underline underline-offset-2 inline-flex items-center gap-1")}>
-                            <span className={"fill-muted-foreground w-3 h-3"}
+                            <span className={"fill-muted-foreground size-3"}
                                   dangerouslySetInnerHTML={{__html: siGithub.svg}}></span>
                             GitHub</a>
                     </FieldDescription>

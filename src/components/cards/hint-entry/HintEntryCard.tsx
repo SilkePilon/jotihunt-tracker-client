@@ -1,7 +1,7 @@
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select.tsx';
-import {Form, FormControl, FormField, FormItem, FormLabel} from '../../ui/form.tsx';
+import {Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select.tsx';
+import {Field, FieldGroup, FieldLabel} from '@/components/ui/field.tsx';
 import {z} from 'zod';
-import {useForm, useWatch} from 'react-hook-form';
+import {Controller, useForm, useWatch} from 'react-hook-form';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {Button} from '../../ui/button.tsx';
 import {InputOTP, InputOTPGroup, InputOTPSlot} from '../../ui/input-otp.tsx';
@@ -153,26 +153,25 @@ export default function HintEntryCard({mapRef}: InferProps<typeof HintEntryCard.
      * Calls onComplete once all 6 digits are entered, so focus can move on.
      */
     const coordinateField = (name: 'x' | 'y', label: string, onComplete: () => void) => (
-        <FormField
+        <Controller
             control={form.control}
             name={name}
-            render={({field}) => (
-                <FormItem className="flex items-center gap-2">
-                    <FormLabel className="w-4 shrink-0 font-semibold">{label}</FormLabel>
-                    <FormControl>
-                        <InputOTP id={`${fieldId}-${name}`} autoComplete="off" inputMode="numeric" maxLength={6}
-                                  pattern={REGEXP_ONLY_DIGITS} onComplete={onComplete} {...field}>
-                            <InputOTPGroup>
-                                {[0, 1, 2, 3, 4, 5].map((index) => (
-                                    <InputOTPSlot key={index} index={index} className="h-9 w-9"/>
-                                ))}
-                            </InputOTPGroup>
-                        </InputOTP>
-                    </FormControl>
+            render={({field, fieldState}) => (
+                <Field orientation="horizontal" data-invalid={fieldState.invalid} className="gap-2">
+                    <FieldLabel htmlFor={`${fieldId}-${name}`} className="w-4 flex-none! font-semibold">{label}</FieldLabel>
+                    <InputOTP id={`${fieldId}-${name}`} autoComplete="off" inputMode="numeric" maxLength={6}
+                              pattern={REGEXP_ONLY_DIGITS} onComplete={onComplete} aria-invalid={fieldState.invalid}
+                              {...field}>
+                        <InputOTPGroup>
+                            {[0, 1, 2, 3, 4, 5].map((index) => (
+                                <InputOTPSlot key={index} index={index} className="h-9 w-9"
+                                              aria-invalid={fieldState.invalid}/>
+                            ))}
+                        </InputOTPGroup>
+                    </InputOTP>
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="size-9"
                         tabIndex={-1}
                         aria-label={`${label}-coördinaat wissen`}
                         onClick={(e) => {
@@ -182,54 +181,51 @@ export default function HintEntryCard({mapRef}: InferProps<typeof HintEntryCard.
                     >
                         <TrashIcon/>
                     </Button>
-                </FormItem>
+                </Field>
             )}
         />
     );
 
     return (
-        <Form {...form}>
-            <form onSubmit={(e) => form.handleSubmit(onSubmit)(e)}>
-                <div className="flex flex-col gap-3">
-                    <div className="flex gap-2 w-full">
-                        <FormField
-                            control={form.control}
-                            name="area"
-                            render={({field}) => (
-                                <FormItem className="w-full">
-                                    <FormLabel>Deelgebied</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}
-                                            value={field.value}>
-                                        <FormControl>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Kies deelgebied..."/>
-                                            </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
+        <form onSubmit={(e) => form.handleSubmit(onSubmit)(e)}>
+            <FieldGroup className="gap-3">
+                <div className="flex gap-2 w-full">
+                    <Controller
+                        control={form.control}
+                        name="area"
+                        render={({field, fieldState}) => (
+                            <Field data-invalid={fieldState.invalid} className="gap-2">
+                                <FieldLabel htmlFor={`${fieldId}-area`}>Deelgebied</FieldLabel>
+                                <Select name={field.name} onValueChange={field.onChange} value={field.value}>
+                                    <SelectTrigger id={`${fieldId}-area`} aria-invalid={fieldState.invalid}>
+                                        <SelectValue placeholder="Kies deelgebied..."/>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectGroup>
                                             {areaOptions.map((option) => (
                                                 <SelectItem key={option.value} value={option.value}>
                                                     {option.label}
                                                 </SelectItem>
                                             ))}
-                                        </SelectContent>
-                                    </Select>
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="time"
-                            render={({field}) => (
-                                <FormItem className="w-full">
-                                    <FormLabel>Tijdstip</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}
-                                            value={field.value}>
-                                        <FormControl>
-                                            <SelectTrigger disabled={!selectedArea}>
-                                                <SelectValue placeholder="Kies tijdstip..."/>
-                                            </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent className="max-h-[280px]">
+                                        </SelectGroup>
+                                    </SelectContent>
+                                </Select>
+                            </Field>
+                        )}
+                    />
+                    <Controller
+                        control={form.control}
+                        name="time"
+                        render={({field, fieldState}) => (
+                            <Field data-invalid={fieldState.invalid} className="gap-2">
+                                <FieldLabel htmlFor={`${fieldId}-time`}>Tijdstip</FieldLabel>
+                                <Select name={field.name} onValueChange={field.onChange} value={field.value}>
+                                    <SelectTrigger id={`${fieldId}-time`} aria-invalid={fieldState.invalid}
+                                                   disabled={!selectedArea}>
+                                        <SelectValue placeholder="Kies tijdstip..."/>
+                                    </SelectTrigger>
+                                    <SelectContent className="max-h-[280px]">
+                                        <SelectGroup>
                                             {timeOptions.length > 0 ? (
                                                 timeOptions.map((option) => (
                                                     <SelectItem key={option.value} value={option.value}>
@@ -241,27 +237,27 @@ export default function HintEntryCard({mapRef}: InferProps<typeof HintEntryCard.
                                                     (Nog) geen tijdstip te kiezen
                                                 </SelectItem>
                                             )}
-                                        </SelectContent>
-                                    </Select>
-                                </FormItem>
-                            )}
-                        />
-                    </div>
-                    <div className="flex flex-col gap-2">
-                        {coordinateField('x', 'X', () => document.getElementById(`${fieldId}-y`)?.focus())}
-                        {coordinateField('y', 'Y', () => setTimeout(() => document.getElementById(submitId)?.focus()))}
-                        {outsideNetherlands && (
-                            <p role="alert" className="text-sm font-medium text-destructive">
-                                Dit coördinaat ligt buiten Nederland. Controleer de X- en Y-waarden.
-                            </p>
+                                        </SelectGroup>
+                                    </SelectContent>
+                                </Select>
+                            </Field>
                         )}
-                    </div>
-                    <Button id={submitId} type="submit" disabled={!form.formState.isValid || outsideNetherlands}>
-                        <Pin/> Registreren
-                    </Button>
+                    />
                 </div>
-            </form>
-        </Form>
+                <div className="flex flex-col gap-2">
+                    {coordinateField('x', 'X', () => document.getElementById(`${fieldId}-y`)?.focus())}
+                    {coordinateField('y', 'Y', () => setTimeout(() => document.getElementById(submitId)?.focus()))}
+                    {outsideNetherlands && (
+                        <p role="alert" className="text-sm font-medium text-destructive">
+                            Dit coördinaat ligt buiten Nederland. Controleer de X- en Y-waarden.
+                        </p>
+                    )}
+                </div>
+                <Button id={submitId} type="submit" disabled={!form.formState.isValid || outsideNetherlands}>
+                    <Pin data-icon="inline-start"/> Registreren
+                </Button>
+            </FieldGroup>
+        </form>
     );
 }
 
