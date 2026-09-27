@@ -59,7 +59,7 @@ export const useAuth = () => {
         confirmPassword: newPassword,
       });
       return response.status === 200;
-    } catch (error) {
+    } catch {
       return false;
     }
   }

@@ -1,6 +1,7 @@
 import { useArticles } from '@/hooks/articles.hook.ts';
 import Ripple from '../../magicui/Ripple.tsx';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { Article } from '@/types/Article';
 import hintAlert from '@/assets/audio/hint-alert.mp3';
 import useInterval from '@/hooks/utils/interval.hook.ts';
 import useSound from 'use-sound';
@@ -11,41 +12,21 @@ export default function NextHintTime() {
 
   const [currentTime, setCurrentTime] = useState(new Date());
   const [lastPlayedHint, setLastPlayedHint] = useState<Date>();
-  const [lastHintTime, setLastHintTime] = useState<Date>();
   const [hasLoaded, setHasLoaded] = useState(false);
   const [newHint, setNewHint] = useState(false);
 
   /**
-   * This effect runs every second to update the current time and check for new hints.
+   * The last hint time, derived from the articles.
    */
-  useInterval(() => {
-    setCurrentTime(new Date());
-    if (hasLoaded) checkForNewHint();
-  }, 1000);
+  const lastHintTime = getLastHintTime(articles);
 
   /**
-   * This effect runs when the articles change to update the last hint time.
+   * On the first load, mark the current last hint as already played so the
+   * sound does not play on the initial browser load.
    */
-  useEffect(() => {
-    const hintTime = getLastHintTime();
-    setLastHintTime(hintTime!);
-    if (hintTime && !hasLoaded) {
-      setHasLoaded(true);
-      setLastPlayedHint(hintTime);
-    }
-  }, [articles]);
-
-  /**
-   * Get the last hint time from the articles.
-   * Assumes the articles are sorted by publishAt descending (which they are by default).
-   * @returns The last hint time
-   */
-  function getLastHintTime() {
-    if (!articles) return;
-    const hints = articles.filter((article) => article.type === 'hint');
-    if (hints.length === 0) return;
-    const lastHint = hints[0];
-    return new Date(lastHint.publishAt);
+  if (lastHintTime && !hasLoaded) {
+    setHasLoaded(true);
+    setLastPlayedHint(lastHintTime);
   }
 
   /**
@@ -55,7 +36,7 @@ export default function NextHintTime() {
     // if there is a new hint that has not been played yet, play the sound
     // make sure the first browser load does not play the sound
 
-    const hintTime = getLastHintTime();
+    const hintTime = lastHintTime;
     if (!hintTime) return;
 
     if (!lastPlayedHint || hintTime.getTime() > lastPlayedHint.getTime()) {
@@ -75,6 +56,14 @@ export default function NextHintTime() {
     console.log('A new hint has arrived!');
     play();
   }
+
+  /**
+   * This effect runs every second to update the current time and check for new hints.
+   */
+  useInterval(() => {
+    setCurrentTime(new Date());
+    if (hasLoaded) checkForNewHint();
+  }, 1000);
 
   /**
    * Get the next hint time.
@@ -139,4 +128,18 @@ export default function NextHintTime() {
       <Ripple color={newHint ? 'green' : 'blue'} />
     </div>
   );
+}
+
+/**
+ * Get the last hint time from the articles.
+ * Assumes the articles are sorted by publishAt descending (which they are by default).
+ * @param articles The articles to search
+ * @returns The last hint time
+ */
+function getLastHintTime(articles?: Article[]) {
+  if (!articles) return;
+  const hints = articles.filter((article) => article.type === 'hint');
+  if (hints.length === 0) return;
+  const lastHint = hints[0];
+  return new Date(lastHint.publishAt);
 }

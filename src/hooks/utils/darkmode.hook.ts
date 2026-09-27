@@ -1,29 +1,21 @@
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 
-export const useDarkMode = () => {
-  const [isDarkMode, setIsDarkMode] = useState(checkDarkMode());
+/**
+ * Subscribe to class changes on the body element.
+ * @param onChange Callback invoked when the body class list changes
+ * @returns Unsubscribe function
+ */
+function subscribe(onChange: () => void) {
+  const mutationObserver = new MutationObserver(onChange);
+  mutationObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  return () => mutationObserver.disconnect();
+}
 
-  function checkDarkMode() {
-    return document.body.classList.contains('dark');
-  }
+function checkDarkMode() {
+  return document.body.classList.contains('dark');
+}
 
-  useEffect(() => {
-    setIsDarkMode(checkDarkMode);
-
-    const mutationObserver = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.attributeName === 'class') {
-          setIsDarkMode(checkDarkMode());
-        }
-      });
-    });
-
-    mutationObserver.observe(document.body, { attributes: true });
-
-    return () => {
-      mutationObserver.disconnect();
-    };
-  }, []);
-
-  return isDarkMode;
-};
+/**
+ * Hook that returns whether dark mode is currently active (i.e. the body has the `dark` class).
+ */
+export const useDarkMode = () => useSyncExternalStore(subscribe, checkDarkMode);

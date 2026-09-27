@@ -1,6 +1,7 @@
-import {Outlet, useNavigate, useOutletContext} from 'react-router';
+import {Outlet, useNavigate} from 'react-router';
 import {toast} from "sonner"
-import {RefObject, useEffect, useRef, useState} from 'react';
+import {isAxiosError} from 'axios';
+import {useRef, useState} from 'react';
 import {SWRConfig} from 'swr';
 import Map, {MapRef} from './components/Map';
 import PWAPrompt from 'react-ios-pwa-prompt';
@@ -8,10 +9,7 @@ import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import {User} from './types/User';
 import ResetPassword from './components/ResetPassword';
 import {useTheme} from "@/hooks/theme.hook.ts";
-
-type ContextType = {
-    mapRef: RefObject<MapRef | null>;
-};
+import type {OutletContextType} from '@/hooks/outlet.hook.ts';
 
 export default function Layout() {
     const navigate = useNavigate();
@@ -24,15 +22,17 @@ export default function Layout() {
 
     /**
      * If reset password is required, open the dialog.
+     * (State is adjusted during render when the flag changes, instead of in an effect.)
      */
-    useEffect(() => {
-        if (auth?.requiresPasswordChange) {
-            setResetPasswordOpen(true);
-        }
-    }, [auth?.requiresPasswordChange]);
+    const requiresPasswordChange = !!auth?.requiresPasswordChange;
+    const [prevRequiresPasswordChange, setPrevRequiresPasswordChange] = useState(false);
+    if (requiresPasswordChange !== prevRequiresPasswordChange) {
+        setPrevRequiresPasswordChange(requiresPasswordChange);
+        if (requiresPasswordChange) setResetPasswordOpen(true);
+    }
 
-    function onSWRError(error: any) {
-        if (error.response?.status === 401) {
+    function onSWRError(error: unknown) {
+        if (isAxiosError(error) && error.response?.status === 401) {
             toast.info("Je sessie is verlopen.", {
                 description: "Log opnieuw in om verder te gaan.",
                 duration: Infinity
@@ -44,14 +44,14 @@ export default function Layout() {
         setErrorShown(true);
         toast.error("Oeps! Er is iets misgegaan.", {
             duration: Infinity,
-            description: 'Er is een fout opgetreden bij het ophalen van de data, probeer het later opnieuw. (Foutmelding: ' + error.message + ')'
+            description: 'Er is een fout opgetreden bij het ophalen van de data, probeer het later opnieuw. (Foutmelding: ' + (error instanceof Error ? error.message : String(error)) + ')'
         })
     }
 
     return (
         <SWRConfig value={{onError: onSWRError}}>
             <ResetPassword open={resetPasswordOpen} setIsOpen={setResetPasswordOpen} allowClose={false}/>
-            <Outlet context={{mapRef} satisfies ContextType}/>
+            <Outlet context={{mapRef} satisfies OutletContextType}/>
             <Map ref={mapRef}/>
             <PWAPrompt
                 promptOnVisit={1}
@@ -64,8 +64,4 @@ export default function Layout() {
             />
         </SWRConfig>
     );
-}
-
-export function useOutlet() {
-    return useOutletContext<ContextType>();
 }

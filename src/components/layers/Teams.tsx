@@ -1,7 +1,7 @@
 import {Layer, Marker, Source} from 'react-map-gl/mapbox';
 import {useTeams} from '@/hooks/teams.hook.ts';
 import MapMarker from '../map/MapMarker';
-import {useMemo, useState} from 'react';
+import {useCallback, useMemo, useState} from 'react';
 import {Team} from '@/types/Team';
 import MapPopup from '../map/MapPopup';
 import {cn, createCircle, getColorFromArea} from '@/lib/utils';
@@ -12,9 +12,10 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '../
 import useLayersStore from '@/stores/layers.store';
 import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip.tsx";
 
+const HOME_TEAM_API_ID = import.meta.env.HOME_TEAM_API_ID;
+const TEAMS_AREA_EDITING = import.meta.env.TEAMS_AREA_EDITING === 'true';
+
 export default function Teams() {
-    const HOME_TEAM_API_ID = import.meta.env.HOME_TEAM_API_ID;
-    const TEAMS_AREA_EDITING = import.meta.env.TEAMS_AREA_EDITING === 'true';
 
     const {showGroupCircles} = useLayersStore();
     const {teams, setTeamArea} = useTeams();
@@ -32,8 +33,9 @@ export default function Teams() {
     function handleAreaChange(area: string) {
         if (!TEAMS_AREA_EDITING) return;
         if (!activeTeam) return;
-        activeTeam.area = area === 'onbekend' ? undefined : area;
-        setTeamArea(activeTeam._id, activeTeam.area);
+        const newArea = area === 'onbekend' ? undefined : area;
+        setActiveTeam({...activeTeam, area: newArea});
+        setTeamArea(activeTeam._id, newArea);
     }
 
     /**
@@ -41,14 +43,14 @@ export default function Teams() {
      * @param open Whether the tooltip should be open or closed.
      * @param teamId The ID of the device for which the tooltip is being handled.
      */
-    function handleMarkerTooltip(open: boolean, teamId: string) {
+    const handleMarkerTooltip = useCallback((open: boolean, teamId: string) => {
         if (activeTeam) {
             setTooltipOpenId(null);
             return;
         }
 
         setTooltipOpenId(open ? teamId : null);
-    }
+    }, [activeTeam]);
 
     const markers = useMemo(() => {
         return teams
@@ -110,7 +112,7 @@ export default function Teams() {
                     )}
                 </div>
             ));
-    }, [teams, isVisible, activeTeam, tooltipOpenId]);
+    }, [teams, isVisible, activeTeam, tooltipOpenId, showGroupCircles, handleMarkerTooltip]);
 
     return (
         <>

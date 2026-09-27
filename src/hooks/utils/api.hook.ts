@@ -5,7 +5,7 @@ export const useFetcher = () => {
   const baseUrl = import.meta.env.API_BASE_URL;
   const authHeader = useAuthHeader();
 
-  async function fetch<T>(url: string, method: 'GET' | 'POST' | 'DELETE' | 'PUT' = 'GET', body?: any) {
+  async function fetch<T>(url: string, method: 'GET' | 'POST' | 'DELETE' | 'PUT' = 'GET', body?: unknown) {
     return axios.request<T>({
       url: `${baseUrl}${url}`,
       method,

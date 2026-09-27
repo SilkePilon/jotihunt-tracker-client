@@ -7,7 +7,7 @@ import HintEntryCard from '../components/cards/hint-entry/HintEntryCard.tsx';
 import CounterHuntCard from '../components/cards/counter-hunt/CounterHuntCard.tsx';
 import Settings from '../components/Settings';
 import useMenuStore from '../stores/menu.store';
-import {useOutlet} from '@/Layout';
+import {useOutlet} from '@/hooks/outlet.hook.ts';
 import {ScrollArea} from '@/components/ui/scroll-area';
 import SearchCard from "@/components/cards/search/SearchCard.tsx";
 import CoordinatesCard from "@/components/cards/coordinates/CoordinatesCard.tsx";

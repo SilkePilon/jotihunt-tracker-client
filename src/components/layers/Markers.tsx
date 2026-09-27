@@ -30,17 +30,18 @@ import {toast} from "sonner";
 import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip.tsx";
 import {Badge} from "@/components/ui/badge.tsx";
 
+// Hunt time boundaries (static for the lifetime of the app)
+const startTime = new Date(import.meta.env.HUNT_START_TIME);
+const endTime = new Date(import.meta.env.HUNT_END_TIME);
+const midnight = new Date(startTime);
+midnight.setHours(23, 0, 0, 0);
+
 export default function Markers({part1 = true, part2 = true}: InferProps<typeof Markers.propTypes>) {
     const {markers, deleteMarker} = useMarkers();
     const {isVisible} = useAreas();
 
     const [activeMarker, setActiveMarker] = useState<Marker>();
     const [tooltipOpenId, setTooltipOpenId] = useState<string | null>(null);
-
-    const startTime = new Date(import.meta.env.HUNT_START_TIME);
-    const endTime = new Date(import.meta.env.HUNT_END_TIME);
-    const midnight = new Date(startTime);
-    midnight.setHours(23, 0, 0, 0);
 
     /**
      * Get a specific icon for a marker type.

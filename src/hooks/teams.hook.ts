@@ -21,7 +21,7 @@ export const useTeams = () => {
             const result = await fetch('/teams/reload', 'POST');
             mutate();
             return result.status === 200;
-        } catch (e) {
+        } catch {
             return false;
         }
     }

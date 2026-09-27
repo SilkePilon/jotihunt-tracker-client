@@ -2,7 +2,7 @@ import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '../../u
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select.tsx';
 import {Form, FormControl, FormField, FormItem, FormLabel} from '../../ui/form.tsx';
 import {z} from 'zod';
-import {useForm} from 'react-hook-form';
+import {useForm, useWatch} from 'react-hook-form';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {Button} from '../../ui/button.tsx';
 import {InputOTP, InputOTPGroup, InputOTPSlot} from '../../ui/input-otp.tsx';
@@ -39,6 +39,7 @@ export default function HintEntryCard({mapRef}: InferProps<typeof HintEntryCard.
             y: '',
         },
     });
+    const selectedArea = useWatch({control: form.control, name: 'area'});
 
     // Handle hint bridge
     useEffect(() => {
@@ -67,7 +68,7 @@ export default function HintEntryCard({mapRef}: InferProps<typeof HintEntryCard.
         }
 
         markers
-            ?.filter((marker) => marker.area === form.watch('area'))
+            ?.filter((marker) => marker.area === selectedArea)
             .filter((marker) => marker.type === MarkerType.Hint)
             .forEach((marker) => {
                 const markerTime = new Date(marker.time);
@@ -137,7 +138,7 @@ export default function HintEntryCard({mapRef}: InferProps<typeof HintEntryCard.
 
     const formComponent = () => (
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)}>
+            <form onSubmit={(e) => form.handleSubmit(onSubmit)(e)}>
                 <div className="flex flex-col gap-4">
                     <div className="flex gap-4 w-full">
                         <FormField
@@ -173,7 +174,7 @@ export default function HintEntryCard({mapRef}: InferProps<typeof HintEntryCard.
                                     <Select onValueChange={field.onChange} defaultValue={field.value}
                                             value={field.value}>
                                         <FormControl>
-                                            <SelectTrigger disabled={!form.watch('area')}>
+                                            <SelectTrigger disabled={!selectedArea}>
                                                 <SelectValue placeholder="Kies tijdstip..."/>
                                             </SelectTrigger>
                                         </FormControl>

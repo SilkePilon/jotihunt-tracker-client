@@ -15,6 +15,32 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Card, CardContent } from '@/components/ui/card';
 import {toast} from "sonner";
 
+function LoadingSkeleton({ rows }: { rows: number }) {
+  return (
+    <>
+      {[...Array(rows)].map((_, index) => (
+        <TableRow key={index}>
+          <TableCell>
+            <Skeleton className="h-4 w-[200px]" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-[300px]" />
+          </TableCell>
+          <TableCell>
+            <Skeleton className="h-4 w-[50px]" />
+          </TableCell>
+          <TableCell>
+            <div className="flex space-x-2">
+              <Skeleton className="h-10 w-10" />
+              <Skeleton className="h-10 w-10" />
+            </div>
+          </TableCell>
+        </TableRow>
+      ))}
+    </>
+  );
+}
+
 export default function Users() {
   const navigate = useNavigate();
   const user = useAuthUser<User>();
@@ -79,30 +105,6 @@ export default function Users() {
     }
   }
 
-  const LoadingSkeleton = () => (
-    <>
-      {[...Array(usersPerPage)].map((_, index) => (
-        <TableRow key={index}>
-          <TableCell>
-            <Skeleton className="h-4 w-[200px]" />
-          </TableCell>
-          <TableCell>
-            <Skeleton className="h-4 w-[300px]" />
-          </TableCell>
-          <TableCell>
-            <Skeleton className="h-4 w-[50px]" />
-          </TableCell>
-          <TableCell>
-            <div className="flex space-x-2">
-              <Skeleton className="h-10 w-10" />
-              <Skeleton className="h-10 w-10" />
-            </div>
-          </TableCell>
-        </TableRow>
-      ))}
-    </>
-  );
-
   if (!user?.admin) {
     return <Navigate to="/" />;
   }
@@ -136,7 +138,7 @@ export default function Users() {
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <LoadingSkeleton />
+                  <LoadingSkeleton rows={usersPerPage} />
                 ) : (
                   filteredUsers.slice(indexOfFirstUser, indexOfLastUser).map((user) => (
                     <TableRow key={user._id}>
