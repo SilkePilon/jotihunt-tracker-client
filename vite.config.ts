@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
 import { viteEnvs } from 'vite-envs';
 import { VitePWA, VitePWAOptions } from 'vite-plugin-pwa';
@@ -58,6 +59,7 @@ const pwaManifest: Partial<VitePWAOptions> = {
 export default defineConfig({
   plugins: [
     react(),
+    tailwindcss(),
     viteEnvs({
       declarationFile: '.env.example',
       computedEnv: async () => {
