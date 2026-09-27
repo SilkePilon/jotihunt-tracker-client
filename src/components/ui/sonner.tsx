@@ -1,25 +1,30 @@
-import {useTheme} from "next-themes"
+import type {CSSProperties} from "react"
 import {Toaster as Sonner} from "sonner"
+import {useDarkMode} from "@/hooks/utils/darkmode.hook.ts"
 
 type ToasterProps = React.ComponentProps<typeof Sonner>
 
 const Toaster = ({...props}: ToasterProps) => {
-    const {theme = "system"} = useTheme()
+    // Follow the app's own dark mode (body.dark), which can differ from the OS preference
+    const isDarkMode = useDarkMode()
 
     return (
         <Sonner
-            theme={theme as ToasterProps["theme"]}
+            theme={isDarkMode ? "dark" : "light"}
             className="toaster group"
+            style={
+                {
+                    "--normal-bg": "var(--popover)",
+                    "--normal-text": "var(--popover-foreground)",
+                    "--normal-border": "var(--border)",
+                } as CSSProperties
+            }
             toastOptions={{
                 closeButton: true,
                 classNames: {
-                    toast:
-                        "group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg",
                     description: "text-muted-foreground!",
-                    actionButton:
-                        "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
-                    cancelButton:
-                        "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
+                    actionButton: "bg-primary! text-primary-foreground!",
+                    cancelButton: "bg-muted! text-muted-foreground!",
                 },
             }}
             {...props}
