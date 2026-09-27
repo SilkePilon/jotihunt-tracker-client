@@ -1,11 +1,21 @@
 import {useEffect} from 'react';
-import {useControl, useMap} from 'react-map-gl/mapbox';
-import type {ControlPosition} from 'react-map-gl/mapbox';
+import {useControl, useMap} from 'react-map-gl/maplibre';
+import type {ControlPosition} from 'react-map-gl/maplibre';
+import type {MapLibreEvent} from 'maplibre-gl';
 import MapboxImageControl from '@mapbox-controls/image';
 import '@mapbox-controls/image/src/index.css';
 
 type ImageControlOptions = ConstructorParameters<typeof MapboxImageControl>[0];
-type ImageControlEvent = mapboxgl.MapboxEvent & Record<string, unknown>;
+type ImageControlEvent = MapLibreEvent & Record<string, unknown>;
+
+// @mapbox-controls/image emits custom, non-standard event names
+// ('image.select', ...) that aren't part of MapLibre's typed MapEventType.
+// Narrow to the subset of the Map API we need and accept arbitrary event
+// names for it.
+type CustomEventMap = {
+    on(type: string, listener: (event: ImageControlEvent) => void): unknown;
+    off(type: string, listener: (event: ImageControlEvent) => void): unknown;
+};
 
 type ImageControlProps = ImageControlOptions & {
     position?: ControlPosition;
@@ -31,7 +41,7 @@ export default function ImageControl({
 
     const {current: mapRef} = useMap();
     useEffect(() => {
-        const map = mapRef?.getMap();
+        const map = mapRef?.getMap() as unknown as CustomEventMap | undefined;
         if (!map) return;
 
         if (onSelect) map.on('image.select', onSelect);

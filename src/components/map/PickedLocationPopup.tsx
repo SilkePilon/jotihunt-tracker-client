@@ -2,7 +2,7 @@ import MapPopup from './MapPopup';
 import proj4 from 'proj4';
 import MarkerRegistration from './MarkerRegistration';
 import GoogleMapsButton from './GoogleMapsButton';
-import {Marker} from "react-map-gl/mapbox";
+import {Marker} from "react-map-gl/maplibre";
 import {Button} from "@/components/ui/button.tsx";
 import {CopyIcon, LightbulbIcon} from "lucide-react";
 import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip.tsx";

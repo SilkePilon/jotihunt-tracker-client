@@ -5,7 +5,7 @@ import {MapRef} from "@/components/Map.tsx";
 import proj4 from "proj4";
 import {useState} from "react";
 import {toast} from "sonner";
-import {LngLat} from "mapbox-gl";
+import type {LngLat} from "maplibre-gl";
 import {cn} from "@/lib/utils.ts";
 
 type Parsed = { lng: number; lat: number };

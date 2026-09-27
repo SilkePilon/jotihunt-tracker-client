@@ -1,4 +1,4 @@
-import {Layer, Marker, Source} from 'react-map-gl/mapbox';
+import {Layer, Marker, Source} from 'react-map-gl/maplibre';
 import {useState} from 'react';
 import MapPopup from '../map/MapPopup';
 import {useDevices} from '@/hooks/devices.hook';

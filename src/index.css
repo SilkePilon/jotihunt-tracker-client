@@ -145,33 +145,33 @@
 
 /*
  * Custom (non-layered) styles. These intentionally live outside of any
- * cascade layer so they keep overriding the (unlayered) mapbox-gl styles,
+ * cascade layer so they keep overriding the (unlayered) maplibre-gl styles,
  * just like they did with Tailwind v3.
  */
 
-/* Mapbox popup styling */
-.mapboxgl-popup-content {
+/* MapLibre popup styling */
+.maplibregl-popup-content {
   @apply animate-in fade-in bg-background!;
   border-radius: 0.75rem !important;
   padding: 1rem;
   font-size: 0.875rem;
 }
 
-.mapboxgl-popup-close-button {
+.maplibregl-popup-close-button {
   width: 30px;
   height: 30px;
   font-size: large;
 }
 
-.mapboxgl-popup-close-button:hover {
+.maplibregl-popup-close-button:hover {
   @apply bg-accent! rounded-tr-lg;
 }
 
-.mapboxgl-popup-tip {
+.maplibregl-popup-tip {
   @apply animate-in fade-in;
 }
 
-.mapboxgl-ctrl-top-right {
+.maplibregl-ctrl-top-right {
   @apply top-[137px]! md:top-0!;
 }
 
@@ -183,7 +183,7 @@
   background-image: url('assets/images/background.webp');
 }
 
-.mapboxgl-ctrl-group {
+.maplibregl-ctrl-group {
   background: transparent !important;
 
   > button {
@@ -191,7 +191,7 @@
   }
 }
 
-.mapboxgl-ctrl-attrib {
+.maplibregl-ctrl-attrib {
   @apply bg-background!;
 
   a {
@@ -209,14 +209,14 @@
 }
 
 body.dark {
-  .mapboxgl-ctrl-group > button > span,
-  .mapboxgl-ctrl-attrib-button,
+  .maplibregl-ctrl-group > button > span,
+  .maplibregl-ctrl-attrib-button,
   .mapbox-ctrl-ruler svg,
   .mapbox-ctrl-image svg {
     filter: invert(1);
   }
 
-  .mapboxgl-popup-tip {
+  .maplibregl-popup-tip {
     @apply border-t-background;
   }
 

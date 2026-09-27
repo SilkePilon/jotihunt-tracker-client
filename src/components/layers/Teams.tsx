@@ -1,4 +1,4 @@
-import {Layer, Marker, Source} from 'react-map-gl/mapbox';
+import {Layer, Marker, Source} from 'react-map-gl/maplibre';
 import {useTeams} from '@/hooks/teams.hook.ts';
 import MapMarker from '../map/MapMarker';
 import {useCallback, useMemo, useState} from 'react';
