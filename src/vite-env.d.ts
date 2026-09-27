@@ -13,7 +13,6 @@ type ImportMetaEnv = {
   BUILD_TIME: number
   VERSION: string
   API_BASE_URL: string
-  MAPBOX_TOKEN: string
   HUNT_START_TIME: string
   HUNT_END_TIME: string
   HOME_TEAM_API_ID: string

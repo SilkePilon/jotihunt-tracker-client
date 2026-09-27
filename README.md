@@ -110,7 +110,6 @@ HUNT_END_TIME=2025-10-19T12:00+02:00 # Pas dit aan naar de eindtijd van de hunt 
 # Client
 JWT_SECRET=verander-dit-naar-een-veilige-random-string-van-minimaal-32-tekens
 API_BASE_URL=https://api.jotihunt.jouwscoutinggroep.nl
-MAPBOX_TOKEN=jouw-mapbox-token-hier
 HOME_TEAM_API_ID=17
 GROUP_WALKING_ID=3
 GROUP_CAR_ID=2
@@ -152,11 +151,11 @@ Stel hier de start- en eindtijd van de hunt in. Let goed op de juiste tijdzone (
 #### `JWT_SECRET`
 Genereer een willekeurige, veilige string van minimaal 32 tekens. Deze wordt gebruikt om JWT tokens te ondertekenen voor de authenticatie.
 
-#### `MAPBOX_TOKEN`
-1. Maak een account aan op [Mapbox](https://www.mapbox.com/).
-2. Volg de instructies [hier](https://docs.mapbox.com/help/dive-deeper/access-tokens/) om een token te genereren.
-3. Standaard heeft je account 50.000 gratis kaartweergaven per maand. Tenzij je van plan bent 600 terminator AI-agents in te schakelen, zou dit voldoende moeten zijn.
-4. Kopieer de token en plak deze in de `.env` file bij `MAPBOX_TOKEN`.
+#### Kaartweergave (MapLibre)
+De kaart gebruikt [MapLibre GL JS](https://maplibre.org/) met gratis, token-loze kaartbronnen. Er is dus geen account of API-token nodig om de kaart te laten werken:
+- **Straten** en **Donker**: vectortegels van [OpenFreeMap](https://openfreemap.org/) (gratis, geen limiet, gebaseerd op OpenStreetMap-data).
+- **Outdoor**: de BRT achtergrondkaart van [PDOK](https://www.pdok.nl/) (Kadaster).
+- **Satelliet**: luchtfoto's van PDOK (Beeldmateriaal Nederland), met plaatsnamen/straten van OpenFreeMap eroverheen.
 
 #### `API_BASE_URL`
 Stel dit in op de URL waar jouw Jotihunt Tracker Server bereikbaar is. Bijvoorbeeld `https://api.jotihunt.jouwscoutinggroep.nl` of `http://localhost:3000` als je lokaal werkt.
