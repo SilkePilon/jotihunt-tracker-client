@@ -28,17 +28,22 @@ export const fetcherWithMethod = async (url: string, authHeader: string, method:
 
 /**
  * Fetch data from the API with authentication.
- * @param url The URL to fetch from / to
+ * @param url The URL to fetch from / to, or null to skip fetching (SWR conditional fetching)
  * @param options SWR specific options
  * @param method The HTTP method to use
  * @param body The body to send with the request
  * @returns The data returned by the API
  */
-export const useAuthSWR = <T>(url: string, options?: SWRConfiguration, method: 'GET' | 'POST' | 'DELETE' | 'PUT' = 'GET', body?: unknown) => {
+export const useAuthSWR = <T>(
+  url: string | null,
+  options?: SWRConfiguration,
+  method: 'GET' | 'POST' | 'DELETE' | 'PUT' = 'GET',
+  body?: unknown,
+) => {
   const authHeader = useAuthHeader();
 
   // SWR fetcher with method and body handling
   const swrFetcher = ([url, authHeader]: [string, string]) => fetcherWithMethod(url, authHeader, method, body);
 
-  return useSWR<T>([url, authHeader], swrFetcher, options);
+  return useSWR<T>(url === null ? null : [url, authHeader], swrFetcher, options);
 };

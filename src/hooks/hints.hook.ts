@@ -1,6 +1,26 @@
+import { useEffect, useState } from 'react';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
 import { fetcherWithMethod, useAuthSWR } from '@/lib/swr';
 import { HintBoard, HintCell, HintCheck, RdPreview } from '@/types/HintCell';
+
+const RD_PREVIEW_DEBOUNCE_MS = 300;
+
+/**
+ * Debounce a fast-changing value by a fixed delay.
+ * @param value The value to debounce
+ * @param delayMs The debounce delay in milliseconds
+ * @returns The debounced value
+ */
+const useDebouncedValue = <T>(value: T, delayMs: number): T => {
+  const [debounced, setDebounced] = useState(value);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => setDebounced(value), delayMs);
+    return () => clearTimeout(timeout);
+  }, [value, delayMs]);
+
+  return debounced;
+};
 
 export const useHintBoard = () => {
   const authHeader = useAuthHeader() || '';
@@ -38,9 +58,13 @@ export const useHintBoard = () => {
  * @returns The parsed coordinate, or null when the answer is not a coordinate (or still loading)
  */
 export const useRdPreview = (answer: string): RdPreview | null => {
-  const { data } = useAuthSWR<{ rd: RdPreview | null }>(`/hints/parse-answer?answer=${encodeURIComponent(answer.trim())}`, {
+  const trimmedAnswer = answer.trim();
+  const debouncedAnswer = useDebouncedValue(trimmedAnswer, RD_PREVIEW_DEBOUNCE_MS);
+  const url = debouncedAnswer ? `/hints/parse-answer?answer=${encodeURIComponent(debouncedAnswer)}` : null;
+
+  const { data } = useAuthSWR<{ rd: RdPreview | null }>(url, {
     keepPreviousData: true,
     revalidateOnFocus: false,
   });
-  return answer.trim() ? (data?.rd ?? null) : null;
+  return trimmedAnswer ? (data?.rd ?? null) : null;
 };
