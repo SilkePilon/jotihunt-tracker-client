@@ -35,7 +35,6 @@ import {MapStyle} from '@/types/MapStyle';
 import useSignOut from 'react-auth-kit/hooks/useSignOut';
 import {useNavigate} from 'react-router';
 import {User} from '@/types/User';
-import PropTypes, {InferProps} from 'prop-types';
 import usePWA from 'react-pwa-install-prompt';
 import {Dialog, DialogTrigger} from './ui/dialog';
 import DebugInfo from './DebugInfo';
@@ -51,7 +50,7 @@ import {
 import {useTeams} from "@/hooks/teams.hook.ts";
 import {toast} from "sonner";
 
-export default function Settings({mobile}: InferProps<typeof Settings.propTypes>) {
+export default function Settings() {
 
     const DISCORD_URL = import.meta.env.DISCORD_URL;
 
@@ -111,26 +110,14 @@ export default function Settings({mobile}: InferProps<typeof Settings.propTypes>
         }
     }
 
-    const mobileTrigger = () => (
-        <div className="block md:hidden bg-background rounded-lg">
-            <Button size="default" className="w-full">
-                <CogIcon/> Instellingen
-            </Button>
-        </div>
-    );
-
-    const desktopTrigger = () => (
-        <div className="md:block hidden">
-            <Button variant="outline" size="sm">
-                <CogIcon/>
-            </Button>
-        </div>
-    );
-
     return (
         <Dialog>
             <DropdownMenu modal={false}>
-                <DropdownMenuTrigger asChild>{mobile ? mobileTrigger() : desktopTrigger()}</DropdownMenuTrigger>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" aria-label="Instellingen">
+                        <CogIcon/>
+                    </Button>
+                </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
                     <DropdownMenuLabel>Hoi, {auth?.name}</DropdownMenuLabel>
                     <DropdownMenuSeparator/>
@@ -284,7 +271,3 @@ export default function Settings({mobile}: InferProps<typeof Settings.propTypes>
         </Dialog>
     );
 }
-
-Settings.propTypes = {
-    mobile: PropTypes.bool.isRequired,
-};

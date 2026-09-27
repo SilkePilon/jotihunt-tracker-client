@@ -45,7 +45,7 @@ function App() {
                     </div>
 
                     {/* Desktop position for settings menu */}
-                    <Settings mobile={false} />
+                    <Settings />
                   </div>
                 </CardContent>
               </Card>
@@ -60,7 +60,7 @@ function App() {
 
               <div className={`flex-col gap-2 animate-in md:animate-none slide-in-from-top-4 fade-in z-30 ${menuOpen ? 'flex' : 'hidden md:flex'}`}>
                 {/* Mobile position for settings menu */}
-                <Settings mobile={true} />
+                <Settings />
                 <FoxStatusCard />
                 <HintEntryCard mapRef={mapRef} />
                 {/* Only show counter hunt when home team is known */}
