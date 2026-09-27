@@ -16,7 +16,7 @@ import proj4 from 'proj4';
 import {MarkerType} from '@/types/MarkerType.ts';
 import {Marker} from '@/types/Marker.ts';
 import {areaOptions} from '@/lib/utils.ts';
-import {useEffect} from "react";
+import {useEffect, useId} from "react";
 import {useHintFormBridge} from "@/hooks/hint-bridge.hook.ts";
 
 const FormSchema = z.object({
@@ -28,6 +28,8 @@ const FormSchema = z.object({
 
 export default function HintEntryCard({mapRef, bare}: InferProps<typeof HintEntryCard.propTypes>) {
     const {coords, clear} = useHintFormBridge();
+    const fieldId = useId();
+    const submitId = `${fieldId}-submit`;
     const {markers, createMarker} = useMarkers();
 
     const form = useForm<z.infer<typeof FormSchema>>({
@@ -136,11 +138,50 @@ export default function HintEntryCard({mapRef, bare}: InferProps<typeof HintEntr
         form.setValue(key, '');
     }
 
+    /**
+     * One RD coordinate row: label, 6 digit slots and a clear button.
+     * Calls onComplete once all 6 digits are entered, so focus can move on.
+     */
+    const coordinateField = (name: 'x' | 'y', label: string, onComplete: () => void) => (
+        <FormField
+            control={form.control}
+            name={name}
+            render={({field}) => (
+                <FormItem className="flex items-center gap-2">
+                    <FormLabel className="w-4 shrink-0 font-semibold">{label}</FormLabel>
+                    <FormControl>
+                        <InputOTP id={`${fieldId}-${name}`} autoComplete="off" inputMode="numeric" maxLength={6}
+                                  pattern={REGEXP_ONLY_DIGITS} onComplete={onComplete} {...field}>
+                            <InputOTPGroup>
+                                {[0, 1, 2, 3, 4, 5].map((index) => (
+                                    <InputOTPSlot key={index} index={index} className="h-9 w-9"/>
+                                ))}
+                            </InputOTPGroup>
+                        </InputOTP>
+                    </FormControl>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-9"
+                        tabIndex={-1}
+                        aria-label={`${label}-coördinaat wissen`}
+                        onClick={(e) => {
+                            e.preventDefault();
+                            clearField(name);
+                        }}
+                    >
+                        <TrashIcon/>
+                    </Button>
+                </FormItem>
+            )}
+        />
+    );
+
     const formComponent = () => (
         <Form {...form}>
             <form onSubmit={(e) => form.handleSubmit(onSubmit)(e)}>
-                <div className="flex flex-col gap-4">
-                    <div className="flex gap-4 w-full">
+                <div className="flex flex-col gap-3">
+                    <div className="flex gap-2 w-full">
                         <FormField
                             control={form.control}
                             name="area"
@@ -196,77 +237,11 @@ export default function HintEntryCard({mapRef, bare}: InferProps<typeof HintEntr
                             )}
                         />
                     </div>
-                    <div className="flex flex-col gap-4">
-                        <div className="flex gap-2 items-end">
-                            <FormField
-                                control={form.control}
-                                name="x"
-                                render={({field}) => (
-                                    <FormItem>
-                                        <FormLabel>X-coördinaat</FormLabel>
-                                        <FormControl>
-                                            <InputOTP autoComplete="off" maxLength={6}
-                                                      pattern={REGEXP_ONLY_DIGITS} {...field}>
-                                                <InputOTPGroup>
-                                                    <InputOTPSlot index={0}/>
-                                                    <InputOTPSlot index={1}/>
-                                                    <InputOTPSlot index={2}/>
-                                                    <InputOTPSlot index={3}/>
-                                                    <InputOTPSlot index={4}/>
-                                                    <InputOTPSlot index={5}/>
-                                                </InputOTPGroup>
-                                            </InputOTP>
-                                        </FormControl>
-                                    </FormItem>
-                                )}
-                            />
-                            <Button
-                                variant="outline"
-                                tabIndex={-1}
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    clearField('x');
-                                }}
-                            >
-                                <TrashIcon/>
-                            </Button>
-                        </div>
-                        <div className="flex gap-2 items-end">
-                            <FormField
-                                control={form.control}
-                                name="y"
-                                render={({field}) => (
-                                    <FormItem>
-                                        <FormLabel>Y-coördinaat</FormLabel>
-                                        <FormControl>
-                                            <InputOTP autoComplete="off" maxLength={6}
-                                                      pattern={REGEXP_ONLY_DIGITS} {...field}>
-                                                <InputOTPGroup>
-                                                    <InputOTPSlot index={0}/>
-                                                    <InputOTPSlot index={1}/>
-                                                    <InputOTPSlot index={2}/>
-                                                    <InputOTPSlot index={3}/>
-                                                    <InputOTPSlot index={4}/>
-                                                    <InputOTPSlot index={5}/>
-                                                </InputOTPGroup>
-                                            </InputOTP>
-                                        </FormControl>
-                                    </FormItem>
-                                )}
-                            />
-                            <Button
-                                variant="outline"
-                                tabIndex={-1}
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    clearField('y');
-                                }}
-                            >
-                                <TrashIcon/>
-                            </Button>
-                        </div>
+                    <div className="flex flex-col gap-2">
+                        {coordinateField('x', 'X', () => document.getElementById(`${fieldId}-y`)?.focus())}
+                        {coordinateField('y', 'Y', () => setTimeout(() => document.getElementById(submitId)?.focus()))}
                     </div>
-                    <Button type="submit" disabled={!form.formState.isValid}>
+                    <Button id={submitId} type="submit" disabled={!form.formState.isValid}>
                         <Pin/> Registreren
                     </Button>
                 </div>
