@@ -240,10 +240,10 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
     <>
       {dialog()}
       <div className="flex gap-2 w-full">
-        <Button variant="default" size="sm" className="w-full" onClick={() => openDialog(MarkerType.Hunt)}>
+        <Button variant="default" size="sm" className="min-w-0 flex-1" onClick={() => openDialog(MarkerType.Hunt)}>
           <LocateFixedIcon data-icon="inline-start" /> Vos hunt
         </Button>
-        <Button variant="default" size="sm" className="w-full" onClick={() => openDialog(MarkerType.Spot)}>
+        <Button variant="default" size="sm" className="min-w-0 flex-1" onClick={() => openDialog(MarkerType.Spot)}>
           <GlassesIcon data-icon="inline-start" /> Vos spot
         </Button>
       </div>
