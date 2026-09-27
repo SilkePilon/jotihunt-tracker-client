@@ -11,6 +11,9 @@ import {Badge} from '../ui/badge';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '../ui/select';
 import useLayersStore from '@/stores/layers.store';
 import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip.tsx";
+import {CheckIcon} from 'lucide-react';
+import {useVisits} from '@/hooks/predictions.hook';
+import VisitControls from '../map/VisitControls';
 
 const HOME_TEAM_API_ID = import.meta.env.HOME_TEAM_API_ID;
 const TEAMS_AREA_EDITING = import.meta.env.TEAMS_AREA_EDITING === 'true';
@@ -24,6 +27,11 @@ export default function Teams() {
     const [activeTeam, setActiveTeam] = useState<Team>();
     const [tooltipOpenId, setTooltipOpenId] = useState<string | null>(null);
     const {areas} = useAreas();
+    const {visits} = useVisits();
+    const visitedIds = useMemo(
+        () => new Set((visits ?? []).filter((visit) => visit.state === 'visited').map((visit) => visit.teamApiId)),
+        [visits],
+    );
 
     /**
      * Handle area change from the select.
@@ -78,8 +86,15 @@ export default function Teams() {
                             onOpenChange={(open) => handleMarkerTooltip(open, team._id)}
                         >
                             <TooltipTrigger asChild>
-                                <div className="hover:brightness-125 hover:scale-105 transition-all ease-in-out">
+                                <div data-team-api-id={team.apiId}
+                                     className="relative hover:brightness-125 hover:scale-105 transition-all ease-in-out">
                                     <MapMarker color={getColorFromArea(team.area || '')}/>
+                                    {visitedIds.has(team.apiId) && (
+                                        <span aria-label="Bezocht"
+                                              className="absolute -right-1 -top-1 flex size-3.5 items-center justify-center rounded-full bg-green-600 text-white ring-2 ring-white">
+                                            <CheckIcon className="size-2.5" strokeWidth={3}/>
+                                        </span>
+                                    )}
                                 </div>
                             </TooltipTrigger>
                             <TooltipContent className={"flex gap-2 items-center"}>
@@ -112,7 +127,7 @@ export default function Teams() {
                     )}
                 </div>
             ));
-    }, [teams, isVisible, activeTeam, tooltipOpenId, showGroupCircles, handleMarkerTooltip]);
+    }, [teams, isVisible, activeTeam, tooltipOpenId, showGroupCircles, handleMarkerTooltip, visitedIds]);
 
     return (
         <>
@@ -142,6 +157,7 @@ export default function Teams() {
                                 {activeTeam.postCode} {activeTeam.city}
                             </p>
                         </div>
+                        {activeTeam.area && <VisitControls teamApiId={activeTeam.apiId}/>}
                         {/* Select with areas */}
                         <div className="flex flex-col gap-2">
                             {TEAMS_AREA_EDITING && (

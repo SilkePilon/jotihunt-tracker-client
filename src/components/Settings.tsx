@@ -68,6 +68,8 @@ export default function Settings() {
         showHomeCircle,
         showGroupCircles,
         toggleGroupCircles,
+        showPredictions,
+        togglePredictions,
         toggleTeams,
         toggleDevices,
         toggleMarkersPart1,
@@ -160,6 +162,11 @@ export default function Settings() {
                                                           onCheckedChange={toggleGroupCircles}
                                                           onSelect={(e) => e.preventDefault()}>
                                     Groepen cirkels
+                                </DropdownMenuCheckboxItem>
+                                <DropdownMenuCheckboxItem checked={showPredictions}
+                                                          onCheckedChange={togglePredictions}
+                                                          onSelect={(e) => e.preventDefault()}>
+                                    Voorspelling
                                 </DropdownMenuCheckboxItem>
                             </DropdownMenuSubContent>
                         </DropdownMenuPortal>

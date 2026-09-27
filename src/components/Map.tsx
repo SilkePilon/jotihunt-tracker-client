@@ -14,6 +14,7 @@ import Devices from './layers/Devices';
 import Markers from './layers/Markers';
 import {forwardRef, useEffect, useImperativeHandle, useRef, useState} from 'react';
 import HomeCircle from './layers/HomeCircle';
+import Predictions from './layers/Predictions';
 import useLayersStore from '../stores/layers.store';
 import useSettingsStore from '../stores/settings.store';
 import {MapStyle} from '@/types/MapStyle';
@@ -67,7 +68,7 @@ const Map = forwardRef<MapRef>((_, ref) => {
     }));
 
     // Store for all layers
-    const {showTeams, showDevices, showMarkersPart1, showMarkersPart2, showHomeCircle} = useLayersStore();
+    const {showTeams, showDevices, showMarkersPart1, showMarkersPart2, showHomeCircle, showPredictions} = useLayersStore();
     const [popupPosition, setPopupPosition] = useState<LngLat>();
     const [rulerActive, setRulerActive] = useState<boolean>(false);
 
@@ -147,6 +148,7 @@ const Map = forwardRef<MapRef>((_, ref) => {
                 </div>
                 {popupPosition && <PickedLocationPopup lng={popupPosition.lng} lat={popupPosition.lat}
                                                        onClose={() => setPopupPosition(undefined)}/>}
+                {showPredictions && <Predictions/>}
                 {showTeams && <Teams/>}
                 {showDevices && <Devices/>}
                 {(showMarkersPart1 || showMarkersPart2) && <Markers part1={showMarkersPart1} part2={showMarkersPart2}/>}
