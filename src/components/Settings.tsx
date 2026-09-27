@@ -7,6 +7,7 @@ import {
     LayersIcon,
     LogOutIcon,
     MoonIcon, RefreshCwIcon,
+    PuzzleIcon,
     ShieldIcon,
     UsersIcon
 } from 'lucide-react';
@@ -211,6 +212,10 @@ export default function Settings({mobile}: InferProps<typeof Settings.propTypes>
                         </DropdownMenuPortal>
                     </DropdownMenuSub>
                     <DropdownMenuSeparator/>
+                    <DropdownMenuItem onClick={() => navigate('/hints')}>
+                        <PuzzleIcon/>
+                        Hint board
+                    </DropdownMenuItem>
                     {auth?.admin && (
                         <>
                             <DropdownMenuItem onClick={() => navigate('/users')}>
