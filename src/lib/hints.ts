@@ -1,4 +1,5 @@
 import DOMPurify from 'dompurify';
+import type { HintArticle, HintBoard, HintCell } from '@/types/HintCell';
 
 export const HINT_WINDOW_MS = 20 * 60 * 1000;
 
@@ -26,4 +27,32 @@ export function sanitizeHintHtml(html: string) {
     ALLOWED_TAGS: ['div', 'p', 'br', 'strong', 'em', 'b', 'i', 'u', 'span', 'ul', 'ol', 'li', 'blockquote', 'h1', 'h2', 'h3', 'img', 'a', 'figure', 'figcaption'],
     ALLOWED_ATTR: ['src', 'href', 'alt', 'width', 'height'],
   });
+}
+
+export interface HintRow {
+  article: HintArticle;
+  cells: Partial<Record<string, HintCell>>;
+}
+
+/**
+ * The newest hint articles with their cells keyed by area.
+ * @param board The hint board
+ * @param count How many articles to return
+ */
+export function lastHintRows(board: HintBoard, count: number): HintRow[] {
+  return [...board.articles]
+    .sort((a, b) => new Date(b.publishAt).getTime() - new Date(a.publishAt).getTime())
+    .slice(0, count)
+    .map((article) => ({
+      article,
+      cells: Object.fromEntries(board.cells.filter((cell) => cell.articleId === article.id).map((cell) => [cell.area, cell])),
+    }));
+}
+
+/**
+ * Solved vs. total cells over the whole hunt, ignoring areas without a hint.
+ */
+export function hintProgress(board: HintBoard): { solved: number; total: number } {
+  const relevant = board.cells.filter((cell) => cell.status !== 'none');
+  return { solved: relevant.filter((cell) => cell.status === 'solved').length, total: relevant.length };
 }

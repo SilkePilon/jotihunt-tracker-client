@@ -2,6 +2,7 @@ import {type ClassValue, clsx} from 'clsx';
 import {twMerge} from 'tailwind-merge';
 import * as turf from '@turf/turf';
 import {isBefore, parseISO, subMinutes} from "date-fns";
+import type { Device } from '@/types/Device';
 
 /**
  * ClassName helper function
@@ -124,4 +125,11 @@ export function isMoreThanFiveMinutesAgo(fixTime: string) {
     const date = parseISO(fixTime);
     const minutesAgo = subMinutes(new Date(), 5);
     return isBefore(date, minutesAgo);
+}
+
+/**
+ * Devices that reported a position in the last five minutes.
+ */
+export function filterActiveDevices(devices?: Device[]): Device[] {
+  return devices?.filter((device) => !isMoreThanFiveMinutesAgo(device.lastUpdate.toString())) ?? [];
 }

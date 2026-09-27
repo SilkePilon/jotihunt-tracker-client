@@ -1,5 +1,5 @@
 import {useDevices} from "@/hooks/devices.hook.ts";
-import {isMoreThanFiveMinutesAgo} from "@/lib/utils.ts";
+import {filterActiveDevices} from "@/lib/utils.ts";
 import {Badge} from "@/components/ui/badge.tsx";
 import {MapPinIcon} from "lucide-react";
 import PropTypes, {InferProps} from "prop-types";
@@ -9,7 +9,7 @@ import {Device} from "@/types/Device.ts";
 export default function ActiveDevices({mapRef}: InferProps<typeof ActiveDevices.propTypes>) {
 
     const {devices, positions} = useDevices();
-    const activeDevices = devices?.filter((device) => !isMoreThanFiveMinutesAgo(device.lastUpdate.toString()));
+    const activeDevices = filterActiveDevices(devices);
 
     /**
      * Fly to the device on the map.
