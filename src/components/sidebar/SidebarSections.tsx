@@ -29,11 +29,11 @@ export default function SidebarSections({ mapRef }: { mapRef: RefObject<MapRef |
         <HintMiniGrid />
       </SidebarSection>
       <SidebarSection id="hintEntry" title="Hint registreren">
-        <HintEntryCard mapRef={mapRef} bare />
+        <HintEntryCard mapRef={mapRef} />
       </SidebarSection>
       {import.meta.env.HOME_TEAM_API_ID && (
         <SidebarSection id="counterHunt" title="Tegenhunt">
-          <CounterHuntCard mapRef={mapRef} bare />
+          <CounterHuntCard mapRef={mapRef} />
         </SidebarSection>
       )}
       <SidebarSection id="hunters" title="Actieve hunters" summary={activeCount ? String(activeCount) : 'Niemand'}>

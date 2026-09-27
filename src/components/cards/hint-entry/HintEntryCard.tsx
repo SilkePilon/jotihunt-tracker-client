@@ -1,4 +1,3 @@
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '../../ui/card.tsx';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select.tsx';
 import {Form, FormControl, FormField, FormItem, FormLabel} from '../../ui/form.tsx';
 import {z} from 'zod';
@@ -27,7 +26,7 @@ const FormSchema = z.object({
     y: z.string().length(6),
 });
 
-export default function HintEntryCard({mapRef, bare}: InferProps<typeof HintEntryCard.propTypes>) {
+export default function HintEntryCard({mapRef}: InferProps<typeof HintEntryCard.propTypes>) {
     const {coords, clear} = useHintFormBridge();
     const fieldId = useId();
     const submitId = `${fieldId}-submit`;
@@ -188,7 +187,7 @@ export default function HintEntryCard({mapRef, bare}: InferProps<typeof HintEntr
         />
     );
 
-    const formComponent = () => (
+    return (
         <Form {...form}>
             <form onSubmit={(e) => form.handleSubmit(onSubmit)(e)}>
                 <div className="flex flex-col gap-3">
@@ -264,23 +263,8 @@ export default function HintEntryCard({mapRef, bare}: InferProps<typeof HintEntr
             </form>
         </Form>
     );
-
-    if (bare) return formComponent();
-
-    return (
-        <>
-            <Card collapsible={true} defaultOpen={true}>
-                <CardHeader>
-                    <CardTitle>Hint registreren</CardTitle>
-                    <CardDescription>Plaats een marker op de kaart op basis van RD-grid coördinaten.</CardDescription>
-                </CardHeader>
-                <CardContent>{formComponent()}</CardContent>
-            </Card>
-        </>
-    );
 }
 
 HintEntryCard.propTypes = {
     mapRef: PropTypes.object.isRequired as PropTypes.Validator<React.RefObject<MapRef | null>>,
-    bare: PropTypes.bool,
 };

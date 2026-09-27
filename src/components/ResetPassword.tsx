@@ -68,7 +68,7 @@ export default function ResetPassword({ open, setIsOpen, allowClose = true }: In
   return (
     <>
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent onInteractOutside={handleInteractOutside} hideClose={!allowClose}>
+        <DialogContent onInteractOutside={handleInteractOutside} showCloseButton={allowClose}>
           <DialogHeader>
             <DialogTitle>Wachtwoord wijzigen</DialogTitle>
             <DialogDescription>{allowClose ? 'Vul je oude en nieuw wachtwoord in.' : 'Je bent verplicht je wachtwoord te wijzigen. Vul je oude en een nieuw wachtwoord in.'}</DialogDescription>

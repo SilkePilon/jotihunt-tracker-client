@@ -1,7 +1,6 @@
 import { Eye, Trash } from 'lucide-react';
 import { Button } from '../../ui/button.tsx';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../ui/card.tsx';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.tsx';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.tsx';
 import useCounterHuntStore from '@/stores/counterhunt.store.ts';
 import { useState } from 'react';
 import PropTypes, { InferProps } from 'prop-types';
@@ -9,7 +8,7 @@ import { MapRef } from '@/components/Map.tsx';
 import useSidebarStore from '@/stores/sidebar.store.ts';
 import { useTeams } from '@/hooks/teams.hook.ts';
 
-export default function CounterHuntCard({ mapRef, bare }: InferProps<typeof CounterHuntCard.propTypes>) {
+export default function CounterHuntCard({ mapRef }: InferProps<typeof CounterHuntCard.propTypes>) {
   // Home coordinates for zooming to the counter hunt
   const { teams } = useTeams();
   const homeTeam = teams?.find((team) => team.apiId == import.meta.env.HOME_TEAM_API_ID);
@@ -43,46 +42,37 @@ export default function CounterHuntCard({ mapRef, bare }: InferProps<typeof Coun
     setDirection(0);
   }
 
-  const controls = (
+  return (
     <div className="flex gap-2 w-full flex-wrap md:flex-nowrap">
       <Select onValueChange={(value) => setChosenDirection(Number(value))} value={chosenDirection.toString()}>
         <SelectTrigger className="w-full">
           <SelectValue placeholder="Kies windrichting..." />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="0">N - Noord</SelectItem>
-          <SelectItem value="45">NO - Noordoost</SelectItem>
-          <SelectItem value="90">O - Oost</SelectItem>
-          <SelectItem value="135">ZO - Zuidoost</SelectItem>
-          <SelectItem value="180">Z - Zuid</SelectItem>
-          <SelectItem value="225">ZW - Zuidwest</SelectItem>
-          <SelectItem value="270">W - West</SelectItem>
-          <SelectItem value="315">NW - Noordwest</SelectItem>
+          <SelectGroup>
+            <SelectItem value="0">N - Noord</SelectItem>
+            <SelectItem value="45">NO - Noordoost</SelectItem>
+            <SelectItem value="90">O - Oost</SelectItem>
+            <SelectItem value="135">ZO - Zuidoost</SelectItem>
+            <SelectItem value="180">Z - Zuid</SelectItem>
+            <SelectItem value="225">ZW - Zuidwest</SelectItem>
+            <SelectItem value="270">W - West</SelectItem>
+            <SelectItem value="315">NW - Noordwest</SelectItem>
+          </SelectGroup>
         </SelectContent>
       </Select>
       <Button onClick={showCounterHunt}>
-        <Eye />Toon
+        <Eye data-icon="inline-start" />
+        Toon
       </Button>
-      <Button variant="outline" onClick={removeCounterHunt} >
-        <Trash />Verwijder
+      <Button variant="outline" onClick={removeCounterHunt}>
+        <Trash data-icon="inline-start" />
+        Verwijder
       </Button>
     </div>
-  );
-
-  if (bare) return controls;
-
-  return (
-    <Card collapsible={true} defaultOpen={true}>
-      <CardHeader>
-        <CardTitle>Tegenhunt visualisatie</CardTitle>
-        <CardDescription>Kies een windrichting om te zien wat het tegenhunt gebied is.</CardDescription>
-      </CardHeader>
-      <CardContent>{controls}</CardContent>
-    </Card>
   );
 }
 
 CounterHuntCard.propTypes = {
   mapRef: PropTypes.object.isRequired as PropTypes.Validator<React.RefObject<MapRef | null>>,
-  bare: PropTypes.bool,
 };
