@@ -1,12 +1,13 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-export type SidebarSectionId = 'foxes' | 'hints' | 'hintEntry' | 'counterHunt' | 'hunters';
+export type SidebarSectionId = 'foxes' | 'hints' | 'predictions' | 'hintEntry' | 'counterHunt' | 'hunters';
 export type SheetSnap = 'peek' | 'half' | 'full';
 
 const DEFAULT_OPEN_SECTIONS: Record<SidebarSectionId, boolean> = {
   foxes: true,
   hints: true,
+  predictions: false,
   hintEntry: false,
   counterHunt: false,
   hunters: false,

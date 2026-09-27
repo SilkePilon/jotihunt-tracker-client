@@ -6,17 +6,21 @@ import ActiveDevices from '@/components/map/ActiveDevices';
 import { useAreas } from '@/hooks/areas.hook';
 import { useDevices } from '@/hooks/devices.hook';
 import { useHintBoard } from '@/hooks/hints.hook';
+import { usePredictions } from '@/hooks/predictions.hook';
 import { statusSummary } from '@/lib/fox-status';
 import { hintProgress } from '@/lib/hints';
+import { predictionSummary } from '@/lib/prediction';
 import { filterActiveDevices } from '@/lib/utils';
 import SidebarSection from './SidebarSection';
 import FoxPills from './FoxPills';
 import HintMiniGrid from './HintMiniGrid';
+import PredictionList from './PredictionList';
 
 export default function SidebarSections({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
   const { areas } = useAreas();
   const { board } = useHintBoard();
   const { devices } = useDevices();
+  const { predictions } = usePredictions();
   const activeCount = filterActiveDevices(devices).length;
   const progress = board ? hintProgress(board) : undefined;
 
@@ -27,6 +31,9 @@ export default function SidebarSections({ mapRef }: { mapRef: RefObject<MapRef |
       </SidebarSection>
       <SidebarSection id="hints" title="Hints" summary={progress ? `${progress.solved}/${progress.total} opgelost` : undefined}>
         <HintMiniGrid />
+      </SidebarSection>
+      <SidebarSection id="predictions" title="Voorspelling" summary={predictionSummary(predictions)}>
+        <PredictionList mapRef={mapRef} />
       </SidebarSection>
       <SidebarSection id="hintEntry" title="Hint registreren">
         <HintEntryCard mapRef={mapRef} />
