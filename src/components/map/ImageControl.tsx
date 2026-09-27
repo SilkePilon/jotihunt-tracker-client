@@ -1,5 +1,6 @@
 import {useEffect} from 'react';
 import {useControl, useMap} from 'react-map-gl/maplibre';
+import {withMaplibreClasses} from '@/lib/map-controls';
 import type {ControlPosition} from 'react-map-gl/maplibre';
 import type {MapLibreEvent} from 'maplibre-gl';
 import MapboxImageControl from '@mapbox-controls/image';
@@ -37,7 +38,7 @@ export default function ImageControl({
     onRemove,
     ...options
 }: ImageControlProps) {
-    useControl(() => new MapboxImageControl(options), {position});
+    useControl(() => withMaplibreClasses(new MapboxImageControl(options)), {position});
 
     const {current: mapRef} = useMap();
     useEffect(() => {

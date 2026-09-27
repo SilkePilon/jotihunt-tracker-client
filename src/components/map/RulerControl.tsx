@@ -1,6 +1,7 @@
 // Ruler.tsx
 import {useEffect} from 'react';
 import {useControl, useMap} from 'react-map-gl/maplibre';
+import {withMaplibreClasses} from '@/lib/map-controls';
 import type {ControlPosition} from 'react-map-gl/maplibre';
 import RulerControl from '@mapbox-controls/ruler';
 import '@mapbox-controls/ruler/src/index.css';
@@ -22,7 +23,7 @@ type CustomEventMap = {
 
 export default function Ruler({position = 'bottom-right', onActivate, onDeactivate, ...options}: RulerProps) {
     // Add the control
-    useControl(() => new RulerControl(options), {position});
+    useControl(() => withMaplibreClasses(new RulerControl(options)), {position});
 
     // Wire map events
     const {current: mapRef} = useMap();
