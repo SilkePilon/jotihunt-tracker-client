@@ -6,6 +6,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { huntCooldownMs, lastHuntTimeFor, statusPillClass } from '@/lib/fox-status';
 import { formatHintCountdown } from '@/lib/next-hint';
 import { cn, getColorFromArea } from '@/lib/utils';
+import { formatDistanceToNow } from 'date-fns';
+import { nl } from 'date-fns/locale';
 
 const STATUS_LABEL: Record<string, string> = { green: 'groen', orange: 'oranje', red: 'rood' };
 
@@ -28,10 +30,13 @@ export default function FoxPills() {
   return (
     <div className="grid grid-cols-9 gap-1">
       {areas.map((area) => {
-        const cooldown = huntCooldownMs(lastHuntTimeFor(hunts, area.name), now);
+        const lastHunt = lastHuntTimeFor(hunts, area.name);
+        const cooldown = huntCooldownMs(lastHunt, now);
         const hidden = isHidden(area.name);
+        const ago = (time: Date | string) => formatDistanceToNow(new Date(time), { locale: nl, addSuffix: true });
         const title =
-          `${area.name}: ${STATUS_LABEL[area.status] ?? area.status}` +
+          `${area.name}: ${STATUS_LABEL[area.status] ?? area.status} (bijgewerkt ${ago(area.updatedAt)})` +
+          ` · laatste hunt: ${lastHunt ? ago(lastHunt) : 'nog geen'}` +
           (cooldown > 0 ? ` · weer te hunten over ${formatHintCountdown(cooldown)}` : '') +
           (hidden ? ' · verborgen' : '');
         return (
