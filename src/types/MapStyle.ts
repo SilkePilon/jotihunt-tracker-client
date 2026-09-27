@@ -1,6 +1,8 @@
+// Stable ids for the map style choices in Settings. These are persisted to
+// localStorage, so the string values must stay stable across releases.
 export enum MapStyle {
-  Streets = 'mapbox://styles/mapbox/streets-v12',
-  Outdoors = 'mapbox://styles/mapbox/outdoors-v11',
-  Satellite = 'mapbox://styles/mapbox/satellite-streets-v12',
-  Dark = 'mapbox://styles/mapbox/dark-v10',
+  Streets = 'streets',
+  Outdoors = 'outdoors',
+  Satellite = 'satellite',
+  Dark = 'dark',
 }
