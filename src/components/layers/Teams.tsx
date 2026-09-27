@@ -146,7 +146,7 @@ export default function Teams() {
                         <div className="flex flex-col gap-2">
                             {TEAMS_AREA_EDITING && (
                                 <Select onValueChange={handleAreaChange} value={activeTeam.area ?? 'onbekend'}>
-                                    <SelectTrigger autoFocus={false}>
+                                    <SelectTrigger autoFocus={false} className="w-full">
                                         <SelectValue placeholder="Kies deelgebied..."/>
                                     </SelectTrigger>
                                     <SelectContent>

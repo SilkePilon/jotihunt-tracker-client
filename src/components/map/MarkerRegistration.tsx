@@ -131,7 +131,7 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
               <Field data-invalid={fieldState.invalid}>
                 <FieldLabel htmlFor={`${fieldId}-area`}>Deelgebied</FieldLabel>
                 <Select name={field.name} onValueChange={field.onChange} value={field.value}>
-                  <SelectTrigger id={`${fieldId}-area`} aria-invalid={fieldState.invalid}>
+                  <SelectTrigger id={`${fieldId}-area`} className="w-full" aria-invalid={fieldState.invalid}>
                     <SelectValue placeholder="Kies deelgebied..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -160,7 +160,7 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel htmlFor={`${fieldId}-day`}>Dag</FieldLabel>
                   <Select name={field.name} onValueChange={(value) => field.onChange(new Date(value))} value={dateValue.toDateString()}>
-                    <SelectTrigger id={`${fieldId}-day`} aria-invalid={fieldState.invalid}>
+                    <SelectTrigger id={`${fieldId}-day`} className="w-full" aria-invalid={fieldState.invalid}>
                       <SelectValue placeholder="Kies dag..." />
                     </SelectTrigger>
                     <SelectContent>

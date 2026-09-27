@@ -194,11 +194,11 @@ export default function HintEntryCard({mapRef}: InferProps<typeof HintEntryCard.
                         control={form.control}
                         name="area"
                         render={({field, fieldState}) => (
-                            <Field data-invalid={fieldState.invalid} className="gap-2">
+                            <Field data-invalid={fieldState.invalid} className="min-w-0 flex-1 gap-2">
                                 <FieldLabel htmlFor={`${fieldId}-area`}>Deelgebied</FieldLabel>
                                 <Select name={field.name} onValueChange={field.onChange} value={field.value}>
-                                    <SelectTrigger id={`${fieldId}-area`} aria-invalid={fieldState.invalid}>
-                                        <SelectValue placeholder="Kies deelgebied..."/>
+                                    <SelectTrigger id={`${fieldId}-area`} className="w-full" aria-invalid={fieldState.invalid}>
+                                        <SelectValue placeholder="Kies gebied"/>
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectGroup>
@@ -217,12 +217,12 @@ export default function HintEntryCard({mapRef}: InferProps<typeof HintEntryCard.
                         control={form.control}
                         name="time"
                         render={({field, fieldState}) => (
-                            <Field data-invalid={fieldState.invalid} className="gap-2">
+                            <Field data-invalid={fieldState.invalid} className="min-w-0 flex-1 gap-2">
                                 <FieldLabel htmlFor={`${fieldId}-time`}>Tijdstip</FieldLabel>
                                 <Select name={field.name} onValueChange={field.onChange} value={field.value}>
-                                    <SelectTrigger id={`${fieldId}-time`} aria-invalid={fieldState.invalid}
+                                    <SelectTrigger id={`${fieldId}-time`} className="w-full" aria-invalid={fieldState.invalid}
                                                    disabled={!selectedArea}>
-                                        <SelectValue placeholder="Kies tijdstip..."/>
+                                        <SelectValue placeholder="Kies tijd"/>
                                     </SelectTrigger>
                                     <SelectContent className="max-h-[280px]">
                                         <SelectGroup>
