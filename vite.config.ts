@@ -76,6 +76,13 @@ export default defineConfig({
     }),
     VitePWA(pwaManifest),
   ],
+  legacy: {
+    // react-auth-kit / @auth-kit/react-router ship Babel-compiled CommonJS
+    // (`exports.default` + `__esModule`). Vite 8 follows Node semantics for
+    // default imports from a `"type": "module"` package, which would resolve
+    // those default imports to the whole `module.exports` object.
+    inconsistentCjsInterop: true,
+  },
   resolve: {
     alias: {
       '@': path.resolve(import.meta.dirname, './src'),
