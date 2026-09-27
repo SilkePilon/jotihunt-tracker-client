@@ -8,10 +8,13 @@ import {CopyIcon, LightbulbIcon} from "lucide-react";
 import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip.tsx";
 import {useHintFormBridge} from "@/hooks/hint-bridge.hook.ts";
 import {toast} from "sonner";
+import useSidebarStore from "@/stores/sidebar.store.ts";
 
 export default function PickedLocationPopup({lat, lng, onClose}: { lat: number; lng: number; onClose: () => void }) {
 
     const setCoords = useHintFormBridge((s) => s.setCoords);
+    const openSection = useSidebarStore((s) => s.openSection);
+    const setSheetSnap = useSidebarStore((s) => s.setSheetSnap);
 
     function toRD(lat: number, lng: number): { x: string, y: string } {
         const rdX = proj4('WGS84', 'RD', [lng, lat])[0].toFixed(0);
@@ -37,6 +40,10 @@ export default function PickedLocationPopup({lat, lng, onClose}: { lat: number; 
     function setHintCoords() {
         const rd = toRD(lat, lng);
         setCoords(rd.x, rd.y);
+        // The hint entry section is collapsed by default, so make sure it's
+        // actually visible (and scrolled into view on mobile) before the form fills in.
+        openSection('hintEntry');
+        setSheetSnap('full');
     }
 
     return (
