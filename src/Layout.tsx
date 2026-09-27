@@ -1,4 +1,4 @@
-import {Outlet, useNavigate, useOutletContext} from 'react-router-dom';
+import {Outlet, useNavigate, useOutletContext} from 'react-router';
 import {toast} from "sonner"
 import {RefObject, useEffect, useRef, useState} from 'react';
 import {SWRConfig} from 'swr';

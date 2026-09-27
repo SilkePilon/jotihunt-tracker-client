@@ -32,7 +32,7 @@ import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import useSettingsStore from '@/stores/settings.store';
 import {MapStyle} from '@/types/MapStyle';
 import useSignOut from 'react-auth-kit/hooks/useSignOut';
-import {useNavigate} from 'react-router-dom';
+import {useNavigate} from 'react-router';
 import {User} from '@/types/User';
 import PropTypes, {InferProps} from 'prop-types';
 import usePWA from 'react-pwa-install-prompt';

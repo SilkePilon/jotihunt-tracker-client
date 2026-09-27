@@ -7,7 +7,7 @@ import {z} from 'zod';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from '../components/ui/form';
 import {useForm} from 'react-hook-form';
-import {useNavigate} from 'react-router-dom';
+import {useNavigate} from 'react-router';
 import usePWA from 'react-pwa-install-prompt';
 import {isMobile} from 'react-device-detect';
 import {useTheme} from "@/hooks/theme.hook.ts";

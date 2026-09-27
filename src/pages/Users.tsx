@@ -1,6 +1,6 @@
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import { User } from '../types/User';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { SearchIcon, PencilIcon, Trash2Icon, ChevronLeftIcon, ChevronRightIcon, ArrowLeftIcon } from 'lucide-react';
 import { Button } from '../components/ui/button';
