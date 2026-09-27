@@ -18,6 +18,7 @@ import {Marker} from '@/types/Marker.ts';
 import {areaOptions} from '@/lib/utils.ts';
 import {useEffect, useId} from "react";
 import {useHintFormBridge} from "@/hooks/hint-bridge.hook.ts";
+import {isInNetherlands} from '@/lib/netherlands';
 
 const FormSchema = z.object({
     area: z.enum([...areaOptions.map((option) => option.value)] as [string, ...string[]]),
@@ -42,6 +43,11 @@ export default function HintEntryCard({mapRef, bare}: InferProps<typeof HintEntr
         },
     });
     const selectedArea = useWatch({control: form.control, name: 'area'});
+    const [xValue, yValue] = useWatch({control: form.control, name: ['x', 'y']});
+
+    // Live check once both coordinates are complete: hints are always in the Netherlands
+    const typedLocation = xValue?.length === 6 && yValue?.length === 6 ? proj4('RD', 'WGS84', [Number(xValue), Number(yValue)]) : undefined;
+    const outsideNetherlands = !!typedLocation && !isInNetherlands(typedLocation[0], typedLocation[1]);
 
     // Handle hint bridge
     useEffect(() => {
@@ -99,6 +105,11 @@ export default function HintEntryCard({mapRef, bare}: InferProps<typeof HintEntr
             form.setError('x', {message: 'Ongeldige coördinaten'});
             form.setError('y', {message: 'Ongeldige coördinaten'});
             toast.error('Ongeldige coördinaten', {description: "Deze coördinaten zijn ongeldig. Controleer of de ingevoerde waarden correct zijn."});
+            return;
+        }
+        if (!isInNetherlands(converted[0], converted[1])) {
+            form.setError('y', {message: 'Dit coördinaat ligt buiten Nederland'});
+            toast.error('Coördinaat buiten Nederland', {description: 'Controleer de X- en Y-waarden; een hint ligt altijd in Nederland.'});
             return;
         }
 
@@ -240,8 +251,13 @@ export default function HintEntryCard({mapRef, bare}: InferProps<typeof HintEntr
                     <div className="flex flex-col gap-2">
                         {coordinateField('x', 'X', () => document.getElementById(`${fieldId}-y`)?.focus())}
                         {coordinateField('y', 'Y', () => setTimeout(() => document.getElementById(submitId)?.focus()))}
+                        {outsideNetherlands && (
+                            <p role="alert" className="text-sm font-medium text-destructive">
+                                Dit coördinaat ligt buiten Nederland. Controleer de X- en Y-waarden.
+                            </p>
+                        )}
                     </div>
-                    <Button id={submitId} type="submit" disabled={!form.formState.isValid}>
+                    <Button id={submitId} type="submit" disabled={!form.formState.isValid || outsideNetherlands}>
                         <Pin/> Registreren
                     </Button>
                 </div>
