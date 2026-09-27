@@ -1,81 +1,24 @@
-import {MenuIcon} from 'lucide-react';
-import {Button} from '../components/ui/button';
-import {Card, CardContent} from '../components/ui/card';
-import FoxStatusCard from '../components/cards/fox-status/FoxStatusCard.tsx';
-import NextHintTime from '../components/cards/next-hint-time/NextHintTimeCard.tsx';
-import HintEntryCard from '../components/cards/hint-entry/HintEntryCard.tsx';
-import CounterHuntCard from '../components/cards/counter-hunt/CounterHuntCard.tsx';
-import Settings from '../components/Settings';
-import useMenuStore from '../stores/menu.store';
-import {useOutlet} from '@/hooks/outlet.hook.ts';
-import {ScrollArea} from '@/components/ui/scroll-area';
-import SearchCard from "@/components/cards/search/SearchCard.tsx";
-import CoordinatesCard from "@/components/cards/coordinates/CoordinatesCard.tsx";
-import ActiveDevices from "@/components/map/ActiveDevices.tsx";
+import { useOutlet } from '@/hooks/outlet.hook.ts';
+import SearchCard from '@/components/cards/search/SearchCard.tsx';
+import CoordinatesCard from '@/components/cards/coordinates/CoordinatesCard.tsx';
+import Sidebar from '@/components/sidebar/Sidebar';
 
 function App() {
+  const { mapRef } = useOutlet();
 
-    const LOGO_URL: string = import.meta.env.LOGO_URL || "/pwa-512x512.png";
-    const GROUP_NAME: string = import.meta.env.GROUP_NAME;
-    const HOME_TEAM_API_ID: number = import.meta.env.HOME_TEAM_API_ID;
-
-    const {menuOpen, toggleMenu} = useMenuStore();
-    const {mapRef} = useOutlet();
-
-    return (
-      <>
-        <div className="absolute z-40 top-0 left-0 w-full md:w-1/5 md:min-w-[450px] h-dvh overflow-y-auto pointer-events-none">
-          <ScrollArea className="h-full overflow-x-auto">
-            <div className="flex flex-col p-2 gap-2 pointer-events-auto">
-              <Card className="sticky top-2 z-40">
-                <CardContent>
-                  <div className="flex gap-2 items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <img src={LOGO_URL} alt="Jotihunt Tracker" className="w-12 h-12 rounded-md" />
-                      <div>
-                        <h1 className="text-xl font-bold">Jotihunt Tracker</h1>
-                        <h2 className="truncate">{GROUP_NAME}</h2>
-                      </div>
-                    </div>
-
-                    <div className="md:hidden">
-                      <Button variant="outline" size="sm" onClick={toggleMenu}>
-                        <MenuIcon />
-                      </Button>
-                    </div>
-
-                    {/* Desktop position for settings menu */}
-                    <Settings />
-                  </div>
-                </CardContent>
-              </Card>
-              <div className={'md:fixed md:top-2 md:right-12 md:z-20 flex gap-2'}>
-                <div className={'hidden md:block'}>
-                  <CoordinatesCard mapRef={mapRef} />
-                </div>
-                <div className={'w-full md:w-auto'}>
-                  <SearchCard mapRef={mapRef} />
-                </div>
-              </div>
-
-              <div className={`flex-col gap-2 animate-in md:animate-none slide-in-from-top-4 fade-in z-30 ${menuOpen ? 'flex' : 'hidden md:flex'}`}>
-                {/* Mobile position for settings menu */}
-                <Settings />
-                <FoxStatusCard />
-                <HintEntryCard mapRef={mapRef} />
-                {/* Only show counter hunt when home team is known */}
-                {HOME_TEAM_API_ID && <CounterHuntCard mapRef={mapRef} />}
-
-                <NextHintTime />
-              </div>
-            </div>
-          </ScrollArea>
+  return (
+    <>
+      <div className="absolute left-2 right-2 top-2 z-30 flex gap-2 md:left-auto md:right-12">
+        <div className="hidden md:block">
+          <CoordinatesCard mapRef={mapRef} />
         </div>
-        <div className={'absolute bottom-2.5 right-2 z-50 hidden md:block'}>
-          <ActiveDevices mapRef={mapRef} />
+        <div className="w-full md:w-auto">
+          <SearchCard mapRef={mapRef} />
         </div>
-      </>
-    );
+      </div>
+      <Sidebar mapRef={mapRef} />
+    </>
+  );
 }
 
 export default App;
