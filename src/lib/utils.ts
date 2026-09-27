@@ -1,17 +1,9 @@
-import {type ClassValue, clsx} from 'clsx';
-import {twMerge} from 'tailwind-merge';
 import * as turf from '@turf/turf';
 import {isBefore, parseISO, subMinutes} from "date-fns";
 import type { Device } from '@/types/Device';
 
-/**
- * ClassName helper function
- * @param inputs The inputs to pass to clsx
- * @returns The className string
- */
-export function cn(...inputs: ClassValue[]) {
-    return twMerge(clsx(inputs));
-}
+// Class-name merging (clsx + tailwind-merge compatible), the same helper the shadcn components use
+export {cn} from 'cn';
 
 /**
  * Convert knots to km/h

@@ -50,7 +50,8 @@ function SelectTrigger({
 function SelectContent({
   className,
   children,
-  position = "item-aligned",
+  // Local default: open below the trigger (upstream uses "item-aligned", which ignores max-h classes)
+  position = "popper",
   align = "center",
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Content>) {

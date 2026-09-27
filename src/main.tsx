@@ -33,7 +33,7 @@ const authStore = createStore({
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
     <>
-        <TooltipProvider>
+        <TooltipProvider delayDuration={700}>
             <AuthProvider store={authStore}>
                 <Routes/>
             </AuthProvider>
