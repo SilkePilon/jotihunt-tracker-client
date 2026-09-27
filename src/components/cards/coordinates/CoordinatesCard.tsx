@@ -271,5 +271,5 @@ export default function CoordinatesCard({ mapRef }: InferProps<typeof Coordinate
 }
 
 CoordinatesCard.propTypes = {
-    mapRef: PropTypes.object.isRequired as PropTypes.Validator<React.RefObject<MapRef>>,
+    mapRef: PropTypes.object.isRequired as PropTypes.Validator<React.RefObject<MapRef | null>>,
 };

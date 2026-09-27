@@ -79,5 +79,5 @@ export default function CounterHuntCard({ mapRef }: InferProps<typeof CounterHun
 }
 
 CounterHuntCard.propTypes = {
-  mapRef: PropTypes.object.isRequired as PropTypes.Validator<React.RefObject<MapRef>>,
+  mapRef: PropTypes.object.isRequired as PropTypes.Validator<React.RefObject<MapRef | null>>,
 };

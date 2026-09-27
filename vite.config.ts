@@ -64,7 +64,7 @@ export default defineConfig({
         const path = await import('path');
         const fs = await import('fs/promises');
 
-        const packageJson = JSON.parse(await fs.readFile(path.resolve(__dirname, 'package.json'), 'utf-8'));
+        const packageJson = JSON.parse(await fs.readFile(path.resolve(import.meta.dirname, 'package.json'), 'utf-8'));
 
         return {
           BUILD_TIME: Date.now(),
@@ -76,7 +76,7 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      '@': path.resolve(import.meta.dirname, './src'),
     },
   },
   preview: {
@@ -90,7 +90,7 @@ export default defineConfig({
     allowedHosts: true
   },
   build: {
-    rollupOptions: {
+    rolldownOptions: {
       output: {
         chunkFileNames: '[name].[hash].js',
       },

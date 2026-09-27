@@ -48,5 +48,5 @@ export default function ActiveDevices({mapRef}: InferProps<typeof ActiveDevices.
 }
 
 ActiveDevices.propTypes = {
-    mapRef: PropTypes.object.isRequired as PropTypes.Validator<React.RefObject<MapRef>>,
+    mapRef: PropTypes.object.isRequired as PropTypes.Validator<React.RefObject<MapRef | null>>,
 };

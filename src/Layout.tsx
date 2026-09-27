@@ -10,7 +10,7 @@ import ResetPassword from './components/ResetPassword';
 import {useTheme} from "@/hooks/theme.hook.ts";
 
 type ContextType = {
-    mapRef: RefObject<MapRef>;
+    mapRef: RefObject<MapRef | null>;
 };
 
 export default function Layout() {
