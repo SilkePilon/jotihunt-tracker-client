@@ -6,7 +6,7 @@ import PropTypes, {InferProps} from "prop-types";
 import {MapRef} from "@/components/Map.tsx";
 import {Device} from "@/types/Device.ts";
 
-export default function ActiveDevices({mapRef}: InferProps<typeof ActiveDevices.propTypes>) {
+export default function ActiveDevices({mapRef, showLabel = true}: InferProps<typeof ActiveDevices.propTypes>) {
 
     const {devices, positions} = useDevices();
     const activeDevices = filterActiveDevices(devices);
@@ -29,8 +29,8 @@ export default function ActiveDevices({mapRef}: InferProps<typeof ActiveDevices.
     }
 
     return (
-      <div className={'flex gap-2 items-center'}>
-        <p className={'text-sm font-semibold text-foreground'}>Actieve hunters:</p>
+      <div className={'flex flex-wrap gap-2 items-center'}>
+        {showLabel && <p className={'text-sm font-semibold text-foreground'}>Actieve hunters:</p>}
         {(!activeDevices || activeDevices?.length <= 0) && (
           <Badge variant={'destructive'}>
           Niemand
@@ -49,4 +49,5 @@ export default function ActiveDevices({mapRef}: InferProps<typeof ActiveDevices.
 
 ActiveDevices.propTypes = {
     mapRef: PropTypes.object.isRequired as PropTypes.Validator<React.RefObject<MapRef | null>>,
+    showLabel: PropTypes.bool,
 };

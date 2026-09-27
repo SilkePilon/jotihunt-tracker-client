@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { toast } from 'sonner';
 import useSound from 'use-sound';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
@@ -19,7 +19,13 @@ export default function Hints() {
   const user = useAuthUser<User>();
   const actions = useHintBoard();
   const { board, isLoading } = actions;
-  const [selected, setSelected] = useState<CellKey>();
+  const [searchParams] = useSearchParams();
+  // Preselect a cell when opened from the sidebar mini grid (/hints?article=<id>&area=<area>)
+  const [selected, setSelected] = useState<CellKey | undefined>(() => {
+    const articleId = Number(searchParams.get('article'));
+    const area = searchParams.get('area');
+    return articleId && area ? { articleId, area } : undefined;
+  });
   const [now, setNow] = useState(() => Date.now());
   const [play] = useSound(hintAlert);
   const knownArticleIds = useRef<Set<number> | null>(null);

@@ -26,7 +26,7 @@ const FormSchema = z.object({
     y: z.string().length(6),
 });
 
-export default function HintEntryCard({mapRef}: InferProps<typeof HintEntryCard.propTypes>) {
+export default function HintEntryCard({mapRef, bare}: InferProps<typeof HintEntryCard.propTypes>) {
     const {coords, clear} = useHintFormBridge();
     const {markers, createMarker} = useMarkers();
 
@@ -274,6 +274,8 @@ export default function HintEntryCard({mapRef}: InferProps<typeof HintEntryCard.
         </Form>
     );
 
+    if (bare) return formComponent();
+
     return (
         <>
             <Card collapsible={true} defaultOpen={true}>
@@ -289,4 +291,5 @@ export default function HintEntryCard({mapRef}: InferProps<typeof HintEntryCard.
 
 HintEntryCard.propTypes = {
     mapRef: PropTypes.object.isRequired as PropTypes.Validator<React.RefObject<MapRef | null>>,
+    bare: PropTypes.bool,
 };
