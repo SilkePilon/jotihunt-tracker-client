@@ -19,10 +19,10 @@
   ```
 - UI copy is Dutch. Code/comments English, matching existing style (JSDoc comments on functions).
 - `bun test` only covers pure `src/lib/*.test.ts` files (excluded from `tsc -b` by `tsconfig.app.json`). Lib files used by tests must use `import type` for type-only imports.
-- Desktop sidebar width `w-[300px]`, section gap `gap-1.5`. Default open sections: `foxes`, `hints`; closed: `hintEntry`, `counterHunt`, `hunters`.
+- Desktop sidebar width `w-[320px]`, section gap `gap-1.5`. Default open sections: `foxes`, `hints`; closed: `hintEntry`, `counterHunt`, `hunters`.
 - Mini grid shows the **last 4** hint articles, newest on top. Cell colours: solved `bg-green-500`, solving `bg-amber-400`, open `bg-muted`, none dashed outline.
 - Countdown pill red in the last 5 minutes (`5 * 60 * 1000` ms). Hunt cooldown after a hunt: 1 hour.
-- Mobile breakpoint: `md` (768px). Sheet snap points: peek `'164px'`, half `0.5`, full `0.92`.
+- Mobile breakpoint: `md` (768px). Sheet snap points: peek `'200px'`, half `0.5`, full `0.92`.
 - Every commit message ends with: `Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>`
 - Deviation from spec (decided here): vaul is used directly (`import { Drawer } from 'vaul'`) instead of generating `ui/drawer.tsx`, because the sheet needs snap-point control that the shadcn wrapper doesn't add.
 

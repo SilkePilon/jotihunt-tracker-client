@@ -42,5 +42,6 @@ describe('formatHintCountdown', () => {
     expect(formatHintCountdown(61_000)).toBe('1:01');
     expect(formatHintCountdown(59 * 60_000 + 59_000)).toBe('59:59');
     expect(formatHintCountdown(3 * 3_600_000 + 5 * 60_000 + 7_000)).toBe('3:05:07');
+    expect(formatHintCountdown(19 * 86_400_000 + 12 * 3_600_000 + 36 * 60_000)).toBe('19d 12u');
   });
 });

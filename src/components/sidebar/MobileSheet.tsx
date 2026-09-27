@@ -3,7 +3,7 @@ import { Drawer } from 'vaul';
 import useSidebarStore, { SheetSnap } from '@/stores/sidebar.store';
 import { cn } from '@/lib/utils';
 
-const SNAP_POINTS: (string | number)[] = ['164px', 0.5, 0.92];
+const SNAP_POINTS: (string | number)[] = ['200px', 0.5, 0.92];
 const SNAP_BY_NAME: Record<SheetSnap, string | number> = { peek: SNAP_POINTS[0], half: SNAP_POINTS[1], full: SNAP_POINTS[2] };
 
 function snapName(snap: string | number | null): SheetSnap {

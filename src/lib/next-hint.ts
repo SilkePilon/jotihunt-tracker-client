@@ -26,11 +26,12 @@ export function getNextHintTime(lastHintTime: Date | undefined, huntStart: Date)
 }
 
 /**
- * Format a countdown as m:ss, or h:mm:ss from one hour.
+ * Format a countdown as m:ss, h:mm:ss from one hour, or "Xd Yu" from one day.
  */
 export function formatHintCountdown(ms: number): string {
   if (ms <= 0) return '0:00';
   const totalSeconds = Math.floor(ms / 1000);
+  if (totalSeconds >= 86400) return `${Math.floor(totalSeconds / 86400)}d ${Math.floor((totalSeconds % 86400) / 3600)}u`;
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = String(totalSeconds % 60).padStart(2, '0');

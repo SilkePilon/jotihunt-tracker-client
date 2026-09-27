@@ -21,7 +21,7 @@ pages themselves (except the deep-link param), any server changes.
 
 ## Desktop layout (≥ md)
 
-Floating stack of small cards, left side, `w-[300px]`, gap 6px, scrolls vertically when taller than
+Floating stack of small cards, left side, `w-[320px]`, gap 6px, scrolls vertically when taller than
 the viewport. Order:
 
 1. **Header** (always visible, not collapsible): logo (`LOGO_URL` fallback `/pwa-512x512.png`),
