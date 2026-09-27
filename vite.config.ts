@@ -98,6 +98,10 @@ export default defineConfig({
     host: true,
     allowedHosts: true
   },
+  worker: {
+    // MapLibre's worker is an ES module worker
+    format: 'es',
+  },
   build: {
     rolldownOptions: {
       output: {

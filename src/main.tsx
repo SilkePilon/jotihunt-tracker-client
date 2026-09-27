@@ -7,6 +7,12 @@ import proj4 from 'proj4';
 import {registerSW} from 'virtual:pwa-register';
 import {TooltipProvider} from "@/components/ui/tooltip.tsx";
 import {Toaster} from "@/components/ui/sonner.tsx";
+import {setWorkerUrl} from 'maplibre-gl';
+import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
+
+// MapLibre resolves its worker relative to its own module, which bundlers don't emit;
+// let Vite bundle the worker and hand MapLibre the resulting URL
+setWorkerUrl(maplibreWorkerUrl);
 
 // Service worker registration
 registerSW({immediate: true});
