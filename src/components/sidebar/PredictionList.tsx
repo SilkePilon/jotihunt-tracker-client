@@ -3,6 +3,7 @@ import { FootprintsIcon, TrainFrontIcon, TriangleAlertIcon } from 'lucide-react'
 import { MapRef } from '@/components/Map';
 import { Skeleton } from '@/components/ui/skeleton';
 import { usePredictions } from '@/hooks/predictions.hook';
+import useSidebarStore from '@/stores/sidebar.store';
 import { accuracyLabel, candidateLabel, predictionStatusText } from '@/lib/prediction';
 import { capitalizeFirstLetter, cn, getColorFromArea } from '@/lib/utils';
 import type { Prediction } from '@/types/Prediction';
@@ -12,6 +13,7 @@ const FLY_TO_ZOOM = 13;
 /** One row per fox team: top-1 group, probability, ETA, mode and accuracy; click flies to the zone. */
 export default function PredictionList({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
   const { predictions } = usePredictions();
+  const setSheetSnap = useSidebarStore((state) => state.setSheetSnap);
 
   if (!predictions) {
     return (
@@ -30,6 +32,8 @@ export default function PredictionList({ mapRef }: { mapRef: RefObject<MapRef | 
   function flyTo(prediction: Prediction) {
     if (!prediction.lastObservation) return;
     mapRef.current?.flyTo({ center: [prediction.lastObservation.lng, prediction.lastObservation.lat], zoom: FLY_TO_ZOOM, duration: 1500 });
+    // On phones, lower the bottom sheet so the zone is visible
+    setSheetSnap('peek');
   }
 
   return (
