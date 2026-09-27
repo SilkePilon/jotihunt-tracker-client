@@ -64,8 +64,10 @@ export default function HintGrid({ articles, cells, now, selected, onSelect }: H
                   >
                     <div className="flex items-center justify-between gap-1">
                       <span className="truncate text-xs">{cell.status === 'none' ? 'geen hint' : (cell.claimedBy?.name ?? '')}</span>
-                      {cell.check === 'verified' && <CheckIcon className="size-4 text-green-700 dark:text-green-400" />}
-                      {cell.check === 'disputed' && <TriangleAlertIcon className="size-4 text-red-600" />}
+                      {cell.check === 'verified' && (
+                        <CheckIcon className="size-4 text-green-700 dark:text-green-400" role="img" aria-label="Klopt" />
+                      )}
+                      {cell.check === 'disputed' && <TriangleAlertIcon className="size-4 text-red-600" role="img" aria-label="Twijfel" />}
                     </div>
                     <div className="flex items-end justify-between gap-1 text-xs">
                       <span className="truncate font-mono">{cell.status === 'solved' ? cell.answer : ''}</span>

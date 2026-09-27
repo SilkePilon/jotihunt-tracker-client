@@ -89,6 +89,7 @@ export default function Hints() {
           article={selectedArticle}
           cell={selectedCell}
           currentUserId={user?._id}
+          isAdmin={user?.admin}
           actions={actions}
           onClose={() => setSelected(undefined)}
           onShowOnMap={showOnMap}

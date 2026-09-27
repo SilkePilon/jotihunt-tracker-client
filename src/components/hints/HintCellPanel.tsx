@@ -24,13 +24,16 @@ interface HintCellPanelProps {
   article: HintArticle;
   cell: HintCell;
   currentUserId?: string;
+  isAdmin?: boolean;
   actions: ReturnType<typeof useHintBoard>;
   onClose: () => void;
   onShowOnMap: (lng: number, lat: number) => void;
 }
 
 function errorMessage(error: unknown) {
-  if (isAxiosError(error)) return error.response?.data?.message ?? error.message;
+  if (isAxiosError(error)) {
+    return error.response?.data?.message ?? error.response?.data?.errors?.[0]?.msg ?? error.message;
+  }
   return String(error);
 }
 
@@ -45,7 +48,7 @@ function openImage(event: React.MouseEvent<HTMLDivElement>) {
   }
 }
 
-export default function HintCellPanel({ article, cell, currentUserId, actions, onClose, onShowOnMap }: HintCellPanelProps) {
+export default function HintCellPanel({ article, cell, currentUserId, isAdmin, actions, onClose, onShowOnMap }: HintCellPanelProps) {
   const [answer, setAnswer] = useState(cell.answer ?? '');
   const [note, setNote] = useState('');
   const [confirmReplace, setConfirmReplace] = useState(false);
@@ -131,7 +134,7 @@ export default function HintCellPanel({ article, cell, currentUserId, actions, o
           </Button>
         )}
         {cell.status === 'solving' && !claimedByMe && <span className="text-sm">Bezig: {cell.claimedBy?.name}</span>}
-        {claimedByMe && (
+        {(claimedByMe || (cell.status === 'solving' && isAdmin)) && (
           <Button variant="outline" disabled={busy} onClick={() => run(() => actions.release(articleId, area))}>
             Vrijgeven
           </Button>
@@ -161,7 +164,13 @@ export default function HintCellPanel({ article, cell, currentUserId, actions, o
             Antwoord
           </label>
           <div className="flex gap-2">
-            <Input id="hint-answer" value={answer} onChange={(event) => setAnswer(event.target.value)} placeholder="1234 5678 of woord" />
+            <Input
+              id="hint-answer"
+              value={answer}
+              onChange={(event) => setAnswer(event.target.value)}
+              placeholder="1234 5678 of woord"
+              maxLength={200}
+            />
             <Button type="submit" disabled={busy || !answer.trim()}>
               Oplossen
             </Button>
@@ -215,7 +224,12 @@ export default function HintCellPanel({ article, cell, currentUserId, actions, o
             </li>
           ))}
         </ul>
-        <Textarea value={note} onChange={(event) => setNote(event.target.value)} placeholder="Bijv. lijkt Ogham, zie regel 2" />
+        <Textarea
+          value={note}
+          onChange={(event) => setNote(event.target.value)}
+          placeholder="Bijv. lijkt Ogham, zie regel 2"
+          maxLength={1000}
+        />
         <Button
           variant="outline"
           disabled={busy || !note.trim()}

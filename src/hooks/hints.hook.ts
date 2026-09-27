@@ -66,5 +66,8 @@ export const useRdPreview = (answer: string): RdPreview | null => {
     keepPreviousData: true,
     revalidateOnFocus: false,
   });
+  // While the debounce is pending, trimmedAnswer !== debouncedAnswer: the fetched data (or
+  // keepPreviousData'd stale data) still belongs to an older answer, so don't show it.
+  if (trimmedAnswer !== debouncedAnswer) return null;
   return trimmedAnswer ? (data?.rd ?? null) : null;
 };
