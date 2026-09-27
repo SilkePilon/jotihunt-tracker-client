@@ -21,22 +21,46 @@ export interface PredictionLabel {
   lat: number;
   text: string;
   color: string;
+  via: PredictionCandidate['via'];
+  transitLabel?: string;
 }
+
+/** Candidates below this probability get a line on the map but no label pill (clutter). */
+export const MIN_LABEL_PROBABILITY = 0.05;
+/** A prediction not recomputed for this long is shown as "verouderd". */
+export const STALE_AFTER_MS = 10 * 60 * 1000;
+const NO_GROUPS_REASON = 'Geen groepen gekoppeld';
 
 /** 24h local clock time, e.g. "14:20". */
 export function formatClock(iso: string): string {
   return format(new Date(iso), 'HH:mm');
 }
 
-/** "62% · ~14:20", "🚆 62% · ~14:20" or "62% · had er al kunnen zijn". */
+/** Rounded percentage that never claims certainty: ">99%" and "<1%" at the extremes. */
+export function formatProbability(probability: number): string {
+  if (probability >= 0.995) return '>99%';
+  if (probability < 0.005) return '<1%';
+  return `${Math.round(probability * 100)}%`;
+}
+
+/** "62% · ~14:20" or "62% · had er al kunnen zijn" (transit is shown with an icon next to it). */
 export function candidateLabel(candidate: PredictionCandidate): string {
-  const prefix = candidate.via === 'transit' ? '🚆 ' : '';
   const when = candidate.overdue ? 'had er al kunnen zijn' : `~${formatClock(candidate.eta)}`;
-  return `${prefix}${Math.round(candidate.probability * 100)}% · ${when}`;
+  return `${formatProbability(candidate.probability)} · ${when}`;
 }
 
 export function accuracyLabel(accuracy: PredictionAccuracy): string {
   return accuracy.evaluations === 0 ? 'top-3 –' : `top-3 ${accuracy.top3Hits}/${accuracy.evaluations}`;
+}
+
+/** Accuracy text for the sidebar row, or null for areas without groups (nothing to predict). */
+export function predictionAccuracyText(prediction: Prediction): string | null {
+  return prediction.reason === NO_GROUPS_REASON ? null : accuracyLabel(prediction.accuracy);
+}
+
+/** True when the prediction was last recomputed more than 10 minutes before `nowMs`. */
+export function isPredictionStale(prediction: Prediction, nowMs: number): boolean {
+  return nowMs - new Date(prediction.updatedAt).getTime() > STALE_AFTER_MS;
 }
 
 /** Status text to show instead of the top candidate, or null for an active prediction. */
@@ -69,7 +93,8 @@ export function visitStatusText(visit?: GroupVisit): string {
 
 /**
  * GeoJSON for the prediction map layer: zones (outer, core, islands), lines from the last
- * position to the candidates and label positions (line midpoints). Paused predictions are skipped.
+ * position to the candidates and label positions (line midpoints, only for candidates ≥ 5 %).
+ * Paused predictions are skipped.
  */
 export function buildPredictionGeoJson(
   predictions: Prediction[],
@@ -97,12 +122,15 @@ export function buildPredictionGeoJson(
         geometry: { type: 'LineString', coordinates: [[last.lng, last.lat], [candidate.lng, candidate.lat]] },
         properties: { area: prediction.area, color, probability: candidate.probability },
       });
+      if (candidate.probability < MIN_LABEL_PROBABILITY) continue;
       labels.push({
         key: `${prediction.area}-${candidate.teamApiId}`,
         lng: (last.lng + candidate.lng) / 2,
         lat: (last.lat + candidate.lat) / 2,
         text: candidateLabel(candidate),
         color,
+        via: candidate.via,
+        ...(candidate.transitLabel ? { transitLabel: candidate.transitLabel } : {}),
       });
     }
   }

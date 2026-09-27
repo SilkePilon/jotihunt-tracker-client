@@ -1,19 +1,23 @@
-import { RefObject } from 'react';
+import { RefObject, useState } from 'react';
 import { FootprintsIcon, TrainFrontIcon, TriangleAlertIcon } from 'lucide-react';
 import { MapRef } from '@/components/Map';
 import { Skeleton } from '@/components/ui/skeleton';
 import { usePredictions } from '@/hooks/predictions.hook';
+import useInterval from '@/hooks/utils/interval.hook';
 import useSidebarStore from '@/stores/sidebar.store';
-import { accuracyLabel, candidateLabel, predictionStatusText } from '@/lib/prediction';
+import { candidateLabel, formatClock, isPredictionStale, predictionAccuracyText, predictionStatusText } from '@/lib/prediction';
 import { capitalizeFirstLetter, cn, getColorFromArea } from '@/lib/utils';
 import type { Prediction } from '@/types/Prediction';
 
 const FLY_TO_ZOOM = 13;
+const STALE_CHECK_MS = 30_000;
 
 /** One row per fox team: top-1 group, probability, ETA, mode and accuracy; click flies to the zone. */
 export default function PredictionList({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
   const { predictions } = usePredictions();
   const setSheetSnap = useSidebarStore((state) => state.setSheetSnap);
+  const [now, setNow] = useState(() => Date.now());
+  useInterval(() => setNow(Date.now()), STALE_CHECK_MS);
 
   if (!predictions) {
     return (
@@ -41,6 +45,8 @@ export default function PredictionList({ mapRef }: { mapRef: RefObject<MapRef | 
       {predictions.map((prediction) => {
         const top = prediction.candidates[0];
         const status = predictionStatusText(prediction);
+        const accuracy = predictionAccuracyText(prediction);
+        const stale = isPredictionStale(prediction, now);
         return (
           <li key={prediction.area}>
             <button
@@ -57,19 +63,41 @@ export default function PredictionList({ mapRef }: { mapRef: RefObject<MapRef | 
                 <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: getColorFromArea(prediction.area) }} />
                 <span className="font-semibold">{capitalizeFirstLetter(prediction.area)}</span>
                 {prediction.estimate && <span className="text-muted-foreground">(schatting)</span>}
-                <span className="ml-auto flex items-center gap-1 text-muted-foreground">
-                  {prediction.transitUnavailable && (
-                    <TriangleAlertIcon className="size-3.5 text-amber-500" aria-label="OV-gegevens niet beschikbaar" />
-                  )}
+                {stale && (
+                  <span className="text-muted-foreground" title={`Bijgewerkt ${formatClock(prediction.updatedAt)}`}>
+                    verouderd
+                  </span>
+                )}
+                <span className="ml-auto flex shrink-0 items-center gap-1 text-muted-foreground">
                   {prediction.mode === 'transit' ? (
                     <TrainFrontIcon className="size-3.5" aria-label="Lopen en openbaar vervoer" />
                   ) : (
                     <FootprintsIcon className="size-3.5" aria-label="Lopend" />
                   )}
-                  {accuracyLabel(prediction.accuracy)}
+                  {accuracy}
                 </span>
               </span>
-              <span className={cn('truncate', status && 'text-muted-foreground')}>{status ?? `${top.name} · ${candidateLabel(top)}`}</span>
+              {status || !top ? (
+                <span className="truncate text-muted-foreground">{status}</span>
+              ) : (
+                <span className="flex min-w-0 items-center gap-1">
+                  <span className="truncate">{top.name}</span>
+                  {top.via === 'transit' && (
+                    <span className="flex shrink-0 items-center gap-0.5">
+                      <span aria-hidden="true">·</span>
+                      <TrainFrontIcon className="size-3" aria-label="Openbaar vervoer" />
+                      {top.transitLabel}
+                    </span>
+                  )}
+                  <span className="shrink-0">· {candidateLabel(top)}</span>
+                </span>
+              )}
+              {prediction.transitUnavailable && (
+                <span className="flex items-center gap-1 text-muted-foreground">
+                  <TriangleAlertIcon className="size-3 shrink-0" aria-hidden="true" />
+                  OV-gegevens niet beschikbaar
+                </span>
+              )}
             </button>
           </li>
         );

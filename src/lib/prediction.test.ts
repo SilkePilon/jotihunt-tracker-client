@@ -4,6 +4,9 @@ import {
   accuracyLabel,
   buildPredictionGeoJson,
   candidateLabel,
+  formatProbability,
+  isPredictionStale,
+  predictionAccuracyText,
   predictionStatusText,
   predictionSummary,
   visitSelection,
@@ -42,8 +45,37 @@ function visit(overrides: Partial<GroupVisit> = {}): GroupVisit {
 
 describe('candidateLabel', () => {
   test('probability and ETA', () => expect(candidateLabel(candidate())).toBe('62% · ~14:20'));
-  test('transit prefix', () => expect(candidateLabel(candidate({ via: 'transit' }))).toBe('🚆 62% · ~14:20'));
+  test('transit is text only (the icon is rendered separately)', () =>
+    expect(candidateLabel(candidate({ via: 'transit', transitLabel: 'bus 5' }))).toBe('62% · ~14:20'));
   test('overdue', () => expect(candidateLabel(candidate({ overdue: true }))).toBe('62% · had er al kunnen zijn'));
+  test('near-certain', () => expect(candidateLabel(candidate({ probability: 1 }))).toBe('>99% · ~14:20'));
+});
+
+describe('formatProbability', () => {
+  test('never claims 100 % or 0 %', () => {
+    expect(formatProbability(1)).toBe('>99%');
+    expect(formatProbability(0.995)).toBe('>99%');
+    expect(formatProbability(0.994)).toBe('99%');
+    expect(formatProbability(0.62)).toBe('62%');
+    expect(formatProbability(0.005)).toBe('1%');
+    expect(formatProbability(0.0049)).toBe('<1%');
+    expect(formatProbability(0)).toBe('<1%');
+  });
+});
+
+describe('isPredictionStale', () => {
+  const updatedAt = new Date(2026, 9, 17, 14, 0).toISOString();
+  const minutesLater = (minutes: number) => new Date(2026, 9, 17, 14, minutes).getTime();
+  test('stale when older than 10 minutes', () => {
+    expect(isPredictionStale(prediction({ updatedAt }), minutesLater(10))).toBe(false);
+    expect(isPredictionStale(prediction({ updatedAt }), minutesLater(11))).toBe(true);
+  });
+});
+
+describe('predictionAccuracyText', () => {
+  test('accuracy for areas with groups', () => expect(predictionAccuracyText(prediction())).toBe('top-3 7/9'));
+  test('nothing for areas without groups', () =>
+    expect(predictionAccuracyText(prediction({ reason: 'Geen groepen gekoppeld', candidates: [], accuracy: { top1Hits: 0, top3Hits: 0, evaluations: 0 } }))).toBeNull());
 });
 
 describe('accuracyLabel', () => {
@@ -113,8 +145,27 @@ describe('buildPredictionGeoJson', () => {
     expect(data.lines.features[1].properties.probability).toBe(0.2);
     expect(data.labels[0].key).toBe('alpha-1');
     expect(data.labels[0].text).toBe('62% · ~14:20');
+    expect(data.labels[0].via).toBe('walk');
     expect(data.labels[0].lng).toBeCloseTo(5.45, 6);
     expect(data.labels[0].lat).toBeCloseTo(52.05, 6);
+  });
+
+  test('labels carry the transit line; candidates under 5 % get a line but no label', () => {
+    const data = buildPredictionGeoJson(
+      [
+        prediction({
+          candidates: [
+            candidate({ via: 'transit', transitLabel: 'bus 5', probability: 0.9 }),
+            candidate({ teamApiId: 2, probability: 0.05 }),
+            candidate({ teamApiId: 3, probability: 0.049 }),
+          ],
+        }),
+      ],
+      () => '#000',
+    );
+    expect(data.lines.features).toHaveLength(3);
+    expect(data.labels.map((label) => label.key)).toEqual(['alpha-1', 'alpha-2']);
+    expect(data.labels[0]).toMatchObject({ text: '90% · ~14:20', via: 'transit', transitLabel: 'bus 5' });
   });
 
   test('no lines without a last observation', () => {
