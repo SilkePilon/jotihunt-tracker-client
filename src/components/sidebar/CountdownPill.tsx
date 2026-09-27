@@ -16,6 +16,7 @@ export default function CountdownPill() {
       )}
     >
       <HourglassIcon className="size-3" aria-hidden />
+      <span className="sr-only">Volgende hint: </span>
       {label}
     </span>
   );

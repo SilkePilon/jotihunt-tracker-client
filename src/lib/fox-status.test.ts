@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import type { Area } from '@/types/Area';
 import type { Hunt } from '@/types/Hunt';
-import { huntCooldownMs, HUNT_COOLDOWN_MS, lastHuntTimeFor, statusPillClass, statusSummary } from './fox-status';
+import { cooldownSummary, huntCooldownMs, HUNT_COOLDOWN_MS, lastHuntTimeFor, statusPillClass, statusSummary } from './fox-status';
 
 function hunt(area: string, status: string, huntTime: string): Hunt {
   return { _id: area + huntTime, area, huntCode: 'x', status, points: 1, huntTime: huntTime as unknown as Date, updatedAt: new Date() };
@@ -43,5 +43,20 @@ describe('statusPillClass / statusSummary', () => {
     expect(statusSummary([area('Alpha', 'green'), area('Bravo', 'red'), area('Charlie', 'green'), area('Delta', 'orange')])).toBe(
       '2 groen · 1 oranje · 1 rood',
     );
+  });
+});
+
+describe('cooldownSummary', () => {
+  const now = new Date('2026-10-17T12:00:00Z').getTime();
+
+  test('lists only areas still cooling down, by first-letter and countdown', () => {
+    const areas = [area('Alpha', 'green'), area('Delta', 'orange'), area('Bravo', 'red')];
+    // Alpha's cooldown ends at 12:23:12 (23:12 left), Delta's at 12:04:10 (4:10 left)
+    const hunts = [hunt('Alpha', 'Goedgekeurd', '2026-10-17T11:23:12Z'), hunt('Delta', 'Goedgekeurd', '2026-10-17T11:04:10Z')];
+    expect(cooldownSummary(areas, hunts, now)).toBe('A 23:12 · D 4:10');
+  });
+
+  test('returns undefined when nothing is cooling down', () => {
+    expect(cooldownSummary([area('Alpha', 'green')], undefined, now)).toBeUndefined();
   });
 });

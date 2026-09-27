@@ -19,6 +19,7 @@ import useSettingsStore from '../stores/settings.store';
 import {MapStyle} from '@/types/MapStyle';
 import {getHybridSatelliteStyle, resolveStaticMapStyle} from '@/lib/map-styles';
 import {useDarkMode} from '@/hooks/utils/darkmode.hook';
+import {useIsMobile} from '@/hooks/media.hook';
 import PickedLocationPopup from './map/PickedLocationPopup';
 import {FullscreenControl} from "react-map-gl/maplibre";
 import '@mapbox-controls/ruler/src/index.css';
@@ -73,6 +74,7 @@ const Map = forwardRef<MapRef>((_, ref) => {
     // Store for settings
     const {mapStyle} = useSettingsStore();
     const isDarkMode = useDarkMode();
+    const isMobile = useIsMobile();
     let correctedMapStyle = mapStyle;
     if (!correctedMapStyle) {
         correctedMapStyle = isDarkMode ? MapStyle.Dark : MapStyle.Streets;
@@ -140,7 +142,8 @@ const Map = forwardRef<MapRef>((_, ref) => {
                 }} position={"top-right"} onActivate={() => setRulerActive(true)}
                        onDeactivate={() => setRulerActive(false)}/>
                 <div className="bg-background">
-                    <AttributionControl position={"bottom-left"} customAttribution={'Jotihunt Tracker | ' + GROUP_NAME} compact={true}/>
+                    {/* The mobile bottom sheet spans the full width at the bottom, covering bottom-left (and bottom-right); move up top-left there instead. */}
+                    <AttributionControl position={isMobile ? 'top-left' : 'bottom-left'} customAttribution={'Jotihunt Tracker | ' + GROUP_NAME} compact={true}/>
                 </div>
                 {popupPosition && <PickedLocationPopup lng={popupPosition.lng} lat={popupPosition.lat}
                                                        onClose={() => setPopupPosition(undefined)}/>}

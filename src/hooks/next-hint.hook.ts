@@ -22,10 +22,12 @@ export function useNextHint(): { label: string; isUrgent: boolean; isNewHint: bo
 
   const lastHintTime = getLastHintTime(articles);
 
-  // On first load, treat the current newest hint as already announced
-  if (lastHintTime && !hasLoaded) {
+  // On first load, treat the current newest hint (if any) as already announced.
+  // Trigger once articles have loaded, even with zero hints yet, so the very
+  // first hint of the hunt still gets a sound/highlight instead of being silent.
+  if (articles && !hasLoaded) {
     setHasLoaded(true);
-    setLastPlayedHint(lastHintTime.getTime());
+    setLastPlayedHint(lastHintTime?.getTime());
   }
 
   useInterval(() => {

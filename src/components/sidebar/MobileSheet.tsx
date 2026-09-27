@@ -31,12 +31,17 @@ export default function MobileSheet({ header, children }: { header: ReactNode; c
       <Drawer.Portal>
         <Drawer.Content
           aria-describedby={undefined}
-          className="fixed inset-x-0 bottom-0 z-40 flex h-full max-h-[96dvh] flex-col rounded-t-2xl border-t bg-background outline-none"
+          className="fixed inset-x-0 bottom-0 z-40 flex h-full max-h-[92dvh] flex-col rounded-t-2xl border-t bg-background outline-none"
         >
           <Drawer.Handle className="mx-auto mb-1 mt-2" />
           <Drawer.Title className="sr-only">Zijbalk</Drawer.Title>
           <div className="px-2">{header}</div>
-          <div className={cn('flex flex-1 flex-col gap-1.5 px-2 pb-6 pt-1.5', sheetSnap === 'full' ? 'overflow-y-auto' : 'overflow-hidden')}>
+          <div
+            className={cn(
+              'flex flex-1 flex-col gap-1.5 px-2 pt-1.5 pb-[max(1.5rem,env(safe-area-inset-bottom))]',
+              sheetSnap === 'full' ? 'overflow-y-auto' : 'overflow-hidden',
+            )}
+          >
             {children}
           </div>
         </Drawer.Content>

@@ -1,5 +1,6 @@
 import type { Area } from '@/types/Area';
 import type { Hunt } from '@/types/Hunt';
+import { formatHintCountdown } from '@/lib/next-hint';
 
 export const HUNT_COOLDOWN_MS = 60 * 60 * 1000;
 
@@ -43,4 +44,19 @@ export function statusPillClass(status: string): string {
 export function statusSummary(areas: Area[]): string {
   const count = (status: string) => areas.filter((area) => area.status === status).length;
   return `${count('green')} groen · ${count('orange')} oranje · ${count('red')} rood`;
+}
+
+/**
+ * Summary of areas still cooling down, like "A 23:12 · D 04:10".
+ * Returns undefined when no area is cooling down.
+ */
+export function cooldownSummary(areas: Area[], hunts: Hunt[] | undefined, now: number): string | undefined {
+  const entries = areas
+    .map((area) => ({
+      letter: area.name.charAt(0).toUpperCase(),
+      cooldown: huntCooldownMs(lastHuntTimeFor(hunts, area.name), now),
+    }))
+    .filter((entry) => entry.cooldown > 0)
+    .map((entry) => `${entry.letter} ${formatHintCountdown(entry.cooldown)}`);
+  return entries.length ? entries.join(' · ') : undefined;
 }
