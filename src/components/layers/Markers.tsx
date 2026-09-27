@@ -66,7 +66,7 @@ export default function Markers({part1 = true, part2 = true}: InferProps<typeof 
      * @param date The date to format.
      */
     function formatMarkerDate(date: Date) {
-        return new Date(date).toLocaleTimeString([], {
+        return new Date(date).toLocaleTimeString('nl-NL', {
             hour: '2-digit',
             minute: '2-digit',
         })

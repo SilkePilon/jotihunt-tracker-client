@@ -24,14 +24,14 @@ export default function DebugInfo() {
       <div>
         <h1 className="font-semibold">Applicatie-informatie</h1>
         <p>Versie: {VERSION}</p>
-        <p>Build tijd: {new Date(BUILD_TIME).toLocaleString()}</p>
+        <p>Build tijd: {new Date(BUILD_TIME).toLocaleString('nl-NL')}</p>
       </div>
 
       <div>
         <h1 className="font-semibold">Omgevingsvariabelen</h1>
         <p>API base URL: {API_BASE_URL}</p>
-        <p>Hunt start: {new Date(HUNT_START_TIME).toLocaleString()}</p>
-        <p>Hunt einde: {new Date(HUNT_END_TIME).toLocaleString()}</p>
+        <p>Hunt start: {new Date(HUNT_START_TIME).toLocaleString('nl-NL')}</p>
+        <p>Hunt einde: {new Date(HUNT_END_TIME).toLocaleString('nl-NL')}</p>
         <p>Thuisbasis API ID: {HOME_TEAM_API_ID}</p>
         <p>Groep ID lopend: {GROUP_WALKING_ID}</p>
         <p>Groep ID auto: {GROUP_CAR_ID}</p>
