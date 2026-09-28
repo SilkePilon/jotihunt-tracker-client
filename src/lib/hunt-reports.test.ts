@@ -156,9 +156,9 @@ describe('huntSourceLabel', () => {
     expect(huntSourceLabel(report())).toBe('Gelezen door Gemini (zekerheid 92%)');
     expect(huntSourceLabel(report({ huntTimeSource: 'manual' }))).toBe('Gelezen door Gemini (zekerheid 95%) · tijd handmatig');
     expect(huntSourceLabel(report({ huntCodeSource: 'manual', huntTimeSource: 'manual' }))).toBe('Handmatig ingevuld');
-    expect(huntSourceLabel(report({ ocrStatus: 'failed', ocrError: 'Geen GEMINI_API_KEY ingesteld', huntCode: null, huntCodeSource: null, huntTimeSource: null }))).toBe(
-      'Lezen mislukt: Geen GEMINI_API_KEY ingesteld',
-    );
+    const failed = report({ ocrStatus: 'failed', ocrError: 'Geen GEMINI_API_KEY ingesteld', huntCode: null, huntCodeSource: null, huntTimeSource: null });
+    expect(huntSourceLabel(failed, true)).toBe('Lezen mislukt: Geen GEMINI_API_KEY ingesteld');
+    expect(huntSourceLabel(failed)).toBe('Lezen mislukt');
     expect(huntSourceLabel(report({ ocrStatus: 'failed', huntCodeSource: 'manual', huntTimeSource: 'manual' }))).toBe('Handmatig ingevuld');
     expect(huntSourceLabel(report({ huntCode: null, huntCodeSource: null, huntTimeSource: null, huntTimeKnown: false }))).toBe('Niets gelezen van de foto');
   });

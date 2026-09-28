@@ -119,12 +119,13 @@ export function readFailed(report: HuntReport): boolean {
 }
 
 /** Where the code and time come from: "Gelezen door Gemini (zekerheid 92%)", "Handmatig ingevuld", "Wordt gelezen…", … */
-export function huntSourceLabel(report: HuntReport): string {
+/** Where the code/time came from; the technical failure reason only for admins (`withError`). */
+export function huntSourceLabel(report: HuntReport, withError = false): string {
   if (isReading(report)) return 'Wordt gelezen…';
   const codeManual = report.huntCodeSource === 'manual';
   const timeManual = report.huntTimeSource === 'manual';
   if (codeManual && timeManual) return 'Handmatig ingevuld';
-  if (readFailed(report)) return report.ocrError ? `Lezen mislukt: ${report.ocrError}` : 'Lezen mislukt';
+  if (readFailed(report)) return withError && report.ocrError ? `Lezen mislukt: ${report.ocrError}` : 'Lezen mislukt';
   const confidence = ocrConfidence(report);
   if (confidence === null) return codeManual || timeManual ? 'Handmatig ingevuld' : 'Niets gelezen van de foto';
   const read = `Gelezen door Gemini (zekerheid ${Math.round(confidence * 100)}%)`;

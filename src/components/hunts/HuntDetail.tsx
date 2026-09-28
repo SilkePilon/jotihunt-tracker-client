@@ -141,7 +141,7 @@ export default function HuntDetail({ report, now, onBack }: { report: HuntReport
               {isAdmin && report.huntTimeKnown && <CopyButton value={huntTimeLabel(report)} label="Tijd" />}
             </Fact>
             <Fact label="Bron">
-              <span className={readFailed(report) ? 'text-destructive' : 'text-muted-foreground'}>{huntSourceLabel(report)}</span>
+              <span className={readFailed(report) ? 'text-destructive' : 'text-muted-foreground'}>{huntSourceLabel(report, isAdmin)}</span>
             </Fact>
             <Fact label="Soort">{capitalizeFirstLetter(report.kind)}</Fact>
             <Fact label="Gemeld door">
