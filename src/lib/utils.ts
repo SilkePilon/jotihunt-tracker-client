@@ -123,5 +123,5 @@ export function isMoreThanFiveMinutesAgo(fixTime: string) {
  * Devices that reported a position in the last five minutes.
  */
 export function filterActiveDevices(devices?: Device[]): Device[] {
-  return devices?.filter((device) => !isMoreThanFiveMinutesAgo(device.lastUpdate.toString())) ?? [];
+  return devices?.filter((device) => device.lastUpdate != null && !isMoreThanFiveMinutesAgo(device.lastUpdate.toString())) ?? [];
 }

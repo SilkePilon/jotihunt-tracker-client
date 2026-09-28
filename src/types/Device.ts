@@ -9,7 +9,8 @@ export interface Device {
   name: string;
   uniqueId: string;
   status: string;
-  lastUpdate: Date;
+  // null until the device has sent its first position (e.g. just created via "Mijn tracker")
+  lastUpdate: Date | null;
   positionId: number;
   phone?: string;
   model?: string;
