@@ -1,8 +1,8 @@
 import { Fragment } from 'react';
-import { useNavigate } from 'react-router';
 import { ArrowRightIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useHintBoard } from '@/hooks/hints.hook';
+import useHintBoardStore from '@/stores/hint-board.store';
 import { lastHintRows } from '@/lib/hints';
 import { areaOptions, cn } from '@/lib/utils';
 import { HintCell } from '@/types/HintCell';
@@ -24,7 +24,7 @@ const statusLabel: Record<HintCell['status'], string> = {
 };
 
 export default function HintMiniGrid() {
-  const navigate = useNavigate();
+  const openBoard = useHintBoardStore((state) => state.openBoard);
   const { board } = useHintBoard();
   const rows = board ? lastHintRows(board, MINI_GRID_ROWS) : [];
 
@@ -55,7 +55,7 @@ export default function HintMiniGrid() {
                     type="button"
                     title={label}
                     aria-label={label}
-                    onClick={() => navigate(`/hints?article=${row.article.id}&area=${area.value}`)}
+                    onClick={() => openBoard({ articleId: row.article.id, area: area.value })}
                     className={cn('h-6 cursor-pointer rounded-sm hover:ring-2 hover:ring-primary/50 md:h-4', cellClass[cell.status])}
                   />
                 );
@@ -64,7 +64,7 @@ export default function HintMiniGrid() {
           ))}
         </div>
       )}
-      <Button variant="outline" size="sm" onClick={() => navigate('/hints')}>
+      <Button variant="outline" size="sm" onClick={() => openBoard()}>
         Open hintbord <ArrowRightIcon />
       </Button>
     </div>

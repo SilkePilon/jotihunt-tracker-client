@@ -49,12 +49,14 @@ import {
 } from "@/components/ui/alert-dialog.tsx";
 import {useTeams} from "@/hooks/teams.hook.ts";
 import {toast} from "sonner";
+import useHintBoardStore from "@/stores/hint-board.store";
 
 export default function Settings() {
 
     const DISCORD_URL = import.meta.env.DISCORD_URL;
 
     const navigate = useNavigate();
+    const openHintBoard = useHintBoardStore((state) => state.openBoard);
     const {isStandalone, isInstallPromptSupported, promptInstall} = usePWA();
     const [resetPasswordOpen, setResetPasswordOpen] = useState(false);
     const [isConfirmReloadDialogOpen, setIsConfirmReloadDialogOpen] = useState(false);
@@ -206,7 +208,7 @@ export default function Settings() {
                         </DropdownMenuPortal>
                     </DropdownMenuSub>
                     <DropdownMenuSeparator/>
-                    <DropdownMenuItem onClick={() => navigate('/hints')}>
+                    <DropdownMenuItem onClick={() => openHintBoard()}>
                         <PuzzleIcon/>
                         Hint board
                     </DropdownMenuItem>

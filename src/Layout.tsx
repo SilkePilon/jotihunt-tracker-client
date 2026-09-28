@@ -8,6 +8,7 @@ import PWAPrompt from 'react-ios-pwa-prompt';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import {User} from './types/User';
 import ResetPassword from './components/ResetPassword';
+import HintBoardDialog from './components/hints/HintBoardDialog';
 import {useTheme} from "@/hooks/theme.hook.ts";
 import type {OutletContextType} from '@/hooks/outlet.hook.ts';
 
@@ -55,6 +56,7 @@ export default function Layout() {
             <ResetPassword open={resetPasswordOpen} setIsOpen={setResetPasswordOpen} allowClose={false}/>
             <Outlet context={{mapRef} satisfies OutletContextType}/>
             <Map ref={mapRef}/>
+            <HintBoardDialog mapRef={mapRef}/>
             <PWAPrompt
                 promptOnVisit={1}
                 appIconPath="/icon_maskable.png"

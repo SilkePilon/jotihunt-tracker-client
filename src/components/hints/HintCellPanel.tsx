@@ -18,7 +18,7 @@ import {
 import { HintArticle, HintCell } from '@/types/HintCell';
 import { useHintBoard, useRdPreview } from '@/hooks/hints.hook';
 import { sanitizeHintHtml } from '@/lib/hints';
-import { capitalizeFirstLetter } from '@/lib/utils';
+import { capitalizeFirstLetter, cn } from '@/lib/utils';
 
 interface HintCellPanelProps {
   article: HintArticle;
@@ -28,6 +28,8 @@ interface HintCellPanelProps {
   actions: ReturnType<typeof useHintBoard>;
   onClose: () => void;
   onShowOnMap: (lng: number, lat: number) => void;
+  /** Extra classes, e.g. to use the full width on phones instead of the 440px side column */
+  className?: string;
 }
 
 function errorMessage(error: unknown) {
@@ -48,7 +50,7 @@ function openImage(event: React.MouseEvent<HTMLDivElement>) {
   }
 }
 
-export default function HintCellPanel({ article, cell, currentUserId, isAdmin, actions, onClose, onShowOnMap }: HintCellPanelProps) {
+export default function HintCellPanel({ article, cell, currentUserId, isAdmin, actions, onClose, onShowOnMap, className }: HintCellPanelProps) {
   const [answer, setAnswer] = useState(cell.answer ?? '');
   const [note, setNote] = useState('');
   const [confirmReplace, setConfirmReplace] = useState(false);
@@ -91,7 +93,7 @@ export default function HintCellPanel({ article, cell, currentUserId, isAdmin, a
   }
 
   return (
-    <aside className="flex h-full w-[440px] shrink-0 flex-col gap-4 overflow-y-auto border-l bg-background p-4">
+    <aside className={cn('flex h-full w-[440px] shrink-0 flex-col gap-4 overflow-y-auto border-l bg-background p-4', className)}>
       <div className="flex items-start justify-between">
         <div>
           <h2 className="text-xl font-bold">{capitalizeFirstLetter(area)}</h2>
