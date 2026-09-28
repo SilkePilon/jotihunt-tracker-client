@@ -48,11 +48,12 @@ interface TimeFieldsProps {
 function TimeFields({ id, hours, minutes, onHours, onMinutes, resolved, error }: TimeFieldsProps) {
   const minutesRef = useRef<HTMLInputElement>(null);
   const digits = (value: string) => value.replace(/\D/g, '').slice(0, 2);
+  const labelId = `${id}-time-label`;
 
   return (
     <Field data-invalid={!!error} className="gap-2">
-      <FieldLabel htmlFor={`${id}-hours`}>Tijd op de foto</FieldLabel>
-      <div className="flex items-center gap-2">
+      <FieldLabel id={labelId}>Tijd op de foto</FieldLabel>
+      <div className="flex items-center gap-2" role="group" aria-labelledby={labelId}>
         <Input
           id={`${id}-hours`}
           inputMode="numeric"
@@ -127,7 +128,7 @@ export default function HuntRegistrationDialog() {
   /** A save failed for another reason than a duplicate code: the button offers a retry */
   const [failed, setFailed] = useState(false);
   const [now, setNow] = useState(() => Date.now());
-  useInterval(() => setNow(Date.now()), CLOCK_TICK_MS);
+  useInterval(() => setNow(Date.now()), open ? CLOCK_TICK_MS : null);
 
   // Reset the form when a new photo arrives (adjust state during render, no effect)
   const [prevPhoto, setPrevPhoto] = useState<File | null>(null);
@@ -188,34 +189,41 @@ export default function HuntRegistrationDialog() {
     if (!chosenArea) next.area = 'Kies de vos';
     if (!time) next.time = 'Vul een geldige tijd in (00:00 – 23:59)';
     setErrors(next);
-    if (next.code || next.area || !time || !photo) return;
+    if (next.code || next.area || !time || !photo || !prepared || prepared.source !== photo) return;
 
+    // The photo this save belongs to: if it's been replaced by the time the request resolves,
+    // this save's result (close/error) must not act on the newer dialog state.
+    const savingPhoto = photo;
+    const savingBlob = prepared.blob;
     setSaving(true);
     try {
       const report = await createReport({
-        photo: prepared?.blob ?? photo,
+        photo: savingBlob,
         huntCode,
         huntTime: resolveHuntTime(time.h, time.m, new Date()),
         area: chosenArea,
         kind,
         position,
       });
+      if (useHuntCaptureStore.getState().photo !== savingPhoto) return;
       toast.success('Hunt geregistreerd', { description: `HQ heeft tot ${formatHuntTime(report.deadline)} om hem in te sturen.` });
       close();
     } catch (error) {
+      if (useHuntCaptureStore.getState().photo !== savingPhoto) return;
       if (isAxiosError<{ reason?: string; reportedByName?: string }>(error) && error.response?.status === 409) {
         setErrors({ code: `Deze code is al geregistreerd door ${error.response.data?.reportedByName ?? 'iemand anders'}` });
+        setFailed(false);
       } else {
         setErrors({ save: 'Opslaan is mislukt. Controleer je verbinding.' });
         setFailed(true);
       }
     } finally {
-      setSaving(false);
+      if (useHuntCaptureStore.getState().photo === savingPhoto) setSaving(false);
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={(next) => !next && close()}>
+    <Dialog open={open} onOpenChange={(next) => !next && !saving && close()}>
       <DialogContent className="max-h-[92dvh] overflow-y-auto sm:max-w-md" data-hunt-registration>
         <DialogHeader>
           <DialogTitle>Hunt registreren</DialogTitle>
@@ -331,7 +339,7 @@ export default function HuntRegistrationDialog() {
             )}
           </FieldGroup>
           <DialogFooter className="mt-4">
-            <Button type="submit" className="w-full sm:w-auto" disabled={saving}>
+            <Button type="submit" className="w-full sm:w-auto" disabled={saving || !prepared || prepared.source !== photo}>
               {saving && <Loader2Icon className="animate-spin" />}
               {failed ? 'Opnieuw proberen' : 'Registreren'}
             </Button>
