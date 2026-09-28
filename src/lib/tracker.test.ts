@@ -41,7 +41,7 @@ describe('trackerSummary', () => {
     expect(trackerSummary(notConfigured)).toBe('Niet ingesteld');
     expect(trackerSummary(unreachable)).toBe('Niet bereikbaar');
     expect(trackerSummary(configured(false))).toBe('Niet verbonden');
-    expect(trackerSummary(configured(true))).toBe('Verbonden ✓');
+    expect(trackerSummary(configured(true))).toBe('Verbonden');
   });
 });
 

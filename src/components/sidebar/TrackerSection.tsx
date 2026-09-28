@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { CircleCheckIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import TrackerCard from '@/components/tracker/TrackerCard';
 import TrackerGuideDialog from '@/components/tracker/TrackerGuideDialog';
@@ -47,7 +48,14 @@ export default function TrackerSection() {
   }
 
   const summaryText = trackerSummary(status);
-  const summary = connected ? <Badge variant="secondary">{summaryText}</Badge> : summaryText;
+  const summary = connected ? (
+    <Badge className="border-transparent bg-green-500 text-white">
+      <CircleCheckIcon data-icon="inline-start" />
+      {summaryText}
+    </Badge>
+  ) : (
+    summaryText
+  );
 
   return (
     <>

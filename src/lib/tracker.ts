@@ -31,7 +31,7 @@ export function trackerRefreshInterval(status: TrackerMe | undefined): number {
 export function trackerSummary(status: TrackerMe | undefined): string | undefined {
   if (!status) return undefined;
   if (!status.configured) return status.reason === 'unreachable' ? 'Niet bereikbaar' : 'Niet ingesteld';
-  return status.connected ? 'Verbonden ✓' : 'Niet verbonden';
+  return status.connected ? 'Verbonden' : 'Niet verbonden';
 }
 
 /** Text for the "not configured" state; admins also get the fix. */

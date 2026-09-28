@@ -92,15 +92,15 @@ export default function TrackerGuideDialog({ open, onOpenChange, status }: Track
             title='Geef locatie-toestemming "Altijd toestaan" en zet batterijbesparing voor Traccar uit.'
           />
           <Step number={5} icon={ToggleRightIcon} title='Zet de schakelaar "Continu volgen" (Service status) aan.' />
-          <Step number={6} icon={CircleCheckIcon} title='Wacht tot hieronder "Verbonden ✓" verschijnt.'>
+          <Step number={6} icon={CircleCheckIcon} title='Wacht tot hieronder "Verbonden" verschijnt.'>
             <div
               className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm"
               data-tracker-live-status={status.connected ? 'connected' : 'waiting'}
             >
               {status.connected ? (
                 <>
-                  <CircleCheckIcon className="size-4 text-primary" />
-                  <span className="font-medium">Verbonden ✓</span>
+                  <CircleCheckIcon className="size-4 text-green-500" />
+                  <span className="font-medium text-green-600 dark:text-green-500">Verbonden</span>
                 </>
               ) : (
                 <>
