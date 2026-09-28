@@ -2,9 +2,13 @@ import { useOutlet } from '@/hooks/outlet.hook.ts';
 import SearchCard from '@/components/cards/search/SearchCard.tsx';
 import CoordinatesCard from '@/components/cards/coordinates/CoordinatesCard.tsx';
 import Sidebar from '@/components/sidebar/Sidebar';
+import HuntCaptureButton from '@/components/hunts/HuntCaptureButton';
+import HuntRegistrationDialog from '@/components/hunts/HuntRegistrationDialog';
+import { useIsMobile } from '@/hooks/media.hook';
 
 function App() {
   const { mapRef } = useOutlet();
+  const isMobile = useIsMobile();
 
   return (
     <>
@@ -17,6 +21,8 @@ function App() {
         </div>
       </div>
       <Sidebar mapRef={mapRef} />
+      {isMobile && <HuntCaptureButton />}
+      <HuntRegistrationDialog />
     </>
   );
 }
