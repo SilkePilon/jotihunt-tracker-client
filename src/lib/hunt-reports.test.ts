@@ -33,7 +33,7 @@ describe('normalizeHuntCode', () => {
 });
 
 describe('extractHuntCode', () => {
-  test('picks the longest alphanumeric token of 4+ characters', () => {
+  test('prefers labelled code when present', () => {
     expect(extractHuntCode('JOTIHUNT 2026\nCode: K7X9QP2\nAlpha')).toBe('K7X9QP2');
   });
   test('uppercases and ignores punctuation around the code', () => {
@@ -42,6 +42,21 @@ describe('extractHuntCode', () => {
   test('empty when there is no token of 4+ characters', () => {
     expect(extractHuntCode('ab 12 x')).toBe('');
     expect(extractHuntCode('')).toBe('');
+  });
+  test('labelled all-digit code', () => {
+    expect(extractHuntCode('ALPHA 2026\nCode: 7392\nFox')).toBe('7392');
+  });
+  test('labelled all-letter code', () => {
+    expect(extractHuntCode('JOTIHUNT 2026\nCode: FOXY\nAlpha')).toBe('FOXY');
+  });
+  test('unlabelled all-digit code (skips year and stop words)', () => {
+    expect(extractHuntCode('JOTIHUNT 2026\n483920\nBravo')).toBe('483920');
+  });
+  test('unlabelled all-letter code', () => {
+    expect(extractHuntCode('JOTIHUNT\nQWERTZ\nDelta')).toBe('QWERTZ');
+  });
+  test('empty when only stop words or year present', () => {
+    expect(extractHuntCode('JOTIHUNT 2026 ALPHA')).toBe('');
   });
 });
 

@@ -8,11 +8,34 @@ export function normalizeHuntCode(code: string): string {
   return code.replace(/\s+/g, '').toUpperCase();
 }
 
-/** The hunt code in OCR text: the longest alphanumeric token of at least 4 characters that contains both letters and numbers ('' when none). */
+/** Extract hunt code from OCR text: labelled code if present, else longest token with letter+digit,
+ * else longest non-stop-word token. Returns '' if none found. */
 export function extractHuntCode(ocrText: string): string {
-  const tokens = ocrText.toUpperCase().match(/[A-Z0-9]{4,}/g) ?? [];
-  const codesWithMixed = tokens.filter((token) => /[A-Z]/.test(token) && /[0-9]/.test(token));
-  return codesWithMixed.reduce((longest, token) => (token.length > longest.length ? token : longest), '');
+  const text = ocrText.toUpperCase();
+  const stopWords = new Set(['JOTIHUNT', 'HUNTCODE', 'CODE', 'HUNT', 'TEGENHUNT', 'SCOUTING', 'ALPHA', 'BRAVO', 'CHARLIE', 'DELTA', 'ECHO', 'FOXTROT', 'GOLF', 'HOTEL', 'OSCAR']);
+  const isStopWord = (token: string): boolean => stopWords.has(token) || /^20\d\d$/.test(token);
+  const tokens = text.match(/[A-Z0-9]{4,}/g) ?? [];
+
+  // 1. Labelled code: "CODE" optionally followed by ":" or whitespace, then a token
+  const labelledMatch = text.match(/CODE\s*:?\s*([A-Z0-9]{4,})/);
+  if (labelledMatch && !isStopWord(labelledMatch[1])) {
+    return labelledMatch[1];
+  }
+
+  // 2. Longest token with both letter and digit
+  const withMixed = tokens.filter((token) => /[A-Z]/.test(token) && /[0-9]/.test(token));
+  if (withMixed.length > 0) {
+    return withMixed.reduce((longest, token) => (token.length > longest.length ? token : longest), '');
+  }
+
+  // 3. Longest token that is not a stop word
+  const nonStopWords = tokens.filter((token) => !isStopWord(token));
+  if (nonStopWords.length > 0) {
+    return nonStopWords.reduce((longest, token) => (token.length > longest.length ? token : longest), '');
+  }
+
+  // 4. Otherwise empty string
+  return '';
 }
 
 const FUTURE_TOLERANCE_MS = 5 * 60 * 1000;
@@ -67,7 +90,8 @@ export function huntsSummary(reports: HuntReport[] | undefined): string | undefi
   return `${reports.length} hunts · ${points} pt`;
 }
 
-/** Own reports plus scraped jotihunt.nl hunts that match no report (by normalised code). */
+/** Own reports plus scraped jotihunt.nl hunts that match no report (by normalised code).
+ * Note: report.huntCode is already normalised by the server. */
 export function huntListItems(reports: HuntReport[] | undefined, hunts: Hunt[] | undefined): HuntListItem[] {
   const codes = new Set((reports ?? []).map((report) => report.huntCode));
   const websiteOnly = (hunts ?? []).filter((hunt) => hunt.huntCode && !codes.has(normalizeHuntCode(hunt.huntCode)));
