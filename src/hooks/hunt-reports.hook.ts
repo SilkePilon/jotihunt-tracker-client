@@ -10,6 +10,8 @@ export interface NewReportInput {
   area: string;
   kind: HuntKind;
   position: { lng: number; lat: number } | null;
+  /** Same id for every attempt of one photo: a retry after a lost response doesn't create a second hunt */
+  uploadId: string;
 }
 
 export const useHuntReports = () => {
@@ -22,6 +24,7 @@ export const useHuntReports = () => {
     form.append('photo', input.photo, 'hunt.jpg');
     form.append('area', input.area);
     form.append('kind', input.kind);
+    form.append('uploadId', input.uploadId);
     if (input.position) {
       form.append('lng', String(input.position.lng));
       form.append('lat', String(input.position.lat));

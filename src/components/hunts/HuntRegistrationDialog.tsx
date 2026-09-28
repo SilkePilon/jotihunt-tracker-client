@@ -14,7 +14,7 @@ import useInterval from '@/hooks/utils/interval.hook';
 import { huntCooldownMs, lastHuntTimeFor } from '@/lib/fox-status';
 import { nearestArea } from '@/lib/hunt-reports';
 import { downscalePhoto } from '@/lib/image';
-import { areaOptions, getColorFromArea } from '@/lib/utils';
+import { areaOptions, getColorFromArea, randomId } from '@/lib/utils';
 import useHuntCaptureStore from '@/stores/hunt-capture.store';
 import type { HuntKind } from '@/types/HuntReport';
 
@@ -53,10 +53,14 @@ export default function HuntRegistrationDialog() {
   const [now, setNow] = useState(() => Date.now());
   useInterval(() => setNow(Date.now()), open ? CLOCK_TICK_MS : null);
 
+  /** One id per photo, sent with every upload attempt so the server can recognise a retry */
+  const [uploadId, setUploadId] = useState(() => randomId());
+
   // Reset the form when a new photo arrives (adjust state during render, no effect)
   const [prevPhoto, setPrevPhoto] = useState<File | null>(null);
   if (photo !== prevPhoto) {
     setPrevPhoto(photo);
+    setUploadId(randomId());
     setPrepared(null);
     setArea('');
     setKind('hunt');
@@ -124,7 +128,7 @@ export default function HuntRegistrationDialog() {
         const winner = await Promise.race([positionPromiseRef.current, wait(POSITION_WAIT_MS)]);
         if (winner !== 'timeout') resolvedPosition = winner;
       }
-      await createReport({ photo: savingBlob, area: chosenArea, kind, position: resolvedPosition });
+      await createReport({ photo: savingBlob, area: chosenArea, kind, position: resolvedPosition, uploadId });
       if (useHuntCaptureStore.getState().photo !== savingPhoto) return;
       toast.success('Hunt verstuurd', { description: 'De code en tijd worden nu gelezen.' });
       close();

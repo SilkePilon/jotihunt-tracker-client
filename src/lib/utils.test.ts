@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { Device } from '@/types/Device';
-import { filterActiveDevices } from './utils';
+import { filterActiveDevices, randomId } from './utils';
 
 function device(id: number, lastUpdate: Date | null): Device {
   return { id, groupId: 0, calendarId: 0, name: `Toestel ${id}`, uniqueId: `u${id}`, status: 'online', lastUpdate, positionId: 0, disabled: false };
@@ -16,5 +16,13 @@ describe('filterActiveDevices', () => {
 
   test('handles a missing list', () => {
     expect(filterActiveDevices(undefined)).toEqual([]);
+  });
+});
+
+describe('randomId', () => {
+  test('RFC 4122 v4 format and unique', () => {
+    const a = randomId();
+    expect(a).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+    expect(randomId()).not.toBe(a);
   });
 });

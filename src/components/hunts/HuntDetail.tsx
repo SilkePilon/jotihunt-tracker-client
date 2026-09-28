@@ -134,11 +134,11 @@ export default function HuntDetail({ report, now, onBack }: { report: HuntReport
             </Fact>
             <Fact label="Code">
               <HuntCodeText report={report} concealed={concealed} />
-              {report.huntCode && <CopyButton value={report.huntCode} label="Code" />}
+              {isAdmin && report.huntCode && <CopyButton value={report.huntCode} label="Code" />}
             </Fact>
             <Fact label="Tijd">
               <HuntTimeText report={report} className="font-mono" />
-              {report.huntTimeKnown && <CopyButton value={huntTimeLabel(report)} label="Tijd" />}
+              {isAdmin && report.huntTimeKnown && <CopyButton value={huntTimeLabel(report)} label="Tijd" />}
             </Fact>
             <Fact label="Bron">
               <span className={readFailed(report) ? 'text-destructive' : 'text-muted-foreground'}>{huntSourceLabel(report)}</span>
