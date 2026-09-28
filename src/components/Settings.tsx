@@ -6,6 +6,7 @@ import {
     KeyIcon,
     LayersIcon,
     LogOutIcon,
+    MapPinnedIcon,
     MoonIcon, RefreshCwIcon,
     PuzzleIcon,
     ShieldIcon,
@@ -58,7 +59,7 @@ export default function Settings() {
 
     const navigate = useNavigate();
     const openHintBoard = useHintBoardStore((state) => state.openBoard);
-    const openAdmin = useAdminStore((state) => state.openAdmin);
+    const openAdminDialog = useAdminStore((state) => state.openDialog);
     const {isStandalone, isInstallPromptSupported, promptInstall} = usePWA();
     const [resetPasswordOpen, setResetPasswordOpen] = useState(false);
     const [isConfirmReloadDialogOpen, setIsConfirmReloadDialogOpen] = useState(false);
@@ -216,10 +217,6 @@ export default function Settings() {
                     </DropdownMenuItem>
                     {auth?.admin && (
                         <>
-                            <DropdownMenuItem onClick={() => openAdmin('hunters')}>
-                                <UsersIcon/>
-                                Beheer
-                            </DropdownMenuItem>
                             <DropdownMenuSub>
                                 <DropdownMenuSubTrigger>
                                     <ShieldIcon/>
@@ -227,6 +224,13 @@ export default function Settings() {
                                 </DropdownMenuSubTrigger>
                                 <DropdownMenuPortal>
                                     <DropdownMenuSubContent>
+                                        <DropdownMenuItem onClick={() => openAdminDialog('hunters')}>
+                                            <MapPinnedIcon/>Hunters
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => openAdminDialog('users')}>
+                                            <UsersIcon/>Gebruikers
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator/>
                                         <DropdownMenuItem onClick={() => setIsConfirmReloadDialogOpen(true)}>
                                             <RefreshCwIcon/>Herlaad teams uit API
                                         </DropdownMenuItem>

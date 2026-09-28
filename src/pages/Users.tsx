@@ -2,13 +2,13 @@ import { useEffect } from 'react';
 import { Navigate } from 'react-router';
 import useAdminStore from '@/stores/admin.store';
 
-/** The old /users page now opens the "Gebruikers" tab of the Beheer dialog on the map. */
+/** The old /users page now opens the Gebruikers dialog on the map. */
 export default function Users() {
-  const openAdmin = useAdminStore((state) => state.openAdmin);
+  const openDialog = useAdminStore((state) => state.openDialog);
 
   useEffect(() => {
-    openAdmin('users');
-  }, [openAdmin]);
+    openDialog('users');
+  }, [openDialog]);
 
   return <Navigate to="/" replace />;
 }

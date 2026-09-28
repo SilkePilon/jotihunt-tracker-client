@@ -1,22 +1,18 @@
 import { create } from 'zustand';
 
-export type AdminTab = 'hunters' | 'users';
+export type AdminDialogId = 'hunters' | 'users';
 
 interface AdminState {
-  open: boolean;
-  tab: AdminTab;
-  openAdmin: (tab?: AdminTab) => void;
-  setTab: (tab: AdminTab) => void;
+  /** Which admin dialog is open (Settings → Admin tools), or null */
+  dialog: AdminDialogId | null;
+  openDialog: (dialog: AdminDialogId) => void;
   close: () => void;
 }
 
-/** The "Beheer" dialog (admins only), opened from the settings menu or the old /users link. */
 const useAdminStore = create<AdminState>()((set) => ({
-  open: false,
-  tab: 'hunters',
-  openAdmin: (tab = 'hunters') => set({ open: true, tab }),
-  setTab: (tab) => set({ tab }),
-  close: () => set({ open: false }),
+  dialog: null,
+  openDialog: (dialog) => set({ dialog }),
+  close: () => set({ dialog: null }),
 }));
 
 export default useAdminStore;

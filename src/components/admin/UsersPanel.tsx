@@ -112,39 +112,41 @@ export default function UsersPanel() {
         </div>
         <Button onClick={handleCreate}>Nieuwe gebruiker</Button>
       </div>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[35%]">Naam</TableHead>
-            <TableHead className="w-[45%] max-md:hidden">E-mailadres</TableHead>
-            <TableHead className="w-[10%]">Admin</TableHead>
-            <TableHead className="w-[10%]">Acties</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {isLoading ? (
-            <LoadingSkeleton rows={usersPerPage} />
-          ) : (
-            filteredUsers.slice(indexOfFirstUser, indexOfLastUser).map((user) => (
-              <TableRow key={user._id}>
-                <TableCell>{user.name}</TableCell>
-                <TableCell className="max-md:hidden">{user.email}</TableCell>
-                <TableCell>{user.admin ? 'Ja' : 'Nee'}</TableCell>
-                <TableCell>
-                  <div className="flex space-x-2">
-                    <Button variant="outline" size="icon" onClick={() => handleEdit(user)}>
-                      <PencilIcon />
-                    </Button>
-                    <Button variant="outline" size="icon" onClick={() => handleDelete(user)}>
-                      <Trash2Icon />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[35%]">Naam</TableHead>
+              <TableHead className="w-[45%] max-md:hidden">E-mailadres</TableHead>
+              <TableHead className="w-[10%]">Admin</TableHead>
+              <TableHead className="w-[10%]">Acties</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              <LoadingSkeleton rows={usersPerPage} />
+            ) : (
+              filteredUsers.slice(indexOfFirstUser, indexOfLastUser).map((user) => (
+                <TableRow key={user._id}>
+                  <TableCell>{user.name}</TableCell>
+                  <TableCell className="max-md:hidden">{user.email}</TableCell>
+                  <TableCell>{user.admin ? 'Ja' : 'Nee'}</TableCell>
+                  <TableCell>
+                    <div className="flex space-x-2">
+                      <Button variant="outline" size="icon" onClick={() => handleEdit(user)}>
+                        <PencilIcon />
+                      </Button>
+                      <Button variant="outline" size="icon" onClick={() => handleDelete(user)}>
+                        <Trash2Icon />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
       <div className="flex items-center justify-between text-sm">
         {isLoading ? (
           <Skeleton className="h-4 w-40" />
@@ -172,9 +174,7 @@ export default function UsersPanel() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Annuleren</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteConfirm}>
-              Verwijderen
-            </AlertDialogAction>
+            <AlertDialogAction onClick={handleDeleteConfirm}>Verwijderen</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -234,12 +234,7 @@ export default function UsersPanel() {
               <Label htmlFor="admin" className="text-right">
                 Admin
               </Label>
-              <Switch
-                id="admin"
-                checked={selectedUser?.admin || false}
-                onCheckedChange={(e) => setSelectedUser({ ...selectedUser, admin: e } as User)}
-                disabled={selectedUser?._id === user?._id}
-              />
+              <Switch id="admin" checked={selectedUser?.admin || false} onCheckedChange={(e) => setSelectedUser({ ...selectedUser, admin: e } as User)} disabled={selectedUser?._id === user?._id} />
             </div>
           </div>
           <Button onClick={handleSave}>Opslaan</Button>
