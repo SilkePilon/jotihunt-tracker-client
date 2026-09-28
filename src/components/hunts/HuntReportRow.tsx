@@ -1,14 +1,18 @@
 import { toast } from 'sonner';
+import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import { Button } from '@/components/ui/button';
 import { useHuntReports } from '@/hooks/hunt-reports.hook';
 import { formatHuntTime } from '@/lib/hunt-reports';
 import { getColorFromArea } from '@/lib/utils';
 import type { HuntReport } from '@/types/HuntReport';
+import type { User } from '@/types/User';
 import HuntStatusBadge from './HuntStatusBadge';
 
 /** Compact row for one hunt report: area dot, code, time, status, and (while pending) quick actions. */
 export default function HuntReportRow({ report, now, onSelect }: { report: HuntReport; now: number; onSelect?: () => void }) {
   const { setSubmitted } = useHuntReports();
+  // Marking a hunt as submitted is HQ work (admins only; the server enforces this too)
+  const isAdmin = !!useAuthUser<User>()?.admin;
   const pending = report.status === 'to_submit' || report.status === 'overdue';
 
   async function markSubmitted() {
@@ -66,9 +70,11 @@ export default function HuntReportRow({ report, now, onSelect }: { report: HuntR
           <Button type="button" variant="outline" size="xs" onClick={copyCode}>
             Kopieer code
           </Button>
-          <Button type="button" variant="outline" size="xs" onClick={() => void markSubmitted()}>
-            Ingestuurd
-          </Button>
+          {isAdmin && (
+            <Button type="button" variant="outline" size="xs" onClick={() => void markSubmitted()}>
+              Ingestuurd
+            </Button>
+          )}
         </div>
       )}
     </div>

@@ -50,7 +50,9 @@ export default function HuntDetail({ report, onBack }: { report: HuntReport; onB
   const photo = useAuthImage(report.photoUrl);
   const [busy, setBusy] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const canDelete = !report.submittedAt && !report.site && !!user && (user.admin || report.reportedBy === user._id);
+  // Status changes and deleting are HQ work: admins only (the server enforces this too)
+  const isAdmin = !!user?.admin;
+  const canDelete = isAdmin && !report.submittedAt && !report.site;
 
   async function changeSubmitted(submitted: boolean) {
     setBusy(true);
@@ -133,12 +135,12 @@ export default function HuntDetail({ report, onBack }: { report: HuntReport; onB
           </dl>
 
           <div className="flex flex-wrap gap-2">
-            {!report.submittedAt && (
+            {isAdmin && !report.submittedAt && (
               <Button type="button" disabled={busy} onClick={() => void changeSubmitted(true)}>
                 Ingestuurd
               </Button>
             )}
-            {report.submittedAt && report.status !== 'judged' && (
+            {isAdmin && report.submittedAt && report.status !== 'judged' && (
               <Button type="button" variant="outline" disabled={busy} onClick={() => void changeSubmitted(false)}>
                 Terugzetten
               </Button>
