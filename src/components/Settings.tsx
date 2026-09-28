@@ -50,6 +50,7 @@ import {
 import {useTeams} from "@/hooks/teams.hook.ts";
 import {toast} from "sonner";
 import useHintBoardStore from "@/stores/hint-board.store";
+import useAdminStore from "@/stores/admin.store";
 
 export default function Settings() {
 
@@ -57,6 +58,7 @@ export default function Settings() {
 
     const navigate = useNavigate();
     const openHintBoard = useHintBoardStore((state) => state.openBoard);
+    const openAdmin = useAdminStore((state) => state.openAdmin);
     const {isStandalone, isInstallPromptSupported, promptInstall} = usePWA();
     const [resetPasswordOpen, setResetPasswordOpen] = useState(false);
     const [isConfirmReloadDialogOpen, setIsConfirmReloadDialogOpen] = useState(false);
@@ -214,9 +216,9 @@ export default function Settings() {
                     </DropdownMenuItem>
                     {auth?.admin && (
                         <>
-                            <DropdownMenuItem onClick={() => navigate('/users')}>
+                            <DropdownMenuItem onClick={() => openAdmin('hunters')}>
                                 <UsersIcon/>
-                                Gebruikers
+                                Beheer
                             </DropdownMenuItem>
                             <DropdownMenuSub>
                                 <DropdownMenuSubTrigger>

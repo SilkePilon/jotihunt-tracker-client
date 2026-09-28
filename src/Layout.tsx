@@ -9,6 +9,7 @@ import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import {User} from './types/User';
 import ResetPassword from './components/ResetPassword';
 import HintBoardDialog from './components/hints/HintBoardDialog';
+import AdminDialog from './components/admin/AdminDialog';
 import {useTheme} from "@/hooks/theme.hook.ts";
 import type {OutletContextType} from '@/hooks/outlet.hook.ts';
 
@@ -57,6 +58,7 @@ export default function Layout() {
             <Outlet context={{mapRef} satisfies OutletContextType}/>
             <Map ref={mapRef}/>
             <HintBoardDialog mapRef={mapRef}/>
+            <AdminDialog mapRef={mapRef}/>
             <PWAPrompt
                 promptOnVisit={1}
                 appIconPath="/icon_maskable.png"

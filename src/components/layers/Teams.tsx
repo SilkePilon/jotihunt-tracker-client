@@ -1,4 +1,4 @@
-import {Layer, Marker, Source} from 'react-map-gl/maplibre';
+import {Layer, Marker, Source, useMap} from 'react-map-gl/maplibre';
 import {useTeams} from '@/hooks/teams.hook.ts';
 import MapMarker from '../map/MapMarker';
 import {useCallback, useMemo, useState} from 'react';
@@ -14,6 +14,10 @@ import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip.t
 import {CheckIcon} from 'lucide-react';
 import {useVisits} from '@/hooks/predictions.hook';
 import VisitControls from '../map/VisitControls';
+import {useIsMobile} from '@/hooks/media.hook';
+
+/** On phones the bottom sheet covers the lower ~130px; aim a bit higher so the team isn't hidden behind it. */
+const MOBILE_CENTER_OFFSET: [number, number] = [0, -65];
 
 const HOME_TEAM_API_ID = import.meta.env.HOME_TEAM_API_ID;
 const TEAMS_AREA_EDITING = import.meta.env.TEAMS_AREA_EDITING === 'true';
@@ -21,6 +25,8 @@ const TEAMS_AREA_EDITING = import.meta.env.TEAMS_AREA_EDITING === 'true';
 export default function Teams() {
 
     const {showGroupCircles} = useLayersStore();
+    const {current: map} = useMap();
+    const isMobile = useIsMobile();
     const {teams, setTeamArea} = useTeams();
     const {isVisible} = useAreas();
 
@@ -75,6 +81,11 @@ export default function Teams() {
                                 setActiveTeam(undefined);
                             } else {
                                 setActiveTeam(team);
+                                map?.easeTo({
+                                    center: [team.location.coordinates[0], team.location.coordinates[1]],
+                                    offset: isMobile ? MOBILE_CENTER_OFFSET : [0, 0],
+                                    duration: 600,
+                                });
                             }
                         }}
                         style={{cursor: 'pointer'}}
@@ -127,7 +138,7 @@ export default function Teams() {
                     )}
                 </div>
             ));
-    }, [teams, isVisible, activeTeam, tooltipOpenId, showGroupCircles, handleMarkerTooltip, visitedIds]);
+    }, [teams, isVisible, activeTeam, tooltipOpenId, showGroupCircles, handleMarkerTooltip, visitedIds, map, isMobile]);
 
     return (
         <>
