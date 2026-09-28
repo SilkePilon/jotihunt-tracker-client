@@ -39,7 +39,7 @@ export default function MobileSheet({ header, children }: { header: ReactNode; c
           <div
             className={cn(
               'flex flex-1 flex-col gap-1.5 px-2 pt-1.5 pb-[max(1.5rem,env(safe-area-inset-bottom))]',
-              sheetSnap === 'full' ? 'overflow-y-auto' : 'overflow-hidden',
+              sheetSnap === 'full' ? 'overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden' : 'overflow-hidden',
             )}
           >
             {children}
