@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-export type SidebarSectionId = 'foxes' | 'hints' | 'predictions' | 'hintEntry' | 'counterHunt' | 'hunters';
+export type SidebarSectionId = 'foxes' | 'hints' | 'predictions' | 'hintEntry' | 'counterHunt' | 'tracking' | 'hunters';
 export type SheetSnap = 'peek' | 'half' | 'full';
 
 const DEFAULT_OPEN_SECTIONS: Record<SidebarSectionId, boolean> = {
@@ -10,6 +10,8 @@ const DEFAULT_OPEN_SECTIONS: Record<SidebarSectionId, boolean> = {
   predictions: false,
   hintEntry: false,
   counterHunt: false,
+  // Closed by default: the section forces itself open while the user's phone is not connected
+  tracking: false,
   hunters: false,
 };
 
@@ -18,6 +20,7 @@ interface SidebarState {
   toggleSection: (id: SidebarSectionId) => void;
   /** Force a section open, e.g. when another part of the UI needs it visible. */
   openSection: (id: SidebarSectionId) => void;
+  setSectionOpen: (id: SidebarSectionId, open: boolean) => void;
   sheetSnap: SheetSnap;
   setSheetSnap: (snap: SheetSnap) => void;
 }
@@ -28,6 +31,7 @@ const useSidebarStore = create<SidebarState>()(
       openSections: DEFAULT_OPEN_SECTIONS,
       toggleSection: (id) => set((state) => ({ openSections: { ...state.openSections, [id]: !state.openSections[id] } })),
       openSection: (id) => set((state) => ({ openSections: { ...state.openSections, [id]: true } })),
+      setSectionOpen: (id, open) => set((state) => ({ openSections: { ...state.openSections, [id]: open } })),
       sheetSnap: 'peek',
       setSheetSnap: (sheetSnap) => set({ sheetSnap }),
     }),

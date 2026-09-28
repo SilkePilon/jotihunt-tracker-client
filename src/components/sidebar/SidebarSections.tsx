@@ -15,6 +15,7 @@ import SidebarSection from './SidebarSection';
 import FoxPills from './FoxPills';
 import HintMiniGrid from './HintMiniGrid';
 import PredictionList from './PredictionList';
+import TrackerSection from './TrackerSection';
 
 export default function SidebarSections({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
   const { areas } = useAreas();
@@ -43,6 +44,7 @@ export default function SidebarSections({ mapRef }: { mapRef: RefObject<MapRef |
           <CounterHuntCard mapRef={mapRef} />
         </SidebarSection>
       )}
+      <TrackerSection />
       <SidebarSection id="hunters" title="Actieve hunters" summary={activeCount ? String(activeCount) : 'Niemand'}>
         <ActiveDevices mapRef={mapRef} showLabel={false} />
       </SidebarSection>
