@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CameraIcon, TrophyIcon } from 'lucide-react';
+import { CameraIcon, ListIcon, TrophyIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useHuntReports } from '@/hooks/hunt-reports.hook';
@@ -53,7 +53,8 @@ export default function HuntsSection() {
               <p className="text-xs text-muted-foreground">Nog geen hunts geregistreerd.</p>
             )
           )}
-          <Button variant="ghost" size="sm" className="w-full" onClick={() => openAll()}>
+          <Button variant="outline" size="sm" className="w-full" onClick={() => openAll()}>
+            <ListIcon data-icon="inline-start" />
             Alle hunts bekijken
           </Button>
           <Button variant="outline" size="sm" className="w-full" onClick={() => setLeaderboardOpen(true)}>

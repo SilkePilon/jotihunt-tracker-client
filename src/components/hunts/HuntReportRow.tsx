@@ -2,10 +2,11 @@ import { toast } from 'sonner';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import { Button } from '@/components/ui/button';
 import { useHuntReports } from '@/hooks/hunt-reports.hook';
-import { formatHuntTime } from '@/lib/hunt-reports';
+import { formatHuntTime, isConcealed } from '@/lib/hunt-reports';
 import { getColorFromArea } from '@/lib/utils';
 import type { HuntReport } from '@/types/HuntReport';
 import type { User } from '@/types/User';
+import Concealed from './Concealed';
 import HuntStatusBadge from './HuntStatusBadge';
 
 /** Compact row for one hunt report: area dot, code, time, status, and (while pending) quick actions. */
@@ -58,7 +59,9 @@ export default function HuntReportRow({ report, now, onSelect }: { report: HuntR
     >
       <div className="flex items-center gap-2">
         <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: getColorFromArea(report.area) }} />
-        <span className="font-mono font-medium">{report.huntCode}</span>
+        <Concealed concealed={isConcealed(report, now)}>
+          <span className="font-mono font-medium">{report.huntCode}</span>
+        </Concealed>
         <span className="text-muted-foreground">{formatHuntTime(report.huntTime)}</span>
         {report.kind === 'tegenhunt' && <span className="text-muted-foreground">Tegenhunt</span>}
         <span className="ml-auto">

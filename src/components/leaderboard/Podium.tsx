@@ -1,5 +1,5 @@
 import { CrownIcon } from 'lucide-react';
-import { breakdownText, initials, podiumOrder } from '@/lib/leaderboard';
+import { breakdownText, podiumOrder } from '@/lib/leaderboard';
 import { cn } from '@/lib/utils';
 import type { LeaderboardEntry } from '@/types/Leaderboard';
 
@@ -33,21 +33,13 @@ export default function Podium({ entries, currentUserId, selectedId, onSelect }:
               className="flex min-w-0 flex-col items-center gap-1 rounded-lg outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
             >
               {first && <CrownIcon className="size-5 text-amber-500" />}
-              <span
-                className={cn(
-                  'flex shrink-0 items-center justify-center rounded-full font-semibold',
-                  first ? 'size-12 bg-primary/15 text-primary ring-2 ring-amber-400' : 'size-10 bg-muted text-sm text-muted-foreground',
-                )}
-              >
-                {initials(entry.name)}
-              </span>
               <span className="flex w-full items-center justify-center gap-0">
-                <span className="min-w-0 truncate text-center text-sm font-medium">
+                <span className={cn('min-w-0 truncate text-center font-medium', first ? 'text-base' : 'text-sm')}>
                   {entry.name}
                 </span>
-                {entry.userId === currentUserId && <span className="shrink-0 text-sm font-medium text-muted-foreground"> (jij)</span>}
+                {entry.userId === currentUserId && <span className="ml-1 shrink-0 text-sm font-medium text-muted-foreground">(jij)</span>}
               </span>
-              <span className={cn('text-sm font-semibold tabular-nums', first && 'text-primary')}>{entry.score}</span>
+              <span className={cn('font-semibold tabular-nums', first ? 'text-lg text-primary' : 'text-sm')}>{entry.score}</span>
               <span className={cn('flex w-full items-start justify-center rounded-t-lg pt-2 text-lg font-bold', BLOCKS[position])}>{entry.rank}</span>
             </button>
           );

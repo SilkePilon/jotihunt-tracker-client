@@ -1,5 +1,5 @@
 import { Badge } from '@/components/ui/badge';
-import { breakdownText, formatKm, initials } from '@/lib/leaderboard';
+import { breakdownText, formatKm } from '@/lib/leaderboard';
 import { cn } from '@/lib/utils';
 import type { LeaderboardEntry } from '@/types/Leaderboard';
 
@@ -24,12 +24,11 @@ export default function LeaderboardRow({ entry, isCurrentUser, selected, onSelec
     >
       <span className="flex w-full items-center gap-2">
         <span className="w-6 shrink-0 text-center text-sm text-muted-foreground tabular-nums">{entry.rank}</span>
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">{initials(entry.name)}</span>
         <span className="flex min-w-0 flex-1 items-center gap-0">
           <span className="min-w-0 truncate text-sm font-medium">
             {entry.name}
           </span>
-          {isCurrentUser && <span className="shrink-0 text-sm font-medium text-muted-foreground"> (jij)</span>}
+          {isCurrentUser && <span className="ml-1 shrink-0 text-sm font-medium text-muted-foreground">(jij)</span>}
         </span>
         <span className="flex shrink-0 items-center gap-1">
           <Badge variant="secondary">🎯 {entry.hunts}</Badge>

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { Leaderboard, LeaderboardEntry } from '@/types/Leaderboard';
-import { breakdownText, initials, podiumOrder, teamStripText, windowText } from './leaderboard';
+import { breakdownText, podiumOrder, teamStripText, windowText } from './leaderboard';
 
 function entry(overrides: Partial<LeaderboardEntry> = {}): LeaderboardEntry {
   return {
@@ -30,22 +30,6 @@ function board(overrides: Partial<Leaderboard> = {}): Leaderboard {
     ...overrides,
   };
 }
-
-describe('initials', () => {
-  test('first letters of the first two words', () => {
-    expect(initials('Test Admin')).toBe('TA');
-    expect(initials('  anna  de  vries ')).toBe('AD');
-  });
-
-  test('first two letters of a single word', () => {
-    expect(initials('Merida')).toBe('Me');
-  });
-
-  test('question mark without a name', () => {
-    expect(initials('')).toBe('?');
-    expect(initials('   ')).toBe('?');
-  });
-});
 
 describe('podiumOrder', () => {
   const [a, b, c, d] = [entry({ userId: 'a' }), entry({ userId: 'b' }), entry({ userId: 'c' }), entry({ userId: 'd' })];

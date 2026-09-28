@@ -108,3 +108,8 @@ export function formatHuntTimeSafe(time: Date | string | null | undefined): stri
   const date = new Date(time);
   return Number.isNaN(date.getTime()) ? '–' : formatHuntTime(date.toISOString());
 }
+
+/** Code and photo stay blurred while the hunt still has to be submitted (not once submitted, overdue or judged). */
+export function isConcealed(report: HuntReport, now: number): boolean {
+  return report.status === 'to_submit' && new Date(report.deadline).getTime() >= now;
+}

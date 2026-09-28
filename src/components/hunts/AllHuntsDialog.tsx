@@ -7,9 +7,10 @@ import { useAuthImage } from '@/hooks/auth-image.hook';
 import { useHuntReports } from '@/hooks/hunt-reports.hook';
 import { useHunts } from '@/hooks/hunts.hook';
 import useInterval from '@/hooks/utils/interval.hook';
-import { formatHuntTime, formatHuntTimeSafe, huntListItems } from '@/lib/hunt-reports';
+import { formatHuntTime, formatHuntTimeSafe, huntListItems, isConcealed } from '@/lib/hunt-reports';
 import { areaOptions, capitalizeFirstLetter, getColorFromArea } from '@/lib/utils';
 import type { HuntListItem, HuntReport } from '@/types/HuntReport';
+import Concealed from './Concealed';
 import HuntDetail from './HuntDetail';
 import HuntStatusBadge from './HuntStatusBadge';
 
@@ -96,12 +97,16 @@ function HuntRow({ item, now, onSelect }: { item: HuntListItem; now: number; onS
   return (
     <TableRow className="cursor-pointer" role="button" tabIndex={0} onClick={() => onSelect(report._id)} onKeyDown={handleKeyDown}>
       <TableCell className="max-md:hidden">
-        <HuntThumb report={report} />
+        <Concealed concealed={isConcealed(report, now)} className="overflow-hidden rounded">
+          <HuntThumb report={report} />
+        </Concealed>
       </TableCell>
       <TableCell>
         <AreaCell area={report.area} />
       </TableCell>
-      <TableCell className="font-mono">{report.huntCode}</TableCell>
+      <TableCell className="font-mono">
+        <Concealed concealed={isConcealed(report, now)}>{report.huntCode}</Concealed>
+      </TableCell>
       <TableCell className="max-md:hidden">{capitalizeFirstLetter(report.kind)}</TableCell>
       <TableCell>{formatHuntTime(report.huntTime)}</TableCell>
       <TableCell className="max-md:hidden">{report.reportedByName}</TableCell>
@@ -142,7 +147,7 @@ export default function AllHuntsDialog({ open, onOpenChange, initialReportId }: 
         </DialogHeader>
 
         {detail ? (
-          <HuntDetail key={detail._id} report={detail} onBack={() => setDetailId(undefined)} />
+          <HuntDetail key={detail._id} report={detail} now={now} onBack={() => setDetailId(undefined)} />
         ) : (
           <>
             <Totals items={items} />

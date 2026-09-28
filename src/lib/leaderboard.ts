@@ -5,14 +5,6 @@ export function formatKm(km: number): string {
   return km.toLocaleString('nl-NL', { maximumFractionDigits: 1 });
 }
 
-/** Avatar text: first letters of the first two words, else the first two letters ("Me"). */
-export function initials(name: string): string {
-  const words = name.trim().split(/\s+/).filter(Boolean);
-  if (words.length === 0) return '?';
-  if (words.length === 1) return words[0].slice(0, 2);
-  return (words[0][0] + words[1][0]).toUpperCase();
-}
-
 /** Podium order 2-1-3; missing places stay `undefined` so the columns keep their position. */
 export function podiumOrder(entries: LeaderboardEntry[]): (LeaderboardEntry | undefined)[] {
   return [entries[1], entries[0], entries[2]];

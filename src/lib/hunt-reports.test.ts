@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import type { Hunt } from '@/types/Hunt';
 import type { HuntReport } from '@/types/HuntReport';
 import type { Prediction } from '@/types/Prediction';
-import { extractHuntCode, huntListItems, huntsSummary, huntStatusLabel, nearestArea, normalizeHuntCode, pendingReports, resolveHuntTime } from './hunt-reports';
+import { extractHuntCode, isConcealed, huntListItems, huntsSummary, huntStatusLabel, nearestArea, normalizeHuntCode, pendingReports, resolveHuntTime } from './hunt-reports';
 
 function report(overrides: Partial<HuntReport> = {}): HuntReport {
   return {
@@ -124,5 +124,16 @@ describe('huntListItems', () => {
     const items = huntListItems([report()], hunts);
     expect(items.map((item) => item.source)).toEqual(['app', 'website']);
     expect(items[1].source === 'website' && items[1].hunt.huntCode).toBe('ZZ99');
+  });
+});
+
+describe('isConcealed', () => {
+  const deadline = new Date(report().deadline).getTime();
+  test('only while still to submit and before the deadline', () => {
+    expect(isConcealed(report(), deadline - 1)).toBe(true);
+    expect(isConcealed(report(), deadline + 1)).toBe(false);
+    expect(isConcealed(report({ status: 'overdue' }), deadline - 1)).toBe(false);
+    expect(isConcealed(report({ status: 'submitted' }), deadline - 1)).toBe(false);
+    expect(isConcealed(report({ status: 'judged' }), deadline - 1)).toBe(false);
   });
 });

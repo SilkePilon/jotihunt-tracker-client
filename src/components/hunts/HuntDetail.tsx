@@ -1,16 +1,18 @@
 import { useState } from 'react';
 import { isAxiosError } from 'axios';
-import { ArrowLeftIcon, CopyIcon, DownloadIcon } from 'lucide-react';
+import { ArrowLeftIcon, CopyIcon, DownloadIcon, ZoomInIcon } from 'lucide-react';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import { toast } from 'sonner';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { useAuthImage } from '@/hooks/auth-image.hook';
 import { useHuntReports } from '@/hooks/hunt-reports.hook';
-import { formatHuntTime } from '@/lib/hunt-reports';
+import { formatHuntTime, isConcealed } from '@/lib/hunt-reports';
 import { capitalizeFirstLetter, getColorFromArea } from '@/lib/utils';
 import type { HuntReport } from '@/types/HuntReport';
 import type { User } from '@/types/User';
+import Concealed from './Concealed';
+import ImageLightbox from './ImageLightbox';
 
 /** The server's (Dutch) error message when there is one. */
 function errorMessage(error: unknown, fallback: string): string {
@@ -44,10 +46,12 @@ function CopyButton({ value, label }: { value: string; label: string }) {
 }
 
 /** One hunt report: photo (downloadable), the facts HQ needs to submit it on jotihunt.nl, and actions. */
-export default function HuntDetail({ report, onBack }: { report: HuntReport; onBack: () => void }) {
+export default function HuntDetail({ report, now, onBack }: { report: HuntReport; now: number; onBack: () => void }) {
   const user = useAuthUser<User>();
   const { setSubmitted, deleteReport } = useHuntReports();
   const photo = useAuthImage(report.photoUrl);
+  const [zoomOpen, setZoomOpen] = useState(false);
+  const concealed = isConcealed(report, now);
   const [busy, setBusy] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   // Status changes and deleting are HQ work: admins only (the server enforces this too)
@@ -90,7 +94,15 @@ export default function HuntDetail({ report, onBack }: { report: HuntReport; onB
       <div className="grid gap-4 md:grid-cols-[3fr_2fr]">
         <div className="flex min-w-0 flex-col gap-3">
           {photo ? (
-            <img src={photo} alt={`Foto van hunt ${report.huntCode}`} className="max-h-[50dvh] w-full rounded-md bg-muted object-contain" />
+            <Concealed concealed={concealed} kind="image" className="overflow-hidden rounded-md">
+              <button type="button" className="group relative block w-full cursor-zoom-in" onClick={() => setZoomOpen(true)} aria-label="Foto vergroten">
+                <img src={photo} alt={`Foto van hunt ${report.huntCode}`} className="max-h-[50dvh] w-full rounded-md bg-muted object-contain" />
+                <span className="absolute bottom-2 right-2 flex items-center gap-1 rounded-md bg-background/90 px-2 py-1 text-xs font-medium opacity-0 shadow transition-opacity group-hover:opacity-100 max-md:opacity-100">
+                  <ZoomInIcon className="size-3.5" />
+                  Vergroten
+                </span>
+              </button>
+            </Concealed>
           ) : (
             <div className="flex h-48 w-full items-center justify-center rounded-md bg-muted text-sm text-muted-foreground">Foto laden…</div>
           )}
@@ -118,7 +130,9 @@ export default function HuntDetail({ report, onBack }: { report: HuntReport; onB
               {capitalizeFirstLetter(report.area)}
             </Fact>
             <Fact label="Code">
-              <span className="truncate font-mono font-medium">{report.huntCode}</span>
+              <Concealed concealed={concealed}>
+                <span className="truncate font-mono font-medium">{report.huntCode}</span>
+              </Concealed>
               <CopyButton value={report.huntCode} label="Code" />
             </Fact>
             <Fact label="Tijd">
@@ -168,6 +182,7 @@ export default function HuntDetail({ report, onBack }: { report: HuntReport; onB
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {photo && <ImageLightbox src={photo} alt={`Foto van hunt ${report.huntCode}`} open={zoomOpen} onOpenChange={setZoomOpen} />}
     </div>
   );
 }
