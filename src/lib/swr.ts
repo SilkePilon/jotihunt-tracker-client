@@ -12,7 +12,7 @@ const baseUrl = import.meta.env.API_BASE_URL;
  * @param body The body to send with the request
  * @returns The data returned by the API
  */
-export const fetcherWithMethod = async (url: string, authHeader: string, method: 'GET' | 'POST' | 'DELETE' | 'PUT' = 'GET', body?: unknown) => {
+export const fetcherWithMethod = async (url: string, authHeader: string, method: 'GET' | 'POST' | 'DELETE' | 'PUT' | 'PATCH' = 'GET', body?: unknown) => {
   const response = await axios({
     url: `${baseUrl}${url}`,
     method,
@@ -37,7 +37,7 @@ export const fetcherWithMethod = async (url: string, authHeader: string, method:
 export const useAuthSWR = <T>(
   url: string | null,
   options?: SWRConfiguration,
-  method: 'GET' | 'POST' | 'DELETE' | 'PUT' = 'GET',
+  method: 'GET' | 'POST' | 'DELETE' | 'PUT' | 'PATCH' = 'GET',
   body?: unknown,
 ) => {
   const authHeader = useAuthHeader();

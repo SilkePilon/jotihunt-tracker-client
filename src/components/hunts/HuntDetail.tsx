@@ -1,17 +1,19 @@
 import { useState } from 'react';
 import { isAxiosError } from 'axios';
-import { ArrowLeftIcon, CopyIcon, DownloadIcon, ZoomInIcon } from 'lucide-react';
+import { ArrowLeftIcon, CopyIcon, DownloadIcon, TriangleAlertIcon, ZoomInIcon } from 'lucide-react';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import { toast } from 'sonner';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { useAuthImage } from '@/hooks/auth-image.hook';
 import { useHuntReports } from '@/hooks/hunt-reports.hook';
-import { formatHuntTime, isConcealed } from '@/lib/hunt-reports';
+import { formatHuntTime, huntSourceLabel, huntTimeLabel, isConcealed, isReading, readFailed } from '@/lib/hunt-reports';
 import { capitalizeFirstLetter, getColorFromArea } from '@/lib/utils';
 import type { HuntReport } from '@/types/HuntReport';
 import type { User } from '@/types/User';
 import Concealed from './Concealed';
+import HuntCodeText, { HuntTimeText } from './HuntCodeText';
+import HuntFieldsForm from './HuntFieldsForm';
 import ImageLightbox from './ImageLightbox';
 
 /** The server's (Dutch) error message when there is one. */
@@ -57,6 +59,7 @@ export default function HuntDetail({ report, now, onBack }: { report: HuntReport
   // Status changes and deleting are HQ work: admins only (the server enforces this too)
   const isAdmin = !!user?.admin;
   const canDelete = isAdmin && !report.submittedAt && !report.site;
+  const codeLabel = report.huntCode ?? 'zonder code';
 
   async function changeSubmitted(submitted: boolean) {
     setBusy(true);
@@ -96,7 +99,7 @@ export default function HuntDetail({ report, now, onBack }: { report: HuntReport
           {photo ? (
             <Concealed concealed={concealed} kind="image" className="overflow-hidden rounded-md">
               <button type="button" className="group relative block w-full cursor-zoom-in" onClick={() => setZoomOpen(true)} aria-label="Foto vergroten">
-                <img src={photo} alt={`Foto van hunt ${report.huntCode}`} className="max-h-[50dvh] w-full rounded-md bg-muted object-contain" />
+                <img src={photo} alt={`Foto van hunt ${codeLabel}`} className="max-h-[50dvh] w-full rounded-md bg-muted object-contain" />
                 <span className="absolute bottom-2 right-2 flex items-center gap-1 rounded-md bg-background/90 px-2 py-1 text-xs font-medium opacity-0 shadow transition-opacity group-hover:opacity-100 max-md:opacity-100">
                   <ZoomInIcon className="size-3.5" />
                   Vergroten
@@ -109,7 +112,7 @@ export default function HuntDetail({ report, now, onBack }: { report: HuntReport
           <div>
             {photo ? (
               <Button asChild variant="outline" size="sm">
-                <a href={photo} download={`hunt-${report.huntCode}.jpg`}>
+                <a href={photo} download={`hunt-${report.huntCode ?? report._id}.jpg`}>
                   <DownloadIcon data-icon="inline-start" />
                   Foto downloaden
                 </a>
@@ -130,14 +133,15 @@ export default function HuntDetail({ report, now, onBack }: { report: HuntReport
               {capitalizeFirstLetter(report.area)}
             </Fact>
             <Fact label="Code">
-              <Concealed concealed={concealed}>
-                <span className="truncate font-mono font-medium">{report.huntCode}</span>
-              </Concealed>
-              <CopyButton value={report.huntCode} label="Code" />
+              <HuntCodeText report={report} concealed={concealed} />
+              {report.huntCode && <CopyButton value={report.huntCode} label="Code" />}
             </Fact>
             <Fact label="Tijd">
-              <span className="font-mono">{formatHuntTime(report.huntTime)}</span>
-              <CopyButton value={formatHuntTime(report.huntTime)} label="Tijd" />
+              <HuntTimeText report={report} className="font-mono" />
+              {report.huntTimeKnown && <CopyButton value={huntTimeLabel(report)} label="Tijd" />}
+            </Fact>
+            <Fact label="Bron">
+              <span className={readFailed(report) ? 'text-destructive' : 'text-muted-foreground'}>{huntSourceLabel(report)}</span>
             </Fact>
             <Fact label="Soort">{capitalizeFirstLetter(report.kind)}</Fact>
             <Fact label="Gemeld door">
@@ -147,6 +151,20 @@ export default function HuntDetail({ report, now, onBack }: { report: HuntReport
             <Fact label="Ingestuurd door">{report.submittedAt ? `${report.submittedByName ?? 'Onbekend'} · ${formatHuntTime(report.submittedAt)}` : '–'}</Fact>
             <Fact label="jotihunt.nl">{report.site ? `${report.site.status} · ${report.site.points} pt` : 'Nog niet beoordeeld'}</Fact>
           </dl>
+
+          {(report.needsReview || report.duplicateOf) && (
+            <div className="flex flex-col gap-1 text-sm text-amber-700 dark:text-amber-400">
+              {report.duplicateOf && (
+                <p className="flex items-center gap-1.5">
+                  <TriangleAlertIcon className="size-4 shrink-0" />
+                  Zelfde code als hunt van {report.duplicateOf.reportedByName}
+                </p>
+              )}
+              {report.needsReview && !isReading(report) && <p>Controleer de code en tijd met de foto.</p>}
+            </div>
+          )}
+
+          {isAdmin && <HuntFieldsForm report={report} />}
 
           <div className="flex flex-wrap gap-2">
             {isAdmin && !report.submittedAt && (
@@ -171,7 +189,7 @@ export default function HuntDetail({ report, now, onBack }: { report: HuntReport
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Hunt {report.huntCode} verwijderen?</AlertDialogTitle>
+            <AlertDialogTitle>Hunt {codeLabel} verwijderen?</AlertDialogTitle>
             <AlertDialogDescription>De foto wordt ook verwijderd.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -182,7 +200,7 @@ export default function HuntDetail({ report, now, onBack }: { report: HuntReport
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      {photo && <ImageLightbox src={photo} alt={`Foto van hunt ${report.huntCode}`} open={zoomOpen} onOpenChange={setZoomOpen} />}
+      {photo && <ImageLightbox src={photo} alt={`Foto van hunt ${codeLabel}`} open={zoomOpen} onOpenChange={setZoomOpen} />}
     </div>
   );
 }

@@ -7,8 +7,6 @@ const HUNT_REPORTS_REFRESH_MS = 10_000;
 
 export interface NewReportInput {
   photo: Blob;
-  huntCode: string;
-  huntTime: Date;
   area: string;
   kind: HuntKind;
   position: { lng: number; lat: number } | null;
@@ -18,12 +16,10 @@ export const useHuntReports = () => {
   const authHeader = useAuthHeader() || '';
   const { data, error, mutate } = useAuthSWR<HuntReport[]>('/hunt-reports', { refreshInterval: HUNT_REPORTS_REFRESH_MS });
 
-  /** Upload a new report (multipart). Throws the axios error on failure (409 = duplicate code). */
+  /** Upload a new report (multipart); the server reads the code and time from the photo afterwards. Throws the axios error on failure. */
   async function createReport(input: NewReportInput): Promise<HuntReport> {
     const form = new FormData();
     form.append('photo', input.photo, 'hunt.jpg');
-    form.append('huntCode', input.huntCode);
-    form.append('huntTime', input.huntTime.toISOString());
     form.append('area', input.area);
     form.append('kind', input.kind);
     if (input.position) {
@@ -35,9 +31,28 @@ export const useHuntReports = () => {
     return response.data;
   }
 
+  function replace(report: HuntReport) {
+    return mutate((current) => (current ?? []).map((existing) => (existing._id === report._id ? report : existing)), { revalidate: false });
+  }
+
+  /** HQ correction of the code and/or time (admins only); only pass the fields that changed. */
+  async function updateReport(id: string, fields: { huntCode?: string; huntTime?: Date }): Promise<HuntReport> {
+    const body = { huntCode: fields.huntCode, huntTime: fields.huntTime?.toISOString() };
+    const report = (await fetcherWithMethod(`/hunt-reports/${id}`, authHeader, 'PATCH', body)) as HuntReport;
+    await replace(report);
+    return report;
+  }
+
+  /** Read the code and time from the photo again (admins only); manually entered fields stay. */
+  async function rereadReport(id: string): Promise<HuntReport> {
+    const report = (await fetcherWithMethod(`/hunt-reports/${id}/read`, authHeader, 'POST')) as HuntReport;
+    await replace(report);
+    return report;
+  }
+
   async function setSubmitted(id: string, submitted: boolean): Promise<HuntReport> {
     const report = (await fetcherWithMethod(`/hunt-reports/${id}/submitted`, authHeader, 'PUT', { submitted })) as HuntReport;
-    await mutate((current) => (current ?? []).map((existing) => (existing._id === id ? report : existing)), { revalidate: false });
+    await replace(report);
     return report;
   }
 
@@ -46,5 +61,5 @@ export const useHuntReports = () => {
     await mutate((current) => (current ?? []).filter((existing) => existing._id !== id), { revalidate: false });
   }
 
-  return { reports: data, isError: !!error, createReport, setSubmitted, deleteReport };
+  return { reports: data, isError: !!error, createReport, updateReport, rereadReport, setSubmitted, deleteReport };
 };

@@ -8,71 +8,6 @@ export function normalizeHuntCode(code: string): string {
   return code.replace(/\s+/g, '');
 }
 
-/**
- * Sticker words that are never the code, also when OCR glues a year to them ("JOTIHUNT2026"), and bare years.
- */
-const STOP_WORD = /^(?:JOTIHUNT|HUNTCODE|CODE|HUNT|TEGENHUNT|SCOUTING|ALPHA|BRAVO|CHARLIE|DELTA|ECHO|FOXTROT|GOLF|HOTEL|OSCAR)\d*$|^20\d\d$/i;
-
-function longest(tokens: string[]): string {
-  return tokens.reduce((best, token) => (token.length > best.length ? token : best), '');
-}
-
-/**
- * The hunt code in OCR text (case kept): a token labelled "code", else the longest token mixing letters and digits,
- * else the longest other token; sticker words and years are skipped. Returns '' when nothing fits.
- */
-export function extractHuntCode(ocrText: string): string {
-  const tokens = (ocrText.match(/[A-Za-z0-9]{4,}/g) ?? []).filter((token) => !STOP_WORD.test(token));
-
-  const labelled = ocrText.match(/code\s*:?\s*([A-Za-z0-9]{4,})/i)?.[1];
-  if (labelled && !STOP_WORD.test(labelled)) return labelled;
-
-  return longest(tokens.filter((token) => /[A-Za-z]/.test(token) && /[0-9]/.test(token))) || longest(tokens);
-}
-
-/** A word Tesseract read, with its confidence (0–100). */
-export interface OcrWord {
-  text: string;
-  confidence: number;
-  /** Position in the recognised image (px) */
-  bbox?: { x0: number; y0: number; x1: number; y1: number };
-}
-
-const MIN_CODE_LENGTH = 5;
-const MAX_CODE_LENGTH = 10;
-/** Readings below this confidence are noise and don't vote. */
-const MIN_VOTE_CONFIDENCE = 10;
-
-/** The most likely hunt code among the words of one OCR pass: code-shaped, not a sticker word, highest confidence. */
-export function codeCandidate(words: OcrWord[]): OcrWord | null {
-  const candidates = words
-    .map((word) => ({ ...word, text: word.text.replace(/[^A-Za-z0-9]/g, '') }))
-    .filter((word) => word.text.length >= MIN_CODE_LENGTH && word.text.length <= MAX_CODE_LENGTH)
-    .filter((word) => !STOP_WORD.test(word.text) && !/hunt/i.test(word.text))
-    .sort((a, b) => b.confidence - a.confidence);
-  return candidates[0] ?? null;
-}
-
-/**
- * Combine the candidates of several OCR passes: the length with the most total confidence wins, then every character
- * position is decided by the confidence-weighted vote of the readings with that length. '' without candidates.
- */
-export function voteHuntCode(candidates: OcrWord[]): string {
-  const voters = candidates.filter((candidate) => candidate.confidence > MIN_VOTE_CONFIDENCE && candidate.text.length > 0);
-  const byLength = new Map<number, number>();
-  for (const voter of voters) byLength.set(voter.text.length, (byLength.get(voter.text.length) ?? 0) + voter.confidence);
-  const length = [...byLength.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
-  if (!length) return '';
-  const same = voters.filter((voter) => voter.text.length === length);
-  let code = '';
-  for (let index = 0; index < length; index++) {
-    const scores = new Map<string, number>();
-    for (const voter of same) scores.set(voter.text[index], (scores.get(voter.text[index]) ?? 0) + voter.confidence);
-    code += [...scores.entries()].sort((a, b) => b[1] - a[1])[0][0];
-  }
-  return code;
-}
-
 const FUTURE_TOLERANCE_MS = 5 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const PAST_TOLERANCE_MS = DAY_MS - FUTURE_TOLERANCE_MS;
@@ -134,7 +69,7 @@ export function huntsSummary(reports: HuntReport[] | undefined): string | undefi
 /** Own reports plus scraped jotihunt.nl hunts that match no report (by normalised code).
  * Note: report.huntCode is already normalised by the server. */
 export function huntListItems(reports: HuntReport[] | undefined, hunts: Hunt[] | undefined): HuntListItem[] {
-  const codes = new Set((reports ?? []).map((report) => report.huntCode));
+  const codes = new Set((reports ?? []).flatMap((report) => (report.huntCode ? [report.huntCode] : [])));
   const websiteOnly = (hunts ?? []).filter((hunt) => hunt.huntCode && !codes.has(normalizeHuntCode(hunt.huntCode)));
   return [...(reports ?? []).map((report) => ({ source: 'app' as const, report })), ...websiteOnly.map((hunt) => ({ source: 'website' as const, hunt }))];
 }
@@ -151,7 +86,49 @@ export function formatHuntTimeSafe(time: Date | string | null | undefined): stri
   return Number.isNaN(date.getTime()) ? '–' : formatHuntTime(date.toISOString());
 }
 
-/** Code and photo stay blurred while the hunt still has to be submitted (not once submitted, overdue or judged). */
+/**
+ * Code and photo stay blurred while the hunt still has to be submitted (not once submitted, overdue or judged).
+ * Nothing is blurred while the code is unknown: HQ needs the photo to read it.
+ */
 export function isConcealed(report: HuntReport, now: number): boolean {
-  return report.status === 'to_submit' && new Date(report.deadline).getTime() >= now;
+  return !!report.huntCode && report.status === 'to_submit' && new Date(report.deadline).getTime() >= now;
+}
+
+/** The server is still reading the code and time from the photo. */
+export function isReading(report: HuntReport): boolean {
+  return report.ocrStatus === 'pending' || report.ocrStatus === 'reading';
+}
+
+/** "14:05", or "±14:05" (the upload time) while the time on the photo is not known yet. */
+export function huntTimeLabel(report: HuntReport): string {
+  return `${report.huntTimeKnown ? '' : '±'}${formatHuntTime(report.huntTime)}`;
+}
+
+/** Lowest confidence (0..1) of the fields that were read from the photo, or null when no field comes from the photo. */
+export function ocrConfidence(report: HuntReport): number | null {
+  const confidences = [
+    ...(report.huntCodeSource === 'ocr' ? [report.codeConfidence ?? 0] : []),
+    ...(report.huntTimeSource === 'ocr' ? [report.timeConfidence ?? 0] : []),
+  ];
+  return confidences.length ? Math.min(...confidences) : null;
+}
+
+/** Reading the photo failed and HQ has not entered both fields by hand yet. */
+export function readFailed(report: HuntReport): boolean {
+  return report.ocrStatus === 'failed' && !(report.huntCodeSource === 'manual' && report.huntTimeSource === 'manual');
+}
+
+/** Where the code and time come from: "Gelezen door Gemini (zekerheid 92%)", "Handmatig ingevuld", "Wordt gelezen…", … */
+export function huntSourceLabel(report: HuntReport): string {
+  if (isReading(report)) return 'Wordt gelezen…';
+  const codeManual = report.huntCodeSource === 'manual';
+  const timeManual = report.huntTimeSource === 'manual';
+  if (codeManual && timeManual) return 'Handmatig ingevuld';
+  if (readFailed(report)) return report.ocrError ? `Lezen mislukt: ${report.ocrError}` : 'Lezen mislukt';
+  const confidence = ocrConfidence(report);
+  if (confidence === null) return codeManual || timeManual ? 'Handmatig ingevuld' : 'Niets gelezen van de foto';
+  const read = `Gelezen door Gemini (zekerheid ${Math.round(confidence * 100)}%)`;
+  if (codeManual) return `${read} · code handmatig`;
+  if (timeManual) return `${read} · tijd handmatig`;
+  return read;
 }

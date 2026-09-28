@@ -7,10 +7,11 @@ import { useAuthImage } from '@/hooks/auth-image.hook';
 import { useHuntReports } from '@/hooks/hunt-reports.hook';
 import { useHunts } from '@/hooks/hunts.hook';
 import useInterval from '@/hooks/utils/interval.hook';
-import { formatHuntTime, formatHuntTimeSafe, huntListItems, isConcealed } from '@/lib/hunt-reports';
+import { formatHuntTimeSafe, huntListItems, isConcealed } from '@/lib/hunt-reports';
 import { areaOptions, capitalizeFirstLetter, getColorFromArea } from '@/lib/utils';
 import type { HuntListItem, HuntReport } from '@/types/HuntReport';
 import Concealed from './Concealed';
+import HuntCodeText, { DuplicateMark, HuntTimeText } from './HuntCodeText';
 import HuntDetail from './HuntDetail';
 import HuntStatusBadge from './HuntStatusBadge';
 
@@ -104,11 +105,16 @@ function HuntRow({ item, now, onSelect }: { item: HuntListItem; now: number; onS
       <TableCell>
         <AreaCell area={report.area} />
       </TableCell>
-      <TableCell className="font-mono">
-        <Concealed concealed={isConcealed(report, now)}>{report.huntCode}</Concealed>
+      <TableCell>
+        <span className="inline-flex items-center gap-1">
+          <HuntCodeText report={report} concealed={isConcealed(report, now)} />
+          <DuplicateMark report={report} />
+        </span>
       </TableCell>
       <TableCell className="max-md:hidden">{capitalizeFirstLetter(report.kind)}</TableCell>
-      <TableCell>{formatHuntTime(report.huntTime)}</TableCell>
+      <TableCell>
+        <HuntTimeText report={report} />
+      </TableCell>
       <TableCell className="max-md:hidden">{report.reportedByName}</TableCell>
       <TableCell>
         <HuntStatusBadge report={report} now={now} />

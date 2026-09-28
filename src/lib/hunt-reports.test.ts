@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import type { Hunt } from '@/types/Hunt';
 import type { HuntReport } from '@/types/HuntReport';
 import type { Prediction } from '@/types/Prediction';
-import { codeCandidate, extractHuntCode, isConcealed, voteHuntCode, huntListItems, huntsSummary, huntStatusLabel, nearestArea, normalizeHuntCode, pendingReports, resolveHuntTime } from './hunt-reports';
+import { huntListItems, huntsSummary, huntSourceLabel, huntStatusLabel, huntTimeLabel, isConcealed, isReading, nearestArea, normalizeHuntCode, ocrConfidence, pendingReports, readFailed, resolveHuntTime } from './hunt-reports';
 
 function report(overrides: Partial<HuntReport> = {}): HuntReport {
   return {
@@ -10,6 +10,9 @@ function report(overrides: Partial<HuntReport> = {}): HuntReport {
     area: 'alpha',
     huntCode: 'AB12CD',
     huntTime: '2026-10-17T12:00:00.000Z',
+    huntTimeKnown: true,
+    huntCodeSource: 'ocr',
+    huntTimeSource: 'ocr',
     kind: 'hunt',
     reportedBy: 'u1',
     reportedByName: 'Merida',
@@ -20,6 +23,12 @@ function report(overrides: Partial<HuntReport> = {}): HuntReport {
     status: 'to_submit',
     deadline: '2026-10-17T12:30:00.000Z',
     photoUrl: '/hunt-reports/r1/photo',
+    ocrStatus: 'done',
+    ocrError: null,
+    codeConfidence: 0.95,
+    timeConfidence: 0.92,
+    needsReview: false,
+    duplicateOf: null,
     ...overrides,
   };
 }
@@ -30,41 +39,6 @@ function prediction(area: string, lng: number, lat: number): Prediction {
 
 describe('normalizeHuntCode', () => {
   test('removes whitespace and keeps the case', () => expect(normalizeHuntCode(' GN cr ZRZ ')).toBe('GNcrZRZ'));
-});
-
-describe('extractHuntCode', () => {
-  test('prefers labelled code when present', () => {
-    expect(extractHuntCode('JOTIHUNT 2026\nCode: K7X9QP2\nAlpha')).toBe('K7X9QP2');
-  });
-  test('keeps the case and ignores punctuation around the code', () => {
-    expect(extractHuntCode('code:\n  "k7x9Qp"')).toBe('k7x9Qp');
-  });
-  test('real sticker text: sticker words skipped in any case', () => {
-    expect(extractHuntCode('JoTiHUNT 2025\nGNcrZRZ')).toBe('GNcrZRZ');
-    expect(extractHuntCode('JOTIHUNT 2025\nGy3M8XI')).toBe('Gy3M8XI');
-  });
-  test('empty when there is no token of 4+ characters', () => {
-    expect(extractHuntCode('ab 12 x')).toBe('');
-    expect(extractHuntCode('')).toBe('');
-  });
-  test('labelled all-digit code', () => {
-    expect(extractHuntCode('ALPHA 2026\nCode: 7392\nFox')).toBe('7392');
-  });
-  test('labelled all-letter code', () => {
-    expect(extractHuntCode('JOTIHUNT 2026\nCode: FOXY\nAlpha')).toBe('FOXY');
-  });
-  test('unlabelled all-digit code (skips year and stop words)', () => {
-    expect(extractHuntCode('JOTIHUNT 2026\n483920\nBravo')).toBe('483920');
-  });
-  test('unlabelled all-letter code', () => {
-    expect(extractHuntCode('JOTIHUNT\nQWERTZ\nDelta')).toBe('QWERTZ');
-  });
-  test('skips sticker words that OCR glued to the year', () => {
-    expect(extractHuntCode('JOTIHUNT2026\nK7X9QP2')).toBe('K7X9QP2');
-  });
-  test('empty when only stop words or year present', () => {
-    expect(extractHuntCode('JOTIHUNT 2026 ALPHA')).toBe('');
-  });
 });
 
 describe('resolveHuntTime', () => {
@@ -129,6 +103,11 @@ describe('huntListItems', () => {
     expect(items.map((item) => item.source)).toEqual(['app', 'website']);
     expect(items[1].source === 'website' && items[1].hunt.huntCode).toBe('ZZ99');
   });
+  test('reports without a code (still being read) match no scraped hunt', () => {
+    const hunts = [{ _id: 'h1', area: 'Alpha', huntCode: 'AB12CD', status: 'Goedgekeurd', points: 5, huntTime: new Date(), updatedAt: new Date() }] as Hunt[];
+    const items = huntListItems([report({ huntCode: null, ocrStatus: 'pending' })], hunts);
+    expect(items.map((item) => item.source)).toEqual(['app', 'website']);
+  });
 });
 
 describe('isConcealed', () => {
@@ -140,48 +119,56 @@ describe('isConcealed', () => {
     expect(isConcealed(report({ status: 'submitted' }), deadline - 1)).toBe(false);
     expect(isConcealed(report({ status: 'judged' }), deadline - 1)).toBe(false);
   });
-});
-
-describe('codeCandidate', () => {
-  test('highest-confidence code-shaped word, skipping sticker words, years and punctuation', () => {
-    const words = [
-      { text: 'JoTiHUNT', confidence: 90 },
-      { text: '2025', confidence: 96 },
-      { text: 'GNcrZRZ', confidence: 87 },
-      { text: 'RRR.', confidence: 48 },
-      { text: '"Gy3M8XI"', confidence: 60 },
-    ];
-    expect(codeCandidate(words)).toEqual({ text: 'GNcrZRZ', confidence: 87 });
-  });
-  test('keeps the position of the word', () => {
-    const bbox = { x0: 10, y0: 20, x1: 300, y1: 80 };
-    expect(codeCandidate([{ text: 'GNcrZRZ', confidence: 80, bbox }])).toEqual({ text: 'GNcrZRZ', confidence: 80, bbox });
-  });
-  test('null without a code-shaped word', () => {
-    expect(codeCandidate([{ text: 'HUNT', confidence: 95 }, { text: 'ab', confidence: 99 }])).toBeNull();
+  test('not while the code is unknown (HQ needs the photo to read it)', () => {
+    expect(isConcealed(report({ huntCode: null, ocrStatus: 'failed' }), deadline - 1)).toBe(false);
   });
 });
 
-describe('voteHuntCode', () => {
-  test('confidence-weighted vote per character among readings of the winning length', () => {
-    // Real readings of the GNcrZRZ sticker from different OCR passes
-    const votes = [
-      { text: 'GNCFZRZ', confidence: 41 },
-      { text: 'GNCRZRZ', confidence: 40 },
-      { text: 'GNcrZRZ', confidence: 87 },
-    ];
-    expect(voteHuntCode(votes)).toBe('GNcrZRZ');
+describe('isReading', () => {
+  test('pending and reading, not done or failed', () => {
+    expect(isReading(report({ ocrStatus: 'pending' }))).toBe(true);
+    expect(isReading(report({ ocrStatus: 'reading' }))).toBe(true);
+    expect(isReading(report({ ocrStatus: 'done' }))).toBe(false);
+    expect(isReading(report({ ocrStatus: 'failed' }))).toBe(false);
   });
-  test('a missed first letter loses to the full-length readings', () => {
-    const votes = [
-      { text: 'Gy3M8XI', confidence: 85 },
-      { text: 'y3M8XI', confidence: 86 },
-      { text: 'Gy3M8XI', confidence: 78 },
-    ];
-    expect(voteHuntCode(votes)).toBe('Gy3M8XI');
+});
+
+describe('huntTimeLabel', () => {
+  test('plain time when known, ± before the upload time when not', () => {
+    const time = new Date(2026, 9, 17, 11, 17).toISOString();
+    expect(huntTimeLabel(report({ huntTime: time }))).toBe('11:17');
+    expect(huntTimeLabel(report({ huntTime: time, huntTimeKnown: false }))).toBe('±11:17');
   });
-  test('ignores near-zero confidence and returns empty without votes', () => {
-    expect(voteHuntCode([{ text: 'GNCPZRZ', confidence: 0 }])).toBe('');
-    expect(voteHuntCode([])).toBe('');
+});
+
+describe('ocrConfidence', () => {
+  test('lowest confidence of the OCR-read fields only', () => {
+    expect(ocrConfidence(report())).toBe(0.92);
+    expect(ocrConfidence(report({ huntTimeSource: 'manual' }))).toBe(0.95);
+    expect(ocrConfidence(report({ huntCodeSource: 'manual', huntTimeSource: 'manual' }))).toBeNull();
+    expect(ocrConfidence(report({ codeConfidence: null }))).toBe(0);
+  });
+});
+
+describe('huntSourceLabel', () => {
+  test('reading, read by Gemini, manual, failed', () => {
+    expect(huntSourceLabel(report({ ocrStatus: 'reading', huntCode: null, huntCodeSource: null, huntTimeSource: null }))).toBe('Wordt gelezen…');
+    expect(huntSourceLabel(report())).toBe('Gelezen door Gemini (zekerheid 92%)');
+    expect(huntSourceLabel(report({ huntTimeSource: 'manual' }))).toBe('Gelezen door Gemini (zekerheid 95%) · tijd handmatig');
+    expect(huntSourceLabel(report({ huntCodeSource: 'manual', huntTimeSource: 'manual' }))).toBe('Handmatig ingevuld');
+    expect(huntSourceLabel(report({ ocrStatus: 'failed', ocrError: 'Geen GEMINI_API_KEY ingesteld', huntCode: null, huntCodeSource: null, huntTimeSource: null }))).toBe(
+      'Lezen mislukt: Geen GEMINI_API_KEY ingesteld',
+    );
+    expect(huntSourceLabel(report({ ocrStatus: 'failed', huntCodeSource: 'manual', huntTimeSource: 'manual' }))).toBe('Handmatig ingevuld');
+    expect(huntSourceLabel(report({ huntCode: null, huntCodeSource: null, huntTimeSource: null, huntTimeKnown: false }))).toBe('Niets gelezen van de foto');
+  });
+});
+
+describe('readFailed', () => {
+  test('failed until both fields are entered by hand', () => {
+    expect(readFailed(report({ ocrStatus: 'failed', huntCodeSource: null, huntTimeSource: null }))).toBe(true);
+    expect(readFailed(report({ ocrStatus: 'failed', huntCodeSource: 'manual', huntTimeSource: null }))).toBe(true);
+    expect(readFailed(report({ ocrStatus: 'failed', huntCodeSource: 'manual', huntTimeSource: 'manual' }))).toBe(false);
+    expect(readFailed(report())).toBe(false);
   });
 });

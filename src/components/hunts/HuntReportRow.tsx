@@ -2,11 +2,11 @@ import { toast } from 'sonner';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import { Button } from '@/components/ui/button';
 import { useHuntReports } from '@/hooks/hunt-reports.hook';
-import { formatHuntTime, isConcealed } from '@/lib/hunt-reports';
+import { isConcealed } from '@/lib/hunt-reports';
 import { getColorFromArea } from '@/lib/utils';
 import type { HuntReport } from '@/types/HuntReport';
 import type { User } from '@/types/User';
-import Concealed from './Concealed';
+import HuntCodeText, { DuplicateMark, HuntTimeText } from './HuntCodeText';
 import HuntStatusBadge from './HuntStatusBadge';
 
 /** Compact row for one hunt report: area dot, code, time, status, and (while pending) quick actions. */
@@ -33,6 +33,7 @@ export default function HuntReportRow({ report, now, onSelect }: { report: HuntR
   }
 
   async function copyCode() {
+    if (!report.huntCode) return;
     try {
       await navigator.clipboard.writeText(report.huntCode);
       toast('Code gekopieerd');
@@ -59,10 +60,9 @@ export default function HuntReportRow({ report, now, onSelect }: { report: HuntR
     >
       <div className="flex items-center gap-2">
         <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: getColorFromArea(report.area) }} />
-        <Concealed concealed={isConcealed(report, now)}>
-          <span className="font-mono font-medium">{report.huntCode}</span>
-        </Concealed>
-        <span className="text-muted-foreground">{formatHuntTime(report.huntTime)}</span>
+        <HuntCodeText report={report} concealed={isConcealed(report, now)} />
+        <DuplicateMark report={report} />
+        <HuntTimeText report={report} className="text-muted-foreground" />
         {report.kind === 'tegenhunt' && <span className="text-muted-foreground">Tegenhunt</span>}
         <span className="ml-auto">
           <HuntStatusBadge report={report} now={now} />
@@ -70,9 +70,11 @@ export default function HuntReportRow({ report, now, onSelect }: { report: HuntR
       </div>
       {pending && isAdmin && (
         <div className="mt-1 flex gap-1.5" onClick={(event) => event.stopPropagation()}>
-          <Button type="button" variant="outline" size="xs" onClick={copyCode}>
-            Kopieer code
-          </Button>
+          {report.huntCode && (
+            <Button type="button" variant="outline" size="xs" onClick={copyCode}>
+              Kopieer code
+            </Button>
+          )}
           <Button type="button" variant="outline" size="xs" onClick={() => void markSubmitted()}>
             Ingestuurd
           </Button>

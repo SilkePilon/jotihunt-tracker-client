@@ -10,7 +10,7 @@ const STATUS_CLASSES: Record<HuntReport['status'], string> = {
   judged: 'border-green-200 bg-green-100 text-green-700 dark:border-green-500/30 dark:bg-green-500/15 dark:text-green-400',
 };
 
-export default function HuntStatusBadge({ report, now }: { report: HuntReport; now: number }) {
+function StatusBadge({ report, now }: { report: HuntReport; now: number }) {
   // The server status is from the last poll; flip to overdue locally when the deadline passes in between
   const overdue = report.status === 'to_submit' && new Date(report.deadline).getTime() < now;
   if (overdue || report.status === 'overdue') return <Badge variant="destructive">Te laat!</Badge>;
@@ -18,4 +18,18 @@ export default function HuntStatusBadge({ report, now }: { report: HuntReport; n
   if (report.status === 'to_submit') text += ` · ${formatHintCountdown(new Date(report.deadline).getTime() - now)}`;
   if (report.status === 'judged' && report.site) text += ` · ${report.site.points} pt`;
   return <Badge className={STATUS_CLASSES[report.status]}>{text}</Badge>;
+}
+
+/** Status of a report, plus "Controleren" when HQ should check the code/time read from the photo. */
+export default function HuntStatusBadge({ report, now }: { report: HuntReport; now: number }) {
+  return (
+    <span className="inline-flex flex-wrap items-center justify-end gap-1">
+      {report.needsReview && (
+        <Badge variant="outline" className="border-amber-400 text-amber-700 dark:border-amber-500/60 dark:text-amber-400" title="Code of tijd controleren">
+          Controleren
+        </Badge>
+      )}
+      <StatusBadge report={report} now={now} />
+    </span>
+  );
 }
