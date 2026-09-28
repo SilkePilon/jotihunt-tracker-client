@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import type { Area } from '@/types/Area';
 import type { Hunt } from '@/types/Hunt';
+import type { HuntReport } from '@/types/HuntReport';
 import { cooldownSummary, huntCooldownMs, HUNT_COOLDOWN_MS, lastHuntTimeFor, statusPillClass, statusSummary } from './fox-status';
 
 function hunt(area: string, status: string, huntTime: string): Hunt {
@@ -17,6 +18,18 @@ describe('lastHuntTimeFor', () => {
     expect(lastHuntTimeFor(hunts, 'Alpha')).toBe('2026-10-17T11:00:00Z');
     expect(lastHuntTimeFor(hunts, 'Bravo')).toBeUndefined();
     expect(lastHuntTimeFor(undefined, 'Alpha')).toBeUndefined();
+  });
+});
+
+describe('lastHuntTimeFor with reports', () => {
+  test('a registered hunt starts the cooldown before the scraper sees it', () => {
+    const reports = [{ area: 'alpha', kind: 'hunt', huntTime: '2026-10-17T13:00:00Z' }] as HuntReport[];
+    const hunts = [hunt('Alpha', 'Goedgekeurd', '2026-10-17T11:00:00Z')];
+    expect(new Date(lastHuntTimeFor(hunts, 'Alpha', reports)!).toISOString()).toBe('2026-10-17T13:00:00.000Z');
+  });
+  test('registered tegenhunts do not count', () => {
+    const reports = [{ area: 'alpha', kind: 'tegenhunt', huntTime: '2026-10-17T13:00:00Z' }] as HuntReport[];
+    expect(lastHuntTimeFor(undefined, 'Alpha', reports)).toBeUndefined();
   });
 });
 
