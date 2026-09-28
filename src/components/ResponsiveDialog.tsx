@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { Drawer } from 'vaul';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useIsMobile } from '@/hooks/media.hook';
+import { cn } from '@/lib/utils';
 
 interface ResponsiveDialogProps {
   open: boolean;
@@ -9,10 +10,12 @@ interface ResponsiveDialogProps {
   title: string;
   description: string;
   children: ReactNode;
+  /** Extra classes for the desktop dialog, e.g. a narrower width */
+  className?: string;
 }
 
 /** Frame shared by the large dialogs: a large dialog on desktop, a bottom drawer on phones. */
-export default function ResponsiveDialog({ open, onClose, title, description, children }: ResponsiveDialogProps) {
+export default function ResponsiveDialog({ open, onClose, title, description, children, className }: ResponsiveDialogProps) {
   const isMobile = useIsMobile();
 
   if (isMobile) {
@@ -35,7 +38,7 @@ export default function ResponsiveDialog({ open, onClose, title, description, ch
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
-      <DialogContent className="flex h-[80dvh] max-h-[80dvh] flex-col gap-4 sm:max-w-4xl">
+      <DialogContent className={cn('flex h-[80dvh] max-h-[80dvh] flex-col gap-4 sm:max-w-4xl', className)}>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>

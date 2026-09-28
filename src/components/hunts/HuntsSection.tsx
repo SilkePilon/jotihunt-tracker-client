@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { CameraIcon } from 'lucide-react';
+import { CameraIcon, TrophyIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useHuntReports } from '@/hooks/hunt-reports.hook';
 import { useIsMobile } from '@/hooks/media.hook';
 import useInterval from '@/hooks/utils/interval.hook';
 import { huntsSummary, pendingReports } from '@/lib/hunt-reports';
+import LeaderboardDialog from '@/components/leaderboard/LeaderboardDialog';
 import SidebarSection from '@/components/sidebar/SidebarSection';
 import AllHuntsDialog from './AllHuntsDialog';
 import HuntPhotoInput from './HuntPhotoInput';
@@ -19,6 +20,7 @@ export default function HuntsSection() {
   useInterval(() => setNow(Date.now()), 1000);
   const [allOpen, setAllOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
+  const [leaderboardOpen, setLeaderboardOpen] = useState(false);
 
   function openAll(reportId?: string) {
     setSelectedId(reportId);
@@ -54,9 +56,14 @@ export default function HuntsSection() {
           <Button variant="ghost" size="sm" className="w-full" onClick={() => openAll()}>
             Alle hunts bekijken
           </Button>
+          <Button variant="outline" size="sm" className="w-full" onClick={() => setLeaderboardOpen(true)}>
+            <TrophyIcon data-icon="inline-start" />
+            Leaderboard
+          </Button>
         </div>
       </SidebarSection>
       <AllHuntsDialog open={allOpen} onOpenChange={setAllOpen} initialReportId={selectedId} />
+      <LeaderboardDialog open={leaderboardOpen} onOpenChange={setLeaderboardOpen} />
     </>
   );
 }
