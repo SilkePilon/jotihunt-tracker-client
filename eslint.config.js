@@ -16,7 +16,7 @@ export default defineConfig([
     },
     rules: {
       // shadcn/ui co-locates variant helpers and hooks with their components
-      'react-refresh/only-export-components': ['error', { allowConstantExport: true, allowExportNames: ['badgeVariants', 'buttonVariants', 'useFormField'] }],
+      'react-refresh/only-export-components': ['error', { allowConstantExport: true, allowExportNames: ['badgeVariants', 'buttonVariants', 'toggleVariants', 'useFormField'] }],
     },
   },
 ]);
