@@ -5,7 +5,7 @@ import { useIsMobile } from '@/hooks/media.hook';
 import useAdminStore from '@/stores/admin.store';
 import useSidebarStore from '@/stores/sidebar.store';
 import type { User } from '@/types/User';
-import AdminShell from './AdminShell';
+import ResponsiveDialog from '@/components/ResponsiveDialog';
 import HuntersPanel from './HuntersPanel';
 
 /** Settings → Admin tools → Hunters: live overview of every tracker. */
@@ -24,8 +24,8 @@ export default function HuntersDialog({ mapRef }: { mapRef: RefObject<MapRef | n
   }
 
   return (
-    <AdminShell open={open} onClose={close} title="Hunters" description="Live locaties, statistieken en voertuig van alle trackers.">
+    <ResponsiveDialog open={open} onClose={close} title="Hunters" description="Live locaties, statistieken en voertuig van alle trackers.">
       <HuntersPanel onShowOnMap={showOnMap} />
-    </AdminShell>
+    </ResponsiveDialog>
   );
 }

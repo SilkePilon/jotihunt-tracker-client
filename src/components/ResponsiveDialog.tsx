@@ -3,7 +3,7 @@ import { Drawer } from 'vaul';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useIsMobile } from '@/hooks/media.hook';
 
-interface AdminShellProps {
+interface ResponsiveDialogProps {
   open: boolean;
   onClose: () => void;
   title: string;
@@ -11,8 +11,8 @@ interface AdminShellProps {
   children: ReactNode;
 }
 
-/** Frame shared by the admin dialogs: a large dialog on desktop, a bottom drawer on phones. */
-export default function AdminShell({ open, onClose, title, description, children }: AdminShellProps) {
+/** Frame shared by the large dialogs: a large dialog on desktop, a bottom drawer on phones. */
+export default function ResponsiveDialog({ open, onClose, title, description, children }: ResponsiveDialogProps) {
   const isMobile = useIsMobile();
 
   if (isMobile) {
