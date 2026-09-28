@@ -30,7 +30,7 @@ export const useHuntReports = () => {
       form.append('lng', String(input.position.lng));
       form.append('lat', String(input.position.lat));
     }
-    const response = await axios.post<HuntReport>(`${import.meta.env.API_BASE_URL}/hunt-reports`, form, { headers: { Authorization: authHeader } });
+    const response = await axios.post<HuntReport>(`${import.meta.env.API_BASE_URL}/hunt-reports`, form, { headers: { Authorization: authHeader }, timeout: 60_000 });
     await mutate((current) => [response.data, ...(current ?? [])], { revalidate: true });
     return response.data;
   }

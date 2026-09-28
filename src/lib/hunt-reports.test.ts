@@ -74,6 +74,12 @@ describe('resolveHuntTime', () => {
   test('yesterday when more than 5 minutes in the future (hunt runs through the night)', () => {
     expect(resolveHuntTime(23, 55, new Date(2026, 9, 18, 0, 10))).toEqual(new Date(2026, 9, 17, 23, 55));
   });
+  test('tomorrow when the written time is a few minutes ahead of the phone clock just before midnight', () => {
+    expect(resolveHuntTime(0, 2, new Date(2026, 9, 17, 23, 59))).toEqual(new Date(2026, 9, 18, 0, 2));
+  });
+  test('keeps today just inside the past tolerance', () => {
+    expect(resolveHuntTime(0, 10, new Date(2026, 9, 17, 23, 59))).toEqual(new Date(2026, 9, 17, 0, 10));
+  });
 });
 
 describe('nearestArea', () => {

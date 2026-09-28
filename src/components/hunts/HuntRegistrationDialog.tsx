@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { isAxiosError } from 'axios';
 import { Loader2Icon } from 'lucide-react';
+import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -19,12 +20,22 @@ import { readHuntCode } from '@/lib/ocr';
 import { areaOptions, getColorFromArea } from '@/lib/utils';
 import useHuntCaptureStore from '@/stores/hunt-capture.store';
 import type { HuntKind } from '@/types/HuntReport';
+import type { User } from '@/types/User';
 
 type OcrState = 'idle' | 'reading' | 'found' | 'not_found';
 type Errors = { code?: string; area?: string; time?: string; save?: string };
+type Position = { lng: number; lat: number };
 
 const CLOCK_TICK_MS = 15_000;
+/** The phone's position at registration is only meaningful as "the fox's position" up to this long after the hunt. */
+const POSITION_MAX_AGE_MS = 15 * 60 * 1000;
+/** How long save() waits for a still-pending geolocation request before uploading without it. */
+const POSITION_WAIT_MS = 3_000;
 const pad = (value: number) => String(value).padStart(2, '0');
+
+function wait(ms: number): Promise<'timeout'> {
+  return new Promise((resolve) => setTimeout(() => resolve('timeout'), ms));
+}
 
 /** HH:MM as numbers, or null when not a valid 24 h time. */
 function parseTime(hours: string, minutes: string): { h: number; m: number } | null {
@@ -114,6 +125,7 @@ export default function HuntRegistrationDialog() {
   const { hunts } = useHunts();
   const { predictions } = usePredictions();
   const { reports, createReport } = useHuntReports();
+  const currentUserName = useAuthUser<User>()?.name;
 
   const [prepared, setPrepared] = useState<{ source: File; blob: Blob; url: string } | null>(null);
   const [ocr, setOcr] = useState<OcrState>('idle');
@@ -122,7 +134,9 @@ export default function HuntRegistrationDialog() {
   const [hours, setHours] = useState('');
   const [minutes, setMinutes] = useState('');
   const [kind, setKind] = useState<HuntKind>('hunt');
-  const [position, setPosition] = useState<{ lng: number; lat: number } | null>(null);
+  const [position, setPosition] = useState<Position | null>(null);
+  /** Resolves with the geolocation result (or null on error/no support); set inside the capture effect, only read in save(). */
+  const positionPromiseRef = useRef<Promise<Position | null> | null>(null);
   const [errors, setErrors] = useState<Errors>({});
   const [saving, setSaving] = useState(false);
   /** A save failed for another reason than a duplicate code: the button offers a retry */
@@ -162,11 +176,21 @@ export default function HuntRegistrationDialog() {
         setCode((current) => current || found);
         setOcr(found ? 'found' : 'not_found');
       });
-    navigator.geolocation?.getCurrentPosition(
-      (result) => !cancelled && setPosition({ lng: result.coords.longitude, lat: result.coords.latitude }),
-      () => undefined,
-      { enableHighAccuracy: true, timeout: 10_000, maximumAge: 60_000 },
-    );
+    positionPromiseRef.current = new Promise<Position | null>((resolve) => {
+      if (!navigator.geolocation) {
+        resolve(null);
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (result) => {
+          const next = { lng: result.coords.longitude, lat: result.coords.latitude };
+          if (!cancelled) setPosition(next);
+          resolve(next);
+        },
+        () => resolve(null),
+        { enableHighAccuracy: true, timeout: 10_000, maximumAge: 60_000 },
+      );
+    });
     return () => {
       cancelled = true;
       if (url) URL.revokeObjectURL(url);
@@ -195,23 +219,44 @@ export default function HuntRegistrationDialog() {
     // this save's result (close/error) must not act on the newer dialog state.
     const savingPhoto = photo;
     const savingBlob = prepared.blob;
+    const previouslyFailed = failed;
     setSaving(true);
     try {
+      const huntTime = resolveHuntTime(time.h, time.m, new Date());
+      // The phone's position at save time is only the fox's position when the hunt just happened.
+      const recentEnough = Date.now() - huntTime.getTime() <= POSITION_MAX_AGE_MS;
+      let resolvedPosition = position;
+      if (recentEnough && positionPromiseRef.current) {
+        const winner = await Promise.race([positionPromiseRef.current, wait(POSITION_WAIT_MS)]);
+        if (winner !== 'timeout') resolvedPosition = winner;
+      }
       const report = await createReport({
         photo: savingBlob,
         huntCode,
-        huntTime: resolveHuntTime(time.h, time.m, new Date()),
+        huntTime,
         area: chosenArea,
         kind,
-        position,
+        position: recentEnough ? resolvedPosition : null,
       });
       if (useHuntCaptureStore.getState().photo !== savingPhoto) return;
       toast.success('Hunt geregistreerd', { description: `HQ heeft tot ${formatHuntTime(report.deadline)} om hem in te sturen.` });
       close();
     } catch (error) {
       if (useHuntCaptureStore.getState().photo !== savingPhoto) return;
-      if (isAxiosError<{ reason?: string; reportedByName?: string }>(error) && error.response?.status === 409) {
-        setErrors({ code: `Deze code is al geregistreerd door ${error.response.data?.reportedByName ?? 'iemand anders'}` });
+      const status = isAxiosError(error) ? error.response?.status : undefined;
+      if (status === 409) {
+        const body = isAxiosError<{ reason?: string; reportedByName?: string }>(error) ? error.response?.data : undefined;
+        if (previouslyFailed && !!body?.reportedByName && body.reportedByName === currentUserName) {
+          // The earlier attempt's response was lost (network hiccup), but the report was saved.
+          toast.success('Hunt geregistreerd', { description: 'Hij was al opgeslagen.' });
+          close();
+          return;
+        }
+        setErrors({ code: `Deze code is al geregistreerd door ${body?.reportedByName ?? 'iemand anders'}` });
+        setFailed(false);
+      } else if (status !== undefined && status >= 400 && status < 500) {
+        const body = isAxiosError<{ message?: string; errors?: { msg: string }[] }>(error) ? error.response?.data : undefined;
+        setErrors({ save: body?.message ?? body?.errors?.[0]?.msg ?? 'Opslaan is mislukt.' });
         setFailed(false);
       } else {
         setErrors({ save: 'Opslaan is mislukt. Controleer je verbinding.' });

@@ -15,7 +15,12 @@ export default function HuntReportRow({ report, now, onSelect }: { report: HuntR
     try {
       await setSubmitted(report._id, true);
       toast.success('Gemarkeerd als ingestuurd', {
-        action: { label: 'Ongedaan maken', onClick: () => void setSubmitted(report._id, false) },
+        action: {
+          label: 'Ongedaan maken',
+          onClick: () => {
+            setSubmitted(report._id, false).catch(() => toast.error('Terugzetten is mislukt'));
+          },
+        },
       });
     } catch {
       toast.error('Opslaan is mislukt');

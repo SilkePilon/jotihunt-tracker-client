@@ -7,7 +7,7 @@ import { useAuthImage } from '@/hooks/auth-image.hook';
 import { useHuntReports } from '@/hooks/hunt-reports.hook';
 import { useHunts } from '@/hooks/hunts.hook';
 import useInterval from '@/hooks/utils/interval.hook';
-import { formatHuntTime, huntListItems } from '@/lib/hunt-reports';
+import { formatHuntTime, formatHuntTimeSafe, huntListItems } from '@/lib/hunt-reports';
 import { areaOptions, capitalizeFirstLetter, getColorFromArea } from '@/lib/utils';
 import type { HuntListItem, HuntReport } from '@/types/HuntReport';
 import HuntDetail from './HuntDetail';
@@ -75,7 +75,7 @@ function HuntRow({ item, now, onSelect }: { item: HuntListItem; now: number; onS
         </TableCell>
         <TableCell className="font-mono">{hunt.huntCode}</TableCell>
         <TableCell className="text-muted-foreground max-md:hidden">–</TableCell>
-        <TableCell>{formatHuntTime(new Date(hunt.huntTime).toISOString())}</TableCell>
+        <TableCell>{formatHuntTimeSafe(hunt.huntTime)}</TableCell>
         <TableCell className="text-muted-foreground max-md:hidden">jotihunt.nl</TableCell>
         <TableCell>
           <Badge variant="outline">{hunt.status}</Badge>

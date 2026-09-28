@@ -32,14 +32,20 @@ export function extractHuntCode(ocrText: string): string {
 }
 
 const FUTURE_TOLERANCE_MS = 5 * 60 * 1000;
+const DAY_MS = 24 * 60 * 60 * 1000;
+const PAST_TOLERANCE_MS = DAY_MS - FUTURE_TOLERANCE_MS;
 
 /**
  * The most recent occurrence of HH:MM (local time). More than 5 minutes in the future means yesterday:
- * the hunt runs through the night, so 23:55 registered at 00:10 is last night.
+ * the hunt runs through the night, so 23:55 registered at 00:10 is last night. Symmetrically, when the
+ * naive same-day time lands more than 24 h − 5 min in the past, the written time is a few minutes ahead
+ * of the phone clock just before midnight (e.g. 00:02 written at 23:59), so it means tomorrow.
  */
 export function resolveHuntTime(hours: number, minutes: number, now: Date): Date {
   const time = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes);
-  if (time.getTime() - now.getTime() > FUTURE_TOLERANCE_MS) time.setDate(time.getDate() - 1);
+  const diff = time.getTime() - now.getTime();
+  if (diff > FUTURE_TOLERANCE_MS) time.setDate(time.getDate() - 1);
+  else if (-diff > PAST_TOLERANCE_MS) time.setDate(time.getDate() + 1);
   return time;
 }
 
@@ -94,4 +100,11 @@ export function huntListItems(reports: HuntReport[] | undefined, hunts: Hunt[] |
 /** "14:05" in Dutch 24 h time. */
 export function formatHuntTime(iso: string): string {
   return new Date(iso).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+}
+
+/** Same as {@link formatHuntTime}, but "–" for a missing or invalid time (scraped jotihunt.nl hunts can lack one). */
+export function formatHuntTimeSafe(time: Date | string | null | undefined): string {
+  if (!time) return '–';
+  const date = new Date(time);
+  return Number.isNaN(date.getTime()) ? '–' : formatHuntTime(date.toISOString());
 }

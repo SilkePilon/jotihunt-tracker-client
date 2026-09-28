@@ -50,7 +50,7 @@ export default function HuntDetail({ report, onBack }: { report: HuntReport; onB
   const photo = useAuthImage(report.photoUrl);
   const [busy, setBusy] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const canDelete = !report.submittedAt && !!user && (user.admin || report.reportedBy === user._id);
+  const canDelete = !report.submittedAt && !report.site && !!user && (user.admin || report.reportedBy === user._id);
 
   async function changeSubmitted(submitted: boolean) {
     setBusy(true);

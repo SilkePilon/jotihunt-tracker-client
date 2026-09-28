@@ -26,6 +26,9 @@ export async function readHuntCode(image: Blob): Promise<string> {
     const { data } = await worker.recognize(image);
     return extractHuntCode(data.text);
   } catch {
+    const worker = workerPromise;
+    workerPromise = null;
+    worker?.then((instance) => instance.terminate()).catch(() => undefined);
     return '';
   }
 }
