@@ -1,8 +1,5 @@
 import type { Leaderboard, LeaderboardEntry } from '@/types/Leaderboard';
 
-const POINTS_PER_HUNT = 2;
-const POINTS_PER_HINT = 3;
-
 /** Kilometres in Dutch notation, at most one decimal ("14,9"). */
 export function formatKm(km: number): string {
   return km.toLocaleString('nl-NL', { maximumFractionDigits: 1 });
@@ -24,9 +21,15 @@ export function podiumOrder(entries: LeaderboardEntry[]): (LeaderboardEntry | un
 /** How the score is made up, e.g. "Hunts 2 × 2 = 4 · jotihunt.nl 10 · Hints 1 × 3 = 3 · 14,9 km = 2". */
 export function breakdownText(entry: LeaderboardEntry): string {
   const parts: string[] = [];
-  if (entry.hunts > 0) parts.push(`Hunts ${entry.hunts} × ${POINTS_PER_HUNT} = ${entry.breakdown.hunts}`);
+  if (entry.hunts > 0) {
+    const huntsMultiplier = entry.breakdown.hunts / entry.hunts;
+    parts.push(`Hunts ${entry.hunts} × ${huntsMultiplier} = ${entry.breakdown.hunts}`);
+  }
   if (entry.breakdown.huntPoints > 0) parts.push(`jotihunt.nl ${entry.breakdown.huntPoints}`);
-  if (entry.hints > 0) parts.push(`Hints ${entry.hints} × ${POINTS_PER_HINT} = ${entry.breakdown.hints}`);
+  if (entry.hints > 0) {
+    const hintsMultiplier = entry.breakdown.hints / entry.hints;
+    parts.push(`Hints ${entry.hints} × ${hintsMultiplier} = ${entry.breakdown.hints}`);
+  }
   if (entry.distanceKm > 0) parts.push(`${formatKm(entry.distanceKm)} km = ${entry.breakdown.distance}`);
   return parts.length ? parts.join(' · ') : 'Nog geen punten';
 }

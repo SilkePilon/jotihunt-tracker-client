@@ -27,7 +27,7 @@ export default function Podium({ entries, currentUserId, selectedId, onSelect }:
             <button
               key={entry.userId}
               type="button"
-              aria-label={`${entry.name}, plek ${entry.rank}, ${entry.score} punten`}
+              aria-label={`${entry.name}${entry.userId === currentUserId ? ' (jij)' : ''}, plek ${entry.rank}, ${entry.score} punten`}
               aria-pressed={entry.userId === selectedId}
               onClick={() => onSelect(entry.userId)}
               className="flex min-w-0 flex-col items-center gap-1 rounded-lg outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
@@ -41,9 +41,11 @@ export default function Podium({ entries, currentUserId, selectedId, onSelect }:
               >
                 {initials(entry.name)}
               </span>
-              <span className="w-full truncate text-center text-sm font-medium">
-                {entry.name}
-                {entry.userId === currentUserId && <span className="text-muted-foreground"> (jij)</span>}
+              <span className="flex w-full items-center justify-center gap-0">
+                <span className="min-w-0 truncate text-center text-sm font-medium">
+                  {entry.name}
+                </span>
+                {entry.userId === currentUserId && <span className="shrink-0 text-sm font-medium text-muted-foreground"> (jij)</span>}
               </span>
               <span className={cn('text-sm font-semibold tabular-nums', first && 'text-primary')}>{entry.score}</span>
               <span className={cn('flex w-full items-start justify-center rounded-t-lg pt-2 text-lg font-bold', BLOCKS[position])}>{entry.rank}</span>
@@ -51,7 +53,7 @@ export default function Podium({ entries, currentUserId, selectedId, onSelect }:
           );
         })}
       </div>
-      {selected && <p className="text-center text-xs text-muted-foreground">{breakdownText(selected)}</p>}
+      {selected && <p className="text-center text-xs text-muted-foreground" aria-live="polite">{breakdownText(selected)}</p>}
     </div>
   );
 }
