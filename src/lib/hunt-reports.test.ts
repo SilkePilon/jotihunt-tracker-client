@@ -55,6 +55,9 @@ describe('extractHuntCode', () => {
   test('unlabelled all-letter code', () => {
     expect(extractHuntCode('JOTIHUNT\nQWERTZ\nDelta')).toBe('QWERTZ');
   });
+  test('skips sticker words that OCR glued to the year', () => {
+    expect(extractHuntCode('JOTIHUNT2026\nK7X9QP2')).toBe('K7X9QP2');
+  });
   test('empty when only stop words or year present', () => {
     expect(extractHuntCode('JOTIHUNT 2026 ALPHA')).toBe('');
   });

@@ -8,34 +8,27 @@ export function normalizeHuntCode(code: string): string {
   return code.replace(/\s+/g, '').toUpperCase();
 }
 
-/** Extract hunt code from OCR text: labelled code if present, else longest token with letter+digit,
- * else longest non-stop-word token. Returns '' if none found. */
+/**
+ * Sticker words that are never the code, also when OCR glues a year to them ("JOTIHUNT2026"), and bare years.
+ */
+const STOP_WORD = /^(?:JOTIHUNT|HUNTCODE|CODE|HUNT|TEGENHUNT|SCOUTING|ALPHA|BRAVO|CHARLIE|DELTA|ECHO|FOXTROT|GOLF|HOTEL|OSCAR)\d*$|^20\d\d$/;
+
+function longest(tokens: string[]): string {
+  return tokens.reduce((best, token) => (token.length > best.length ? token : best), '');
+}
+
+/**
+ * The hunt code in OCR text: a token labelled "code", else the longest token mixing letters and digits, else the
+ * longest other token; sticker words and years are skipped. Returns '' when nothing fits.
+ */
 export function extractHuntCode(ocrText: string): string {
   const text = ocrText.toUpperCase();
-  const stopWords = new Set(['JOTIHUNT', 'HUNTCODE', 'CODE', 'HUNT', 'TEGENHUNT', 'SCOUTING', 'ALPHA', 'BRAVO', 'CHARLIE', 'DELTA', 'ECHO', 'FOXTROT', 'GOLF', 'HOTEL', 'OSCAR']);
-  const isStopWord = (token: string): boolean => stopWords.has(token) || /^20\d\d$/.test(token);
-  const tokens = text.match(/[A-Z0-9]{4,}/g) ?? [];
+  const tokens = (text.match(/[A-Z0-9]{4,}/g) ?? []).filter((token) => !STOP_WORD.test(token));
 
-  // 1. Labelled code: "CODE" optionally followed by ":" or whitespace, then a token
-  const labelledMatch = text.match(/CODE\s*:?\s*([A-Z0-9]{4,})/);
-  if (labelledMatch && !isStopWord(labelledMatch[1])) {
-    return labelledMatch[1];
-  }
+  const labelled = text.match(/CODE\s*:?\s*([A-Z0-9]{4,})/)?.[1];
+  if (labelled && !STOP_WORD.test(labelled)) return labelled;
 
-  // 2. Longest token with both letter and digit
-  const withMixed = tokens.filter((token) => /[A-Z]/.test(token) && /[0-9]/.test(token));
-  if (withMixed.length > 0) {
-    return withMixed.reduce((longest, token) => (token.length > longest.length ? token : longest), '');
-  }
-
-  // 3. Longest token that is not a stop word
-  const nonStopWords = tokens.filter((token) => !isStopWord(token));
-  if (nonStopWords.length > 0) {
-    return nonStopWords.reduce((longest, token) => (token.length > longest.length ? token : longest), '');
-  }
-
-  // 4. Otherwise empty string
-  return '';
+  return longest(tokens.filter((token) => /[A-Z]/.test(token) && /[0-9]/.test(token))) || longest(tokens);
 }
 
 const FUTURE_TOLERANCE_MS = 5 * 60 * 1000;

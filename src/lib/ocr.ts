@@ -10,7 +10,7 @@ let workerPromise: Promise<Worker> | null = null;
 function getWorker(): Promise<Worker> {
   workerPromise ??= import('tesseract.js').then(async ({ createWorker }) => {
     const worker = await createWorker('eng');
-    await worker.setParameters({ tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789' });
+    await worker.setParameters({ tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ' });
     return worker;
   });
   workerPromise.catch(() => {
