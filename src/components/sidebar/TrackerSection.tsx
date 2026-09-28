@@ -49,7 +49,7 @@ export default function TrackerSection() {
 
   const summaryText = trackerSummary(status);
   const summary = connected ? (
-    <Badge className="border-transparent bg-green-500 text-white">
+    <Badge className="border-green-200 bg-green-100 text-green-700 dark:border-green-500/30 dark:bg-green-500/15 dark:text-green-400">
       <CircleCheckIcon data-icon="inline-start" />
       {summaryText}
     </Badge>
