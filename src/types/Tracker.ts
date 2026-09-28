@@ -1,6 +1,6 @@
 export type Vehicle = 'walking' | 'bike' | 'car' | 'motorcycle';
 
-export type TrackerNotConfiguredReason = 'client_url_missing' | 'client_url_invalid' | 'api_missing' | 'unreachable';
+export type TrackerNotConfiguredReason = 'client_url_missing' | 'client_url_invalid' | 'api_missing' | 'unreachable' | 'group_invalid';
 
 export interface TrackerStats {
   /** ISO time of the last data Traccar received */

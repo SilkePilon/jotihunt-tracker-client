@@ -30,7 +30,7 @@ export function trackerRefreshInterval(status: TrackerMe | undefined): number {
 /** Collapsed-section summary. */
 export function trackerSummary(status: TrackerMe | undefined): string | undefined {
   if (!status) return undefined;
-  if (!status.configured) return 'Niet ingesteld';
+  if (!status.configured) return status.reason === 'unreachable' ? 'Niet bereikbaar' : 'Niet ingesteld';
   return status.connected ? 'Verbonden ✓' : 'Niet verbonden';
 }
 
@@ -38,6 +38,11 @@ export function trackerSummary(status: TrackerMe | undefined): string | undefine
 export function notConfiguredText(reason: TrackerNotConfiguredReason, admin: boolean): { title: string; hint?: string } {
   if (reason === 'unreachable') {
     return { title: 'De trackerserver is nu niet bereikbaar.', hint: admin ? 'Controleer of Traccar draait en of de Traccar-token nog geldig is.' : undefined };
+  }
+  if (reason === 'group_invalid') {
+    return {
+      title: admin ? 'Traccar-groep bestaat niet — controleer GROUP_*_ID in .env' : 'Live tracking is tijdelijk niet beschikbaar',
+    };
   }
   const hint =
     reason === 'client_url_invalid'

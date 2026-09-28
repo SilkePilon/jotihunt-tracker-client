@@ -24,6 +24,7 @@ const configured = (connected: boolean): TrackerMe => ({
   stats: {},
 });
 const notConfigured: TrackerMe = { configured: false, reason: 'client_url_missing', connected: false };
+const unreachable: TrackerMe = { configured: false, reason: 'unreachable', connected: false };
 
 describe('trackerRefreshInterval', () => {
   test('10 s until connected, 30 s when connected, 60 s when not configured', () => {
@@ -38,6 +39,7 @@ describe('trackerSummary', () => {
   test('per state', () => {
     expect(trackerSummary(undefined)).toBeUndefined();
     expect(trackerSummary(notConfigured)).toBe('Niet ingesteld');
+    expect(trackerSummary(unreachable)).toBe('Niet bereikbaar');
     expect(trackerSummary(configured(false))).toBe('Niet verbonden');
     expect(trackerSummary(configured(true))).toBe('Verbonden ✓');
   });
@@ -52,6 +54,15 @@ describe('notConfiguredText', () => {
     expect(notConfiguredText('api_missing', false)).toEqual({ title: 'Live tracking is nog niet ingesteld.', hint: undefined });
     expect(notConfiguredText('client_url_invalid', true).hint).toBe('TRACCAR_CLIENT_URL in .env is geen geldige http(s)-URL.');
     expect(notConfiguredText('unreachable', false).title).toBe('De trackerserver is nu niet bereikbaar.');
+  });
+
+  test('group_invalid: admins get the .env hint in the title, others a generic message', () => {
+    expect(notConfiguredText('group_invalid', true)).toEqual({
+      title: 'Traccar-groep bestaat niet — controleer GROUP_*_ID in .env',
+    });
+    expect(notConfiguredText('group_invalid', false)).toEqual({
+      title: 'Live tracking is tijdelijk niet beschikbaar',
+    });
   });
 });
 
