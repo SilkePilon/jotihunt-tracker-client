@@ -1,7 +1,7 @@
 import {Outlet, useNavigate} from 'react-router';
 import {toast} from "sonner"
 import {isAxiosError} from 'axios';
-import {useRef, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {SWRConfig} from 'swr';
 import Map, {MapRef} from './components/Map';
 import PWAPrompt from 'react-ios-pwa-prompt';
@@ -22,14 +22,16 @@ export default function Layout() {
 
     /**
      * If reset password is required, open the dialog.
-     * (State is adjusted during render when the flag changes, instead of in an effect.)
+     * It opens after the first commit on purpose: on phones the sidebar is a vaul bottom sheet, which is a
+     * modal Radix layer and blocks pointer events and focus for every dialog that registered before it.
+     * Opening one tick later puts the password dialog on top of the sheet.
      */
     const requiresPasswordChange = !!auth?.requiresPasswordChange;
-    const [prevRequiresPasswordChange, setPrevRequiresPasswordChange] = useState(false);
-    if (requiresPasswordChange !== prevRequiresPasswordChange) {
-        setPrevRequiresPasswordChange(requiresPasswordChange);
-        if (requiresPasswordChange) setResetPasswordOpen(true);
-    }
+    useEffect(() => {
+        if (!requiresPasswordChange) return;
+        const timeout = setTimeout(() => setResetPasswordOpen(true), 0);
+        return () => clearTimeout(timeout);
+    }, [requiresPasswordChange]);
 
     function onSWRError(error: unknown) {
         if (isAxiosError(error) && error.response?.status === 401) {
