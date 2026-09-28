@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import type { Hunt } from '@/types/Hunt';
 import type { HuntReport } from '@/types/HuntReport';
 import type { Prediction } from '@/types/Prediction';
-import { ambiguousCharacters, codeCandidate, extractHuntCode, isConcealed, voteHuntCode, huntListItems, huntsSummary, huntStatusLabel, nearestArea, normalizeHuntCode, pendingReports, resolveHuntTime } from './hunt-reports';
+import { codeCandidate, extractHuntCode, isConcealed, voteHuntCode, huntListItems, huntsSummary, huntStatusLabel, nearestArea, normalizeHuntCode, pendingReports, resolveHuntTime } from './hunt-reports';
 
 function report(overrides: Partial<HuntReport> = {}): HuntReport {
   return {
@@ -183,13 +183,5 @@ describe('voteHuntCode', () => {
   test('ignores near-zero confidence and returns empty without votes', () => {
     expect(voteHuntCode([{ text: 'GNCPZRZ', confidence: 0 }])).toBe('');
     expect(voteHuntCode([])).toBe('');
-  });
-});
-
-describe('ambiguousCharacters', () => {
-  test('lists look-alike groups present in the code', () => {
-    expect(ambiguousCharacters('Gy3M8X1')).toEqual(['1 / I / l', '8 / B', 'X / x']);
-    expect(ambiguousCharacters('GNcrZRZ')).toEqual(['2 / Z / z', 'C / c']);
-    expect(ambiguousCharacters('ARTMN')).toEqual([]);
   });
 });

@@ -73,14 +73,6 @@ export function voteHuntCode(candidates: OcrWord[]): string {
   return code;
 }
 
-/** Characters that OCR (and people) easily mix up; the code is case-sensitive, so c/C matters too. */
-const LOOK_ALIKES = ['1Il', '0Oo', '5Ss', '2Zz', '8B', 'Cc', 'Vv', 'Ww', 'Xx'];
-
-/** Look-alike groups present in a code, e.g. ["1 / I / l", "C / c"], for a "check these" hint. */
-export function ambiguousCharacters(code: string): string[] {
-  return LOOK_ALIKES.filter((group) => [...code].some((char) => group.includes(char))).map((group) => [...group].join(' / '));
-}
-
 const FUTURE_TOLERANCE_MS = 5 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const PAST_TOLERANCE_MS = DAY_MS - FUTURE_TOLERANCE_MS;

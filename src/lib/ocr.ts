@@ -33,13 +33,13 @@ export interface HuntCodeReading {
 /** Rounded box around the recognised code on the sticker preview, so the user sees what was read. */
 function drawCodeBox(canvas: HTMLCanvasElement, box: NonNullable<OcrWord['bbox']>) {
   const context = canvas.getContext('2d')!;
-  const padding = Math.round(canvas.width * 0.015);
+  const padding = Math.round(canvas.width * 0.022);
   const x = Math.max(0, box.x0 - padding);
   const y = Math.max(0, box.y0 - padding);
   const width = Math.min(canvas.width, box.x1 + padding) - x;
   const height = Math.min(canvas.height, box.y1 + padding) - y;
   context.strokeStyle = '#f97316';
-  context.lineWidth = Math.max(3, Math.round(canvas.width / 240));
+  context.lineWidth = Math.max(6, Math.round(canvas.width / 90));
   context.beginPath();
   context.roundRect(x, y, width, height, Math.round(height * 0.18));
   context.stroke();

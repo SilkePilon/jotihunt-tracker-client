@@ -14,7 +14,7 @@ import { useHuntReports } from '@/hooks/hunt-reports.hook';
 import { usePredictions } from '@/hooks/predictions.hook';
 import useInterval from '@/hooks/utils/interval.hook';
 import { huntCooldownMs, lastHuntTimeFor } from '@/lib/fox-status';
-import { ambiguousCharacters, formatHuntTime, nearestArea, normalizeHuntCode, resolveHuntTime } from '@/lib/hunt-reports';
+import { formatHuntTime, nearestArea, normalizeHuntCode, resolveHuntTime } from '@/lib/hunt-reports';
 import { downscalePhoto } from '@/lib/image';
 import { readHuntCode } from '@/lib/ocr';
 import { areaOptions, getColorFromArea } from '@/lib/utils';
@@ -206,7 +206,6 @@ export default function HuntRegistrationDialog() {
     };
   }, [photo]);
 
-  const lookAlikes = ambiguousCharacters(code);
   const suggestedArea = nearestArea(position, predictions);
   const chosenArea = area || suggestedArea || '';
   const time = parseTime(hours, minutes);
@@ -320,12 +319,7 @@ export default function HuntRegistrationDialog() {
                 {ocr === 'reading' && <Loader2Icon className="size-4 shrink-0 animate-spin text-muted-foreground" />}
               </div>
               {ocr === 'reading' && <FieldDescription>Code lezen…</FieldDescription>}
-              {ocr === 'found' && (
-                <FieldDescription>
-                  Controleer de code, hoofdletters tellen mee.
-                  {lookAlikes.length > 0 && <> Let op: {lookAlikes.join(' · ')}</>}
-                </FieldDescription>
-              )}
+              {ocr === 'found' && <FieldDescription>Controleer de code, hoofdletters tellen mee.</FieldDescription>}
               {ocr === 'not_found' && <FieldDescription>Code niet gelezen, typ hem over</FieldDescription>}
               <FieldError>{errors.code}</FieldError>
             </Field>
