@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ListOrderedIcon, RefreshCwIcon, SmartphoneIcon } from 'lucide-react';
+import { ListOrderedIcon, QrCodeIcon, RefreshCwIcon, SmartphoneIcon } from 'lucide-react';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -26,6 +26,8 @@ export default function TrackerCard({ status, isError, savingVehicle, onVehicleC
   const auth = useAuthUser<User>();
   const isMobile = useIsMobile();
   const [relink, setRelink] = useState(false);
+  // On phones the QR code is hidden by default (you can't scan your own screen)
+  const [showQr, setShowQr] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   useInterval(() => setNow(Date.now()), CLOCK_TICK_MS);
 
@@ -76,17 +78,36 @@ export default function TrackerCard({ status, isError, savingVehicle, onVehicleC
 
   return (
     <div className="flex flex-col items-center gap-2" data-tracker-state="pairing">
-      <TrackerQrCode value={status.qrUrl} />
-      <p className="text-center text-xs text-muted-foreground">Scan deze code met de Traccar Client-app</p>
-      {vehiclePicker}
-      {isMobile && (
-        <Button asChild size="sm" className="w-full">
-          <a href={status.deepLink}>
-            <SmartphoneIcon />
-            Open in Traccar-app
-          </a>
-        </Button>
+      {isMobile ? (
+        <>
+          <Button asChild className="w-full">
+            <a href={status.deepLink}>
+              <SmartphoneIcon />
+              Verbinden met Traccar-app
+            </a>
+          </Button>
+          <p className="text-center text-xs text-muted-foreground">
+            Opent de Traccar Client-app met de juiste instellingen. Nog geen app? Installeer hem eerst via de uitleg.
+          </p>
+          {showQr ? (
+            <>
+              <TrackerQrCode value={status.qrUrl} />
+              <p className="text-center text-xs text-muted-foreground">Of scan deze code met een andere telefoon</p>
+            </>
+          ) : (
+            <Button variant="ghost" size="sm" onClick={() => setShowQr(true)}>
+              <QrCodeIcon />
+              QR-code tonen
+            </Button>
+          )}
+        </>
+      ) : (
+        <>
+          <TrackerQrCode value={status.qrUrl} />
+          <p className="text-center text-xs text-muted-foreground">Scan deze code met de Traccar Client-app</p>
+        </>
       )}
+      {vehiclePicker}
       <div className="flex w-full gap-2">
         <Button variant="outline" size="sm" className="flex-1" onClick={onOpenGuide}>
           <ListOrderedIcon />

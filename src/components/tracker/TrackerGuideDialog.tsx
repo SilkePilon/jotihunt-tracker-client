@@ -45,6 +45,8 @@ interface TrackerGuideDialogProps {
 /** Step-by-step guide for connecting the phone, with the same QR code and a live connection status. */
 export default function TrackerGuideDialog({ open, onOpenChange, status }: TrackerGuideDialogProps) {
   const isMobile = useIsMobile();
+  // Phones skip the QR step: the connect button opens the app directly
+  const firstCommonStep = isMobile ? 3 : 4;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -68,31 +70,32 @@ export default function TrackerGuideDialog({ open, onOpenChange, status }: Track
               </Button>
             </div>
           </Step>
-          <Step number={2} icon={ScanQrCodeIcon} title="Open de app en tik op het QR-icoon (instellingen → QR-code scannen).">
-            {isMobile && (
-              <>
-                <p className="text-xs text-muted-foreground">Open je deze pagina op je telefoon? Tik dan op deze knop in plaats van te scannen:</p>
-                <Button asChild size="sm" className="w-full">
-                  <a href={status.deepLink}>
-                    <SmartphoneIcon />
-                    Open in Traccar-app
-                  </a>
-                </Button>
-              </>
-            )}
-          </Step>
-          <Step number={3} icon={QrCodeIcon} title="Scan deze QR-code.">
-            <div className="flex justify-center">
-              <TrackerQrCode value={status.qrUrl} size={160} />
-            </div>
-          </Step>
+          {isMobile ? (
+            <Step number={2} icon={SmartphoneIcon} title="Tik op de knop om de app te openen met de juiste instellingen.">
+              <Button asChild size="sm" className="w-full">
+                <a href={status.deepLink}>
+                  <SmartphoneIcon />
+                  Verbinden met Traccar-app
+                </a>
+              </Button>
+            </Step>
+          ) : (
+            <>
+              <Step number={2} icon={ScanQrCodeIcon} title="Open de app en tik op het QR-icoon (instellingen → QR-code scannen)." />
+              <Step number={3} icon={QrCodeIcon} title="Scan deze QR-code.">
+                <div className="flex justify-center">
+                  <TrackerQrCode value={status.qrUrl} size={160} />
+                </div>
+              </Step>
+            </>
+          )}
           <Step
-            number={4}
+            number={firstCommonStep}
             icon={MapPinIcon}
             title='Geef locatie-toestemming "Altijd toestaan" en zet batterijbesparing voor Traccar uit.'
           />
-          <Step number={5} icon={ToggleRightIcon} title='Zet de schakelaar "Continu volgen" (Service status) aan.' />
-          <Step number={6} icon={CircleCheckIcon} title='Wacht tot hieronder "Verbonden" verschijnt.'>
+          <Step number={firstCommonStep + 1} icon={ToggleRightIcon} title='Zet de schakelaar "Continu volgen" (Service status) aan.' />
+          <Step number={firstCommonStep + 2} icon={CircleCheckIcon} title='Wacht tot hieronder "Verbonden" verschijnt.'>
             <div
               className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm"
               data-tracker-live-status={status.connected ? 'connected' : 'waiting'}
