@@ -22,15 +22,28 @@ export default function HuntReportRow({ report, now, onSelect }: { report: HuntR
     }
   }
 
-  function copyCode() {
-    void navigator.clipboard.writeText(report.huntCode);
-    toast('Code gekopieerd');
+  async function copyCode() {
+    try {
+      await navigator.clipboard.writeText(report.huntCode);
+      toast('Code gekopieerd');
+    } catch {
+      toast.error('Kopiëren mislukt');
+    }
+  }
+
+  function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+    if (event.target !== event.currentTarget) return;
+    if (event.key === 'Enter' || event.key === ' ') {
+      if (event.key === ' ') event.preventDefault();
+      onSelect?.();
+    }
   }
 
   return (
     <div
       className={onSelect ? 'cursor-pointer rounded-md px-1 py-1 text-xs hover:bg-accent' : 'px-1 py-1 text-xs'}
       onClick={onSelect}
+      onKeyDown={onSelect ? handleKeyDown : undefined}
       role={onSelect ? 'button' : undefined}
       tabIndex={onSelect ? 0 : undefined}
     >

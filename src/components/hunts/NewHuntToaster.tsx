@@ -18,7 +18,8 @@ export default function NewHuntToaster() {
   useEffect(() => {
     if (!reports) return;
     const ids = new Set(reports.map((report) => report._id));
-    const fresh = known.current ? reports.filter((report) => !known.current!.has(report._id)) : [];
+    const prevKnown = known.current;
+    const fresh = prevKnown ? reports.filter((report) => !prevKnown.has(report._id)) : [];
     known.current = ids;
     for (const report of fresh) {
       if (report.reportedBy === user?._id) continue;

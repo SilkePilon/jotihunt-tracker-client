@@ -42,14 +42,16 @@ export default function HuntsSection() {
               </Button>
             )}
           </HuntPhotoInput>
-          {reports?.length ? (
-            <div className="flex flex-col gap-1">
-              {reports.slice(0, 3).map((report) => (
-                <HuntReportRow key={report._id} report={report} now={now} onSelect={() => openAll(report._id)} />
-              ))}
-            </div>
-          ) : (
-            <p className="text-xs text-muted-foreground">Nog geen hunts geregistreerd.</p>
+          {reports !== undefined && (
+            reports.length ? (
+              <div className="flex flex-col gap-1">
+                {reports.slice(0, 3).map((report) => (
+                  <HuntReportRow key={report._id} report={report} now={now} onSelect={() => openAll(report._id)} />
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">Nog geen hunts geregistreerd.</p>
+            )
           )}
           <Button variant="ghost" size="sm" className="w-full" onClick={() => openAll()}>
             Alle hunts bekijken
