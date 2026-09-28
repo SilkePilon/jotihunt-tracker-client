@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAreas } from '@/hooks/areas.hook';
 import { useHunts } from '@/hooks/hunts.hook';
+import { useHuntReports } from '@/hooks/hunt-reports.hook';
 import useInterval from '@/hooks/utils/interval.hook';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cooldownSummary, huntCooldownMs, lastHuntTimeFor, statusPillClass } from '@/lib/fox-status';
@@ -14,6 +15,7 @@ const STATUS_LABEL: Record<string, string> = { green: 'groen', orange: 'oranje',
 export default function FoxPills() {
   const { areas, toggleHidden, isHidden } = useAreas();
   const { hunts } = useHunts();
+  const { reports } = useHuntReports();
   const [now, setNow] = useState(() => Date.now());
   useInterval(() => setNow(Date.now()), 1000);
 
@@ -27,13 +29,13 @@ export default function FoxPills() {
     );
   }
 
-  const cooldowns = cooldownSummary(areas, hunts, now);
+  const cooldowns = cooldownSummary(areas, hunts, now, reports);
 
   return (
     <div className="flex flex-col gap-1">
       <div className="grid grid-cols-9 gap-1">
         {areas.map((area) => {
-          const lastHunt = lastHuntTimeFor(hunts, area.name);
+          const lastHunt = lastHuntTimeFor(hunts, area.name, reports);
           const cooldown = huntCooldownMs(lastHunt, now);
           const hidden = isHidden(area.name);
           const ago = (time: Date | string) => formatDistanceToNow(new Date(time), { locale: nl, addSuffix: true });

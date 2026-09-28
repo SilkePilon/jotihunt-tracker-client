@@ -11,6 +11,7 @@ import { statusSummary } from '@/lib/fox-status';
 import { hintProgress } from '@/lib/hints';
 import { predictionSummary } from '@/lib/prediction';
 import { filterActiveDevices } from '@/lib/utils';
+import HuntsSection from '@/components/hunts/HuntsSection';
 import SidebarSection from './SidebarSection';
 import FoxPills from './FoxPills';
 import HintMiniGrid from './HintMiniGrid';
@@ -33,6 +34,7 @@ export default function SidebarSections({ mapRef }: { mapRef: RefObject<MapRef |
       <SidebarSection id="hints" title="Hints" summary={progress ? `${progress.solved}/${progress.total} opgelost` : undefined}>
         <HintMiniGrid />
       </SidebarSection>
+      <HuntsSection />
       <SidebarSection id="predictions" title="Voorspelling" summary={predictionSummary(predictions)}>
         <PredictionList mapRef={mapRef} />
       </SidebarSection>

@@ -4,6 +4,7 @@ import CoordinatesCard from '@/components/cards/coordinates/CoordinatesCard.tsx'
 import Sidebar from '@/components/sidebar/Sidebar';
 import HuntCaptureButton from '@/components/hunts/HuntCaptureButton';
 import HuntRegistrationDialog from '@/components/hunts/HuntRegistrationDialog';
+import NewHuntToaster from '@/components/hunts/NewHuntToaster';
 import { useIsMobile } from '@/hooks/media.hook';
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
       <Sidebar mapRef={mapRef} />
       {isMobile && <HuntCaptureButton />}
       <HuntRegistrationDialog />
+      <NewHuntToaster />
     </>
   );
 }
