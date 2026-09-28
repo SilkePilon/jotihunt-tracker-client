@@ -34,6 +34,8 @@ export function extractHuntCode(ocrText: string): string {
 export interface OcrWord {
   text: string;
   confidence: number;
+  /** Position in the recognised image (px) */
+  bbox?: { x0: number; y0: number; x1: number; y1: number };
 }
 
 const MIN_CODE_LENGTH = 5;
@@ -44,7 +46,7 @@ const MIN_VOTE_CONFIDENCE = 10;
 /** The most likely hunt code among the words of one OCR pass: code-shaped, not a sticker word, highest confidence. */
 export function codeCandidate(words: OcrWord[]): OcrWord | null {
   const candidates = words
-    .map((word) => ({ text: word.text.replace(/[^A-Za-z0-9]/g, ''), confidence: word.confidence }))
+    .map((word) => ({ ...word, text: word.text.replace(/[^A-Za-z0-9]/g, '') }))
     .filter((word) => word.text.length >= MIN_CODE_LENGTH && word.text.length <= MAX_CODE_LENGTH)
     .filter((word) => !STOP_WORD.test(word.text) && !/hunt/i.test(word.text))
     .sort((a, b) => b.confidence - a.confidence);

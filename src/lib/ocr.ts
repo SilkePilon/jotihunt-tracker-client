@@ -30,12 +30,27 @@ export interface HuntCodeReading {
   sticker: Blob | null;
 }
 
+/** Rounded box around the recognised code on the sticker preview, so the user sees what was read. */
+function drawCodeBox(canvas: HTMLCanvasElement, box: NonNullable<OcrWord['bbox']>) {
+  const context = canvas.getContext('2d')!;
+  const padding = Math.round(canvas.width * 0.015);
+  const x = Math.max(0, box.x0 - padding);
+  const y = Math.max(0, box.y0 - padding);
+  const width = Math.min(canvas.width, box.x1 + padding) - x;
+  const height = Math.min(canvas.height, box.y1 + padding) - y;
+  context.strokeStyle = '#f97316';
+  context.lineWidth = Math.max(3, Math.round(canvas.width / 240));
+  context.beginPath();
+  context.roundRect(x, y, width, height, Math.round(height * 0.18));
+  context.stroke();
+}
+
 async function recognizeWords(worker: Worker, image: HTMLCanvasElement | Blob, mode: PSM): Promise<{ words: OcrWord[]; text: string }> {
   await worker.setParameters({ tessedit_pageseg_mode: mode });
   const { data } = await worker.recognize(image, {}, { text: true, blocks: true });
   const words: OcrWord[] = [];
   for (const block of data.blocks ?? []) {
-    for (const paragraph of block.paragraphs) for (const line of paragraph.lines) for (const word of line.words) words.push({ text: word.text, confidence: word.confidence });
+    for (const paragraph of block.paragraphs) for (const line of paragraph.lines) for (const word of line.words) words.push({ text: word.text, confidence: word.confidence, bbox: word.bbox });
   }
   return { words, text: data.text };
 }
@@ -53,17 +68,25 @@ export async function readHuntCode(photo: Blob): Promise<HuntCodeReading> {
     const wholeCandidate = codeCandidate(whole.words);
     if (wholeCandidate) candidates.push(wholeCandidate);
 
-    let sticker: Blob | null = null;
+    // The first (smallest) crop is also the preview; remember where the code was found on it
+    let preview: { canvas: HTMLCanvasElement; candidates: OcrWord[] } | null = null;
     for (const width of STICKER_WIDTHS) {
       const crop = await cropSticker(photo, width);
       if (!crop) break;
-      sticker ??= await canvasToBlob(crop);
+      const cropCandidates: OcrWord[] = [];
       for (const mode of [SINGLE_BLOCK, SPARSE_TEXT]) {
         const candidate = codeCandidate((await recognizeWords(worker, crop, mode)).words);
-        if (candidate) candidates.push(candidate);
+        if (candidate) cropCandidates.push(candidate);
       }
+      candidates.push(...cropCandidates);
+      preview ??= { canvas: crop, candidates: cropCandidates };
     }
-    return { code: voteHuntCode(candidates) || extractHuntCode(whole.text), sticker };
+
+    const code = voteHuntCode(candidates) || extractHuntCode(whole.text);
+    if (!preview) return { code, sticker: null };
+    const located = preview.candidates.find((candidate) => candidate.text === code) ?? [...preview.candidates].sort((a, b) => b.confidence - a.confidence)[0];
+    if (located?.bbox) drawCodeBox(preview.canvas, located.bbox);
+    return { code, sticker: await canvasToBlob(preview.canvas) };
   } catch {
     const worker = workerPromise;
     workerPromise = null;

@@ -153,6 +153,10 @@ describe('codeCandidate', () => {
     ];
     expect(codeCandidate(words)).toEqual({ text: 'GNcrZRZ', confidence: 87 });
   });
+  test('keeps the position of the word', () => {
+    const bbox = { x0: 10, y0: 20, x1: 300, y1: 80 };
+    expect(codeCandidate([{ text: 'GNcrZRZ', confidence: 80, bbox }])).toEqual({ text: 'GNcrZRZ', confidence: 80, bbox });
+  });
   test('null without a code-shaped word', () => {
     expect(codeCandidate([{ text: 'HUNT', confidence: 95 }, { text: 'ab', confidence: 99 }])).toBeNull();
   });
