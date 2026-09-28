@@ -7,6 +7,7 @@ import { useIsMobile } from '@/hooks/media.hook';
 import useInterval from '@/hooks/utils/interval.hook';
 import { huntsSummary, pendingReports } from '@/lib/hunt-reports';
 import SidebarSection from '@/components/sidebar/SidebarSection';
+import AllHuntsDialog from './AllHuntsDialog';
 import HuntPhotoInput from './HuntPhotoInput';
 import HuntReportRow from './HuntReportRow';
 
@@ -18,9 +19,6 @@ export default function HuntsSection() {
   useInterval(() => setNow(Date.now()), 1000);
   const [allOpen, setAllOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
-  // Plumbing for the "Alle hunts" dialog wired up in Task 8; not rendered yet.
-  void allOpen;
-  void selectedId;
 
   function openAll(reportId?: string) {
     setSelectedId(reportId);
@@ -58,7 +56,7 @@ export default function HuntsSection() {
           </Button>
         </div>
       </SidebarSection>
-      {/* AllHuntsDialog is wired up in Task 8, using `allOpen`/`setAllOpen`/`selectedId`. */}
+      <AllHuntsDialog open={allOpen} onOpenChange={setAllOpen} initialReportId={selectedId} />
     </>
   );
 }
