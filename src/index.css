@@ -126,6 +126,13 @@
     @apply bg-background text-foreground;
   }
 
+  /* Full-screen map app: the page itself never scrolls. Disable the mobile browser's pull-to-refresh and
+     scroll chaining, so swiping the bottom sheet down closes it instead of reloading the page. */
+  html,
+  body {
+    overscroll-behavior: none;
+  }
+
   /* Tailwind v4 defaults buttons to cursor: default; keep the v3 behaviour */
   button:not(:disabled),
   [role='button']:not(:disabled) {
