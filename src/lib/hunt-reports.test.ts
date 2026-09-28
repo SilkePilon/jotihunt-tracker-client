@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import type { Hunt } from '@/types/Hunt';
 import type { HuntReport } from '@/types/HuntReport';
 import type { Prediction } from '@/types/Prediction';
-import { extractHuntCode, isConcealed, huntListItems, huntsSummary, huntStatusLabel, nearestArea, normalizeHuntCode, pendingReports, resolveHuntTime } from './hunt-reports';
+import { ambiguousCharacters, codeCandidate, extractHuntCode, isConcealed, voteHuntCode, huntListItems, huntsSummary, huntStatusLabel, nearestArea, normalizeHuntCode, pendingReports, resolveHuntTime } from './hunt-reports';
 
 function report(overrides: Partial<HuntReport> = {}): HuntReport {
   return {
@@ -29,15 +29,19 @@ function prediction(area: string, lng: number, lat: number): Prediction {
 }
 
 describe('normalizeHuntCode', () => {
-  test('removes whitespace and uppercases', () => expect(normalizeHuntCode(' ab 12 ')).toBe('AB12'));
+  test('removes whitespace and keeps the case', () => expect(normalizeHuntCode(' GN cr ZRZ ')).toBe('GNcrZRZ'));
 });
 
 describe('extractHuntCode', () => {
   test('prefers labelled code when present', () => {
     expect(extractHuntCode('JOTIHUNT 2026\nCode: K7X9QP2\nAlpha')).toBe('K7X9QP2');
   });
-  test('uppercases and ignores punctuation around the code', () => {
-    expect(extractHuntCode('code:\n  "k7x9qp"')).toBe('K7X9QP');
+  test('keeps the case and ignores punctuation around the code', () => {
+    expect(extractHuntCode('code:\n  "k7x9Qp"')).toBe('k7x9Qp');
+  });
+  test('real sticker text: sticker words skipped in any case', () => {
+    expect(extractHuntCode('JoTiHUNT 2025\nGNcrZRZ')).toBe('GNcrZRZ');
+    expect(extractHuntCode('JOTIHUNT 2025\nGy3M8XI')).toBe('Gy3M8XI');
   });
   test('empty when there is no token of 4+ characters', () => {
     expect(extractHuntCode('ab 12 x')).toBe('');
@@ -118,7 +122,7 @@ describe('pendingReports / huntsSummary', () => {
 describe('huntListItems', () => {
   test('adds scraped hunts whose code matches no report', () => {
     const hunts = [
-      { _id: 'h1', area: 'Alpha', huntCode: 'ab12cd', status: 'Goedgekeurd', points: 5, huntTime: new Date(), updatedAt: new Date() },
+      { _id: 'h1', area: 'Alpha', huntCode: 'AB12CD ', status: 'Goedgekeurd', points: 5, huntTime: new Date(), updatedAt: new Date() },
       { _id: 'h2', area: 'Bravo', huntCode: 'ZZ99', status: 'Afgekeurd', points: 0, huntTime: new Date(), updatedAt: new Date() },
     ] as Hunt[];
     const items = huntListItems([report()], hunts);
@@ -135,5 +139,53 @@ describe('isConcealed', () => {
     expect(isConcealed(report({ status: 'overdue' }), deadline - 1)).toBe(false);
     expect(isConcealed(report({ status: 'submitted' }), deadline - 1)).toBe(false);
     expect(isConcealed(report({ status: 'judged' }), deadline - 1)).toBe(false);
+  });
+});
+
+describe('codeCandidate', () => {
+  test('highest-confidence code-shaped word, skipping sticker words, years and punctuation', () => {
+    const words = [
+      { text: 'JoTiHUNT', confidence: 90 },
+      { text: '2025', confidence: 96 },
+      { text: 'GNcrZRZ', confidence: 87 },
+      { text: 'RRR.', confidence: 48 },
+      { text: '"Gy3M8XI"', confidence: 60 },
+    ];
+    expect(codeCandidate(words)).toEqual({ text: 'GNcrZRZ', confidence: 87 });
+  });
+  test('null without a code-shaped word', () => {
+    expect(codeCandidate([{ text: 'HUNT', confidence: 95 }, { text: 'ab', confidence: 99 }])).toBeNull();
+  });
+});
+
+describe('voteHuntCode', () => {
+  test('confidence-weighted vote per character among readings of the winning length', () => {
+    // Real readings of the GNcrZRZ sticker from different OCR passes
+    const votes = [
+      { text: 'GNCFZRZ', confidence: 41 },
+      { text: 'GNCRZRZ', confidence: 40 },
+      { text: 'GNcrZRZ', confidence: 87 },
+    ];
+    expect(voteHuntCode(votes)).toBe('GNcrZRZ');
+  });
+  test('a missed first letter loses to the full-length readings', () => {
+    const votes = [
+      { text: 'Gy3M8XI', confidence: 85 },
+      { text: 'y3M8XI', confidence: 86 },
+      { text: 'Gy3M8XI', confidence: 78 },
+    ];
+    expect(voteHuntCode(votes)).toBe('Gy3M8XI');
+  });
+  test('ignores near-zero confidence and returns empty without votes', () => {
+    expect(voteHuntCode([{ text: 'GNCPZRZ', confidence: 0 }])).toBe('');
+    expect(voteHuntCode([])).toBe('');
+  });
+});
+
+describe('ambiguousCharacters', () => {
+  test('lists look-alike groups present in the code', () => {
+    expect(ambiguousCharacters('Gy3M8X1')).toEqual(['1 / I / l', '8 / B', 'X / x']);
+    expect(ambiguousCharacters('GNcrZRZ')).toEqual(['2 / Z / z', 'C / c']);
+    expect(ambiguousCharacters('ARTMN')).toEqual([]);
   });
 });

@@ -14,7 +14,7 @@ import { useHuntReports } from '@/hooks/hunt-reports.hook';
 import { usePredictions } from '@/hooks/predictions.hook';
 import useInterval from '@/hooks/utils/interval.hook';
 import { huntCooldownMs, lastHuntTimeFor } from '@/lib/fox-status';
-import { formatHuntTime, nearestArea, normalizeHuntCode, resolveHuntTime } from '@/lib/hunt-reports';
+import { ambiguousCharacters, formatHuntTime, nearestArea, normalizeHuntCode, resolveHuntTime } from '@/lib/hunt-reports';
 import { downscalePhoto } from '@/lib/image';
 import { readHuntCode } from '@/lib/ocr';
 import { areaOptions, getColorFromArea } from '@/lib/utils';
@@ -129,6 +129,8 @@ export default function HuntRegistrationDialog() {
 
   const [prepared, setPrepared] = useState<{ source: File; blob: Blob; url: string } | null>(null);
   const [ocr, setOcr] = useState<OcrState>('idle');
+  /** Cropped, enlarged sticker from the OCR, shown next to the code field for checking */
+  const [stickerUrl, setStickerUrl] = useState<string | null>(null);
   const [code, setCode] = useState('');
   const [area, setArea] = useState('');
   const [hours, setHours] = useState('');
@@ -150,6 +152,7 @@ export default function HuntRegistrationDialog() {
     setPrevPhoto(photo);
     setPrepared(null);
     setOcr(photo ? 'reading' : 'idle');
+    setStickerUrl(null);
     setCode('');
     setArea('');
     setHours('');
@@ -165,16 +168,21 @@ export default function HuntRegistrationDialog() {
     if (!photo) return;
     let cancelled = false;
     let url: string | undefined;
+    let stickerObjectUrl: string | undefined;
     void downscalePhoto(photo)
       .catch(() => photo as Blob)
       .then(async (blob) => {
         if (cancelled) return;
         url = URL.createObjectURL(blob);
         setPrepared({ source: photo, blob, url });
-        const found = await readHuntCode(blob);
+        const reading = await readHuntCode(blob);
         if (cancelled) return;
-        setCode((current) => current || found);
-        setOcr(found ? 'found' : 'not_found');
+        if (reading.sticker) {
+          stickerObjectUrl = URL.createObjectURL(reading.sticker);
+          setStickerUrl(stickerObjectUrl);
+        }
+        setCode((current) => current || reading.code);
+        setOcr(reading.code ? 'found' : 'not_found');
       });
     positionPromiseRef.current = new Promise<Position | null>((resolve) => {
       if (!navigator.geolocation) {
@@ -194,9 +202,11 @@ export default function HuntRegistrationDialog() {
     return () => {
       cancelled = true;
       if (url) URL.revokeObjectURL(url);
+      if (stickerObjectUrl) URL.revokeObjectURL(stickerObjectUrl);
     };
   }, [photo]);
 
+  const lookAlikes = ambiguousCharacters(code);
   const suggestedArea = nearestArea(position, predictions);
   const chosenArea = area || suggestedArea || '';
   const time = parseTime(hours, minutes);
@@ -290,14 +300,16 @@ export default function HuntRegistrationDialog() {
           <FieldGroup className="gap-4">
             <Field data-invalid={!!errors.code} className="gap-2">
               <FieldLabel htmlFor={`${id}-code`}>Huntcode</FieldLabel>
+              {stickerUrl && <img src={stickerUrl} alt="Vergrote uitsnede van de sticker" className="w-full rounded-md border bg-white" />}
               <div className="flex items-center gap-2">
                 <Input
                   id={`${id}-code`}
-                  autoCapitalize="characters"
+                  autoCapitalize="off"
+                  autoCorrect="off"
                   autoComplete="off"
                   spellCheck={false}
                   aria-invalid={!!errors.code}
-                  className="font-mono uppercase"
+                  className="font-mono text-base tracking-wider"
                   value={code}
                   onChange={(event) => {
                     setCode(event.target.value);
@@ -308,7 +320,12 @@ export default function HuntRegistrationDialog() {
                 {ocr === 'reading' && <Loader2Icon className="size-4 shrink-0 animate-spin text-muted-foreground" />}
               </div>
               {ocr === 'reading' && <FieldDescription>Code lezen…</FieldDescription>}
-              {ocr === 'found' && <FieldDescription>Controleer de code</FieldDescription>}
+              {ocr === 'found' && (
+                <FieldDescription>
+                  Controleer de code, hoofdletters tellen mee.
+                  {lookAlikes.length > 0 && <> Let op: {lookAlikes.join(' · ')}</>}
+                </FieldDescription>
+              )}
               {ocr === 'not_found' && <FieldDescription>Code niet gelezen, typ hem over</FieldDescription>}
               <FieldError>{errors.code}</FieldError>
             </Field>
