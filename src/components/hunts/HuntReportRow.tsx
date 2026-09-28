@@ -11,7 +11,7 @@ import HuntStatusBadge from './HuntStatusBadge';
 /** Compact row for one hunt report: area dot, code, time, status, and (while pending) quick actions. */
 export default function HuntReportRow({ report, now, onSelect }: { report: HuntReport; now: number; onSelect?: () => void }) {
   const { setSubmitted } = useHuntReports();
-  // Marking a hunt as submitted is HQ work (admins only; the server enforces this too)
+  // Copying the code and marking a hunt as submitted is HQ work (admins only; the server enforces the status change)
   const isAdmin = !!useAuthUser<User>()?.admin;
   const pending = report.status === 'to_submit' || report.status === 'overdue';
 
@@ -65,16 +65,14 @@ export default function HuntReportRow({ report, now, onSelect }: { report: HuntR
           <HuntStatusBadge report={report} now={now} />
         </span>
       </div>
-      {pending && (
+      {pending && isAdmin && (
         <div className="mt-1 flex gap-1.5" onClick={(event) => event.stopPropagation()}>
           <Button type="button" variant="outline" size="xs" onClick={copyCode}>
             Kopieer code
           </Button>
-          {isAdmin && (
-            <Button type="button" variant="outline" size="xs" onClick={() => void markSubmitted()}>
-              Ingestuurd
-            </Button>
-          )}
+          <Button type="button" variant="outline" size="xs" onClick={() => void markSubmitted()}>
+            Ingestuurd
+          </Button>
         </div>
       )}
     </div>
