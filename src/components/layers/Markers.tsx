@@ -30,9 +30,8 @@ import {toast} from "sonner";
 import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip.tsx";
 import {Badge} from "@/components/ui/badge.tsx";
 
-// Hunt time boundaries (static for the lifetime of the app)
+// Split between the two marker layers (static for the lifetime of the app): 23:00 on the first hunt day
 const startTime = new Date(import.meta.env.HUNT_START_TIME);
-const endTime = new Date(import.meta.env.HUNT_END_TIME);
 const midnight = new Date(startTime);
 midnight.setHours(23, 0, 0, 0);
 
@@ -99,13 +98,13 @@ export default function Markers({part1 = true, part2 = true}: InferProps<typeof 
         return markers.filter((marker) => {
             const markerTime = new Date(marker.time);
 
-            // Part 1: From HUNT_START_TIME until MIDNIGHT (00:00)
-            if (part1 && markerTime >= startTime && markerTime < midnight) {
+            // Part 1: everything before 23:00 on the first hunt day (also markers from before the hunt, e.g. tests)
+            if (part1 && markerTime < midnight) {
                 return isVisible(marker.area);
             }
 
-            // Part 2: From MIDNIGHT until HUNT_END_TIME
-            if (part2 && markerTime >= midnight && markerTime <= endTime) {
+            // Part 2: everything from 23:00 on the first hunt day
+            if (part2 && markerTime >= midnight) {
                 return isVisible(marker.area);
             }
 
