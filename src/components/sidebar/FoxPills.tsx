@@ -4,13 +4,20 @@ import { useHunts } from '@/hooks/hunts.hook';
 import { useHuntReports } from '@/hooks/hunt-reports.hook';
 import useInterval from '@/hooks/utils/interval.hook';
 import { Skeleton } from '@/components/ui/skeleton';
-import { cooldownSummary, huntCooldownMs, lastHuntTimeFor, statusPillClass } from '@/lib/fox-status';
+import { COOLDOWN_PILL_CLASS, huntCooldownMs, lastHuntTimeFor, statusPillClass } from '@/lib/fox-status';
 import { formatHintCountdown } from '@/lib/next-hint';
-import { cn, getColorFromArea } from '@/lib/utils';
+import { capitalizeFirstLetter, cn, getColorFromArea } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { nl } from 'date-fns/locale';
 
 const STATUS_LABEL: Record<string, string> = { green: 'groen', orange: 'oranje', red: 'rood' };
+
+const LEGEND = [
+  { label: 'actief', dot: 'bg-green-500' },
+  { label: 'onderweg', dot: 'bg-orange-500' },
+  { label: 'inactief', dot: 'bg-red-500' },
+  { label: 'cooldown', dot: 'bg-blue-500' },
+];
 
 export default function FoxPills() {
   const { areas, toggleHidden, isHidden } = useAreas();
@@ -21,19 +28,17 @@ export default function FoxPills() {
 
   if (!areas) {
     return (
-      <div className="grid grid-cols-9 gap-1">
+      <div className="flex flex-wrap gap-1.5">
         {Array.from({ length: 9 }, (_, index) => (
-          <Skeleton key={index} className="h-7 rounded-full" />
+          <Skeleton key={index} className="h-6 w-16 rounded-md" />
         ))}
       </div>
     );
   }
 
-  const cooldowns = cooldownSummary(areas, hunts, now, reports);
-
   return (
-    <div className="flex flex-col gap-1">
-      <div className="grid grid-cols-9 gap-1">
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap gap-1">
         {areas.map((area) => {
           const lastHunt = lastHuntTimeFor(hunts, area.name, reports);
           const cooldown = huntCooldownMs(lastHunt, now);
@@ -53,18 +58,26 @@ export default function FoxPills() {
               aria-pressed={!hidden}
               onClick={() => toggleHidden(area.name)}
               className={cn(
-                'relative h-7 cursor-pointer rounded-full border text-xs font-semibold transition-opacity',
-                cooldown > 0 ? 'border-blue-400 bg-blue-100 text-blue-700' : statusPillClass(area.status),
+                'inline-flex h-6 cursor-pointer items-center gap-1 rounded-md border px-1.5 text-xs font-medium transition-opacity hover:brightness-95',
+                cooldown > 0 ? COOLDOWN_PILL_CLASS : statusPillClass(area.status),
                 hidden && 'opacity-40',
               )}
             >
-              <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full border border-white" style={{ backgroundColor: getColorFromArea(area.name) }} />
-              {area.name.charAt(0).toUpperCase()}
+              <span className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: getColorFromArea(area.name) }} />
+              {capitalizeFirstLetter(area.name)}
+              {cooldown > 0 && <span className="tabular-nums">{formatHintCountdown(cooldown)}</span>}
             </button>
           );
         })}
       </div>
-      {cooldowns && <p className="text-xs text-muted-foreground">Weer te hunten: {cooldowns}</p>}
+      <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+        {LEGEND.map((item) => (
+          <span key={item.label} className="flex items-center gap-1">
+            <span className={cn('size-2 rounded-full', item.dot)} />
+            {item.label}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }

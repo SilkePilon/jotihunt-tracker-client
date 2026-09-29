@@ -1,7 +1,6 @@
 import type { Area } from '@/types/Area';
 import type { Hunt } from '@/types/Hunt';
 import type { HuntReport } from '@/types/HuntReport';
-import { formatHintCountdown } from '@/lib/next-hint';
 
 export const HUNT_COOLDOWN_MS = 60 * 60 * 1000;
 
@@ -28,19 +27,19 @@ export function huntCooldownMs(lastHuntTime: Date | string | undefined, now: num
   return Math.max(0, new Date(lastHuntTime).getTime() + HUNT_COOLDOWN_MS - now);
 }
 
-/**
- * Tailwind classes for a fox status pill.
- */
+/** Pill colours per fox status (and for a fox still in its hunt cooldown), light and dark mode. */
+export const COOLDOWN_PILL_CLASS = 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/15 dark:text-blue-300';
+
 export function statusPillClass(status: string): string {
   switch (status) {
     case 'green':
-      return 'bg-green-100 border-green-400 text-green-700';
+      return 'border-green-200 bg-green-50 text-green-700 dark:border-green-500/30 dark:bg-green-500/15 dark:text-green-400';
     case 'orange':
-      return 'bg-orange-100 border-orange-400 text-orange-700';
+      return 'border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-500/30 dark:bg-orange-500/15 dark:text-orange-300';
     case 'red':
-      return 'bg-red-100 border-red-400 text-red-700';
+      return 'border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/15 dark:text-red-300';
     default:
-      return 'bg-gray-100 border-gray-400 text-gray-700';
+      return 'border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-500/30 dark:bg-gray-500/15 dark:text-gray-300';
   }
 }
 
@@ -50,19 +49,4 @@ export function statusPillClass(status: string): string {
 export function statusSummary(areas: Area[]): string {
   const count = (status: string) => areas.filter((area) => area.status === status).length;
   return `${count('green')} groen · ${count('orange')} oranje · ${count('red')} rood`;
-}
-
-/**
- * Summary of areas still cooling down, like "A 23:12 · D 04:10".
- * Returns undefined when no area is cooling down.
- */
-export function cooldownSummary(areas: Area[], hunts: Hunt[] | undefined, now: number, reports?: HuntReport[]): string | undefined {
-  const entries = areas
-    .map((area) => ({
-      letter: area.name.charAt(0).toUpperCase(),
-      cooldown: huntCooldownMs(lastHuntTimeFor(hunts, area.name, reports), now),
-    }))
-    .filter((entry) => entry.cooldown > 0)
-    .map((entry) => `${entry.letter} ${formatHintCountdown(entry.cooldown)}`);
-  return entries.length ? entries.join(' · ') : undefined;
 }
