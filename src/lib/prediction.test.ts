@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { Prediction } from '@/types/Prediction';
-import { ageLabel, badgeText, buildPredictionMap, formatProbability, predictionStatusText, predictionSummary, visitSelection, visitStatusText } from './prediction';
+import { ageLabel, badgeText, buildPredictionMap, CONFIDENCE_LEVEL, formatProbability, predictionStatusText, predictionSummary, visitSelection, visitStatusText } from './prediction';
 
 function prediction(overrides: Partial<Prediction> = {}): Prediction {
   return {
@@ -47,6 +47,13 @@ describe('prediction helpers', () => {
     expect(predictionStatusText(prediction({ paused: true, reason: 'Inactief' }))).toBe('Inactief');
     expect(predictionStatusText(prediction({ pin: null, candidates: [], reason: 'Nog geen locatie' }))).toBe('Nog geen locatie');
     expect(predictionStatusText(prediction({ candidates: [] }))).toBe('Alle groepen bezocht');
+    expect(predictionStatusText(prediction({ pin: null, candidates: [], stale: true, error: 'Gemini-verzoek mislukt (HTTP 503)' }))).toBe('Gemini-verzoek mislukt (HTTP 503)');
+    expect(predictionStatusText(prediction({ pin: null, candidates: [], stale: true }))).toBe('AI-voorspelling mislukt');
+    expect(predictionStatusText(prediction({ stale: true, error: 'x' }))).toBeNull();
+  });
+
+  test('confidence level is the number of filled bars', () => {
+    expect([CONFIDENCE_LEVEL.low, CONFIDENCE_LEVEL.medium, CONFIDENCE_LEVEL.high]).toEqual([1, 2, 3]);
   });
 
   test('summary counts predictions with a pin', () => {
@@ -64,6 +71,8 @@ describe('prediction helpers', () => {
   test('buildPredictionMap: line last→pin, pin, badges ranked; paused and pinless skipped', () => {
     const map = buildPredictionMap([prediction(), prediction({ area: 'b', paused: true }), prediction({ area: 'c', pin: null })], () => '#f00');
     expect(map.pins).toEqual([{ area: 'alpha', lng: 5.5, lat: 52.09, color: '#f00', stale: false }]);
+    expect(map.badges.every((badge) => badge.stale === false)).toBe(true);
+    expect(buildPredictionMap([prediction({ stale: true })], () => '#f00').badges.every((badge) => badge.stale)).toBe(true);
     expect(map.lines.features).toHaveLength(1);
     expect(map.lines.features[0].geometry.coordinates).toEqual([
       [5.48, 52.08],

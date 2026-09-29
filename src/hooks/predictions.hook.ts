@@ -4,8 +4,8 @@ import { fetcherWithMethod, useAuthSWR } from '@/lib/swr';
 import type { GroupVisit, Prediction, VisitChoice } from '@/types/Prediction';
 
 const PREDICTION_REFRESH_MS = 15_000;
-/** The server recomputes in the background after PUT /visits; fetch once more after this delay. */
-const RECOMPUTE_SETTLE_MS = 2_000;
+/** The server recomputes in the background after PUT /visits (a Gemini call takes tens of seconds); fetch once more after this delay. */
+const RECOMPUTE_SETTLE_MS = 45_000;
 
 const isPredictionsKey = (key: unknown) => Array.isArray(key) && key[0] === '/predictions';
 

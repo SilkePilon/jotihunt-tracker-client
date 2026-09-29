@@ -19,9 +19,11 @@ export interface MapBadge {
   text: string;
   /** 0 = most likely */
   rank: number;
+  stale: boolean;
 }
 
-export const CONFIDENCE_COLOR: Record<Confidence, string> = { high: 'bg-green-500', medium: 'bg-amber-500', low: 'bg-red-500' };
+/** Number of filled bars in the confidence signal icon. */
+export const CONFIDENCE_LEVEL: Record<Confidence, 1 | 2 | 3> = { low: 1, medium: 2, high: 3 };
 export const CONFIDENCE_LABEL: Record<Confidence, string> = { high: 'Zekerheid hoog', medium: 'Zekerheid middel', low: 'Zekerheid laag' };
 
 /** 24h local clock time, e.g. "14:20". */
@@ -53,6 +55,7 @@ export function ageLabel(updatedAt: string, nowMs: number): string {
 export function predictionStatusText(prediction: Prediction): string | null {
   if (prediction.paused) return prediction.reason ?? 'Gepauzeerd';
   if (prediction.reason) return prediction.reason;
+  if (prediction.stale && !prediction.pin) return prediction.error ?? 'AI-voorspelling mislukt';
   if (prediction.candidates.length === 0) return 'Alle groepen bezocht';
   return null;
 }
@@ -98,7 +101,7 @@ export function buildPredictionMap(
       });
     }
     prediction.candidates.forEach((candidate, rank) => {
-      badges.push({ key: `${prediction.area}-${candidate.teamApiId}`, area: prediction.area, lng: candidate.lng, lat: candidate.lat, color, text: badgeText(candidate), rank });
+      badges.push({ key: `${prediction.area}-${candidate.teamApiId}`, area: prediction.area, lng: candidate.lng, lat: candidate.lat, color, text: badgeText(candidate), rank, stale: prediction.stale });
     });
   }
   return { lines: { type: 'FeatureCollection', features: lines }, pins, badges };

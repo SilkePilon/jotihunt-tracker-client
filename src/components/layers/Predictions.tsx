@@ -28,7 +28,7 @@ export default function Predictions() {
       </Source>
       {data.badges.map((badge) => (
         <Marker key={badge.key} longitude={badge.lng} latitude={badge.lat} anchor="center" style={{ pointerEvents: 'none' }}>
-          <span className="relative flex flex-col items-center">
+          <span className={cn('relative flex flex-col items-center', badge.stale && 'grayscale opacity-50')}>
             <span className={cn('rounded-full border-[3px]', badge.rank === 0 ? 'size-11' : 'size-9 opacity-70')} style={{ borderColor: badge.color }} />
             <span
               className="absolute top-full mt-0.5 whitespace-nowrap rounded-full px-1.5 py-0.5 text-[11px] font-semibold text-white shadow"

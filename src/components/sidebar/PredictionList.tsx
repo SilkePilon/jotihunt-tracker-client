@@ -6,12 +6,24 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { usePredictions } from '@/hooks/predictions.hook';
 import useInterval from '@/hooks/utils/interval.hook';
 import useSidebarStore from '@/stores/sidebar.store';
-import { ageLabel, CONFIDENCE_COLOR, CONFIDENCE_LABEL, formatClock, formatProbability, predictionStatusText } from '@/lib/prediction';
+import { ageLabel, CONFIDENCE_LABEL, CONFIDENCE_LEVEL, formatClock, formatProbability, predictionStatusText } from '@/lib/prediction';
 import { capitalizeFirstLetter, cn, getColorFromArea } from '@/lib/utils';
-import type { Prediction } from '@/types/Prediction';
+import type { Confidence, Prediction } from '@/types/Prediction';
 
 const FLY_TO_ZOOM = 14;
 const TICK_MS = 30_000;
+
+/** Neutral 3-bar signal icon (no traffic-light colours, those mean fox status). */
+function ConfidenceBars({ confidence }: { confidence: Confidence }) {
+  const level = CONFIDENCE_LEVEL[confidence];
+  return (
+    <span className="flex h-3 shrink-0 items-end gap-px" title={CONFIDENCE_LABEL[confidence]} aria-label={CONFIDENCE_LABEL[confidence]} role="img">
+      {[1, 2, 3].map((bar) => (
+        <span key={bar} className={cn('w-[3px] rounded-[1px]', bar <= level ? 'bg-foreground' : 'bg-muted-foreground/30')} style={{ height: `${4 + bar * 3}px` }} />
+      ))}
+    </span>
+  );
+}
 
 /** One card per fox team: AI pin, top-3 groups as bars with ETA; tap flies to the pin, ⓘ shows the AI's reason. */
 export default function PredictionList({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
@@ -60,11 +72,7 @@ export default function PredictionList({ mapRef }: { mapRef: RefObject<MapRef | 
               >
                 {capitalizeFirstLetter(prediction.area)}
                 {prediction.confidence && (
-                  <span
-                    className={cn('size-2 shrink-0 rounded-full', CONFIDENCE_COLOR[prediction.confidence])}
-                    title={CONFIDENCE_LABEL[prediction.confidence]}
-                    aria-label={CONFIDENCE_LABEL[prediction.confidence]}
-                  />
+                  <ConfidenceBars confidence={prediction.confidence} />
                 )}
               </button>
               {prediction.stale && (
