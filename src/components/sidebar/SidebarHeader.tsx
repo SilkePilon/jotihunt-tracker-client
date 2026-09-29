@@ -1,5 +1,6 @@
 import Settings from '@/components/Settings';
 import CountdownPill from './CountdownPill';
+import DemoBadge from './DemoBadge';
 
 export default function SidebarHeader() {
   const logoUrl: string = import.meta.env.LOGO_URL || '/pwa-512x512.png';
@@ -12,6 +13,7 @@ export default function SidebarHeader() {
         <p className="truncate text-sm font-bold leading-tight">Jotihunt Tracker</p>
         {groupName && <p className="truncate text-xs text-muted-foreground">{groupName}</p>}
       </div>
+      <DemoBadge />
       <CountdownPill />
       <Settings />
     </div>

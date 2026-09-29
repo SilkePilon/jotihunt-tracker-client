@@ -10,6 +10,7 @@ import {User} from './types/User';
 import ResetPassword from './components/ResetPassword';
 import HintBoardDialog from './components/hints/HintBoardDialog';
 import HuntersDialog from './components/admin/HuntersDialog';
+import DemoReloader from './components/DemoReloader';
 import UsersDialog from './components/admin/UsersDialog';
 import {useTheme} from "@/hooks/theme.hook.ts";
 import type {OutletContextType} from '@/hooks/outlet.hook.ts';
@@ -56,6 +57,7 @@ export default function Layout() {
     return (
         <SWRConfig value={{onError: onSWRError}}>
             <ResetPassword open={resetPasswordOpen} setIsOpen={setResetPasswordOpen} allowClose={false}/>
+            <DemoReloader/>
             <Outlet context={{mapRef} satisfies OutletContextType}/>
             <Map ref={mapRef}/>
             <HintBoardDialog mapRef={mapRef}/>

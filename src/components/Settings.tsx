@@ -10,7 +10,9 @@ import {
     MoonIcon, RefreshCwIcon,
     PuzzleIcon,
     ShieldIcon,
-    UsersIcon
+    UsersIcon,
+    FlaskConicalIcon,
+    Loader2Icon
 } from 'lucide-react';
 import {siDiscord} from "simple-icons"
 import {Button} from './ui/button';
@@ -52,6 +54,8 @@ import {useTeams} from "@/hooks/teams.hook.ts";
 import {toast} from "sonner";
 import useHintBoardStore from "@/stores/hint-board.store";
 import useAdminStore from "@/stores/admin.store";
+import {useDemo} from "@/hooks/demo.hook";
+import {isAxiosError} from "axios";
 
 export default function Settings() {
 
@@ -83,6 +87,25 @@ export default function Settings() {
     } = useLayersStore();
     const {mapStyle, setMapStyle, darkMode, setDarkMode} = useSettingsStore();
     const {reloadTeams} = useTeams();
+    const {demo, setDemo} = useDemo();
+    const [isDemoDialogOpen, setIsDemoDialogOpen] = useState(false);
+    const [isSwitchingDemo, setIsSwitchingDemo] = useState(false);
+    const turnDemoOn = !demo?.enabled;
+
+    async function handleSwitchDemo() {
+        setIsSwitchingDemo(true);
+        try {
+            await setDemo(turnDemoOn);
+            window.location.reload();
+        } catch (error) {
+            const message = isAxiosError(error) && error.response?.data?.message
+                ? String(error.response.data.message)
+                : 'Het wisselen van demo mode is mislukt.';
+            toast.error(message);
+            setIsSwitchingDemo(false);
+            setIsDemoDialogOpen(false);
+        }
+    }
 
     // Authentication stuff
     const auth = useAuthUser<User>();
@@ -231,6 +254,11 @@ export default function Settings() {
                                             <UsersIcon/>Gebruikers
                                         </DropdownMenuItem>
                                         <DropdownMenuSeparator/>
+                                        <DropdownMenuCheckboxItem checked={!!demo?.enabled}
+                                                                  disabled={!demo}
+                                                                  onCheckedChange={() => setIsDemoDialogOpen(true)}>
+                                            <FlaskConicalIcon/>Demo mode
+                                        </DropdownMenuCheckboxItem>
                                         <DropdownMenuItem onClick={() => setIsConfirmReloadDialogOpen(true)}>
                                             <RefreshCwIcon/>Herlaad teams uit API
                                         </DropdownMenuItem>
@@ -278,6 +306,33 @@ export default function Settings() {
                         <AlertDialogCancel>Annuleren</AlertDialogCancel>
                         <AlertDialogAction onClick={handleReloadTeams}>
                             Herladen
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog open={isDemoDialogOpen} onOpenChange={(open) => {
+                if (!isSwitchingDemo) setIsDemoDialogOpen(open);
+            }}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>
+                            {turnDemoOn ? 'Demo mode aanzetten?' : 'Demo mode uitzetten?'}
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {turnDemoOn
+                                ? 'Iedereen ziet dan demo-gegevens. De echte gegevens blijven bewaard.'
+                                : 'De demo-gegevens verdwijnen.'}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isSwitchingDemo}>Annuleren</AlertDialogCancel>
+                        <AlertDialogAction disabled={isSwitchingDemo} onClick={(e) => {
+                            e.preventDefault();
+                            void handleSwitchDemo();
+                        }}>
+                            {isSwitchingDemo && <Loader2Icon className="animate-spin"/>}
+                            {turnDemoOn ? 'Aanzetten' : 'Uitzetten'}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
