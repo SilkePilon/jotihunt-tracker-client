@@ -12,7 +12,8 @@ export function lastHuntTimeFor(hunts: Hunt[] | undefined, areaName: string, rep
   const area = areaName.toLowerCase();
   const times: (Date | string)[] = [
     ...(hunts ?? []).filter((hunt) => !hunt.status.toLowerCase().includes('tegenhunt') && hunt.area.toLowerCase() === area).map((hunt) => hunt.huntTime),
-    ...(reports ?? []).filter((report) => report.kind === 'hunt' && report.area === area).map((report) => report.huntTime),
+    // Only once the time on the sticker is known (read from the photo or entered by an admin), not the upload time
+    ...(reports ?? []).filter((report) => report.kind === 'hunt' && report.huntTimeKnown && report.area === area).map((report) => report.huntTime),
   ];
   return times
     .filter((time) => !Number.isNaN(new Date(time).getTime()))

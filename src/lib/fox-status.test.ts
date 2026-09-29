@@ -22,13 +22,17 @@ describe('lastHuntTimeFor', () => {
 });
 
 describe('lastHuntTimeFor with reports', () => {
+  test('ignores reports whose time is not known yet (still being read)', () => {
+    const reports = [{ area: 'alpha', kind: 'hunt', huntTime: '2026-10-17T13:00:00Z', huntTimeKnown: false }] as HuntReport[];
+    expect(lastHuntTimeFor(undefined, 'Alpha', reports)).toBeUndefined();
+  });
   test('a registered hunt starts the cooldown before the scraper sees it', () => {
-    const reports = [{ area: 'alpha', kind: 'hunt', huntTime: '2026-10-17T13:00:00Z' }] as HuntReport[];
+    const reports = [{ area: 'alpha', kind: 'hunt', huntTime: '2026-10-17T13:00:00Z', huntTimeKnown: true }] as HuntReport[];
     const hunts = [hunt('Alpha', 'Goedgekeurd', '2026-10-17T11:00:00Z')];
     expect(new Date(lastHuntTimeFor(hunts, 'Alpha', reports)!).toISOString()).toBe('2026-10-17T13:00:00.000Z');
   });
   test('registered tegenhunts do not count', () => {
-    const reports = [{ area: 'alpha', kind: 'tegenhunt', huntTime: '2026-10-17T13:00:00Z' }] as HuntReport[];
+    const reports = [{ area: 'alpha', kind: 'tegenhunt', huntTime: '2026-10-17T13:00:00Z', huntTimeKnown: true }] as HuntReport[];
     expect(lastHuntTimeFor(undefined, 'Alpha', reports)).toBeUndefined();
   });
 });

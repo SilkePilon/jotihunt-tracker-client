@@ -1,5 +1,5 @@
 import { Badge } from '@/components/ui/badge';
-import { huntStatusLabel } from '@/lib/hunt-reports';
+import { huntStatusLabel, isReading } from '@/lib/hunt-reports';
 import { formatHintCountdown } from '@/lib/next-hint';
 import type { HuntReport } from '@/types/HuntReport';
 
@@ -29,7 +29,8 @@ export default function HuntStatusBadge({ report, now }: { report: HuntReport; n
           Controleren
         </Badge>
       )}
-      <StatusBadge report={report} now={now} />
+      {/* While the photo is being read there is no real hunt time yet, so no "Te versturen" countdown either */}
+      {!isReading(report) && <StatusBadge report={report} now={now} />}
     </span>
   );
 }
