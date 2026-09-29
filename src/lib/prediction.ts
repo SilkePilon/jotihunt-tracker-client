@@ -1,35 +1,28 @@
 import { format } from 'date-fns';
-import type { Feature, FeatureCollection, LineString, Polygon } from 'geojson';
-import type { GeoPolygon, GroupVisit, Prediction, PredictionAccuracy, PredictionCandidate, VisitChoice } from '@/types/Prediction';
+import type { Feature, FeatureCollection, LineString } from 'geojson';
+import type { Confidence, GroupVisit, Prediction, PredictionCandidate, VisitChoice } from '@/types/Prediction';
 
-export interface ZoneProperties {
+export interface MapPin {
   area: string;
-  color: string;
-  kind: 'core' | 'outer' | 'island';
-  estimate: boolean;
-}
-
-export interface LineProperties {
-  area: string;
-  color: string;
-  probability: number;
-}
-
-export interface PredictionLabel {
-  key: string;
   lng: number;
   lat: number;
-  text: string;
   color: string;
-  via: PredictionCandidate['via'];
-  transitLabel?: string;
+  stale: boolean;
 }
 
-/** Candidates below this probability get a line on the map but no label pill (clutter). */
-export const MIN_LABEL_PROBABILITY = 0.05;
-/** A prediction not recomputed for this long is shown as "verouderd". */
-export const STALE_AFTER_MS = 10 * 60 * 1000;
-const NO_GROUPS_REASON = 'Geen groepen gekoppeld';
+export interface MapBadge {
+  key: string;
+  area: string;
+  lng: number;
+  lat: number;
+  color: string;
+  text: string;
+  /** 0 = most likely */
+  rank: number;
+}
+
+export const CONFIDENCE_COLOR: Record<Confidence, string> = { high: 'bg-green-500', medium: 'bg-amber-500', low: 'bg-red-500' };
+export const CONFIDENCE_LABEL: Record<Confidence, string> = { high: 'Zekerheid hoog', medium: 'Zekerheid middel', low: 'Zekerheid laag' };
 
 /** 24h local clock time, e.g. "14:20". */
 export function formatClock(iso: string): string {
@@ -43,97 +36,70 @@ export function formatProbability(probability: number): string {
   return `${Math.round(probability * 100)}%`;
 }
 
-/** "62% · ~14:20" or "62% · had er al kunnen zijn" (transit is shown with an icon next to it). */
-export function candidateLabel(candidate: PredictionCandidate): string {
-  const when = candidate.overdue ? 'had er al kunnen zijn' : `~${formatClock(candidate.eta)}`;
-  return `${formatProbability(candidate.probability)} · ${when}`;
+/** "62% 14:20" */
+export function badgeText(candidate: PredictionCandidate): string {
+  return `${formatProbability(candidate.probability)} ${formatClock(candidate.eta)}`;
 }
 
-export function accuracyLabel(accuracy: PredictionAccuracy): string {
-  return accuracy.evaluations === 0 ? 'top-3 –' : `top-3 ${accuracy.top3Hits}/${accuracy.evaluations}`;
+/** Compact age: "nu", "4m", "2u". */
+export function ageLabel(updatedAt: string, nowMs: number): string {
+  const minutes = Math.floor((nowMs - new Date(updatedAt).getTime()) / 60_000);
+  if (minutes < 1) return 'nu';
+  if (minutes < 60) return `${minutes}m`;
+  return `${Math.floor(minutes / 60)}u`;
 }
 
-/** Accuracy text for the sidebar row, or null for areas without groups (nothing to predict). */
-export function predictionAccuracyText(prediction: Prediction): string | null {
-  return prediction.reason === NO_GROUPS_REASON ? null : accuracyLabel(prediction.accuracy);
-}
-
-/** True when the prediction was last recomputed more than 10 minutes before `nowMs`. */
-export function isPredictionStale(prediction: Prediction, nowMs: number): boolean {
-  return nowMs - new Date(prediction.updatedAt).getTime() > STALE_AFTER_MS;
-}
-
-/** Status text to show instead of the top candidate, or null for an active prediction. */
+/** Text to show instead of the candidate bars, or null for an active prediction. */
 export function predictionStatusText(prediction: Prediction): string | null {
-  if (prediction.paused) return prediction.reason ?? 'Voorspelling gepauzeerd';
+  if (prediction.paused) return prediction.reason ?? 'Gepauzeerd';
   if (prediction.reason) return prediction.reason;
-  if (prediction.candidates.length === 0) return 'Geen kandidaten meer in deze ronde';
+  if (prediction.candidates.length === 0) return 'Alle groepen bezocht';
   return null;
 }
 
-/** Collapsed sidebar summary: number of active predictions. */
+/** Collapsed sidebar summary: number of predictions with a pin. */
 export function predictionSummary(predictions?: Prediction[]): string | undefined {
   if (!predictions) return undefined;
-  const active = predictions.filter((prediction) => !prediction.paused && prediction.candidates.length > 0).length;
+  const active = predictions.filter((prediction) => !prediction.paused && prediction.pin).length;
   return active === 0 ? 'Geen actieve' : `${active} actief`;
 }
 
-/** Which of the three visit buttons is active: a manual state, or automatic. */
+/** Which of the three visit buttons is active: a manual state, or AI. */
 export function visitSelection(visit?: GroupVisit): VisitChoice {
   return visit?.source === 'manual' ? visit.state : 'auto';
 }
 
 export function visitStatusText(visit?: GroupVisit): string {
-  if (!visit) return 'Nog niet bezocht (automatisch)';
+  if (!visit) return 'Nog niet bezocht (AI)';
   const state = visit.state === 'visited' ? 'Bezocht' : 'Niet bezocht';
-  const source = visit.source === 'manual' ? 'handmatig' : 'automatisch';
-  const time = visit.state === 'visited' && visit.visitedAt ? `, ${formatClock(visit.visitedAt)}` : '';
+  const source = visit.source === 'manual' ? 'handmatig' : 'AI';
+  const time = visit.source === 'manual' && visit.state === 'visited' && visit.visitedAt ? `, ${formatClock(visit.visitedAt)}` : '';
   return `${state} (${source}${time}) · ronde ${visit.round}`;
 }
 
-/**
- * GeoJSON for the prediction map layer: zones (outer, core, islands), lines from the last
- * position to the candidates and label positions (line midpoints, only for candidates ≥ 5 %).
- * Paused predictions are skipped.
- */
-export function buildPredictionGeoJson(
+/** Map data: a dashed line from the last observation to the pin, the pins, and a badge per candidate group. */
+export function buildPredictionMap(
   predictions: Prediction[],
   colorFor: (area: string) => string,
-): { zones: FeatureCollection<Polygon, ZoneProperties>; lines: FeatureCollection<LineString, LineProperties>; labels: PredictionLabel[] } {
-  const zones: Feature<Polygon, ZoneProperties>[] = [];
-  const lines: Feature<LineString, LineProperties>[] = [];
-  const labels: PredictionLabel[] = [];
-
+): { lines: FeatureCollection<LineString, { area: string; color: string }>; pins: MapPin[]; badges: MapBadge[] } {
+  const lines: Feature<LineString, { area: string; color: string }>[] = [];
+  const pins: MapPin[] = [];
+  const badges: MapBadge[] = [];
   for (const prediction of predictions) {
-    if (prediction.paused) continue;
+    if (prediction.paused || !prediction.pin) continue;
     const color = colorFor(prediction.area);
-    const addZone = (geometry: GeoPolygon | null, kind: ZoneProperties['kind']) => {
-      if (geometry) zones.push({ type: 'Feature', geometry, properties: { area: prediction.area, color, kind, estimate: prediction.estimate } });
-    };
-    addZone(prediction.zone.outer, 'outer');
-    addZone(prediction.zone.core, 'core');
-    prediction.zone.islands.forEach((island) => addZone(island, 'island'));
-
-    const last = prediction.lastObservation;
-    if (!last) continue;
-    for (const candidate of prediction.candidates) {
+    const { pin, lastObservation: last } = prediction;
+    pins.push({ area: prediction.area, lng: pin.lng, lat: pin.lat, color, stale: prediction.stale });
+    if (last) {
       lines.push({
         type: 'Feature',
-        geometry: { type: 'LineString', coordinates: [[last.lng, last.lat], [candidate.lng, candidate.lat]] },
-        properties: { area: prediction.area, color, probability: candidate.probability },
-      });
-      if (candidate.probability < MIN_LABEL_PROBABILITY) continue;
-      labels.push({
-        key: `${prediction.area}-${candidate.teamApiId}`,
-        lng: (last.lng + candidate.lng) / 2,
-        lat: (last.lat + candidate.lat) / 2,
-        text: candidateLabel(candidate),
-        color,
-        via: candidate.via,
-        ...(candidate.transitLabel ? { transitLabel: candidate.transitLabel } : {}),
+        geometry: { type: 'LineString', coordinates: [[last.lng, last.lat], [pin.lng, pin.lat]] },
+        properties: { area: prediction.area, color },
       });
     }
+    prediction.candidates.forEach((candidate, rank) => {
+      badges.push({ key: `${prediction.area}-${candidate.teamApiId}`, area: prediction.area, lng: candidate.lng, lat: candidate.lat, color, text: badgeText(candidate), rank });
+    });
   }
-
-  return { zones: { type: 'FeatureCollection', features: zones }, lines: { type: 'FeatureCollection', features: lines }, labels };
+  return { lines: { type: 'FeatureCollection', features: lines }, pins, badges };
 }

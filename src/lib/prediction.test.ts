@@ -1,176 +1,77 @@
 import { describe, expect, test } from 'bun:test';
-import type { GroupVisit, Prediction, PredictionCandidate } from '@/types/Prediction';
-import {
-  accuracyLabel,
-  buildPredictionGeoJson,
-  candidateLabel,
-  formatProbability,
-  isPredictionStale,
-  predictionAccuracyText,
-  predictionStatusText,
-  predictionSummary,
-  visitSelection,
-  visitStatusText,
-} from './prediction';
-
-// Local times, so the expected labels don't depend on the machine's time zone
-const eta = new Date(2026, 9, 17, 14, 20).toISOString();
-const square = { type: 'Polygon' as const, coordinates: [[[5, 52], [5.1, 52], [5.1, 52.1], [5, 52]]] };
-
-function candidate(overrides: Partial<PredictionCandidate> = {}): PredictionCandidate {
-  return { teamApiId: 1, name: 'Scouting Test', lng: 5.5, lat: 52.1, probability: 0.62, travelMinutes: 14, eta, via: 'walk', overdue: false, ...overrides };
-}
+import type { Prediction } from '@/types/Prediction';
+import { ageLabel, badgeText, buildPredictionMap, formatProbability, predictionStatusText, predictionSummary, visitSelection, visitStatusText } from './prediction';
 
 function prediction(overrides: Partial<Prediction> = {}): Prediction {
   return {
     area: 'alpha',
     status: 'green',
-    mode: 'walking',
-    estimate: false,
-    transitUnavailable: false,
-    lastObservation: { time: eta, lng: 5.4, lat: 52.0, kind: 'hint' },
-    zone: { core: square, outer: square, islands: [] },
-    candidates: [candidate()],
-    accuracy: { top1Hits: 3, top3Hits: 7, evaluations: 9 },
-    updatedAt: eta,
     paused: false,
+    updatedAt: '2026-10-17T12:00:00Z',
     round: 1,
+    estimate: false,
+    stale: false,
+    lastObservation: { time: '2026-10-17T11:00:00Z', lng: 5.48, lat: 52.08, kind: 'hint' },
+    pin: { lat: 52.09, lng: 5.5 },
+    confidence: 'high',
+    candidates: [
+      { teamApiId: 1, name: 'Rijn', lng: 5.51, lat: 52.1, probability: 0.62, eta: '2026-10-17T12:20:00Z', walkMinutes: 20 },
+      { teamApiId: 2, name: 'Valken', lng: 5.52, lat: 52.1, probability: 0.38, eta: '2026-10-17T12:35:00Z', walkMinutes: 35 },
+    ],
+    visitedTeamApiIds: [],
+    why: 'Richting oost.',
     ...overrides,
   };
 }
 
-function visit(overrides: Partial<GroupVisit> = {}): GroupVisit {
-  return { area: 'alpha', teamApiId: 1, round: 1, state: 'visited', source: 'auto', visitedAt: null, ...overrides };
-}
-
-describe('candidateLabel', () => {
-  test('probability and ETA', () => expect(candidateLabel(candidate())).toBe('62% · ~14:20'));
-  test('transit is text only (the icon is rendered separately)', () =>
-    expect(candidateLabel(candidate({ via: 'transit', transitLabel: 'bus 5' }))).toBe('62% · ~14:20'));
-  test('overdue', () => expect(candidateLabel(candidate({ overdue: true }))).toBe('62% · had er al kunnen zijn'));
-  test('near-certain', () => expect(candidateLabel(candidate({ probability: 1 }))).toBe('>99% · ~14:20'));
-});
-
-describe('formatProbability', () => {
-  test('never claims 100 % or 0 %', () => {
-    expect(formatProbability(1)).toBe('>99%');
-    expect(formatProbability(0.995)).toBe('>99%');
-    expect(formatProbability(0.994)).toBe('99%');
+describe('prediction helpers', () => {
+  test('formatProbability extremes', () => {
+    expect(formatProbability(0.999)).toBe('>99%');
+    expect(formatProbability(0.001)).toBe('<1%');
     expect(formatProbability(0.62)).toBe('62%');
-    expect(formatProbability(0.005)).toBe('1%');
-    expect(formatProbability(0.0049)).toBe('<1%');
-    expect(formatProbability(0)).toBe('<1%');
   });
-});
 
-describe('isPredictionStale', () => {
-  const updatedAt = new Date(2026, 9, 17, 14, 0).toISOString();
-  const minutesLater = (minutes: number) => new Date(2026, 9, 17, 14, minutes).getTime();
-  test('stale when older than 10 minutes', () => {
-    expect(isPredictionStale(prediction({ updatedAt }), minutesLater(10))).toBe(false);
-    expect(isPredictionStale(prediction({ updatedAt }), minutesLater(11))).toBe(true);
+  test('badgeText is "62% HH:mm"', () => {
+    expect(badgeText(prediction().candidates[0])).toMatch(/^62% \d{2}:\d{2}$/);
   });
-});
 
-describe('predictionAccuracyText', () => {
-  test('accuracy for areas with groups', () => expect(predictionAccuracyText(prediction())).toBe('top-3 7/9'));
-  test('nothing for areas without groups', () =>
-    expect(predictionAccuracyText(prediction({ reason: 'Geen groepen gekoppeld', candidates: [], accuracy: { top1Hits: 0, top3Hits: 0, evaluations: 0 } }))).toBeNull());
-});
-
-describe('accuracyLabel', () => {
-  test('top-3 hits of evaluations', () => expect(accuracyLabel({ top1Hits: 3, top3Hits: 7, evaluations: 9 })).toBe('top-3 7/9'));
-  test('no evaluations yet', () => expect(accuracyLabel({ top1Hits: 0, top3Hits: 0, evaluations: 0 })).toBe('top-3 –'));
-});
-
-describe('predictionStatusText', () => {
-  test('paused shows the reason', () => {
-    expect(predictionStatusText(prediction({ paused: true, reason: 'Inactief, voorspelling gepauzeerd', candidates: [] }))).toBe('Inactief, voorspelling gepauzeerd');
+  test('ageLabel', () => {
+    const t = Date.parse('2026-10-17T12:00:00Z');
+    expect(ageLabel('2026-10-17T12:00:00Z', t + 30_000)).toBe('nu');
+    expect(ageLabel('2026-10-17T12:00:00Z', t + 4 * 60_000)).toBe('4m');
+    expect(ageLabel('2026-10-17T12:00:00Z', t + 125 * 60_000)).toBe('2u');
   });
-  test('reason without pause', () => {
-    expect(predictionStatusText(prediction({ reason: 'Nog geen waarnemingen', candidates: [] }))).toBe('Nog geen waarnemingen');
-  });
-  test('no candidates left', () => {
-    expect(predictionStatusText(prediction({ candidates: [] }))).toBe('Geen kandidaten meer in deze ronde');
-  });
-  test('active prediction has no status text', () => expect(predictionStatusText(prediction())).toBeNull());
-});
 
-describe('predictionSummary', () => {
-  test('counts active predictions', () => {
-    expect(predictionSummary(undefined)).toBeUndefined();
-    expect(predictionSummary([prediction(), prediction({ area: 'bravo', paused: true, candidates: [] })])).toBe('1 actief');
-    expect(predictionSummary([])).toBe('Geen actieve');
+  test('status text', () => {
+    expect(predictionStatusText(prediction())).toBeNull();
+    expect(predictionStatusText(prediction({ paused: true, reason: 'Inactief' }))).toBe('Inactief');
+    expect(predictionStatusText(prediction({ pin: null, candidates: [], reason: 'Nog geen locatie' }))).toBe('Nog geen locatie');
+    expect(predictionStatusText(prediction({ candidates: [] }))).toBe('Alle groepen bezocht');
   });
-});
 
-describe('visit helpers', () => {
-  test('no visit doc → automatic, not visited', () => {
+  test('summary counts predictions with a pin', () => {
+    expect(predictionSummary([prediction(), prediction({ area: 'b', pin: null })])).toBe('1 actief');
+    expect(predictionSummary([prediction({ paused: true })])).toBe('Geen actieve');
+  });
+
+  test('visit helpers', () => {
     expect(visitSelection(undefined)).toBe('auto');
-    expect(visitStatusText(undefined)).toBe('Nog niet bezocht (automatisch)');
+    expect(visitSelection({ area: 'a', teamApiId: 1, round: 1, state: 'visited', source: 'manual', visitedAt: null })).toBe('visited');
+    expect(visitStatusText(undefined)).toBe('Nog niet bezocht (AI)');
+    expect(visitStatusText({ area: 'a', teamApiId: 1, round: 2, state: 'visited', source: 'auto', visitedAt: null })).toBe('Bezocht (AI) · ronde 2');
   });
 
-  test('manual override', () => {
-    const manual = visit({ state: 'not_visited', source: 'manual' });
-    expect(visitSelection(manual)).toBe('not_visited');
-    expect(visitStatusText(manual)).toBe('Niet bezocht (handmatig) · ronde 1');
-  });
-
-  test('automatic visit with time', () => {
-    const auto = visit({ round: 2, visitedAt: new Date(2026, 9, 17, 14, 5).toISOString() });
-    expect(visitSelection(auto)).toBe('auto');
-    expect(visitStatusText(auto)).toBe('Bezocht (automatisch, 14:05) · ronde 2');
-  });
-});
-
-describe('buildPredictionGeoJson', () => {
-  test('zones, lines and labels for active predictions only', () => {
-    const data = buildPredictionGeoJson(
-      [
-        prediction({ estimate: true, zone: { core: square, outer: square, islands: [square] }, candidates: [candidate(), candidate({ teamApiId: 2, lng: 5.6, probability: 0.2 })] }),
-        prediction({ area: 'bravo', paused: true, candidates: [] }),
-      ],
-      () => '#abcdef',
-    );
-    expect(data.zones.features.map((feature) => feature.properties)).toEqual([
-      { area: 'alpha', color: '#abcdef', kind: 'outer', estimate: true },
-      { area: 'alpha', color: '#abcdef', kind: 'core', estimate: true },
-      { area: 'alpha', color: '#abcdef', kind: 'island', estimate: true },
+  test('buildPredictionMap: line last→pin, pin, badges ranked; paused and pinless skipped', () => {
+    const map = buildPredictionMap([prediction(), prediction({ area: 'b', paused: true }), prediction({ area: 'c', pin: null })], () => '#f00');
+    expect(map.pins).toEqual([{ area: 'alpha', lng: 5.5, lat: 52.09, color: '#f00', stale: false }]);
+    expect(map.lines.features).toHaveLength(1);
+    expect(map.lines.features[0].geometry.coordinates).toEqual([
+      [5.48, 52.08],
+      [5.5, 52.09],
     ]);
-    expect(data.lines.features).toHaveLength(2);
-    expect(data.lines.features[0].geometry.coordinates).toEqual([
-      [5.4, 52.0],
-      [5.5, 52.1],
+    expect(map.badges.map((badge) => [badge.key, badge.rank])).toEqual([
+      ['alpha-1', 0],
+      ['alpha-2', 1],
     ]);
-    expect(data.lines.features[1].properties.probability).toBe(0.2);
-    expect(data.labels[0].key).toBe('alpha-1');
-    expect(data.labels[0].text).toBe('62% · ~14:20');
-    expect(data.labels[0].via).toBe('walk');
-    expect(data.labels[0].lng).toBeCloseTo(5.45, 6);
-    expect(data.labels[0].lat).toBeCloseTo(52.05, 6);
-  });
-
-  test('labels carry the transit line; candidates under 5 % get a line but no label', () => {
-    const data = buildPredictionGeoJson(
-      [
-        prediction({
-          candidates: [
-            candidate({ via: 'transit', transitLabel: 'bus 5', probability: 0.9 }),
-            candidate({ teamApiId: 2, probability: 0.05 }),
-            candidate({ teamApiId: 3, probability: 0.049 }),
-          ],
-        }),
-      ],
-      () => '#000',
-    );
-    expect(data.lines.features).toHaveLength(3);
-    expect(data.labels.map((label) => label.key)).toEqual(['alpha-1', 'alpha-2']);
-    expect(data.labels[0]).toMatchObject({ text: '90% · ~14:20', via: 'transit', transitLabel: 'bus 5' });
-  });
-
-  test('no lines without a last observation', () => {
-    const data = buildPredictionGeoJson([prediction({ lastObservation: null })], () => '#000');
-    expect(data.lines.features).toEqual([]);
-    expect(data.labels).toEqual([]);
   });
 });

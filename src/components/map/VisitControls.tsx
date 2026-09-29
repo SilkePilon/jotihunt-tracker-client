@@ -8,10 +8,10 @@ import type { VisitChoice } from '@/types/Prediction';
 const OPTIONS: { value: VisitChoice; label: string }[] = [
   { value: 'visited', label: 'Bezocht' },
   { value: 'not_visited', label: 'Niet bezocht' },
-  { value: 'auto', label: 'Automatisch' },
+  { value: 'auto', label: 'AI' },
 ];
 
-/** Visited / not visited / automatic buttons for a group (used in the group popup). */
+/** Visited / not visited / AI buttons for a group (used in the group popup). */
 export default function VisitControls({ teamApiId }: { teamApiId: number }) {
   const { visits, setVisit } = useVisits();
   const [busy, setBusy] = useState(false);

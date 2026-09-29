@@ -33,7 +33,21 @@ function report(overrides: Partial<HuntReport> = {}): HuntReport {
 }
 
 function prediction(area: string, lng: number, lat: number): Prediction {
-  return { area, lastObservation: { time: '2026-10-17T11:00:00Z', lng, lat, kind: 'hint' } } as Prediction;
+  return {
+    area,
+    status: 'green',
+    paused: false,
+    updatedAt: '2026-10-17T12:00:00Z',
+    round: 1,
+    estimate: false,
+    stale: false,
+    lastObservation: { time: '2026-10-17T11:00:00Z', lng, lat, kind: 'hint' },
+    pin: null,
+    confidence: null,
+    candidates: [],
+    visitedTeamApiIds: [],
+    why: '',
+  };
 }
 
 describe('normalizeHuntCode', () => {

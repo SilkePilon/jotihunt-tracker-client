@@ -26,14 +26,14 @@ export function resolveHuntTime(hours: number, minutes: number, now: Date): Date
   return time;
 }
 
-/** Area whose last observation (hint/hunt/spot) is closest to the phone, or null. */
+/** Area whose best guess (pin) or last observation is closest to the phone, or null. */
 export function nearestArea(position: { lng: number; lat: number } | null, predictions: Prediction[] | undefined): string | null {
   if (!position || !predictions) return null;
   let best: { area: string; km: number } | null = null;
   for (const prediction of predictions) {
-    const observation = prediction.lastObservation;
-    if (!observation) continue;
-    const km = distance([position.lng, position.lat], [observation.lng, observation.lat]);
+    const point = prediction.pin ?? prediction.lastObservation;
+    if (!point) continue;
+    const km = distance([position.lng, position.lat], [point.lng, point.lat]);
     if (!best || km < best.km) best = { area: prediction.area, km };
   }
   return best?.area ?? null;

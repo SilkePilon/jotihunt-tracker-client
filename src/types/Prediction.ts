@@ -1,6 +1,4 @@
-import type { Polygon } from 'geojson';
-
-export type GeoPolygon = Polygon;
+export type Confidence = 'low' | 'medium' | 'high';
 
 export interface PredictionCandidate {
   teamApiId: number;
@@ -9,36 +7,31 @@ export interface PredictionCandidate {
   lat: number;
   /** 0–1 */
   probability: number;
-  travelMinutes: number;
   /** ISO time */
   eta: string;
-  via: 'walk' | 'transit';
-  transitLabel?: string;
-  /** The ETA has passed: "had er al kunnen zijn" */
-  overdue: boolean;
-}
-
-export interface PredictionAccuracy {
-  top1Hits: number;
-  top3Hits: number;
-  evaluations: number;
+  walkMinutes: number;
 }
 
 export interface Prediction {
   area: string;
   status: string;
-  mode: 'walking' | 'transit';
-  /** Straight-line fallback was used (no ORS key or ORS error) */
-  estimate: boolean;
-  transitUnavailable: boolean;
-  lastObservation: { time: string; lng: number; lat: number; kind: 'hint' | 'hunt' | 'spot' } | null;
-  zone: { core: GeoPolygon | null; outer: GeoPolygon | null; islands: GeoPolygon[] };
-  candidates: PredictionCandidate[];
-  accuracy: PredictionAccuracy;
-  updatedAt: string;
   paused: boolean;
   reason?: string;
+  updatedAt: string;
   round: number;
+  /** Walking times were straight-line estimates */
+  estimate: boolean;
+  /** The last AI run failed; this is an older prediction */
+  stale: boolean;
+  error?: string;
+  lastObservation: { time: string; lng: number; lat: number; kind: 'hint' | 'hunt' | 'spot' } | null;
+  /** AI best guess of the current fox position */
+  pin: { lat: number; lng: number } | null;
+  confidence: Confidence | null;
+  candidates: PredictionCandidate[];
+  visitedTeamApiIds: number[];
+  /** One short Dutch sentence, shown behind ⓘ */
+  why: string;
 }
 
 export type VisitState = 'visited' | 'not_visited';
@@ -49,6 +42,7 @@ export interface GroupVisit {
   teamApiId: number;
   round: number;
   state: VisitState;
+  /** auto = decided by the AI */
   source: 'auto' | 'manual';
   visitedAt: string | null;
 }
