@@ -152,8 +152,8 @@ const Map = forwardRef<MapRef>((_, ref) => {
                     </>
                 )}
                 <div className="bg-background">
-                    {/* The mobile bottom sheet covers the bottom of the screen; on phones the credits sit top-right instead. */}
-                    <AttributionControl position={isMobile ? 'top-right' : 'bottom-left'} customAttribution={GROUP_NAME ? `Jotihunt Tracker | ${GROUP_NAME}` : 'Jotihunt Tracker'} compact={true}/>
+                    {/* Credits on the right: bottom-right on desktop; on phones top-right, above the bottom sheet. */}
+                    <AttributionControl position={isMobile ? 'top-right' : 'bottom-right'} customAttribution={GROUP_NAME ? `Jotihunt Tracker | ${GROUP_NAME}` : 'Jotihunt Tracker'} compact={true}/>
                 </div>
                 {popupPosition && <PickedLocationPopup lng={popupPosition.lng} lat={popupPosition.lat}
                                                        onClose={() => setPopupPosition(undefined)}/>}
