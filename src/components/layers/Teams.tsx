@@ -14,6 +14,7 @@ import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip.t
 import {CheckIcon} from 'lucide-react';
 import {useVisits} from '@/hooks/predictions.hook';
 import VisitControls from '../map/VisitControls';
+import TeamLogo from '../map/TeamLogo';
 import {useIsMobile} from '@/hooks/media.hook';
 
 /** On phones the bottom sheet covers the lower ~130px; aim a bit higher so the team isn't hidden behind it. */
@@ -147,8 +148,11 @@ export default function Teams() {
                 <MapPopup longitude={activeTeam.location.coordinates[0]} latitude={activeTeam.location.coordinates[1]}
                           onClose={() => setActiveTeam(undefined)}>
                     <div className="mr-6 flex flex-col gap-3 w-full">
+                        <div className="flex items-center gap-3">
+                            <TeamLogo name={activeTeam.name} logoUrl={activeTeam.logoUrl}/>
+                            <h2 className="font-semibold leading-tight">{activeTeam.name}</h2>
+                        </div>
                         <div>
-                            <h2 className="font-semibold">{activeTeam.name}</h2>
                             <div className="flex items-center gap-1">
                                 <p>Deelgebied</p>
                                 <Badge

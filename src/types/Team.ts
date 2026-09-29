@@ -9,6 +9,8 @@ export interface Team {
   postCode: string;
   city: string;
   area?: string;
+  /** Group logo from jotihunt.nl, when the group uploaded one */
+  logoUrl?: string;
   location: {
     type: string;
     coordinates: number[];
