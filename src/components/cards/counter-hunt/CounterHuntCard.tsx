@@ -1,5 +1,6 @@
 import { Eye, Trash } from 'lucide-react';
 import { Button } from '../../ui/button.tsx';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.tsx';
 import useCounterHuntStore from '@/stores/counterhunt.store.ts';
 import { useState } from 'react';
@@ -43,9 +44,9 @@ export default function CounterHuntCard({ mapRef }: InferProps<typeof CounterHun
   }
 
   return (
-    <div className="flex gap-2 w-full flex-wrap md:flex-nowrap">
+    <div className="flex w-full items-center gap-2">
       <Select onValueChange={(value) => setChosenDirection(Number(value))} value={chosenDirection.toString()}>
-        <SelectTrigger className="w-full">
+        <SelectTrigger className="w-full min-w-0 flex-1" aria-label="Windrichting">
           <SelectValue placeholder="Kies windrichting..." />
         </SelectTrigger>
         <SelectContent>
@@ -65,10 +66,14 @@ export default function CounterHuntCard({ mapRef }: InferProps<typeof CounterHun
         <Eye data-icon="inline-start" />
         Toon
       </Button>
-      <Button variant="outline" onClick={removeCounterHunt}>
-        <Trash data-icon="inline-start" />
-        Verwijder
-      </Button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="outline" size="icon" aria-label="Tegenhunt verwijderen" onClick={removeCounterHunt}>
+            <Trash />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Tegenhunt verwijderen</TooltipContent>
+      </Tooltip>
     </div>
   );
 }
