@@ -12,7 +12,8 @@ import {
     ShieldIcon,
     UsersIcon,
     FlaskConicalIcon,
-    Loader2Icon
+    Loader2Icon,
+    SparklesIcon
 } from 'lucide-react';
 import {siDiscord} from "simple-icons"
 import {Button} from './ui/button';
@@ -55,6 +56,7 @@ import {toast} from "sonner";
 import useHintBoardStore from "@/stores/hint-board.store";
 import useAdminStore from "@/stores/admin.store";
 import {useDemo} from "@/hooks/demo.hook";
+import {usePredictionSetting} from "@/hooks/predictions.hook";
 import {isAxiosError} from "axios";
 
 export default function Settings() {
@@ -90,6 +92,15 @@ export default function Settings() {
     const {demo, setDemo} = useDemo();
     const [isDemoDialogOpen, setIsDemoDialogOpen] = useState(false);
     const [isSwitchingDemo, setIsSwitchingDemo] = useState(false);
+    const {enabled: predictionEnabled, setEnabled: setPredictionEnabled} = usePredictionSetting();
+
+    async function handleTogglePrediction(enabled: boolean) {
+        try {
+            await setPredictionEnabled(enabled);
+        } catch {
+            toast.error('AI-voorspelling wisselen is mislukt');
+        }
+    }
     const turnDemoOn = !demo?.enabled;
 
     async function handleSwitchDemo() {
@@ -191,11 +202,13 @@ export default function Settings() {
                                                           onSelect={(e) => e.preventDefault()}>
                                     Groepen cirkels
                                 </DropdownMenuCheckboxItem>
-                                <DropdownMenuCheckboxItem checked={showPredictions}
-                                                          onCheckedChange={togglePredictions}
-                                                          onSelect={(e) => e.preventDefault()}>
-                                    Voorspelling
-                                </DropdownMenuCheckboxItem>
+                                {predictionEnabled !== false && (
+                                    <DropdownMenuCheckboxItem checked={showPredictions}
+                                                              onCheckedChange={togglePredictions}
+                                                              onSelect={(e) => e.preventDefault()}>
+                                        Voorspelling
+                                    </DropdownMenuCheckboxItem>
+                                )}
                             </DropdownMenuSubContent>
                         </DropdownMenuPortal>
                     </DropdownMenuSub>
@@ -258,6 +271,12 @@ export default function Settings() {
                                                                   disabled={!demo}
                                                                   onCheckedChange={() => setIsDemoDialogOpen(true)}>
                                             <FlaskConicalIcon/>Demo mode
+                                        </DropdownMenuCheckboxItem>
+                                        <DropdownMenuCheckboxItem checked={predictionEnabled !== false}
+                                                                  disabled={predictionEnabled === undefined}
+                                                                  onCheckedChange={(checked) => void handleTogglePrediction(checked)}
+                                                                  onSelect={(e) => e.preventDefault()}>
+                                            <SparklesIcon/>AI-voorspelling
                                         </DropdownMenuCheckboxItem>
                                         <DropdownMenuItem onClick={() => setIsConfirmReloadDialogOpen(true)}>
                                             <RefreshCwIcon/>Herlaad teams uit API

@@ -6,7 +6,7 @@ import ActiveDevices from '@/components/map/ActiveDevices';
 import { useAreas } from '@/hooks/areas.hook';
 import { useDevices } from '@/hooks/devices.hook';
 import { useHintBoard } from '@/hooks/hints.hook';
-import { usePredictions } from '@/hooks/predictions.hook';
+import { usePredictions, usePredictionSetting } from '@/hooks/predictions.hook';
 import { statusSummary } from '@/lib/fox-status';
 import { hintProgress } from '@/lib/hints';
 import { predictionSummary } from '@/lib/prediction';
@@ -23,6 +23,7 @@ export default function SidebarSections({ mapRef }: { mapRef: RefObject<MapRef |
   const { board } = useHintBoard();
   const { devices } = useDevices();
   const { predictions } = usePredictions();
+  const { enabled: predictionEnabled } = usePredictionSetting();
   const activeCount = filterActiveDevices(devices).length;
   const progress = board ? hintProgress(board) : undefined;
 
@@ -35,9 +36,11 @@ export default function SidebarSections({ mapRef }: { mapRef: RefObject<MapRef |
         <HintMiniGrid />
       </SidebarSection>
       <HuntsSection />
-      <SidebarSection id="predictions" title="Voorspelling" summary={predictionSummary(predictions)}>
-        <PredictionList mapRef={mapRef} />
-      </SidebarSection>
+      {predictionEnabled !== false && (
+        <SidebarSection id="predictions" title="Voorspelling" summary={predictionSummary(predictions)}>
+          <PredictionList mapRef={mapRef} />
+        </SidebarSection>
+      )}
       <SidebarSection id="hintEntry" title="Hint registreren">
         <HintEntryCard mapRef={mapRef} />
       </SidebarSection>

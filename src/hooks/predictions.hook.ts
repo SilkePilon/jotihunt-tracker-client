@@ -7,16 +7,41 @@ const PREDICTION_REFRESH_MS = 15_000;
 /** The server recomputes in the background after PUT /visits (a Gemini call takes tens of seconds); fetch once more after this delay. */
 const RECOMPUTE_SETTLE_MS = 45_000;
 
+const SETTING_REFRESH_MS = 30_000;
 const isPredictionsKey = (key: unknown) => Array.isArray(key) && key[0] === '/predictions';
 
+const isPredictionRelatedKey = (key: unknown) => Array.isArray(key) && (key[0] === '/predictions' || key[0] === '/visits');
+
+/**
+ * Global admin switch for the AI fox prediction. `enabled` is undefined until loaded; hide prediction UI only when
+ * it is exactly `false`.
+ */
+export const usePredictionSetting = () => {
+  const authHeader = useAuthHeader() || '';
+  const { data, mutate } = useAuthSWR<{ enabled: boolean }>('/settings/prediction', { refreshInterval: SETTING_REFRESH_MS });
+  const { mutate: mutateGlobal } = useSWRConfig();
+
+  /** Admin only; throws the axios error on failure. */
+  async function setEnabled(enabled: boolean) {
+    const result = (await fetcherWithMethod('/settings/prediction', authHeader, 'PUT', { enabled })) as { enabled: boolean };
+    await mutate(result, { revalidate: false });
+    await mutateGlobal(isPredictionRelatedKey);
+    return result.enabled;
+  }
+
+  return { enabled: data?.enabled, setEnabled };
+};
+
 export const usePredictions = () => {
-  const { data, error } = useAuthSWR<Prediction[]>('/predictions', { refreshInterval: PREDICTION_REFRESH_MS });
+  const { enabled } = usePredictionSetting();
+  const { data, error } = useAuthSWR<Prediction[]>(enabled === false ? null : '/predictions', { refreshInterval: PREDICTION_REFRESH_MS });
   return { predictions: data, isLoading: !error && !data, isError: error };
 };
 
 export const useVisits = () => {
   const authHeader = useAuthHeader() || '';
-  const { data, error, mutate } = useAuthSWR<GroupVisit[]>('/visits', { refreshInterval: PREDICTION_REFRESH_MS });
+  const { enabled } = usePredictionSetting();
+  const { data, error, mutate } = useAuthSWR<GroupVisit[]>(enabled === false ? null : '/visits', { refreshInterval: PREDICTION_REFRESH_MS });
   const { mutate: mutateGlobal } = useSWRConfig();
 
   /**

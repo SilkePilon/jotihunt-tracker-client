@@ -12,7 +12,7 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '../
 import useLayersStore from '@/stores/layers.store';
 import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip.tsx";
 import {CheckIcon} from 'lucide-react';
-import {useVisits} from '@/hooks/predictions.hook';
+import {usePredictionSetting, useVisits} from '@/hooks/predictions.hook';
 import VisitControls from '../map/VisitControls';
 import TeamLogo from '../map/TeamLogo';
 import {useIsMobile} from '@/hooks/media.hook';
@@ -35,6 +35,7 @@ export default function Teams() {
     const [tooltipOpenId, setTooltipOpenId] = useState<string | null>(null);
     const {areas} = useAreas();
     const {visits} = useVisits();
+    const {enabled: predictionEnabled} = usePredictionSetting();
     const visitedIds = useMemo(
         () => new Set((visits ?? []).filter((visit) => visit.state === 'visited').map((visit) => visit.teamApiId)),
         [visits],
@@ -167,7 +168,7 @@ export default function Teams() {
                         <p className="text-xs leading-snug text-muted-foreground">
                             {activeTeam.accomodation} · {activeTeam.street} {activeTeam.houseNumber}{activeTeam.houseNumberAddition ? ` ${activeTeam.houseNumberAddition}` : ''}, {activeTeam.postCode} {activeTeam.city}
                         </p>
-                        {activeTeam.area && <VisitControls teamApiId={activeTeam.apiId}/>}
+                        {activeTeam.area && predictionEnabled !== false && <VisitControls teamApiId={activeTeam.apiId}/>}
                         {/* Select with areas */}
                         <div className="flex flex-col gap-2">
                             {TEAMS_AREA_EDITING && (
