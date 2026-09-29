@@ -13,7 +13,7 @@ import type { HuntReport } from '@/types/HuntReport';
 import type { User } from '@/types/User';
 import Concealed from './Concealed';
 import HuntCodeText, { HuntTimeText } from './HuntCodeText';
-import HuntFieldsForm from './HuntFieldsForm';
+import { EditCode, EditTime, RereadButton } from './HuntInlineEdit';
 import ImageLightbox from './ImageLightbox';
 
 /** The server's (Dutch) error message when there is one. */
@@ -56,6 +56,8 @@ export default function HuntDetail({ report, now, onBack }: { report: HuntReport
   const concealed = isConcealed(report, now);
   const [busy, setBusy] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  /** Which field is being edited inline (admins) */
+  const [editing, setEditing] = useState<'code' | 'time' | null>(null);
   // Status changes and deleting are HQ work: admins only (the server enforces this too)
   const isAdmin = !!user?.admin;
   const canDelete = isAdmin && !report.submittedAt && !report.site;
@@ -133,12 +135,15 @@ export default function HuntDetail({ report, now, onBack }: { report: HuntReport
               {capitalizeFirstLetter(report.area)}
             </Fact>
             <Fact label="Code">
-              <HuntCodeText report={report} concealed={concealed} />
-              {isAdmin && report.huntCode && <CopyButton value={report.huntCode} label="Code" />}
+              {editing !== 'code' && <HuntCodeText report={report} concealed={concealed} />}
+              {isAdmin && editing !== 'code' && report.huntCode && <CopyButton value={report.huntCode} label="Code" />}
+              {isAdmin && <EditCode report={report} editing={editing === 'code'} onEditingChange={(on) => setEditing(on ? 'code' : null)} />}
+              {isAdmin && editing !== 'code' && <RereadButton report={report} />}
             </Fact>
             <Fact label="Tijd">
-              <HuntTimeText report={report} className="font-mono" />
-              {isAdmin && report.huntTimeKnown && <CopyButton value={huntTimeLabel(report)} label="Tijd" />}
+              {editing !== 'time' && <HuntTimeText report={report} className="font-mono" />}
+              {isAdmin && editing !== 'time' && report.huntTimeKnown && <CopyButton value={huntTimeLabel(report)} label="Tijd" />}
+              {isAdmin && <EditTime report={report} editing={editing === 'time'} onEditingChange={(on) => setEditing(on ? 'time' : null)} />}
             </Fact>
             <Fact label="Bron">
               <span className={readFailed(report) ? 'text-destructive' : 'text-muted-foreground'}>{huntSourceLabel(report, isAdmin)}</span>
@@ -163,8 +168,6 @@ export default function HuntDetail({ report, now, onBack }: { report: HuntReport
               {report.needsReview && !isReading(report) && <p>Controleer de code en tijd met de foto.</p>}
             </div>
           )}
-
-          {isAdmin && <HuntFieldsForm report={report} />}
 
           <div className="flex flex-wrap gap-2">
             {isAdmin && !report.submittedAt && (

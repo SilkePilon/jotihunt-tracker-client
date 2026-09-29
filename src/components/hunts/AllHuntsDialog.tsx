@@ -7,12 +7,14 @@ import { useAuthImage } from '@/hooks/auth-image.hook';
 import { useHuntReports } from '@/hooks/hunt-reports.hook';
 import { useHunts } from '@/hooks/hunts.hook';
 import useInterval from '@/hooks/utils/interval.hook';
+import { keepOpenWhileEditing } from '@/lib/inline-edit';
 import { formatHuntTimeSafe, huntListItems, isConcealed } from '@/lib/hunt-reports';
 import { areaOptions, capitalizeFirstLetter, getColorFromArea } from '@/lib/utils';
 import type { HuntListItem, HuntReport } from '@/types/HuntReport';
 import Concealed from './Concealed';
 import HuntCodeText, { DuplicateMark, HuntTimeText } from './HuntCodeText';
 import HuntDetail from './HuntDetail';
+
 import HuntStatusBadge from './HuntStatusBadge';
 
 type Filter = 'all' | 'pending' | 'submitted' | 'judged';
@@ -146,7 +148,7 @@ export default function AllHuntsDialog({ open, onOpenChange, initialReportId }: 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[92dvh] flex-col gap-3 sm:max-w-4xl max-md:h-dvh max-md:max-h-dvh max-md:max-w-none max-md:rounded-none">
+      <DialogContent onEscapeKeyDown={keepOpenWhileEditing} className="flex max-h-[92dvh] flex-col gap-3 sm:max-w-4xl max-md:h-dvh max-md:max-h-dvh max-md:max-w-none max-md:rounded-none">
         <DialogHeader>
           <DialogTitle>Alle hunts</DialogTitle>
           <DialogDescription className="sr-only">Alle geregistreerde hunts en hunts van jotihunt.nl.</DialogDescription>
