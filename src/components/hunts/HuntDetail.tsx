@@ -148,7 +148,6 @@ export default function HuntDetail({ report, now, onBack }: { report: HuntReport
             <Fact label="Bron">
               <span className={readFailed(report) ? 'text-destructive' : 'text-muted-foreground'}>{huntSourceLabel(report, isAdmin)}</span>
             </Fact>
-            <Fact label="Soort">{capitalizeFirstLetter(report.kind)}</Fact>
             <Fact label="Gemeld door">
               {report.reportedByName} · {formatHuntTime(report.createdAt)}
             </Fact>

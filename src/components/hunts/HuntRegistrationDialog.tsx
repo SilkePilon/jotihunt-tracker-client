@@ -16,7 +16,6 @@ import { nearestArea } from '@/lib/hunt-reports';
 import { downscalePhoto } from '@/lib/image';
 import { areaOptions, getColorFromArea, randomId } from '@/lib/utils';
 import useHuntCaptureStore from '@/stores/hunt-capture.store';
-import type { HuntKind } from '@/types/HuntReport';
 
 type Errors = { area?: string; save?: string };
 type Position = { lng: number; lat: number };
@@ -30,7 +29,7 @@ function wait(ms: number): Promise<'timeout'> {
 }
 
 /**
- * Register a hunt from a photo: only the fox team and the kind. The server reads the code and the handwritten time
+ * Register a hunt from a photo: only the fox team. The server reads the code and the handwritten time
  * from the photo in the background; HQ checks them. Driven by the capture store.
  */
 export default function HuntRegistrationDialog() {
@@ -42,7 +41,6 @@ export default function HuntRegistrationDialog() {
 
   const [prepared, setPrepared] = useState<{ source: File; blob: Blob; url: string } | null>(null);
   const [area, setArea] = useState('');
-  const [kind, setKind] = useState<HuntKind>('hunt');
   const [position, setPosition] = useState<Position | null>(null);
   /** Resolves with the geolocation result (or null on error/no support); set inside the capture effect, only read in save(). */
   const positionPromiseRef = useRef<Promise<Position | null> | null>(null);
@@ -63,7 +61,6 @@ export default function HuntRegistrationDialog() {
     setUploadId(randomId());
     setPrepared(null);
     setArea('');
-    setKind('hunt');
     setErrors({});
     setSaving(false);
     setFailed(false);
@@ -105,7 +102,7 @@ export default function HuntRegistrationDialog() {
   const suggestedArea = nearestArea(position, predictions);
   const chosenArea = area || suggestedArea || '';
   const isRed = !!chosenArea && areas?.find((candidate) => candidate.name.toLowerCase() === chosenArea)?.status === 'red';
-  const inCooldown = !!chosenArea && kind === 'hunt' && huntCooldownMs(lastHuntTimeFor(hunts, chosenArea, reports), now) > 0;
+  const inCooldown = !!chosenArea && huntCooldownMs(lastHuntTimeFor(hunts, chosenArea, reports), now) > 0;
 
   const clearError = (key: keyof Errors) => setErrors((current) => ({ ...current, [key]: undefined, save: undefined }));
 
@@ -128,7 +125,7 @@ export default function HuntRegistrationDialog() {
         const winner = await Promise.race([positionPromiseRef.current, wait(POSITION_WAIT_MS)]);
         if (winner !== 'timeout') resolvedPosition = winner;
       }
-      await createReport({ photo: savingBlob, area: chosenArea, kind, position: resolvedPosition, uploadId });
+      await createReport({ photo: savingBlob, area: chosenArea, position: resolvedPosition, uploadId });
       if (useHuntCaptureStore.getState().photo !== savingPhoto) return;
       toast.success('Hunt verstuurd', { description: 'De code en tijd worden nu gelezen.' });
       close();
@@ -193,26 +190,6 @@ export default function HuntRegistrationDialog() {
                 ))}
               </ToggleGroup>
               <FieldError>{errors.area}</FieldError>
-            </Field>
-
-            <Field className="gap-2">
-              <FieldLabel>Soort</FieldLabel>
-              <ToggleGroup
-                type="single"
-                variant="outline"
-                size="sm"
-                aria-label="Soort"
-                className="w-full"
-                value={kind}
-                onValueChange={(next) => next && setKind(next as HuntKind)}
-              >
-                <ToggleGroupItem value="hunt" className="flex-1">
-                  Hunt
-                </ToggleGroupItem>
-                <ToggleGroupItem value="tegenhunt" className="flex-1">
-                  Tegenhunt
-                </ToggleGroupItem>
-              </ToggleGroup>
             </Field>
 
             {isRed && <p className="text-sm text-amber-600 dark:text-amber-500">Deze vos is inactief (rood). De hunt wordt waarschijnlijk afgekeurd.</p>}

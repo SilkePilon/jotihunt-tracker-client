@@ -78,7 +78,6 @@ function HuntRow({ item, now, onSelect }: { item: HuntListItem; now: number; onS
           <AreaCell area={hunt.area} />
         </TableCell>
         <TableCell className="font-mono">{hunt.huntCode}</TableCell>
-        <TableCell className="text-muted-foreground max-md:hidden">–</TableCell>
         <TableCell>{formatHuntTimeSafe(hunt.huntTime)}</TableCell>
         <TableCell className="text-muted-foreground max-md:hidden">jotihunt.nl</TableCell>
         <TableCell>
@@ -113,7 +112,6 @@ function HuntRow({ item, now, onSelect }: { item: HuntListItem; now: number; onS
           <DuplicateMark report={report} />
         </span>
       </TableCell>
-      <TableCell className="max-md:hidden">{capitalizeFirstLetter(report.kind)}</TableCell>
       <TableCell>
         <HuntTimeText report={report} />
       </TableCell>
@@ -183,7 +181,6 @@ export default function AllHuntsDialog({ open, onOpenChange, initialReportId }: 
                         <span className="max-md:sr-only">Deelgebied</span>
                       </TableHead>
                       <TableHead>Code</TableHead>
-                      <TableHead className="max-md:hidden">Soort</TableHead>
                       <TableHead>Tijd</TableHead>
                       <TableHead className="max-md:hidden">Gemeld door</TableHead>
                       <TableHead>Status</TableHead>

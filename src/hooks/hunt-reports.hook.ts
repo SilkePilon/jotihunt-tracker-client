@@ -1,14 +1,13 @@
 import axios from 'axios';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
 import { fetcherWithMethod, useAuthSWR } from '@/lib/swr';
-import type { HuntKind, HuntReport } from '@/types/HuntReport';
+import type { HuntReport } from '@/types/HuntReport';
 
 const HUNT_REPORTS_REFRESH_MS = 10_000;
 
 export interface NewReportInput {
   photo: Blob;
   area: string;
-  kind: HuntKind;
   position: { lng: number; lat: number } | null;
   /** Same id for every attempt of one photo: a retry after a lost response doesn't create a second hunt */
   uploadId: string;
@@ -23,7 +22,7 @@ export const useHuntReports = () => {
     const form = new FormData();
     form.append('photo', input.photo, 'hunt.jpg');
     form.append('area', input.area);
-    form.append('kind', input.kind);
+    form.append('kind', 'hunt');
     form.append('uploadId', input.uploadId);
     if (input.position) {
       form.append('lng', String(input.position.lng));

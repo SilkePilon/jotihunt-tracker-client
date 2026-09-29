@@ -24,7 +24,7 @@ export default function NewHuntToaster() {
     for (const report of fresh) {
       if (report.reportedBy === user?._id) continue;
       const left = new Date(report.deadline).getTime() - Date.now();
-      toast.info(`Nieuwe ${report.kind === 'tegenhunt' ? 'tegenhunt' : 'hunt'} ${capitalizeFirstLetter(report.area)}`, {
+      toast.info(`Nieuwe hunt ${capitalizeFirstLetter(report.area)}`, {
         description: report.huntTimeKnown && left > 0 ? `Door ${report.reportedByName} – nog ${formatHintCountdown(left)} om in te sturen.` : `Door ${report.reportedByName}.`,
       });
     }

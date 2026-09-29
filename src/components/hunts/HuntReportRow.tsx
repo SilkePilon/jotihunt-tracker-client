@@ -27,7 +27,6 @@ export default function HuntReportRow({ report, now, onSelect }: { report: HuntR
         <HuntCodeText report={report} concealed={isConcealed(report, now)} />
         <DuplicateMark report={report} />
         <HuntTimeText report={report} className="text-muted-foreground" />
-        {report.kind === 'tegenhunt' && <span className="text-muted-foreground">Tegenhunt</span>}
         <span className="ml-auto">
           <HuntStatusBadge report={report} now={now} />
         </span>
