@@ -147,31 +147,26 @@ export default function Teams() {
             {activeTeam && (
                 <MapPopup longitude={activeTeam.location.coordinates[0]} latitude={activeTeam.location.coordinates[1]}
                           onClose={() => setActiveTeam(undefined)}>
-                    <div className="mr-6 flex flex-col gap-3 w-full">
-                        <div className="flex items-center gap-3">
-                            <TeamLogo name={activeTeam.name} logoUrl={activeTeam.logoUrl}/>
-                            <h2 className="font-semibold leading-tight">{activeTeam.name}</h2>
-                        </div>
-                        <div>
-                            <div className="flex items-center gap-1">
-                                <p>Deelgebied</p>
-                                <Badge
-                                    className="text-white border-0"
-                                    style={{
-                                        backgroundColor: getColorFromArea(activeTeam.area || ''),
-                                    }}
-                                >
-                                    {activeTeam.area ?? 'Onbekend'}
-                                </Badge>
+                    <div className="mr-5 flex w-64 flex-col gap-2 text-sm">
+                        <div className="flex items-center gap-2.5">
+                            <TeamLogo name={activeTeam.name} logoUrl={activeTeam.logoUrl} className="size-11 rounded-lg"/>
+                            <div className="min-w-0">
+                                <h2 className="font-semibold leading-tight">{activeTeam.name}</h2>
+                                <div className="mt-1">
+                                    {activeTeam.area ? (
+                                        <Badge className="border-0 text-white capitalize"
+                                               style={{backgroundColor: getColorFromArea(activeTeam.area)}}>
+                                            {activeTeam.area}
+                                        </Badge>
+                                    ) : (
+                                        <span className="text-xs text-muted-foreground">Geen deelgebied</span>
+                                    )}
+                                </div>
                             </div>
-                            <p>Accomodatie: {activeTeam.accomodation}</p>
-                            <p>
-                                {activeTeam.street} {activeTeam.houseNumber} {activeTeam.houseNumberAddition}
-                            </p>
-                            <p>
-                                {activeTeam.postCode} {activeTeam.city}
-                            </p>
                         </div>
+                        <p className="text-xs leading-snug text-muted-foreground">
+                            {activeTeam.accomodation} · {activeTeam.street} {activeTeam.houseNumber}{activeTeam.houseNumberAddition ? ` ${activeTeam.houseNumberAddition}` : ''}, {activeTeam.postCode} {activeTeam.city}
+                        </p>
                         {activeTeam.area && <VisitControls teamApiId={activeTeam.apiId}/>}
                         {/* Select with areas */}
                         <div className="flex flex-col gap-2">
