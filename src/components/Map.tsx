@@ -132,19 +132,28 @@ const Map = forwardRef<MapRef>((_, ref) => {
                 mapStyle={resolvedMapStyle}
                 maxBounds={maxBounds}
                 onClick={openPopup}
+                // Phones: start with the credits collapsed to the (i) button; MapLibre opens them on load
+                onLoad={(event) => {
+                    if (isMobile) event.target.getContainer().querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show');
+                }}
             >
-                <NavigationControl/>
-                <ScaleControl/>
-                <GeolocateControl/>
-                <FullscreenControl/>
-                <ImageControl/>
-                <Ruler linePaint={{
-                    'line-color': '#1473e8',
-                }} position={"top-right"} onActivate={() => setRulerActive(true)}
-                       onDeactivate={() => setRulerActive(false)}/>
+                {/* Phones: no map controls, the map is navigated by touch and the bottom sheet needs the room */}
+                {!isMobile && (
+                    <>
+                        <NavigationControl/>
+                        <ScaleControl/>
+                        <GeolocateControl/>
+                        <FullscreenControl/>
+                        <ImageControl/>
+                        <Ruler linePaint={{
+                            'line-color': '#1473e8',
+                        }} position={"top-right"} onActivate={() => setRulerActive(true)}
+                               onDeactivate={() => setRulerActive(false)}/>
+                    </>
+                )}
                 <div className="bg-background">
-                    {/* The mobile bottom sheet spans the full width at the bottom, covering bottom-left (and bottom-right); move up top-left there instead. */}
-                    <AttributionControl position={isMobile ? 'top-left' : 'bottom-left'} customAttribution={'Jotihunt Tracker | ' + GROUP_NAME} compact={true}/>
+                    {/* The mobile bottom sheet covers the bottom of the screen; on phones the credits sit top-right instead. */}
+                    <AttributionControl position={isMobile ? 'top-right' : 'bottom-left'} customAttribution={GROUP_NAME ? `Jotihunt Tracker | ${GROUP_NAME}` : 'Jotihunt Tracker'} compact={true}/>
                 </div>
                 {popupPosition && <PickedLocationPopup lng={popupPosition.lng} lat={popupPosition.lat}
                                                        onClose={() => setPopupPosition(undefined)}/>}

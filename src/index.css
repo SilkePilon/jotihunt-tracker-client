@@ -168,10 +168,6 @@
   @apply animate-in fade-in;
 }
 
-.maplibregl-ctrl-top-right {
-  @apply top-[137px]! md:top-0!;
-}
-
 .card {
   box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
 }

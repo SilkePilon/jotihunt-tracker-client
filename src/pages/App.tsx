@@ -13,11 +13,12 @@ function App() {
 
   return (
     <>
-      <div className="absolute left-2 right-2 top-2 z-30 flex gap-2 md:left-auto md:right-12">
-        <div className="hidden md:block">
+      {/* Desktop only: on phones the map stays free (search via the sidebar, groups via the map) */}
+      <div className="absolute right-12 top-2 z-30 hidden gap-2 md:flex">
+        <div>
           <CoordinatesCard mapRef={mapRef} />
         </div>
-        <div className="w-full md:w-auto">
+        <div>
           <SearchCard mapRef={mapRef} />
         </div>
       </div>
