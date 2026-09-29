@@ -6,14 +6,14 @@ export const HUNT_COOLDOWN_MS = 60 * 60 * 1000;
 
 /**
  * Time of the latest hunt on an area, from the scraped jotihunt.nl hunts and the app's own reports (so the
- * cooldown starts at registration). Tegenhunts don't count for the cooldown (since 2024).
+ * cooldown starts at registration). Tegenhunts on the site don't count for the cooldown (since 2024).
  */
 export function lastHuntTimeFor(hunts: Hunt[] | undefined, areaName: string, reports?: HuntReport[]): Date | string | undefined {
   const area = areaName.toLowerCase();
   const times: (Date | string)[] = [
     ...(hunts ?? []).filter((hunt) => !hunt.status.toLowerCase().includes('tegenhunt') && hunt.area.toLowerCase() === area).map((hunt) => hunt.huntTime),
     // Only once the time on the sticker is known (read from the photo or entered by an admin), not the upload time
-    ...(reports ?? []).filter((report) => report.kind === 'hunt' && report.huntTimeKnown && report.area === area).map((report) => report.huntTime),
+    ...(reports ?? []).filter((report) => report.huntTimeKnown && report.area === area).map((report) => report.huntTime),
   ];
   return times
     .filter((time) => !Number.isNaN(new Date(time).getTime()))

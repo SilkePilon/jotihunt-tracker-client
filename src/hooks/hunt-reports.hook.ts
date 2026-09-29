@@ -22,7 +22,6 @@ export const useHuntReports = () => {
     const form = new FormData();
     form.append('photo', input.photo, 'hunt.jpg');
     form.append('area', input.area);
-    form.append('kind', 'hunt');
     form.append('uploadId', input.uploadId);
     if (input.position) {
       form.append('lng', String(input.position.lng));

@@ -13,7 +13,6 @@ function report(overrides: Partial<HuntReport> = {}): HuntReport {
     huntTimeKnown: true,
     huntCodeSource: 'ocr',
     huntTimeSource: 'ocr',
-    kind: 'hunt',
     reportedBy: 'u1',
     reportedByName: 'Merida',
     submittedAt: null,

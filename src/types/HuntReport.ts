@@ -1,4 +1,3 @@
-export type HuntKind = 'hunt' | 'tegenhunt';
 export type HuntReportStatus = 'to_submit' | 'overdue' | 'submitted' | 'judged';
 /** Server-side reading of the code and time from the photo (Gemini) */
 export type OcrStatus = 'pending' | 'reading' | 'done' | 'failed';
@@ -16,7 +15,6 @@ export interface HuntReport {
   huntTimeKnown: boolean;
   huntCodeSource: FieldSource | null;
   huntTimeSource: FieldSource | null;
-  kind: HuntKind;
   reportedBy: string;
   reportedByName: string;
   submittedAt: string | null;
