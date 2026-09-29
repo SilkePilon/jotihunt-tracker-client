@@ -6,7 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { usePredictions } from '@/hooks/predictions.hook';
 import useInterval from '@/hooks/utils/interval.hook';
 import useSidebarStore from '@/stores/sidebar.store';
-import { ageLabel, CONFIDENCE_LABEL, CONFIDENCE_LEVEL, formatClock, formatProbability, predictionStatusText } from '@/lib/prediction';
+import { ageLabel, CONFIDENCE_LABEL, CONFIDENCE_LEVEL, formatClock, predictionStatusText } from '@/lib/prediction';
 import { capitalizeFirstLetter, cn, getColorFromArea } from '@/lib/utils';
 import type { Confidence, Prediction } from '@/types/Prediction';
 
@@ -25,7 +25,7 @@ function ConfidenceBars({ confidence }: { confidence: Confidence }) {
   );
 }
 
-/** One card per fox team: AI pin, top-3 groups as bars with ETA; tap flies to the pin, ⓘ shows the AI's reason. */
+/** One card per fox team: AI pin and confidence; tap the name flies to the pin, ⓘ shows the AI's reason. */
 export default function PredictionList({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
   const { predictions } = usePredictions();
   const setSheetSnap = useSidebarStore((state) => state.setSheetSnap);
@@ -36,7 +36,7 @@ export default function PredictionList({ mapRef }: { mapRef: RefObject<MapRef | 
     return (
       <div className="flex flex-col gap-1.5">
         {Array.from({ length: 3 }, (_, index) => (
-          <Skeleton key={index} className="h-20 rounded-lg" />
+          <Skeleton key={index} className="h-9 rounded-lg" />
         ))}
       </div>
     );
@@ -96,22 +96,7 @@ export default function PredictionList({ mapRef }: { mapRef: RefObject<MapRef | 
                 </Popover>
               )}
             </div>
-            {status ? (
-              <p className="truncate pb-1.5 pr-2 text-muted-foreground">{status}</p>
-            ) : (
-              <button type="button" onClick={() => flyTo(prediction)} className="flex w-full flex-col gap-1 pb-2 pr-2 text-left">
-                {prediction.candidates.map((candidate) => (
-                  <span key={candidate.teamApiId} className="grid grid-cols-[minmax(0,1fr)_3.5rem_2.25rem_2.75rem] items-center gap-1.5">
-                    <span className="truncate">{candidate.name}</span>
-                    <span className="h-1.5 overflow-hidden rounded-full bg-muted">
-                      <span className="block h-full rounded-full" style={{ width: `${Math.round(candidate.probability * 100)}%`, backgroundColor: color }} />
-                    </span>
-                    <span className="text-right tabular-nums">{formatProbability(candidate.probability)}</span>
-                    <span className="rounded bg-muted px-1 text-center tabular-nums">{formatClock(candidate.eta)}</span>
-                  </span>
-                ))}
-              </button>
-            )}
+            {status && <p className="truncate pb-1.5 pr-2 text-muted-foreground">{status}</p>}
           </li>
         );
       })}

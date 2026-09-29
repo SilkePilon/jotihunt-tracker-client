@@ -44,7 +44,6 @@ function prediction(area: string, lng: number, lat: number): Prediction {
     lastObservation: { time: '2026-10-17T11:00:00Z', lng, lat, kind: 'hint' },
     pin: null,
     confidence: null,
-    candidates: [],
     visitedTeamApiIds: [],
     why: '',
   };

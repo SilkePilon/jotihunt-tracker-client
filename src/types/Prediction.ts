@@ -1,17 +1,5 @@
 export type Confidence = 'low' | 'medium' | 'high';
 
-export interface PredictionCandidate {
-  teamApiId: number;
-  name: string;
-  lng: number;
-  lat: number;
-  /** 0–1 */
-  probability: number;
-  /** ISO time */
-  eta: string;
-  walkMinutes: number;
-}
-
 export interface Prediction {
   area: string;
   status: string;
@@ -28,7 +16,6 @@ export interface Prediction {
   /** AI best guess of the current fox position */
   pin: { lat: number; lng: number } | null;
   confidence: Confidence | null;
-  candidates: PredictionCandidate[];
   visitedTeamApiIds: number[];
   /** One short Dutch sentence, shown behind ⓘ */
   why: string;

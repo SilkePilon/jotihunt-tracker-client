@@ -1,24 +1,12 @@
 import { format } from 'date-fns';
 import type { Feature, FeatureCollection, LineString } from 'geojson';
-import type { Confidence, GroupVisit, Prediction, PredictionCandidate, VisitChoice } from '@/types/Prediction';
+import type { Confidence, GroupVisit, Prediction, VisitChoice } from '@/types/Prediction';
 
 export interface MapPin {
   area: string;
   lng: number;
   lat: number;
   color: string;
-  stale: boolean;
-}
-
-export interface MapBadge {
-  key: string;
-  area: string;
-  lng: number;
-  lat: number;
-  color: string;
-  text: string;
-  /** 0 = most likely */
-  rank: number;
   stale: boolean;
 }
 
@@ -31,18 +19,6 @@ export function formatClock(iso: string): string {
   return format(new Date(iso), 'HH:mm');
 }
 
-/** Rounded percentage that never claims certainty: ">99%" and "<1%" at the extremes. */
-export function formatProbability(probability: number): string {
-  if (probability >= 0.995) return '>99%';
-  if (probability < 0.005) return '<1%';
-  return `${Math.round(probability * 100)}%`;
-}
-
-/** "62% 14:20" */
-export function badgeText(candidate: PredictionCandidate): string {
-  return `${formatProbability(candidate.probability)} ${formatClock(candidate.eta)}`;
-}
-
 /** Compact age: "nu", "4m", "2u". */
 export function ageLabel(updatedAt: string, nowMs: number): string {
   const minutes = Math.floor((nowMs - new Date(updatedAt).getTime()) / 60_000);
@@ -51,12 +27,11 @@ export function ageLabel(updatedAt: string, nowMs: number): string {
   return `${Math.floor(minutes / 60)}u`;
 }
 
-/** Text to show instead of the candidate bars, or null for an active prediction. */
+/** Text to show under the card header, or null for an active prediction. */
 export function predictionStatusText(prediction: Prediction): string | null {
   if (prediction.paused) return prediction.reason ?? 'Gepauzeerd';
   if (prediction.reason) return prediction.reason;
   if (prediction.stale && !prediction.pin) return prediction.error ?? 'AI-voorspelling mislukt';
-  if (prediction.candidates.length === 0) return 'Alle groepen bezocht';
   return null;
 }
 
@@ -80,14 +55,13 @@ export function visitStatusText(visit?: GroupVisit): string {
   return `${state} (${source}${time}) · ronde ${visit.round}`;
 }
 
-/** Map data: a dashed line from the last observation to the pin, the pins, and a badge per candidate group. */
+/** Map data: a dashed line from the last observation to the pin and the pins. */
 export function buildPredictionMap(
   predictions: Prediction[],
   colorFor: (area: string) => string,
-): { lines: FeatureCollection<LineString, { area: string; color: string }>; pins: MapPin[]; badges: MapBadge[] } {
+): { lines: FeatureCollection<LineString, { area: string; color: string }>; pins: MapPin[] } {
   const lines: Feature<LineString, { area: string; color: string }>[] = [];
   const pins: MapPin[] = [];
-  const badges: MapBadge[] = [];
   for (const prediction of predictions) {
     if (prediction.paused || !prediction.pin) continue;
     const color = colorFor(prediction.area);
@@ -100,9 +74,6 @@ export function buildPredictionMap(
         properties: { area: prediction.area, color },
       });
     }
-    prediction.candidates.forEach((candidate, rank) => {
-      badges.push({ key: `${prediction.area}-${candidate.teamApiId}`, area: prediction.area, lng: candidate.lng, lat: candidate.lat, color, text: badgeText(candidate), rank, stale: prediction.stale });
-    });
   }
-  return { lines: { type: 'FeatureCollection', features: lines }, pins, badges };
+  return { lines: { type: 'FeatureCollection', features: lines }, pins };
 }
