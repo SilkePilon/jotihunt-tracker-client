@@ -9,7 +9,6 @@ interface HintGridProps {
   articles: HintArticle[];
   cells: HintCell[];
   now: number;
-  selected?: CellKey;
   onSelect: (key: CellKey) => void;
 }
 
@@ -20,7 +19,7 @@ const statusClass: Record<HintCell['status'], string> = {
   none: 'bg-background border border-dashed text-muted-foreground',
 };
 
-export default function HintGrid({ articles, cells, now, selected, onSelect }: HintGridProps) {
+export default function HintGrid({ articles, cells, now, onSelect }: HintGridProps) {
   const cellsByKey = new Map(cells.map((cell) => [`${cell.articleId}:${cell.area}`, cell]));
 
   return (
@@ -50,16 +49,14 @@ export default function HintGrid({ articles, cells, now, selected, onSelect }: H
               if (!cell) return <td key={area.value} />;
               const left = remainingMs(cell.publishAt, now);
               const showTimer = (cell.status === 'open' || cell.status === 'solving') && left > 0;
-              const isSelected = selected?.articleId === article.id && selected.area === area.value;
               return (
                 <td key={area.value} className="p-0">
                   <button
                     type="button"
                     onClick={() => onSelect({ articleId: article.id, area: area.value })}
                     className={cn(
-                      'flex h-16 w-full flex-col justify-between rounded-md p-2 text-left transition-colors',
+                      'flex h-16 w-full cursor-pointer flex-col justify-between rounded-md p-2 text-left transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none',
                       statusClass[cell.status],
-                      isSelected && 'ring-2 ring-primary',
                     )}
                   >
                     <div className="flex items-center justify-between gap-1">

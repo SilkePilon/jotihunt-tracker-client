@@ -1,23 +1,30 @@
 import { create } from 'zustand';
 import type { CellKey } from '@/components/hints/HintGrid';
 
+export type HintBoardView = 'overview' | 'detail' | null;
+
 interface HintBoardState {
-  open: boolean;
-  /** Cell shown in the answer panel */
+  /** Which hint dialog is open: the overview grid, the detail of one cell, or none */
+  view: HintBoardView;
+  /** Cell shown in the detail dialog */
   selected?: CellKey;
-  /** Open the hint board, optionally with a cell preselected (e.g. from the sidebar mini grid). */
-  openBoard: (selected?: CellKey) => void;
-  setSelected: (selected?: CellKey) => void;
+  /** Open the overview grid. */
+  openBoard: () => void;
+  /** Open the detail dialog of one cell (the overview closes). */
+  openCell: (key: CellKey) => void;
+  /** Go from the detail dialog back to the overview grid. */
+  backToOverview: () => void;
   close: () => void;
 }
 
 /** Shared by the sidebar mini grid, the settings menu and the /hints redirect, which all open the same board. */
 const useHintBoardStore = create<HintBoardState>()((set) => ({
-  open: false,
+  view: null,
   selected: undefined,
-  openBoard: (selected) => set({ open: true, selected }),
-  setSelected: (selected) => set({ selected }),
-  close: () => set({ open: false, selected: undefined }),
+  openBoard: () => set({ view: 'overview', selected: undefined }),
+  openCell: (selected) => set({ view: 'detail', selected }),
+  backToOverview: () => set({ view: 'overview', selected: undefined }),
+  close: () => set({ view: null, selected: undefined }),
 }));
 
 export default useHintBoardStore;

@@ -8,12 +8,14 @@ import useHintBoardStore from '@/stores/hint-board.store';
 export default function Hints() {
   const [searchParams] = useSearchParams();
   const openBoard = useHintBoardStore((state) => state.openBoard);
+  const openCell = useHintBoardStore((state) => state.openCell);
   const articleId = Number(searchParams.get('article'));
   const area = searchParams.get('area');
 
   useEffect(() => {
-    openBoard(articleId && area ? { articleId, area } : undefined);
-  }, [openBoard, articleId, area]);
+    if (articleId && area) openCell({ articleId, area });
+    else openBoard();
+  }, [openBoard, openCell, articleId, area]);
 
   return <Navigate to="/" replace />;
 }

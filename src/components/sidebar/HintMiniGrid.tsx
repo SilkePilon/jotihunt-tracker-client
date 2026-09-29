@@ -25,6 +25,7 @@ const statusLabel: Record<HintCell['status'], string> = {
 
 export default function HintMiniGrid() {
   const openBoard = useHintBoardStore((state) => state.openBoard);
+  const openCell = useHintBoardStore((state) => state.openCell);
   const { board } = useHintBoard();
   const rows = board ? lastHintRows(board, MINI_GRID_ROWS) : [];
 
@@ -55,7 +56,7 @@ export default function HintMiniGrid() {
                     type="button"
                     title={label}
                     aria-label={label}
-                    onClick={() => openBoard({ articleId: row.article.id, area: area.value })}
+                    onClick={() => openCell({ articleId: row.article.id, area: area.value })}
                     className={cn('h-6 cursor-pointer rounded-sm hover:ring-2 hover:ring-primary/50 md:h-4', cellClass[cell.status])}
                   />
                 );

@@ -14,7 +14,7 @@ import type { User } from '@/types/User';
 import Concealed from './Concealed';
 import HuntCodeText, { HuntTimeText } from './HuntCodeText';
 import { EditCode, EditTime, RereadButton } from './HuntInlineEdit';
-import ImageLightbox from './ImageLightbox';
+import ImageLightbox from '@/components/ImageLightbox';
 
 /** The server's (Dutch) error message when there is one. */
 function errorMessage(error: unknown, fallback: string): string {

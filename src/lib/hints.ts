@@ -56,3 +56,28 @@ export function hintProgress(board: HintBoard): { solved: number; total: number 
   const relevant = board.cells.filter((cell) => cell.status !== 'none');
   return { solved: relevant.filter((cell) => cell.status === 'solved').length, total: relevant.length };
 }
+
+export type HintStepNumber = 1 | 2 | 3;
+
+export interface HintStep {
+  /** The step the cell is at: 1 claim, 2 solve, 3 check */
+  current: HintStepNumber;
+  /** Steps that are finished */
+  done: HintStepNumber[];
+  /** Check result, only for solved cells */
+  checkState?: HintCell['check'];
+}
+
+/**
+ * Where a hint cell is in the claim → solve → check flow (cells without a hint have no stepper and report step 1).
+ */
+export function hintStep(cell: Pick<HintCell, 'status' | 'check'>): HintStep {
+  switch (cell.status) {
+    case 'solving':
+      return { current: 2, done: [1] };
+    case 'solved':
+      return { current: 3, done: cell.check === 'verified' ? [1, 2, 3] : [1, 2], checkState: cell.check };
+    default:
+      return { current: 1, done: [] };
+  }
+}

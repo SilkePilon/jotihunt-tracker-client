@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { formatCountdown, HINT_WINDOW_MS, remainingMs, hintProgress, lastHintRows } from './hints';
+import { formatCountdown, HINT_WINDOW_MS, remainingMs, hintProgress, hintStep, lastHintRows } from './hints';
 import type { HintBoard, HintCell } from '@/types/HintCell';
 
 describe('hint timer', () => {
@@ -50,5 +50,31 @@ describe('lastHintRows', () => {
 
   test('hintProgress ignores none cells', () => {
     expect(hintProgress(board)).toEqual({ solved: 1, total: 2 });
+  });
+});
+
+describe('hintStep', () => {
+  test('open cell is at step 1', () => {
+    expect(hintStep({ status: 'open', check: 'unchecked' })).toEqual({ current: 1, done: [] });
+  });
+
+  test('none cell reports step 1 (no stepper shown)', () => {
+    expect(hintStep({ status: 'none', check: 'unchecked' })).toEqual({ current: 1, done: [] });
+  });
+
+  test('solving cell has claimed and is at step 2', () => {
+    expect(hintStep({ status: 'solving', check: 'unchecked' })).toEqual({ current: 2, done: [1] });
+  });
+
+  test('solved unchecked cell is at step 3', () => {
+    expect(hintStep({ status: 'solved', check: 'unchecked' })).toEqual({ current: 3, done: [1, 2], checkState: 'unchecked' });
+  });
+
+  test('verified cell has all steps done', () => {
+    expect(hintStep({ status: 'solved', check: 'verified' })).toEqual({ current: 3, done: [1, 2, 3], checkState: 'verified' });
+  });
+
+  test('disputed cell stays at step 3 with the dispute', () => {
+    expect(hintStep({ status: 'solved', check: 'disputed' })).toEqual({ current: 3, done: [1, 2], checkState: 'disputed' });
   });
 });
