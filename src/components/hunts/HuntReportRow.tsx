@@ -1,47 +1,11 @@
-import { toast } from 'sonner';
-import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
-import { Button } from '@/components/ui/button';
-import { useHuntReports } from '@/hooks/hunt-reports.hook';
 import { isConcealed } from '@/lib/hunt-reports';
 import { getColorFromArea } from '@/lib/utils';
 import type { HuntReport } from '@/types/HuntReport';
-import type { User } from '@/types/User';
 import HuntCodeText, { DuplicateMark, HuntTimeText } from './HuntCodeText';
 import HuntStatusBadge from './HuntStatusBadge';
 
-/** Compact row for one hunt report: area dot, code, time, status, and (while pending) quick actions. */
+/** Compact row for one hunt report: area dot, code, time and status; click opens the details. */
 export default function HuntReportRow({ report, now, onSelect }: { report: HuntReport; now: number; onSelect?: () => void }) {
-  const { setSubmitted } = useHuntReports();
-  // Copying the code and marking a hunt as submitted is HQ work (admins only; the server enforces the status change)
-  const isAdmin = !!useAuthUser<User>()?.admin;
-  const pending = report.status === 'to_submit' || report.status === 'overdue';
-
-  async function markSubmitted() {
-    try {
-      await setSubmitted(report._id, true);
-      toast.success('Gemarkeerd als ingestuurd', {
-        action: {
-          label: 'Ongedaan maken',
-          onClick: () => {
-            setSubmitted(report._id, false).catch(() => toast.error('Terugzetten is mislukt'));
-          },
-        },
-      });
-    } catch {
-      toast.error('Opslaan is mislukt');
-    }
-  }
-
-  async function copyCode() {
-    if (!report.huntCode) return;
-    try {
-      await navigator.clipboard.writeText(report.huntCode);
-      toast('Code gekopieerd');
-    } catch {
-      toast.error('Kopiëren mislukt');
-    }
-  }
-
   function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
     if (event.target !== event.currentTarget) return;
     if (event.key === 'Enter' || event.key === ' ') {
@@ -68,18 +32,6 @@ export default function HuntReportRow({ report, now, onSelect }: { report: HuntR
           <HuntStatusBadge report={report} now={now} />
         </span>
       </div>
-      {pending && isAdmin && (
-        <div className="mt-1 flex gap-1.5" onClick={(event) => event.stopPropagation()}>
-          {report.huntCode && (
-            <Button type="button" variant="outline" size="xs" onClick={copyCode}>
-              Kopieer code
-            </Button>
-          )}
-          <Button type="button" variant="outline" size="xs" onClick={() => void markSubmitted()}>
-            Ingestuurd
-          </Button>
-        </div>
-      )}
     </div>
   );
 }
