@@ -27,6 +27,7 @@ import {FullscreenControl} from "react-map-gl/maplibre";
 import '@mapbox-controls/ruler/src/index.css';
 import Ruler from "@/components/map/RulerControl.tsx";
 import ImageControl from "@/components/map/ImageControl.tsx";
+import {DEFAULT_VIEW} from '@/lib/map-view';
 
 type FlyToOpts = NonNullable<Parameters<MaplibreMap["flyTo"]>[0]>;
 
@@ -36,11 +37,6 @@ export interface MapRef {
     markPoint(lngLat: LngLat): void;
 }
 
-const initialViewState = {
-    latitude: 52.1209259,
-    longitude: 5.6869246,
-    zoom: 9.5,
-};
 // react-map-gl/maplibre's maxBounds prop expects a flat [west, south, east, north] tuple.
 const maxBounds: [number, number, number, number] = [
     3.314971144228537, 50.80372101501058,
@@ -128,7 +124,7 @@ const Map = forwardRef<MapRef>((_, ref) => {
             <Maplibre
                 ref={mapRef}
                 reuseMaps
-                initialViewState={initialViewState}
+                initialViewState={DEFAULT_VIEW}
                 style={{width: '100%', height: '100%'}}
                 attributionControl={false}
                 mapStyle={resolvedMapStyle}
