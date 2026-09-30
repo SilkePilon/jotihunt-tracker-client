@@ -32,13 +32,17 @@ export function useTargetRect(id: TourTargetId | null, enabled: boolean, resetKe
     const startedAt = performance.now();
     let frame = 0;
     let element: Element | null = null;
+    let everFound = false;
 
     function tick() {
+      // React may have replaced the node; a detached one measures as zeros, so look it up again
+      if (element && !element.isConnected) element = null;
       if (!element) {
         element = document.querySelector(tourSelector(id!));
         if (element) {
+          everFound = true;
           element.scrollIntoView({ block: 'nearest' });
-        } else if (performance.now() - startedAt > FIND_TIMEOUT_MS) {
+        } else if (!everFound && performance.now() - startedAt > FIND_TIMEOUT_MS) {
           console.warn(`[tour] target not found: ${id}`);
           setState({ status: 'missing', rect: null, key: resetKey });
           return;

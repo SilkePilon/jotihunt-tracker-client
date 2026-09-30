@@ -25,6 +25,12 @@ interface TourCardProps {
 const TourCard = forwardRef<HTMLDivElement, TourCardProps>(function TourCard(props, ref) {
   const { title, body, stepIndex, stepCount, durationMs, paused, position, onPrev, onNext, onTogglePause, onSkip, onTimeUp } = props;
   const [hovered, setHovered] = useState(false);
+  // The card moves away from a still cursor without pointerleave, so reset hover when the step changes
+  const [prevStepIndex, setPrevStepIndex] = useState(stepIndex);
+  if (stepIndex !== prevStepIndex) {
+    setPrevStepIndex(stepIndex);
+    setHovered(false);
+  }
   const isLast = stepIndex === stepCount - 1;
 
   return (

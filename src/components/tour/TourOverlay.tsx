@@ -49,6 +49,7 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
     return () => {
       cancelled = true;
       runUndos(undos);
+      setActionsDoneFor(null);
     };
     // Re-run per step only; isMobile changes mid-tour are rare and handled by the next step
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -79,6 +80,10 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
   useEffect(() => {
     if (!active) return;
     function onKey(event: KeyboardEvent) {
+      if (event.repeat || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      const target = event.target as HTMLElement | null;
+      const editing = !!target && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
+      if (editing && event.key !== 'Escape') return;
       const action = { ArrowRight: next, ArrowLeft: prev, Escape: skip }[event.key];
       if (!action) return;
       event.preventDefault();
