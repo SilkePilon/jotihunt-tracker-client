@@ -3,6 +3,7 @@ import type { Rect } from './placement';
 import { tourSelector, type TourTargetId } from './targets';
 
 const FIND_TIMEOUT_MS = 1500;
+const RESCROLL_INTERVAL_MS = 300;
 
 type Status = 'pending' | 'found' | 'missing' | 'none';
 
@@ -33,6 +34,7 @@ export function useTargetRect(id: TourTargetId | null, enabled: boolean, resetKe
     let frame = 0;
     let element: Element | null = null;
     let everFound = false;
+    let lastScrollAt = -Infinity;
 
     function tick() {
       // React may have replaced the node; a detached one measures as zeros, so look it up again
@@ -51,6 +53,14 @@ export function useTargetRect(id: TourTargetId | null, enabled: boolean, resetKe
       if (element) {
         const { x, y, width, height } = element.getBoundingClientRect();
         const rect = { x, y, width, height };
+        // The sheet is still animating (overflow-hidden) when the first scroll runs, so keep nudging the target into view until it fits.
+        const outside = y < 0 || y + height > window.innerHeight || x < 0 || x + width > window.innerWidth;
+        const fits = height <= window.innerHeight && width <= window.innerWidth;
+        const now = performance.now();
+        if (outside && fits && now - lastScrollAt >= RESCROLL_INTERVAL_MS) {
+          lastScrollAt = now;
+          element.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        }
         setState((prev) =>
           prev.status === 'found' && prev.key === resetKey && sameRect(prev.rect, rect) ? prev : { status: 'found', rect, key: resetKey },
         );
