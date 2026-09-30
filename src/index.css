@@ -222,3 +222,13 @@ body.dark {
   /* From https://css.glass */
   backdrop-filter: blur(5px);
 }
+
+/* Onboarding tour: the progress bar doubles as the auto-advance timer (animationend = next step) */
+@keyframes tour-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
