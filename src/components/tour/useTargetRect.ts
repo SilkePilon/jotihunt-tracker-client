@@ -5,7 +5,27 @@ import { tourSelector, type TourTargetId } from './targets';
 const FIND_TIMEOUT_MS = 1500;
 const RESCROLL_INTERVAL_MS = 300;
 
+const EDGE_MARGIN = 8;
+const REVEAL_PADDING = 16;
+
 type Status = 'pending' | 'found' | 'missing' | 'none';
+
+// The phone sheet's box extends below the window, so its scroller thinks the target is visible; correct against the window instead.
+function revealInWindow(element: Element, rect: Rect) {
+  let scroller: HTMLElement | null = element.parentElement;
+  while (scroller) {
+    const { overflowY } = getComputedStyle(scroller);
+    if ((overflowY === 'auto' || overflowY === 'scroll') && scroller.scrollHeight > scroller.clientHeight) break;
+    scroller = scroller.parentElement;
+  }
+  if (!scroller) return;
+  const bottom = rect.y + rect.height;
+  if (bottom > window.innerHeight - EDGE_MARGIN) {
+    scroller.scrollTop += Math.max(0, Math.min(bottom - (window.innerHeight - REVEAL_PADDING), rect.y - REVEAL_PADDING));
+  } else if (rect.y < EDGE_MARGIN) {
+    scroller.scrollTop -= REVEAL_PADDING - rect.y;
+  }
+}
 
 function sameRect(a: Rect | null, b: Rect) {
   return !!a && a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
@@ -54,12 +74,12 @@ export function useTargetRect(id: TourTargetId | null, enabled: boolean, resetKe
         const { x, y, width, height } = element.getBoundingClientRect();
         const rect = { x, y, width, height };
         // The sheet is still animating (overflow-hidden) when the first scroll runs, so keep nudging the target into view until it fits.
-        const outside = y < 0 || y + height > window.innerHeight || x < 0 || x + width > window.innerWidth;
+        const outside = y + height > window.innerHeight - EDGE_MARGIN || y < EDGE_MARGIN;
         const fits = height <= window.innerHeight && width <= window.innerWidth;
         const now = performance.now();
         if (outside && fits && now - lastScrollAt >= RESCROLL_INTERVAL_MS) {
           lastScrollAt = now;
-          element.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+          revealInWindow(element, rect);
         }
         setState((prev) =>
           prev.status === 'found' && prev.key === resetKey && sameRect(prev.rect, rect) ? prev : { status: 'found', rect, key: resetKey },
