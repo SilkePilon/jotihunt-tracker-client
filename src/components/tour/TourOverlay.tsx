@@ -11,6 +11,7 @@ import { TOUR_STEPS } from './steps';
 import TourCard from './TourCard';
 import useTourStore from './tour.store';
 import type { Undo } from './types';
+import { useSpotlightMotion } from './useSpotlightMotion';
 import { useTargetRect } from './useTargetRect';
 
 const SPOTLIGHT_PADDING = 8;
@@ -129,24 +130,32 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  if (!step) return null;
+  // Last step that became ready: its text stays on the card (faded out) until the next step is ready
+  const ready = actionsDone && targetStatus !== 'pending';
+  // An optional step without a target is about to be skipped; don't flash its text meanwhile
+  const hideCard = !!step?.optional && targetStatus !== 'found';
+  const [shownIndex, setShownIndex] = useState<number | null>(null);
+  const nextShownIndex = !active ? null : ready && !hideCard ? stepIndex : shownIndex;
+  if (nextShownIndex !== shownIndex) setShownIndex(nextShownIndex);
 
   const rect = targetStatus === 'found' ? target.rect : null;
-  const ready = actionsDone && targetStatus !== 'pending';
-  const isLast = stepIndex === steps.length - 1;
-  // An optional step without a target is about to be skipped; don't flash its text meanwhile
-  const hideCard = !!step.optional && targetStatus !== 'found';
-  const position = placeCard({ target: rect, card: cardSize, viewport, placement: step.placement, isMobile });
+  const position = placeCard({ target: rect, card: cardSize, viewport, placement: step?.placement, isMobile });
+  // No target: the hole closes in place, so the whole screen is dimmed
+  const hole = rect && {
+    x: rect.x - SPOTLIGHT_PADDING,
+    y: rect.y - SPOTLIGHT_PADDING,
+    width: rect.width + SPOTLIGHT_PADDING * 2,
+    height: rect.height + SPOTLIGHT_PADDING * 2,
+  };
+  const holeRef = useRef<HTMLDivElement>(null);
+  // While a target is looked up (or an optional step is being skipped) everything stays where it is
+  const hold = targetStatus === 'pending' || hideCard;
+  useSpotlightMotion({ active: !!step, hold, card: position, hole }, cardRef, holeRef);
 
-  // No target: a zero-size hole in the middle, so the whole screen is dimmed
-  const hole = rect
-    ? {
-        top: rect.y - SPOTLIGHT_PADDING,
-        left: rect.x - SPOTLIGHT_PADDING,
-        width: rect.width + SPOTLIGHT_PADDING * 2,
-        height: rect.height + SPOTLIGHT_PADDING * 2,
-      }
-    : { top: viewport.height / 2, left: viewport.width / 2, width: 0, height: 0 };
+  if (!step) return null;
+
+  const isLast = stepIndex === steps.length - 1;
+  const shownStep = (shownIndex !== null && steps[shownIndex]) || step;
 
   return createPortal(
     // pointer-events-auto: Radix modals set pointer-events:none on <body> while open
@@ -155,19 +164,19 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
       <div className="absolute inset-0" />
       <div
         aria-hidden
-        className="pointer-events-none fixed rounded-xl shadow-[0_0_0_9999px_rgb(0_0_0/0.6)] transition-all duration-[350ms] ease-out motion-reduce:transition-none"
-        style={hole}
+        ref={holeRef}
+        className="pointer-events-none fixed left-0 top-0 rounded-xl shadow-[0_0_0_9999px_rgb(0_0_0/0.6)] will-change-[transform,width,height]"
       />
       <TourCard
         ref={cardRef}
-        title={step.title}
-        body={step.body}
+        title={shownStep.title}
+        body={shownStep.body}
+        contentVisible={shownIndex === stepIndex}
         stepIndex={stepIndex}
         stepCount={steps.length}
         durationMs={ready && !isLast ? stepDuration(step) : undefined}
         paused={paused}
         hidden={hideCard}
-        position={position}
         onPrev={prev}
         onNext={next}
         onTogglePause={togglePause}

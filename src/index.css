@@ -224,11 +224,11 @@ body.dark {
 }
 
 /* Onboarding tour: the progress bar doubles as the auto-advance timer (animationend = next step) */
-@keyframes tour-progress {
+@keyframes tour-ring {
   from {
-    transform: scaleX(0);
+    stroke-dashoffset: var(--tour-ring-length);
   }
   to {
-    transform: scaleX(1);
+    stroke-dashoffset: 0;
   }
 }
