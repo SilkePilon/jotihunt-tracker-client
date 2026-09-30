@@ -20,7 +20,7 @@ const SPOTLIGHT_PADDING = 8;
  * and floats the card next to it. Mounted once in Layout; renders nothing while the tour is inactive.
  */
 export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
-  const { active, stepIndex, stepCount, direction, paused, next, prev, togglePause, skip, stop } = useTourStore();
+  const { active, stepIndex, direction, paused, next, prev, togglePause, skip, stop } = useTourStore();
   const isMobile = useIsMobile();
   const platform = isMobile ? 'mobile' : 'desktop';
   const steps = stepsForPlatform(TOUR_STEPS, platform);
@@ -30,9 +30,26 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
   // Index of the step whose actions have finished; compared per step so a stale "done" never leaks into the next one
   const [actionsDoneFor, setActionsDoneFor] = useState<number | null>(null);
   const actionsDone = active && actionsDoneFor === stepIndex;
-  const target = useTargetRect(targetId, actionsDone, stepIndex);
+  // Optional steps are usually off for a reason; don't keep the screen dimmed for long while looking
+  const target = useTargetRect(targetId, actionsDone, stepIndex, step?.optional ? 600 : undefined);
   // The hook's state lags one render behind a step change; treat a status from another step as still pending
   const targetStatus = target.key === stepIndex ? target.status : 'pending';
+
+  // Runs before every passive effect below, so the snapshot is taken before any step action touches the sidebar
+  const snapshot = useRef<Pick<ReturnType<typeof useSidebarStore.getState>, 'openSections' | 'sheetSnap'> | null>(null);
+  const startPlatform = useRef(platform);
+  useLayoutEffect(() => {
+    if (!active) return;
+    const { openSections, sheetSnap } = useSidebarStore.getState();
+    snapshot.current = { openSections, sheetSnap };
+    startPlatform.current = platform;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active]);
+
+  // The step list depends on the platform, so crossing the breakpoint mid-tour invalidates stepCount and stepIndex
+  useEffect(() => {
+    if (active && (!step || startPlatform.current !== platform)) stop();
+  }, [active, step, platform, stop]);
 
   // Run the step's actions; undo them when leaving the step (next, prev, skip, finish, unmount)
   useEffect(() => {
@@ -55,12 +72,12 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, stepIndex]);
 
-  // Snapshot the sidebar when the tour starts, restore it when it ends
+  // Declared after the action effect: cleanups run in declaration order, so this restore comes after the step's undos
   useEffect(() => {
     if (!active) return;
-    const { openSections, sheetSnap } = useSidebarStore.getState();
     return () => {
-      useSidebarStore.setState({ openSections, sheetSnap });
+      if (snapshot.current) useSidebarStore.setState(snapshot.current);
+      snapshot.current = null;
     };
   }, [active]);
 
@@ -116,7 +133,7 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
 
   const rect = targetStatus === 'found' ? target.rect : null;
   const ready = actionsDone && targetStatus !== 'pending';
-  const isLast = stepIndex === stepCount - 1;
+  const isLast = stepIndex === steps.length - 1;
   // An optional step without a target is about to be skipped; don't flash its text meanwhile
   const hideCard = !!step.optional && targetStatus !== 'found';
   const position = placeCard({ target: rect, card: cardSize, viewport, placement: step.placement, isMobile });
@@ -146,7 +163,7 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
         title={step.title}
         body={step.body}
         stepIndex={stepIndex}
-        stepCount={stepCount}
+        stepCount={steps.length}
         durationMs={ready && !isLast ? stepDuration(step) : undefined}
         paused={paused}
         hidden={hideCard}

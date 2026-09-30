@@ -39,7 +39,6 @@ const TourCard = forwardRef<HTMLDivElement, TourCardProps>(function TourCard(pro
     <Card
       ref={ref}
       role="dialog"
-      aria-live="polite"
       aria-label={title}
       className={cn(
         'pointer-events-auto fixed left-0 top-0 z-[70] w-[min(340px,calc(100vw-24px))] gap-3 overflow-hidden py-4 shadow-2xl transition-transform duration-[350ms] ease-out motion-reduce:transition-none',
@@ -77,7 +76,7 @@ const TourCard = forwardRef<HTMLDivElement, TourCardProps>(function TourCard(pro
           />
         )}
       </div>
-      <div className="flex flex-col gap-1 px-4">
+      <div aria-live="polite" className="flex flex-col gap-1 px-4">
         <p className="text-base font-semibold">{title}</p>
         <p className="text-sm text-muted-foreground">{body}</p>
       </div>

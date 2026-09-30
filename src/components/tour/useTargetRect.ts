@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import type { Rect } from './placement';
 import { tourSelector, type TourTargetId } from './targets';
 
-const FIND_TIMEOUT_MS = 1500;
+const DEFAULT_FIND_TIMEOUT_MS = 1500;
 const RESCROLL_INTERVAL_MS = 300;
 
 const EDGE_MARGIN = 8;
@@ -33,10 +33,10 @@ function sameRect(a: Rect | null, b: Rect) {
 
 /**
  * Find the element for a tour target and follow its position every frame (sections expand, the sheet slides,
- * the window resizes). Waits up to 1.5s for the element to appear; then reports 'missing'.
+ * the window resizes). Waits up to `findTimeoutMs` (default 1.5s) for the element to appear; then reports 'missing'.
  * `enabled` is false until the step's actions have run; `resetKey` restarts the search for a new step.
  */
-export function useTargetRect(id: TourTargetId | null, enabled: boolean, resetKey: unknown) {
+export function useTargetRect(id: TourTargetId | null, enabled: boolean, resetKey: unknown, findTimeoutMs = DEFAULT_FIND_TIMEOUT_MS) {
   const [state, setState] = useState<{ status: Status; rect: Rect | null; key: unknown }>({ status: 'pending', rect: null, key: resetKey });
 
   useEffect(() => {
@@ -64,7 +64,7 @@ export function useTargetRect(id: TourTargetId | null, enabled: boolean, resetKe
         if (element) {
           everFound = true;
           element.scrollIntoView({ block: 'nearest' });
-        } else if (!everFound && performance.now() - startedAt > FIND_TIMEOUT_MS) {
+        } else if (!everFound && performance.now() - startedAt > findTimeoutMs) {
           console.warn(`[tour] target not found: ${id}`);
           setState({ status: 'missing', rect: null, key: resetKey });
           return;
@@ -91,7 +91,7 @@ export function useTargetRect(id: TourTargetId | null, enabled: boolean, resetKe
     setState({ status: 'pending', rect: null, key: resetKey });
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [id, enabled, resetKey]);
+  }, [id, enabled, resetKey, findTimeoutMs]);
 
   return state;
 }

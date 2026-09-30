@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import { useAuth } from '@/hooks/auth.hook';
 import { useFetcher } from '@/hooks/utils/api.hook';
@@ -17,12 +17,18 @@ const AUTO_START_DELAY_MS = 1000;
 export function useStartTour() {
   const isMobile = useIsMobile();
   const authUser = useAuthUser<User>();
+  // Read at save time: the tour can outlive the render that created markSeen
+  const authUserRef = useRef(authUser);
+  useEffect(() => {
+    authUserRef.current = authUser;
+  });
   const { updateUserState } = useAuth();
   const { fetch } = useFetcher();
 
   async function markSeen() {
     // Local state first, so the auto start does not fire again while the request is in flight
-    if (authUser) updateUserState({ ...authUser, tutorialVersion: TOUR_VERSION });
+    const current = authUserRef.current;
+    if (current) updateUserState({ ...current, tutorialVersion: TOUR_VERSION });
     try {
       await fetch('/auth/tutorial', 'POST', { version: TOUR_VERSION });
     } catch (error) {
