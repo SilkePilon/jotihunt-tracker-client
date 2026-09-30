@@ -30,7 +30,7 @@ export const TOUR_STEPS: TourStep[] = [
     id: 'sidebar',
     target: 'sidebar.root',
     title: 'Het zijpaneel',
-    body: 'Alles wat je nodig hebt staat in dit paneel. Elke kaart klapt open en dicht. Op je telefoon schuif je het paneel omhoog en omlaag.',
+    body: 'Alles wat je nodig hebt staat in dit paneel. Elk blok klapt open en dicht. Op je telefoon schuif je het paneel omhoog en omlaag.',
     actions: [sheetSnap('half')],
   },
   {
@@ -58,7 +58,7 @@ export const TOUR_STEPS: TourStep[] = [
     id: 'hint-board',
     target: 'hintBoard.dialog',
     title: 'Het hintbord',
-    body: 'Alle hints van de hele dag. Open een vakje om de hint te bekijken en de oplossing in te vullen.',
+    body: 'Alle hints van de hele dag. Open een vakje om de hint te bekijken, te claimen en de oplossing in te vullen.',
     actions: [openHintBoard()],
   },
   {
