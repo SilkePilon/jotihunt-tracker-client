@@ -61,7 +61,7 @@ function tick(motion: Motion, els: Elements, now: number) {
 /**
  * Glides the tour card and the spotlight hole with springs, writing styles straight to the DOM (no re-render per frame).
  * `active` false resets everything. `hold` keeps the current goals (a target is still being looked up); `hole` null
- * closes the spotlight to 0×0 around the center of its current goal. The first goals are applied without animation.
+ * closes the spotlight to 0×0 around the center of its current position. The first goals are applied without animation.
  */
 export function useSpotlightMotion(
   { active, hold, card, hole }: { active: boolean; hold: boolean; card: { x: number; y: number }; hole: Rect | null },
@@ -90,8 +90,9 @@ export function useSpotlightMotion(
       goalHole = { holeX, holeY, holeW, holeH };
     } else {
       // Close in place; the very first hole starts closed in the middle of the screen
-      const cx = prev ? prev.holeX + prev.holeW / 2 : window.innerWidth / 2;
-      const cy = prev ? prev.holeY + prev.holeH / 2 : window.innerHeight / 2;
+      const cur = motion.springs;
+      const cx = cur ? cur.holeX.value + cur.holeW.value / 2 : prev ? prev.holeX + prev.holeW / 2 : window.innerWidth / 2;
+      const cy = cur ? cur.holeY.value + cur.holeH.value / 2 : prev ? prev.holeY + prev.holeH / 2 : window.innerHeight / 2;
       goalHole = { holeX: cx, holeY: cy, holeW: 0, holeH: 0 };
     }
     const goals: Values = { cardX: card.x, cardY: card.y, ...goalHole };

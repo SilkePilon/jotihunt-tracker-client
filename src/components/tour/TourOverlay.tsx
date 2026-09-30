@@ -15,6 +15,8 @@ import { useSpotlightMotion } from './useSpotlightMotion';
 import { useTargetRect } from './useTargetRect';
 
 const SPOTLIGHT_PADDING = 8;
+/** Keep in sync with the content fade duration in TourCard */
+const FADE_MS = 150;
 
 /**
  * Runs the onboarding tour: performs each step's actions, finds its target, dims everything except the target,
@@ -135,8 +137,20 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
   // An optional step without a target is about to be skipped; don't flash its text meanwhile
   const hideCard = !!step?.optional && targetStatus !== 'found';
   const [shownIndex, setShownIndex] = useState<number | null>(null);
-  const nextShownIndex = !active ? null : ready && !hideCard ? stepIndex : shownIndex;
-  if (nextShownIndex !== shownIndex) setShownIndex(nextShownIndex);
+  if (!active && shownIndex !== null) setShownIndex(null);
+  // When the step last changed: the old text needs its full fade-out before the displayed step may switch
+  const changedAt = useRef(0);
+  useEffect(() => {
+    changedAt.current = performance.now();
+  }, [stepIndex]);
+  const canShow = active && ready && !hideCard;
+  useEffect(() => {
+    if (!canShow || shownIndex === stepIndex) return;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const wait = reduced || shownIndex === null ? 0 : Math.max(0, FADE_MS - (performance.now() - changedAt.current));
+    const timer = setTimeout(() => setShownIndex(stepIndex), wait);
+    return () => clearTimeout(timer);
+  }, [canShow, shownIndex, stepIndex]);
 
   const rect = targetStatus === 'found' ? target.rect : null;
   const position = placeCard({ target: rect, card: cardSize, viewport, placement: step?.placement, isMobile });
@@ -174,7 +188,7 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
         contentVisible={shownIndex === stepIndex}
         stepIndex={stepIndex}
         stepCount={steps.length}
-        durationMs={ready && !isLast ? stepDuration(step) : undefined}
+        durationMs={ready && !isLast && shownIndex === stepIndex ? stepDuration(step) : undefined}
         paused={paused}
         hidden={hideCard}
         onPrev={prev}

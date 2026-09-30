@@ -223,7 +223,7 @@ body.dark {
   backdrop-filter: blur(5px);
 }
 
-/* Onboarding tour: the progress bar doubles as the auto-advance timer (animationend = next step) */
+/* Onboarding tour: the progress ring around the pause button doubles as the auto-advance timer (animationend = next step) */
 @keyframes tour-ring {
   from {
     stroke-dashoffset: var(--tour-ring-length);

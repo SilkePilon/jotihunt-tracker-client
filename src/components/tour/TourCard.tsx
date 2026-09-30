@@ -68,7 +68,7 @@ const TourCard = forwardRef<HTMLDivElement, TourCardProps>(function TourCard(pro
         if (event.pointerType === 'touch') setHovered(false);
       }}
     >
-      <div aria-live="polite" className="flex flex-col gap-1 px-4 transition-opacity duration-150" style={{ opacity: contentVisible ? 1 : 0 }}>
+      <div aria-live="polite" className="flex flex-col gap-1 px-4 transition-opacity duration-150 motion-reduce:transition-none" style={{ opacity: contentVisible ? 1 : 0 }}>
         <p className="text-base font-semibold">{title}</p>
         <p className="text-sm text-muted-foreground">{body}</p>
       </div>
@@ -77,7 +77,7 @@ const TourCard = forwardRef<HTMLDivElement, TourCardProps>(function TourCard(pro
           <span
             key={i}
             className={cn(
-              'h-1.5 rounded-full transition-[width] duration-200',
+              'h-1.5 rounded-full transition-[width] duration-200 motion-reduce:transition-none',
               i === stepIndex ? 'w-4 bg-primary' : 'w-1.5',
               i < stepIndex && 'bg-primary',
               i > stepIndex && 'bg-muted-foreground/30',
