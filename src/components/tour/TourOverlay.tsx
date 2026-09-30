@@ -117,6 +117,8 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
   const rect = targetStatus === 'found' ? target.rect : null;
   const ready = actionsDone && targetStatus !== 'pending';
   const isLast = stepIndex === stepCount - 1;
+  // An optional step without a target is about to be skipped; don't flash its text meanwhile
+  const hideCard = !!step.optional && targetStatus !== 'found';
   const position = placeCard({ target: rect, card: cardSize, viewport, placement: step.placement, isMobile });
 
   // No target: a zero-size hole in the middle, so the whole screen is dimmed
@@ -147,6 +149,7 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
         stepCount={stepCount}
         durationMs={ready && !isLast ? stepDuration(step) : undefined}
         paused={paused}
+        hidden={hideCard}
         position={position}
         onPrev={prev}
         onNext={next}

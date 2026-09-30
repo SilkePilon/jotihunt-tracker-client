@@ -12,6 +12,8 @@ interface TourCardProps {
   /** Auto-advance time; undefined = no progress bar (last step, or still loading) */
   durationMs?: number;
   paused: boolean;
+  /** Keep the card mounted (for measuring and transitions) but invisible, e.g. for an optional step about to be skipped */
+  hidden?: boolean;
   position: { x: number; y: number };
   onPrev: () => void;
   onNext: () => void;
@@ -23,7 +25,7 @@ interface TourCardProps {
 
 /** The floating tour card. It glides to `position`; its progress bar is the auto-advance timer. */
 const TourCard = forwardRef<HTMLDivElement, TourCardProps>(function TourCard(props, ref) {
-  const { title, body, stepIndex, stepCount, durationMs, paused, position, onPrev, onNext, onTogglePause, onSkip, onTimeUp } = props;
+  const { title, body, stepIndex, stepCount, durationMs, paused, hidden, position, onPrev, onNext, onTogglePause, onSkip, onTimeUp } = props;
   const [hovered, setHovered] = useState(false);
   // The card moves away from a still cursor without pointerleave, so reset hover when the step changes
   const [prevStepIndex, setPrevStepIndex] = useState(stepIndex);
@@ -39,10 +41,27 @@ const TourCard = forwardRef<HTMLDivElement, TourCardProps>(function TourCard(pro
       role="dialog"
       aria-live="polite"
       aria-label={title}
-      className="pointer-events-auto fixed left-0 top-0 z-[70] w-[min(340px,calc(100vw-24px))] gap-3 overflow-hidden py-4 shadow-2xl transition-transform duration-[350ms] ease-out motion-reduce:transition-none"
+      className={cn(
+        'pointer-events-auto fixed left-0 top-0 z-[70] w-[min(340px,calc(100vw-24px))] gap-3 overflow-hidden py-4 shadow-2xl transition-transform duration-[350ms] ease-out motion-reduce:transition-none',
+        hidden && 'invisible',
+      )}
       style={{ transform: `translate(${position.x}px, ${position.y}px)` }}
-      onPointerEnter={() => setHovered(true)}
+      // Hover counts only after real movement: a card gliding under a parked cursor fires synthetic
+      // pointer events with zero movement, which would otherwise freeze the timer until the mouse moves
+      onPointerMove={(event) => {
+        if (event.movementX !== 0 || event.movementY !== 0) setHovered(true);
+      }}
       onPointerLeave={() => setHovered(false)}
+      // Touching the card pauses auto-advance while the finger is down
+      onPointerDown={(event) => {
+        if (event.pointerType === 'touch') setHovered(true);
+      }}
+      onPointerUp={(event) => {
+        if (event.pointerType === 'touch') setHovered(false);
+      }}
+      onPointerCancel={(event) => {
+        if (event.pointerType === 'touch') setHovered(false);
+      }}
     >
       <div className="absolute inset-x-0 top-0 h-1 bg-muted">
         {durationMs !== undefined && (
