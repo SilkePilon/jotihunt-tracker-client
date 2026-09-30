@@ -2,6 +2,7 @@ import { ReactNode, useRef } from 'react';
 import { Drawer } from 'vaul';
 import useSidebarStore, { SheetSnap } from '@/stores/sidebar.store';
 import { cn } from '@/lib/utils';
+import { tourTarget } from '@/components/tour/targets';
 
 const SNAP_POINTS: (string | number)[] = ['200px', 0.5, 0.92];
 const SNAP_BY_NAME: Record<SheetSnap, string | number> = { peek: SNAP_POINTS[0], half: SNAP_POINTS[1], full: SNAP_POINTS[2] };
@@ -39,6 +40,7 @@ export default function MobileSheet({ header, children }: { header: ReactNode; c
     >
       <Drawer.Portal>
         <Drawer.Content
+          {...tourTarget('sidebar.root')}
           aria-describedby={undefined}
           className="fixed inset-x-0 bottom-0 z-40 flex h-full max-h-[92dvh] select-none flex-col rounded-t-2xl border-t bg-background outline-none [-webkit-touch-callout:none] [&_input]:select-text [&_textarea]:select-text"
         >

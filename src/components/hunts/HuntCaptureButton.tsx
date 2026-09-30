@@ -1,6 +1,7 @@
 import { CameraIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import HuntPhotoInput from './HuntPhotoInput';
+import { tourTarget } from '@/components/tour/targets';
 
 /**
  * Phones: round camera button at the bottom right, just above the bottom sheet's peek height (132 px).
@@ -10,7 +11,7 @@ export default function HuntCaptureButton() {
   return (
     <HuntPhotoInput capture>
       {(open) => (
-        <Button size="icon-lg" className="fixed bottom-[144px] right-3 z-30 size-14 rounded-full shadow-lg" onClick={open} aria-label="Hunt registreren">
+        <Button {...tourTarget('huntCapture.button')} size="icon-lg" className="fixed bottom-[144px] right-3 z-30 size-14 rounded-full shadow-lg" onClick={open} aria-label="Hunt registreren">
           <CameraIcon className="size-6" />
         </Button>
       )}

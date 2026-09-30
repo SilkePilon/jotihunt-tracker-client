@@ -13,7 +13,8 @@ import {
     UsersIcon,
     FlaskConicalIcon,
     Loader2Icon,
-    SparklesIcon
+    SparklesIcon,
+    CompassIcon
 } from 'lucide-react';
 import {siDiscord} from "simple-icons"
 import {Button} from './ui/button';
@@ -58,10 +59,22 @@ import useAdminStore from "@/stores/admin.store";
 import {useDemo} from "@/hooks/demo.hook";
 import {usePredictionSetting} from "@/hooks/predictions.hook";
 import {isAxiosError} from "axios";
+import useSettingsMenuStore from '@/stores/settings-menu.store';
+import useTourStore from '@/components/tour/tour.store';
+import {tourTarget} from '@/components/tour/targets';
 
-export default function Settings() {
+export default function Settings({onReplayTour}: { onReplayTour?: () => void }) {
 
     const DISCORD_URL = import.meta.env.DISCORD_URL;
+
+    const menuOpen = useSettingsMenuStore((state) => state.open);
+    const setMenuOpen = useSettingsMenuStore((state) => state.setOpen);
+
+    // While the tour shows this menu, clicks on the tour card count as "outside"; the tour closes it itself
+    function handleMenuOpenChange(open: boolean) {
+        if (!open && useTourStore.getState().active) return;
+        setMenuOpen(open);
+    }
 
     const navigate = useNavigate();
     const openHintBoard = useHintBoardStore((state) => state.openBoard);
@@ -153,7 +166,7 @@ export default function Settings() {
 
     return (
         <Dialog>
-            <DropdownMenu modal={false}>
+            <DropdownMenu modal={false} open={menuOpen} onOpenChange={handleMenuOpenChange}>
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" aria-label="Instellingen">
                         <CogIcon/>
@@ -251,6 +264,15 @@ export default function Settings() {
                         <PuzzleIcon/>
                         Hint board
                     </DropdownMenuItem>
+                    {onReplayTour && (
+                        <DropdownMenuItem {...tourTarget('settings.replayItem')} onClick={() => {
+                            setMenuOpen(false);
+                            onReplayTour();
+                        }}>
+                            <CompassIcon/>
+                            Rondleiding opnieuw
+                        </DropdownMenuItem>
+                    )}
                     {auth?.admin && (
                         <>
                             <DropdownMenuSub>

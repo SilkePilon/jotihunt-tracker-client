@@ -28,6 +28,7 @@ import '@mapbox-controls/ruler/src/index.css';
 import Ruler from "@/components/map/RulerControl.tsx";
 import ImageControl from "@/components/map/ImageControl.tsx";
 import {DEFAULT_VIEW} from '@/lib/map-view';
+import {tourTarget} from '@/components/tour/targets';
 
 type FlyToOpts = NonNullable<Parameters<MaplibreMap["flyTo"]>[0]>;
 
@@ -120,7 +121,7 @@ const Map = forwardRef<MapRef>((_, ref) => {
     }
 
     return (
-        <div className="w-dvw h-dvh">
+        <div className="w-dvw h-dvh" {...tourTarget('map')}>
             <Maplibre
                 ref={mapRef}
                 reuseMaps

@@ -7,6 +7,8 @@ import useHintBoardStore from '@/stores/hint-board.store';
 import useSidebarStore from '@/stores/sidebar.store';
 import HintBoard, { HintLegend, NewHintAlert } from './HintBoard';
 import HintDetailDialog from './HintDetailDialog';
+import { tourTarget } from '@/components/tour/targets';
+import useTourStore from '@/components/tour/tour.store';
 
 /**
  * The hint board overview (a large dialog on desktop, a bottom drawer on phones, on top of the sidebar sheet) and the
@@ -19,6 +21,11 @@ export default function HintBoardDialog({ mapRef }: { mapRef: RefObject<MapRef |
   const setSheetSnap = useSidebarStore((state) => state.setSheetSnap);
   const overviewOpen = view === 'overview';
 
+  // While the tour shows the board, clicks on the tour card count as "outside"; the tour closes it itself
+  function handleOpenChange(next: boolean) {
+    if (!next && !useTourStore.getState().active) close();
+  }
+
   function showOnMap(lng: number, lat: number) {
     close();
     // On phones, lower the sidebar sheet so the hint location is visible
@@ -27,10 +34,10 @@ export default function HintBoardDialog({ mapRef }: { mapRef: RefObject<MapRef |
   }
 
   const overview = isMobile ? (
-    <Drawer.Root open={overviewOpen} onOpenChange={(next) => !next && close()}>
+    <Drawer.Root open={overviewOpen} onOpenChange={handleOpenChange}>
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 z-50 bg-black/40" />
-        <Drawer.Content className="fixed inset-x-0 bottom-0 z-50 flex h-[92dvh] flex-col rounded-t-2xl border-t bg-background outline-none">
+        <Drawer.Content {...tourTarget('hintBoard.dialog')} className="fixed inset-x-0 bottom-0 z-50 flex h-[92dvh] flex-col rounded-t-2xl border-t bg-background outline-none">
           <Drawer.Handle className="mx-auto mb-1 mt-2" />
           <div className="flex flex-col gap-1 px-4 pb-2 pt-1">
             <Drawer.Title className="text-lg font-semibold">Hints</Drawer.Title>
@@ -45,8 +52,8 @@ export default function HintBoardDialog({ mapRef }: { mapRef: RefObject<MapRef |
       </Drawer.Portal>
     </Drawer.Root>
   ) : (
-    <Dialog open={overviewOpen} onOpenChange={(next) => !next && close()}>
-      <DialogContent className="flex h-[90dvh] max-h-[90dvh] flex-col gap-3 sm:max-w-6xl">
+    <Dialog open={overviewOpen} onOpenChange={handleOpenChange}>
+      <DialogContent {...tourTarget('hintBoard.dialog')} className="flex h-[90dvh] max-h-[90dvh] flex-col gap-3 sm:max-w-6xl">
         <DialogHeader className="flex-row items-center gap-4 pr-8">
           <DialogTitle className="text-xl">Hints</DialogTitle>
           <DialogDescription asChild>

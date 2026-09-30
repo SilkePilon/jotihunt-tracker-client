@@ -3,6 +3,7 @@ import { ChevronDownIcon } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import useSidebarStore, { SidebarSectionId } from '@/stores/sidebar.store';
 import { cn } from '@/lib/utils';
+import { tourTarget } from '@/components/tour/targets';
 
 interface SidebarSectionProps {
   id: SidebarSectionId;
@@ -22,7 +23,7 @@ export default function SidebarSection({ id, title, summary, open: openProp, onO
   const open = openProp ?? storedOpen;
 
   return (
-    <Collapsible open={open} onOpenChange={onOpenChange ?? (() => toggleSection(id))} className="card rounded-xl bg-card px-3 py-2 text-card-foreground">
+    <Collapsible {...tourTarget(`sidebar.${id}`)} open={open} onOpenChange={onOpenChange ?? (() => toggleSection(id))} className="card rounded-xl bg-card px-3 py-2 text-card-foreground">
       <CollapsibleTrigger className="flex w-full cursor-pointer items-center justify-between gap-2 text-left">
         <span className="text-sm font-semibold">{title}</span>
         <span className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
