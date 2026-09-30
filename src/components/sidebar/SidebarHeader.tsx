@@ -1,8 +1,10 @@
 import Settings from '@/components/Settings';
+import { useStartTour } from '@/components/tour/useTour';
 import CountdownPill from './CountdownPill';
 import DemoBadge from './DemoBadge';
 
 export default function SidebarHeader() {
+  const startTour = useStartTour();
   const logoUrl: string = import.meta.env.LOGO_URL || '/pwa-512x512.png';
   const groupName: string = import.meta.env.GROUP_NAME;
 
@@ -15,7 +17,7 @@ export default function SidebarHeader() {
       </div>
       <DemoBadge />
       <CountdownPill />
-      <Settings />
+      <Settings onReplayTour={() => startTour('replay')} />
     </div>
   );
 }

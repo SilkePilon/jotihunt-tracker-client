@@ -14,6 +14,8 @@ import DemoReloader from './components/DemoReloader';
 import UsersDialog from './components/admin/UsersDialog';
 import {useTheme} from "@/hooks/theme.hook.ts";
 import type {OutletContextType} from '@/hooks/outlet.hook.ts';
+import TourOverlay from './components/tour/TourOverlay';
+import {useTourAutoStart} from './components/tour/useTour';
 
 export default function Layout() {
     const navigate = useNavigate();
@@ -23,6 +25,7 @@ export default function Layout() {
     const [resetPasswordOpen, setResetPasswordOpen] = useState(false);
 
     useTheme();
+    const tour = useTourAutoStart();
 
     /**
      * If reset password is required, open the dialog.
@@ -63,15 +66,19 @@ export default function Layout() {
             <HintBoardDialog mapRef={mapRef}/>
             <HuntersDialog mapRef={mapRef}/>
             <UsersDialog/>
-            <PWAPrompt
-                promptOnVisit={1}
-                appIconPath="/icon_maskable.png"
-                copyTitle="Installeer als app"
-                copySubtitle="Jotihunt Tracker"
-                copyDescription="Deze website kan als app geïnstalleerd worden. Volg de onderstaande instructies om deze app te installeren."
-                copyShareStep='Druk op de "Deel" knop in de menubalk'
-                copyAddToHomeScreenStep='Druk op "Zet op beginscherm"'
-            />
+            <TourOverlay mapRef={mapRef}/>
+            {/* Held back until the onboarding tour is done so they don't overlap */}
+            {!tour.pending && (
+                <PWAPrompt
+                    promptOnVisit={1}
+                    appIconPath="/icon_maskable.png"
+                    copyTitle="Installeer als app"
+                    copySubtitle="Jotihunt Tracker"
+                    copyDescription="Deze website kan als app geïnstalleerd worden. Volg de onderstaande instructies om deze app te installeren."
+                    copyShareStep='Druk op de "Deel" knop in de menubalk'
+                    copyAddToHomeScreenStep='Druk op "Zet op beginscherm"'
+                />
+            )}
         </SWRConfig>
     );
 }
