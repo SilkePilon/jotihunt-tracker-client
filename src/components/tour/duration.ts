@@ -1,8 +1,8 @@
 import type { TourStep } from './types';
 
-const MIN_MS = 4000;
-const MAX_MS = 10000;
-const MS_PER_CHAR = 40;
+const MIN_MS = 6000;
+const MAX_MS = 15000;
+const MS_PER_CHAR = 60;
 
 /** How long a step stays before auto-advancing: longer text gets more time. */
 export function stepDuration(step: Pick<TourStep, 'title' | 'body' | 'durationMs'>): number {
