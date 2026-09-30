@@ -24,6 +24,11 @@ describe('placeCard', () => {
     expect(placeCard({ target, card, viewport, placement: 'left', isMobile: false }).x).toBe(340);
   });
 
+  test('explicit placement that fits is honored over auto order', () => {
+    const target = { x: 400, y: 100, width: 200, height: 100 };
+    expect(placeCard({ target, card, viewport, placement: 'bottom', isMobile: false })).toEqual({ x: 330, y: 212 });
+  });
+
   test('full-screen target (map): centered over it', () => {
     const target = { x: 0, y: 0, width: 1280, height: 800 };
     expect(placeCard({ target, card, viewport, isMobile: false })).toEqual({ x: 470, y: 300 });

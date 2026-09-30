@@ -1,4 +1,4 @@
-import { describe, expect, test, spyOn } from 'bun:test';
+import { describe, expect, test, spyOn, afterEach } from 'bun:test';
 import { runActions, runUndos } from './runner';
 import type { TourAction, TourContext } from './types';
 
@@ -15,6 +15,14 @@ function action(name: string, log: string[], withUndo = true): TourAction {
 }
 
 describe('runner', () => {
+  let consoleSpy: ReturnType<typeof spyOn>;
+
+  afterEach(() => {
+    if (consoleSpy) {
+      consoleSpy.mockRestore();
+    }
+  });
+
   test('runs actions in order and undoes them in reverse', async () => {
     const log: string[] = [];
     const undos = await runActions([action('a', log), action('b', log, false), action('c', log)], ctx);
@@ -25,18 +33,18 @@ describe('runner', () => {
   test('a failing action does not stop the rest', async () => {
     const log: string[] = [];
     const broken: TourAction = { name: 'broken', run: () => { throw new Error('boom'); } };
-    const consoleSpy = spyOn(console, 'warn').mockImplementation(() => {});
+    consoleSpy = spyOn(console, 'warn').mockImplementation(() => {});
     const undos = await runActions([broken, action('ok', log)], ctx);
-    consoleSpy.mockRestore();
     expect(log).toEqual(['run ok']);
     expect(undos).toHaveLength(1);
+    expect(consoleSpy).toHaveBeenCalledTimes(1);
   });
 
   test('a failing undo does not stop the rest', () => {
     const log: string[] = [];
-    const consoleSpy = spyOn(console, 'warn').mockImplementation(() => {});
+    consoleSpy = spyOn(console, 'warn').mockImplementation(() => {});
     runUndos([() => log.push('first'), () => { throw new Error('boom'); }]);
-    consoleSpy.mockRestore();
     expect(log).toEqual(['first']);
+    expect(consoleSpy).toHaveBeenCalledTimes(1);
   });
 });
