@@ -1,6 +1,5 @@
 import {Outlet, useNavigate} from 'react-router';
 import {toast} from "sonner"
-import {isAxiosError} from 'axios';
 import {useEffect, useRef, useState} from 'react';
 import {SWRConfig} from 'swr';
 import Map, {MapRef} from './components/Map';
@@ -18,6 +17,7 @@ import {useNotificationsPrompt} from './components/notifications/useNotification
 import {useTheme} from "@/hooks/theme.hook.ts";
 import {useNotificationFeed} from '@/hooks/notification-feed.hook';
 import {useFetcher} from '@/hooks/utils/api.hook';
+import {isUnauthorized} from '@/lib/session';
 import {resyncPush} from '@/lib/push';
 import type {OutletContextType} from '@/hooks/outlet.hook.ts';
 import TourOverlay from './components/tour/TourOverlay';
@@ -30,8 +30,16 @@ export default function Layout() {
     const mapRef = useRef<MapRef>(null);
     const [resetPasswordOpen, setResetPasswordOpen] = useState(false);
 
+    function sessionExpired() {
+        toast.info("Je sessie is verlopen.", {
+            description: "Log opnieuw in om verder te gaan.",
+            duration: Infinity
+        })
+        navigate('/login');
+    }
+
     useTheme();
-    useNotificationFeed();
+    useNotificationFeed({onUnauthorized: sessionExpired});
     const {fetch} = useFetcher();
     useEffect(() => {
         void resyncPush(fetch);
@@ -56,12 +64,8 @@ export default function Layout() {
     useNotificationsPrompt(tour.pending || requiresPasswordChange);
 
     function onSWRError(error: unknown) {
-        if (isAxiosError(error) && error.response?.status === 401) {
-            toast.info("Je sessie is verlopen.", {
-                description: "Log opnieuw in om verder te gaan.",
-                duration: Infinity
-            })
-            navigate('/login');
+        if (isUnauthorized(error)) {
+            sessionExpired();
             return;
         }
         if (errorShown) return;

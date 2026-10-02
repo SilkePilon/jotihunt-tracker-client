@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useIsMobile } from '@/hooks/media.hook';
 import useHintBoardStore from '@/stores/hint-board.store';
 import useSidebarStore from '@/stores/sidebar.store';
-import HintBoard, { HintLegend, NewHintAlert } from './HintBoard';
+import HintBoard, { HintLegend } from './HintBoard';
 import HintDetailDialog from './HintDetailDialog';
 import { tourTarget } from '@/components/tour/targets';
 import useTourStore from '@/components/tour/tour.store';
@@ -69,7 +69,6 @@ export default function HintBoardDialog({ mapRef }: { mapRef: RefObject<MapRef |
 
   return (
     <>
-      {view && <NewHintAlert />}
       {overview}
       <HintDetailDialog onShowOnMap={showOnMap} />
     </>

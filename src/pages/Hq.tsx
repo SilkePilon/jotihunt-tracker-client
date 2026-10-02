@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Navigate } from 'react-router';
+import { Navigate, useNavigate } from 'react-router';
+import { SWRConfig } from 'swr';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import Map from '@/components/Map';
 import HqClock from '@/components/hq/HqClock';
@@ -8,15 +9,28 @@ import HuntFeed from '@/components/hq/HuntFeed';
 import LatestArticle from '@/components/hq/LatestArticle';
 import AlertBanner from '@/components/hq/AlertBanner';
 import AudioUnlock from '@/components/hq/AudioUnlock';
+import DemoReloader from '@/components/DemoReloader';
 import { useNotificationFeed } from '@/hooks/notification-feed.hook';
 import { useTheme } from '@/hooks/theme.hook';
-import type { AppNotification } from '@/lib/notifications';
+import { isUnauthorized } from '@/lib/session';
+import { pickPrimary, type AppNotification } from '@/lib/notifications';
 import type { User } from '@/types/User';
 
 const BANNER_MS = 8000;
 
 /** Admin-only wall display for the HQ TV: map, area tiles, hunts, latest article, loud alerts for everything. */
 export default function Hq() {
+  const navigate = useNavigate();
+  // Outside Layout, so it needs its own handler: an expired session sends the TV to the login page
+  return (
+    <SWRConfig value={{ onError: (error) => isUnauthorized(error) && navigate('/login') }}>
+      <DemoReloader />
+      <HqScreen onUnauthorized={() => navigate('/login')} />
+    </SWRConfig>
+  );
+}
+
+function HqScreen({ onUnauthorized }: { onUnauthorized: () => void }) {
   const user = useAuthUser<User>();
   const [audioUnlocked, setAudioUnlocked] = useState(false);
   const [banner, setBanner] = useState<AppNotification | null>(null);
@@ -26,8 +40,9 @@ export default function Hq() {
   useNotificationFeed({
     respectPreferences: false,
     toasts: false,
-    onNotification: (notification) => {
-      setBanner(notification);
+    onUnauthorized,
+    onPoll: (alerted) => {
+      setBanner(pickPrimary(alerted));
       clearTimeout(timeout.current);
       timeout.current = setTimeout(() => setBanner(null), BANNER_MS);
     },

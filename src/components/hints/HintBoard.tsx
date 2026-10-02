@@ -1,11 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
-import { toast } from 'sonner';
-import useSound from 'use-sound';
+import { useState } from 'react';
 import HintGrid from '@/components/hints/HintGrid';
 import { useHintBoard } from '@/hooks/hints.hook';
 import useInterval from '@/hooks/utils/interval.hook';
 import useHintBoardStore from '@/stores/hint-board.store';
-import hintAlert from '@/assets/audio/hint-alert.mp3';
 
 const LEGEND = [
   { label: 'open', className: 'bg-muted' },
@@ -25,32 +22,6 @@ export function HintLegend() {
       ))}
     </div>
   );
-}
-
-/**
- * Plays a sound and shows a toast when a new hint article appears (not on first load). Mounted while the hint overview
- * or a hint detail is open, so it keeps its list of known hints when switching between the two.
- */
-export function NewHintAlert() {
-  const { board } = useHintBoard();
-  const [play] = useSound(hintAlert);
-  const knownArticleIds = useRef<Set<number> | null>(null);
-
-  useEffect(() => {
-    if (!board) return;
-    const known = knownArticleIds.current;
-    if (known === null) {
-      knownArticleIds.current = new Set(board.articles.map((article) => article.id));
-      return;
-    }
-    const fresh = board.articles.filter((article) => !known.has(article.id));
-    if (fresh.length === 0) return;
-    fresh.forEach((article) => known.add(article.id));
-    play();
-    toast.info('Nieuwe hint!', { description: fresh[0].title });
-  }, [board, play]);
-
-  return null;
 }
 
 /**

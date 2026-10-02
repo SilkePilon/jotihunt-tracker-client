@@ -49,6 +49,28 @@ export function toastKind(notification: Pick<AppNotification, 'type' | 'data'>):
   return 'info';
 }
 
+/** Highest first: what the one sound of a poll (and the HQ banner) goes by. */
+const SOUND_PRIORITY: SoundKey[] = ['fox-green', 'broadcast', 'deadline', 'fox-status', 'hint', 'article'];
+
+/** The most important of these notifications, or null when empty. The earliest one wins a tie. */
+export function pickPrimary<T extends Pick<AppNotification, 'type' | 'data'>>(notifications: readonly T[]): T | null {
+  let best: T | null = null;
+  for (const notification of notifications) {
+    if (best === null || SOUND_PRIORITY.indexOf(soundKey(notification)) < SOUND_PRIORITY.indexOf(soundKey(best))) best = notification;
+  }
+  return best;
+}
+
+export function pickSound(notifications: readonly Pick<AppNotification, 'type' | 'data'>[]): SoundKey | null {
+  const primary = pickPrimary(notifications);
+  return primary ? soundKey(primary) : null;
+}
+
+/** Created at most `maxAgeMs` before the server's clock: older ones were already pushed, don't alert again after e.g. a backgrounded phone resumes. */
+export function isRecent(notification: Pick<AppNotification, 'createdAt'>, serverTime: string, maxAgeMs: number): boolean {
+  return new Date(serverTime).getTime() - new Date(notification.createdAt).getTime() <= maxAgeMs;
+}
+
 const SEEN_LIMIT = 200;
 
 /** The notifications not handled yet; marks them as seen (the feed is polled with an overlapping window). */
