@@ -115,12 +115,12 @@ export default function Login() {
                     {/* Haal onderstaande alsjeblieft niet weg! Zo help je andere ook een beetje :)
                      Een groepsnaam kun je instellen via GROUP_NAME. */}
                     <FieldDescription className="px-6 text-center">
-                        Ontwikkeling door Scouting Scherpenzeel e.o.<br/>
-                        <a href={"https://scoutingscherpenzeel.nl"} target={"_blank"} rel={"noreferrer"}
+                        Ontwikkeling door Silke Pilon<br/>
+                        <a href={"https://silkepilon.dev"} target={"_blank"} rel={"noreferrer"}
                            className={cn("ml-2 underline underline-offset-2 inline-flex items-center gap-1")}>
                             <GlobeIcon className={"size-3"}/>
                             Website</a>
-                        <a href={"https://github.com/ScoutingScherpenzeel"} target={"_blank"} rel={"noreferrer"}
+                        <a href={"https://github.com/SilkePilon"} target={"_blank"} rel={"noreferrer"}
                            className={cn("ml-2 underline underline-offset-2 inline-flex items-center gap-1")}>
                             <span className={"fill-muted-foreground size-3"}
                                   dangerouslySetInnerHTML={{__html: siGithub.svg}}></span>
