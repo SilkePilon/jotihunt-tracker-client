@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import type { Hunt } from '@/types/Hunt';
 import type { HuntReport } from '@/types/HuntReport';
 import type { Prediction } from '@/types/Prediction';
-import { huntListItems, huntsSummary, huntSourceLabel, huntStatusLabel, huntTimeLabel, isConcealed, isReading, nearestArea, normalizeHuntCode, ocrConfidence, pendingReports, readFailed, resolveHuntTime } from './hunt-reports';
+import { huntListItems, huntsSummary, huntSourceLabel, huntStatusLabel, huntTimeLabel, isConcealed, isReading, nearestArea, normalizeHuntCode, ocrConfidence, pendingReports, readFailed, resolveHuntTime, totalPoints } from './hunt-reports';
 
 function report(overrides: Partial<HuntReport> = {}): HuntReport {
   return {
@@ -183,4 +183,13 @@ describe('readFailed', () => {
     expect(readFailed(report({ ocrStatus: 'failed', huntCodeSource: 'manual', huntTimeSource: 'manual' }))).toBe(false);
     expect(readFailed(report())).toBe(false);
   });
+});
+
+test('totalPoints sums site points of reports and website hunts', () => {
+  const items = [
+    { source: 'app', report: { site: { points: 5 } } },
+    { source: 'app', report: { site: null } },
+    { source: 'website', hunt: { points: 3 } },
+  ] as unknown as Parameters<typeof totalPoints>[0];
+  expect(totalPoints(items)).toBe(8);
 });

@@ -4,6 +4,7 @@ import Login from './pages/Login';
 import AuthOutlet from '@auth-kit/react-router/AuthOutlet';
 import Users from './pages/Users';
 import Hints from './pages/Hints';
+import Hq from './pages/Hq';
 import Layout from './Layout';
 
 export default function Routes() {
@@ -11,6 +12,7 @@ export default function Routes() {
     <BrowserRouter>
       <RouterRoutes>
         <Route element={<AuthOutlet fallbackPath="/login" />}>
+          <Route path="/hq" element={<Hq />} />
           <Route path="/" element={<Layout />}>
             <Route index element={<App />} />
             <Route path="/users" element={<Users />} />

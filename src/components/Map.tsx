@@ -46,7 +46,7 @@ const maxBounds: [number, number, number, number] = [
 
 const IMAGE_CONTROL_LAYER_PREFIXES = ['$fill:', '$contour:', '$knobs:'];
 
-const Map = forwardRef<MapRef>((_, ref) => {
+const Map = forwardRef<MapRef, { className?: string }>(({className}, ref) => {
 
     const GROUP_NAME: string = import.meta.env.GROUP_NAME;
 
@@ -121,7 +121,7 @@ const Map = forwardRef<MapRef>((_, ref) => {
     }
 
     return (
-        <div className="w-dvw h-dvh" {...tourTarget('map')}>
+        <div className={className ?? "w-dvw h-dvh"} {...tourTarget('map')}>
             <Maplibre
                 ref={mapRef}
                 reuseMaps

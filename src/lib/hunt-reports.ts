@@ -133,3 +133,8 @@ export function huntSourceLabel(report: HuntReport, withError = false): string {
   if (timeManual) return `${read} · tijd handmatig`;
   return read;
 }
+
+/** Points of a hunt list: the jotihunt.nl result of own reports, plus website-only hunts. */
+export function totalPoints(items: HuntListItem[]): number {
+  return items.reduce((sum, item) => sum + (item.source === 'app' ? (item.report.site?.points ?? 0) : item.hunt.points), 0);
+}
