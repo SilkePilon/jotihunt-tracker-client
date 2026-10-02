@@ -14,6 +14,8 @@ import DemoReloader from './components/DemoReloader';
 import UsersDialog from './components/admin/UsersDialog';
 import {useTheme} from "@/hooks/theme.hook.ts";
 import {useNotificationFeed} from '@/hooks/notification-feed.hook';
+import {useFetcher} from '@/hooks/utils/api.hook';
+import {resyncPush} from '@/lib/push';
 import type {OutletContextType} from '@/hooks/outlet.hook.ts';
 import TourOverlay from './components/tour/TourOverlay';
 import {useTourAutoStart} from './components/tour/useTour';
@@ -27,6 +29,12 @@ export default function Layout() {
 
     useTheme();
     useNotificationFeed();
+    const {fetch} = useFetcher();
+    useEffect(() => {
+        void resyncPush(fetch);
+        // Once per page load
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
     const tour = useTourAutoStart();
 
     /**

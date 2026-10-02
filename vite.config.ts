@@ -10,6 +10,7 @@ const pwaManifest: Partial<VitePWAOptions> = {
   workbox: {
     globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
     maximumFileSizeToCacheInBytes: 1024 * 1024 * 10,
+    importScripts: ['push-sw.js'],
   },
   manifest: {
     name: 'Jotihunt Tracker',
