@@ -38,6 +38,7 @@ export function useNotificationFeed({ respectPreferences = true, toasts = true, 
     let cursor: string | null = null;
     let busy = false;
     const seen = new Set<string>();
+    let startedAt: string | null = null;
 
     async function poll() {
       if (busy) return;
@@ -45,7 +46,13 @@ export function useNotificationFeed({ respectPreferences = true, toasts = true, 
       try {
         const since = cursor ? `?since=${encodeURIComponent(new Date(new Date(cursor).getTime() - OVERLAP_MS).toISOString())}` : '';
         const response = (await fetcherWithMethod(`/notifications${since}`, authHeader)) as { notifications: AppNotification[]; serverTime: string };
-        const fresh = cursor ? mergeFeed(seen, response.notifications) : [];
+        if (!cursor) {
+          startedAt = response.serverTime;
+        }
+        let fresh = cursor ? mergeFeed(seen, response.notifications) : [];
+        if (startedAt) {
+          fresh = fresh.filter((n) => new Date(n.createdAt).getTime() > new Date(startedAt!).getTime());
+        }
         cursor = response.serverTime;
         const options = latest.current;
         let played = false;
