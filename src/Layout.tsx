@@ -13,6 +13,7 @@ import HuntersDialog from './components/admin/HuntersDialog';
 import DemoReloader from './components/DemoReloader';
 import UsersDialog from './components/admin/UsersDialog';
 import {useTheme} from "@/hooks/theme.hook.ts";
+import {useNotificationFeed} from '@/hooks/notification-feed.hook';
 import type {OutletContextType} from '@/hooks/outlet.hook.ts';
 import TourOverlay from './components/tour/TourOverlay';
 import {useTourAutoStart} from './components/tour/useTour';
@@ -25,6 +26,7 @@ export default function Layout() {
     const [resetPasswordOpen, setResetPasswordOpen] = useState(false);
 
     useTheme();
+    useNotificationFeed();
     const tour = useTourAutoStart();
 
     /**

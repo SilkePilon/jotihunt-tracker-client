@@ -10,8 +10,10 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 interface SettingsState {
   mapStyle: MapStyle;
   darkMode?: boolean;
+  soundMuted: boolean;
   setMapStyle: (mapStyle: MapStyle) => void;
   setDarkMode: (darkMode?: boolean) => void;
+  setSoundMuted: (soundMuted: boolean) => void;
 }
 
 // Bumped when the shape/meaning of persisted fields changes in a
@@ -26,11 +28,15 @@ const useSettingsStore = create<SettingsState>()(
     (set) => ({
       mapStyle: '' as MapStyle,
       darkMode: undefined,
+      soundMuted: false,
       setMapStyle: (mapStyle: MapStyle) => {
         set({ mapStyle });
       },
       setDarkMode: (darkMode?: boolean) => {
         set({ darkMode });
+      },
+      setSoundMuted: (soundMuted: boolean) => {
+        set({ soundMuted });
       },
     }),
     {
@@ -42,6 +48,7 @@ const useSettingsStore = create<SettingsState>()(
         const mapStyle = state?.mapStyle;
         return {
           ...state,
+          soundMuted: state?.soundMuted ?? false,
           // '' means "automatic", otherwise it must be a known MapStyle id.
           mapStyle: mapStyle === '' || isMapStyle(mapStyle) ? mapStyle : ('' as MapStyle),
         } as SettingsState;

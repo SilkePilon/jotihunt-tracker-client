@@ -1,20 +1,17 @@
 import { useState } from 'react';
-import useSound from 'use-sound';
 import { useArticles } from '@/hooks/articles.hook.ts';
 import useInterval from '@/hooks/utils/interval.hook.ts';
-import hintAlert from '@/assets/audio/hint-alert.mp3';
 import { formatHintCountdown, getLastHintTime, getNextHintTime } from '@/lib/next-hint';
 
 const URGENT_MS = 5 * 60 * 1000;
 const NEW_HINT_HIGHLIGHT_MS = 60 * 1000;
 
 /**
- * Countdown to the next hint, plus a sound and highlight when a new hint arrives
- * (not on the first load).
+ * Countdown to the next hint, plus a highlight when a new hint arrives (not on the first load).
+ * The sound comes from the notification feed.
  */
 export function useNextHint(): { label: string; isUrgent: boolean; isNewHint: boolean } {
   const { articles, isLoading, isError } = useArticles();
-  const [play] = useSound(hintAlert);
   const [now, setNow] = useState(() => Date.now());
   const [hasLoaded, setHasLoaded] = useState(false);
   const [lastPlayedHint, setLastPlayedHint] = useState<number>();
@@ -36,7 +33,6 @@ export function useNextHint(): { label: string; isUrgent: boolean; isNewHint: bo
     if (hasLoaded && lastHintTime && (!lastPlayedHint || lastHintTime.getTime() > lastPlayedHint)) {
       setLastPlayedHint(lastHintTime.getTime());
       setNewHintUntil(current + NEW_HINT_HIGHLIGHT_MS);
-      play();
     }
   }, 1000);
 
