@@ -47,8 +47,8 @@ export default function NotificationsDialog() {
     setSaving(true);
     try {
       await update({ disabledTypes: current, promptedVersion: NOTIFICATIONS_PROMPT_VERSION });
-      const wantsPush = current.length < NOTIFICATION_OPTIONS.length;
-      if (wantsPush && !iosInstall && isPushSupported()) {
+      // Always: broadcasts can't be switched off, so every device wants push
+      if (!iosInstall && isPushSupported()) {
         const result = await subscribePush(fetch);
         if (result === 'subscribed') toast.success('Meldingen opgeslagen', { description: 'Je krijgt pushmeldingen op dit apparaat.' });
         else toast.warning('Meldingen opgeslagen', { description: RESULT_MESSAGE[result] });

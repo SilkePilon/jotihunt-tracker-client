@@ -64,6 +64,8 @@ import useNotificationsDialogStore from '@/stores/notifications-dialog.store';
 import {useDemo} from "@/hooks/demo.hook";
 import {usePredictionSetting} from "@/hooks/predictions.hook";
 import {isAxiosError} from "axios";
+import {useFetcher} from '@/hooks/utils/api.hook';
+import {unsubscribePush} from '@/lib/push';
 import useSettingsMenuStore from '@/stores/settings-menu.store';
 import useTourStore from '@/components/tour/tour.store';
 import {tourTarget} from '@/components/tour/targets';
@@ -141,7 +143,10 @@ export default function Settings({onReplayTour}: { onReplayTour?: () => void }) 
     const auth = useAuthUser<User>();
     const signOut = useSignOut();
 
-    function logout() {
+    const {fetch} = useFetcher();
+
+    async function logout() {
+        await unsubscribePush(fetch);
         signOut();
         navigate('/login');
     }

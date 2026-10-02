@@ -66,3 +66,17 @@ export async function resyncPush(fetch: Fetch): Promise<void> {
     console.warn('[push] resync failed', error);
   }
 }
+
+/** On logout: stop pushes for this device (server and browser), so the next user here doesn't get this user's alerts. */
+export async function unsubscribePush(fetch: Fetch): Promise<void> {
+  if (!isPushSupported()) return;
+  try {
+    const registration = await navigator.serviceWorker.getRegistration();
+    const subscription = await registration?.pushManager.getSubscription();
+    if (!subscription) return;
+    await fetch('/push/subscribe', 'DELETE', { endpoint: subscription.endpoint });
+    await subscription.unsubscribe();
+  } catch (error) {
+    console.warn('[push] unsubscribe failed', error);
+  }
+}
