@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { CameraIcon, ListIcon, TrophyIcon } from 'lucide-react';
+import { CameraIcon, ListIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
 import { useHuntReports } from '@/hooks/hunt-reports.hook';
 import { useIsMobile } from '@/hooks/media.hook';
 import useInterval from '@/hooks/utils/interval.hook';
 import { huntsSummary, pendingReports } from '@/lib/hunt-reports';
-import LeaderboardDialog from '@/components/leaderboard/LeaderboardDialog';
 import SidebarSection from '@/components/sidebar/SidebarSection';
 import AllHuntsDialog from './AllHuntsDialog';
 import HuntPhotoInput from './HuntPhotoInput';
@@ -20,7 +20,6 @@ export default function HuntsSection() {
   useInterval(() => setNow(Date.now()), 1000);
   const [allOpen, setAllOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
-  const [leaderboardOpen, setLeaderboardOpen] = useState(false);
 
   function openAll(reportId?: string) {
     setSelectedId(reportId);
@@ -34,14 +33,6 @@ export default function HuntsSection() {
     <>
       <SidebarSection id="hunts" title="Hunts" summary={summary}>
         <div className="flex flex-col gap-2">
-          <HuntPhotoInput capture={isMobile}>
-            {(open) => (
-              <Button size="sm" className="w-full" onClick={open}>
-                <CameraIcon data-icon="inline-start" />
-                Hunt registreren
-              </Button>
-            )}
-          </HuntPhotoInput>
           {reports !== undefined && (
             reports.length ? (
               <div className="flex flex-col gap-1">
@@ -50,21 +41,29 @@ export default function HuntsSection() {
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-muted-foreground">Nog geen hunts geregistreerd.</p>
+              <Empty className="border-2 border-muted-foreground/40 p-4 md:p-6">
+                <EmptyHeader>
+                  <EmptyTitle className="text-sm">Nog geen hunts geregistreerd</EmptyTitle>
+                  <EmptyDescription className="text-xs">Maak een foto van een hunt om hem te registreren.</EmptyDescription>
+                </EmptyHeader>
+              </Empty>
             )
           )}
+          <HuntPhotoInput capture={isMobile}>
+            {(open) => (
+              <Button size="sm" className="w-full" onClick={open}>
+                <CameraIcon data-icon="inline-start" />
+                Hunt registreren
+              </Button>
+            )}
+          </HuntPhotoInput>
           <Button variant="outline" size="sm" className="w-full" onClick={() => openAll()}>
             <ListIcon data-icon="inline-start" />
             Alle hunts bekijken
           </Button>
-          <Button variant="outline" size="sm" className="w-full" onClick={() => setLeaderboardOpen(true)}>
-            <TrophyIcon data-icon="inline-start" />
-            Leaderboard
-          </Button>
         </div>
       </SidebarSection>
       <AllHuntsDialog open={allOpen} onOpenChange={setAllOpen} initialReportId={selectedId} />
-      <LeaderboardDialog open={leaderboardOpen} onOpenChange={setLeaderboardOpen} />
     </>
   );
 }
