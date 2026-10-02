@@ -40,7 +40,7 @@ export default function Concealed({ concealed, kind = 'text', className, childre
       </span>
       {kind === 'image' && (
         <span className="pointer-events-none absolute inset-0 flex items-center justify-center group-hover/conceal:hidden">
-          <span className="flex items-center gap-1.5 rounded-full bg-background/90 px-3 py-1.5 text-sm font-medium shadow">
+          <span className="flex items-center gap-1.5 rounded-badge bg-background/90 px-3 py-1.5 text-sm font-medium shadow">
             <EyeIcon className="size-4" />
             Tik om te tonen
           </span>

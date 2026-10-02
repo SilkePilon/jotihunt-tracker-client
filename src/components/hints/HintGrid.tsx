@@ -55,7 +55,7 @@ export default function HintGrid({ articles, cells, now, onSelect }: HintGridPro
                     type="button"
                     onClick={() => onSelect({ articleId: article.id, area: area.value })}
                     className={cn(
-                      'flex h-16 w-full cursor-pointer flex-col justify-between rounded-md p-2 text-left transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none',
+                      'flex h-16 w-full cursor-pointer flex-col justify-between rounded-badge p-2 text-left transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none',
                       statusClass[cell.status],
                     )}
                   >

@@ -102,7 +102,7 @@ export default function HuntDetail({ report, now, onBack }: { report: HuntReport
             <Concealed concealed={concealed} kind="image" className="overflow-hidden rounded-md">
               <button type="button" className="group relative block w-full cursor-zoom-in" onClick={() => setZoomOpen(true)} aria-label="Foto vergroten">
                 <img src={photo} alt={`Foto van hunt ${codeLabel}`} className="max-h-[50dvh] w-full rounded-md bg-muted object-contain" />
-                <span className="absolute bottom-2 right-2 flex items-center gap-1 rounded-md bg-background/90 px-2 py-1 text-xs font-medium opacity-0 shadow transition-opacity group-hover:opacity-100 max-md:opacity-100">
+                <span className="absolute bottom-2 right-2 flex items-center gap-1 rounded-badge bg-background/90 px-2 py-1 text-xs font-medium opacity-0 shadow transition-opacity group-hover:opacity-100 max-md:opacity-100">
                   <ZoomInIcon className="size-3.5" />
                   Vergroten
                 </span>

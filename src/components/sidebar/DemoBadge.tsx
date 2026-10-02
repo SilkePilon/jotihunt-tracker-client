@@ -9,7 +9,7 @@ export default function DemoBadge() {
         <Tooltip>
             <TooltipTrigger asChild>
                 <span
-                    className="shrink-0 rounded-full bg-primary px-2 py-0.5 text-xs font-bold tracking-wide text-primary-foreground">
+                    className="shrink-0 rounded-badge bg-primary px-2 py-0.5 text-xs font-bold tracking-wide text-primary-foreground">
                     DEMO
                 </span>
             </TooltipTrigger>

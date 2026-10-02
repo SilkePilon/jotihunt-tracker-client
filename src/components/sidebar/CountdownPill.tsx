@@ -9,7 +9,7 @@ export default function CountdownPill() {
     <span
       title="Volgende hint"
       className={cn(
-        'flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 font-mono text-xs font-semibold',
+        'flex shrink-0 items-center gap-1 rounded-badge px-2 py-0.5 font-mono text-xs font-semibold',
         isNewHint && 'animate-pulse bg-green-100 text-green-700',
         !isNewHint && isUrgent && 'bg-red-100 text-red-700',
         !isNewHint && !isUrgent && 'bg-orange-100 text-orange-700',

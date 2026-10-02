@@ -47,7 +47,7 @@ function Totals({ items }: { items: HuntListItem[] }) {
   return (
     <div className="flex flex-wrap items-center gap-1.5 text-xs">
       {areas.map((area) => (
-        <span key={area.value} className="inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5">
+        <span key={area.value} className="inline-flex items-center gap-1.5 rounded-badge border px-2 py-0.5">
           <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: getColorFromArea(area.value) }} />
           {area.label} {area.count} · {area.points} pt
         </span>

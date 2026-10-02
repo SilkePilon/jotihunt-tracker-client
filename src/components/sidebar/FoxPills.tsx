@@ -30,7 +30,7 @@ export default function FoxPills() {
     return (
       <div className="flex flex-wrap gap-1.5">
         {Array.from({ length: 9 }, (_, index) => (
-          <Skeleton key={index} className="h-6 w-16 rounded-md" />
+          <Skeleton key={index} className="h-6 w-16 rounded-badge" />
         ))}
       </div>
     );
@@ -58,7 +58,7 @@ export default function FoxPills() {
               aria-pressed={!hidden}
               onClick={() => toggleHidden(area.name)}
               className={cn(
-                'inline-flex h-6 cursor-pointer items-center gap-1 rounded-md border px-1.5 text-xs font-medium transition-opacity hover:brightness-95',
+                'inline-flex h-6 cursor-pointer items-center gap-1 rounded-badge border px-1.5 text-xs font-medium transition-opacity hover:brightness-95',
                 cooldown > 0 ? COOLDOWN_PILL_CLASS : statusPillClass(area.status),
                 hidden && 'opacity-40',
               )}

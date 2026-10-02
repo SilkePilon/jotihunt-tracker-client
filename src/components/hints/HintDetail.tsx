@@ -62,7 +62,7 @@ function HintStepper({ cell }: { cell: HintCell }) {
             <li
               aria-current={current ? 'step' : undefined}
               className={cn(
-                'flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium',
+                'flex shrink-0 items-center gap-1.5 rounded-badge border px-2.5 py-1 text-xs font-medium',
                 done && 'border-green-600 bg-green-600 text-white dark:border-green-700 dark:bg-green-700',
                 current && !disputed && 'border-primary bg-primary/10 text-primary',
                 current && disputed && 'border-red-500 bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300',

@@ -45,7 +45,7 @@ export default function PredictionList({ mapRef }: { mapRef: RefObject<MapRef | 
     return (
       <div className="flex flex-wrap gap-1.5">
         {Array.from({ length: 9 }, (_, index) => (
-          <Skeleton key={index} className="h-7 w-20 rounded-full" />
+          <Skeleton key={index} className="h-7 w-20 rounded-badge" />
         ))}
       </div>
     );
@@ -83,7 +83,7 @@ export default function PredictionList({ mapRef }: { mapRef: RefObject<MapRef | 
                   if (!wasOpen.current) flyTo(prediction);
                 }}
                 className={cn(
-                  'inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-full px-2.5 text-xs font-semibold transition-[transform,box-shadow,opacity] active:scale-95',
+                  'inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-badge px-2.5 text-xs font-semibold transition-[transform,box-shadow,opacity] active:scale-95',
                   !active && 'bg-muted text-muted-foreground',
                   prediction.stale && 'opacity-60',
                   openArea === prediction.area && 'ring-2 ring-offset-2 ring-offset-background',

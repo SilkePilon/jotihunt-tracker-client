@@ -57,7 +57,7 @@ export default function HintMiniGrid() {
                     title={label}
                     aria-label={label}
                     onClick={() => openCell({ articleId: row.article.id, area: area.value })}
-                    className={cn('h-6 cursor-pointer rounded-sm hover:ring-2 hover:ring-primary/50 md:h-4', cellClass[cell.status])}
+                    className={cn('h-6 cursor-pointer rounded-badge hover:ring-2 hover:ring-primary/50 md:h-4', cellClass[cell.status])}
                   />
                 );
               })}
