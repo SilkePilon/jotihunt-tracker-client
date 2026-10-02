@@ -28,8 +28,14 @@ test('unsubscribePush deletes the endpoint on the server, then unsubscribes the 
     const fetch = (async (url: string, method?: string, body?: unknown) => void calls.push(`${method} ${url} ${JSON.stringify(body)}`)) as never;
     await unsubscribePush(fetch);
     expect(calls).toEqual(['DELETE /push/subscribe {"endpoint":"https://push.example/1"}', 'unsubscribe']);
-    // errors are swallowed
+    // errors are swallowed, but the browser still unsubscribes
+    calls.length = 0;
     await unsubscribePush((async () => { throw new Error('offline'); }) as never);
+    expect(calls).toEqual(['unsubscribe']);
+    // a hanging request is cut off by the timeout, and the browser still unsubscribes
+    calls.length = 0;
+    await unsubscribePush((() => new Promise(() => {})) as never, 20);
+    expect(calls).toEqual(['unsubscribe']);
   } finally {
     g.window = original.window;
     g.Notification = original.Notification;

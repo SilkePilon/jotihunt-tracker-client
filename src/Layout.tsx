@@ -32,6 +32,7 @@ export default function Layout() {
 
     function sessionExpired() {
         toast.info("Je sessie is verlopen.", {
+            id: 'session-expired',
             description: "Log opnieuw in om verder te gaan.",
             duration: Infinity
         })

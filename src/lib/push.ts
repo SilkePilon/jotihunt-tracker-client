@@ -67,15 +67,30 @@ export async function resyncPush(fetch: Fetch): Promise<void> {
   }
 }
 
+/** Longest logout waits for the server to forget this device. */
+const UNSUBSCRIBE_TIMEOUT_MS = 3000;
+
 /** On logout: stop pushes for this device (server and browser), so the next user here doesn't get this user's alerts. */
-export async function unsubscribePush(fetch: Fetch): Promise<void> {
+export async function unsubscribePush(fetch: Fetch, timeoutMs = UNSUBSCRIBE_TIMEOUT_MS): Promise<void> {
   if (!isPushSupported()) return;
   try {
     const registration = await navigator.serviceWorker.getRegistration();
     const subscription = await registration?.pushManager.getSubscription();
     if (!subscription) return;
-    await fetch('/push/subscribe', 'DELETE', { endpoint: subscription.endpoint });
-    await subscription.unsubscribe();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      // Bounded, so logout never hangs on a bad connection
+      await Promise.race([
+        fetch('/push/subscribe', 'DELETE', { endpoint: subscription.endpoint }),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(() => reject(new Error('timeout')), timeoutMs);
+        }),
+      ]);
+    } finally {
+      clearTimeout(timer);
+      // Always drop the browser subscription, even when the server couldn't be reached
+      await subscription.unsubscribe();
+    }
   } catch (error) {
     console.warn('[push] unsubscribe failed', error);
   }

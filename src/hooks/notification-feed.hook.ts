@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
-import { isAxiosError } from 'axios';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
+import { isUnauthorized } from '@/lib/session';
 import { fetcherWithMethod } from '@/lib/swr';
 import { isRecent, mergeFeed, pickSound, shouldAlert, toastKind, type AppNotification } from '@/lib/notifications';
 import { playNotificationSound } from '@/lib/notification-sounds';
@@ -73,7 +73,7 @@ export function useNotificationFeed({ respectPreferences = true, toasts = true, 
         }
         options.onPoll?.(alertable);
       } catch (error) {
-        if (isAxiosError(error) && error.response?.status === 401) latest.current.onUnauthorized?.();
+        if (isUnauthorized(error)) latest.current.onUnauthorized?.();
         // Otherwise the next poll retries; the cursor only advances on success
       } finally {
         busy = false;
