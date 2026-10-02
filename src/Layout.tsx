@@ -12,6 +12,9 @@ import HintBoardDialog from './components/hints/HintBoardDialog';
 import HuntersDialog from './components/admin/HuntersDialog';
 import DemoReloader from './components/DemoReloader';
 import UsersDialog from './components/admin/UsersDialog';
+import BroadcastDialog from './components/admin/BroadcastDialog';
+import NotificationsDialog from './components/notifications/NotificationsDialog';
+import {useNotificationsPrompt} from './components/notifications/useNotificationsPrompt';
 import {useTheme} from "@/hooks/theme.hook.ts";
 import {useNotificationFeed} from '@/hooks/notification-feed.hook';
 import {useFetcher} from '@/hooks/utils/api.hook';
@@ -35,7 +38,6 @@ export default function Layout() {
         // Once per page load
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
-    const tour = useTourAutoStart();
 
     /**
      * If reset password is required, open the dialog.
@@ -49,6 +51,9 @@ export default function Layout() {
         const timeout = setTimeout(() => setResetPasswordOpen(true), 0);
         return () => clearTimeout(timeout);
     }, [requiresPasswordChange]);
+
+    const tour = useTourAutoStart();
+    useNotificationsPrompt(tour.pending || requiresPasswordChange);
 
     function onSWRError(error: unknown) {
         if (isAxiosError(error) && error.response?.status === 401) {
@@ -76,6 +81,8 @@ export default function Layout() {
             <HintBoardDialog mapRef={mapRef}/>
             <HuntersDialog mapRef={mapRef}/>
             <UsersDialog/>
+            <BroadcastDialog/>
+            <NotificationsDialog/>
             <TourOverlay mapRef={mapRef}/>
             {/* Held back until the onboarding tour is done so they don't overlap */}
             {!tour.pending && (

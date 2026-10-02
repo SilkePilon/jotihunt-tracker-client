@@ -14,7 +14,11 @@ import {
     FlaskConicalIcon,
     Loader2Icon,
     SparklesIcon,
-    CompassIcon
+    CompassIcon,
+    BellIcon,
+    Volume2Icon,
+    MegaphoneIcon,
+    MonitorIcon
 } from 'lucide-react';
 import {siDiscord} from "simple-icons"
 import {Button} from './ui/button';
@@ -56,6 +60,7 @@ import {useTeams} from "@/hooks/teams.hook.ts";
 import {toast} from "sonner";
 import useHintBoardStore from "@/stores/hint-board.store";
 import useAdminStore from "@/stores/admin.store";
+import useNotificationsDialogStore from '@/stores/notifications-dialog.store';
 import {useDemo} from "@/hooks/demo.hook";
 import {usePredictionSetting} from "@/hooks/predictions.hook";
 import {isAxiosError} from "axios";
@@ -79,6 +84,7 @@ export default function Settings({onReplayTour}: { onReplayTour?: () => void }) 
     const navigate = useNavigate();
     const openHintBoard = useHintBoardStore((state) => state.openBoard);
     const openAdminDialog = useAdminStore((state) => state.openDialog);
+    const openNotifications = useNotificationsDialogStore((state) => state.setOpen);
     const {isStandalone, isInstallPromptSupported, promptInstall} = usePWA();
     const [resetPasswordOpen, setResetPasswordOpen] = useState(false);
     const [isConfirmReloadDialogOpen, setIsConfirmReloadDialogOpen] = useState(false);
@@ -100,7 +106,7 @@ export default function Settings({onReplayTour}: { onReplayTour?: () => void }) 
         toggleMarkersPart2,
         toggleHomeCircle,
     } = useLayersStore();
-    const {mapStyle, setMapStyle, darkMode, setDarkMode} = useSettingsStore();
+    const {mapStyle, setMapStyle, darkMode, setDarkMode, soundMuted, setSoundMuted} = useSettingsStore();
     const {reloadTeams} = useTeams();
     const {demo, setDemo} = useDemo();
     const [isDemoDialogOpen, setIsDemoDialogOpen] = useState(false);
@@ -264,6 +270,16 @@ export default function Settings({onReplayTour}: { onReplayTour?: () => void }) 
                         <PuzzleIcon/>
                         Hint board
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => openNotifications(true)}>
+                        <BellIcon/>
+                        Meldingen
+                    </DropdownMenuItem>
+                    <DropdownMenuCheckboxItem checked={!soundMuted}
+                                              onCheckedChange={(checked) => setSoundMuted(!checked)}
+                                              onSelect={(e) => e.preventDefault()}>
+                        <Volume2Icon/>
+                        Geluid
+                    </DropdownMenuCheckboxItem>
                     {onReplayTour && (
                         <DropdownMenuItem {...tourTarget('settings.replayItem')} onClick={() => {
                             setMenuOpen(false);
@@ -287,6 +303,12 @@ export default function Settings({onReplayTour}: { onReplayTour?: () => void }) 
                                         </DropdownMenuItem>
                                         <DropdownMenuItem onClick={() => openAdminDialog('users')}>
                                             <UsersIcon/>Gebruikers
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => openAdminDialog('broadcast')}>
+                                            <MegaphoneIcon/>Bericht versturen
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => window.open('/hq', '_blank', 'noopener')}>
+                                            <MonitorIcon/>HQ-scherm
                                         </DropdownMenuItem>
                                         <DropdownMenuSeparator/>
                                         <DropdownMenuCheckboxItem checked={!!demo?.enabled}

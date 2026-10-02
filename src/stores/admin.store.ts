@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type AdminDialogId = 'hunters' | 'users';
+export type AdminDialogId = 'hunters' | 'users' | 'broadcast';
 
 interface AdminState {
   /** Which admin dialog is open (Settings → Admin tools), or null */
