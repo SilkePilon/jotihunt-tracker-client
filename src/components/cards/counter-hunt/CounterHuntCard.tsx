@@ -9,6 +9,7 @@ import { MapRef } from '@/components/Map.tsx';
 import useSidebarStore from '@/stores/sidebar.store.ts';
 import { useTeams } from '@/hooks/teams.hook.ts';
 import CounterHuntAlertButton from './CounterHuntAlertButton';
+import { destination } from '@turf/turf';
 
 export default function CounterHuntCard({ mapRef }: InferProps<typeof CounterHuntCard.propTypes>) {
   // Home coordinates for zooming to the counter hunt
@@ -27,8 +28,10 @@ export default function CounterHuntCard({ mapRef }: InferProps<typeof CounterHun
     setVisible(true);
     setDirection(chosenDirection);
     if (homeTeam) {
+      // Center on the middle of the wind sector (500 m radius, see HomeCircle), not on the HQ itself
+      const [longitude, latitude] = destination(homeTeam.location.coordinates, 250, chosenDirection, { units: 'meters' }).geometry.coordinates;
       mapRef.current?.flyTo({
-        center: [homeTeam?.location.coordinates[0], homeTeam?.location.coordinates[1]],
+        center: [longitude, latitude],
         duration: 2000,
         zoom: 16,
       });
