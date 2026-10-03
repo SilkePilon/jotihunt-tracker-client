@@ -7,8 +7,7 @@ import {
     LayersIcon,
     LogOutIcon,
     MapPinnedIcon,
-    MoonIcon, RefreshCwIcon,
-    PuzzleIcon,
+    RefreshCwIcon,
     ShieldIcon,
     UsersIcon,
     FlaskConicalIcon,
@@ -58,7 +57,6 @@ import {
 } from "@/components/ui/alert-dialog.tsx";
 import {useTeams} from "@/hooks/teams.hook.ts";
 import {toast} from "sonner";
-import useHintBoardStore from "@/stores/hint-board.store";
 import useAdminStore from "@/stores/admin.store";
 import useNotificationsDialogStore from '@/stores/notifications-dialog.store';
 import {useDemo} from "@/hooks/demo.hook";
@@ -84,7 +82,6 @@ export default function Settings({onReplayTour}: { onReplayTour?: () => void }) 
     }
 
     const navigate = useNavigate();
-    const openHintBoard = useHintBoardStore((state) => state.openBoard);
     const openAdminDialog = useAdminStore((state) => state.openDialog);
     const openNotifications = useNotificationsDialogStore((state) => state.setOpen);
     const {isStandalone, isInstallPromptSupported, promptInstall} = usePWA();
@@ -108,7 +105,7 @@ export default function Settings({onReplayTour}: { onReplayTour?: () => void }) 
         toggleMarkersPart2,
         toggleHomeCircle,
     } = useLayersStore();
-    const {mapStyle, setMapStyle, darkMode, setDarkMode, soundMuted, setSoundMuted} = useSettingsStore();
+    const {mapStyle, setMapStyle, soundMuted, setSoundMuted} = useSettingsStore();
     const {reloadTeams} = useTeams();
     const {demo, setDemo} = useDemo();
     const [isDemoDialogOpen, setIsDemoDialogOpen] = useState(false);
@@ -149,16 +146,6 @@ export default function Settings({onReplayTour}: { onReplayTour?: () => void }) 
         await unsubscribePush(fetch);
         signOut();
         navigate('/login');
-    }
-
-    function changeDarkMode(d: string) {
-        if (d === 'true') {
-            setDarkMode(true);
-        } else if (d === 'false') {
-            setDarkMode(false);
-        } else {
-            setDarkMode(undefined);
-        }
     }
 
     async function handleReloadTeams() {
@@ -254,27 +241,7 @@ export default function Settings({onReplayTour}: { onReplayTour?: () => void }) 
                             </DropdownMenuSubContent>
                         </DropdownMenuPortal>
                     </DropdownMenuSub>
-                    <DropdownMenuSub>
-                        <DropdownMenuSubTrigger>
-                            <MoonIcon/>
-                            Donkere modus
-                        </DropdownMenuSubTrigger>
-                        <DropdownMenuPortal>
-                            <DropdownMenuSubContent>
-                                <DropdownMenuRadioGroup value={darkMode != null ? `${darkMode}` : 'auto'}
-                                                        onValueChange={(d) => changeDarkMode(d)}>
-                                    <DropdownMenuRadioItem value={'auto'}>Automatisch</DropdownMenuRadioItem>
-                                    <DropdownMenuRadioItem value={'true'}>Aan</DropdownMenuRadioItem>
-                                    <DropdownMenuRadioItem value={'false'}>Uit</DropdownMenuRadioItem>
-                                </DropdownMenuRadioGroup>
-                            </DropdownMenuSubContent>
-                        </DropdownMenuPortal>
-                    </DropdownMenuSub>
                     <DropdownMenuSeparator/>
-                    <DropdownMenuItem onClick={() => openHintBoard()}>
-                        <PuzzleIcon/>
-                        Hint board
-                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => openNotifications(true)}>
                         <BellIcon/>
                         Meldingen

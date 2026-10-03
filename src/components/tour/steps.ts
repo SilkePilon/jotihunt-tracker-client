@@ -1,5 +1,5 @@
 import NotificationSoundsPanel from './panels/NotificationSoundsPanel';
-import { flyToOverview, openHintBoard, openSection, openSettings, sheetSnap } from './actions';
+import { flyToOverview, openHintBoard, openSection, openSettings, scrollSidebarToTop, sheetSnap } from './actions';
 import type { TourStep } from './types';
 
 /**
@@ -118,8 +118,8 @@ export const TOUR_STEPS: TourStep[] = [
     id: 'settings',
     target: 'settings.replayItem',
     title: 'Instellingen',
-    body: 'Kaartstijl, donkere modus, zichtbare lagen en meer. Hier kun je deze rondleiding ook altijd opnieuw bekijken.',
-    actions: [sheetSnap('peek'), openSettings()],
+    body: 'Kaartstijl, zichtbare lagen en meer. Hier kun je deze rondleiding ook altijd opnieuw bekijken.',
+    actions: [sheetSnap('peek'), scrollSidebarToTop(), openSettings()],
   },
   {
     id: 'notification-sounds',

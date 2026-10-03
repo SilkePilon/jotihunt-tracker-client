@@ -2,6 +2,7 @@ import useSidebarStore, { SheetSnap, SidebarSectionId } from '@/stores/sidebar.s
 import useHintBoardStore from '@/stores/hint-board.store';
 import useSettingsMenuStore from '@/stores/settings-menu.store';
 import { DEFAULT_VIEW } from '@/lib/map-view';
+import { tourSelector } from './targets';
 import type { TourAction } from './types';
 
 /**
@@ -42,6 +43,19 @@ export function openHintBoard(): TourAction {
     run: () => {
       useHintBoardStore.getState().openBoard();
       return () => useHintBoardStore.getState().close();
+    },
+  };
+}
+
+/**
+ * Scroll the desktop sidebar back to the top, so the header (with the settings button) is on screen again after
+ * earlier steps scrolled down to the lower sections. No-op on the phone, where the header sits outside the scroller.
+ */
+export function scrollSidebarToTop(): TourAction {
+  return {
+    name: 'scrollSidebarToTop',
+    run: () => {
+      document.querySelector(tourSelector('sidebar.root'))?.parentElement?.scrollTo({ top: 0 });
     },
   };
 }

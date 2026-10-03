@@ -1,7 +1,7 @@
 import Settings from '@/components/Settings';
 import { useStartTour } from '@/components/tour/useTour';
-import CountdownPill from './CountdownPill';
 import DemoBadge from './DemoBadge';
+import ThemeToggle from './ThemeToggle';
 
 export default function SidebarHeader() {
   const startTour = useStartTour();
@@ -16,7 +16,7 @@ export default function SidebarHeader() {
         {groupName && <p className="truncate text-xs text-muted-foreground">{groupName}</p>}
       </div>
       <DemoBadge />
-      <CountdownPill />
+      <ThemeToggle />
       <Settings onReplayTour={() => startTour('replay')} />
     </div>
   );
