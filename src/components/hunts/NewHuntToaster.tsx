@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import { useHuntReports } from '@/hooks/hunt-reports.hook';
-import { formatHintCountdown } from '@/lib/next-hint';
+import { formatCountdown } from '@/lib/format';
 import { capitalizeFirstLetter } from '@/lib/utils';
 import type { User } from '@/types/User';
 
@@ -25,7 +25,7 @@ export default function NewHuntToaster() {
       if (report.reportedBy === user?._id) continue;
       const left = new Date(report.deadline).getTime() - Date.now();
       toast.info(`Nieuwe hunt ${capitalizeFirstLetter(report.area)}`, {
-        description: report.huntTimeKnown && left > 0 ? `Door ${report.reportedByName} – nog ${formatHintCountdown(left)} om in te sturen.` : `Door ${report.reportedByName}.`,
+        description: report.huntTimeKnown && left > 0 ? `Door ${report.reportedByName} – nog ${formatCountdown(left)} om in te sturen.` : `Door ${report.reportedByName}.`,
       });
     }
   }, [reports, user?._id]);

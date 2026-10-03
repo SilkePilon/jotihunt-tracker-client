@@ -15,7 +15,8 @@ import HintNotes from './detail/HintNotes';
 import HintStepActions from './detail/HintStepActions';
 import HintStepper from './detail/HintStepper';
 import ReplaceMarkerDialog from './detail/ReplaceMarkerDialog';
-import { formatTime, STEP_LABELS } from './detail/hint-detail.utils';
+import { formatClock } from '@/lib/format';
+import { STEP_LABELS } from './detail/hint-detail.utils';
 
 interface HintDetailProps {
   article: HintArticle;
@@ -63,7 +64,7 @@ export default function HintDetail({ article, cell, currentUserId, isAdmin, acti
         </Button>
         <span className="size-3 shrink-0 rounded-full" style={{ backgroundColor: getColorFromArea(area) }} aria-hidden />
         <h2 className="text-lg font-bold">{areaName}</h2>
-        <span className="text-sm text-muted-foreground">Hint {formatTime(article.publishAt)}</span>
+        <span className="text-sm text-muted-foreground">Hint {formatClock(article.publishAt)}</span>
         {(cell.status === 'open' || cell.status === 'solving') && <Countdown publishAt={cell.publishAt} />}
       </div>
 

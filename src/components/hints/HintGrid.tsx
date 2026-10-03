@@ -1,9 +1,9 @@
 import { CheckIcon, TriangleAlertIcon } from 'lucide-react';
-import { HintArticle, HintCell } from '@/types/HintCell';
+import { CellKey, HintArticle, HintCell } from '@/types/HintCell';
 import { areaOptions, cn, getColorFromArea } from '@/lib/utils';
-import { formatCountdown, remainingMs } from '@/lib/hints';
+import { formatCountdown } from '@/lib/format';
+import { remainingMs } from '@/lib/hints';
 
-export type CellKey = { articleId: number; area: string };
 
 interface HintGridProps {
   articles: HintArticle[];

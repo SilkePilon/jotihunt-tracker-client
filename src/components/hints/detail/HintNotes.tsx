@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { HintCell } from '@/types/HintCell';
-import { formatTime } from './hint-detail.utils';
+import { formatClock } from '@/lib/format';
 
 interface HintNotesProps {
   notes: HintCell['notes'];
@@ -30,7 +30,7 @@ export default function HintNotes({ notes, busy, onAdd }: HintNotesProps) {
             {notes.map((item) => (
               <li key={item._id} className="rounded-md bg-muted p-2 text-sm">
                 <div className="text-xs text-muted-foreground">
-                  {item.user?.name ?? 'Onbekend'} · {formatTime(item.createdAt)}
+                  {item.user?.name ?? 'Onbekend'} · {formatClock(item.createdAt)}
                 </div>
                 <div className="whitespace-pre-wrap">{item.text}</div>
               </li>

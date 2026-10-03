@@ -7,14 +7,13 @@ import { useState } from 'react';
 import PropTypes, { InferProps } from 'prop-types';
 import { MapRef } from '@/components/Map.tsx';
 import useSidebarStore from '@/stores/sidebar.store.ts';
-import { useTeams } from '@/hooks/teams.hook.ts';
+import { useHomeTeam } from '@/hooks/teams.hook.ts';
 import CounterHuntAlertButton from './CounterHuntAlertButton';
 import { destination } from '@turf/turf';
 
 export default function CounterHuntCard({ mapRef }: InferProps<typeof CounterHuntCard.propTypes>) {
   // Home coordinates for zooming to the counter hunt
-  const { teams } = useTeams();
-  const homeTeam = teams?.find((team) => team.apiId == import.meta.env.HOME_TEAM_API_ID);
+  const homeTeam = useHomeTeam();
 
   const setSheetSnap = useSidebarStore((state) => state.setSheetSnap);
   const { direction, setDirection, setVisible } = useCounterHuntStore();

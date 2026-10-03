@@ -2,12 +2,11 @@ import { useState } from 'react';
 import { isAxiosError } from 'axios';
 import { toast } from 'sonner';
 import { useHintBoard } from '@/hooks/hints.hook';
+import { apiErrorMessage } from '@/lib/api-error';
 
+/** The server's message, else the axios message ("Network Error") or the error itself. */
 function errorMessage(error: unknown) {
-  if (isAxiosError(error)) {
-    return error.response?.data?.message ?? error.response?.data?.errors?.[0]?.msg ?? error.message;
-  }
-  return String(error);
+  return apiErrorMessage(error, isAxiosError(error) ? error.message : String(error));
 }
 
 interface SubmitAnswerCallbacks {

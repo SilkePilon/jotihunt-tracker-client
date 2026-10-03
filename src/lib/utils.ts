@@ -1,6 +1,6 @@
 import * as turf from '@turf/turf';
-import {isBefore, parseISO, subMinutes} from "date-fns";
 import type { Device } from '@/types/Device';
+import { isActive } from '@/lib/tracker';
 
 // Class-name merging (clsx + tailwind-merge compatible), the same helper the shadcn components use
 export {cn} from 'cn';
@@ -109,21 +109,19 @@ export const areaOptions = [
 ];
 
 /**
- * Check if a timestamp is more than 5 minutes ago
+ * Check if a timestamp is more than 5 minutes ago (the inverse of {@link isActive}; kept for the map layers)
  * @param fixTime The timestamp to check
- * @return True if the timestamp is more than 5 minutes ago, false otherwise
+ * @return True if the timestamp is more than 5 minutes ago (or invalid), false otherwise
  */
 export function isMoreThanFiveMinutesAgo(fixTime: string) {
-    const date = parseISO(fixTime);
-    const minutesAgo = subMinutes(new Date(), 5);
-    return isBefore(date, minutesAgo);
+    return !isActive(fixTime);
 }
 
 /**
  * Devices that reported a position in the last five minutes.
  */
-export function filterActiveDevices(devices?: Device[]): Device[] {
-  return devices?.filter((device) => device.lastUpdate != null && !isMoreThanFiveMinutesAgo(new Date(device.lastUpdate).toISOString())) ?? [];
+export function filterActiveDevices(devices?: Device[], now = Date.now()): Device[] {
+  return devices?.filter((device) => isActive(device.lastUpdate, now)) ?? [];
 }
 /**
  * Random UUID v4. `crypto.randomUUID()` only exists in secure contexts (HTTPS / localhost); the app is also opened

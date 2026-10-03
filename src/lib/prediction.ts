@@ -1,5 +1,5 @@
-import { format } from 'date-fns';
 import type { Feature, FeatureCollection, LineString } from 'geojson';
+import { formatClock } from '@/lib/format';
 import type { Confidence, GroupVisit, Prediction, VisitChoice } from '@/types/Prediction';
 
 export interface MapPin {
@@ -13,11 +13,6 @@ export interface MapPin {
 /** Number of filled bars in the confidence signal icon. */
 export const CONFIDENCE_LEVEL: Record<Confidence, 1 | 2 | 3> = { low: 1, medium: 2, high: 3 };
 export const CONFIDENCE_LABEL: Record<Confidence, string> = { high: 'Zekerheid hoog', medium: 'Zekerheid middel', low: 'Zekerheid laag' };
-
-/** 24h local clock time, e.g. "14:20". */
-export function formatClock(iso: string): string {
-  return format(new Date(iso), 'HH:mm');
-}
 
 /** Compact age: "nu", "4m", "2u". */
 export function ageLabel(updatedAt: string, nowMs: number): string {

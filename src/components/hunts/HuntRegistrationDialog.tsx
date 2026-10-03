@@ -11,6 +11,7 @@ import { useHunts } from '@/hooks/hunts.hook';
 import { useHuntReports } from '@/hooks/hunt-reports.hook';
 import { usePredictions } from '@/hooks/predictions.hook';
 import useInterval from '@/hooks/utils/interval.hook';
+import { apiErrorMessage } from '@/lib/api-error';
 import { huntCooldownMs, lastHuntTimeFor } from '@/lib/fox-status';
 import { nearestArea } from '@/lib/hunt-reports';
 import { downscalePhoto } from '@/lib/image';
@@ -135,8 +136,7 @@ export default function HuntRegistrationDialog() {
       if (useHuntCaptureStore.getState().photo !== savingPhoto) return;
       const status = isAxiosError(error) ? error.response?.status : undefined;
       if (status !== undefined && status >= 400 && status < 500) {
-        const body = isAxiosError<{ message?: string; errors?: { msg: string }[] }>(error) ? error.response?.data : undefined;
-        setErrors({ save: body?.message ?? body?.errors?.[0]?.msg ?? 'Versturen is mislukt.' });
+        setErrors({ save: apiErrorMessage(error, 'Versturen is mislukt.') });
         setFailed(false);
       } else {
         setErrors({ save: 'Versturen is mislukt. Controleer je verbinding.' });

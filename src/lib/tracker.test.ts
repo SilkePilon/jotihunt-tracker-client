@@ -1,14 +1,15 @@
 import { describe, expect, test } from 'bun:test';
 import type { TrackerMe } from '@/types/Tracker';
 import {
+  ACTIVE_WINDOW_MS,
   formatAccuracy,
   formatBattery,
   formatDistance,
   formatLastUpdate,
   formatSpeed,
+  isActive,
   isVehicle,
   notConfiguredText,
-  qrCodePath,
   sectionTransition,
   trackerRefreshInterval,
   trackerSummary,
@@ -113,16 +114,18 @@ describe('isVehicle', () => {
   });
 });
 
-describe('qrCodePath', () => {
-  test('square matrix with the top-left finder pattern', () => {
-    const { size, path } = qrCodePath('http://tracker.test:5055/?id=jh-0123456789&accuracy=highest');
-    expect(size).toBeGreaterThanOrEqual(21);
-    expect((size - 17) % 4).toBe(0);
-    expect(path.startsWith('M0 0h1v1h-1z')).toBe(true);
-    expect(path).toContain(`M${size - 1} 0h1v1h-1z`);
+describe('isActive', () => {
+  const now = new Date('2026-10-17T12:00:00Z').getTime();
+
+  test('active up to and including the 5 minute window', () => {
+    expect(isActive(new Date(now - 60_000), now)).toBe(true);
+    expect(isActive(new Date(now - ACTIVE_WINDOW_MS).toISOString(), now)).toBe(true);
+    expect(isActive(now - ACTIVE_WINDOW_MS - 1, now)).toBe(false);
   });
 
-  test('is deterministic', () => {
-    expect(qrCodePath('abc')).toEqual(qrCodePath('abc'));
+  test('missing or invalid times are inactive', () => {
+    expect(isActive(null, now)).toBe(false);
+    expect(isActive(undefined, now)).toBe(false);
+    expect(isActive('not a date', now)).toBe(false);
   });
 });

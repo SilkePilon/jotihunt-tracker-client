@@ -1,8 +1,24 @@
-import proj4 from 'proj4';
+import { fromRD } from '@/lib/rd';
 
 export type Parsed = { lng: number; lat: number };
 
 const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
+
+/** Two numbers joined by a single comma and nothing else, e.g. "155000,463000" or "52.1,4.3". */
+const COMMA_PAIR = /^\s*([-+]?\d+(?:\.\d+)?),([-+]?\d+(?:\.\d+)?)\s*$/;
+/** A side that can't be the fraction of a decimal comma: an RD-like integer (4+ digits) or a number with a dot. */
+const PAIR_SIDE = /^[-+]?\d{4,}$|\./;
+
+/**
+ * Resolve commas between digits: a decimal comma ("52,1 4,3" → "52.1 4.3"), unless the comma can only be the pair
+ * separator: one comma, no other separator, and both sides RD-like integers or numbers with a dot
+ * ("155000,463000" → "155000 463000", "52.1,4.3" → "52.1 4.3").
+ */
+export function normalizeCommas(input: string): string {
+  const pair = input.match(COMMA_PAIR);
+  if (pair && PAIR_SIDE.test(pair[1]) && PAIR_SIDE.test(pair[2])) return `${pair[1]} ${pair[2]}`;
+  return input.replace(/(\d),(\d)/g, (_m, a, b) => `${a}.${b}`);
+}
 
 /**
  * Parse a single DMS token like:
@@ -85,7 +101,7 @@ export function tryParseDMSPair(a: string, b: string): Parsed | null {
  */
 export function tokenizePair(input: string): string[] {
   // First, convert decimal commas inside numbers to dots
-  let s = input.replace(/(\d),(\d)/g, (_m, a, b) => `${a}.${b}`);
+  let s = normalizeCommas(input);
 
   // Replace the remaining separators with spaces
   s = s.replace(/[;|/]+/g, ' ');
@@ -120,8 +136,6 @@ export function tokenizePair(input: string): string[] {
  * - WGS84 decimal: "52.123 4.321", "52,123; 4,321", "N52.1 E4.3", "4.3, 52.1" (auto order)
  * - WGS84 DMS: "52°22'30\"N 4°53'0\"E", "52 22 30 N, 4 53 0 E"
  * - RD: "155000 463000", "155000,463000", etc.
- *
- * RD conversion needs the 'RD' proj4 projection to be registered (done in main.tsx).
  */
 export function parseToWGS84(input: string): Parsed | null {
   if (!input || !input.trim()) return null;
@@ -135,7 +149,7 @@ export function parseToWGS84(input: string): Parsed | null {
   }
 
   // 2) Decimal / RD attempt
-  const numeric = input.replace(/(\d),(\d)/g, (_m, a, b) => `${a}.${b}`).replace(/[^\d.\-+ ,;|/]/g, ' ');
+  const numeric = normalizeCommas(input).replace(/[^\d.\-+ ,;|/]/g, ' ');
 
   const nums = (numeric.match(/[-+]?\d+(?:\.\d+)?/g) || []).map(Number);
   if (nums.length < 2) return null;
@@ -156,7 +170,7 @@ export function parseToWGS84(input: string): Parsed | null {
   // outside the RD grid end up outside the Netherlands and get rejected there.
   if (Number.isFinite(a) && Number.isFinite(b) && Math.abs(a) > 10000 && Math.abs(b) > 10000) {
     try {
-      const [lng, lat] = proj4('RD', 'WGS84', [a, b]);
+      const [lng, lat] = fromRD(a, b);
       return { lng: clamp(lng, -180, 180), lat: clamp(lat, -90, 90) };
     } catch {
       /* ignore */

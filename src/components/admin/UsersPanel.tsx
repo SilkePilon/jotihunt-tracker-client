@@ -10,7 +10,7 @@ import { useAdmin } from '@/hooks/admin.hook';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import { toast } from 'sonner';
 
 function LoadingSkeleton({ rows }: { rows: number }) {
@@ -166,18 +166,14 @@ export default function UsersPanel() {
       </div>
 
       {/* Confirm delete dialog */}
-      <AlertDialog open={isConfirmDeleteDialogOpen} onOpenChange={setIsConfirmDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Weet je zeker dat je deze gebruiker wilt verwijderen?</AlertDialogTitle>
-            <AlertDialogDescription>Deze actie kan niet ongedaan worden gemaakt.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annuleren</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteConfirm}>Verwijderen</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={isConfirmDeleteDialogOpen}
+        onOpenChange={setIsConfirmDeleteDialogOpen}
+        title="Weet je zeker dat je deze gebruiker wilt verwijderen?"
+        description="Deze actie kan niet ongedaan worden gemaakt."
+        confirmLabel="Verwijderen"
+        onConfirm={handleDeleteConfirm}
+      />
 
       {/* Edit / create user dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

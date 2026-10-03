@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { qrCodePath } from '@/lib/tracker';
+import { qrCodePath } from '@/lib/qr-code';
 
 const QUIET_ZONE = 2;
 

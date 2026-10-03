@@ -1,13 +1,13 @@
 import MapPopup from './MapPopup';
-import proj4 from 'proj4';
 import MarkerRegistration from './MarkerRegistration';
 import GoogleMapsButton from './GoogleMapsButton';
 import {Marker} from "react-map-gl/maplibre";
 import {Button} from "@/components/ui/button.tsx";
-import {CopyIcon, LightbulbIcon} from "lucide-react";
+import {LightbulbIcon} from "lucide-react";
 import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip.tsx";
 import {useHintFormBridge} from "@/hooks/hint-bridge.hook.ts";
-import {toast} from "sonner";
+import CopyButton from "@/components/CopyButton";
+import {toRD} from "@/lib/rd";
 import useSidebarStore from "@/stores/sidebar.store.ts";
 
 export default function PickedLocationPopup({lat, lng, onClose}: { lat: number; lng: number; onClose: () => void }) {
@@ -16,21 +16,9 @@ export default function PickedLocationPopup({lat, lng, onClose}: { lat: number; 
     const openSection = useSidebarStore((s) => s.openSection);
     const setSheetSnap = useSidebarStore((s) => s.setSheetSnap);
 
-    const [rdX, rdY] = proj4('WGS84', 'RD', [lng, lat]);
-    const rd = {x: rdX.toFixed(0), y: rdY.toFixed(0)};
-
-    async function copy(text: string) {
-        try {
-            await navigator.clipboard.writeText(text);
-            toast.success("Coördinaten gekopieerd naar klembord!");
-        } catch {
-            // The clipboard API needs a secure context (https) and permission
-            toast.error("Kopiëren mislukt");
-        }
-    }
-
-    const copyRDCoordinates = () => copy(`${rd.x}, ${rd.y}`);
-    const copyLatLngCoordinates = () => copy(`${lat.toFixed(7)}, ${lng.toFixed(7)}`);
+    const rdMetres = toRD(lng, lat);
+    const rd = {x: rdMetres.x.toFixed(0), y: rdMetres.y.toFixed(0)};
+    const copiedMessage = "Coördinaten gekopieerd naar klembord!";
 
     function setHintCoords() {
         setCoords(rd.x, rd.y);
@@ -59,8 +47,8 @@ export default function PickedLocationPopup({lat, lng, onClose}: { lat: number; 
                                     <p>Breedtegraad: {lat.toFixed(7)}</p>
                                     <p>Lengtegraad: {lng.toFixed(7)}</p>
                                 </div>
-                                <Button variant={"outline"} size={"icon"}
-                                        onClick={copyLatLngCoordinates}><CopyIcon/></Button>
+                                <CopyButton value={`${lat.toFixed(7)}, ${lng.toFixed(7)}`} label="Coördinaten"
+                                            successMessage={copiedMessage} size="icon"/>
                             </div>
                             <hr/>
                             <div className={"flex gap-3 justify-between"}>
@@ -78,8 +66,8 @@ export default function PickedLocationPopup({lat, lng, onClose}: { lat: number; 
                                             Plaats coördinaten in hint registratie.
                                         </TooltipContent>
                                     </Tooltip>
-                                    <Button variant={"outline"} size={"icon"}
-                                            onClick={copyRDCoordinates}><CopyIcon/></Button>
+                                    <CopyButton value={`${rd.x}, ${rd.y}`} label="RD-coördinaten"
+                                                successMessage={copiedMessage} size="icon"/>
                                 </div>
                             </div>
                             <hr/>

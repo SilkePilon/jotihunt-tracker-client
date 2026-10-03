@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useArticles } from '@/hooks/articles.hook';
 import useInterval from '@/hooks/utils/interval.hook';
 import { latestNonHintArticle } from '@/lib/hq';
-import { formatHintCountdown } from '@/lib/next-hint';
+import { formatClock, formatCountdown } from '@/lib/format';
 
 const TYPE_LABEL: Record<string, string> = { assignment: 'Opdracht', news: 'Nieuws' };
 
@@ -17,10 +17,10 @@ export default function LatestArticle() {
   return (
     <div>
       <div className="text-xs uppercase text-muted-foreground">
-        {TYPE_LABEL[article.type] ?? article.type} · {new Date(article.publishAt).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}
+        {TYPE_LABEL[article.type] ?? article.type} · {formatClock(article.publishAt)}
       </div>
       <div className="text-lg font-semibold leading-tight">{article.title}</div>
-      {left > 0 && <div className="text-sm tabular-nums text-orange-500">Deadline over {formatHintCountdown(left)}</div>}
+      {left > 0 && <div className="text-sm tabular-nums text-orange-500">Deadline over {formatCountdown(left)}</div>}
     </div>
   );
 }

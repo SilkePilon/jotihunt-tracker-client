@@ -1,4 +1,4 @@
-import { formatHintCountdown } from '@/lib/next-hint';
+import { formatClock, formatCountdown } from '@/lib/format';
 import { distance } from '@turf/turf';
 import type { Hunt } from '@/types/Hunt';
 import type { HuntListItem, HuntReport } from '@/types/HuntReport';
@@ -62,7 +62,7 @@ export function currentHuntStatus(report: HuntReport, now: number): HuntReport['
 export function huntStatusText(report: HuntReport, now: number): string {
   if (currentHuntStatus(report, now) === 'overdue') return 'Te laat!';
   let text = huntStatusLabel(report);
-  if (report.status === 'to_submit') text += ` · ${formatHintCountdown(new Date(report.deadline).getTime() - now)}`;
+  if (report.status === 'to_submit') text += ` · ${formatCountdown(new Date(report.deadline).getTime() - now)}`;
   if (report.status === 'judged' && report.site) text += ` · ${report.site.points} pt`;
   return text;
 }
@@ -89,16 +89,11 @@ export function huntListItems(reports: HuntReport[] | undefined, hunts: Hunt[] |
   return [...(reports ?? []).map((report) => ({ source: 'app' as const, report })), ...websiteOnly.map((hunt) => ({ source: 'website' as const, hunt }))];
 }
 
-/** "14:05" in Dutch 24 h time. */
-export function formatHuntTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
-}
-
-/** Same as {@link formatHuntTime}, but "–" for a missing or invalid time (scraped jotihunt.nl hunts can lack one). */
+/** {@link formatClock}, but "–" for a missing or invalid time (scraped jotihunt.nl hunts can lack one). */
 export function formatHuntTimeSafe(time: Date | string | null | undefined): string {
   if (!time) return '–';
   const date = new Date(time);
-  return Number.isNaN(date.getTime()) ? '–' : formatHuntTime(date.toISOString());
+  return Number.isNaN(date.getTime()) ? '–' : formatClock(date);
 }
 
 /** The server is still reading the code and time from the photo. */
@@ -108,7 +103,7 @@ export function isReading(report: HuntReport): boolean {
 
 /** "14:05", or "±14:05" (the upload time) while the time on the photo is not known yet. */
 export function huntTimeLabel(report: HuntReport): string {
-  return `${report.huntTimeKnown ? '' : '±'}${formatHuntTime(report.huntTime)}`;
+  return `${report.huntTimeKnown ? '' : '±'}${formatClock(report.huntTime)}`;
 }
 
 /** Lowest confidence (0..1) of the fields that were read from the photo, or null when no field comes from the photo. */

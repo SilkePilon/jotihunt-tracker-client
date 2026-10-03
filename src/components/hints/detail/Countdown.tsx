@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import useInterval from '@/hooks/utils/interval.hook';
-import { formatCountdown, remainingMs } from '@/lib/hints';
+import { formatCountdown } from '@/lib/format';
+import { remainingMs } from '@/lib/hints';
 import { cn } from '@/lib/utils';
 
 /**

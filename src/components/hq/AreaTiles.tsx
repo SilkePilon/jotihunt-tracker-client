@@ -5,8 +5,8 @@ import { useHuntReports } from '@/hooks/hunt-reports.hook';
 import { usePredictions, usePredictionSetting } from '@/hooks/predictions.hook';
 import useInterval from '@/hooks/utils/interval.hook';
 import { huntCooldownMs, lastHuntTimeFor } from '@/lib/fox-status';
-import { formatHintCountdown } from '@/lib/next-hint';
-import { CONFIDENCE_LABEL, formatClock } from '@/lib/prediction';
+import { formatClock, formatCountdown } from '@/lib/format';
+import { CONFIDENCE_LABEL } from '@/lib/prediction';
 import { capitalizeFirstLetter, cn, getColorFromArea } from '@/lib/utils';
 
 const TILE_CLASS: Record<string, string> = {
@@ -15,8 +15,6 @@ const TILE_CLASS: Record<string, string> = {
   red: 'border-red-500 bg-red-500/15',
 };
 const STATUS_LABEL: Record<string, string> = { green: 'Groen', orange: 'Oranje', red: 'Rood' };
-
-const timeOf = (time: Date | string) => new Date(time).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
 
 export default function AreaTiles() {
   const { areas } = useAreas();
@@ -39,8 +37,8 @@ export default function AreaTiles() {
               <span className="size-2.5 rounded-full" style={{ backgroundColor: getColorFromArea(area.name) }} />
               {capitalizeFirstLetter(area.name)}
             </div>
-            <div className="text-sm font-medium">{cooldown > 0 ? <span className="text-blue-500 tabular-nums">Cooldown {formatHintCountdown(cooldown)}</span> : (STATUS_LABEL[area.status] ?? area.status)}</div>
-            <div className="text-xs text-muted-foreground">Hunt: {lastHunt ? timeOf(lastHunt) : '–'}</div>
+            <div className="text-sm font-medium">{cooldown > 0 ? <span className="text-blue-500 tabular-nums">Cooldown {formatCountdown(cooldown)}</span> : (STATUS_LABEL[area.status] ?? area.status)}</div>
+            <div className="text-xs text-muted-foreground">Hunt: {lastHunt ? formatClock(lastHunt) : '–'}</div>
             {predictionEnabled !== false && prediction?.lastObservation && (
               <div className="text-xs text-muted-foreground">
                 {prediction.lastObservation.kind}: {formatClock(prediction.lastObservation.time)}

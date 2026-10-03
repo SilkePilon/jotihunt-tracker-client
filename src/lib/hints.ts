@@ -11,15 +11,6 @@ export function remainingMs(publishAt: string, now: number) {
 }
 
 /**
- * Format milliseconds as m:ss (rounded up, never negative).
- */
-export function formatCountdown(ms: number) {
-  if (ms <= 0) return '0:00';
-  const totalSeconds = Math.ceil(ms / 1000);
-  return `${Math.floor(totalSeconds / 60)}:${String(totalSeconds % 60).padStart(2, '0')}`;
-}
-
-/**
  * Sanitise Jotihunt article HTML before rendering it.
  */
 export function sanitizeHintHtml(html: string) {

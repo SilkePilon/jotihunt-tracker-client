@@ -1,13 +1,15 @@
 import { useState } from 'react';
-import { isAxiosError } from 'axios';
-import { ArrowLeftIcon, CopyIcon, DownloadIcon, TriangleAlertIcon, ZoomInIcon } from 'lucide-react';
+import { ArrowLeftIcon, DownloadIcon, TriangleAlertIcon, ZoomInIcon } from 'lucide-react';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import { toast } from 'sonner';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import ConfirmDialog from '@/components/ConfirmDialog';
+import CopyButton from '@/components/CopyButton';
 import { Button } from '@/components/ui/button';
 import { useAuthImage } from '@/hooks/auth-image.hook';
 import { useHuntReports } from '@/hooks/hunt-reports.hook';
-import { formatHuntTime, huntSourceLabel, huntTimeLabel, isReading, readFailed } from '@/lib/hunt-reports';
+import { apiErrorMessage } from '@/lib/api-error';
+import { formatClock } from '@/lib/format';
+import { huntSourceLabel, huntTimeLabel, isReading, readFailed } from '@/lib/hunt-reports';
 import { capitalizeFirstLetter, getColorFromArea } from '@/lib/utils';
 import type { HuntReport } from '@/types/HuntReport';
 import type { User } from '@/types/User';
@@ -15,34 +17,12 @@ import HuntCodeText, { HuntTimeText } from './HuntCodeText';
 import { EditCode, EditTime, RereadButton } from './HuntInlineEdit';
 import ImageLightbox from '@/components/ImageLightbox';
 
-/** The server's (Dutch) error message when there is one. */
-function errorMessage(error: unknown, fallback: string): string {
-  return (isAxiosError<{ message?: string }>(error) && error.response?.data?.message) || fallback;
-}
-
 function Fact({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <>
       <dt className="text-muted-foreground">{label}</dt>
       <dd className="flex min-w-0 items-center gap-1.5">{children}</dd>
     </>
-  );
-}
-
-function CopyButton({ value, label }: { value: string; label: string }) {
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(value);
-      toast(`${label} gekopieerd`);
-    } catch {
-      toast.error('Kopiëren mislukt');
-    }
-  }
-
-  return (
-    <Button type="button" variant="outline" size="icon-xs" aria-label={`${label} kopiëren`} onClick={() => void copy()}>
-      <CopyIcon />
-    </Button>
   );
 }
 
@@ -67,7 +47,7 @@ export default function HuntDetail({ report, onBack }: { report: HuntReport; onB
       await setSubmitted(report._id, submitted);
       toast.success(submitted ? 'Gemarkeerd als ingestuurd' : 'Teruggezet naar te versturen');
     } catch (error) {
-      toast.error(errorMessage(error, 'Opslaan is mislukt'));
+      toast.error(apiErrorMessage(error, 'Opslaan is mislukt'));
     } finally {
       setBusy(false);
     }
@@ -80,7 +60,8 @@ export default function HuntDetail({ report, onBack }: { report: HuntReport; onB
       toast.success('Hunt verwijderd');
       onBack();
     } catch (error) {
-      toast.error(errorMessage(error, 'Verwijderen is mislukt'));
+      toast.error(apiErrorMessage(error, 'Verwijderen is mislukt'));
+      setConfirmOpen(false);
       setBusy(false);
     }
   }
@@ -145,10 +126,10 @@ export default function HuntDetail({ report, onBack }: { report: HuntReport; onB
               <span className={readFailed(report) ? 'text-destructive' : 'text-muted-foreground'}>{huntSourceLabel(report, isAdmin)}</span>
             </Fact>
             <Fact label="Gemeld door">
-              {report.reportedByName} · {formatHuntTime(report.createdAt)}
+              {report.reportedByName} · {formatClock(report.createdAt)}
             </Fact>
-            <Fact label="Deadline">{formatHuntTime(report.deadline)}</Fact>
-            <Fact label="Ingestuurd door">{report.submittedAt ? `${report.submittedByName ?? 'Onbekend'} · ${formatHuntTime(report.submittedAt)}` : '–'}</Fact>
+            <Fact label="Deadline">{formatClock(report.deadline)}</Fact>
+            <Fact label="Ingestuurd door">{report.submittedAt ? `${report.submittedByName ?? 'Onbekend'} · ${formatClock(report.submittedAt)}` : '–'}</Fact>
             <Fact label="jotihunt.nl">{report.site ? `${report.site.status} · ${report.site.points} pt` : 'Nog niet beoordeeld'}</Fact>
           </dl>
 
@@ -184,20 +165,15 @@ export default function HuntDetail({ report, onBack }: { report: HuntReport; onB
         </div>
       </div>
 
-      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Hunt {codeLabel} verwijderen?</AlertDialogTitle>
-            <AlertDialogDescription>De foto wordt ook verwijderd.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annuleren</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={() => void remove()}>
-              Verwijderen
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title={`Hunt ${codeLabel} verwijderen?`}
+        description="De foto wordt ook verwijderd."
+        confirmLabel="Verwijderen"
+        destructive
+        onConfirm={remove}
+      />
       {photo && <ImageLightbox src={photo} alt={`Foto van hunt ${codeLabel}`} open={zoomOpen} onOpenChange={setZoomOpen} />}
     </div>
   );

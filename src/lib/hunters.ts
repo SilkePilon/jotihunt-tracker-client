@@ -2,9 +2,8 @@ import type { Device } from '@/types/Device';
 import type { Position } from '@/types/Position';
 import type { Vehicle } from '@/types/Tracker';
 import type { User } from '@/types/User';
+import { isActive } from '@/lib/tracker';
 import { knotsToKmh } from '@/lib/utils';
-
-export const ACTIVE_WINDOW_MS = 5 * 60 * 1000;
 
 /** Traccar group id per vehicle (GROUP_*_ID in .env); undefined when not configured. */
 export type VehicleGroupIds = Partial<Record<Vehicle, number>>;
@@ -45,7 +44,7 @@ export function hunterRows(devices: Device[] | undefined, positions: Position[] 
       position,
       user: userByDevice.get(device.id),
       vehicle: vehicleForGroupId(device.groupId, groups),
-      active: !!lastUpdate && now - new Date(lastUpdate).getTime() <= ACTIVE_WINDOW_MS,
+      active: isActive(lastUpdate, now),
       lastUpdate,
       speedKmh: typeof position?.speed === 'number' ? knotsToKmh(position.speed) : undefined,
       batteryPercent: typeof battery === 'number' ? battery : undefined,

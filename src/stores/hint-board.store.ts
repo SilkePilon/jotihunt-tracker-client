@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { CellKey } from '@/components/hints/HintGrid';
+import type { CellKey } from '@/types/HintCell';
 
 export type HintBoardView = 'overview' | 'detail' | null;
 

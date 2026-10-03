@@ -3,6 +3,7 @@ import { ArrowRightIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useHintBoard } from '@/hooks/hints.hook';
 import useHintBoardStore from '@/stores/hint-board.store';
+import { formatClock } from '@/lib/format';
 import { lastHintRows } from '@/lib/hints';
 import { areaOptions, cn } from '@/lib/utils';
 import { HintCell } from '@/types/HintCell';
@@ -44,7 +45,7 @@ export default function HintMiniGrid() {
           {rows.map((row) => (
             <Fragment key={row.article.id}>
               <span className="font-mono text-muted-foreground">
-                {new Date(row.article.publishAt).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}
+                {formatClock(row.article.publishAt)}
               </span>
               {areaOptions.map((area) => {
                 const cell = row.cells[area.value];

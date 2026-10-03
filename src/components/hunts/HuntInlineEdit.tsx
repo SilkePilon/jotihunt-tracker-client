@@ -1,36 +1,14 @@
 import { useRef, useState } from 'react';
-import { isAxiosError } from 'axios';
 import { CheckIcon, Loader2Icon, PencilIcon, RefreshCwIcon, XIcon } from 'lucide-react';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
+import IconAction from '@/components/IconAction';
 import { Input } from '@/components/ui/input';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useHuntReports } from '@/hooks/hunt-reports.hook';
+import { apiErrorMessage } from '@/lib/api-error';
 import { isReading, normalizeHuntCode, resolveHuntTime } from '@/lib/hunt-reports';
 import type { HuntReport } from '@/types/HuntReport';
 
 const pad = (value: number) => String(value).padStart(2, '0');
-
-
-/** The server's (Dutch) error message when there is one. */
-function errorMessage(error: unknown, fallback: string): string {
-  if (!isAxiosError<{ message?: string; errors?: { msg: string }[] }>(error)) return fallback;
-  return error.response?.data?.message ?? error.response?.data?.errors?.[0]?.msg ?? fallback;
-}
-
-/** Small outline icon button with a tooltip, same size as the copy buttons. */
-export function IconAction({ label, onClick, disabled, children }: { label: string; onClick: () => void; disabled?: boolean; children: React.ReactNode }) {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button type="button" variant="outline" size="icon-xs" aria-label={label} onClick={onClick} disabled={disabled}>
-          {children}
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent>{label}</TooltipContent>
-    </Tooltip>
-  );
-}
 
 function SaveCancel({ saving, onSave, onCancel }: { saving: boolean; onSave: () => void; onCancel: () => void }) {
   return (
@@ -72,7 +50,7 @@ export function EditCode({ report, editing, onEditingChange }: { report: HuntRep
       toast.success('Code opgeslagen');
       onEditingChange(false);
     } catch (error) {
-      toast.error('Opslaan is mislukt', { description: errorMessage(error, 'Probeer het opnieuw.') });
+      toast.error('Opslaan is mislukt', { description: apiErrorMessage(error, 'Probeer het opnieuw.') });
     } finally {
       setSaving(false);
     }
@@ -143,7 +121,7 @@ export function EditTime({ report, editing, onEditingChange }: { report: HuntRep
       toast.success('Tijd opgeslagen');
       onEditingChange(false);
     } catch (error) {
-      toast.error('Opslaan is mislukt', { description: errorMessage(error, 'Probeer het opnieuw.') });
+      toast.error('Opslaan is mislukt', { description: apiErrorMessage(error, 'Probeer het opnieuw.') });
     } finally {
       setSaving(false);
     }
@@ -209,7 +187,7 @@ export function RereadButton({ report }: { report: HuntReport }) {
       await rereadReport(report._id);
       toast('De foto wordt opnieuw gelezen');
     } catch (error) {
-      toast.error('Opnieuw lezen is mislukt', { description: errorMessage(error, 'Probeer het opnieuw.') });
+      toast.error('Opnieuw lezen is mislukt', { description: apiErrorMessage(error, 'Probeer het opnieuw.') });
     } finally {
       setBusy(false);
     }

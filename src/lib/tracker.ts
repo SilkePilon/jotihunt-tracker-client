@@ -1,4 +1,3 @@
-import { create } from 'qrcode';
 import type { TrackerMe, TrackerNotConfiguredReason, Vehicle } from '@/types/Tracker';
 
 export const TRACKER_POLL_NOT_CONNECTED_MS = 10_000;
@@ -12,6 +11,16 @@ export const VEHICLE_OPTIONS: { value: Vehicle; label: string }[] = [
   { value: 'car', label: 'Auto' },
   { value: 'motorcycle', label: 'Motor' },
 ];
+
+/** A tracker counts as active when it reported in the last 5 minutes. */
+export const ACTIVE_WINDOW_MS = 5 * 60 * 1000;
+
+/** Whether a fix / last update time is at most {@link ACTIVE_WINDOW_MS} ago; false when missing or invalid. */
+export function isActive(fixTime: Date | string | number | null | undefined, now = Date.now()): boolean {
+  if (fixTime == null) return false;
+  const time = new Date(fixTime).getTime();
+  return Number.isFinite(time) && now - time <= ACTIVE_WINDOW_MS;
+}
 
 export const TRACCAR_PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=org.traccar.client';
 export const TRACCAR_APP_STORE_URL = 'https://apps.apple.com/app/id843156974';
@@ -89,16 +98,4 @@ export function formatLastUpdate(iso: string | undefined, now: number): string {
   if (minutes < 1) return 'zojuist';
   if (minutes < 60) return `${minutes} min geleden`;
   return `${Math.floor(minutes / 60)} uur geleden`;
-}
-
-/** QR code as one SVG path in module units (1 unit per module, no quiet zone). */
-export function qrCodePath(text: string): { size: number; path: string } {
-  const { modules } = create(text, { errorCorrectionLevel: 'M' });
-  let path = '';
-  for (let row = 0; row < modules.size; row++) {
-    for (let col = 0; col < modules.size; col++) {
-      if (modules.get(row, col)) path += `M${col} ${row}h1v1h-1z`;
-    }
-  }
-  return { size: modules.size, path };
 }

@@ -1,19 +1,10 @@
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 interface ReplaceMarkerDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   areaName: string;
-  onConfirm: () => void;
+  onConfirm: () => Promise<unknown> | unknown;
 }
 
 /**
@@ -21,17 +12,16 @@ interface ReplaceMarkerDialogProps {
  */
 export default function ReplaceMarkerDialog({ open, onOpenChange, areaName, onConfirm }: ReplaceMarkerDialogProps) {
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Hint-marker vervangen?</AlertDialogTitle>
-          <AlertDialogDescription>Er staat al een hint-marker voor {areaName} op dit uur. Wil je die vervangen door dit antwoord?</AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Annuleren</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm}>Vervangen</AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <ConfirmDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Hint-marker vervangen?"
+      description={`Er staat al een hint-marker voor ${areaName} op dit uur. Wil je die vervangen door dit antwoord?`}
+      confirmLabel="Vervangen"
+      onConfirm={async () => {
+        await onConfirm();
+        onOpenChange(false);
+      }}
+    />
   );
 }

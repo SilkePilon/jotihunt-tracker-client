@@ -133,7 +133,7 @@ describe('isReading', () => {
 
 describe('huntTimeLabel', () => {
   test('plain time when known, ± before the upload time when not', () => {
-    const time = new Date(2026, 9, 17, 11, 17).toISOString();
+    const time = '2026-10-17T09:17:00Z'; // 11:17 Dutch time
     expect(huntTimeLabel(report({ huntTime: time }))).toBe('11:17');
     expect(huntTimeLabel(report({ huntTime: time, huntTimeKnown: false }))).toBe('±11:17');
   });

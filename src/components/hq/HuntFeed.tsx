@@ -3,7 +3,8 @@ import { useHunts } from '@/hooks/hunts.hook';
 import { useHuntReports } from '@/hooks/hunt-reports.hook';
 import useInterval from '@/hooks/utils/interval.hook';
 import HuntStatusBadge from '@/components/hunts/HuntStatusBadge';
-import { formatHuntTime, huntListItems, totalPoints } from '@/lib/hunt-reports';
+import { formatClock } from '@/lib/format';
+import { huntListItems, totalPoints } from '@/lib/hunt-reports';
 import { capitalizeFirstLetter } from '@/lib/utils';
 
 const FEED_SIZE = 6;
@@ -26,7 +27,7 @@ export default function HuntFeed() {
       {(reports ?? []).slice(0, FEED_SIZE).map((report) => (
         <div key={report._id} className="flex items-center justify-between gap-2 text-sm">
           <span className="truncate">
-            <strong>{capitalizeFirstLetter(report.area)}</strong> · {formatHuntTime(report.huntTime)} · {report.reportedByName}
+            <strong>{capitalizeFirstLetter(report.area)}</strong> · {formatClock(report.huntTime)} · {report.reportedByName}
           </span>
           <HuntStatusBadge report={report} now={now} />
         </div>

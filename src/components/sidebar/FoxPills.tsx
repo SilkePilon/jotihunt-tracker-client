@@ -5,7 +5,7 @@ import { useHuntReports } from '@/hooks/hunt-reports.hook';
 import useInterval from '@/hooks/utils/interval.hook';
 import { Skeleton } from '@/components/ui/skeleton';
 import { huntCooldownMs, lastHuntTimeFor } from '@/lib/fox-status';
-import { formatHintCountdown } from '@/lib/next-hint';
+import { formatCountdown } from '@/lib/format';
 import { capitalizeFirstLetter, cn, getColorFromArea } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { nl } from 'date-fns/locale';
@@ -72,7 +72,7 @@ export default function FoxPills() {
                 const title =
                   `${area.name}: ${STATUS_LABEL[area.status] ?? area.status} (bijgewerkt ${ago(area.updatedAt)})` +
                   ` · laatste hunt: ${lastHunt ? ago(lastHunt) : 'nog geen'}` +
-                  (cooldown > 0 ? ` · weer te hunten over ${formatHintCountdown(cooldown)}` : '') +
+                  (cooldown > 0 ? ` · weer te hunten over ${formatCountdown(cooldown)}` : '') +
                   (hidden ? ' · verborgen' : '');
                 return (
                   <button
@@ -89,7 +89,7 @@ export default function FoxPills() {
                   >
                     <span className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: getColorFromArea(area.name) }} />
                     {capitalizeFirstLetter(area.name)}
-                    {cooldown > 0 && <span className="tabular-nums text-blue-600 dark:text-blue-300">{formatHintCountdown(cooldown)}</span>}
+                    {cooldown > 0 && <span className="tabular-nums text-blue-600 dark:text-blue-300">{formatCountdown(cooldown)}</span>}
                   </button>
                 );
               })}

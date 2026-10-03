@@ -1,11 +1,10 @@
-import { useTeams } from '@/hooks/teams.hook';
+import { useHomeTeam } from '@/hooks/teams.hook';
 import { createCircle, createWindSector } from '@/lib/utils';
 import useCounterHuntStore from '@/stores/counterhunt.store';
 import { Layer, Source } from 'react-map-gl/maplibre';
 
 export default function HomeCircle() {
-  const { teams } = useTeams();
-  const homeTeam = teams?.find((team) => team.apiId == import.meta.env.HOME_TEAM_API_ID);
+  const homeTeam = useHomeTeam();
 
   // 45-degree sector, counter hunts can be up to 45 degrees (probably)
   const windAngleRange = 45;

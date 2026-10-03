@@ -14,6 +14,13 @@ describe('filterActiveDevices', () => {
     expect(filterActiveDevices([recent, old, never]).map((d) => d.id)).toEqual([1]);
   });
 
+  test('uses the given time', () => {
+    const at = new Date('2026-10-17T12:00:00Z');
+    const now = at.getTime() + 4 * 60_000;
+    expect(filterActiveDevices([device(1, at)], now).map((d) => d.id)).toEqual([1]);
+    expect(filterActiveDevices([device(1, at)], now + 2 * 60_000)).toEqual([]);
+  });
+
   test('handles a missing list', () => {
     expect(filterActiveDevices(undefined)).toEqual([]);
   });

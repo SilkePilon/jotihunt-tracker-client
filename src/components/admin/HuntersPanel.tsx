@@ -1,18 +1,19 @@
 import { useState } from 'react';
-import { isAxiosError } from 'axios';
 import { ArrowLeftIcon, CopyIcon, ExternalLinkIcon, LocateFixedIcon, SearchIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import IconAction from '@/components/IconAction';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAdmin } from '@/hooks/admin.hook';
 import { useDevices } from '@/hooks/devices.hook';
 import { useIsMobile } from '@/hooks/media.hook';
 import useInterval from '@/hooks/utils/interval.hook';
+import { apiErrorMessage } from '@/lib/api-error';
+import { copyToClipboard } from '@/lib/clipboard';
 import { formatCoordinates, googleMapsUrl, hunterRows, vehicleGroupIdsFromEnv, type HunterRow } from '@/lib/hunters';
 import { formatAccuracy, formatBattery, formatLastUpdate, formatSpeed, isVehicle, VEHICLE_OPTIONS } from '@/lib/tracker';
 import { cn } from '@/lib/utils';
@@ -44,8 +45,7 @@ function VehicleSelect({ row }: { row: HunterRow }) {
       await setDeviceVehicle(row.device.id, value);
       toast.success(`Voertuig van ${row.device.name} aangepast`);
     } catch (error) {
-      const message = isAxiosError(error) ? (error.response?.data?.message ?? error.response?.data?.errors?.[0]?.msg) : undefined;
-      toast.error('Voertuig aanpassen is mislukt', { description: message ?? 'Probeer het opnieuw.' });
+      toast.error('Voertuig aanpassen is mislukt', { description: apiErrorMessage(error, 'Probeer het opnieuw.') });
     } finally {
       setSaving(false);
     }
@@ -67,31 +67,16 @@ function VehicleSelect({ row }: { row: HunterRow }) {
   );
 }
 
-function IconAction({ label, children }: { label: string; children: React.ReactElement }) {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>{children}</TooltipTrigger>
-      <TooltipContent>{label}</TooltipContent>
-    </Tooltip>
-  );
-}
-
 function LocationActions({ row, onShowOnMap }: { row: HunterRow; onShowOnMap: ShowOnMap }) {
   const position = row.position;
   if (!position) return <span className="text-xs text-muted-foreground">Geen locatie</span>;
   return (
     <div className="flex justify-end gap-1" onClick={(event) => event.stopPropagation()}>
-      <IconAction label="Op kaart">
-        <Button variant="outline" size="icon-sm" aria-label="Op kaart" onClick={() => onShowOnMap(position.longitude, position.latitude)}>
-          <LocateFixedIcon />
-        </Button>
+      <IconAction label="Op kaart" size="icon-sm" onClick={() => onShowOnMap(position.longitude, position.latitude)}>
+        <LocateFixedIcon />
       </IconAction>
-      <IconAction label="Google Maps">
-        <Button variant="outline" size="icon-sm" aria-label="Open in Google Maps" asChild>
-          <a href={googleMapsUrl(position.latitude, position.longitude)} target="_blank" rel="noopener noreferrer">
-            <ExternalLinkIcon />
-          </a>
-        </Button>
+      <IconAction label="Google Maps" ariaLabel="Open in Google Maps" size="icon-sm" href={googleMapsUrl(position.latitude, position.longitude)}>
+        <ExternalLinkIcon />
       </IconAction>
     </div>
   );
@@ -105,15 +90,6 @@ function subtitle(row: HunterRow): string {
 /** All details of one hunter (phones: after tapping a row; desktop: after clicking the name). */
 function HunterDetail({ row, now, onBack, onShowOnMap }: { row: HunterRow; now: number; onBack: () => void; onShowOnMap: ShowOnMap }) {
   const position = row.position;
-
-  async function copyCoordinates(lat: number, lng: number) {
-    try {
-      await navigator.clipboard.writeText(formatCoordinates(lat, lng));
-      toast('Coördinaten gekopieerd');
-    } catch {
-      toast.error('Kopiëren mislukt');
-    }
-  }
 
   const facts: [string, React.ReactNode][] = [
     ['Laatste update', formatLastUpdate(row.lastUpdate, now)],
@@ -162,7 +138,7 @@ function HunterDetail({ row, now, onBack, onShowOnMap }: { row: HunterRow; now: 
               Google Maps
             </a>
           </Button>
-          <Button variant="ghost" size="sm" className="font-mono" onClick={() => copyCoordinates(position.latitude, position.longitude)}>
+          <Button variant="ghost" size="sm" className="font-mono" onClick={() => void copyToClipboard(formatCoordinates(position.latitude, position.longitude), 'Coördinaten gekopieerd')}>
             {formatCoordinates(position.latitude, position.longitude)}
             <CopyIcon data-icon="inline-end" />
           </Button>

@@ -1,9 +1,9 @@
 import { useEffect, useRef } from 'react';
 
 /**
- * Hook to run a function every X seconds
+ * Hook to run a function every `delay` milliseconds (the latest callback is used; null pauses it)
  * @param callback The function to run
- * @param delay The delay in seconds
+ * @param delay The delay in milliseconds, or null to stop
  */
 function useInterval(callback: () => void, delay: number | null) {
   const savedCallback = useRef<(() => void) | undefined>(undefined);

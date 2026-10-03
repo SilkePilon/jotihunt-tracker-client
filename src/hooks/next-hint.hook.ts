@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useArticles } from '@/hooks/articles.hook.ts';
 import useInterval from '@/hooks/utils/interval.hook.ts';
-import { formatHintCountdown, getLastHintTime, getNextHintTime } from '@/lib/next-hint';
+import { formatCountdown } from '@/lib/format';
+import { getLastHintTime, getNextHintTime } from '@/lib/next-hint';
 
 const URGENT_MS = 5 * 60 * 1000;
 const NEW_HINT_HIGHLIGHT_MS = 60 * 1000;
@@ -41,7 +42,7 @@ export function useNextHint(): { label: string; isUrgent: boolean; isNewHint: bo
   const huntOver = now > lastHintSlot;
   const isNewHint = now < newHintUntil;
 
-  let label = formatHintCountdown(remaining);
+  let label = formatCountdown(remaining);
   if (isLoading) label = '…';
   else if (isError) label = 'Fout';
   else if (isNewHint) label = 'Nieuwe hint!';

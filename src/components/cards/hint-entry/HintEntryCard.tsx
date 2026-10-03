@@ -11,13 +11,13 @@ import {useMarkers} from '@/hooks/markers.hook.ts';
 import {toast} from 'sonner';
 import PropTypes, {InferProps} from 'prop-types';
 import {MapRef} from '@/components/Map.tsx';
-import proj4 from 'proj4';
 import {MarkerType} from '@/types/MarkerType.ts';
 import {Marker} from '@/types/Marker.ts';
 import {areaOptions} from '@/lib/utils.ts';
 import {useEffect, useId} from "react";
 import {useHintFormBridge} from "@/hooks/hint-bridge.hook.ts";
 import {isInNetherlands} from '@/lib/netherlands';
+import {fromRD, isPlausibleRD} from '@/lib/rd';
 
 const FormSchema = z.object({
     area: z.enum([...areaOptions.map((option) => option.value)] as [string, ...string[]]),
@@ -45,7 +45,7 @@ export default function HintEntryCard({mapRef}: InferProps<typeof HintEntryCard.
     const [xValue, yValue] = useWatch({control: form.control, name: ['x', 'y']});
 
     // Live check once both coordinates are complete: hints are always in the Netherlands
-    const typedLocation = xValue?.length === 6 && yValue?.length === 6 ? proj4('RD', 'WGS84', [Number(xValue), Number(yValue)]) : undefined;
+    const typedLocation = xValue?.length === 6 && yValue?.length === 6 ? fromRD(Number(xValue), Number(yValue)) : undefined;
     const outsideNetherlands = !!typedLocation && !isInNetherlands(typedLocation[0], typedLocation[1]);
 
     // Handle hint bridge
@@ -99,13 +99,13 @@ export default function HintEntryCard({mapRef}: InferProps<typeof HintEntryCard.
         // Convert RD coordinates to WGS84
         const x = Number(data.x);
         const y = Number(data.y);
-        const converted = proj4('RD', 'WGS84', [x, y]);
-        if (converted[0] === undefined || converted[1] === undefined || x < 0 || x > 290000 || y < 290000 || y > 630000) {
+        if (!isPlausibleRD(x, y)) {
             form.setError('x', {message: 'Ongeldige coördinaten'});
             form.setError('y', {message: 'Ongeldige coördinaten'});
             toast.error('Ongeldige coördinaten', {description: "Deze coördinaten zijn ongeldig. Controleer of de ingevoerde waarden correct zijn."});
             return;
         }
+        const converted = fromRD(x, y);
         if (!isInNetherlands(converted[0], converted[1])) {
             form.setError('y', {message: 'Dit coördinaat ligt buiten Nederland'});
             toast.error('Coördinaat buiten Nederland', {description: 'Controleer de X- en Y-waarden; een hint ligt altijd in Nederland.'});
@@ -117,7 +117,7 @@ export default function HintEntryCard({mapRef}: InferProps<typeof HintEntryCard.
             time: new Date(data.time),
             location: {
                 type: 'Point',
-                coordinates: [converted[0]!, converted[1]!],
+                coordinates: [converted[0], converted[1]],
             },
             type: MarkerType.Hint,
         };
@@ -129,7 +129,7 @@ export default function HintEntryCard({mapRef}: InferProps<typeof HintEntryCard.
                 description: 'De hint is succesvol geregistreerd.'
             });
             mapRef.current?.flyTo({
-                center: [converted[0]!, converted[1]!],
+                center: [converted[0], converted[1]],
                 duration: 2000,
                 zoom: 12,
             });
