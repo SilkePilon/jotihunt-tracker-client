@@ -21,6 +21,7 @@ export default function StickerHero({ src, box, alt, className }: { src: string;
 
   return (
     <div ref={frameRef} className={cn('relative overflow-hidden bg-muted', className)}>
+      <img src={src} alt="" aria-hidden className="absolute inset-0 size-full scale-110 object-cover opacity-60 blur-xl" />
       <img
         src={src}
         alt={alt}

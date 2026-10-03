@@ -17,8 +17,9 @@ export interface Crop {
 export const MAX_ZOOM = 6;
 
 /**
- * Show the sticker box, padded by `padding` of its size on each side, as large as fits in the frame while the image
- * still covers the whole frame (no empty edges). Without a box: the whole image, cover-fit and centred.
+ * Show the sticker box, padded by `padding` of its size on each side, as large as fits in the frame. The padded box is
+ * always fully visible, so the image may be smaller than the frame; the hero's blurred backdrop fills the empty sides.
+ * Without a box: the whole image, cover-fit and centred.
  */
 export function stickerCrop(box: StickerBox | null, image: Size, frame: Size, padding = 0.15): Crop {
   const cover = Math.max(frame.width / image.width, frame.height / image.height);
@@ -34,15 +35,17 @@ export function stickerCrop(box: StickerBox | null, image: Size, frame: Size, pa
     const top = Math.max(0, (ymin / 1000) * image.height - padY);
     const bottom = Math.min(image.height, (ymax / 1000) * image.height + padY);
     const fit = Math.min(frame.width / (right - left), frame.height / (bottom - top));
-    scale = Math.min(Math.max(fit, cover), cover * MAX_ZOOM);
+    scale = Math.min(fit, cover * MAX_ZOOM);
     centerX = (left + right) / 2;
     centerY = (top + bottom) / 2;
   }
-  // Offsets run from (frame − scaled image) up to 0, so the image always covers the frame
-  const clamp = (value: number, min: number) => Math.min(0, Math.max(min, value));
+  // Centre the box, then keep the image from leaving an avoidable gap: a larger image covers the frame, a smaller one
+  // stays fully inside it (the empty sides show the blurred backdrop).
+  const clamp = (value: number, frameSize: number, scaledSize: number) =>
+    Math.min(Math.max(value, Math.min(0, frameSize - scaledSize)), Math.max(0, frameSize - scaledSize));
   return {
     scale,
-    x: clamp(frame.width / 2 - centerX * scale, frame.width - image.width * scale),
-    y: clamp(frame.height / 2 - centerY * scale, frame.height - image.height * scale),
+    x: clamp(frame.width / 2 - centerX * scale, frame.width, image.width * scale),
+    y: clamp(frame.height / 2 - centerY * scale, frame.height, image.height * scale),
   };
 }

@@ -26,8 +26,17 @@ describe('stickerCrop', () => {
     expectCrop(stickerCrop([495, 495, 505, 505], square, frame), { scale, x: 250 - 500 * scale, y: 125 - 500 * scale });
   });
 
-  test('never zooms out below cover', () => {
-    expectCrop(stickerCrop([0, 0, 1000, 1000], square, frame), { scale: 0.5, x: 0, y: -125 });
+  test('zooms out so a large box stays fully visible', () => {
+    expectCrop(stickerCrop([0, 0, 1000, 1000], { width: 1000, height: 1000 }, { width: 500, height: 250 }), { scale: 0.25, x: 125, y: 0 });
+  });
+
+  test('wide frame, portrait photo: the whole sticker is inside the frame', () => {
+    const { scale, x, y } = stickerCrop([385, 79, 673, 922], { width: 900, height: 1200 }, { width: 894, height: 240 });
+    expect(scale).toBeLessThan(894 / 900);
+    expect(y + (385 / 1000) * 1200 * scale).toBeGreaterThanOrEqual(0);
+    expect(y + (673 / 1000) * 1200 * scale).toBeLessThanOrEqual(240);
+    expect(x + (79 / 1000) * 900 * scale).toBeGreaterThanOrEqual(0);
+    expect(x + (922 / 1000) * 900 * scale).toBeLessThanOrEqual(894);
   });
 
   test('without a box: whole image, cover-fit and centred', () => {
