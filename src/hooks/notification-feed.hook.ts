@@ -5,6 +5,7 @@ import { isUnauthorized } from '@/lib/session';
 import { fetcherWithMethod } from '@/lib/swr';
 import { isRecent, mergeFeed, pickSound, shouldAlert, toastKind, type AppNotification } from '@/lib/notifications';
 import { playNotificationSound } from '@/lib/notification-sounds';
+import { showBroadcastToast } from '@/components/notifications/BroadcastToast';
 import { useNotificationPrefs } from '@/hooks/notification-prefs.hook';
 import useSettingsStore from '@/stores/settings.store';
 
@@ -68,7 +69,12 @@ export function useNotificationFeed({ respectPreferences = true, toasts = true, 
         if (sound && !options.soundMuted) playNotificationSound(sound);
         if (options.toasts) {
           for (const notification of alertable) {
-            toast[toastKind(notification)](notification.title, { description: notification.body || undefined, duration: notification.urgent ? 30_000 : 8000 });
+            const duration = notification.urgent ? 30_000 : 8000;
+            if (notification.type === 'broadcast') {
+              showBroadcastToast(notification.body, notification.data.from, duration);
+              continue;
+            }
+            toast[toastKind(notification)](notification.title, { description: notification.body || undefined, duration });
           }
         }
         options.onPoll?.(alertable);

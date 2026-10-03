@@ -35,14 +35,14 @@ export default function BroadcastDialog() {
   }
 
   return (
-    <ResponsiveDialog open={open} onClose={close} title="Bericht versturen" description="Iedereen krijgt dit als melding met geluid." className="sm:max-w-md">
-      <div className="flex flex-col gap-3 px-4 pb-4 md:px-0 md:pb-0">
-        <Textarea value={message} maxLength={MAX_LENGTH} onChange={(event) => setMessage(event.target.value)} placeholder="Bijv. Iedereen terug naar HQ" rows={3} />
+    <ResponsiveDialog open={open} onClose={close} title="Bericht versturen" description="Iedereen krijgt dit als melding met geluid." className="sm:max-w-sm" compact>
+      <div className="flex flex-col gap-2">
+        <Textarea value={message} maxLength={MAX_LENGTH} onChange={(event) => setMessage(event.target.value)} placeholder="Bijv. Iedereen terug naar HQ" rows={2} className="min-h-0 resize-none" />
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>
             {message.length}/{MAX_LENGTH}
           </span>
-          <Button onClick={() => void send()} disabled={sending || message.trim().length === 0}>
+          <Button size="sm" onClick={() => void send()} disabled={sending || message.trim().length === 0}>
             Versturen
           </Button>
         </div>

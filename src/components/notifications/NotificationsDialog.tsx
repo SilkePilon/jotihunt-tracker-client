@@ -65,31 +65,33 @@ export default function NotificationsDialog() {
   }
 
   return (
-    <ResponsiveDialog open={open} onClose={() => void close()} title="Meldingen" description="Kies waarvoor je een melding en geluid krijgt. Alles staat standaard aan." className="sm:max-w-md">
-      <div className="flex flex-col gap-4 px-4 pb-4 md:px-0 md:pb-0">
+    <ResponsiveDialog open={open} onClose={() => void close()} title="Meldingen" description="Kies waarvoor je een melding en geluid krijgt." className="sm:max-w-sm" compact>
+      <div className="flex flex-col gap-3">
         {NOTIFICATION_OPTIONS.map((option) => (
-          <div key={option.type} className="flex items-start justify-between gap-4">
-            <Label htmlFor={`notification-${option.type}`} className="flex flex-col items-start gap-0.5">
-              <span className="font-medium">{option.label}</span>
+          <div key={option.type} className="flex items-center justify-between gap-3">
+            <Label htmlFor={`notification-${option.type}`} className="flex flex-col items-start gap-0 leading-tight">
+              <span className="text-sm font-medium">{option.label}</span>
               <span className="text-xs font-normal text-muted-foreground">{option.description}</span>
             </Label>
             <Switch id={`notification-${option.type}`} checked={!current.includes(option.type)} onCheckedChange={(on) => toggle(option.type, on)} />
           </div>
         ))}
-        <p className="text-xs text-muted-foreground">Berichten van HQ krijg je altijd.</p>
         {iosInstall && (
           <p className="rounded-md border bg-muted/50 p-2 text-xs">
             Op een iPhone werken pushmeldingen alleen als de app op je beginscherm staat: tik op <strong>Deel</strong> en dan <strong>Zet op beginscherm</strong>. Geluiden in de app werken wel.
           </p>
         )}
         {!iosInstall && pushPermission() === 'denied' && <p className="rounded-md border bg-muted/50 p-2 text-xs">{RESULT_MESSAGE.denied}</p>}
-        <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={() => void close()}>
-            Later
-          </Button>
-          <Button onClick={() => void save()} disabled={saving || !prefs}>
-            Opslaan
-          </Button>
+        <div className="flex items-center justify-between gap-2 pt-1">
+          <span className="text-xs text-muted-foreground">Berichten van HQ krijg je altijd.</span>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => void close()}>
+              Later
+            </Button>
+            <Button size="sm" onClick={() => void save()} disabled={saving || !prefs}>
+              Opslaan
+            </Button>
+          </div>
         </div>
       </div>
     </ResponsiveDialog>
