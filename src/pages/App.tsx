@@ -7,6 +7,7 @@ import HuntRegistrationDialog from '@/components/hunts/HuntRegistrationDialog';
 import NewHuntToaster from '@/components/hunts/NewHuntToaster';
 import { useIsMobile } from '@/hooks/media.hook';
 import { tourTarget } from '@/components/tour/targets';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 function App() {
   const { mapRef } = useOutlet();
@@ -17,16 +18,24 @@ function App() {
       {/* Desktop only: on phones the map stays free (search via the sidebar, groups via the map) */}
       <div className="absolute right-2 top-2 z-30 hidden gap-2 md:flex" {...tourTarget('cards.topRight')}>
         <div>
-          <CoordinatesCard mapRef={mapRef} />
+          <ErrorBoundary>
+            <CoordinatesCard mapRef={mapRef} />
+          </ErrorBoundary>
         </div>
         <div>
-          <SearchCard mapRef={mapRef} />
+          <ErrorBoundary>
+            <SearchCard mapRef={mapRef} />
+          </ErrorBoundary>
         </div>
       </div>
-      <Sidebar mapRef={mapRef} />
-      {isMobile && <HuntCaptureButton />}
-      <HuntRegistrationDialog />
-      <NewHuntToaster />
+      <ErrorBoundary name="De zijbalk" variant="floating">
+        <Sidebar mapRef={mapRef} />
+      </ErrorBoundary>
+      <ErrorBoundary name="Hunt registreren" variant="floating">
+        {isMobile && <HuntCaptureButton />}
+        <HuntRegistrationDialog />
+        <NewHuntToaster />
+      </ErrorBoundary>
     </>
   );
 }

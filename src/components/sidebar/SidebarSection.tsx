@@ -4,6 +4,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import useSidebarStore, { SidebarSectionId } from '@/stores/sidebar.store';
 import { cn } from '@/lib/utils';
 import { tourTarget } from '@/components/tour/targets';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 interface SidebarSectionProps {
   id: SidebarSectionId;
@@ -31,7 +32,9 @@ export default function SidebarSection({ id, title, summary, open: openProp, onO
           <ChevronDownIcon className={cn('size-4 shrink-0 transition-transform', open && 'rotate-180')} />
         </span>
       </CollapsibleTrigger>
-      <CollapsibleContent className="pt-2">{children}</CollapsibleContent>
+      <CollapsibleContent className="pt-2">
+        <ErrorBoundary variant="inline">{children}</ErrorBoundary>
+      </CollapsibleContent>
     </Collapsible>
   );
 }

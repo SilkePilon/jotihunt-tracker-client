@@ -10,6 +10,7 @@ import ResetPassword from './components/ResetPassword';
 import HintBoardDialog from './components/hints/HintBoardDialog';
 import HuntersDialog from './components/admin/HuntersDialog';
 import DemoReloader from './components/DemoReloader';
+import ErrorBoundary from './components/ErrorBoundary';
 import UsersDialog from './components/admin/UsersDialog';
 import BroadcastDialog from './components/admin/BroadcastDialog';
 import NotificationsDialog from './components/notifications/NotificationsDialog';
@@ -80,16 +81,31 @@ export default function Layout() {
 
     return (
         <SWRConfig value={{onError: onSWRError}}>
-            <ResetPassword open={resetPasswordOpen} setIsOpen={setResetPasswordOpen} allowClose={false}/>
-            <DemoReloader/>
-            <Outlet context={{mapRef} satisfies OutletContextType}/>
-            <Map ref={mapRef}/>
-            <HintBoardDialog mapRef={mapRef}/>
-            <HuntersDialog mapRef={mapRef}/>
-            <UsersDialog/>
-            <BroadcastDialog/>
-            <NotificationsDialog/>
-            <TourOverlay mapRef={mapRef}/>
+            {/* Separate boundaries: one crashing part (a dialog, the map, a sidebar section) must not take the rest down */}
+            <ErrorBoundary name="Dit venster" variant="floating">
+                <ResetPassword open={resetPasswordOpen} setIsOpen={setResetPasswordOpen} allowClose={false}/>
+            </ErrorBoundary>
+            <ErrorBoundary variant="floating">
+                <DemoReloader/>
+            </ErrorBoundary>
+            <ErrorBoundary name="Deze pagina" variant="floating">
+                <Outlet context={{mapRef} satisfies OutletContextType}/>
+            </ErrorBoundary>
+            <ErrorBoundary name="De kaart" className="mx-auto mt-[40dvh] w-fit">
+                <Map ref={mapRef}/>
+            </ErrorBoundary>
+            <ErrorBoundary name="Het hintbord" variant="floating">
+                <HintBoardDialog mapRef={mapRef}/>
+            </ErrorBoundary>
+            <ErrorBoundary name="Dit venster" variant="floating">
+                <HuntersDialog mapRef={mapRef}/>
+                <UsersDialog/>
+                <BroadcastDialog/>
+                <NotificationsDialog/>
+            </ErrorBoundary>
+            <ErrorBoundary name="De rondleiding" variant="floating">
+                <TourOverlay mapRef={mapRef}/>
+            </ErrorBoundary>
             {/* Held back until the onboarding tour is done so they don't overlap */}
             {!tour.pending && (
                 <PWAPrompt

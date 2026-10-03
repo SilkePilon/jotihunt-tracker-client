@@ -9,6 +9,7 @@ import {registerSW} from 'virtual:pwa-register';
 import {TooltipProvider} from "@/components/ui/tooltip.tsx";
 import {Toaster} from "@/components/ui/sonner.tsx";
 import {toast} from 'sonner';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 // Service worker registration. A new version waits for the user: an automatic reload mid-hunt
 // would throw away a half-entered hunt photo or hint answer.
@@ -35,7 +36,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <>
         <TooltipProvider delayDuration={700}>
             <AuthProvider store={authStore}>
-                <Routes/>
+                <ErrorBoundary variant="page">
+                    <Routes/>
+                </ErrorBoundary>
             </AuthProvider>
         </TooltipProvider>
         <Toaster />
