@@ -14,7 +14,8 @@ import type {LngLat, MapMouseEvent, Map as MaplibreMap, StyleSpecification} from
 import Teams from './layers/Teams';
 import Devices from './layers/Devices';
 import Markers from './layers/Markers';
-import {forwardRef, useEffect, useImperativeHandle, useRef, useState} from 'react';
+import {forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState} from 'react';
+import {useShallow} from 'zustand/react/shallow';
 import HomeCircle from './layers/HomeCircle';
 import Predictions from './layers/Predictions';
 import {usePredictionSetting} from '@/hooks/predictions.hook';
@@ -85,13 +86,25 @@ const Map = forwardRef<MapRef, { className?: string }>(({className}, ref) => {
     }));
 
     // Store for all layers
-    const {showTeams, showDevices, showMarkersPart1, showMarkersPart2, showHomeCircle, showPredictions} = useLayersStore();
+    const {showTeams, showDevices, showMarkersPart1, showMarkersPart2, showHomeCircle, showPredictions} = useLayersStore(
+        useShallow((state) => ({
+            showTeams: state.showTeams,
+            showDevices: state.showDevices,
+            showMarkersPart1: state.showMarkersPart1,
+            showMarkersPart2: state.showMarkersPart2,
+            showHomeCircle: state.showHomeCircle,
+            showPredictions: state.showPredictions,
+        })),
+    );
     const {enabled: predictionEnabled} = usePredictionSetting();
     const [popupPosition, setPopupPosition] = useState<LngLat>();
     const [rulerActive, setRulerActive] = useState<boolean>(false);
+    // Stable, so the ruler doesn't re-subscribe its map events on every render
+    const activateRuler = useCallback(() => setRulerActive(true), []);
+    const deactivateRuler = useCallback(() => setRulerActive(false), []);
 
     // Store for settings
-    const {mapStyle} = useSettingsStore();
+    const mapStyle = useSettingsStore((state) => state.mapStyle);
     const isDarkMode = useDarkMode();
     const isMobile = useIsMobile();
     let correctedMapStyle = mapStyle;
@@ -158,8 +171,8 @@ const Map = forwardRef<MapRef, { className?: string }>(({className}, ref) => {
                             credits (above), ruler, fullscreen, my location, zoom */}
                         <Ruler linePaint={RULER_LINE_PAINT} markerPaint={RULER_MARKER_PAINT}
                                labelLayout={RULER_LABEL_LAYOUT} labelPaint={RULER_LABEL_PAINT}
-                               position="bottom-right" onActivate={() => setRulerActive(true)}
-                               onDeactivate={() => setRulerActive(false)}/>
+                               position="bottom-right" onActivate={activateRuler}
+                               onDeactivate={deactivateRuler}/>
                         <FullscreenControl position="bottom-right"/>
                         <GeolocateControl position="bottom-right"/>
                         <NavigationControl position="bottom-right" showCompass={false}/>

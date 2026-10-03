@@ -1,172 +1,71 @@
-import {Layer, Marker, Source} from 'react-map-gl/maplibre';
-import {useState} from 'react';
-import MapPopup from '../map/MapPopup';
-import {useDevices} from '@/hooks/devices.hook';
+import { useCallback, useMemo, useState } from 'react';
+import { Layer, Source, type FillLayerSpecification } from 'react-map-gl/maplibre';
+import { useDevices } from '@/hooks/devices.hook';
 import carIcon from '@/assets/images/car.svg';
 import bicycleIcon from '@/assets/images/bicycle.svg';
 import walkingIcon from '@/assets/images/walking.svg';
 import motorbikeIcon from '@/assets/images/motorbike.svg';
 import phoneIcon from '@/assets/images/phone.svg';
-import arrow from '@/assets/images/arrow.svg';
-import {cn, createCircle, isMoreThanFiveMinutesAgo, knotsToKmh} from '@/lib/utils';
-import {formatDistanceToNow} from 'date-fns';
-import {nl} from 'date-fns/locale';
-import {Position} from '@/types/Position';
-import MarkerRegistration from '../map/MarkerRegistration';
-import GoogleMapsButton from '../map/GoogleMapsButton';
-import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip.tsx";
-import {Badge} from "@/components/ui/badge.tsx";
-import {formatBattery, formatSpeed} from '@/lib/tracker';
+import { vehicleForGroupId, vehicleGroupIdsFromEnv } from '@/lib/hunters';
+import { accuracyCircles } from '@/lib/map-layers';
+import { isMoreThanFiveMinutesAgo } from '@/lib/utils';
+import type { Vehicle } from '@/types/Tracker';
+import DeviceMarker from './devices/DeviceMarker';
+import DevicePopup from './devices/DevicePopup';
+
+const GROUPS = vehicleGroupIdsFromEnv(import.meta.env);
+const VEHICLE_ICONS: Record<Vehicle, string> = { walking: walkingIcon, bike: bicycleIcon, car: carIcon, motorcycle: motorbikeIcon };
+
+/** Icon for a Traccar group: the vehicle's icon, or a phone when the group isn't a configured vehicle */
+function iconForGroup(groupId: number): string {
+  const vehicle = vehicleForGroupId(groupId, GROUPS);
+  return vehicle ? VEHICLE_ICONS[vehicle] : phoneIcon;
+}
+
+const ACCURACY_SOURCE = 'device-accuracy';
+const ACCURACY_PAINT: FillLayerSpecification['paint'] = {
+  'fill-color': 'rgba(66, 135, 245, 0.2)',
+  'fill-outline-color': 'rgba(66, 135, 245, 0.5)',
+};
 
 export default function Devices() {
-    const GROUP_WALKING_ID: number = +import.meta.env.GROUP_WALKING_ID;
-    const GROUP_CAR_ID: number = +import.meta.env.GROUP_CAR_ID;
-    const GROUP_MOTORCYCLE_ID: number = +import.meta.env.GROUP_MOTORCYCLE_ID;
-    const GROUP_BIKE_ID: number = +import.meta.env.GROUP_BIKE_ID;
+  const { positions, devices } = useDevices();
+  const [activeDeviceId, setActiveDeviceId] = useState<number>();
+  // Derived from the current data so the popup follows the device; device id 0 is valid, hence `!== undefined`
+  const activeDevice = activeDeviceId !== undefined ? positions?.find((position) => position.deviceId === activeDeviceId) : undefined;
 
-    const {positions, devices} = useDevices();
-    const [activeDeviceId, setActiveDeviceId] = useState<number>();
-    const activeDevice = positions?.find((device) => device.deviceId === activeDeviceId);
+  /** Device id -> icon for its vehicle group (phone when the group isn't a vehicle) */
+  const iconByDevice = useMemo(() => new Map((devices ?? []).map((device) => [device.id, iconForGroup(device.groupId)])), [devices]);
+  const circles = useMemo(() => accuracyCircles(positions ?? []), [positions]);
 
-    const [tooltipOpenId, setTooltipOpenId] = useState<number | null>(null);
+  const selectDevice = useCallback((deviceId: number) => setActiveDeviceId(deviceId), []);
+  const closePopup = useCallback(() => setActiveDeviceId(undefined), []);
 
-    /**
-     * Get the icon for a device
-     * @param position The "raw" position object to get the group from
-     * @returns The SVG icon for the device
-     */
-    function getIcon(position: Position) {
-        const device = devices?.find((device) => device.id === position.deviceId);
-        const groupId = device?.groupId;
-        switch (groupId) {
-            case GROUP_WALKING_ID:
-                return walkingIcon;
-            case GROUP_CAR_ID:
-                return carIcon;
-            case GROUP_MOTORCYCLE_ID:
-                return motorbikeIcon;
-            case GROUP_BIKE_ID:
-                return bicycleIcon;
-            default:
-                return phoneIcon;
-        }
-    }
-
-    /**
-     * Get the CSS style for the device icon based on the course.
-     * Displays an arrow pointing in the direction of the course.
-     * For example, with a course of 45 (P = device position):
-     *
-     *         *
-     *        /
-     *       P
-     *
-     * @param course The heading of the device.
-     * @returns The CSS style for the device icon.
-     */
-    function getCoursePositionStyle(course: number) {
-        const distance = 30;
-
-        const translateX = Math.sin((course * Math.PI) / 180) * distance;
-        const translateY = -Math.cos((course * Math.PI) / 180) * distance;
-
-        return {
-            transform: `translate(${translateX}px, ${translateY}px) rotate(${course}deg)`, //
-            transformOrigin: 'center center',
-        };
-    }
-
-    /**
-     * Handle the tooltip for a marker.
-     * @param open Whether the tooltip should be open or closed.
-     * @param deviceId The ID of the device for which the tooltip is being handled.
-     */
-    function handleMarkerTooltip(open: boolean, deviceId: number) {
-        if (activeDeviceId) {
-            setTooltipOpenId(null);
-            return;
-        }
-        setTooltipOpenId(open ? deviceId : null);
-    }
-
-    return (
-        <>
-            {positions?.map((position) => (
-                <div key={position.deviceId}>
-                    <Marker
-                        key={position.id}
-                        longitude={position.longitude}
-                        latitude={position.latitude}
-                        anchor="center"
-                        onClick={(e) => {
-                            e.originalEvent.stopPropagation();
-                            setActiveDeviceId(position.deviceId);
-                        }}
-                        style={{cursor: 'pointer'}}
-                        className={cn(tooltipOpenId == position.deviceId ? 'z-20' : 'z-10' )}
-                    >
-                        <Tooltip
-                            delayDuration={0}
-                            open={tooltipOpenId === position.deviceId && !activeDeviceId}
-                            onOpenChange={(open) => handleMarkerTooltip(open, position.deviceId)}
-                        >
-                            <TooltipTrigger asChild>
-                                <div
-                                    className={cn('h-10 hover:brightness-125 hover:scale-105 transition-all ease-in-out', isMoreThanFiveMinutesAgo(position.fixTime) && 'grayscale')}>
-                                    {position.speed > 0 && !isMoreThanFiveMinutesAgo(position.fixTime) && (
-                                        <div className="absolute w-10 h-10 transform flex items-center justify-center"
-                                             style={getCoursePositionStyle(position.course)}>
-                                            <img src={arrow} alt="arrow" className="w-7 h-7"/>
-                                        </div>
-                                    )}
-                                    <img alt={"device"} src={getIcon(position)} className="h-10"/>
-                                </div>
-                            </TooltipTrigger>
-                            <TooltipContent className={"flex gap-2 items-center"}>
-                                <span className="text-sm font-medium">{position.deviceName}</span>
-                                <Badge>
-                                    {formatDistanceToNow(position.fixTime, {
-                                        locale: nl,
-                                        addSuffix: true,
-                                    })}
-                                </Badge>
-                            </TooltipContent>
-                        </Tooltip>
-                    </Marker>
-                    <Source id={`circle-source-${position.deviceId}`} type="geojson"
-                            data={createCircle(position.longitude, position.latitude, position.accuracy)}>
-                        <Layer
-                            id={`circle-layer-${position.deviceId}`}
-                            type="fill"
-                            paint={{
-                                'fill-color': 'rgba(66, 135, 245, 0.2)',
-                                'fill-outline-color': 'rgba(66, 135, 245, 0.5)',
-                            }}
-                        />
-                    </Source>
-                </div>
-            ))}
-            {activeDevice && (
-                <MapPopup longitude={activeDevice.longitude} latitude={activeDevice.latitude}
-                          onClose={() => setActiveDeviceId(undefined)} offset={{bottom: [0, -20]}}>
-                    <div className="mr-6 flex flex-col gap-2 w-full">
-                        <div>
-                            <h2 className="font-semibold">{activeDevice.deviceName}</h2>
-                            <p>Snelheid: {formatSpeed(knotsToKmh(activeDevice.speed))}</p>
-                            <p>Batterij: {formatBattery(activeDevice.attributes.batteryLevel)}</p>
-                            <p>
-                                Laatste update:{' '}
-                                {formatDistanceToNow(activeDevice.fixTime, {
-                                    locale: nl,
-                                    addSuffix: true,
-                                })}
-                            </p>
-                        </div>
-                        <GoogleMapsButton lat={activeDevice.latitude} lng={activeDevice.longitude}/>
-                        <MarkerRegistration lat={activeDevice.latitude} lng={activeDevice.longitude}/>
-                    </div>
-                </MapPopup>
-            )}
-        </>
-    );
+  return (
+    <>
+      <Source id={ACCURACY_SOURCE} type="geojson" data={circles}>
+        <Layer id="device-accuracy-fill" type="fill" source={ACCURACY_SOURCE} paint={ACCURACY_PAINT} />
+      </Source>
+      {positions?.map((position) => {
+        const stale = isMoreThanFiveMinutesAgo(position.fixTime);
+        return (
+          <DeviceMarker
+            key={position.deviceId}
+            deviceId={position.deviceId}
+            deviceName={position.deviceName}
+            longitude={position.longitude}
+            latitude={position.latitude}
+            course={position.course}
+            fixTime={position.fixTime}
+            icon={iconByDevice.get(position.deviceId) ?? phoneIcon}
+            moving={position.speed > 0 && !stale}
+            stale={stale}
+            tooltipsDisabled={activeDevice !== undefined}
+            onSelect={selectDevice}
+          />
+        );
+      })}
+      {activeDevice && <DevicePopup position={activeDevice} onClose={closePopup} />}
+    </>
+  );
 }
