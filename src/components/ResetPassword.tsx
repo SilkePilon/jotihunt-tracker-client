@@ -7,8 +7,6 @@ import { Field, FieldError, FieldGroup, FieldLabel } from './ui/field';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { useAuth } from '@/hooks/auth.hook';
-import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
-import { User } from '@/types/User';
 import {toast} from "sonner";
 import { useId } from 'react';
 
@@ -25,7 +23,6 @@ const resetPasswordSchema = z
 
 export default function ResetPassword({ open, setIsOpen, allowClose = true }: InferProps<typeof ResetPassword.propTypes>) {
   const auth = useAuth();
-  const authUser = useAuthUser<User>();
   const fieldId = useId();
 
   const form = useForm<z.infer<typeof resetPasswordSchema>>({
@@ -40,18 +37,17 @@ export default function ResetPassword({ open, setIsOpen, allowClose = true }: In
   async function handleUpdatePassword(data: z.infer<typeof resetPasswordSchema>) {
     const result = await auth.updatePassword(data.oldPassword, data.newPassword);
 
-    if (!result) {
+    if (result === 'wrong-password') {
       form.setError('oldPassword', { message: 'Oud wachtwoord is onjuist.' });
       return;
     }
+    if (result === 'failed') {
+      form.setError('root.serverError', { message: 'Wachtwoord wijzigen is mislukt. Controleer je verbinding en probeer het opnieuw.' });
+      return;
+    }
 
-    if (!authUser) return;
     if (setIsOpen) setIsOpen(false);
-
     form.reset();
-
-    const newUserState = { ...authUser, requiresPasswordChange: false };
-    auth.updateUserState(newUserState);
     toast.success('Wachtwoord bijgewerkt!', {
       description: 'Je wachtwoord is succesvol aangepast.'
     });
@@ -110,6 +106,7 @@ export default function ResetPassword({ open, setIsOpen, allowClose = true }: In
                   </Field>
                 )}
               />
+              {form.formState.errors.root?.serverError && <FieldError errors={[form.formState.errors.root.serverError]} />}
               <Button type="submit">Wachtwoord wijzigen</Button>
             </FieldGroup>
           </form>

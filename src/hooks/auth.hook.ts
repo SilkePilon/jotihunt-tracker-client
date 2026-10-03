@@ -1,12 +1,14 @@
 import { User } from '@/types/User';
 import axios from 'axios';
 import useSignIn from 'react-auth-kit/hooks/useSignIn';
+import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import { useFetcher } from './utils/api.hook';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
 import { REQUEST_TIMEOUT_MS } from '@/lib/http';
+import { loginFailure, passwordUpdateFailure, type LoginResult, type PasswordUpdateResult } from '@/lib/auth-result';
+import { markTokenReplaced } from '@/lib/session';
 
-/** Outcome of a login attempt; the server answers 429 after too many wrong passwords */
-export type LoginResult = 'ok' | 'invalid' | 'rate-limited' | 'offline';
+export type { LoginResult, PasswordUpdateResult };
 
 export const useAuth = () => {
   const baseUrl = import.meta.env.API_BASE_URL;
@@ -14,6 +16,7 @@ export const useAuth = () => {
   const signIn = useSignIn();
   const { fetch } = useFetcher();
   const authHeader = useAuthHeader();
+  const authUser = useAuthUser<User>();
 
   /**
    * Tries to login with the given credentials.
@@ -33,9 +36,8 @@ export const useAuth = () => {
         return error.response;
       });
 
-    if (!response) return 'offline';
-    if (response.status === 429) return 'rate-limited';
-    if (response.status !== 200) return 'invalid';
+    // 5xx, timeouts and network errors are 'offline': the password may well be right
+    if (response?.status !== 200) return loginFailure(response?.status);
 
     const token = response.data.accessToken;
 
@@ -56,17 +58,34 @@ export const useAuth = () => {
     return signinResult ? 'ok' : 'invalid';
   }
 
-  async function updatePassword(oldPassword: string, newPassword: string) {
+  /**
+   * Change the own password. The server signs out every session, this one included, and returns a fresh token:
+   * sign in with it (the user state no longer requires a password change).
+   * @returns 'ok', 'wrong-password' (400/401) or 'failed' (server trouble, rate limit, no connection)
+   */
+  async function updatePassword(oldPassword: string, newPassword: string): Promise<PasswordUpdateResult> {
+    let response;
     try {
-      const response = await fetch('/auth/update-password', 'POST', {
+      response = await fetch<{ accessToken?: string }>('/auth/update-password', 'POST', {
         oldPassword,
         newPassword,
         confirmPassword: newPassword,
       });
-      return response.status === 200;
-    } catch {
-      return false;
+    } catch (error) {
+      return passwordUpdateFailure(axios.isAxiosError(error) ? error.response?.status : undefined);
     }
+    if (response.status !== 200) return passwordUpdateFailure(response.status);
+
+    const userState = authUser ? { ...authUser, requiresPasswordChange: false } : undefined;
+    const token = response.data?.accessToken;
+    if (token) {
+      // Requests still on their way with the old token get a 401 that must not sign the user out
+      markTokenReplaced(authHeader);
+      signIn({ auth: { token, type: 'Bearer' }, userState });
+    } else if (userState) {
+      await updateUserState(userState);
+    }
+    return 'ok';
   }
 
   async function updateUserState(user: User) {
