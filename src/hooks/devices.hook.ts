@@ -2,12 +2,17 @@ import { Position } from '@/types/Position';
 import { useAuthSWR } from '../lib/swr';
 import { Device } from '@/types/Device';
 
+/** Traccar devices report every few seconds; polling faster only re-renders the map for nothing. */
+const TRACKER_REFRESH_MS = 3000;
+
 export const useDevices = () => {
   const { data: positions, error: positionsError } = useAuthSWR<Position[]>('/tracker/positions', {
-    refreshInterval: 100,
+    refreshInterval: TRACKER_REFRESH_MS,
+    dedupingInterval: TRACKER_REFRESH_MS,
   });
   const { data: devices, error: devicesError } = useAuthSWR<Device[]>('/tracker/devices', {
-    refreshInterval: 100,
+    refreshInterval: TRACKER_REFRESH_MS,
+    dedupingInterval: TRACKER_REFRESH_MS,
   });
 
   return {

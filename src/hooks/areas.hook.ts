@@ -1,16 +1,19 @@
+import { useCallback } from 'react';
 import { Area } from '@/types/Area';
 import { useAuthSWR } from '../lib/swr';
 import useHiddenAreasStore from '@/stores/hiddenareas.store';
 
 export const useAreas = () => {
   const { data, error } = useAuthSWR<Area[]>('/areas', {
-    refreshInterval: 1000,
+    // The server refreshes areas from the Jotihunt API every 10 s
+    refreshInterval: 5000,
   });
 
   const { hiddenAreas, toggleHidden } = useHiddenAreasStore();
 
-  const isHidden = (areaName: string) => hiddenAreas.includes(areaName.toLowerCase());
-  const isVisible = (areaName: string) => !hiddenAreas.includes(areaName.toLowerCase());
+  // Stable between renders: layers use these in memoised filters
+  const isHidden = useCallback((areaName: string) => hiddenAreas.includes(areaName.toLowerCase()), [hiddenAreas]);
+  const isVisible = useCallback((areaName: string) => !hiddenAreas.includes(areaName.toLowerCase()), [hiddenAreas]);
 
   return {
     areas: data,

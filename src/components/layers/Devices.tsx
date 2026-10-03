@@ -16,6 +16,7 @@ import MarkerRegistration from '../map/MarkerRegistration';
 import GoogleMapsButton from '../map/GoogleMapsButton';
 import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip.tsx";
 import {Badge} from "@/components/ui/badge.tsx";
+import {formatBattery, formatSpeed} from '@/lib/tracker';
 
 export default function Devices() {
     const GROUP_WALKING_ID: number = +import.meta.env.GROUP_WALKING_ID;
@@ -111,7 +112,7 @@ export default function Devices() {
                         >
                             <TooltipTrigger asChild>
                                 <div
-                                    className={`h-10 hover:brightness-125 hover:scale-105 transition-all ease-in-out ${isMoreThanFiveMinutesAgo(position.fixTime) && 'grayscale'}`}>
+                                    className={cn('h-10 hover:brightness-125 hover:scale-105 transition-all ease-in-out', isMoreThanFiveMinutesAgo(position.fixTime) && 'grayscale')}>
                                     {position.speed > 0 && !isMoreThanFiveMinutesAgo(position.fixTime) && (
                                         <div className="absolute w-10 h-10 transform flex items-center justify-center"
                                              style={getCoursePositionStyle(position.course)}>
@@ -151,8 +152,8 @@ export default function Devices() {
                     <div className="mr-6 flex flex-col gap-2 w-full">
                         <div>
                             <h2 className="font-semibold">{activeDevice.deviceName}</h2>
-                            <p>Snelheid: {Math.round(knotsToKmh(activeDevice.speed))} km/h</p>
-                            <p>Batterij: {Math.round(activeDevice.attributes.batteryLevel)}%</p>
+                            <p>Snelheid: {formatSpeed(knotsToKmh(activeDevice.speed))}</p>
+                            <p>Batterij: {formatBattery(activeDevice.attributes.batteryLevel)}</p>
                             <p>
                                 Laatste update:{' '}
                                 {formatDistanceToNow(activeDevice.fixTime, {

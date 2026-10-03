@@ -16,7 +16,7 @@ const resetPasswordSchema = z
   .object({
     oldPassword: z.string().min(1, 'Oude wachtwoord mag niet leeg zijn.'),
     newPassword: z.string().min(1, 'Nieuw wachtwoord mag niet leeg zijn.'),
-    confirmPassword: z.string().min(1, 'Nieuw wachtwoord bevestigeing mag niet leeg zijn.'),
+    confirmPassword: z.string().min(1, 'Nieuw wachtwoord bevestiging mag niet leeg zijn.'),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
     message: 'Wachtwoorden komen niet overeen',

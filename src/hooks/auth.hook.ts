@@ -25,10 +25,11 @@ export const useAuth = () => {
         password,
       })
       .catch((error) => {
+        // Undefined on network errors (no response)
         return error.response;
       });
 
-    if (response.status !== 200) {
+    if (!response || response.status !== 200) {
       return false;
     }
 

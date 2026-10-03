@@ -13,11 +13,11 @@ export const useMarkers = () => {
    * Create a new marker via the API.
    * Updates the local state with the new marker.
    * @param marker The marker to create
-   * @returns True if the marker was created successfully, false otherwise
+   * @returns True if the marker was created successfully, false otherwise (never throws)
    */
   async function createMarker(marker: Marker): Promise<boolean> {
-    const result = await fetcherWithMethod('/markers', authHeader, 'POST', marker);
-    if (result._id) {
+    const result = await fetcherWithMethod('/markers', authHeader, 'POST', marker).catch(() => null);
+    if (result?._id) {
       mutate((data) => {
         if (data) {
           return [...data, result];
@@ -32,10 +32,10 @@ export const useMarkers = () => {
   /**
    * Delete a marker via the API.
    * @param markerId The ID of the marker to delete
-   * @returns True if the marker was deleted successfully, false otherwise
+   * @returns True if the marker was deleted successfully, false otherwise (never throws)
    */
   async function deleteMarker(markerId: string): Promise<boolean> {
-    const result = await fetcherWithMethod(`/markers/${markerId}`, authHeader, 'DELETE');
+    const result = await fetcherWithMethod(`/markers/${markerId}`, authHeader, 'DELETE').catch(() => null);
     if (result) {
       mutate((data) => {
         if (data) {

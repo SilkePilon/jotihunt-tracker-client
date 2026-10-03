@@ -16,6 +16,7 @@ import {usePredictionSetting, useVisits} from '@/hooks/predictions.hook';
 import VisitControls from '../map/VisitControls';
 import TeamLogo from '../map/TeamLogo';
 import {useIsMobile} from '@/hooks/media.hook';
+import {toast} from 'sonner';
 
 /** On phones the bottom sheet covers the lower ~130px; aim a bit higher so the team isn't hidden behind it. */
 const MOBILE_CENTER_OFFSET: [number, number] = [0, -65];
@@ -46,12 +47,16 @@ export default function Teams() {
      * Disabled if TEAMS_AREA_EDITING is false.
      * @param area The new area to set.
      */
-    function handleAreaChange(area: string) {
+    async function handleAreaChange(area: string) {
         if (!TEAMS_AREA_EDITING) return;
         if (!activeTeam) return;
+        const previous = activeTeam;
         const newArea = area === 'onbekend' ? undefined : area;
-        setActiveTeam({...activeTeam, area: newArea});
-        setTeamArea(activeTeam._id, newArea);
+        setActiveTeam({...previous, area: newArea});
+        if (!(await setTeamArea(previous._id, newArea))) {
+            setActiveTeam((current) => (current?._id === previous._id ? previous : current));
+            toast.error('Deelgebied opslaan mislukt');
+        }
     }
 
     /**
@@ -166,7 +171,7 @@ export default function Teams() {
                             </div>
                         </div>
                         <p className="text-xs leading-snug text-muted-foreground">
-                            {activeTeam.accomodation} · {activeTeam.street} {activeTeam.houseNumber}{activeTeam.houseNumberAddition ? ` ${activeTeam.houseNumberAddition}` : ''}, {activeTeam.postCode} {activeTeam.city}
+                            {activeTeam.accomodation} · {activeTeam.street} {activeTeam.houseNumber}{activeTeam.housenumberAddition ? ` ${activeTeam.housenumberAddition}` : ''}, {activeTeam.postCode} {activeTeam.city}
                         </p>
                         {activeTeam.area && predictionEnabled !== false && <VisitControls teamApiId={activeTeam.apiId}/>}
                         {/* Select with areas */}

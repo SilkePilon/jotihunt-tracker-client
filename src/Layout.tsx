@@ -1,4 +1,4 @@
-import {Outlet, useNavigate} from 'react-router';
+import {Outlet} from 'react-router';
 import {toast} from "sonner"
 import {useEffect, useRef, useState} from 'react';
 import {SWRConfig} from 'swr';
@@ -18,13 +18,14 @@ import {useTheme} from "@/hooks/theme.hook.ts";
 import {useNotificationFeed} from '@/hooks/notification-feed.hook';
 import {useFetcher} from '@/hooks/utils/api.hook';
 import {isUnauthorized} from '@/lib/session';
+import {useSessionExpired} from '@/hooks/session.hook';
 import {resyncPush} from '@/lib/push';
 import type {OutletContextType} from '@/hooks/outlet.hook.ts';
 import TourOverlay from './components/tour/TourOverlay';
 import {useTourAutoStart} from './components/tour/useTour';
 
 export default function Layout() {
-    const navigate = useNavigate();
+    const endSession = useSessionExpired();
     const [errorShown, setErrorShown] = useState(false);
     const auth = useAuthUser<User>();
     const mapRef = useRef<MapRef>(null);
@@ -36,7 +37,7 @@ export default function Layout() {
             description: "Log opnieuw in om verder te gaan.",
             duration: Infinity
         })
-        navigate('/login');
+        endSession();
     }
 
     useTheme();

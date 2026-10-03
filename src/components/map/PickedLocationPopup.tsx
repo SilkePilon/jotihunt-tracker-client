@@ -16,29 +16,23 @@ export default function PickedLocationPopup({lat, lng, onClose}: { lat: number; 
     const openSection = useSidebarStore((s) => s.openSection);
     const setSheetSnap = useSidebarStore((s) => s.setSheetSnap);
 
-    function toRD(lat: number, lng: number): { x: string, y: string } {
-        const rdX = proj4('WGS84', 'RD', [lng, lat])[0].toFixed(0);
-        const rdY = proj4('WGS84', 'RD', [lng, lat])[1].toFixed(0);
-        return {x: rdX, y: rdY};
+    const [rdX, rdY] = proj4('WGS84', 'RD', [lng, lat]);
+    const rd = {x: rdX.toFixed(0), y: rdY.toFixed(0)};
+
+    async function copy(text: string) {
+        try {
+            await navigator.clipboard.writeText(text);
+            toast.success("Coördinaten gekopieerd naar klembord!");
+        } catch {
+            // The clipboard API needs a secure context (https) and permission
+            toast.error("Kopiëren mislukt");
+        }
     }
 
-    async function copyRDCoordinates() {
-        const rd = toRD(lat, lng);
-        await navigator.clipboard.writeText(`${rd.x}, ${rd.y}`);
-        notifyCopy();
-    }
-
-    async function copyLatLngCoordinates() {
-        await navigator.clipboard.writeText(`${lat.toFixed(7)}, ${lng.toFixed(7)}`);
-        notifyCopy();
-    }
-
-    function notifyCopy() {
-        toast.success("Coördinaten gekopieerd naar klembord!");
-    }
+    const copyRDCoordinates = () => copy(`${rd.x}, ${rd.y}`);
+    const copyLatLngCoordinates = () => copy(`${lat.toFixed(7)}, ${lng.toFixed(7)}`);
 
     function setHintCoords() {
-        const rd = toRD(lat, lng);
         setCoords(rd.x, rd.y);
         // The hint entry section is collapsed by default, so make sure it's
         // actually visible (and scrolled into view on mobile) before the form fills in.
@@ -71,12 +65,12 @@ export default function PickedLocationPopup({lat, lng, onClose}: { lat: number; 
                             <hr/>
                             <div className={"flex gap-3 justify-between"}>
                                 <div className={"flex flex-col"}>
-                                    <p>RD-x: {proj4('WGS84', 'RD', [lng, lat])[0].toFixed(0)}</p>
-                                    <p>RD-y: {proj4('WGS84', 'RD', [lng, lat])[1].toFixed(0)}</p>
+                                    <p>RD-x: {rd.x}</p>
+                                    <p>RD-y: {rd.y}</p>
                                 </div>
                                 <div className={"flex gap-2"}>
                                     <Tooltip>
-                                        <TooltipTrigger>
+                                        <TooltipTrigger asChild>
                                             <Button variant={"outline"} size={"icon"}
                                                     onClick={setHintCoords}><LightbulbIcon/></Button>
                                         </TooltipTrigger>

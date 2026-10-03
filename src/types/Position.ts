@@ -1,7 +1,7 @@
 export interface Position {
   id: string;
   attributes: {
-    batteryLevel: number;
+    batteryLevel?: number;
     distance: number;
     totalDistance: number;
     motion: boolean;

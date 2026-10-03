@@ -60,6 +60,8 @@ export default function HuntRegistrationDialog() {
     setPrevPhoto(photo);
     setUploadId(randomId());
     setPrepared(null);
+    // The previous photo's position must not suggest an area or be uploaded with this one
+    setPosition(null);
     setArea('');
     setErrors({});
     setSaving(false);

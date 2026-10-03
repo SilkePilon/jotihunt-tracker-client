@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Navigate, useNavigate } from 'react-router';
+import { Navigate } from 'react-router';
 import { SWRConfig } from 'swr';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import Map from '@/components/Map';
@@ -13,6 +13,7 @@ import DemoReloader from '@/components/DemoReloader';
 import { useNotificationFeed } from '@/hooks/notification-feed.hook';
 import { useTheme } from '@/hooks/theme.hook';
 import { isUnauthorized } from '@/lib/session';
+import { useSessionExpired } from '@/hooks/session.hook';
 import { pickPrimary, type AppNotification } from '@/lib/notifications';
 import type { User } from '@/types/User';
 
@@ -20,12 +21,12 @@ const BANNER_MS = 8000;
 
 /** Admin-only wall display for the HQ TV: map, area tiles, hunts, latest article, loud alerts for everything. */
 export default function Hq() {
-  const navigate = useNavigate();
+  const endSession = useSessionExpired();
   // Outside Layout, so it needs its own handler: an expired session sends the TV to the login page
   return (
-    <SWRConfig value={{ onError: (error) => isUnauthorized(error) && navigate('/login') }}>
+    <SWRConfig value={{ onError: (error) => isUnauthorized(error) && endSession() }}>
       <DemoReloader />
-      <HqScreen onUnauthorized={() => navigate('/login')} />
+      <HqScreen onUnauthorized={endSession} />
     </SWRConfig>
   );
 }

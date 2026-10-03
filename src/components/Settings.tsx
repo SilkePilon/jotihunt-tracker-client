@@ -2,22 +2,11 @@ import {
     BugIcon,
     CogIcon,
     DownloadIcon,
-    EyeIcon,
     KeyIcon,
-    LayersIcon,
     LogOutIcon,
-    MapPinnedIcon,
-    RefreshCwIcon,
-    ShieldIcon,
-    UsersIcon,
-    FlaskConicalIcon,
-    Loader2Icon,
-    SparklesIcon,
     CompassIcon,
     BellIcon,
     Volume2Icon,
-    MegaphoneIcon,
-    MonitorIcon
 } from 'lucide-react';
 import {siDiscord} from "simple-icons"
 import {Button} from './ui/button';
@@ -27,51 +16,36 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuLabel,
-    DropdownMenuPortal,
-    DropdownMenuRadioGroup,
-    DropdownMenuRadioItem,
     DropdownMenuSeparator,
-    DropdownMenuSub,
-    DropdownMenuSubContent,
-    DropdownMenuSubTrigger,
     DropdownMenuTrigger,
 } from './ui/dropdown-menu';
-import useLayersStore from '@/stores/layers.store';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import useSettingsStore from '@/stores/settings.store';
-import {MapStyle} from '@/types/MapStyle';
-import useSignOut from 'react-auth-kit/hooks/useSignOut';
-import {useNavigate} from 'react-router';
 import {User} from '@/types/User';
 import usePWA from 'react-pwa-install-prompt';
 import {Dialog, DialogTrigger} from './ui/dialog';
 import DebugInfo from './DebugInfo';
 import ResetPassword from './ResetPassword';
 import {useState} from 'react';
-import {
-    AlertDialog, AlertDialogAction, AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription, AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle
-} from "@/components/ui/alert-dialog.tsx";
-import {useTeams} from "@/hooks/teams.hook.ts";
-import {toast} from "sonner";
-import useAdminStore from "@/stores/admin.store";
 import useNotificationsDialogStore from '@/stores/notifications-dialog.store';
-import {useDemo} from "@/hooks/demo.hook";
-import {usePredictionSetting} from "@/hooks/predictions.hook";
-import {isAxiosError} from "axios";
-import {useFetcher} from '@/hooks/utils/api.hook';
-import {unsubscribePush} from '@/lib/push';
 import useSettingsMenuStore from '@/stores/settings-menu.store';
 import useTourStore from '@/components/tour/tour.store';
 import {tourTarget} from '@/components/tour/targets';
+import {useLogout} from '@/hooks/logout.hook';
+import LayersSubmenu from './settings/LayersSubmenu';
+import MapStyleSubmenu from './settings/MapStyleSubmenu';
+import AdminSubmenu from './settings/AdminSubmenu';
+import ReloadTeamsDialog from './settings/ReloadTeamsDialog';
+import DemoModeDialog from './settings/DemoModeDialog';
 
-export default function Settings({onReplayTour}: { onReplayTour?: () => void }) {
+const DISCORD_URL = import.meta.env.DISCORD_URL;
 
-    const DISCORD_URL = import.meta.env.DISCORD_URL;
+interface SettingsProps {
+    /** Shows a "Rondleiding opnieuw" item when given */
+    onReplayTour?: () => void;
+}
 
+export default function Settings({onReplayTour}: SettingsProps) {
     const menuOpen = useSettingsMenuStore((state) => state.open);
     const setMenuOpen = useSettingsMenuStore((state) => state.setOpen);
 
@@ -81,86 +55,16 @@ export default function Settings({onReplayTour}: { onReplayTour?: () => void }) 
         setMenuOpen(open);
     }
 
-    const navigate = useNavigate();
-    const openAdminDialog = useAdminStore((state) => state.openDialog);
     const openNotifications = useNotificationsDialogStore((state) => state.setOpen);
+    const soundMuted = useSettingsStore((state) => state.soundMuted);
+    const setSoundMuted = useSettingsStore((state) => state.setSoundMuted);
     const {isStandalone, isInstallPromptSupported, promptInstall} = usePWA();
     const [resetPasswordOpen, setResetPasswordOpen] = useState(false);
-    const [isConfirmReloadDialogOpen, setIsConfirmReloadDialogOpen] = useState(false);
+    const [reloadTeamsOpen, setReloadTeamsOpen] = useState(false);
+    const [demoDialogOpen, setDemoDialogOpen] = useState(false);
 
-    // Store for all layers / settings
-    const {
-        showTeams,
-        showDevices,
-        showMarkersPart1,
-        showMarkersPart2,
-        showHomeCircle,
-        showGroupCircles,
-        toggleGroupCircles,
-        showPredictions,
-        togglePredictions,
-        toggleTeams,
-        toggleDevices,
-        toggleMarkersPart1,
-        toggleMarkersPart2,
-        toggleHomeCircle,
-    } = useLayersStore();
-    const {mapStyle, setMapStyle, soundMuted, setSoundMuted} = useSettingsStore();
-    const {reloadTeams} = useTeams();
-    const {demo, setDemo} = useDemo();
-    const [isDemoDialogOpen, setIsDemoDialogOpen] = useState(false);
-    const [isSwitchingDemo, setIsSwitchingDemo] = useState(false);
-    const {enabled: predictionEnabled, setEnabled: setPredictionEnabled} = usePredictionSetting();
-
-    async function handleTogglePrediction(enabled: boolean) {
-        try {
-            await setPredictionEnabled(enabled);
-        } catch {
-            toast.error('AI-voorspelling wisselen is mislukt');
-        }
-    }
-    const turnDemoOn = !demo?.enabled;
-
-    async function handleSwitchDemo() {
-        setIsSwitchingDemo(true);
-        try {
-            await setDemo(turnDemoOn);
-            window.location.reload();
-        } catch (error) {
-            const message = isAxiosError(error) && error.response?.data?.message
-                ? String(error.response.data.message)
-                : 'Het wisselen van demo mode is mislukt.';
-            toast.error(message);
-            setIsSwitchingDemo(false);
-            setIsDemoDialogOpen(false);
-        }
-    }
-
-    // Authentication stuff
     const auth = useAuthUser<User>();
-    const signOut = useSignOut();
-
-    const {fetch} = useFetcher();
-
-    async function logout() {
-        await unsubscribePush(fetch);
-        signOut();
-        navigate('/login');
-    }
-
-    async function handleReloadTeams() {
-        const result = await reloadTeams();
-        if (result) {
-            toast.success('Teams herladen', {
-                description: 'Alle teams zijn succesvol herladen vanuit de Jotihunt API.',
-            });
-            setIsConfirmReloadDialogOpen(false);
-        } else {
-            toast.error('Fout bij herladen teams', {
-                description: 'Er is iets misgegaan bij het herladen van de teams. Probeer het later opnieuw.',
-            });
-        }
-    }
+    const logout = useLogout();
 
     return (
         <Dialog>
@@ -179,68 +83,8 @@ export default function Settings({onReplayTour}: { onReplayTour?: () => void }) 
                             Installeer app
                         </DropdownMenuItem>
                     )}
-                    <DropdownMenuSub>
-                        <DropdownMenuSubTrigger>
-                            <EyeIcon/>
-                            Zichtbare lagen
-                        </DropdownMenuSubTrigger>
-                        <DropdownMenuPortal>
-                            <DropdownMenuSubContent>
-                                <DropdownMenuCheckboxItem checked={showTeams} onCheckedChange={toggleTeams}
-                                                          onSelect={(e) => e.preventDefault()}>
-                                    Deelnemende groepen
-                                </DropdownMenuCheckboxItem>
-                                <DropdownMenuCheckboxItem checked={showDevices} onCheckedChange={toggleDevices}
-                                                          onSelect={(e) => e.preventDefault()}>
-                                    Huidige locatie auto's
-                                </DropdownMenuCheckboxItem>
-                                <DropdownMenuCheckboxItem checked={showMarkersPart1}
-                                                          onCheckedChange={toggleMarkersPart1}
-                                                          onSelect={(e) => e.preventDefault()}>
-                                    Markers (speelhelft 1)
-                                </DropdownMenuCheckboxItem>
-                                <DropdownMenuCheckboxItem checked={showMarkersPart2}
-                                                          onCheckedChange={toggleMarkersPart2}
-                                                          onSelect={(e) => e.preventDefault()}>
-                                    Markers (speelhelft 2)
-                                </DropdownMenuCheckboxItem>
-                                <DropdownMenuCheckboxItem checked={showHomeCircle} onCheckedChange={toggleHomeCircle}
-                                                          onSelect={(e) => e.preventDefault()}>
-                                    Tegenhunt cirkel
-                                </DropdownMenuCheckboxItem>
-                                <DropdownMenuCheckboxItem checked={showGroupCircles}
-                                                          onCheckedChange={toggleGroupCircles}
-                                                          onSelect={(e) => e.preventDefault()}>
-                                    Groepen cirkels
-                                </DropdownMenuCheckboxItem>
-                                {predictionEnabled !== false && (
-                                    <DropdownMenuCheckboxItem checked={showPredictions}
-                                                              onCheckedChange={togglePredictions}
-                                                              onSelect={(e) => e.preventDefault()}>
-                                        Voorspelling
-                                    </DropdownMenuCheckboxItem>
-                                )}
-                            </DropdownMenuSubContent>
-                        </DropdownMenuPortal>
-                    </DropdownMenuSub>
-                    <DropdownMenuSub>
-                        <DropdownMenuSubTrigger>
-                            <LayersIcon/>
-                            Kaartstijl
-                        </DropdownMenuSubTrigger>
-                        <DropdownMenuPortal>
-                            <DropdownMenuSubContent>
-                                <DropdownMenuRadioGroup value={mapStyle}
-                                                        onValueChange={(s) => setMapStyle(s as MapStyle)}>
-                                    <DropdownMenuRadioItem value={''}>Automatisch</DropdownMenuRadioItem>
-                                    <DropdownMenuRadioItem value={MapStyle.Streets}>Straten</DropdownMenuRadioItem>
-                                    <DropdownMenuRadioItem value={MapStyle.Outdoors}>Outdoor</DropdownMenuRadioItem>
-                                    <DropdownMenuRadioItem value={MapStyle.Satellite}>Satelliet</DropdownMenuRadioItem>
-                                    <DropdownMenuRadioItem value={MapStyle.Dark}>Donker</DropdownMenuRadioItem>
-                                </DropdownMenuRadioGroup>
-                            </DropdownMenuSubContent>
-                        </DropdownMenuPortal>
-                    </DropdownMenuSub>
+                    <LayersSubmenu/>
+                    <MapStyleSubmenu/>
                     <DropdownMenuSeparator/>
                     <DropdownMenuItem onClick={() => openNotifications(true)}>
                         <BellIcon/>
@@ -263,43 +107,8 @@ export default function Settings({onReplayTour}: { onReplayTour?: () => void }) 
                     )}
                     {auth?.admin && (
                         <>
-                            <DropdownMenuSub>
-                                <DropdownMenuSubTrigger>
-                                    <ShieldIcon/>
-                                    Admin tools
-                                </DropdownMenuSubTrigger>
-                                <DropdownMenuPortal>
-                                    <DropdownMenuSubContent>
-                                        <DropdownMenuItem onClick={() => openAdminDialog('hunters')}>
-                                            <MapPinnedIcon/>Hunters
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => openAdminDialog('users')}>
-                                            <UsersIcon/>Gebruikers
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => openAdminDialog('broadcast')}>
-                                            <MegaphoneIcon/>Bericht versturen
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => window.open('/hq', '_blank', 'noopener')}>
-                                            <MonitorIcon/>HQ-scherm
-                                        </DropdownMenuItem>
-                                        <DropdownMenuSeparator/>
-                                        <DropdownMenuCheckboxItem checked={!!demo?.enabled}
-                                                                  disabled={!demo}
-                                                                  onCheckedChange={() => setIsDemoDialogOpen(true)}>
-                                            <FlaskConicalIcon/>Demo mode
-                                        </DropdownMenuCheckboxItem>
-                                        <DropdownMenuCheckboxItem checked={predictionEnabled !== false}
-                                                                  disabled={predictionEnabled === undefined}
-                                                                  onCheckedChange={(checked) => void handleTogglePrediction(checked)}
-                                                                  onSelect={(e) => e.preventDefault()}>
-                                            <SparklesIcon/>AI-voorspelling
-                                        </DropdownMenuCheckboxItem>
-                                        <DropdownMenuItem onClick={() => setIsConfirmReloadDialogOpen(true)}>
-                                            <RefreshCwIcon/>Herlaad teams uit API
-                                        </DropdownMenuItem>
-                                    </DropdownMenuSubContent>
-                                </DropdownMenuPortal>
-                            </DropdownMenuSub>
+                            <AdminSubmenu onToggleDemo={() => setDemoDialogOpen(true)}
+                                          onReloadTeams={() => setReloadTeamsOpen(true)}/>
                             <DialogTrigger asChild>
                                 <DropdownMenuItem>
                                     <BugIcon/>
@@ -312,8 +121,8 @@ export default function Settings({onReplayTour}: { onReplayTour?: () => void }) 
                     {DISCORD_URL && (
                         <DropdownMenuItem asChild>
                             <a href={DISCORD_URL} target="_blank" rel="noopener noreferrer">
-                            <span className={"fill-foreground"} dangerouslySetInnerHTML={{__html: siDiscord.svg}}></span>
-                            Join de Discord
+                                <span className={"fill-foreground"} dangerouslySetInnerHTML={{__html: siDiscord.svg}}></span>
+                                Join de Discord
                             </a>
                         </DropdownMenuItem>
                     )}
@@ -329,50 +138,8 @@ export default function Settings({onReplayTour}: { onReplayTour?: () => void }) 
 
             <ResetPassword open={resetPasswordOpen} setIsOpen={setResetPasswordOpen} allowClose={true}/>
             <DebugInfo/>
-
-            <AlertDialog open={isConfirmReloadDialogOpen} onOpenChange={setIsConfirmReloadDialogOpen}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Weet je zeker dat je all teams wilt herladen?</AlertDialogTitle>
-                        <AlertDialogDescription>Dit reset alle ingevulde deelgebieden. Deze actie kan niet ongedaan
-                            worden gemaakt.</AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Annuleren</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleReloadTeams}>
-                            Herladen
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-
-            <AlertDialog open={isDemoDialogOpen} onOpenChange={(open) => {
-                if (!isSwitchingDemo) setIsDemoDialogOpen(open);
-            }}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>
-                            {turnDemoOn ? 'Demo mode aanzetten?' : 'Demo mode uitzetten?'}
-                        </AlertDialogTitle>
-                        <AlertDialogDescription>
-                            {turnDemoOn
-                                ? 'Iedereen ziet dan demo-gegevens. De echte gegevens blijven bewaard.'
-                                : 'De demo-gegevens verdwijnen.'}
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel disabled={isSwitchingDemo}>Annuleren</AlertDialogCancel>
-                        <AlertDialogAction disabled={isSwitchingDemo} onClick={(e) => {
-                            e.preventDefault();
-                            void handleSwitchDemo();
-                        }}>
-                            {isSwitchingDemo && <Loader2Icon className="animate-spin"/>}
-                            {turnDemoOn ? 'Aanzetten' : 'Uitzetten'}
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-
+            <ReloadTeamsDialog open={reloadTeamsOpen} onOpenChange={setReloadTeamsOpen}/>
+            <DemoModeDialog open={demoDialogOpen} onOpenChange={setDemoDialogOpen}/>
         </Dialog>
     );
 }

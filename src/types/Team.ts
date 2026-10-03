@@ -4,8 +4,8 @@ export interface Team {
   name: string;
   accomodation: string;
   street: string;
-  houseNumber: string;
-  houseNumberAddition: string;
+  houseNumber: number;
+  housenumberAddition?: string;
   postCode: string;
   city: string;
   area?: string;

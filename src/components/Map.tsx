@@ -7,6 +7,8 @@ import Maplibre, {
 } from 'react-map-gl/maplibre';
 
 import 'maplibre-gl/dist/maplibre-gl.css';
+import {setWorkerUrl} from 'maplibre-gl';
+import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 
 import type {LngLat, MapMouseEvent, Map as MaplibreMap, StyleSpecification} from 'maplibre-gl';
 import Teams from './layers/Teams';
@@ -29,6 +31,11 @@ import Ruler from "@/components/map/RulerControl.tsx";
 import type {SymbolLayerSpecification} from '@maplibre/maplibre-gl-style-spec';
 import {DEFAULT_VIEW} from '@/lib/map-view';
 import {tourTarget} from '@/components/tour/targets';
+
+// MapLibre resolves its worker relative to its own module, which bundlers don't emit;
+// let Vite bundle the worker and hand MapLibre the resulting URL. Here, not in main.tsx, so the
+// map library stays out of the login page's chunk.
+setWorkerUrl(maplibreWorkerUrl);
 
 type FlyToOpts = NonNullable<Parameters<MaplibreMap["flyTo"]>[0]>;
 

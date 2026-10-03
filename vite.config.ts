@@ -6,10 +6,14 @@ import { viteEnvs } from 'vite-envs';
 import { VitePWA, VitePWAOptions } from 'vite-plugin-pwa';
 
 const pwaManifest: Partial<VitePWAOptions> = {
-  registerType: 'autoUpdate',
+  // main.tsx asks before reloading into a new version
+  registerType: 'prompt',
   workbox: {
     globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
-    maximumFileSizeToCacheInBytes: 1024 * 1024 * 10,
+    // The store screenshots (5 MB) are only for the install dialog, never needed offline
+    globIgnores: ['**/screenshot_*.png'],
+    // The map chunk (maplibre) is larger than workbox's 2 MB default
+    maximumFileSizeToCacheInBytes: 1024 * 1024 * 5,
     importScripts: ['push-sw.js'],
   },
   manifest: {
