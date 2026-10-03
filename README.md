@@ -96,8 +96,8 @@ MONGO_URI=mongodb://mongodb:27017/jotihunt
 MONGO_INITDB_DATABASE=jotihunt
 
 # Traccar
-TRACCARR_API_URL=http://traccar:8082
-TRACCARR_API_TOKEN=token-van-traccar
+TRACCAR_API_URL=http://traccar:8082
+TRACCAR_API_TOKEN=token-van-traccar
 JOTIHUNT_API_URL=https://jotihunt.nl/api/2.0
 
 # Jotihunt
@@ -136,11 +136,11 @@ Volg de configuratiestappen om de volledige applicatie werkend te krijgen.
 
 ### Omgevingsvariabelen
 De applicatie kan worden geconfigureerd via omgevingsvariabelen. Hieronder volgt een overzicht van waar je de verschillende variabelen vandaan kunt halen.
-#### `TRACCARR_API_TOKEN`
+#### `TRACCAR_API_TOKEN`
 1. Ga naar jouw Traccar server (standaard te bereiken via `http://localhost:8082`) en log in als administrator.
 2. Navigeer onderin naar `Instellingen` > `Voorkeuren` > `Token`.
 3. Stel een verloopdatum in en druk op de ververs knop.
-4. Kopieer de gegenereerde token en plak deze in de `.env` file bij `TRACCARR_API_TOKEN`.
+4. Kopieer de gegenereerde token en plak deze in de `.env` file bij `TRACCAR_API_TOKEN`.
 
 #### `JOTIHUNT_WEB_USERNAME` en `JOTIHUNT_WEB_PASSWORD`
 Dit zijn de inloggegevens die je normaal gebruikt om in te loggen op [jotihunt.nl](https://jotihunt.nl). De server zal deze gebruiken om automatisch de hunts op te halen (scrapen).
