@@ -36,9 +36,13 @@ export function hasExpectedShape(url: string, data: unknown): boolean {
   return OBJECT_CHECKS[path]?.(data) ?? true;
 }
 
-/** The list itself, or an empty list for anything that is not an array (e.g. a malformed cached value). */
-export function asList<T>(data: T[] | null | undefined | unknown): T[] {
-  return Array.isArray(data) ? (data as T[]) : [];
+/**
+ * For hooks that return a polled list: undefined while loading stays undefined, anything else that is not an array
+ * (a malformed cached value) becomes an empty list, so the components never call `.filter` on an object.
+ */
+export function asList<T>(data: T[] | undefined): T[] | undefined {
+  if (data === undefined) return undefined;
+  return Array.isArray(data) ? data : [];
 }
 
 export class UnexpectedResponseError extends Error {

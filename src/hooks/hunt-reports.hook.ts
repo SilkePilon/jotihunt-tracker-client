@@ -2,6 +2,7 @@ import axios from 'axios';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
 import { fetcherWithMethod, useAuthSWR } from '@/lib/swr';
 import type { HuntReport } from '@/types/HuntReport';
+import { asList } from '@/lib/response-shape';
 
 const HUNT_REPORTS_REFRESH_MS = 10_000;
 
@@ -62,5 +63,5 @@ export const useHuntReports = () => {
     await mutate((current) => (current ?? []).filter((existing) => existing._id !== id), { revalidate: false });
   }
 
-  return { reports: data, isError: !!error, createReport, updateReport, rereadReport, setSubmitted, deleteReport };
+  return { reports: asList(data), isError: !!error, createReport, updateReport, rereadReport, setSubmitted, deleteReport };
 };

@@ -28,10 +28,11 @@ describe('hasExpectedShape', () => {
 });
 
 describe('asList', () => {
-  test('arrays pass through, anything else is empty', () => {
+  test('arrays pass through, loading stays undefined, anything else is empty', () => {
     const list = [1, 2];
     expect(asList(list)).toBe(list);
-    expect(asList(undefined)).toEqual([]);
-    expect(asList({ message: 'x' })).toEqual([]);
+    expect(asList(undefined)).toBeUndefined();
+    expect(asList({ message: 'x' } as unknown as number[])).toEqual([]);
+    expect(asList(null as unknown as number[])).toEqual([]);
   });
 });

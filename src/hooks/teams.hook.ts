@@ -2,6 +2,7 @@ import { Team } from '@/types/Team';
 import { useAuthSWR } from '../lib/swr';
 import { useFetcher } from './utils/api.hook';
 import { SLOW_REQUEST_TIMEOUT_MS } from '@/lib/http';
+import { asList } from '@/lib/response-shape';
 
 const TEAMS_AREA_EDITING = import.meta.env.TEAMS_AREA_EDITING === 'true';
 
@@ -48,7 +49,7 @@ export const useTeams = () => {
   }
 
   return {
-    teams: data,
+    teams: asList(data),
     isLoading: !error && !data,
     isError: error,
     setTeamArea,

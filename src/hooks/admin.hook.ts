@@ -2,6 +2,7 @@ import { useAuthSWR } from '@/lib/swr';
 import type { Vehicle } from '@/types/Tracker';
 import { User } from '@/types/User';
 import { useFetcher } from './utils/api.hook';
+import { asList } from '@/lib/response-shape';
 
 export const useAdmin = () => {
   const { data, error, mutate } = useAuthSWR<User[]>('/admin/users');
@@ -37,7 +38,7 @@ export const useAdmin = () => {
   }
 
   return {
-    users: data,
+    users: asList(data),
     isLoading: !error && !data,
     isError: error,
     updateUser,
