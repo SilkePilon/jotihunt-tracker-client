@@ -7,6 +7,7 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import { useFetcher } from '@/hooks/utils/api.hook';
 import { counterHuntAlertTitle } from '@/lib/counter-hunt';
 import type { User } from '@/types/User';
+import { SLOW_REQUEST_TIMEOUT_MS } from '@/lib/http';
 
 /** Admins only: alert everyone (push + sound) that there is a tegenhunt in the chosen direction. */
 export default function CounterHuntAlertButton({ direction }: { direction: number }) {
@@ -18,7 +19,7 @@ export default function CounterHuntAlertButton({ direction }: { direction: numbe
 
   async function send() {
     try {
-      await fetch('/admin/counter-hunt', 'POST', { direction });
+      await fetch('/admin/counter-hunt', 'POST', { direction }, SLOW_REQUEST_TIMEOUT_MS);
       toast.success('Iedereen is gewaarschuwd', { description: title ?? undefined });
       setConfirmOpen(false);
     } catch {

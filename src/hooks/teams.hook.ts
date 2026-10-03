@@ -1,6 +1,7 @@
 import { Team } from '@/types/Team';
 import { useAuthSWR } from '../lib/swr';
 import { useFetcher } from './utils/api.hook';
+import { SLOW_REQUEST_TIMEOUT_MS } from '@/lib/http';
 
 const TEAMS_AREA_EDITING = import.meta.env.TEAMS_AREA_EDITING === 'true';
 
@@ -37,7 +38,7 @@ export const useTeams = () => {
 
   async function reloadTeams(): Promise<boolean> {
     try {
-      const result = await fetch('/teams/reload', 'POST');
+      const result = await fetch('/teams/reload', 'POST', undefined, SLOW_REQUEST_TIMEOUT_MS);
       return result.status === 200;
     } catch {
       return false;

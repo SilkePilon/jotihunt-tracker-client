@@ -1,6 +1,8 @@
 import axios from 'axios';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
 import useSWR, { SWRConfiguration } from 'swr';
+import { REQUEST_TIMEOUT_MS } from '@/lib/http';
+import { hasExpectedShape, UnexpectedResponseError } from '@/lib/response-shape';
 
 const baseUrl = import.meta.env.API_BASE_URL;
 
@@ -20,11 +22,19 @@ export const fetcherWithMethod = async (url: string, authHeader: string, method:
       Authorization: authHeader,
     },
     data: body, // Used for POST, PUT, DELETE, etc.
+    timeout: REQUEST_TIMEOUT_MS,
   });
 
-  if (response.data.error) throw new Error(response.data.error);
+  if (response.data?.error) throw new Error(response.data.error);
   return response.data;
 };
+
+/** GET for SWR: a malformed answer (proxy page, error object with status 200) fails instead of reaching the components. */
+async function swrFetcher([url, authHeader]: [string, string]) {
+  const data = await fetcherWithMethod(url, authHeader);
+  if (!hasExpectedShape(url, data)) throw new UnexpectedResponseError(url);
+  return data;
+}
 
 /**
  * Fetch data from the API with authentication.
@@ -34,8 +44,6 @@ export const fetcherWithMethod = async (url: string, authHeader: string, method:
  */
 export const useAuthSWR = <T>(url: string | null, options?: SWRConfiguration) => {
   const authHeader = useAuthHeader();
-
-  const swrFetcher = ([url, authHeader]: [string, string]) => fetcherWithMethod(url, authHeader);
 
   return useSWR<T>(url === null ? null : [url, authHeader], swrFetcher, options);
 };
