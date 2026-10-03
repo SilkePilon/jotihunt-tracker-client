@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
+import { hintBoardRefreshMs } from '@/lib/hints';
 import { fetcherWithMethod, useAuthSWR } from '@/lib/swr';
+import useHintBoardStore from '@/stores/hint-board.store';
 import { HintBoard, HintCell, HintCheck, RdPreview } from '@/types/HintCell';
 
 const RD_PREVIEW_DEBOUNCE_MS = 300;
@@ -24,7 +26,10 @@ const useDebouncedValue = <T>(value: T, delayMs: number): T => {
 
 export const useHintBoard = () => {
   const authHeader = useAuthHeader() || '';
-  const { data, error, mutate } = useAuthSWR<HintBoard>('/hints/board', { refreshInterval: 3000 });
+  // Every user of the board agrees on the interval: fast only while a hint dialog is open (see hintBoardRefreshMs)
+  const dialogOpen = useHintBoardStore((state) => state.view !== null);
+  const { data, error, mutate } = useAuthSWR<HintBoard>('/hints/board', { refreshInterval: hintBoardRefreshMs(dialogOpen) });
+  const refresh = useCallback(() => mutate(), [mutate]);
 
   /**
    * Post an action for a cell and put the returned cell straight into the cache.
@@ -43,6 +48,8 @@ export const useHintBoard = () => {
     board: data,
     isLoading: !error && !data,
     isError: error,
+    /** Fetch the board now (e.g. when a dialog opens, the idle poll can be up to 10 s old). */
+    refresh,
     claim: (articleId: number, area: string) => post(articleId, area, 'claim'),
     release: (articleId: number, area: string) => post(articleId, area, 'release'),
     solve: (articleId: number, area: string, answer: string, replaceMarker = false) =>

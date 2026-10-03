@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import ResponsiveDialog from '@/components/ResponsiveDialog';
 import { useHintBoard } from '@/hooks/hints.hook';
@@ -17,6 +18,12 @@ export default function HintDetailDialog({ onShowOnMap }: { onShowOnMap: (lng: n
   const selected = useHintBoardStore((state) => state.selected);
   const close = useHintBoardStore((state) => state.close);
   const backToOverview = useHintBoardStore((state) => state.backToOverview);
+  // The board polls slowly while no hint dialog is open; fetch it right away when one opens (this dialog is always mounted)
+  const dialogOpen = useHintBoardStore((state) => state.view !== null);
+  const { refresh } = actions;
+  useEffect(() => {
+    if (dialogOpen) refresh();
+  }, [dialogOpen, refresh]);
 
   const article = board?.articles.find((item) => item.id === selected?.articleId);
   const cell = board?.cells.find((item) => item.articleId === selected?.articleId && item.area === selected?.area);

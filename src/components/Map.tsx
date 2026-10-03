@@ -4,13 +4,14 @@ import Maplibre, {
     NavigationControl,
     ScaleControl,
     MapRef as MaplibreRef,
+    type MapLayerMouseEvent,
 } from 'react-map-gl/maplibre';
 
 import 'maplibre-gl/dist/maplibre-gl.css';
 import {setWorkerUrl} from 'maplibre-gl';
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 
-import type {LngLat, MapMouseEvent, Map as MaplibreMap, StyleSpecification} from 'maplibre-gl';
+import type {LngLat, Map as MaplibreMap, StyleSpecification} from 'maplibre-gl';
 import Teams from './layers/Teams';
 import Devices from './layers/Devices';
 import Markers from './layers/Markers';
@@ -31,6 +32,7 @@ import '@mapbox-controls/ruler/src/index.css';
 import Ruler from "@/components/map/RulerControl.tsx";
 import type {SymbolLayerSpecification} from '@maplibre/maplibre-gl-style-spec';
 import {DEFAULT_VIEW} from '@/lib/map-view';
+import {FOX_MARKERS_LAYER} from '@/lib/map-layers';
 import {tourTarget} from '@/components/tour/targets';
 
 // MapLibre resolves its worker relative to its own module, which bundlers don't emit;
@@ -65,6 +67,9 @@ const RULER_LABEL_LAYOUT: SymbolLayerSpecification['layout'] = {
     'text-ignore-placement': true,
 };
 const RULER_LABEL_PAINT = {'text-color': '#fff', 'text-halo-color': RULER_COLOR, 'text-halo-width': 3.5};
+
+// Clicks on these canvas layers open their own popup instead of the location popup
+const INTERACTIVE_LAYER_IDS = [FOX_MARKERS_LAYER];
 
 const Map = forwardRef<MapRef, { className?: string }>(({className}, ref) => {
 
@@ -137,8 +142,8 @@ const Map = forwardRef<MapRef, { className?: string }>(({className}, ref) => {
     /**
      * Open the current location popup when the map is clicked.
      */
-    function openPopup(e: MapMouseEvent) {
-        if (popupPosition || rulerActive) return;
+    function openPopup(e: MapLayerMouseEvent) {
+        if (popupPosition || rulerActive || e.features?.length) return;
 
         setPopupPosition(e.lngLat);
     }
@@ -154,6 +159,7 @@ const Map = forwardRef<MapRef, { className?: string }>(({className}, ref) => {
                 mapStyle={resolvedMapStyle}
                 maxBounds={maxBounds}
                 onClick={openPopup}
+                interactiveLayerIds={INTERACTIVE_LAYER_IDS}
                 // Phones: start with the credits collapsed to the (i) button; MapLibre opens them on load
                 onLoad={(event) => {
                     if (isMobile) event.target.getContainer().querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show');

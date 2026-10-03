@@ -1,14 +1,17 @@
-import { useState } from 'react';
+import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useAuthImage } from '@/hooks/auth-image.hook';
 import { useHuntReports } from '@/hooks/hunt-reports.hook';
+import { useInViewOnce } from '@/hooks/in-view.hook';
+import { useIsMobile } from '@/hooks/media.hook';
 import { useHunts } from '@/hooks/hunts.hook';
 import useInterval from '@/hooks/utils/interval.hook';
 import { keepOpenWhileEditing } from '@/lib/inline-edit';
-import { formatHuntTimeSafe, huntListItems } from '@/lib/hunt-reports';
+import { formatHuntTimeSafe, hasLiveCountdown, huntListItems } from '@/lib/hunt-reports';
 import { areaOptions, capitalizeFirstLetter, cn, getColorFromArea } from '@/lib/utils';
 import type { HuntListItem, HuntReport } from '@/types/HuntReport';
 import HuntCodeText, { DuplicateMark, HuntTimeText } from './HuntCodeText';
@@ -17,6 +20,9 @@ import HuntDetail from './HuntDetail';
 import HuntStatusBadge from './HuntStatusBadge';
 
 type Filter = 'all' | 'pending' | 'submitted' | 'judged';
+
+/** Rows rendered at first (and added per "Meer laden"), so a long list opens quickly. */
+const PAGE_SIZE = 200;
 
 function matchesFilter(item: HuntListItem, filter: Filter): boolean {
   if (filter === 'all') return true;
@@ -29,9 +35,19 @@ function matchesFilter(item: HuntListItem, filter: Filter): boolean {
 const itemArea = (item: HuntListItem) => (item.source === 'app' ? item.report.area : item.hunt.area).trim().toLowerCase();
 const itemPoints = (item: HuntListItem) => (item.source === 'app' ? (item.report.site?.points ?? 0) : item.hunt.points);
 
+/** Photo thumbnail, only fetched once the row scrolls into view (each photo is a full-size download). */
 function HuntThumb({ report }: { report: HuntReport }) {
-  const photo = useAuthImage(report.photoUrl);
-  return photo ? <img src={photo} alt="" className="size-8 rounded object-cover" /> : <div className="size-8 rounded bg-muted" />;
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInViewOnce(ref);
+  const photo = useAuthImage(inView ? report.photoUrl : null);
+  return photo ? <img src={photo} alt="" className="size-8 rounded object-cover" /> : <div ref={ref} className="size-8 rounded bg-muted" />;
+}
+
+/** Status badge with its own clock: only rows with a running "Te versturen" countdown re-render every second. */
+function LiveHuntStatusBadge({ report }: { report: HuntReport }) {
+  const [now, setNow] = useState(() => Date.now());
+  useInterval(() => setNow(Date.now()), hasLiveCountdown(report, now) ? 1000 : null);
+  return <HuntStatusBadge report={report} now={now} />;
 }
 
 function Totals({ items }: { items: HuntListItem[] }) {
@@ -67,7 +83,14 @@ function AreaCell({ area }: { area: string }) {
   );
 }
 
-function HuntRow({ item, now, onSelect }: { item: HuntListItem; now: number; onSelect: (id: string) => void }) {
+interface HuntRowProps {
+  item: HuntListItem;
+  /** Phones show no photo column (and fetch no photos) */
+  showThumb: boolean;
+  onSelect: (id: string) => void;
+}
+
+const HuntRow = memo(function HuntRow({ item, showThumb, onSelect }: HuntRowProps) {
   if (item.source === 'website') {
     const { hunt } = item;
     return (
@@ -97,9 +120,7 @@ function HuntRow({ item, now, onSelect }: { item: HuntListItem; now: number; onS
 
   return (
     <TableRow className="cursor-pointer" role="button" tabIndex={0} onClick={() => onSelect(report._id)} onKeyDown={handleKeyDown}>
-      <TableCell className="max-md:hidden">
-        <HuntThumb report={report} />
-      </TableCell>
+      <TableCell className="max-md:hidden">{showThumb && <HuntThumb report={report} />}</TableCell>
       <TableCell>
         <AreaCell area={report.area} />
       </TableCell>
@@ -114,12 +135,12 @@ function HuntRow({ item, now, onSelect }: { item: HuntListItem; now: number; onS
       </TableCell>
       <TableCell className="max-md:hidden">{report.reportedByName}</TableCell>
       <TableCell>
-        <HuntStatusBadge report={report} now={now} />
+        <LiveHuntStatusBadge report={report} />
       </TableCell>
       <TableCell className="text-right">{report.site ? report.site.points : '–'}</TableCell>
     </TableRow>
   );
-}
+});
 
 /** Every hunt (own reports plus website-only hunts) with per-area totals, a status filter and a detail view per report. */
 export default function AllHuntsDialog({ open, onOpenChange, initialReportId }: { open: boolean; onOpenChange: (open: boolean) => void; initialReportId?: string }) {
@@ -128,18 +149,36 @@ export default function AllHuntsDialog({ open, onOpenChange, initialReportId }: 
   const [filter, setFilter] = useState<Filter>('all');
   const [detailId, setDetailId] = useState<string | undefined>(open ? initialReportId : undefined);
   const [prevOpen, setPrevOpen] = useState(open);
+  const [limit, setLimit] = useState(PAGE_SIZE);
+  const isMobile = useIsMobile();
   const [now, setNow] = useState(() => Date.now());
-  useInterval(() => setNow(Date.now()), open ? 1000 : null);
+  const detail = detailId ? reports?.find((report) => report._id === detailId) : undefined;
+  // Only the detail needs the dialog-wide clock; list rows tick on their own (LiveHuntStatusBadge)
+  useInterval(() => setNow(Date.now()), open && detail ? 1000 : null);
 
   // Opening the dialog shows the requested report (or the list)
   if (open !== prevOpen) {
     setPrevOpen(open);
-    if (open) setDetailId(initialReportId);
+    if (open) {
+      setDetailId(initialReportId);
+      // The clock only runs while a detail is shown; don't show it with the time of the last opening
+      setNow(() => Date.now());
+      setLimit(PAGE_SIZE);
+    }
   }
 
-  const items = huntListItems(reports, hunts);
-  const shown = items.filter((item) => matchesFilter(item, filter));
-  const detail = detailId ? reports?.find((report) => report._id === detailId) : undefined;
+  const selectReport = useCallback((id: string) => {
+    setNow(Date.now());
+    setDetailId(id);
+  }, []);
+
+  function changeFilter(next: Filter) {
+    setFilter(next);
+    setLimit(PAGE_SIZE);
+  }
+
+  const items = useMemo(() => huntListItems(reports, hunts), [reports, hunts]);
+  const shown = useMemo(() => items.filter((item) => matchesFilter(item, filter)), [items, filter]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -162,7 +201,7 @@ export default function AllHuntsDialog({ open, onOpenChange, initialReportId }: 
         ) : (
           <>
             <Totals items={items} />
-            <ToggleGroup type="single" variant="outline" size="sm" aria-label="Filter" className="max-md:w-full" value={filter} onValueChange={(next) => next && setFilter(next as Filter)}>
+            <ToggleGroup type="single" variant="outline" size="sm" aria-label="Filter" className="max-md:w-full" value={filter} onValueChange={(next) => next && changeFilter(next as Filter)}>
               <ToggleGroupItem value="all" className="max-md:flex-auto max-md:px-2 max-md:text-xs">
                 Alles
               </ToggleGroupItem>
@@ -178,26 +217,35 @@ export default function AllHuntsDialog({ open, onOpenChange, initialReportId }: 
             </ToggleGroup>
             <div className="min-h-0 flex-1 overflow-y-auto">
               {shown.length ? (
-                <Table className="max-md:text-xs">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="max-md:hidden">Foto</TableHead>
-                      <TableHead>
-                        <span className="max-md:sr-only">Deelgebied</span>
-                      </TableHead>
-                      <TableHead>Code</TableHead>
-                      <TableHead>Tijd</TableHead>
-                      <TableHead className="max-md:hidden">Gemeld door</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Punten</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {shown.map((item) => (
-                      <HuntRow key={item.source === 'app' ? item.report._id : `site-${item.hunt._id}`} item={item} now={now} onSelect={setDetailId} />
-                    ))}
-                  </TableBody>
-                </Table>
+                <>
+                  <Table className="max-md:text-xs">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="max-md:hidden">Foto</TableHead>
+                        <TableHead>
+                          <span className="max-md:sr-only">Deelgebied</span>
+                        </TableHead>
+                        <TableHead>Code</TableHead>
+                        <TableHead>Tijd</TableHead>
+                        <TableHead className="max-md:hidden">Gemeld door</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Punten</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {shown.slice(0, limit).map((item) => (
+                        <HuntRow key={item.source === 'app' ? item.report._id : `site-${item.hunt._id}`} item={item} showThumb={!isMobile} onSelect={selectReport} />
+                      ))}
+                    </TableBody>
+                  </Table>
+                  {shown.length > limit && (
+                    <div className="flex justify-center py-3">
+                      <Button variant="outline" size="sm" onClick={() => setLimit((current) => current + PAGE_SIZE)}>
+                        Meer laden ({shown.length - limit} over)
+                      </Button>
+                    </div>
+                  )}
+                </>
               ) : (
                 <p className="py-8 text-center text-sm text-muted-foreground">Geen hunts in deze lijst.</p>
               )}
