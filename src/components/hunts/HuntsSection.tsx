@@ -10,7 +10,7 @@ import { huntsSummary, pendingReports } from '@/lib/hunt-reports';
 import SidebarSection from '@/components/sidebar/SidebarSection';
 import AllHuntsDialog from './AllHuntsDialog';
 import HuntPhotoInput from './HuntPhotoInput';
-import HuntReportRow from './HuntReportRow';
+import HuntTimelineItem from './HuntTimelineItem';
 
 /** Sidebar section for registered hunts: quick capture, the last few reports, and a link to the full list. */
 export default function HuntsSection() {
@@ -35,9 +35,9 @@ export default function HuntsSection() {
         <div className="flex flex-col gap-2">
           {reports !== undefined && (
             reports.length ? (
-              <div className="flex flex-col gap-1.5">
-                {reports.slice(0, 3).map((report) => (
-                  <HuntReportRow key={report._id} report={report} now={now} onSelect={() => openAll(report._id)} />
+              <div className="flex flex-col">
+                {reports.slice(0, 3).map((report, index, shown) => (
+                  <HuntTimelineItem key={report._id} report={report} now={now} last={index === shown.length - 1} onSelect={() => openAll(report._id)} />
                 ))}
               </div>
             ) : (
@@ -49,18 +49,20 @@ export default function HuntsSection() {
               </Empty>
             )
           )}
-          <HuntPhotoInput capture={isMobile}>
-            {(open) => (
-              <Button size="sm" className="w-full" onClick={open}>
-                <CameraIcon data-icon="inline-start" />
-                Hunt registreren
-              </Button>
-            )}
-          </HuntPhotoInput>
-          <Button variant="outline" size="sm" className="w-full" onClick={() => openAll()}>
-            <ListIcon data-icon="inline-start" />
-            Alle hunts bekijken
-          </Button>
+          <div className="flex gap-2">
+            <HuntPhotoInput capture={isMobile}>
+              {(open) => (
+                <Button size="sm" className="flex-1" onClick={open}>
+                  <CameraIcon data-icon="inline-start" />
+                  Hunt registreren
+                </Button>
+              )}
+            </HuntPhotoInput>
+            <Button variant="outline" size="sm" onClick={() => openAll()} aria-label="Alle hunts bekijken">
+              <ListIcon data-icon="inline-start" />
+              Alle
+            </Button>
+          </div>
         </div>
       </SidebarSection>
       <AllHuntsDialog open={allOpen} onOpenChange={setAllOpen} initialReportId={selectedId} />
