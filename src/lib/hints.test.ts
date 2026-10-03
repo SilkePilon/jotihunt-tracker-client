@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { HINT_WINDOW_MS, remainingMs, hintProgress, hintStep, lastHintRows } from './hints';
+import { HINT_WINDOW_MS, hintBoardRefreshMs, remainingMs, hintProgress, hintStep, lastHintRows } from './hints';
 import type { HintBoard, HintCell } from '@/types/HintCell';
 
 describe('hint timer', () => {
@@ -70,4 +70,9 @@ describe('hintStep', () => {
   test('disputed cell stays at step 3 with the dispute', () => {
     expect(hintStep({ status: 'solved', check: 'disputed' })).toEqual({ current: 3, done: [1, 2], checkState: 'disputed' });
   });
+});
+
+describe('hintBoardRefreshMs', () => {
+  test('polls every 3 s while a hint dialog is open', () => expect(hintBoardRefreshMs(true)).toBe(3000));
+  test('polls every 10 s for the sidebar mini grid', () => expect(hintBoardRefreshMs(false)).toBe(10_000));
 });
