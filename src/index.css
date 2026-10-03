@@ -178,12 +178,25 @@
   background-image: url('assets/images/background.webp');
 }
 
+/* Map buttons in the shadcn style: 36px (h-9) like the cards top right, card background, rounded, thin dividers */
 .maplibregl-ctrl-group {
-  background: transparent !important;
+  @apply overflow-hidden rounded-md! border border-border bg-card! shadow-xs!;
 
   > button {
-    @apply bg-background!;
+    @apply size-9! bg-transparent! transition-colors hover:bg-accent!;
   }
+
+  > button + button {
+    @apply border-t! border-border!;
+  }
+}
+
+.maplibregl-ctrl-bottom-right .maplibregl-ctrl {
+  @apply mr-2! mb-2!;
+}
+
+.maplibregl-ctrl-bottom-right .maplibregl-ctrl + .maplibregl-ctrl {
+  @apply mb-1.5!;
 }
 
 .maplibregl-ctrl-attrib {
@@ -194,20 +207,10 @@
   }
 }
 
-.mapbox-ctrl-image {
-  @apply overflow-hidden!;
-
-  button:disabled {
-    opacity: 1 !important;
-    @apply bg-accent!;
-  }
-}
-
 body.dark {
   .maplibregl-ctrl-group > button > span,
   .maplibregl-ctrl-attrib-button,
-  .mapbox-ctrl-ruler svg,
-  .mapbox-ctrl-image svg {
+  .mapbox-ctrl-ruler svg {
     filter: invert(1);
   }
 

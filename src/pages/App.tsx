@@ -15,7 +15,7 @@ function App() {
   return (
     <>
       {/* Desktop only: on phones the map stays free (search via the sidebar, groups via the map) */}
-      <div className="absolute right-12 top-2 z-30 hidden gap-2 md:flex" {...tourTarget('cards.topRight')}>
+      <div className="absolute right-2 top-2 z-30 hidden gap-2 md:flex" {...tourTarget('cards.topRight')}>
         <div>
           <CoordinatesCard mapRef={mapRef} />
         </div>

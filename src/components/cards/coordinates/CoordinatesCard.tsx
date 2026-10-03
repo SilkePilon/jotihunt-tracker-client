@@ -259,8 +259,8 @@ export default function CoordinatesCard({ mapRef }: InferProps<typeof Coordinate
     }
 
     return (<>
-        <div className={"bg-background rounded-lg"}>
-            <InputGroup className={cn("h-10", hasError && "border-red-500")}>
+        <div className={"bg-background rounded-md"}>
+            <InputGroup className={cn("h-9", hasError && "border-red-500")}>
                 <InputGroupInput placeholder="Zoek op coördinaat..."  onInput={onInput} value={inputValue} />
                 <InputGroupAddon align="inline-end">
                     <InputGroupButton variant="secondary" onClick={() => goToInput(inputValue)}>Bekijk</InputGroupButton>

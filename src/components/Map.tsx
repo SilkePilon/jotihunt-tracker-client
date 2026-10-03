@@ -26,7 +26,7 @@ import PickedLocationPopup from './map/PickedLocationPopup';
 import {FullscreenControl} from "react-map-gl/maplibre";
 import '@mapbox-controls/ruler/src/index.css';
 import Ruler from "@/components/map/RulerControl.tsx";
-import ImageControl from "@/components/map/ImageControl.tsx";
+import type {SymbolLayerSpecification} from '@maplibre/maplibre-gl-style-spec';
 import {DEFAULT_VIEW} from '@/lib/map-view';
 import {tourTarget} from '@/components/tour/targets';
 
@@ -44,7 +44,19 @@ const maxBounds: [number, number, number, number] = [
     7.092053256784122, 53.51040334737814,
 ];
 
-const IMAGE_CONTROL_LAYER_PREFIXES = ['$fill:', '$contour:', '$knobs:'];
+// Ruler in the app's blue; the distances are white on a thick blue halo so they read on light, dark and satellite maps
+const RULER_COLOR = '#1473e8';
+const RULER_LINE_PAINT = {'line-color': RULER_COLOR, 'line-width': 3};
+const RULER_MARKER_PAINT = {'circle-radius': 5, 'circle-color': '#fff', 'circle-stroke-width': 2.5, 'circle-stroke-color': RULER_COLOR};
+const RULER_LABEL_LAYOUT: SymbolLayerSpecification['layout'] = {
+    'text-field': '{distance}',
+    'text-size': 14,
+    'text-offset': [0, 1],
+    'text-anchor': 'top',
+    'text-allow-overlap': true,
+    'text-ignore-placement': true,
+};
+const RULER_LABEL_PAINT = {'text-color': '#fff', 'text-halo-color': RULER_COLOR, 'text-halo-width': 3.5};
 
 const Map = forwardRef<MapRef, { className?: string }>(({className}, ref) => {
 
@@ -108,15 +120,6 @@ const Map = forwardRef<MapRef, { className?: string }>(({className}, ref) => {
     function openPopup(e: MapMouseEvent) {
         if (popupPosition || rulerActive) return;
 
-        const isCtrlPressed = e.originalEvent.ctrlKey;
-        const clickedFeatures = mapRef.current?.queryRenderedFeatures(e.point) ?? [];
-        const isImageControlClick = clickedFeatures.some((feature) => {
-            const layerId = feature.layer?.id ?? '';
-            return IMAGE_CONTROL_LAYER_PREFIXES.some((prefix) => layerId.startsWith(prefix));
-        });
-
-        if (!isCtrlPressed && isImageControlClick) return;
-
         setPopupPosition(e.lngLat);
     }
 
@@ -136,24 +139,25 @@ const Map = forwardRef<MapRef, { className?: string }>(({className}, ref) => {
                     if (isMobile) event.target.getContainer().querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show');
                 }}
             >
-                {/* Phones: no map controls, the map is navigated by touch and the bottom sheet needs the room */}
-                {!isMobile && (
-                    <>
-                        <NavigationControl/>
-                        <ScaleControl/>
-                        <GeolocateControl/>
-                        <FullscreenControl/>
-                        <ImageControl/>
-                        <Ruler linePaint={{
-                            'line-color': '#1473e8',
-                        }} position={"top-right"} onActivate={() => setRulerActive(true)}
-                               onDeactivate={() => setRulerActive(false)}/>
-                    </>
-                )}
                 <div className="bg-background">
                     {/* Credits on the right: bottom-right on desktop; on phones top-right, above the bottom sheet. */}
                     <AttributionControl position={isMobile ? 'top-right' : 'bottom-right'} customAttribution={GROUP_NAME ? `Jotihunt Tracker | ${GROUP_NAME}` : 'Jotihunt Tracker'} compact={true}/>
                 </div>
+                {/* Phones: no map controls, the map is navigated by touch and the bottom sheet needs the room */}
+                {!isMobile && (
+                    <>
+                        <ScaleControl/>
+                        {/* Bottom corners stack upwards (the last added control ends up on top), so add bottom-to-top:
+                            credits (above), ruler, fullscreen, my location, zoom */}
+                        <Ruler linePaint={RULER_LINE_PAINT} markerPaint={RULER_MARKER_PAINT}
+                               labelLayout={RULER_LABEL_LAYOUT} labelPaint={RULER_LABEL_PAINT}
+                               position="bottom-right" onActivate={() => setRulerActive(true)}
+                               onDeactivate={() => setRulerActive(false)}/>
+                        <FullscreenControl position="bottom-right"/>
+                        <GeolocateControl position="bottom-right"/>
+                        <NavigationControl position="bottom-right" showCompass={false}/>
+                    </>
+                )}
                 {popupPosition && <PickedLocationPopup lng={popupPosition.lng} lat={popupPosition.lat}
                                                        onClose={() => setPopupPosition(undefined)}/>}
                 {showPredictions && predictionEnabled !== false && <Predictions/>}

@@ -36,17 +36,20 @@ export default function SearchCard({ mapRef }: InferProps<typeof SearchCard.prop
     return (
         <div className={"w-full flex flex-col gap-2"}>
         <Popover open={open} onOpenChange={setOpen}>
+            {/* Solid backing like the coordinate search; the outline button is translucent in dark mode */}
+            <div className={"bg-background rounded-md"}>
             <PopoverTrigger asChild>
                 <Button
                     variant="outline"
                     role="combobox"
                     aria-expanded={open}
-                    className="justify-between"
+                    className="w-full justify-between"
                 >
                     <span className={"flex gap-2 items-center"}><NavigationIcon/> Snel navigeren naar groep...</span>
                     <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
             </PopoverTrigger>
+            </div>
             <PopoverContent className="p-0 w-full md:w-64">
                 <Command>
                     <CommandInput placeholder="Zoeken..." />
