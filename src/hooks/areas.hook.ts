@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { Area } from '@/types/Area';
 import { useAuthSWR } from '../lib/swr';
 import useHiddenAreasStore from '@/stores/hiddenareas.store';
+import { asList } from '@/lib/response-shape';
 
 export const useAreas = () => {
   const { data, error } = useAuthSWR<Area[]>('/areas', {
@@ -16,7 +17,7 @@ export const useAreas = () => {
   const isVisible = useCallback((areaName: string) => !hiddenAreas.includes(areaName.toLowerCase()), [hiddenAreas]);
 
   return {
-    areas: data,
+    areas: asList(data),
     isLoading: !error && !data,
     isError: error,
     toggleHidden,

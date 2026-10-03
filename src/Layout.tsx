@@ -10,6 +10,8 @@ import ResetPassword from './components/ResetPassword';
 import HintBoardDialog from './components/hints/HintBoardDialog';
 import HuntersDialog from './components/admin/HuntersDialog';
 import DemoReloader from './components/DemoReloader';
+import ErrorBoundary from './components/ErrorBoundary';
+import StaleDataBadge from './components/StaleDataBadge';
 import UsersDialog from './components/admin/UsersDialog';
 import BroadcastDialog from './components/admin/BroadcastDialog';
 import NotificationsDialog from './components/notifications/NotificationsDialog';
@@ -23,10 +25,12 @@ import {resyncPush} from '@/lib/push';
 import type {OutletContextType} from '@/hooks/outlet.hook.ts';
 import TourOverlay from './components/tour/TourOverlay';
 import {useTourAutoStart} from './components/tour/useTour';
+import {createFetchErrorToastState} from '@/lib/fetch-error-toast';
+
+const FETCH_ERROR_TOAST_ID = 'fetch-error';
 
 export default function Layout() {
     const endSession = useSessionExpired();
-    const [errorShown, setErrorShown] = useState(false);
     const auth = useAuthUser<User>();
     const mapRef = useRef<MapRef>(null);
     const [resetPasswordOpen, setResetPasswordOpen] = useState(false);
@@ -65,31 +69,57 @@ export default function Layout() {
     const tour = useTourAutoStart();
     useNotificationsPrompt(tour.pending || requiresPasswordChange);
 
-    function onSWRError(error: unknown) {
+    // Which SWR keys are failing, and whether the error toast is up. Mutable, not state: every poll passes through here.
+    const [errorToast] = useState(createFetchErrorToastState);
+
+    function onSWRError(error: unknown, key: string) {
+        // Only a 401 means the session is gone; 500/503, timeouts and network errors keep the user signed in
         if (isUnauthorized(error)) {
             sessionExpired();
             return;
         }
-        if (errorShown) return;
-        setErrorShown(true);
+        // One toast per outage, and not again within a minute when the connection flaps
+        if (!errorToast.error(key)) return;
         toast.error("Oeps! Er is iets misgegaan.", {
+            id: FETCH_ERROR_TOAST_ID,
             duration: Infinity,
-            description: 'Er is een fout opgetreden bij het ophalen van de data, probeer het later opnieuw. (Foutmelding: ' + (error instanceof Error ? error.message : String(error)) + ')'
+            description: 'Er is een fout opgetreden bij het ophalen van de data, probeer het later opnieuw. (Foutmelding: ' + (error instanceof Error ? error.message : String(error)) + ')',
         })
     }
 
+    function onSWRSuccess(_data: unknown, key: string) {
+        // Only when the failing endpoints themselves load again; another endpoint working says nothing about them
+        if (errorToast.success(key)) toast.dismiss(FETCH_ERROR_TOAST_ID);
+    }
+
     return (
-        <SWRConfig value={{onError: onSWRError}}>
-            <ResetPassword open={resetPasswordOpen} setIsOpen={setResetPasswordOpen} allowClose={false}/>
-            <DemoReloader/>
-            <Outlet context={{mapRef} satisfies OutletContextType}/>
-            <Map ref={mapRef}/>
-            <HintBoardDialog mapRef={mapRef}/>
-            <HuntersDialog mapRef={mapRef}/>
-            <UsersDialog/>
-            <BroadcastDialog/>
-            <NotificationsDialog/>
-            <TourOverlay mapRef={mapRef}/>
+        <SWRConfig value={{onError: onSWRError, onSuccess: onSWRSuccess}}>
+            <StaleDataBadge/>
+            {/* Separate boundaries: one crashing part (a dialog, the map, a sidebar section) must not take the rest down */}
+            <ErrorBoundary name="Dit venster" variant="floating">
+                <ResetPassword open={resetPasswordOpen} setIsOpen={setResetPasswordOpen} allowClose={false}/>
+            </ErrorBoundary>
+            <ErrorBoundary variant="floating">
+                <DemoReloader/>
+            </ErrorBoundary>
+            <ErrorBoundary name="Deze pagina" variant="floating">
+                <Outlet context={{mapRef} satisfies OutletContextType}/>
+            </ErrorBoundary>
+            <ErrorBoundary name="De kaart" className="mx-auto mt-[40dvh] w-fit">
+                <Map ref={mapRef}/>
+            </ErrorBoundary>
+            <ErrorBoundary name="Het hintbord" variant="floating">
+                <HintBoardDialog mapRef={mapRef}/>
+            </ErrorBoundary>
+            <ErrorBoundary name="Dit venster" variant="floating">
+                <HuntersDialog mapRef={mapRef}/>
+                <UsersDialog/>
+                <BroadcastDialog/>
+                <NotificationsDialog/>
+            </ErrorBoundary>
+            <ErrorBoundary name="De rondleiding" variant="floating">
+                <TourOverlay mapRef={mapRef}/>
+            </ErrorBoundary>
             {/* Held back until the onboarding tour is done so they don't overlap */}
             {!tour.pending && (
                 <PWAPrompt

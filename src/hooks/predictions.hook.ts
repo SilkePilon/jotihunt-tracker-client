@@ -2,6 +2,7 @@ import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
 import { useSWRConfig } from 'swr';
 import { fetcherWithMethod, useAuthSWR } from '@/lib/swr';
 import type { GroupVisit, Prediction, VisitChoice } from '@/types/Prediction';
+import { asList } from '@/lib/response-shape';
 
 const PREDICTION_REFRESH_MS = 15_000;
 /** The server recomputes in the background after PUT /visits (a Gemini call takes tens of seconds); fetch once more after this delay. */
@@ -35,7 +36,7 @@ export const usePredictionSetting = () => {
 export const usePredictions = () => {
   const { enabled } = usePredictionSetting();
   const { data, error } = useAuthSWR<Prediction[]>(enabled === false ? null : '/predictions', { refreshInterval: PREDICTION_REFRESH_MS });
-  return { predictions: data, isLoading: !error && !data, isError: error };
+  return { predictions: asList(data), isLoading: !error && !data, isError: error };
 };
 
 export const useVisits = () => {
@@ -57,5 +58,5 @@ export const useVisits = () => {
     return visit;
   }
 
-  return { visits: data, isLoading: !error && !data, isError: error, setVisit };
+  return { visits: asList(data), isLoading: !error && !data, isError: error, setVisit };
 };

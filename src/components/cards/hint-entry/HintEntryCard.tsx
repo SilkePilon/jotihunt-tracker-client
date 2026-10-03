@@ -18,6 +18,7 @@ import {useEffect, useId} from "react";
 import {useHintFormBridge} from "@/hooks/hint-bridge.hook.ts";
 import {isInNetherlands} from '@/lib/netherlands';
 import {fromRD, isPlausibleRD} from '@/lib/rd';
+import {apiErrorMessage} from '@/lib/api-error';
 
 const FormSchema = z.object({
     area: z.enum([...areaOptions.map((option) => option.value)] as [string, ...string[]]),
@@ -122,8 +123,8 @@ export default function HintEntryCard({mapRef}: InferProps<typeof HintEntryCard.
             type: MarkerType.Hint,
         };
 
-        const result = await createMarker(marker);
-        if (result) {
+        const error = await createMarker(marker);
+        if (!error) {
             form.reset();
             toast.success('Hint geregistreerd!', {
                 description: 'De hint is succesvol geregistreerd.'
@@ -135,7 +136,7 @@ export default function HintEntryCard({mapRef}: InferProps<typeof HintEntryCard.
             });
         } else {
             toast.error('Fout bij registreren hint.', {
-                description: 'Er is een fout opgetreden bij het registreren van de hint.'
+                description: apiErrorMessage(error, 'Er is een fout opgetreden bij het registreren van de hint.')
             });
         }
     }

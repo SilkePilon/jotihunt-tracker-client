@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { toast } from 'sonner';
+import { apiErrorMessage } from '@/lib/api-error';
 
 function LoadingSkeleton({ rows }: { rows: number }) {
   return (
@@ -68,10 +69,10 @@ export default function UsersPanel() {
 
   async function handleDeleteConfirm() {
     if (!selectedUser) return;
-    const result = await deleteUser(selectedUser._id);
+    const error = await deleteUser(selectedUser._id);
     setIsConfirmDeleteDialogOpen(false);
-    if (!result) {
-      toast.error('Er is een fout opgetreden', { description: 'De gebruiker kon niet worden verwijderd.' });
+    if (error) {
+      toast.error('Er is een fout opgetreden', { description: apiErrorMessage(error, 'De gebruiker kon niet worden verwijderd.') });
     } else {
       toast.success('Gebruiker verwijderd', { description: 'De gebruiker is succesvol verwijderd.' });
     }
@@ -89,15 +90,10 @@ export default function UsersPanel() {
 
   async function handleSave() {
     if (!selectedUser) return;
-    let result: boolean;
-    if (selectedUser?._id) {
-      result = await updateUser(selectedUser);
-    } else {
-      result = await createUser(selectedUser);
-    }
+    const error = selectedUser?._id ? await updateUser(selectedUser) : await createUser(selectedUser);
     setIsDialogOpen(false);
-    if (!result) {
-      toast.error('Er is een fout opgetreden', { description: 'De gebruiker kon niet worden opgeslagen.' });
+    if (error) {
+      toast.error('Er is een fout opgetreden', { description: apiErrorMessage(error, 'De gebruiker kon niet worden opgeslagen.') });
     } else {
       toast.success('Gebruiker opgeslagen', { description: 'De gebruiker is succesvol opgeslagen.' });
     }

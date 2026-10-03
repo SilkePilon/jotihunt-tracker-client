@@ -1,5 +1,6 @@
 import { Hunt } from '@/types/Hunt';
 import { useAuthSWR } from '../lib/swr';
+import { asList } from '@/lib/response-shape';
 
 export const useHunts = () => {
   const { data, error } = useAuthSWR<Hunt[]>('/hunts', {
@@ -7,7 +8,7 @@ export const useHunts = () => {
   });
 
   return {
-    hunts: data,
+    hunts: asList(data),
     isLoading: !error && !data,
     isError: error,
   };

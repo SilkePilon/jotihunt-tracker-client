@@ -1,8 +1,9 @@
 import proj4 from 'proj4';
 
 /**
- * Rijksdriehoeksmeting (RD New, EPSG:28992). Importing this module registers the 'RD' projection globally, so plain
- * `proj4('WGS84', 'RD', ...)` calls elsewhere work too once it has been imported (main.tsx does so at startup).
+ * Rijksdriehoeksmeting (RD New, EPSG:28992). Importing this module registers the 'RD' projection. Use the helpers
+ * below rather than calling proj4 with 'RD' directly: importing them guarantees the registration ran first (main.tsx
+ * no longer imports this module, so proj4 stays out of the login page's bundle).
  */
 proj4.defs(
   'RD',

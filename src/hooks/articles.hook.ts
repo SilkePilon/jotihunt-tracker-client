@@ -1,5 +1,6 @@
 import { Article } from '@/types/Article';
 import { useAuthSWR } from '../lib/swr';
+import { asList } from '@/lib/response-shape';
 
 export const useArticles = () => {
   const { data, error } = useAuthSWR<Article[]>('/articles', {
@@ -7,7 +8,7 @@ export const useArticles = () => {
   });
 
   return {
-    articles: data,
+    articles: asList(data),
     isLoading: !error && !data,
     isError: error,
   };

@@ -2,32 +2,40 @@ import { useAuthSWR } from '@/lib/swr';
 import type { Vehicle } from '@/types/Tracker';
 import { User } from '@/types/User';
 import { useFetcher } from './utils/api.hook';
+import { asList } from '@/lib/response-shape';
 
 export const useAdmin = () => {
   const { data, error, mutate } = useAuthSWR<User[]>('/admin/users');
   const { fetch } = useFetcher();
 
-  /** Run a request and report success; axios throws on 4xx/5xx, which counts as a failure. */
-  async function succeeded(request: () => Promise<{ status: number }>, expected: number): Promise<boolean> {
+  /**
+   * Run a request; resolves to null on success, else to the error (axios throws on 4xx/5xx, so the server's message
+   * can be shown with apiErrorMessage).
+   */
+  async function failure(request: () => Promise<{ status: number }>, expected: number): Promise<unknown> {
     try {
-      return (await request()).status === expected;
-    } catch {
-      return false;
+      const { status } = await request();
+      return status === expected ? null : new Error(`Unexpected status ${status}`);
+    } catch (error) {
+      return error ?? new Error('Request failed');
     } finally {
       void mutate();
     }
   }
 
-  function updateUser(user: User): Promise<boolean> {
-    return succeeded(() => fetch(`/admin/users/${user._id}`, 'PUT', user), 200);
+  /** Resolves to null on success, else to the error */
+  function updateUser(user: User): Promise<unknown> {
+    return failure(() => fetch(`/admin/users/${user._id}`, 'PUT', user), 200);
   }
 
-  function deleteUser(id: string): Promise<boolean> {
-    return succeeded(() => fetch(`/admin/users/${id}`, 'DELETE'), 200);
+  /** Resolves to null on success, else to the error */
+  function deleteUser(id: string): Promise<unknown> {
+    return failure(() => fetch(`/admin/users/${id}`, 'DELETE'), 200);
   }
 
-  function createUser(user: User): Promise<boolean> {
-    return succeeded(() => fetch('/admin/users', 'POST', user), 201);
+  /** Resolves to null on success, else to the error */
+  function createUser(user: User): Promise<unknown> {
+    return failure(() => fetch('/admin/users', 'POST', user), 201);
   }
 
   /** Move any hunter's Traccar device to a vehicle group (map icon). Throws the axios error on failure. */
@@ -37,7 +45,7 @@ export const useAdmin = () => {
   }
 
   return {
-    users: data,
+    users: asList(data),
     isLoading: !error && !data,
     isError: error,
     updateUser,

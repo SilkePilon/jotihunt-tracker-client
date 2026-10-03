@@ -1,8 +1,12 @@
-import type { Feature, FeatureCollection, LineString, Polygon } from 'geojson';
+import type { Feature, FeatureCollection, LineString, Point, Polygon } from 'geojson';
 import type { Marker } from '@/types/Marker';
+import { MarkerType } from '@/types/MarkerType';
 import type { Position } from '@/types/Position';
 import type { Team } from '@/types/Team';
 import { createCircle, getColorFromArea } from '@/lib/utils';
+
+/** Symbol layer with the fox markers (hint/hunt/spot); Map.tsx doesn't open its location popup for clicks on it. */
+export const FOX_MARKERS_LAYER = 'fox-markers';
 
 /** Radius of the circle drawn around each group (metres). */
 export const TEAM_CIRCLE_RADIUS_M = 500;
@@ -21,7 +25,17 @@ export interface TrailProperties {
   color: string;
 }
 
-function collection<G extends Polygon | LineString, P>(features: Feature<G, P>[]): FeatureCollection<G, P> {
+export interface MarkerFeatureProperties {
+  id: string;
+  type: MarkerType;
+  area: string;
+  /** Epoch milliseconds */
+  time: number;
+  /** Map image id, see {@link markerImageId} */
+  icon: string;
+}
+
+function collection<G extends Polygon | LineString | Point, P>(features: Feature<G, P>[]): FeatureCollection<G, P> {
   return { type: 'FeatureCollection', features };
 }
 
@@ -52,4 +66,39 @@ export function trailLines(groups: Record<string, Marker[]>, colorFor: (area: st
         geometry: { type: 'LineString', coordinates: markers.map((marker) => marker.location.coordinates) },
       })),
   );
+}
+
+/** Id of the map image (registered with map.addImage) for a marker type; unknown types get the plain fox. */
+export function markerImageId(type: MarkerType): string {
+  switch (type) {
+    case MarkerType.Hint:
+      return 'fox-hint';
+    case MarkerType.Hunt:
+      return 'fox-hunt';
+    case MarkerType.Spot:
+      return 'fox-spot';
+    default:
+      return 'fox';
+  }
+}
+
+/** One point per marker for the fox symbol layer (one canvas layer instead of an HTML element per marker). */
+export function markerFeatures(markers: Marker[]): FeatureCollection<Point, MarkerFeatureProperties> {
+  return collection(
+    markers.map((marker) => ({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: marker.location.coordinates },
+      properties: { id: marker._id!, type: marker.type, area: marker.area, time: new Date(marker.time).getTime(), icon: markerImageId(marker.type) },
+    })),
+  );
+}
+
+/**
+ * Which of `candidates` are drawn above `target` (in their current order), i.e. have to be moved below it.
+ * @param order All layer ids, bottom to top (map.getLayersOrder())
+ */
+export function layersToMoveBelow(order: string[], target: string, candidates: string[]): string[] {
+  const targetIndex = order.indexOf(target);
+  if (targetIndex === -1) return [];
+  return order.slice(targetIndex + 1).filter((id) => candidates.includes(id));
 }

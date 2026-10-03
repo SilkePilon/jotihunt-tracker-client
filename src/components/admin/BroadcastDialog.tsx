@@ -7,6 +7,7 @@ import ResponsiveDialog from '@/components/ResponsiveDialog';
 import { useFetcher } from '@/hooks/utils/api.hook';
 import useAdminStore from '@/stores/admin.store';
 import type { User } from '@/types/User';
+import { SLOW_REQUEST_TIMEOUT_MS } from '@/lib/http';
 
 const MAX_LENGTH = 200;
 
@@ -23,7 +24,7 @@ export default function BroadcastDialog() {
   async function send() {
     setSending(true);
     try {
-      await fetch('/admin/broadcast', 'POST', { message: message.trim() });
+      await fetch('/admin/broadcast', 'POST', { message: message.trim() }, SLOW_REQUEST_TIMEOUT_MS);
       toast.success('Bericht verstuurd');
       setMessage('');
       close();

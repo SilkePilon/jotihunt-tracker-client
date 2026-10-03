@@ -1,5 +1,6 @@
 import {useAuthSWR} from '@/lib/swr';
 import {useFetcher} from './utils/api.hook';
+import {SLOW_REQUEST_TIMEOUT_MS} from '@/lib/http';
 
 export type DemoState = {
     enabled: boolean;
@@ -13,7 +14,7 @@ export const useDemo = () => {
 
     /** Switch demo mode on or off (admin). Takes several seconds; throws (axios error) on failure. */
     async function setDemo(enabled: boolean) {
-        const result = await fetch<DemoState>('/demo', 'POST', {enabled});
+        const result = await fetch<DemoState>('/demo', 'POST', {enabled}, SLOW_REQUEST_TIMEOUT_MS);
         await mutate(result.data, {revalidate: false});
         return result.data;
     }

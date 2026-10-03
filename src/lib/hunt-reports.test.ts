@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import type { Hunt } from '@/types/Hunt';
 import type { HuntReport } from '@/types/HuntReport';
 import type { Prediction } from '@/types/Prediction';
-import { huntListItems, huntStatusSentence, huntsSummary, huntSourceLabel, huntStatusLabel, huntTimeLabel, huntTimelineStatus, isReading, nearestArea, normalizeHuntCode, ocrConfidence, pendingReports, readFailed, resolveHuntTime, totalPoints } from './hunt-reports';
+import { hasLiveCountdown, huntListItems, huntStatusSentence, huntsSummary, huntSourceLabel, huntStatusLabel, huntTimeLabel, huntTimelineStatus, isReading, nearestArea, normalizeHuntCode, ocrConfidence, pendingReports, readFailed, resolveHuntTime, totalPoints } from './hunt-reports';
 
 function report(overrides: Partial<HuntReport> = {}): HuntReport {
   return {
@@ -207,5 +207,20 @@ describe('timeline status', () => {
   test('huntTimelineStatus shows the status label for a judged hunt without points', () => {
     const rejected = report({ status: 'judged', site: { status: 'Afgekeurd', points: 0, seenAt: '2026-10-17T13:00:00.000Z' } });
     expect(huntTimelineStatus(rejected, after)).toBe('Afgekeurd');
+  });
+});
+
+describe('hasLiveCountdown', () => {
+  const deadline = new Date('2026-10-17T12:30:00.000Z').getTime();
+  test('ticks while a report waits to be submitted before its deadline', () => {
+    expect(hasLiveCountdown(report(), deadline - 1000)).toBe(true);
+  });
+  test('stops at the deadline (the status then stays "Te laat!")', () => {
+    expect(hasLiveCountdown(report(), deadline)).toBe(false);
+  });
+  test('no countdown for submitted/judged/overdue reports or while the photo is being read', () => {
+    expect(hasLiveCountdown(report({ status: 'submitted' }), deadline - 1000)).toBe(false);
+    expect(hasLiveCountdown(report({ status: 'overdue' }), deadline - 1000)).toBe(false);
+    expect(hasLiveCountdown(report({ ocrStatus: 'reading' }), deadline - 1000)).toBe(false);
   });
 });

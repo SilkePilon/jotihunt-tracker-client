@@ -67,6 +67,11 @@ export function huntStatusText(report: HuntReport, now: number): string {
   return text;
 }
 
+/** The status text of a report changes every second (the "Te versturen · 08:42" countdown) until its deadline passes. */
+export function hasLiveCountdown(report: HuntReport, now: number): boolean {
+  return report.status === 'to_submit' && !isReading(report) && new Date(report.deadline).getTime() > now;
+}
+
 /** Reports HQ still has to submit on jotihunt.nl. */
 export function pendingReports(reports: HuntReport[] | undefined): HuntReport[] {
   return (reports ?? []).filter((report) => report.status === 'to_submit' || report.status === 'overdue');
