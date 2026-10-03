@@ -39,6 +39,12 @@ describe('pickSound / pickPrimary', () => {
   const hint = n({ id: 'e', type: 'hint' });
   const article = n({ id: 'f', type: 'article' });
 
+  test('counter-hunt has its own sound, below green and above broadcast', () => {
+    const counterHunt = n({ id: 'g', type: 'counter-hunt', data: { direction: 45 } });
+    expect(soundKey(counterHunt)).toBe('counter-hunt');
+    expect(pickSound([broadcast, counterHunt])).toBe('counter-hunt');
+    expect(pickSound([counterHunt, green])).toBe('fox-green');
+  });
   test('empty gives null', () => {
     expect(pickSound([])).toBeNull();
     expect(pickPrimary([])).toBeNull();

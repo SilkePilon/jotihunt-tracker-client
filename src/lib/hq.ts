@@ -10,6 +10,7 @@ export function bannerClass(notification: Pick<AppNotification, 'type' | 'data'>
   }
   if (notification.type === 'hunt-deadline') return 'bg-orange-500 text-white';
   if (notification.type === 'broadcast') return 'bg-purple-700 text-white';
+  if (notification.type === 'counter-hunt') return 'bg-red-700 text-white';
   return 'bg-blue-600 text-white';
 }
 

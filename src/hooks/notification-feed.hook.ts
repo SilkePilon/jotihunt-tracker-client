@@ -5,7 +5,7 @@ import { isUnauthorized } from '@/lib/session';
 import { fetcherWithMethod } from '@/lib/swr';
 import { isRecent, mergeFeed, pickSound, shouldAlert, toastKind, type AppNotification } from '@/lib/notifications';
 import { playNotificationSound } from '@/lib/notification-sounds';
-import { showBroadcastToast } from '@/components/notifications/BroadcastToast';
+import { showHighlightToast } from '@/components/notifications/HighlightToast';
 import { useNotificationPrefs } from '@/hooks/notification-prefs.hook';
 import useSettingsStore from '@/stores/settings.store';
 
@@ -70,10 +70,7 @@ export function useNotificationFeed({ respectPreferences = true, toasts = true, 
         if (options.toasts) {
           for (const notification of alertable) {
             const duration = notification.urgent ? 30_000 : 8000;
-            if (notification.type === 'broadcast') {
-              showBroadcastToast(notification.body, notification.data.from, duration);
-              continue;
-            }
+            if (showHighlightToast(notification, duration)) continue;
             toast[toastKind(notification)](notification.title, { description: notification.body || undefined, duration });
           }
         }
