@@ -3,7 +3,7 @@ import type { Marker } from '@/types/Marker';
 import { MarkerType } from '@/types/MarkerType';
 import type { Position } from '@/types/Position';
 import type { Team } from '@/types/Team';
-import { accuracyCircles, teamCircles, trailLines } from './map-layers';
+import { accuracyCircles, layersToMoveBelow, markerFeatures, markerImageId, teamCircles, trailLines } from './map-layers';
 
 function team(id: string, area?: string): Team {
   return { _id: id, apiId: 1, name: id, area, location: { type: 'Point', coordinates: [5.9, 52] } } as Team;
@@ -60,5 +60,35 @@ describe('trailLines', () => {
       [5, 52],
       [6, 52],
     ]);
+  });
+});
+
+describe('markerFeatures', () => {
+  test('one point per marker with what the symbol layer, tooltip and click need', () => {
+    const time = '2026-10-17T12:00:00.000Z';
+    const fc = markerFeatures([{ _id: 'm1', area: 'Alpha', time: time as unknown as Date, type: MarkerType.Hunt, location: { type: 'Point', coordinates: [5.1, 52.2] } }]);
+    expect(fc.features).toEqual([
+      { type: 'Feature', geometry: { type: 'Point', coordinates: [5.1, 52.2] }, properties: { id: 'm1', type: MarkerType.Hunt, area: 'Alpha', time: Date.parse(time), icon: 'fox-hunt' } },
+    ]);
+  });
+});
+
+describe('markerImageId', () => {
+  test('one map image per marker type, the plain fox for unknown types', () => {
+    expect(markerImageId(MarkerType.Hint)).toBe('fox-hint');
+    expect(markerImageId(MarkerType.Hunt)).toBe('fox-hunt');
+    expect(markerImageId(MarkerType.Spot)).toBe('fox-spot');
+    expect(markerImageId('other' as MarkerType)).toBe('fox');
+  });
+});
+
+describe('layersToMoveBelow', () => {
+  const candidates = ['home', 'trails'];
+  test('candidates drawn above the target, in their current order', () => {
+    expect(layersToMoveBelow(['base', 'trails', 'fox', 'home', 'ruler'], 'fox', candidates)).toEqual(['home']);
+  });
+  test('nothing when they are already below, or the target is missing', () => {
+    expect(layersToMoveBelow(['home', 'trails', 'fox', 'ruler'], 'fox', candidates)).toEqual([]);
+    expect(layersToMoveBelow(['home', 'trails'], 'fox', candidates)).toEqual([]);
   });
 });
