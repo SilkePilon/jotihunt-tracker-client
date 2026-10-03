@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, useState } from 'react';
 import { stickerCrop, type Size, type StickerBox } from '@/lib/sticker-crop';
 import { cn } from '@/lib/utils';
 
-/** Photo that fills its frame, zoomed onto the sticker when its box is known (else the whole photo, cover-fit). */
+/** Photo zoomed so the whole sticker (when its box is known) is visible; a blurred copy fills any empty sides. Without a box: the whole photo, cover-fit. */
 export default function StickerHero({ src, box, alt, className }: { src: string; box: StickerBox | null; alt: string; className?: string }) {
   const frameRef = useRef<HTMLDivElement>(null);
   const [frame, setFrame] = useState<Size | null>(null);

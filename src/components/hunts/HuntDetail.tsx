@@ -85,17 +85,25 @@ export default function HuntDetail({ report, now, onBack, onClose }: { report: H
           <div className="flex h-60 items-center justify-center bg-muted text-sm text-muted-foreground max-md:h-52">Foto laden…</div>
         )}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-b from-transparent to-background px-4 pt-12 pb-3">
-          <div className="pointer-events-auto flex min-w-0 items-center gap-2">
+          <div className="flex min-w-0 items-center gap-2">
             <HuntCodeText report={report} className="text-[22px] leading-tight" />
-            {isAdmin && report.huntCode && <CopyButton value={report.huntCode} label="Code" />}
-            <span className="ml-auto">
+            {isAdmin && report.huntCode && (
+              <span className="pointer-events-auto">
+                <CopyButton value={report.huntCode} label="Code" />
+              </span>
+            )}
+            <span className="pointer-events-auto ml-auto">
               <HuntStatusBadge report={report} now={now} />
             </span>
           </div>
-          <div className="pointer-events-auto mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+          <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
             <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: getColorFromArea(report.area) }} />
             {capitalizeFirstLetter(report.area)} · <HuntTimeText report={report} className="font-mono" />
-            {isAdmin && report.huntTimeKnown && <CopyButton value={huntTimeLabel(report)} label="Tijd" />}· deadline {formatClock(report.deadline)}
+            {isAdmin && report.huntTimeKnown && (
+              <span className="pointer-events-auto">
+                <CopyButton value={huntTimeLabel(report)} label="Tijd" />
+              </span>
+            )}· deadline {formatClock(report.deadline)}
           </div>
         </div>
         <Button type="button" variant="secondary" size="icon-sm" className="absolute top-3 left-3 bg-background/70 backdrop-blur" onClick={onBack} aria-label="Terug">

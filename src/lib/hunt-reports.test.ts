@@ -203,4 +203,9 @@ describe('timeline status', () => {
     expect(huntTimelineStatus(judged, after)).toBe('+250 pt');
     expect(huntTimelineStatus(report({ status: 'judged', site: null }), after)).toBe('Beoordeeld');
   });
+
+  test('huntTimelineStatus shows the status label for a judged hunt without points', () => {
+    const rejected = report({ status: 'judged', site: { status: 'Afgekeurd', points: 0, seenAt: '2026-10-17T13:00:00.000Z' } });
+    expect(huntTimelineStatus(rejected, after)).toBe('Afgekeurd');
+  });
 });

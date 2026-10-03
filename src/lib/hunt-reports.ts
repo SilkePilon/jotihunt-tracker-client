@@ -166,6 +166,6 @@ export function huntTimelineStatus(report: HuntReport, now: number): string {
     case 'submitted':
       return 'Ingestuurd';
     case 'judged':
-      return report.site ? `+${report.site.points} pt` : 'Beoordeeld';
+      return report.site?.points ? `+${report.site.points} pt` : report.site?.status || 'Beoordeeld';
   }
 }

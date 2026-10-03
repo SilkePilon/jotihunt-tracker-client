@@ -46,7 +46,7 @@ export default function HuntTimelineItem({ report, now, last, onSelect }: { repo
           {capitalizeFirstLetter(report.area)} · {huntStatusSentence(report, now)}
         </span>
       </span>
-      {!reading && <span className={cn('whitespace-nowrap font-semibold tabular-nums', STATUS_TEXT[currentHuntStatus(report, now)])}>{huntTimelineStatus(report, now)}</span>}
+      {!reading && <span className={cn('whitespace-nowrap font-semibold tabular-nums', currentHuntStatus(report, now) === 'judged' && !report.site?.points ? 'text-muted-foreground' : STATUS_TEXT[currentHuntStatus(report, now)])}>{huntTimelineStatus(report, now)}</span>}
     </div>
   );
 }
