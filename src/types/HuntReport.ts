@@ -32,6 +32,8 @@ export interface HuntReport {
   /** 0..1, only for OCR-read values */
   codeConfidence: number | null;
   timeConfidence: number | null;
+  /** Sticker bounding box in the photo: [ymin, xmin, ymax, xmax], 0..1000; null when unknown */
+  stickerBox: [number, number, number, number] | null;
   /** HQ should check the code/time (failed, missing or low confidence); false while still reading */
   needsReview: boolean;
   /** An older report with exactly the same code */

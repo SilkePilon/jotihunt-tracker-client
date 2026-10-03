@@ -140,3 +140,32 @@ export function huntSourceLabel(report: HuntReport, withError = false): string {
 export function totalPoints(items: HuntListItem[]): number {
   return items.reduce((sum, item) => sum + (item.source === 'app' ? (item.report.site?.points ?? 0) : item.hunt.points), 0);
 }
+
+/** Second line of a timeline entry: what the report is waiting for, e.g. "te versturen" or "deadline verstreken". */
+export function huntStatusSentence(report: HuntReport, now: number): string {
+  if (isReading(report)) return 'wordt gelezen';
+  switch (currentHuntStatus(report, now)) {
+    case 'to_submit':
+      return 'te versturen';
+    case 'overdue':
+      return 'deadline verstreken';
+    case 'submitted':
+      return 'ingestuurd';
+    case 'judged':
+      return report.site?.status ? report.site.status.toLowerCase() : 'beoordeeld';
+  }
+}
+
+/** Right-hand status of a timeline entry: "nog 8:42", "Te laat!", "Ingestuurd" or "+250 pt". */
+export function huntTimelineStatus(report: HuntReport, now: number): string {
+  switch (currentHuntStatus(report, now)) {
+    case 'to_submit':
+      return `nog ${formatCountdown(new Date(report.deadline).getTime() - now)}`;
+    case 'overdue':
+      return 'Te laat!';
+    case 'submitted':
+      return 'Ingestuurd';
+    case 'judged':
+      return report.site ? `+${report.site.points} pt` : 'Beoordeeld';
+  }
+}

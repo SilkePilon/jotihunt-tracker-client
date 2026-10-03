@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import type { Hunt } from '@/types/Hunt';
 import type { HuntReport } from '@/types/HuntReport';
 import type { Prediction } from '@/types/Prediction';
-import { huntListItems, huntsSummary, huntSourceLabel, huntStatusLabel, huntTimeLabel, isReading, nearestArea, normalizeHuntCode, ocrConfidence, pendingReports, readFailed, resolveHuntTime, totalPoints } from './hunt-reports';
+import { huntListItems, huntStatusSentence, huntsSummary, huntSourceLabel, huntStatusLabel, huntTimeLabel, huntTimelineStatus, isReading, nearestArea, normalizeHuntCode, ocrConfidence, pendingReports, readFailed, resolveHuntTime, totalPoints } from './hunt-reports';
 
 function report(overrides: Partial<HuntReport> = {}): HuntReport {
   return {
@@ -26,6 +26,7 @@ function report(overrides: Partial<HuntReport> = {}): HuntReport {
     ocrError: null,
     codeConfidence: 0.95,
     timeConfidence: 0.92,
+    stickerBox: null,
     needsReview: false,
     duplicateOf: null,
     ...overrides,
@@ -178,4 +179,28 @@ test('totalPoints sums site points of reports and website hunts', () => {
     { source: 'website', hunt: { points: 3 } },
   ] as unknown as Parameters<typeof totalPoints>[0];
   expect(totalPoints(items)).toBe(8);
+});
+
+describe('timeline status', () => {
+  const deadline = Date.parse('2026-10-17T12:30:00.000Z');
+  const before = deadline - (8 * 60 + 42) * 1000;
+  const after = deadline + 60_000;
+  const judged = report({ status: 'judged', site: { status: 'Goedgekeurd', points: 250, seenAt: '2026-10-17T13:00:00.000Z' } });
+
+  test('huntStatusSentence per status', () => {
+    expect(huntStatusSentence(report(), before)).toBe('te versturen');
+    expect(huntStatusSentence(report(), after)).toBe('deadline verstreken');
+    expect(huntStatusSentence(report({ status: 'submitted' }), after)).toBe('ingestuurd');
+    expect(huntStatusSentence(judged, after)).toBe('goedgekeurd');
+    expect(huntStatusSentence(report({ status: 'judged', site: null }), after)).toBe('beoordeeld');
+    expect(huntStatusSentence(report({ ocrStatus: 'reading' }), before)).toBe('wordt gelezen');
+  });
+
+  test('huntTimelineStatus per status', () => {
+    expect(huntTimelineStatus(report(), before)).toBe('nog 8:42');
+    expect(huntTimelineStatus(report(), after)).toBe('Te laat!');
+    expect(huntTimelineStatus(report({ status: 'submitted' }), after)).toBe('Ingestuurd');
+    expect(huntTimelineStatus(judged, after)).toBe('+250 pt');
+    expect(huntTimelineStatus(report({ status: 'judged', site: null }), after)).toBe('Beoordeeld');
+  });
 });
