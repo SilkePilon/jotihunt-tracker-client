@@ -25,9 +25,9 @@ import {resyncPush} from '@/lib/push';
 import type {OutletContextType} from '@/hooks/outlet.hook.ts';
 import TourOverlay from './components/tour/TourOverlay';
 import {useTourAutoStart} from './components/tour/useTour';
+import {createFetchErrorToastState} from '@/lib/fetch-error-toast';
 
 const FETCH_ERROR_TOAST_ID = 'fetch-error';
-const ERROR_TOAST_COOLDOWN_MS = 60_000;
 
 export default function Layout() {
     const endSession = useSessionExpired();
@@ -69,32 +69,27 @@ export default function Layout() {
     const tour = useTourAutoStart();
     useNotificationsPrompt(tour.pending || requiresPasswordChange);
 
-    // When the fetch error toast was last shown, or null while none is up. A ref: every poll passes through here.
-    const errorToastAt = useRef<number | null>(null);
-    const lastErrorToastAt = useRef(0);
+    // Which SWR keys are failing, and whether the error toast is up. Mutable, not state: every poll passes through here.
+    const [errorToast] = useState(createFetchErrorToastState);
 
-    function onSWRError(error: unknown) {
+    function onSWRError(error: unknown, key: string) {
         // Only a 401 means the session is gone; 500/503, timeouts and network errors keep the user signed in
         if (isUnauthorized(error)) {
             sessionExpired();
             return;
         }
-        // One toast at a time, and not again within a minute when the connection flaps
-        if (errorToastAt.current !== null || Date.now() - lastErrorToastAt.current < ERROR_TOAST_COOLDOWN_MS) return;
-        errorToastAt.current = lastErrorToastAt.current = Date.now();
+        // One toast per outage, and not again within a minute when the connection flaps
+        if (!errorToast.error(key)) return;
         toast.error("Oeps! Er is iets misgegaan.", {
             id: FETCH_ERROR_TOAST_ID,
             duration: Infinity,
             description: 'Er is een fout opgetreden bij het ophalen van de data, probeer het later opnieuw. (Foutmelding: ' + (error instanceof Error ? error.message : String(error)) + ')',
-            onDismiss: () => { errorToastAt.current = null; },
         })
     }
 
-    function onSWRSuccess() {
-        // Data comes in again: clear the error, so a later outage shows a new one
-        if (errorToastAt.current === null) return;
-        errorToastAt.current = null;
-        toast.dismiss(FETCH_ERROR_TOAST_ID);
+    function onSWRSuccess(_data: unknown, key: string) {
+        // Only when the failing endpoints themselves load again; another endpoint working says nothing about them
+        if (errorToast.success(key)) toast.dismiss(FETCH_ERROR_TOAST_ID);
     }
 
     return (
