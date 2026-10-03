@@ -17,6 +17,7 @@ import FoxPills from './FoxPills';
 import HintMiniGrid from './HintMiniGrid';
 import PredictionList from './PredictionList';
 import TrackerSection from './TrackerSection';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 export default function SidebarSections({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
   const { areas } = useAreas();
@@ -35,7 +36,9 @@ export default function SidebarSections({ mapRef }: { mapRef: RefObject<MapRef |
       <SidebarSection id="hints" title="Hints" summary={progress ? `${progress.solved}/${progress.total} opgelost` : undefined}>
         <HintMiniGrid />
       </SidebarSection>
-      <HuntsSection />
+      <ErrorBoundary name="Hunts">
+        <HuntsSection />
+      </ErrorBoundary>
       {predictionEnabled !== false && (
         <SidebarSection id="predictions" title="Voorspelling" summary={predictionSummary(predictions)}>
           <PredictionList mapRef={mapRef} />
@@ -49,7 +52,9 @@ export default function SidebarSections({ mapRef }: { mapRef: RefObject<MapRef |
           <CounterHuntCard mapRef={mapRef} />
         </SidebarSection>
       )}
-      <TrackerSection />
+      <ErrorBoundary name="Tracker">
+        <TrackerSection />
+      </ErrorBoundary>
       <SidebarSection id="hunters" title="Actieve hunters" summary={activeCount ? String(activeCount) : 'Niemand'}>
         <ActiveDevices mapRef={mapRef} showLabel={false} />
       </SidebarSection>

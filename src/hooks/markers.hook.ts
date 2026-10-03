@@ -1,6 +1,7 @@
 import { Marker } from '@/types/Marker';
 import { fetcherWithMethod, useAuthSWR } from '../lib/swr';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
+import { asList } from '@/lib/response-shape';
 
 export const useMarkers = () => {
   const authHeader = useAuthHeader() || '';
@@ -49,7 +50,7 @@ export const useMarkers = () => {
   }
 
   return {
-    markers: data,
+    markers: asList(data),
     isLoading: !error && !data,
     isError: error,
     createMarker,

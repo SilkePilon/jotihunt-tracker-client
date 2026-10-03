@@ -1,6 +1,9 @@
 import axios from 'axios';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
 import useSWR, { SWRConfiguration } from 'swr';
+import { REQUEST_TIMEOUT_MS } from '@/lib/http';
+import { hasExpectedShape, UnexpectedResponseError } from '@/lib/response-shape';
+import { reportFetchError, reportFetchSuccess } from '@/lib/connection';
 
 const baseUrl = import.meta.env.API_BASE_URL;
 
@@ -20,11 +23,28 @@ export const fetcherWithMethod = async (url: string, authHeader: string, method:
       Authorization: authHeader,
     },
     data: body, // Used for POST, PUT, DELETE, etc.
+    timeout: REQUEST_TIMEOUT_MS,
   });
 
-  if (response.data.error) throw new Error(response.data.error);
+  if (response.data?.error) throw new Error(response.data.error);
   return response.data;
 };
+
+/** GET for SWR: a malformed answer (proxy page, error object with status 200) fails instead of reaching the components. */
+async function swrFetcher([url, authHeader]: [string, string]) {
+  try {
+    const data = await fetcherWithMethod(url, authHeader);
+    if (!hasExpectedShape(url, data)) throw new UnexpectedResponseError(url);
+    reportFetchSuccess();
+    return data;
+  } catch (error) {
+    reportFetchError();
+    throw error;
+  }
+}
+
+/** Coming back to the app (focus) refetches at most this often, instead of ~15 endpoints on every switch back. */
+const FOCUS_THROTTLE_MS = 30_000;
 
 /**
  * Fetch data from the API with authentication.
@@ -35,7 +55,5 @@ export const fetcherWithMethod = async (url: string, authHeader: string, method:
 export const useAuthSWR = <T>(url: string | null, options?: SWRConfiguration) => {
   const authHeader = useAuthHeader();
 
-  const swrFetcher = ([url, authHeader]: [string, string]) => fetcherWithMethod(url, authHeader);
-
-  return useSWR<T>(url === null ? null : [url, authHeader], swrFetcher, options);
+  return useSWR<T>(url === null ? null : [url, authHeader], swrFetcher, { focusThrottleInterval: FOCUS_THROTTLE_MS, ...options });
 };

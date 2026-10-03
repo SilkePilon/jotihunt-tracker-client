@@ -1,6 +1,7 @@
 import { Position } from '@/types/Position';
 import { useAuthSWR } from '../lib/swr';
 import { Device } from '@/types/Device';
+import { asList } from '@/lib/response-shape';
 
 /** Traccar devices report every few seconds; polling faster only re-renders the map for nothing. */
 const TRACKER_REFRESH_MS = 3000;
@@ -16,8 +17,8 @@ export const useDevices = () => {
   });
 
   return {
-    positions: positions,
-    devices: devices,
+    positions: asList(positions),
+    devices: asList(devices),
     isLoading: !(positionsError || devicesError) && !(positions && devices),
     isError: positionsError || devicesError,
   };

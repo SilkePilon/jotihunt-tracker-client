@@ -3,6 +3,7 @@ import axios from 'axios';
 import useSignIn from 'react-auth-kit/hooks/useSignIn';
 import { useFetcher } from './utils/api.hook';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
+import { REQUEST_TIMEOUT_MS } from '@/lib/http';
 
 /** Outcome of a login attempt; the server answers 429 after too many wrong passwords */
 export type LoginResult = 'ok' | 'invalid' | 'rate-limited' | 'offline';
@@ -26,7 +27,7 @@ export const useAuth = () => {
       .post(`${baseUrl}/auth/login`, {
         email,
         password,
-      })
+      }, { timeout: REQUEST_TIMEOUT_MS })
       .catch((error) => {
         // Undefined on network errors (no response)
         return error.response;

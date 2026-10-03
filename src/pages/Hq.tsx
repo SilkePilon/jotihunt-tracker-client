@@ -10,6 +10,8 @@ import LatestArticle from '@/components/hq/LatestArticle';
 import AlertBanner from '@/components/hq/AlertBanner';
 import AudioUnlock from '@/components/hq/AudioUnlock';
 import DemoReloader from '@/components/DemoReloader';
+import ErrorBoundary from '@/components/ErrorBoundary';
+import StaleDataBadge from '@/components/StaleDataBadge';
 import { useNotificationFeed } from '@/hooks/notification-feed.hook';
 import { useTheme } from '@/hooks/theme.hook';
 import { isUnauthorized } from '@/lib/session';
@@ -26,6 +28,7 @@ export default function Hq() {
   return (
     <SWRConfig value={{ onError: (error) => isUnauthorized(error) && endSession() }}>
       <DemoReloader />
+      <StaleDataBadge />
       <HqScreen onUnauthorized={endSession} />
     </SWRConfig>
   );
@@ -54,12 +57,22 @@ function HqScreen({ onUnauthorized }: { onUnauthorized: () => void }) {
 
   return (
     <div className="grid h-dvh w-dvw grid-cols-[65fr_35fr] overflow-hidden bg-background text-foreground">
-      <Map className="relative h-full w-full" />
+      <ErrorBoundary name="De kaart" className="m-auto w-fit">
+        <Map className="relative h-full w-full" />
+      </ErrorBoundary>
       <aside className="flex min-h-0 flex-col gap-4 overflow-y-auto border-l p-4">
-        <HqClock />
-        <AreaTiles />
-        <HuntFeed />
-        <LatestArticle />
+        <ErrorBoundary>
+          <HqClock />
+        </ErrorBoundary>
+        <ErrorBoundary>
+          <AreaTiles />
+        </ErrorBoundary>
+        <ErrorBoundary>
+          <HuntFeed />
+        </ErrorBoundary>
+        <ErrorBoundary>
+          <LatestArticle />
+        </ErrorBoundary>
       </aside>
       <AlertBanner notification={banner} onDismiss={() => setBanner(null)} />
       {!audioUnlocked && <AudioUnlock onUnlock={() => setAudioUnlocked(true)} />}

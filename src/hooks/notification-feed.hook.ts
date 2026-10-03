@@ -53,6 +53,8 @@ export function useNotificationFeed({ respectPreferences = true, toasts = true, 
       try {
         const since = cursor ? `?since=${encodeURIComponent(new Date(new Date(cursor).getTime() - OVERLAP_MS).toISOString())}` : '';
         const response = (await fetcherWithMethod(`/notifications${since}`, authHeader)) as { notifications: AppNotification[]; serverTime: string };
+        // A proxy page or error object with status 200: retry next poll without moving the cursor
+        if (!Array.isArray(response?.notifications) || typeof response.serverTime !== 'string') return;
         if (!cursor) {
           startedAt = response.serverTime;
         }
