@@ -11,6 +11,7 @@ import AlertBanner from '@/components/hq/AlertBanner';
 import AudioUnlock from '@/components/hq/AudioUnlock';
 import DemoReloader from '@/components/DemoReloader';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import StaleDataBadge from '@/components/StaleDataBadge';
 import { useNotificationFeed } from '@/hooks/notification-feed.hook';
 import { useTheme } from '@/hooks/theme.hook';
 import { isUnauthorized } from '@/lib/session';
@@ -27,6 +28,7 @@ export default function Hq() {
   return (
     <SWRConfig value={{ onError: (error) => isUnauthorized(error) && endSession() }}>
       <DemoReloader />
+      <StaleDataBadge />
       <HqScreen onUnauthorized={endSession} />
     </SWRConfig>
   );
