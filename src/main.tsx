@@ -3,8 +3,6 @@ import './index.css';
 import Routes from './Routes.tsx';
 import createStore from 'react-auth-kit/createStore';
 import AuthProvider from 'react-auth-kit';
-// Registers the 'RD' proj4 projection globally (the map layers call proj4('WGS84', 'RD', ...) directly)
-import '@/lib/rd';
 import {registerSW} from 'virtual:pwa-register';
 import {TooltipProvider} from "@/components/ui/tooltip.tsx";
 import {Toaster} from "@/components/ui/sonner.tsx";
