@@ -9,7 +9,7 @@ import { useHunts } from '@/hooks/hunts.hook';
 import useInterval from '@/hooks/utils/interval.hook';
 import { keepOpenWhileEditing } from '@/lib/inline-edit';
 import { formatHuntTimeSafe, huntListItems } from '@/lib/hunt-reports';
-import { areaOptions, capitalizeFirstLetter, getColorFromArea } from '@/lib/utils';
+import { areaOptions, capitalizeFirstLetter, cn, getColorFromArea } from '@/lib/utils';
 import type { HuntListItem, HuntReport } from '@/types/HuntReport';
 import HuntCodeText, { DuplicateMark, HuntTimeText } from './HuntCodeText';
 import HuntDetail from './HuntDetail';
@@ -143,14 +143,22 @@ export default function AllHuntsDialog({ open, onOpenChange, initialReportId }: 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent onEscapeKeyDown={keepOpenWhileEditing} className="flex max-h-[92dvh] flex-col gap-3 sm:max-w-4xl max-md:h-dvh max-md:max-h-dvh max-md:max-w-none max-md:rounded-none">
-        <DialogHeader>
+      <DialogContent
+        onEscapeKeyDown={keepOpenWhileEditing}
+        showCloseButton={!detail}
+        className={cn(
+          'flex max-h-[92dvh] flex-col gap-3 sm:max-w-4xl max-md:h-dvh max-md:max-h-dvh max-md:max-w-none max-md:rounded-none',
+          // The detail's photo runs to the dialog edges and brings its own back/close buttons
+          detail && 'gap-0 overflow-hidden p-0',
+        )}
+      >
+        <DialogHeader className={cn(detail && 'sr-only')}>
           <DialogTitle>Alle hunts</DialogTitle>
           <DialogDescription className="sr-only">Alle geregistreerde hunts en hunts van jotihunt.nl.</DialogDescription>
         </DialogHeader>
 
         {detail ? (
-          <HuntDetail key={detail._id} report={detail} onBack={() => setDetailId(undefined)} />
+          <HuntDetail key={detail._id} report={detail} now={now} onBack={() => setDetailId(undefined)} onClose={() => onOpenChange(false)} />
         ) : (
           <>
             <Totals items={items} />
