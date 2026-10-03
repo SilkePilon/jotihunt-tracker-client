@@ -41,11 +41,14 @@ export default function Login() {
      * Navigates to the dashboard if successful.
      */
     async function handleLogin(data: z.infer<typeof FormSchema>) {
-        const success = await login(data.email, data.password);
-        if (!success) {
-            form.setError('password', {
-                message: 'Ongeldig e-mailadres of wachtwoord.',
-            });
+        const result = await login(data.email, data.password);
+        if (result !== 'ok') {
+            const messages = {
+                invalid: 'Ongeldig e-mailadres of wachtwoord.',
+                'rate-limited': 'Te veel mislukte pogingen, probeer het over een kwartier opnieuw.',
+                offline: 'Kan de server niet bereiken, controleer je verbinding.',
+            };
+            form.setError('password', {message: messages[result]});
             return;
         }
 
