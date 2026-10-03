@@ -8,10 +8,9 @@ import { useHuntReports } from '@/hooks/hunt-reports.hook';
 import { useHunts } from '@/hooks/hunts.hook';
 import useInterval from '@/hooks/utils/interval.hook';
 import { keepOpenWhileEditing } from '@/lib/inline-edit';
-import { formatHuntTimeSafe, huntListItems, isConcealed } from '@/lib/hunt-reports';
+import { formatHuntTimeSafe, huntListItems } from '@/lib/hunt-reports';
 import { areaOptions, capitalizeFirstLetter, getColorFromArea } from '@/lib/utils';
 import type { HuntListItem, HuntReport } from '@/types/HuntReport';
-import Concealed from './Concealed';
 import HuntCodeText, { DuplicateMark, HuntTimeText } from './HuntCodeText';
 import HuntDetail from './HuntDetail';
 
@@ -99,16 +98,14 @@ function HuntRow({ item, now, onSelect }: { item: HuntListItem; now: number; onS
   return (
     <TableRow className="cursor-pointer" role="button" tabIndex={0} onClick={() => onSelect(report._id)} onKeyDown={handleKeyDown}>
       <TableCell className="max-md:hidden">
-        <Concealed concealed={isConcealed(report, now)} className="overflow-hidden rounded">
-          <HuntThumb report={report} />
-        </Concealed>
+        <HuntThumb report={report} />
       </TableCell>
       <TableCell>
         <AreaCell area={report.area} />
       </TableCell>
       <TableCell>
         <span className="inline-flex items-center gap-1">
-          <HuntCodeText report={report} concealed={isConcealed(report, now)} />
+          <HuntCodeText report={report} />
           <DuplicateMark report={report} />
         </span>
       </TableCell>
@@ -153,7 +150,7 @@ export default function AllHuntsDialog({ open, onOpenChange, initialReportId }: 
         </DialogHeader>
 
         {detail ? (
-          <HuntDetail key={detail._id} report={detail} now={now} onBack={() => setDetailId(undefined)} />
+          <HuntDetail key={detail._id} report={detail} onBack={() => setDetailId(undefined)} />
         ) : (
           <>
             <Totals items={items} />

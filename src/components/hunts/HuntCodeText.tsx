@@ -2,19 +2,14 @@ import { Loader2Icon, TriangleAlertIcon } from 'lucide-react';
 import { huntTimeLabel, isReading } from '@/lib/hunt-reports';
 import { cn } from '@/lib/utils';
 import type { HuntReport } from '@/types/HuntReport';
-import Concealed from './Concealed';
 
 /**
- * The hunt code of a report: the known code in mono (blurred while concealed), "Wordt gelezen…" while the server
+ * The hunt code of a report: the known code in mono, "Wordt gelezen…" while the server
  * reads the photo, or "Onbekend" when reading found nothing.
  */
-export default function HuntCodeText({ report, concealed, className }: { report: HuntReport; concealed: boolean; className?: string }) {
+export default function HuntCodeText({ report, className }: { report: HuntReport; className?: string }) {
   if (report.huntCode) {
-    return (
-      <Concealed concealed={concealed}>
-        <span className={cn('truncate font-mono font-medium', className)}>{report.huntCode}</span>
-      </Concealed>
-    );
+    return <span className={cn('truncate font-mono font-bold', className)}>{report.huntCode}</span>;
   }
   if (isReading(report)) {
     return (

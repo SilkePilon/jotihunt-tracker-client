@@ -7,11 +7,10 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Button } from '@/components/ui/button';
 import { useAuthImage } from '@/hooks/auth-image.hook';
 import { useHuntReports } from '@/hooks/hunt-reports.hook';
-import { formatHuntTime, huntSourceLabel, huntTimeLabel, isConcealed, isReading, readFailed } from '@/lib/hunt-reports';
+import { formatHuntTime, huntSourceLabel, huntTimeLabel, isReading, readFailed } from '@/lib/hunt-reports';
 import { capitalizeFirstLetter, getColorFromArea } from '@/lib/utils';
 import type { HuntReport } from '@/types/HuntReport';
 import type { User } from '@/types/User';
-import Concealed from './Concealed';
 import HuntCodeText, { HuntTimeText } from './HuntCodeText';
 import { EditCode, EditTime, RereadButton } from './HuntInlineEdit';
 import ImageLightbox from '@/components/ImageLightbox';
@@ -48,12 +47,11 @@ function CopyButton({ value, label }: { value: string; label: string }) {
 }
 
 /** One hunt report: photo (downloadable), the facts HQ needs to submit it on jotihunt.nl, and actions. */
-export default function HuntDetail({ report, now, onBack }: { report: HuntReport; now: number; onBack: () => void }) {
+export default function HuntDetail({ report, onBack }: { report: HuntReport; onBack: () => void }) {
   const user = useAuthUser<User>();
   const { setSubmitted, deleteReport } = useHuntReports();
   const photo = useAuthImage(report.photoUrl);
   const [zoomOpen, setZoomOpen] = useState(false);
-  const concealed = isConcealed(report, now);
   const [busy, setBusy] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   /** Which field is being edited inline (admins) */
@@ -99,15 +97,13 @@ export default function HuntDetail({ report, now, onBack }: { report: HuntReport
       <div className="grid gap-4 md:grid-cols-[3fr_2fr]">
         <div className="flex min-w-0 flex-col gap-3">
           {photo ? (
-            <Concealed concealed={concealed} kind="image" className="overflow-hidden rounded-md">
-              <button type="button" className="group relative block w-full cursor-zoom-in" onClick={() => setZoomOpen(true)} aria-label="Foto vergroten">
-                <img src={photo} alt={`Foto van hunt ${codeLabel}`} className="max-h-[50dvh] w-full rounded-md bg-muted object-contain" />
-                <span className="absolute bottom-2 right-2 flex items-center gap-1 rounded-badge bg-background/90 px-2 py-1 text-xs font-medium opacity-0 shadow transition-opacity group-hover:opacity-100 max-md:opacity-100">
-                  <ZoomInIcon className="size-3.5" />
-                  Vergroten
-                </span>
-              </button>
-            </Concealed>
+            <button type="button" className="group relative block w-full cursor-zoom-in" onClick={() => setZoomOpen(true)} aria-label="Foto vergroten">
+              <img src={photo} alt={`Foto van hunt ${codeLabel}`} className="max-h-[50dvh] w-full rounded-md bg-muted object-contain" />
+              <span className="absolute bottom-2 right-2 flex items-center gap-1 rounded-badge bg-background/90 px-2 py-1 text-xs font-medium opacity-0 shadow transition-opacity group-hover:opacity-100 max-md:opacity-100">
+                <ZoomInIcon className="size-3.5" />
+                Vergroten
+              </span>
+            </button>
           ) : (
             <div className="flex h-48 w-full items-center justify-center rounded-md bg-muted text-sm text-muted-foreground">Foto laden…</div>
           )}
@@ -135,7 +131,7 @@ export default function HuntDetail({ report, now, onBack }: { report: HuntReport
               {capitalizeFirstLetter(report.area)}
             </Fact>
             <Fact label="Code">
-              {editing !== 'code' && <HuntCodeText report={report} concealed={concealed} />}
+              {editing !== 'code' && <HuntCodeText report={report} />}
               {isAdmin && editing !== 'code' && report.huntCode && <CopyButton value={report.huntCode} label="Code" />}
               {isAdmin && <EditCode report={report} editing={editing === 'code'} onEditingChange={(on) => setEditing(on ? 'code' : null)} />}
               {isAdmin && editing !== 'code' && <RereadButton report={report} />}

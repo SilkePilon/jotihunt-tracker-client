@@ -1,3 +1,4 @@
+import { formatHintCountdown } from '@/lib/next-hint';
 import { distance } from '@turf/turf';
 import type { Hunt } from '@/types/Hunt';
 import type { HuntListItem, HuntReport } from '@/types/HuntReport';
@@ -52,6 +53,20 @@ export function huntStatusLabel(report: HuntReport): string {
   }
 }
 
+/** Status of a report right now: the server status is from the last poll, so flip to overdue locally when the deadline passes in between. */
+export function currentHuntStatus(report: HuntReport, now: number): HuntReport['status'] {
+  return report.status === 'to_submit' && new Date(report.deadline).getTime() < now ? 'overdue' : report.status;
+}
+
+/** Status text with the submit countdown or the awarded points, e.g. "Te versturen · 08:42". */
+export function huntStatusText(report: HuntReport, now: number): string {
+  if (currentHuntStatus(report, now) === 'overdue') return 'Te laat!';
+  let text = huntStatusLabel(report);
+  if (report.status === 'to_submit') text += ` · ${formatHintCountdown(new Date(report.deadline).getTime() - now)}`;
+  if (report.status === 'judged' && report.site) text += ` · ${report.site.points} pt`;
+  return text;
+}
+
 /** Reports HQ still has to submit on jotihunt.nl. */
 export function pendingReports(reports: HuntReport[] | undefined): HuntReport[] {
   return (reports ?? []).filter((report) => report.status === 'to_submit' || report.status === 'overdue');
@@ -84,14 +99,6 @@ export function formatHuntTimeSafe(time: Date | string | null | undefined): stri
   if (!time) return '–';
   const date = new Date(time);
   return Number.isNaN(date.getTime()) ? '–' : formatHuntTime(date.toISOString());
-}
-
-/**
- * Code and photo stay blurred while the hunt still has to be submitted (not once submitted, overdue or judged).
- * Nothing is blurred while the code is unknown: HQ needs the photo to read it.
- */
-export function isConcealed(report: HuntReport, now: number): boolean {
-  return !!report.huntCode && report.status === 'to_submit' && new Date(report.deadline).getTime() >= now;
 }
 
 /** The server is still reading the code and time from the photo. */

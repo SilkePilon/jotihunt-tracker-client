@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import type { Hunt } from '@/types/Hunt';
 import type { HuntReport } from '@/types/HuntReport';
 import type { Prediction } from '@/types/Prediction';
-import { huntListItems, huntsSummary, huntSourceLabel, huntStatusLabel, huntTimeLabel, isConcealed, isReading, nearestArea, normalizeHuntCode, ocrConfidence, pendingReports, readFailed, resolveHuntTime, totalPoints } from './hunt-reports';
+import { huntListItems, huntsSummary, huntSourceLabel, huntStatusLabel, huntTimeLabel, isReading, nearestArea, normalizeHuntCode, ocrConfidence, pendingReports, readFailed, resolveHuntTime, totalPoints } from './hunt-reports';
 
 function report(overrides: Partial<HuntReport> = {}): HuntReport {
   return {
@@ -119,20 +119,6 @@ describe('huntListItems', () => {
     const hunts = [{ _id: 'h1', area: 'Alpha', huntCode: 'AB12CD', status: 'Goedgekeurd', points: 5, huntTime: new Date(), updatedAt: new Date() }] as Hunt[];
     const items = huntListItems([report({ huntCode: null, ocrStatus: 'pending' })], hunts);
     expect(items.map((item) => item.source)).toEqual(['app', 'website']);
-  });
-});
-
-describe('isConcealed', () => {
-  const deadline = new Date(report().deadline).getTime();
-  test('only while still to submit and before the deadline', () => {
-    expect(isConcealed(report(), deadline - 1)).toBe(true);
-    expect(isConcealed(report(), deadline + 1)).toBe(false);
-    expect(isConcealed(report({ status: 'overdue' }), deadline - 1)).toBe(false);
-    expect(isConcealed(report({ status: 'submitted' }), deadline - 1)).toBe(false);
-    expect(isConcealed(report({ status: 'judged' }), deadline - 1)).toBe(false);
-  });
-  test('not while the code is unknown (HQ needs the photo to read it)', () => {
-    expect(isConcealed(report({ huntCode: null, ocrStatus: 'failed' }), deadline - 1)).toBe(false);
   });
 });
 

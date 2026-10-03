@@ -35,7 +35,7 @@ export default function HuntsSection() {
         <div className="flex flex-col gap-2">
           {reports !== undefined && (
             reports.length ? (
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1.5">
                 {reports.slice(0, 3).map((report) => (
                   <HuntReportRow key={report._id} report={report} now={now} onSelect={() => openAll(report._id)} />
                 ))}
