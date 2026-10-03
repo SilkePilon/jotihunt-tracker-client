@@ -1,3 +1,4 @@
+import NotificationSoundsPanel from './panels/NotificationSoundsPanel';
 import { flyToOverview, openHintBoard, openSection, openSettings, sheetSnap } from './actions';
 import type { TourStep } from './types';
 
@@ -119,6 +120,14 @@ export const TOUR_STEPS: TourStep[] = [
     title: 'Instellingen',
     body: 'Kaartstijl, donkere modus, zichtbare lagen en meer. Hier kun je deze rondleiding ook altijd opnieuw bekijken.',
     actions: [sheetSnap('peek'), openSettings()],
+  },
+  {
+    id: 'notification-sounds',
+    target: 'tour.panel',
+    title: 'Meldingen en geluiden',
+    body: 'Bij elke soort melding hoort een eigen geluid. Speel ze hier af, zodat je onderweg zonder te kijken weet wat er gebeurt. Welke meldingen je krijgt, kies je in Instellingen → Meldingen. Klik op Volgende als je klaar bent.',
+    actions: [sheetSnap('peek')],
+    panel: NotificationSoundsPanel,
   },
   {
     id: 'done',

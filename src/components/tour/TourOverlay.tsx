@@ -6,6 +6,7 @@ import useSidebarStore from '@/stores/sidebar.store';
 import { stepDuration } from './duration';
 import { placeCard, type Size } from './placement';
 import { stepsForPlatform, targetFor } from './resolve';
+import { tourTarget } from './targets';
 import { runActions, runUndos } from './runner';
 import { TOUR_STEPS } from './steps';
 import TourCard from './TourCard';
@@ -169,6 +170,7 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
   if (!step) return null;
 
   const isLast = stepIndex === steps.length - 1;
+  const Panel = step.panel;
   const shownStep = (shownIndex !== null && steps[shownIndex]) || step;
 
   return createPortal(
@@ -181,6 +183,17 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
         ref={holeRef}
         className="pointer-events-none fixed left-0 top-0 rounded-xl shadow-[0_0_0_9999px_rgb(0_0_0/0.6)] will-change-[transform,width,height]"
       />
+      {Panel && (
+        // Above the dim layer and the click shield, so the user can use it. Phones: at the top, the card docks below.
+        // Desktop: shifted left by half a card (340px + gap), so the card fits beside it
+        <div
+          key={step.id}
+          {...tourTarget('tour.panel')}
+          className="fixed left-1/2 top-3 w-[min(400px,calc(100vw-24px))] -translate-x-1/2 overflow-y-auto rounded-xl border bg-background shadow-2xl animate-in fade-in duration-300 max-h-[calc(100dvh-24px)] md:left-[calc(50%-376px)] md:top-1/2 md:-translate-y-1/2 md:translate-x-0 motion-reduce:animate-none"
+        >
+          <Panel />
+        </div>
+      )}
       <TourCard
         ref={cardRef}
         title={shownStep.title}
@@ -188,7 +201,7 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
         contentVisible={shownIndex === stepIndex}
         stepIndex={stepIndex}
         stepCount={steps.length}
-        durationMs={ready && !isLast && shownIndex === stepIndex ? stepDuration(step) : undefined}
+        durationMs={ready && !isLast && !step.panel && shownIndex === stepIndex ? stepDuration(step) : undefined}
         paused={paused}
         hidden={hideCard}
         onPrev={prev}

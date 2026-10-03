@@ -1,4 +1,4 @@
-import type { RefObject } from 'react';
+import type { ComponentType, RefObject } from 'react';
 import type { MapRef } from '@/components/Map';
 import type { TourTargetId } from './targets';
 
@@ -38,6 +38,11 @@ export interface TourStep {
   only?: Platform;
   /** Skip the step (in the current direction) when its target is not in the DOM, e.g. a feature that is turned off */
   optional?: boolean;
+  /**
+   * Tour-only content shown in a panel above the dimmed screen (see panels/). The user interacts with it,
+   * so the step doesn't auto-advance. Set `target` to 'tour.panel' so the spotlight and card go around it.
+   */
+  panel?: ComponentType;
   /** TOUR_VERSION that introduced this step; reserved for a future "what's new" tour */
   since?: number;
 }

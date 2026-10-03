@@ -8,9 +8,10 @@ import type { SoundKey } from './notifications';
 
 const SOURCES: Record<SoundKey, string> = { 'fox-green': foxGreen, 'fox-status': foxStatus, hint, article, deadline, broadcast };
 
-/** Play an alert; silently ignored when the browser blocks audio (no user interaction yet). */
-export function playNotificationSound(key: SoundKey, volume = 1) {
+/** Play an alert; silently ignored when the browser blocks audio (no user interaction yet). Returns the audio, to stop it early. */
+export function playNotificationSound(key: SoundKey, volume = 1): HTMLAudioElement {
   const audio = new Audio(SOURCES[key]);
   audio.volume = volume;
   audio.play().catch(() => {});
+  return audio;
 }

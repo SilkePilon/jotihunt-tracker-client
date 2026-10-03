@@ -14,6 +14,7 @@ export const TOUR_TARGET_IDS = [
   'huntCapture.button',
   'cards.topRight',
   'settings.replayItem',
+  'tour.panel',
 ] as const;
 
 export type TourTargetId = (typeof TOUR_TARGET_IDS)[number];

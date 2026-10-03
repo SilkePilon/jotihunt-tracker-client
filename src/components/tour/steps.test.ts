@@ -45,6 +45,12 @@ describe('TOUR_STEPS', () => {
     }
   });
 
+  test('a step has a panel exactly when it targets the tour panel', () => {
+    for (const step of TOUR_STEPS) {
+      expect(!!step.panel).toBe(step.target === 'tour.panel');
+    }
+  });
+
   test('first and last steps are not optional', () => {
     expect(TOUR_STEPS[0].optional).toBeFalsy();
     expect(TOUR_STEPS[TOUR_STEPS.length - 1].optional).toBeFalsy();
