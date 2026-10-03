@@ -14,20 +14,23 @@ export const useMarkers = () => {
    * Create a new marker via the API.
    * Updates the local state with the new marker.
    * @param marker The marker to create
-   * @returns True if the marker was created successfully, false otherwise (never throws)
+   * @returns null if the marker was created, else the error (never throws; show it with apiErrorMessage)
    */
-  async function createMarker(marker: Marker): Promise<boolean> {
-    const result = await fetcherWithMethod('/markers', authHeader, 'POST', marker).catch(() => null);
-    if (result?._id) {
-      mutate((data) => {
-        if (data) {
-          return [...data, result];
-        }
-        return [result];
-      });
-      return true;
+  async function createMarker(marker: Marker): Promise<unknown> {
+    let result;
+    try {
+      result = await fetcherWithMethod('/markers', authHeader, 'POST', marker);
+    } catch (error) {
+      return error ?? new Error('Request failed');
     }
-    return false;
+    if (!result?._id) return new Error('Unexpected response');
+    mutate((data) => {
+      if (data) {
+        return [...data, result];
+      }
+      return [result];
+    });
+    return null;
   }
 
   /**

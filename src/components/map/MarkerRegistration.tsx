@@ -13,6 +13,7 @@ import { Input } from '../ui/input';
 import { Marker } from '@/types/Marker';
 import { useMarkers } from '@/hooks/markers.hook';
 import {toast} from "sonner";
+import { apiErrorMessage } from '@/lib/api-error';
 
 const HUNT_START_TIME = new Date(import.meta.env.HUNT_START_TIME);
 const HUNT_END_TIME = new Date(import.meta.env.HUNT_END_TIME);
@@ -111,12 +112,13 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
       },
     };
 
-    const result = await createMarker(marker);
-    if (result) {
+    const error = await createMarker(marker);
+    if (!error) {
       handleOpenChange(false);
       toast.success('Marker geplaatst!', { description: 'De marker is succesvol geplaatst.' });
     } else {
-      toast.error('Er is iets misgegaan.', { description: 'Er is een fout opgetreden bij het plaatsen van de marker, probeer het later opnieuw.' });
+      // The server's message for e.g. a 429 (too many markers in a row)
+      toast.error('Er is iets misgegaan.', { description: apiErrorMessage(error, 'Er is een fout opgetreden bij het plaatsen van de marker, probeer het later opnieuw.') });
     }
   }
 
