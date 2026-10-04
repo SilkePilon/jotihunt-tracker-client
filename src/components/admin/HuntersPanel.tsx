@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeftIcon, CopyIcon, ExternalLinkIcon, LocateFixedIcon, SearchIcon } from 'lucide-react';
+import { ArrowLeftIcon, ExternalLinkIcon, LocateFixedIcon, SearchIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import IconAction from '@/components/IconAction';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +13,7 @@ import { useDevices } from '@/hooks/devices.hook';
 import { useIsMobile } from '@/hooks/media.hook';
 import useInterval from '@/hooks/utils/interval.hook';
 import { apiErrorMessage } from '@/lib/api-error';
-import { copyToClipboard } from '@/lib/clipboard';
+import CopyButton from '@/components/CopyButton';
 import { formatCoordinates, googleMapsUrl, hunterRows, vehicleGroupIdsFromEnv, type HunterRow } from '@/lib/hunters';
 import { formatAccuracy, formatBattery, formatLastUpdate, formatSpeed, isVehicle, VEHICLE_OPTIONS } from '@/lib/tracker';
 import { cn } from '@/lib/utils';
@@ -138,10 +138,10 @@ function HunterDetail({ row, now, onBack, onShowOnMap }: { row: HunterRow; now: 
               Google Maps
             </a>
           </Button>
-          <Button variant="ghost" size="sm" className="font-mono" onClick={() => void copyToClipboard(formatCoordinates(position.latitude, position.longitude), 'Coördinaten gekopieerd')}>
+          <span className="flex items-center gap-1.5 font-mono text-sm">
             {formatCoordinates(position.latitude, position.longitude)}
-            <CopyIcon data-icon="inline-end" />
-          </Button>
+            <CopyButton value={formatCoordinates(position.latitude, position.longitude)} label="Coördinaten" size="icon-sm" />
+          </span>
         </div>
       ) : (
         <p className="text-sm text-muted-foreground">Nog geen locatie ontvangen.</p>

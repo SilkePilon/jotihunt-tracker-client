@@ -34,7 +34,8 @@ export default function HuntTimelineItem({ report, now, last, onSelect }: { repo
     >
       <HuntTimeText report={report} className="text-right text-muted-foreground tabular-nums" />
       <span className="relative flex h-full justify-center" aria-hidden>
-        {!last && <span className="absolute top-3 -bottom-3 w-0.5 bg-border" />}
+        {/* Runs on to the next dot; after the last dot it fades out, so a single hunt still reads as a timeline */}
+        <span className={cn('absolute top-3 w-0.5', last ? 'bottom-0 bg-linear-to-b from-border to-transparent' : '-bottom-3 bg-border')} />
         <span className="relative mt-0.5 size-2.5 rounded-full ring-[3px] ring-card" style={{ backgroundColor: getColorFromArea(report.area) }} />
       </span>
       <span className="flex min-w-0 flex-col">

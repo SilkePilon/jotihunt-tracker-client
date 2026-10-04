@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { ArrowLeftIcon, DownloadIcon, PencilIcon, TriangleAlertIcon, XIcon } from 'lucide-react';
+import { ArrowLeftIcon, DownloadIcon, PencilIcon, Trash2Icon, TriangleAlertIcon, XIcon } from 'lucide-react';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import { toast } from 'sonner';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import CopyButton from '@/components/CopyButton';
+import IconAction from '@/components/IconAction';
 import ImageLightbox from '@/components/ImageLightbox';
 import { Button } from '@/components/ui/button';
 import { useAuthImage } from '@/hooks/auth-image.hook';
@@ -186,11 +187,11 @@ export default function HuntDetail({ report, now, onBack, onClose }: { report: H
             Bewerken
           </Button>
         )}
-        {isAdmin && <RereadButton report={report} />}
+        {isAdmin && <RereadButton report={report} size="icon-sm" />}
         {canDelete && (
-          <Button type="button" variant="ghost" size="sm" className="text-destructive hover:text-destructive" disabled={busy} onClick={() => setConfirmOpen(true)}>
-            Verwijderen
-          </Button>
+          <IconAction label="Verwijderen" size="icon-sm" disabled={busy} onClick={() => setConfirmOpen(true)}>
+            <Trash2Icon className="text-destructive" />
+          </IconAction>
         )}
         <span className={cn('ml-auto flex gap-2', !isAdmin && 'hidden')}>
           {!report.submittedAt && (
