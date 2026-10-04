@@ -73,6 +73,6 @@ describe('hintStep', () => {
 });
 
 describe('hintBoardRefreshMs', () => {
-  test('polls every 3 s while a hint dialog is open', () => expect(hintBoardRefreshMs(true)).toBe(3000));
+  test('polls every 3 s while the hints page is open', () => expect(hintBoardRefreshMs(true)).toBe(3000));
   test('polls every 10 s for the sidebar mini grid', () => expect(hintBoardRefreshMs(false)).toBe(10_000));
 });

@@ -34,7 +34,7 @@ export default function SidebarSections({ mapRef }: { mapRef: RefObject<MapRef |
         <FoxPills />
       </SidebarSection>
       <SidebarSection id="hints" title="Hints" summary={progress ? `${progress.solved}/${progress.total} opgelost` : undefined}>
-        <HintMiniGrid />
+        <HintMiniGrid mapRef={mapRef} />
       </SidebarSection>
       <ErrorBoundary name="Hunts">
         <HuntsSection />

@@ -13,12 +13,6 @@ export interface HintNote {
   createdAt: string;
 }
 
-/** Identifies one cell of the hint board: a hint article and an area. */
-export interface CellKey {
-  articleId: number;
-  area: string;
-}
-
 export interface HintCell {
   _id: string;
   articleId: number;

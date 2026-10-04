@@ -4,7 +4,6 @@ import {useEffect, useRef, useState} from 'react';
 import {SWRConfig} from 'swr';
 import Map, {MapRef} from './components/Map';
 import PWAPrompt from 'react-ios-pwa-prompt';
-import HintBoardDialog from './components/hints/HintBoardDialog';
 import HuntersDialog from './components/admin/HuntersDialog';
 import DemoReloader from './components/DemoReloader';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -89,9 +88,6 @@ export default function Layout() {
             </ErrorBoundary>
             <ErrorBoundary name="De kaart" className="mx-auto mt-[40dvh] w-fit">
                 <Map ref={mapRef}/>
-            </ErrorBoundary>
-            <ErrorBoundary name="Het hintbord" variant="floating">
-                <HintBoardDialog mapRef={mapRef}/>
             </ErrorBoundary>
             <ErrorBoundary name="Dit venster" variant="floating">
                 <HuntersDialog mapRef={mapRef}/>

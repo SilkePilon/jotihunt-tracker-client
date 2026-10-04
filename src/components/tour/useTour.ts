@@ -3,7 +3,6 @@ import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import { useAuth } from '@/hooks/auth.hook';
 import { useFetcher } from '@/hooks/utils/api.hook';
 import { useIsMobile } from '@/hooks/media.hook';
-import useHintBoardStore from '@/stores/hint-board.store';
 import useAdminStore from '@/stores/admin.store';
 import type { User } from '@/types/User';
 import { stepsForPlatform } from './resolve';
@@ -47,12 +46,11 @@ export function useStartTour() {
 export function useTourAutoStart() {
   const authUser = useAuthUser<User>();
   const active = useTourStore((state) => state.active);
-  const hintBoardOpen = useHintBoardStore((state) => state.view !== null);
   const adminDialogOpen = useAdminStore((state) => state.dialog !== null);
   const startTour = useStartTour();
 
   const due = !!authUser && (authUser.tutorialVersion ?? 0) < TOUR_VERSION;
-  const canStart = !!authUser && due && !authUser.requiresPasswordChange && !active && !hintBoardOpen && !adminDialogOpen;
+  const canStart = !!authUser && due && !authUser.requiresPasswordChange && !active && !adminDialogOpen;
 
   useEffect(() => {
     if (!canStart) return;
