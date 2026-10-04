@@ -27,6 +27,8 @@ export interface HuntReport {
   deadline: string;
   /** Server path of the photo; needs the auth header */
   photoUrl: string;
+  /** Server path of a small list thumbnail (the full photo when there is none); needs the auth header. Missing from older servers */
+  thumbUrl?: string;
   ocrStatus: OcrStatus;
   ocrError: string | null;
   /** 0..1, only for OCR-read values */
