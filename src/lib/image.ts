@@ -1,7 +1,7 @@
 /**
  * createImageBitmap resize hint that brings the long side to `maxSide`, or null when the image is small enough already.
  * Only one side is given (the browser keeps the aspect ratio): if the browser applies it before the EXIF rotation, the
- * result is merely larger than needed, never distorted; downscalePhoto clamps it afterwards.
+ * result is merely larger than needed, never distorted; preparePhoto clamps it afterwards.
  */
 export function resizeHint(width: number, height: number, maxSide: number): { resizeWidth: number } | { resizeHeight: number } | null {
   if (!(width > 0 && height > 0) || Math.max(width, height) <= maxSide) return null;
@@ -40,18 +40,40 @@ async function decodeScaled(file: Blob, maxSide: number): Promise<ImageBitmap> {
   return createImageBitmap(file, { imageOrientation: 'from-image' });
 }
 
-/**
- * Downscale a photo to at most `maxSide` px on the long side and re-encode it as JPEG (quality 0.8).
- * Phone photos are 3–8 MB; this keeps uploads around 300 KB on a bad connection.
- * Uses the EXIF orientation (createImageBitmap `imageOrientation: 'from-image'`).
- */
-export async function downscalePhoto(file: Blob, maxSide = 1600): Promise<Blob> {
-  const bitmap = await decodeScaled(file, maxSide);
-  const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+/** Pixel size that brings the long side to at most `maxSide` (never upscaled, at least 1 px). */
+export function scaledSize(width: number, height: number, maxSide: number): { width: number; height: number } {
+  const scale = Math.min(1, maxSide / Math.max(width, height));
+  return { width: Math.max(1, Math.round(width * scale)), height: Math.max(1, Math.round(height * scale)) };
+}
+
+/** Long side of the list thumbnail uploaded with a hunt photo (shown at ~32–64 CSS px, sharp on a 3x screen). */
+export const THUMB_MAX_SIDE = 320;
+
+function encodeJpeg(source: CanvasImageSource & { width: number; height: number }, maxSide: number, quality: number): Promise<Blob> {
+  const size = scaledSize(source.width, source.height, maxSide);
   const canvas = document.createElement('canvas');
-  canvas.width = Math.round(bitmap.width * scale);
-  canvas.height = Math.round(bitmap.height * scale);
-  canvas.getContext('2d')!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  bitmap.close();
-  return new Promise((resolve, reject) => canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('Foto verkleinen mislukt'))), 'image/jpeg', 0.8));
+  canvas.width = size.width;
+  canvas.height = size.height;
+  const context = canvas.getContext('2d')!;
+  // A 5x reduction for the thumbnail would alias with the default (low) smoothing
+  context.imageSmoothingQuality = 'high';
+  context.drawImage(source, 0, 0, canvas.width, canvas.height);
+  return new Promise((resolve, reject) => canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('Foto verkleinen mislukt'))), 'image/jpeg', quality));
+}
+
+/**
+ * Downscale a photo to at most `maxSide` px on the long side and re-encode it as JPEG (quality 0.8), plus a small
+ * list thumbnail (THUMB_MAX_SIDE, quality 0.7) from the same decode. Phone photos are 3–8 MB; this keeps uploads
+ * around 300 KB on a bad connection. Uses the EXIF orientation (createImageBitmap `imageOrientation: 'from-image'`),
+ * so both come out upright. The thumbnail is null when only it fails.
+ */
+export async function preparePhoto(file: Blob, maxSide = 1600): Promise<{ photo: Blob; thumb: Blob | null }> {
+  const bitmap = await decodeScaled(file, maxSide);
+  try {
+    const photo = await encodeJpeg(bitmap, maxSide, 0.8);
+    const thumb = await encodeJpeg(bitmap, THUMB_MAX_SIDE, 0.7).catch(() => null);
+    return { photo, thumb };
+  } finally {
+    bitmap.close();
+  }
 }
