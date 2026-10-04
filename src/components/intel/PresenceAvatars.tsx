@@ -31,7 +31,7 @@ export default function PresenceAvatars({ entries, max = 3 }: { entries: Presenc
             .slice(max)
             .map((entry) => entry.name)
             .join(', ')}
-          aria-label={`en ${rest} anderen`}
+          aria-label={`en ${rest} ${rest === 1 ? 'ander' : 'anderen'}`}
           className={cn(CIRCLE, '-ml-1.5 bg-muted text-muted-foreground')}
         >
           +{rest}

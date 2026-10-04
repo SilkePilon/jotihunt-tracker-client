@@ -10,7 +10,7 @@ import HintStepper from '@/components/hints/detail/HintStepper';
 import { Button } from '@/components/ui/button';
 import { useGuardedWrite } from '@/hooks/guarded-write.hook';
 import useHintActions from '@/hooks/hint-actions.hook';
-import { useHintBoard, useRdPreview } from '@/hooks/hints.hook';
+import { useRdPreview, type HintBoardActions } from '@/hooks/hints.hook';
 import { useOutlet } from '@/hooks/outlet.hook';
 import { hintStep, type HintStepNumber } from '@/lib/hints';
 import { capitalizeFirstLetter, cn } from '@/lib/utils';
@@ -19,7 +19,7 @@ import OverwriteDialog from './OverwriteDialog';
 
 interface HintWorkflowProps {
   cell: HintCell;
-  actions: ReturnType<typeof useHintBoard>;
+  actions: HintBoardActions;
   selfId?: string;
   isAdmin?: boolean;
 }
@@ -48,6 +48,11 @@ export default function HintWorkflow({ cell, actions, selfId, isAdmin }: HintWor
   const step = hintStep(cell);
   const showForm = formForStep === step.current;
 
+  /** Someone else was first: fetch the board, so the pane shows their claim or answer behind the dialog */
+  function refreshBoard() {
+    void actions.refresh();
+  }
+
   /** Reveals the answer form, seeded with the current answer (someone else may have solved it since opening) */
   function revealForm(formStep: HintStepNumber) {
     setAnswer(cell.answer ?? '');
@@ -64,11 +69,12 @@ export default function HintWorkflow({ cell, actions, selfId, isAdmin }: HintWor
         setFormForStep(null);
         toast.success(solvedKind.current === 'rd' ? 'Opgelost, hint-marker geplaatst!' : 'Antwoord opgeslagen');
       },
+      refreshBoard,
     );
   }
 
   function claim() {
-    void guard.run((flags) => actions.claim(articleId, area, flags.overwrite), 'jij');
+    void guard.run((flags) => actions.claim(articleId, area, flags.overwrite), 'bezig', undefined, refreshBoard);
   }
 
   function showOnMap(lng: number, lat: number) {

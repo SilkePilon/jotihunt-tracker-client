@@ -53,8 +53,8 @@ export default function HintMiniGrid({ mapRef }: { mapRef: RefObject<MapRef | nu
     }
     setSelected({ articleId, area });
     if (cell.status === 'solved' && cell.answerLocation) {
-      // Lower the sidebar sheet so the hint location is visible
-      setSheetSnap('peek');
+      // Lower the sidebar sheet to half: the hint location shows on the map and the answer line under the grid stays visible
+      setSheetSnap('half');
       mapRef.current?.flyTo({ center: cell.answerLocation, duration: 2000, zoom: 15 });
     }
   }

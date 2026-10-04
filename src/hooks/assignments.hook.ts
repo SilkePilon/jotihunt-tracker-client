@@ -23,6 +23,8 @@ export const useAssignments = () => {
     assignments: asList(data),
     members: asList(members) ?? [],
     isError: error,
+    /** Fetch the bookkeeping now, e.g. after a write was refused because someone else was first */
+    refresh: () => mutate(),
     setStatus: (articleId: number, status: AssignmentStatus, overwrite = false) => post(articleId, 'status', { status, overwrite }),
     setOwner: (articleId: number, owner: string | null, overwrite = false) => post(articleId, 'owner', { owner, overwrite }),
     addNote: (articleId: number, text: string) => post(articleId, 'notes', { text }),

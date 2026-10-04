@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { formatClock } from '@/lib/format';
 import { ASSIGNMENT_STATUS_LABELS, deadlineLabel, deadlineTone, type DeadlineTone } from '@/lib/intel';
@@ -56,10 +56,11 @@ function HintLine({ item }: { item: IntelItem }) {
 }
 
 /** Assignment: the deadline (or how it ended), the points and who does it */
-function AssignmentLine({ item, now }: { item: IntelItem; now: number }) {
+function AssignmentLine({ item, now }: { item: IntelItem; now?: number }) {
   const status = item.assignment?.status ?? 'open';
-  const tone = deadlineTone(item.endTime, now, status);
-  const label = tone === 'done' ? ASSIGNMENT_STATUS_LABELS[status].toLowerCase() : item.endTime ? deadlineLabel(item.endTime, now) : null;
+  // Without a deadline there is no clock to read: the tone is 'done' or 'none' whatever the time
+  const tone = deadlineTone(item.endTime, now ?? 0, status);
+  const label = tone === 'done' ? ASSIGNMENT_STATUS_LABELS[status].toLowerCase() : item.endTime && now !== undefined ? deadlineLabel(item.endTime, now) : null;
   const meta = [item.maxPoints !== undefined ? `max ${item.maxPoints} pt` : null, item.assignment?.owner?.name ?? 'niemand'].filter(Boolean).join(' · ');
   return (
     <>
@@ -82,13 +83,18 @@ function NewsLine({ item }: { item: IntelItem }) {
 interface IntelListItemProps {
   item: IntelItem;
   selected: boolean;
-  now: number;
+  /** The current time, only for an assignment with a deadline: the other rows do not follow the clock */
+  now?: number;
+  /** The other users who have this item open */
   presence: PresenceEntry[];
-  onSelect: () => void;
+  onSelect: (item: IntelItem) => void;
 }
 
-/** One row of the list: a hint, an assignment or a news item with its state at a glance */
-export default function IntelListItem({ item, selected, now, presence, onSelect }: IntelListItemProps) {
+/**
+ * One row of the list: a hint, an assignment or a news item with its state at a glance. Memoised: give it props that
+ * keep their identity, so a row only renders again when something it shows changed.
+ */
+function IntelListItem({ item, selected, now, presence, onSelect }: IntelListItemProps) {
   const icon = TYPE_ICON[item.type];
   const unread = item.unread && item.type !== 'hint';
 
@@ -96,7 +102,7 @@ export default function IntelListItem({ item, selected, now, presence, onSelect 
     <button
       type="button"
       aria-current={selected}
-      onClick={onSelect}
+      onClick={() => onSelect(item)}
       className={cn(
         'flex w-full cursor-pointer gap-2.5 border-b px-3 py-2.5 text-left outline-none transition-colors hover:bg-muted/60 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset',
         selected && 'bg-muted shadow-[inset_2px_0_0_var(--primary)] hover:bg-muted',
@@ -123,3 +129,5 @@ export default function IntelListItem({ item, selected, now, presence, onSelect 
     </button>
   );
 }
+
+export default memo(IntelListItem);

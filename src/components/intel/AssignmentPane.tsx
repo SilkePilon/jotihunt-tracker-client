@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { isAxiosError } from 'axios';
 import { ExternalLinkIcon } from 'lucide-react';
 import { toast } from 'sonner';
@@ -34,18 +34,26 @@ interface AssignmentPaneProps {
 export default function AssignmentPane({ item, now, assignments, presence, selfId }: AssignmentPaneProps) {
   const guard = useGuardedWrite();
   const [noteBusy, setNoteBusy] = useState(false);
+  const statusLabelId = useId();
 
   const { assignment } = item;
   const status = assignment?.status ?? 'open';
   const owner = assignment?.owner ?? null;
   const selfName = assignments.members.find((member) => member._id === selfId)?.name ?? 'jij';
+  // Giving it to who already has it is not a choice
+  const assignable = assignments.members.filter((member) => member._id !== owner?._id);
+
+  /** Someone else was first: fetch the bookkeeping, so the pane shows their value behind the dialog */
+  function refresh() {
+    void assignments.refresh();
+  }
 
   function setStatus(next: AssignmentStatus) {
-    void guard.run((flags) => assignments.setStatus(item.id, next, flags.overwrite), ASSIGNMENT_STATUS_LABELS[next]);
+    void guard.run((flags) => assignments.setStatus(item.id, next, flags.overwrite), ASSIGNMENT_STATUS_LABELS[next], undefined, refresh);
   }
 
   function setOwner(ownerId: string | null, name: string) {
-    void guard.run((flags) => assignments.setOwner(item.id, ownerId, flags.overwrite), name);
+    void guard.run((flags) => assignments.setOwner(item.id, ownerId, flags.overwrite), name, undefined, refresh);
   }
 
   async function addNote(text: string, clear: () => void) {
@@ -66,7 +74,7 @@ export default function AssignmentPane({ item, now, assignments, presence, selfI
       {item.endTime && <DeadlineBox endTime={item.endTime} now={now} status={status} />}
 
       <div className="flex flex-col gap-1.5">
-        <span id="assignment-status-label" className={LABEL}>
+        <span id={statusLabelId} className={LABEL}>
           Status
         </span>
         <ToggleGroup
@@ -74,7 +82,7 @@ export default function AssignmentPane({ item, now, assignments, presence, selfI
           variant="outline"
           size="sm"
           className="w-full"
-          aria-labelledby="assignment-status-label"
+          aria-labelledby={statusLabelId}
           value={status}
           disabled={guard.busy}
           // Radix gives '' when the pressed one is clicked again: the status stays
@@ -111,14 +119,14 @@ export default function AssignmentPane({ item, now, assignments, presence, selfI
             )}
           </span>
         </div>
-        {assignments.members.length > 0 && (
+        {assignable.length > 0 && (
           // The value stays empty: the select is an action, the owner shows above
-          <Select value="" disabled={guard.busy} onValueChange={(memberId) => setOwner(memberId, assignments.members.find((member) => member._id === memberId)?.name ?? '')}>
+          <Select value="" disabled={guard.busy} onValueChange={(memberId) => setOwner(memberId, assignable.find((member) => member._id === memberId)?.name ?? '')}>
             <SelectTrigger size="sm" className="w-full" aria-label="Toewijzen aan">
               <SelectValue placeholder="Toewijzen aan…" />
             </SelectTrigger>
             <SelectContent>
-              {assignments.members.map((member) => (
+              {assignable.map((member) => (
                 <SelectItem key={member._id} value={member._id}>
                   {member.name}
                 </SelectItem>

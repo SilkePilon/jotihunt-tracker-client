@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
 import { hintBoardRefreshMs } from '@/lib/hints';
 import { fetcherWithMethod, useAuthSWR } from '@/lib/swr';
@@ -24,12 +24,15 @@ const useDebouncedValue = <T>(value: T, delayMs: number): T => {
   return debounced;
 };
 
+/**
+ * The hint board (articles and their cells per area) with the actions on a cell. `actions` is one memoised object, so
+ * a memoised component that takes it does not re-render on every poll; the same functions are also spread at the top
+ * level.
+ */
 export const useHintBoard = ({ live = false }: { live?: boolean } = {}) => {
   const authHeader = useAuthHeader() || '';
   // The hints page polls fast (claims by others must show up quickly); the sidebar mini grid slowly
   const { data, error, mutate } = useAuthSWR<HintBoard>('/hints/board', { refreshInterval: hintBoardRefreshMs(live) });
-  const refresh = useCallback(() => mutate(), [mutate]);
-
   // Memoised: the functions keep their identity between polls, so a pane that only uses them need not re-render
   const actions = useMemo(() => {
     /**
@@ -43,6 +46,8 @@ export const useHintBoard = ({ live = false }: { live?: boolean } = {}) => {
     }
 
     return {
+      /** Fetch the board now instead of waiting for the next poll, e.g. after a write was refused because someone else was first. */
+      refresh: () => mutate(),
       claim: (articleId: number, area: string, overwrite = false) => post(articleId, area, 'claim', { overwrite }),
       release: (articleId: number, area: string) => post(articleId, area, 'release'),
       solve: (articleId: number, area: string, answer: string, flags: Partial<WriteFlags> = {}) =>
@@ -57,11 +62,13 @@ export const useHintBoard = ({ live = false }: { live?: boolean } = {}) => {
     board: data,
     isLoading: !error && !data,
     isError: error,
-    /** Fetch the board now (e.g. when a dialog opens, the idle poll can be up to 10 s old). */
-    refresh,
+    actions,
     ...actions,
   };
 };
+
+/** The memoised actions of `useHintBoard`: stable between polls */
+export type HintBoardActions = ReturnType<typeof useHintBoard>['actions'];
 
 /**
  * Let the server parse a typed answer as an RD coordinate (single source of truth for RD rules).

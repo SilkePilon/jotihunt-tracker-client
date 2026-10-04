@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useArticles } from '@/hooks/articles.hook';
 import { useAssignments } from '@/hooks/assignments.hook';
 import { useHintBoard } from '@/hooks/hints.hook';
@@ -41,13 +42,13 @@ function searchFor(item: IntelItem, currentArea?: string): string {
  * in the centre. It covers the map, which stays mounted underneath.
  */
 export default function IntelPage() {
-  const { articles } = useArticles();
+  const { articles, isError: articlesFailed } = useArticles();
   const hintBoard = useHintBoard({ live: true });
   const { board } = hintBoard;
   const assignmentBook = useAssignments();
   const { assignments } = assignmentBook;
   const { readState, markRead } = useReadState();
-  const { label: nextHint } = useNextHint();
+  const { label: nextHint, isCountdown } = useNextHint();
   const user = useAuthUser<User>();
   const selfId = user?._id;
 
@@ -70,16 +71,26 @@ export default function IntelPage() {
   const selected = items.find((item) => item.id === selection.itemId);
   const presence = usePresence(selected?.id, selected?.type === 'hint' ? selection.area : undefined);
 
-  // Nothing selected yet: the first row. A hint without a (valid) area: its first open area. As a string, so the
-  // effect only runs when the address really has to change.
+  // Nothing selected yet: the first row. A hint without a (valid) area: its first open area. An old ?article= link:
+  // the same selection as ?item=. As a string, so the effect only runs when the address really has to change.
   const current = selectionSearch(selection.itemId, selection.area).slice(1);
   let redirect: string | undefined;
   if (selection.itemId === undefined) redirect = filtered[0] && searchFor(filtered[0]);
   else if (selected && searchFor(selected, selection.area) !== current) redirect = searchFor(selected, selection.area);
+  else if (params.has('article')) redirect = current;
 
   useEffect(() => {
     if (redirect !== undefined) setParams(redirect, { replace: true });
   }, [redirect, setParams]);
+
+  // Another row; the area is read from the address itself, so the function only changes with the address and not on
+  // every tick of the clock (the rows are memoised)
+  const selectItem = useCallback(
+    (item: IntelItem) => {
+      setParams((previous) => searchFor(item, parseSelection(previous).area), { replace: false });
+    },
+    [setParams],
+  );
 
   // Another area of the selected hint; from the address itself, so the function stays the same between renders
   const changeArea = useCallback(
@@ -107,7 +118,7 @@ export default function IntelPage() {
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-background">
-      <IntelTopBar nextHint={nextHint === '…' ? undefined : nextHint} />
+      <IntelTopBar nextHint={nextHint === '…' ? undefined : nextHint} isCountdown={isCountdown} />
       <div className="flex min-h-0 flex-1">
         <aside className="flex w-[290px] shrink-0 flex-col border-r" aria-label="Overzicht">
           <ErrorBoundary name="De lijst" variant="inline" className="p-3">
@@ -121,12 +132,14 @@ export default function IntelPage() {
               presence={presence}
               selfId={selfId}
               loading={articles === undefined}
-              onSelect={(item) => setParams(searchFor(item, selection.area), { replace: false })}
+              failed={articles === undefined && !!articlesFailed}
+              onSelect={selectItem}
             />
           </ErrorBoundary>
         </aside>
         <main className="min-w-0 flex-1 overflow-y-auto bg-muted/30">
-          <ErrorBoundary name="Dit bericht" variant="inline" className="p-8">
+          {/* Keyed on the item: a crash in one item does not stick to the next */}
+          <ErrorBoundary key={selected?.id ?? 'none'} name="Dit bericht" variant="inline" className="p-8">
             {selected ? (
               <IntelReader item={selected} area={selectedArea} />
             ) : (
@@ -135,16 +148,25 @@ export default function IntelPage() {
           </ErrorBoundary>
         </main>
         <aside className="w-[360px] shrink-0 overflow-y-auto border-l" aria-label="Details">
-          <ErrorBoundary name="Dit paneel" variant="inline" className="p-4">
+          <ErrorBoundary key={selected?.id ?? 'none'} name="Dit paneel" variant="inline" className="p-4">
             {!selected && <p className="p-4 text-sm text-muted-foreground">Kies een item</p>}
-            {selected?.type === 'hint' && selectedArea && (
+            {selected?.type === 'hint' && board === undefined && (
+              // The cells are not there yet: no area to work on, and no telling whether this hint has one
+              <div className="flex flex-col gap-3 p-4" aria-busy="true" aria-label="Laden…">
+                <Skeleton className="h-7 w-full" />
+                <Skeleton className="h-5 w-3/5" />
+                <Skeleton className="h-4 w-4/5" />
+                <Skeleton className="h-4 w-2/5" />
+              </div>
+            )}
+            {selected?.type === 'hint' && board !== undefined && selectedArea && (
               // Keyed on the cell: the answer field starts fresh on another area
               <HintPane
                 key={selectedCell?._id ?? `${selected.id}-${selectedArea}`}
                 item={selected}
                 area={selectedArea}
                 onAreaChange={changeArea}
-                actions={hintBoard}
+                actions={hintBoard.actions}
                 presence={presence}
                 selfId={selfId}
                 isAdmin={user?.admin}

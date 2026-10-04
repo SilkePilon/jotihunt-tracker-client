@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
 import { fetcherWithMethod, useAuthSWR } from '@/lib/swr';
 import type { ReadState } from '@/types/Intel';
@@ -10,10 +10,14 @@ export const useReadState = () => {
   const authHeader = useAuthHeader() || '';
   const { data, mutate } = useAuthSWR<ReadState>('/articles/read', { refreshInterval: READ_STATE_REFRESH_MS });
 
+  /** Ids whose POST is under way: a second call before the optimistic data is rendered must not send another one */
+  const inFlight = useRef(new Set<number>());
+
   /** Mark an article as read: shown at once, stored in the background (a failure only means it shows unread again later) */
   const markRead = useCallback(
     async (articleId: number) => {
-      if (data?.read.includes(articleId)) return;
+      if (data?.read.includes(articleId) || inFlight.current.has(articleId)) return;
+      inFlight.current.add(articleId);
       const key = String(articleId);
       await mutate(
         async (current) => {
@@ -26,7 +30,9 @@ export const useReadState = () => {
           revalidate: true,
           rollbackOnError: true,
         },
-      ).catch(() => undefined);
+      )
+        .catch(() => undefined)
+        .finally(() => inFlight.current.delete(articleId));
     },
     [authHeader, data, mutate],
   );

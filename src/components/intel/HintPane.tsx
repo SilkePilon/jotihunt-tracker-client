@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import Countdown from '@/components/hints/detail/Countdown';
-import { useHintBoard } from '@/hooks/hints.hook';
+import type { HintBoardActions } from '@/hooks/hints.hook';
 import { formatClock } from '@/lib/format';
 import { othersOnItem } from '@/lib/intel';
 import { capitalizeFirstLetter, getColorFromArea } from '@/lib/utils';
@@ -14,7 +14,8 @@ interface HintPaneProps {
   /** The area of the hint the pane works on */
   area: string;
   onAreaChange: (area: string) => void;
-  actions: ReturnType<typeof useHintBoard>;
+  /** The memoised actions of `useHintBoard`, not the hook's whole return value (that is new on every render) */
+  actions: HintBoardActions;
   presence: PresenceEntry[];
   selfId?: string;
   isAdmin?: boolean;
@@ -48,20 +49,5 @@ function HintPane({ item, area, onAreaChange, actions, presence, selfId, isAdmin
   );
 }
 
-/**
- * The page re-renders every second for its clock. The hook object is new each time, but its action functions come
- * from one memo: comparing one of them tells whether they changed.
- */
-function sameProps(previous: HintPaneProps, next: HintPaneProps): boolean {
-  return (
-    previous.item === next.item &&
-    previous.area === next.area &&
-    previous.onAreaChange === next.onAreaChange &&
-    previous.actions.solve === next.actions.solve &&
-    previous.presence === next.presence &&
-    previous.selfId === next.selfId &&
-    previous.isAdmin === next.isAdmin
-  );
-}
-
-export default memo(HintPane, sameProps);
+// Memoised: the page re-renders every second for its clock, and every prop here is stable between those renders
+export default memo(HintPane);
