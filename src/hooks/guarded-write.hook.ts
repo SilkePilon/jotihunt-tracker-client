@@ -18,20 +18,26 @@ export interface PendingWrite {
 /**
  * Runs a write that the server may refuse with a conflict (someone else's value) or an existing hint marker. The
  * refusal becomes `pending`, which the overwrite dialog shows; `confirm` repeats the write with the flag that lets it
- * through. Other errors are toasted.
+ * through. Other errors are toasted. While a write is under way, `run` and `confirm` do nothing.
  */
 export function useGuardedWrite() {
   const [busy, setBusy] = useState(false);
   const [pending, setPending] = useState<PendingWrite | null>(null);
   const retry = useRef<{ write: Write; flags: WriteFlags; newValue: string; onDone?: () => void } | null>(null);
 
+  /** Set while a write is under way: `busy` only shows it a render later */
+  const inFlight = useRef(false);
+
   async function attempt(write: Write, flags: WriteFlags, newValue: string, onDone?: () => void) {
+    if (inFlight.current) return;
+    inFlight.current = true;
     setBusy(true);
+    let saved = false;
     try {
       await write(flags);
+      saved = true;
       retry.current = null;
       setPending(null);
-      onDone?.();
     } catch (error) {
       const step = nextWriteStep(error, flags);
       if (step.ask === 'error') {
@@ -43,8 +49,11 @@ export function useGuardedWrite() {
         setPending({ conflict: step.conflict, marker: step.ask === 'marker', newValue });
       }
     } finally {
+      inFlight.current = false;
       setBusy(false);
     }
+    // Outside the try: an error in onDone is not a failed save
+    if (saved) onDone?.();
   }
 
   return {

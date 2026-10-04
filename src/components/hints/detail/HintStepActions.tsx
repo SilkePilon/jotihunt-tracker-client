@@ -12,6 +12,8 @@ interface HintStepActionsProps {
   actions: ReturnType<typeof useHintBoard>;
   busy: boolean;
   run: (action: () => Promise<unknown>, success?: string) => Promise<void>;
+  /** Claims the cell; when someone else has it the caller asks before taking it over */
+  onClaim: (overwrite?: boolean) => void;
   /** Whether the answer form of the current step was revealed */
   showForm: boolean;
   onRevealForm: (step: HintStepNumber) => void;
@@ -21,12 +23,12 @@ interface HintStepActionsProps {
 
 type StepProps = Omit<HintStepActionsProps, 'currentUserId'> & { noHintButton: ReactNode; releaseButton: ReactNode };
 
-function OpenStep({ cell, actions, busy, run, showForm, onRevealForm, answerForm, noHintButton }: StepProps) {
+function OpenStep({ busy, onClaim, showForm, onRevealForm, answerForm, noHintButton }: StepProps) {
   return (
     <>
       <p className="text-sm text-muted-foreground">Claim deze hint zodat anderen zien dat jij hem oplost.</p>
       <div className="flex flex-wrap items-center gap-2">
-        <Button disabled={busy} onClick={() => run(() => actions.claim(cell.articleId, cell.area))}>
+        <Button disabled={busy} onClick={() => onClaim()}>
           Claimen
         </Button>
         {!showForm && (
@@ -41,7 +43,7 @@ function OpenStep({ cell, actions, busy, run, showForm, onRevealForm, answerForm
   );
 }
 
-function SolvingStep({ cell, isAdmin, showForm, onRevealForm, answerForm, noHintButton, releaseButton, claimedByMe, claimedByOther }: StepProps & { claimedByMe: boolean; claimedByOther: boolean }) {
+function SolvingStep({ cell, isAdmin, busy, onClaim, showForm, onRevealForm, answerForm, noHintButton, releaseButton, claimedByMe, claimedByOther }: StepProps & { claimedByMe: boolean; claimedByOther: boolean }) {
   if (claimedByOther && !showForm) {
     return (
       <>
@@ -49,6 +51,9 @@ function SolvingStep({ cell, isAdmin, showForm, onRevealForm, answerForm, noHint
           <span className="font-semibold">{cell.claimedBy?.name}</span> is hiermee bezig
         </p>
         <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" disabled={busy} onClick={() => onClaim()}>
+            Overnemen
+          </Button>
           <Button variant="ghost" size="sm" onClick={() => onRevealForm(2)}>
             Toch een antwoord invullen
           </Button>

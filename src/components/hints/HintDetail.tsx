@@ -40,7 +40,7 @@ export default function HintDetail({ article, cell, currentUserId, isAdmin, acti
   const [zoomSrc, setZoomSrc] = useState<string | null>(null);
 
   const { articleId, area } = cell;
-  const { busy, run, submitAnswer } = useHintActions(actions, articleId, area);
+  const { busy, run } = useHintActions();
   const areaName = capitalizeFirstLetter(area);
   const step = hintStep(cell);
   const showForm = formForStep === step.current;
@@ -52,7 +52,10 @@ export default function HintDetail({ article, cell, currentUserId, isAdmin, acti
   }
 
   function submit(replaceMarker = false) {
-    return submitAnswer(answer, replaceMarker, { onSolved: () => setFormForStep(null), onExistingMarker: () => setConfirmReplace(true) });
+    return run(async () => {
+      await actions.solve(articleId, area, answer, { replaceMarker });
+      setFormForStep(null);
+    });
   }
 
   return (
@@ -111,6 +114,7 @@ export default function HintDetail({ article, cell, currentUserId, isAdmin, acti
             actions={actions}
             busy={busy}
             run={run}
+            onClaim={() => run(() => actions.claim(articleId, area))}
             showForm={showForm}
             onRevealForm={revealForm}
             answerForm={<AnswerForm answer={answer} onAnswerChange={setAnswer} busy={busy} onSubmit={() => submit()} />}

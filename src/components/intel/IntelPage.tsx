@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import ErrorBoundary from '@/components/ErrorBoundary';
@@ -13,10 +13,13 @@ import { buildIntelItems, filterIntelItems, intelCounts, parseSelection, selecti
 import { areaOptions } from '@/lib/utils';
 import type { IntelFilter, IntelItem } from '@/types/Intel';
 import type { User } from '@/types/User';
+import AssignmentPane from './AssignmentPane';
+import HintPane from './HintPane';
 import IntelFilters from './IntelFilters';
 import IntelList from './IntelList';
 import IntelReader from './IntelReader';
 import IntelTopBar from './IntelTopBar';
+import NewsPane from './NewsPane';
 
 /** The first area (in the usual order) that still needs work, else the first area of the hint */
 function firstOpenArea(item: IntelItem): string | undefined {
@@ -39,11 +42,14 @@ function searchFor(item: IntelItem, currentArea?: string): string {
  */
 export default function IntelPage() {
   const { articles } = useArticles();
-  const { board } = useHintBoard({ live: true });
-  const { assignments } = useAssignments();
+  const hintBoard = useHintBoard({ live: true });
+  const { board } = hintBoard;
+  const assignmentBook = useAssignments();
+  const { assignments } = assignmentBook;
   const { readState, markRead } = useReadState();
   const { label: nextHint } = useNextHint();
-  const selfId = useAuthUser<User>()?._id;
+  const user = useAuthUser<User>();
+  const selfId = user?._id;
 
   const [filter, setFilter] = useState<IntelFilter>({ type: 'all', query: '', openOnly: false });
   const [now, setNow] = useState(() => Date.now());
@@ -68,6 +74,22 @@ export default function IntelPage() {
   useEffect(() => {
     if (redirect !== undefined) setParams(redirect, { replace: true });
   }, [redirect, setParams]);
+
+  // Another area of the selected hint; from the address itself, so the function stays the same between renders
+  const changeArea = useCallback(
+    (area: string) => {
+      setParams(
+        (previous) => {
+          const { itemId } = parseSelection(previous);
+          return itemId === undefined ? previous : selectionSearch(itemId, area).slice(1);
+        },
+        { replace: true },
+      );
+    },
+    [setParams],
+  );
+  const selectedArea = selected?.type === 'hint' ? selection.area : undefined;
+  const selectedCell = selectedArea ? selected?.cells.find((cell) => cell.area === selectedArea) : undefined;
 
   // Opening a news item or assignment marks it read, once per opened item
   const openedArticleId = selected && selected.type !== 'hint' && readState ? selected.id : undefined;
@@ -100,7 +122,7 @@ export default function IntelPage() {
         <main className="min-w-0 flex-1 overflow-y-auto bg-muted/30">
           <ErrorBoundary name="Dit bericht" variant="inline" className="p-8">
             {selected ? (
-              <IntelReader item={selected} area={selected.type === 'hint' ? selection.area : undefined} />
+              <IntelReader item={selected} area={selectedArea} />
             ) : (
               <p className="flex h-full items-center justify-center p-8 text-center text-sm text-muted-foreground">Kies links een hint, opdracht of nieuwsbericht.</p>
             )}
@@ -108,7 +130,22 @@ export default function IntelPage() {
         </main>
         <aside className="w-[360px] shrink-0 overflow-y-auto border-l" aria-label="Details">
           <ErrorBoundary name="Dit paneel" variant="inline" className="p-4">
-            <p className="p-4 text-sm text-muted-foreground">Kies een item</p>
+            {!selected && <p className="p-4 text-sm text-muted-foreground">Kies een item</p>}
+            {selected?.type === 'hint' && selectedArea && (
+              // Keyed on the cell: the answer field starts fresh on another area
+              <HintPane
+                key={selectedCell?._id ?? `${selected.id}-${selectedArea}`}
+                item={selected}
+                area={selectedArea}
+                onAreaChange={changeArea}
+                actions={hintBoard}
+                presence={presence}
+                selfId={selfId}
+                isAdmin={user?.admin}
+              />
+            )}
+            {selected?.type === 'assignment' && <AssignmentPane key={selected.id} item={selected} now={now} assignments={assignmentBook} presence={presence} selfId={selfId} />}
+            {selected?.type === 'news' && <NewsPane item={selected} presence={presence} selfId={selfId} />}
           </ErrorBoundary>
         </aside>
       </div>
