@@ -3,7 +3,20 @@ import type { Marker } from '@/types/Marker';
 import { MarkerType } from '@/types/MarkerType';
 import type { Position } from '@/types/Position';
 import type { Team } from '@/types/Team';
-import { accuracyCircles, layersToMoveBelow, markerFeatures, markerImageId, teamCircles, trailLines } from './map-layers';
+import {
+  accuracyCircles,
+  hunterFeatures,
+  hunterImageId,
+  layerStackMoves,
+  markerFeatures,
+  markerImageId,
+  parseHunterImageId,
+  parseTeamPinImageId,
+  teamCircles,
+  teamPinFeatures,
+  teamPinImageId,
+  trailLines,
+} from './map-layers';
 
 function team(id: string, area?: string): Team {
   return { _id: id, apiId: 1, name: id, area, location: { type: 'Point', coordinates: [5.9, 52] } } as Team;
@@ -82,13 +95,94 @@ describe('markerImageId', () => {
   });
 });
 
-describe('layersToMoveBelow', () => {
-  const candidates = ['home', 'trails'];
-  test('candidates drawn above the target, in their current order', () => {
-    expect(layersToMoveBelow(['base', 'trails', 'fox', 'home', 'ruler'], 'fox', candidates)).toEqual(['home']);
+describe('teamPinFeatures', () => {
+  test('one point per team with its area colour, visited state and pin images', () => {
+    const teams = [{ ...team('a', 'Alpha'), apiId: 7, name: 'Groep A' }, { ...team('b'), apiId: 8 }];
+    const fc = teamPinFeatures(teams, new Set([7]), colorFor);
+    expect(fc.features).toEqual([
+      {
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [5.9, 52] },
+        properties: { id: 'a', icon: 'team-pin|color-Alpha|visited', hoverIcon: 'team-pin|color-Alpha|visited|hover' },
+      },
+      { type: 'Feature', geometry: { type: 'Point', coordinates: [5.9, 52] }, properties: { id: 'b', icon: 'team-pin|none|', hoverIcon: 'team-pin|none||hover' } },
+    ]);
   });
-  test('nothing when they are already below, or the target is missing', () => {
-    expect(layersToMoveBelow(['home', 'trails', 'fox', 'ruler'], 'fox', candidates)).toEqual([]);
-    expect(layersToMoveBelow(['home', 'trails'], 'fox', candidates)).toEqual([]);
+});
+
+describe('teamPinImageId', () => {
+  test('round-trips colour, visited badge and hover', () => {
+    for (const [color, visited, hover] of [
+      ['#f87171', true, false],
+      ['#ffffff', false, true],
+    ] as const) {
+      expect(parseTeamPinImageId(teamPinImageId(color, visited, hover))).toEqual({ color, visited, hover });
+    }
   });
+  test('other images are not team pins', () => {
+    expect(parseTeamPinImageId('fox-hunt')).toBeUndefined();
+    expect(parseTeamPinImageId('hunter|car|live')).toBeUndefined();
+  });
+});
+
+describe('hunterFeatures', () => {
+  const pos = (deviceId: number, speed: number, fixTime: string) => ({ ...position(deviceId, 10), deviceName: `Hunter ${deviceId}`, speed, course: 90, fixTime });
+  test('vehicle icon, grey when stale, heading arrow only when moving with a recent fix', () => {
+    const fc = hunterFeatures([pos(1, 3, 'recent'), pos(2, 3, 'old'), pos(3, 0, 'recent')], (id) => (id === 1 ? 'car' : 'phone'), (fixTime) => fixTime === 'old');
+    expect(fc.features.map((f) => f.properties)).toEqual([
+      { id: 1, icon: 'hunter|car|live', hoverIcon: 'hunter|car|live|hover', course: 90, moving: true },
+      { id: 2, icon: 'hunter|phone|stale', hoverIcon: 'hunter|phone|stale|hover', course: 90, moving: false },
+      { id: 3, icon: 'hunter|phone|live', hoverIcon: 'hunter|phone|live|hover', course: 90, moving: false },
+    ]);
+    expect(fc.features[0].geometry).toEqual({ type: 'Point', coordinates: [5.9, 52] });
+  });
+});
+
+describe('hunterImageId', () => {
+  test('round-trips icon, stale and hover', () => {
+    expect(parseHunterImageId(hunterImageId('bike', true, true))).toEqual({ icon: 'bike', stale: true, hover: true });
+    expect(parseHunterImageId(hunterImageId('phone', false))).toEqual({ icon: 'phone', stale: false, hover: false });
+  });
+  test('unknown icons and other images are not hunters', () => {
+    expect(parseHunterImageId('hunter|boat|live')).toBeUndefined();
+    expect(parseHunterImageId('team-pin|#fff|')).toBeUndefined();
+  });
+});
+
+describe('layerStackMoves', () => {
+  const stack = [['home', 'trails'], ['fox'], ['teams'], ['hunters']];
+  test('nothing to do when the stack is in order (other layers may sit in between)', () => {
+    expect(layerStackMoves(['base', 'trails', 'home', 'fox', 'labels', 'teams', 'hunters', 'ruler'], stack)).toEqual([]);
+  });
+  test('a layer added later (e.g. toggling the home circle) goes below the groups above it', () => {
+    expect(layerStackMoves(['base', 'trails', 'fox', 'teams', 'hunters', 'home'], stack)).toEqual([['home', 'fox']]);
+  });
+  test('foxes added after the team and hunter pins (icons still loading) end up below them', () => {
+    const moves = layerStackMoves(['base', 'teams', 'hunters', 'trails', 'fox'], stack);
+    expect(apply(['base', 'teams', 'hunters', 'trails', 'fox'], moves)).toEqual(['base', 'trails', 'fox', 'teams', 'hunters']);
+  });
+  test('any order ends up stacked', () => {
+    const permutations = (list: string[]): string[][] => (list.length <= 1 ? [list] : list.flatMap((id) => permutations(list.filter((other) => other !== id)).map((rest) => [id, ...rest])));
+    for (const order of permutations(['home', 'trails', 'fox', 'teams', 'hunters', 'ruler'])) {
+      const result = apply(order, layerStackMoves(order, stack));
+      const rank = (id: string) => stack.findIndex((group) => group.includes(id));
+      const ranks = result.filter((id) => id !== 'ruler').map(rank);
+      expect(ranks).toEqual([...ranks].sort((a, b) => a - b));
+      expect(result.filter((id) => id !== 'ruler').length).toBe(5);
+    }
+  });
+  test('missing layers are skipped', () => {
+    expect(apply(['hunters', 'home'], layerStackMoves(['hunters', 'home'], stack))).toEqual(['home', 'hunters']);
+    expect(layerStackMoves([], stack)).toEqual([]);
+  });
+
+  /** map.moveLayer(id, beforeId) on a plain list */
+  function apply(order: string[], moves: [string, string][]): string[] {
+    const result = [...order];
+    for (const [id, beforeId] of moves) {
+      result.splice(result.indexOf(id), 1);
+      result.splice(result.indexOf(beforeId), 0, id);
+    }
+    return result;
+  }
 });
