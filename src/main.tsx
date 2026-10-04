@@ -8,6 +8,7 @@ import {TooltipProvider} from "@/components/ui/tooltip.tsx";
 import {Toaster} from "@/components/ui/sonner.tsx";
 import {toast} from 'sonner';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import {installPasswordChangeInterceptor} from '@/lib/password-change';
 
 // Service worker registration. A new version waits for the user: an automatic reload mid-hunt
 // would throw away a half-entered hunt photo or hint answer.
@@ -21,6 +22,9 @@ const updateSW = registerSW({
         });
     },
 });
+
+// A PASSWORD_CHANGE_REQUIRED answer to any request switches to the password change screen (PasswordChangeGate)
+installPasswordChangeInterceptor();
 
 // Store auth state
 const authStore = createStore({

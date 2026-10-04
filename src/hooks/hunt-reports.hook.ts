@@ -8,6 +8,8 @@ const HUNT_REPORTS_REFRESH_MS = 10_000;
 
 export interface NewReportInput {
   photo: Blob;
+  /** Small list thumbnail (optional; the server falls back to the photo) */
+  thumb?: Blob | null;
   area: string;
   position: { lng: number; lat: number } | null;
   /** Same id for every attempt of one photo: a retry after a lost response doesn't create a second hunt */
@@ -22,6 +24,7 @@ export const useHuntReports = () => {
   async function createReport(input: NewReportInput): Promise<HuntReport> {
     const form = new FormData();
     form.append('photo', input.photo, 'hunt.jpg');
+    if (input.thumb) form.append('thumb', input.thumb, 'hunt-thumb.jpg');
     form.append('area', input.area);
     form.append('uploadId', input.uploadId);
     if (input.position) {

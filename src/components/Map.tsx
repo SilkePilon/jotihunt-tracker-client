@@ -32,7 +32,8 @@ import '@mapbox-controls/ruler/src/index.css';
 import Ruler from "@/components/map/RulerControl.tsx";
 import type {SymbolLayerSpecification} from '@maplibre/maplibre-gl-style-spec';
 import {DEFAULT_VIEW} from '@/lib/map-view';
-import {FOX_MARKERS_LAYER} from '@/lib/map-layers';
+import {FOX_MARKERS_LAYER, HUNTER_ARROWS_LAYER, HUNTERS_LAYER, TEAM_PINS_LAYER} from '@/lib/map-layers';
+import LayerStack from './layers/LayerStack';
 import {tourTarget} from '@/components/tour/targets';
 
 // MapLibre resolves its worker relative to its own module, which bundlers don't emit;
@@ -69,7 +70,7 @@ const RULER_LABEL_LAYOUT: SymbolLayerSpecification['layout'] = {
 const RULER_LABEL_PAINT = {'text-color': '#fff', 'text-halo-color': RULER_COLOR, 'text-halo-width': 3.5};
 
 // Clicks on these canvas layers open their own popup instead of the location popup
-const INTERACTIVE_LAYER_IDS = [FOX_MARKERS_LAYER];
+const INTERACTIVE_LAYER_IDS = [FOX_MARKERS_LAYER, TEAM_PINS_LAYER, HUNTERS_LAYER, HUNTER_ARROWS_LAYER];
 
 const Map = forwardRef<MapRef, { className?: string }>(({className}, ref) => {
 
@@ -160,6 +161,9 @@ const Map = forwardRef<MapRef, { className?: string }>(({className}, ref) => {
                 maxBounds={maxBounds}
                 onClick={openPopup}
                 interactiveLayerIds={INTERACTIVE_LAYER_IDS}
+                // No symbol fade: every tracker poll moves the hunter icons, which then faded in again (about 20 extra
+                // full map repaints per poll); the HTML markers they replace moved instantly
+                fadeDuration={0}
                 // Phones: start with the credits collapsed to the (i) button; MapLibre opens them on load
                 onLoad={(event) => {
                     if (isMobile) event.target.getContainer().querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show');
@@ -191,6 +195,7 @@ const Map = forwardRef<MapRef, { className?: string }>(({className}, ref) => {
                 {showDevices && <Devices/>}
                 {(showMarkersPart1 || showMarkersPart2) && <Markers part1={showMarkersPart1} part2={showMarkersPart2}/>}
                 {showHomeCircle && <HomeCircle/>}
+                <LayerStack/>
             </Maplibre>
         </div>
     );

@@ -61,7 +61,7 @@ export const useAuth = () => {
   /**
    * Change the own password. The server signs out every session, this one included, and returns a fresh token:
    * sign in with it (the user state no longer requires a password change).
-   * @returns 'ok', 'wrong-password' (400/401) or 'failed' (server trouble, rate limit, no connection)
+   * @returns 'ok', 'wrong-password' (400), 'session-ended' (401) or 'failed' (server trouble, rate limit, no connection)
    */
   async function updatePassword(oldPassword: string, newPassword: string): Promise<PasswordUpdateResult> {
     let response;

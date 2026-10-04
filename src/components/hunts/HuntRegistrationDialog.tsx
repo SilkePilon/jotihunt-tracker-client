@@ -14,7 +14,7 @@ import useInterval from '@/hooks/utils/interval.hook';
 import { apiErrorMessage } from '@/lib/api-error';
 import { huntCooldownMs, lastHuntTimeFor } from '@/lib/fox-status';
 import { nearestArea } from '@/lib/hunt-reports';
-import { downscalePhoto } from '@/lib/image';
+import { preparePhoto } from '@/lib/image';
 import { areaOptions, getColorFromArea, randomId } from '@/lib/utils';
 import useHuntCaptureStore from '@/stores/hunt-capture.store';
 
@@ -40,7 +40,7 @@ export default function HuntRegistrationDialog() {
   const { predictions } = usePredictions();
   const { reports, createReport } = useHuntReports();
 
-  const [prepared, setPrepared] = useState<{ source: File; blob: Blob; url: string } | null>(null);
+  const [prepared, setPrepared] = useState<{ source: File; blob: Blob; thumb: Blob | null; url: string } | null>(null);
   const [area, setArea] = useState('');
   const [position, setPosition] = useState<Position | null>(null);
   /** Resolves with the geolocation result (or null on error/no support); set inside the capture effect, only read in save(). */
@@ -74,12 +74,13 @@ export default function HuntRegistrationDialog() {
     if (!photo) return;
     let cancelled = false;
     let url: string | undefined;
-    void downscalePhoto(photo)
-      .catch(() => photo as Blob)
-      .then((blob) => {
+    // Not decodable here: upload the original without a thumbnail (the list then shows the full photo)
+    void preparePhoto(photo)
+      .catch(() => ({ photo: photo as Blob, thumb: null }))
+      .then(({ photo: blob, thumb }) => {
         if (cancelled) return;
         url = URL.createObjectURL(blob);
-        setPrepared({ source: photo, blob, url });
+        setPrepared({ source: photo, blob, thumb, url });
       });
     positionPromiseRef.current = new Promise<Position | null>((resolve) => {
       if (!navigator.geolocation) {
@@ -119,6 +120,7 @@ export default function HuntRegistrationDialog() {
     // this save's result (close/error) must not act on the newer dialog state.
     const savingPhoto = photo;
     const savingBlob = prepared.blob;
+    const savingThumb = prepared.thumb;
     setSaving(true);
     try {
       // The time on the photo is only known after reading, so always send the phone's position (the marker
@@ -128,7 +130,7 @@ export default function HuntRegistrationDialog() {
         const winner = await Promise.race([positionPromiseRef.current, wait(POSITION_WAIT_MS)]);
         if (winner !== 'timeout') resolvedPosition = winner;
       }
-      await createReport({ photo: savingBlob, area: chosenArea, position: resolvedPosition, uploadId });
+      await createReport({ photo: savingBlob, thumb: savingThumb, area: chosenArea, position: resolvedPosition, uploadId });
       if (useHuntCaptureStore.getState().photo !== savingPhoto) return;
       toast.success('Hunt verstuurd', { description: 'De code en tijd worden nu gelezen.' });
       close();

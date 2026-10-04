@@ -35,11 +35,11 @@ function matchesFilter(item: HuntListItem, filter: Filter): boolean {
 const itemArea = (item: HuntListItem) => (item.source === 'app' ? item.report.area : item.hunt.area).trim().toLowerCase();
 const itemPoints = (item: HuntListItem) => (item.source === 'app' ? (item.report.site?.points ?? 0) : item.hunt.points);
 
-/** Photo thumbnail, only fetched once the row scrolls into view (each photo is a full-size download). */
+/** Photo thumbnail (the small server thumbnail), only fetched once the row scrolls into view. */
 function HuntThumb({ report }: { report: HuntReport }) {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInViewOnce(ref);
-  const photo = useAuthImage(inView ? report.photoUrl : null);
+  const photo = useAuthImage(inView ? (report.thumbUrl ?? report.photoUrl) : null);
   return photo ? <img src={photo} alt="" className="size-8 rounded object-cover" /> : <div ref={ref} className="size-8 rounded bg-muted" />;
 }
 

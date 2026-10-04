@@ -3,6 +3,7 @@ import { BrowserRouter, Routes as RouterRoutes, Route } from 'react-router';
 import AuthOutlet from '@auth-kit/react-router/AuthOutlet';
 import Users from './pages/Users';
 import Hints from './pages/Hints';
+import PasswordChangeGate from './components/PasswordChangeGate';
 
 // Split per page: the login page should not download the map, and the map page not the login page
 const Layout = lazy(() => import('./Layout'));
@@ -16,11 +17,14 @@ export default function Routes() {
       <Suspense fallback={null}>
         <RouterRoutes>
           <Route element={<AuthOutlet fallbackPath="/login" />}>
-            <Route path="/hq" element={<Hq />} />
-            <Route path="/" element={<Layout />}>
-              <Route index element={<App />} />
-              <Route path="/users" element={<Users />} />
-              <Route path="/hints" element={<Hints />} />
+            {/* An admin-set password must be changed first: until then only that screen mounts, for every page */}
+            <Route element={<PasswordChangeGate />}>
+              <Route path="/hq" element={<Hq />} />
+              <Route path="/" element={<Layout />}>
+                <Route index element={<App />} />
+                <Route path="/users" element={<Users />} />
+                <Route path="/hints" element={<Hints />} />
+              </Route>
             </Route>
           </Route>
           <Route path="/login" element={<Login />} />

@@ -2,7 +2,7 @@
 export type LoginResult = 'ok' | 'invalid' | 'rate-limited' | 'offline';
 
 /** Outcome of changing the own password */
-export type PasswordUpdateResult = 'ok' | 'wrong-password' | 'failed';
+export type PasswordUpdateResult = 'ok' | 'wrong-password' | 'session-ended' | 'failed';
 
 /**
  * Why a login failed, by the HTTP status (undefined: no response, i.e. a network error or timeout). Server trouble
@@ -14,7 +14,12 @@ export function loginFailure(status: number | undefined): Exclude<LoginResult, '
   return 'invalid';
 }
 
-/** Why changing the password failed: only a 400/401 means the old password is wrong. */
+/**
+ * Why changing the password failed: a 400 means the old password is wrong, a 401 that the session itself is gone
+ * (e.g. the password was already changed on another device, which revokes this token).
+ */
 export function passwordUpdateFailure(status: number | undefined): Exclude<PasswordUpdateResult, 'ok'> {
-  return status === 400 || status === 401 ? 'wrong-password' : 'failed';
+  if (status === 400) return 'wrong-password';
+  if (status === 401) return 'session-ended';
+  return 'failed';
 }

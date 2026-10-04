@@ -22,7 +22,7 @@ describe('loginFailure', () => {
 
 describe('passwordUpdateFailure', () => {
   test('only 400/401 mean a wrong old password', () => {
-    expect(passwordUpdateFailure(401)).toBe('wrong-password');
+    expect(passwordUpdateFailure(401)).toBe('session-ended');
     expect(passwordUpdateFailure(400)).toBe('wrong-password');
   });
 
