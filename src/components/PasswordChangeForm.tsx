@@ -7,6 +7,7 @@ import { Field, FieldError, FieldGroup, FieldLabel } from './ui/field';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { useAuth } from '@/hooks/auth.hook';
+import { useSessionExpired } from '@/hooks/session.hook';
 
 const passwordChangeSchema = z
   .object({
@@ -22,6 +23,7 @@ const passwordChangeSchema = z
 /** Old + new password form; on success the session continues with the fresh token (see useAuth().updatePassword). */
 export default function PasswordChangeForm({ onSuccess }: { onSuccess?: () => void }) {
   const auth = useAuth();
+  const endSession = useSessionExpired();
   const fieldId = useId();
 
   const form = useForm<z.infer<typeof passwordChangeSchema>>({
@@ -38,6 +40,11 @@ export default function PasswordChangeForm({ onSuccess }: { onSuccess?: () => vo
 
     if (result === 'wrong-password') {
       form.setError('oldPassword', { message: 'Oud wachtwoord is onjuist.' });
+      return;
+    }
+    if (result === 'session-ended') {
+      toast.info('Je sessie is verlopen.', { id: 'session-expired', description: 'Log opnieuw in om verder te gaan.', duration: Infinity });
+      endSession();
       return;
     }
     if (result === 'failed') {
