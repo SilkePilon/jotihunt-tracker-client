@@ -22,11 +22,30 @@ export function remainingMs(publishAt: string, now: number) {
   return new Date(publishAt).getTime() + HINT_WINDOW_MS - now;
 }
 
+let hintPurifier: typeof DOMPurify | undefined;
+
 /**
- * Sanitise Jotihunt article HTML before rendering it.
+ * A DOMPurify instance of our own, so its hook does not run for other users of the shared one. Made on first use:
+ * there is no `window` when this module is imported outside a browser (the unit tests).
+ */
+function getHintPurifier(): typeof DOMPurify {
+  if (!hintPurifier) {
+    hintPurifier = DOMPurify(window);
+    // Runs after the attributes were filtered: `target` and `rel` are not allowed from the article, only as set here
+    hintPurifier.addHook('afterSanitizeAttributes', (node) => {
+      if (node.tagName !== 'A') return;
+      node.setAttribute('target', '_blank');
+      node.setAttribute('rel', 'noopener noreferrer');
+    });
+  }
+  return hintPurifier;
+}
+
+/**
+ * Sanitise Jotihunt article HTML before rendering it. Links open in a new tab, so a click does not leave the tracker.
  */
 export function sanitizeHintHtml(html: string) {
-  return DOMPurify.sanitize(html, {
+  return getHintPurifier().sanitize(html, {
     ALLOWED_TAGS: ['div', 'p', 'br', 'strong', 'em', 'b', 'i', 'u', 'span', 'ul', 'ol', 'li', 'blockquote', 'h1', 'h2', 'h3', 'img', 'a', 'figure', 'figcaption'],
     ALLOWED_ATTR: ['src', 'href', 'alt', 'width', 'height'],
   });

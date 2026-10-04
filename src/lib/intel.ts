@@ -35,13 +35,17 @@ export function buildIntelItems({ articles, board, assignments, readState }: { a
     });
 }
 
-/** Whether an item still needs attention: unsolved hint cells, an assignment not handed in or skipped, unread news */
+/**
+ * Whether an item still needs attention: unsolved hint cells, an assignment not handed in or skipped, unread news.
+ * A hint without cells (the board still loads) counts as open, so it does not drop out of the "open" filter meanwhile.
+ */
 export function isOpenItem(item: IntelItem): boolean {
-  if (item.type === 'hint') return item.cells.some((cell) => cell.status === 'open' || cell.status === 'solving');
+  if (item.type === 'hint') return item.cells.length === 0 || item.cells.some((cell) => cell.status === 'open' || cell.status === 'solving');
   if (item.type === 'assignment') return !item.assignment || item.assignment.status === 'open' || item.assignment.status === 'busy';
   return item.unread;
 }
 
+/** How many items there are in total and per type, for the filter chips */
 export function intelCounts(items: IntelItem[]): Record<IntelType | 'all', number> {
   const counts = { all: items.length, hint: 0, assignment: 0, news: 0 };
   for (const item of items) counts[item.type]++;
@@ -50,16 +54,18 @@ export function intelCounts(items: IntelItem[]): Record<IntelType | 'all', numbe
 
 const plainText = (html: string) => html.replace(/<[^>]+>/g, ' ');
 
+/** The items that pass the filter: the type, "only open", and the query in the title, summary or text (tags and repeated spaces ignored) */
 export function filterIntelItems(items: IntelItem[], filter: IntelFilter): IntelItem[] {
-  const query = filter.query.trim().toLowerCase();
+  const query = filter.query.trim().toLowerCase().replace(/\s+/g, ' ');
   return items.filter((item) => {
     if (filter.type !== 'all' && item.type !== filter.type) return false;
     if (filter.openOnly && !isOpenItem(item)) return false;
     if (!query) return true;
-    return `${item.title} ${plainText(item.content)}`.toLowerCase().replace(/\s+/g, ' ').includes(query);
+    return `${item.title} ${item.summary ?? ''} ${plainText(item.content)}`.toLowerCase().replace(/\s+/g, ' ').includes(query);
   });
 }
 
+/** How pressing a deadline is; 'done' when the assignment was handed in or skipped, 'none' without a deadline */
 export type DeadlineTone = 'none' | 'done' | 'late' | 'urgent' | 'soon';
 
 const HOUR_MS = 60 * 60 * 1000;
@@ -98,6 +104,7 @@ export function hasExistingMarker(error: unknown): boolean {
   return !!conflictBody(error)?.existingMarkerId;
 }
 
+/** What follows a failed guarded write: a question to the user with the flags to repeat it with, or an error */
 export type WriteStep = { ask: 'conflict'; conflict: WriteConflict; flags: WriteFlags } | { ask: 'marker'; conflict: null; flags: WriteFlags } | { ask: 'error' };
 
 /** What to do after a guarded write failed: ask the user (and with which flags to repeat it), or show the error */
@@ -116,9 +123,9 @@ const CONFLICT_TEXT: Record<WriteConflict['kind'], { title: string; did: string;
 };
 
 /** The texts of the overwrite dialog for a conflict */
-export function conflictText(conflict: WriteConflict): { title: string; description: string; current: string; confirm: string } {
+export function conflictText(conflict: WriteConflict): { title: string; description: string; confirm: string } {
   const text = CONFLICT_TEXT[conflict.kind];
-  return { title: text.title, description: `${conflict.by?.name ?? 'Iemand anders'} ${text.did}.`, current: 'Nu', confirm: text.confirm };
+  return { title: text.title, description: `${conflict.by?.name ?? 'Iemand anders'} ${text.did}.`, confirm: text.confirm };
 }
 
 /** Great-circle distance between two [lng, lat] points, in whole metres */
@@ -138,6 +145,7 @@ export function parseSelection(params: URLSearchParams): Selection {
   return area ? { itemId, area } : { itemId };
 }
 
+/** The query string (with its "?") that selects an item and, for a hint, an area; empty without an item */
 export function selectionSearch(itemId?: number, area?: string): string {
   if (itemId === undefined) return '';
   return `?item=${itemId}${area ? `&area=${area}` : ''}`;

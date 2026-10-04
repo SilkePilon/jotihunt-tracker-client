@@ -1,7 +1,9 @@
 import type { HintCell, HintNote, UserRef } from './HintCell';
 
+/** What an article is on the hints page; every article type other than hint and assignment is news */
 export type IntelType = 'hint' | 'assignment' | 'news';
 
+/** How far we are with an assignment */
 export type AssignmentStatus = 'open' | 'busy' | 'submitted' | 'skipped';
 
 /** Our own bookkeeping of an assignment article; articles without one are open and unowned */
@@ -17,6 +19,7 @@ export interface Assignment {
   notes: HintNote[];
 }
 
+/** Which articles the current user opened, and how many users opened each */
 export interface ReadState {
   /** Ids of the articles the current user opened */
   read: number[];
@@ -24,6 +27,7 @@ export interface ReadState {
   readBy: Record<string, number>;
 }
 
+/** A user who has an item (and, for a hint, an area) of the hints page open */
 export interface PresenceEntry {
   userId: string;
   name: string;
@@ -60,6 +64,7 @@ export interface IntelItem {
   readBy: number;
 }
 
+/** The filter above the list of the hints page */
 export interface IntelFilter {
   type: IntelType | 'all';
   query: string;
@@ -67,6 +72,7 @@ export interface IntelFilter {
   openOnly: boolean;
 }
 
+/** The item (and hint area) selected in the page's address */
 export interface Selection {
   itemId?: number;
   area?: string;

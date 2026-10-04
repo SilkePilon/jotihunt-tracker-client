@@ -76,6 +76,12 @@ describe('isOpenItem, intelCounts, filterIntelItems', () => {
     expect(isOpenItem(news3)).toBe(false);
   });
 
+  test('open: a hint whose cells are not there yet (the board still loads)', () => {
+    const hint = buildIntelItems({ articles: [article(1, 'hint')] })[0];
+    expect(hint.cells).toEqual([]);
+    expect(isOpenItem(hint)).toBe(true);
+  });
+
   test('counts per type', () => {
     expect(intelCounts(items())).toEqual({ all: 4, hint: 1, assignment: 1, news: 2 });
   });
@@ -88,6 +94,13 @@ describe('isOpenItem, intelCounts, filterIntelItems', () => {
     expect(filterIntelItems(list, { type: 'all', query: 'tekst 2', openOnly: false }).map((item) => item.id)).toEqual([2]);
     expect(filterIntelItems(list, { type: 'all', query: 'strong', openOnly: false })).toEqual([]);
     expect(filterIntelItems(list, { type: 'all', query: '  ', openOnly: false })).toHaveLength(4);
+  });
+
+  test('search also looks in the summary, and repeated spaces in the query count as one', () => {
+    const list = items();
+    expect(filterIntelItems(list, { type: 'all', query: 'doedelzak', openOnly: false }).map((item) => item.id)).toEqual([2]);
+    expect(filterIntelItems(list, { type: 'all', query: 'tekst   2', openOnly: false }).map((item) => item.id)).toEqual([2]);
+    expect(filterIntelItems(list, { type: 'all', query: ' bouw  een\tdoedelzak ', openOnly: false }).map((item) => item.id)).toEqual([2]);
   });
 });
 
@@ -157,8 +170,8 @@ describe('write conflicts', () => {
   });
 
   test('conflictText per kind', () => {
-    expect(conflictText({ ...conflict, kind: 'answer' } as never)).toEqual({ title: 'Antwoord overschrijven?', description: 'Sanne heeft dit vak al opgelost.', current: 'Nu', confirm: 'Overschrijven' });
-    expect(conflictText({ ...conflict, kind: 'claim', value: null } as never)).toEqual({ title: 'Vak overnemen?', description: 'Sanne is met dit vak bezig.', current: 'Nu', confirm: 'Overnemen' });
+    expect(conflictText({ ...conflict, kind: 'answer' } as never)).toEqual({ title: 'Antwoord overschrijven?', description: 'Sanne heeft dit vak al opgelost.', confirm: 'Overschrijven' });
+    expect(conflictText({ ...conflict, kind: 'claim', value: null } as never)).toEqual({ title: 'Vak overnemen?', description: 'Sanne is met dit vak bezig.', confirm: 'Overnemen' });
     expect(conflictText({ ...conflict, kind: 'status' } as never).title).toBe('Status overschrijven?');
     expect(conflictText({ ...conflict, kind: 'owner' } as never).title).toBe('Opdracht overnemen?');
     expect(conflictText({ ...conflict, by: null } as never).description).toBe('Iemand anders heeft dit vak al opgelost.');

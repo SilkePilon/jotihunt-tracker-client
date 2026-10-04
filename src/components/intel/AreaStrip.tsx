@@ -20,7 +20,10 @@ interface AreaStripProps {
   presence: PresenceEntry[];
 }
 
-/** The areas of one hint as a row of buttons: how far each is, and which one the pane shows */
+/**
+ * The areas of one hint as a row of buttons: how far each is, and which one the pane shows. The letter is in the text
+ * colour (an area colour like yellow is unreadable on a light background); the area colour is the bar under it.
+ */
 export default function AreaStrip({ cells, area, onSelect, presence }: AreaStripProps) {
   const ordered = areaOptions.flatMap(({ value }) => cells.filter((cell) => cell.area === value));
   if (ordered.length === 0) return null;
@@ -38,15 +41,15 @@ export default function AreaStrip({ cells, area, onSelect, presence }: AreaStrip
             aria-label={label}
             aria-pressed={selected}
             onClick={() => onSelect(cell.area)}
-            style={{ color: getColorFromArea(cell.area) }}
             className={cn(
-              'relative flex min-w-0 flex-1 cursor-pointer items-center justify-center gap-0.5 rounded-lg border py-1 text-xs font-bold outline-none transition-colors hover:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50',
+              'relative flex min-w-0 flex-1 cursor-pointer items-center justify-center gap-0.5 rounded-lg border py-1 text-xs font-bold text-foreground outline-none transition-colors hover:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50',
               STATUS_CLASS[cell.status],
               selected && 'border-primary opacity-100 ring-1 ring-primary',
             )}
           >
             {cell.area.charAt(0).toUpperCase()}
             {cell.status === 'solved' && <CheckIcon className="size-3" aria-hidden />}
+            <span className="absolute inset-x-1.5 bottom-0.5 h-0.5 rounded-full" style={{ backgroundColor: getColorFromArea(cell.area) }} aria-hidden />
             {presence.some((entry) => entry.area === cell.area) && <span className="absolute right-0.5 top-0.5 size-1.5 rounded-full bg-amber-500" aria-hidden />}
           </button>
         );
