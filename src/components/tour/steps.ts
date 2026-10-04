@@ -1,5 +1,5 @@
 import NotificationSoundsPanel from './panels/NotificationSoundsPanel';
-import { flyToOverview, openHintBoard, openSection, openSettings, scrollSidebarToTop, sheetSnap } from './actions';
+import { flyToOverview, openSection, openSettings, scrollSidebarToTop, sheetSnap } from './actions';
 import type { TourStep } from './types';
 
 /**
@@ -52,15 +52,8 @@ export const TOUR_STEPS: TourStep[] = [
     id: 'hints',
     target: 'sidebar.hints',
     title: 'Hints',
-    body: 'De laatste hints per deelgebied in één oogopslag: groen is opgelost, oranje is bezig en grijs staat nog open.',
+    body: 'De laatste hints per deelgebied in één oogopslag: groen is opgelost, oranje is bezig en grijs staat nog open. Op een laptop open je met "Open hints" de pagina met alle hints, opdrachten en nieuws.',
     actions: [sheetSnap('full'), openSection('hints')],
-  },
-  {
-    id: 'hint-board',
-    target: 'hintBoard.dialog',
-    title: 'Het hintbord',
-    body: 'Alle hints van de hele dag. Open een vakje om de hint te bekijken, te claimen en de oplossing in te vullen.',
-    actions: [openHintBoard()],
   },
   {
     id: 'hint-entry',

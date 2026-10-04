@@ -4,7 +4,6 @@ import CoordinatesCard from '@/components/cards/coordinates/CoordinatesCard.tsx'
 import Sidebar from '@/components/sidebar/Sidebar';
 import HuntCaptureButton from '@/components/hunts/HuntCaptureButton';
 import HuntRegistrationDialog from '@/components/hunts/HuntRegistrationDialog';
-import NewHuntToaster from '@/components/hunts/NewHuntToaster';
 import { useIsMobile } from '@/hooks/media.hook';
 import { tourTarget } from '@/components/tour/targets';
 import ErrorBoundary from '@/components/ErrorBoundary';
@@ -34,7 +33,6 @@ function App() {
       <ErrorBoundary name="Hunt registreren" variant="floating">
         {isMobile && <HuntCaptureButton />}
         <HuntRegistrationDialog />
-        <NewHuntToaster />
       </ErrorBoundary>
     </>
   );

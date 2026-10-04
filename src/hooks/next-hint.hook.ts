@@ -9,9 +9,10 @@ const NEW_HINT_HIGHLIGHT_MS = 60 * 1000;
 
 /**
  * Countdown to the next hint, plus a highlight when a new hint arrives (not on the first load).
- * The sound comes from the notification feed.
+ * The sound comes from the notification feed. `isCountdown` tells whether `label` is the time left, and not a message
+ * ("Nieuwe hint!", "Geen hints meer") or the loading or error state.
  */
-export function useNextHint(): { label: string; isUrgent: boolean; isNewHint: boolean } {
+export function useNextHint(): { label: string; isUrgent: boolean; isNewHint: boolean; isCountdown: boolean } {
   const { articles, isLoading, isError } = useArticles();
   const [now, setNow] = useState(() => Date.now());
   const [hasLoaded, setHasLoaded] = useState(false);
@@ -43,10 +44,12 @@ export function useNextHint(): { label: string; isUrgent: boolean; isNewHint: bo
   const isNewHint = now < newHintUntil;
 
   let label = formatCountdown(remaining);
+  let isCountdown = false;
   if (isLoading) label = '…';
   else if (isError) label = 'Fout';
   else if (isNewHint) label = 'Nieuwe hint!';
   else if (huntOver) label = 'Geen hints meer';
+  else isCountdown = true;
 
-  return { label, isNewHint, isUrgent: !huntOver && !isNewHint && remaining > 0 && remaining < URGENT_MS };
+  return { label, isNewHint, isCountdown, isUrgent: !huntOver && !isNewHint && remaining > 0 && remaining < URGENT_MS };
 }

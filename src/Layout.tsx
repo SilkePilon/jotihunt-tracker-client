@@ -1,14 +1,14 @@
-import {Outlet} from 'react-router';
+import {Outlet, useLocation} from 'react-router';
 import {toast} from "sonner"
 import {useEffect, useRef, useState} from 'react';
 import {SWRConfig} from 'swr';
 import Map, {MapRef} from './components/Map';
 import PWAPrompt from 'react-ios-pwa-prompt';
-import HintBoardDialog from './components/hints/HintBoardDialog';
 import HuntersDialog from './components/admin/HuntersDialog';
 import DemoReloader from './components/DemoReloader';
 import ErrorBoundary from './components/ErrorBoundary';
 import StaleDataBadge from './components/StaleDataBadge';
+import NewHuntToaster from './components/hunts/NewHuntToaster';
 import UsersDialog from './components/admin/UsersDialog';
 import BroadcastDialog from './components/admin/BroadcastDialog';
 import NotificationsDialog from './components/notifications/NotificationsDialog';
@@ -49,8 +49,10 @@ export default function Layout() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    const {pathname} = useLocation();
     const tour = useTourAutoStart();
-    useNotificationsPrompt(tour.pending);
+    // Like the tour, the notifications prompt only opens on the map page
+    useNotificationsPrompt(tour.pending || pathname !== '/');
 
     // Which SWR keys are failing, and whether the error toast is up. Mutable, not state: every poll passes through here.
     const [errorToast] = useState(createFetchErrorToastState);
@@ -79,20 +81,23 @@ export default function Layout() {
 
     return (
         <SWRConfig value={{onError: onSWRError, onSuccess: onSWRSuccess}}>
-            <StaleDataBadge/>
             {/* Separate boundaries: one crashing part (a dialog, the map, a sidebar section) must not take the rest down */}
             <ErrorBoundary variant="floating">
                 <DemoReloader/>
+                {/* Here and not on the map page: hunts registered while another page is open are announced too */}
+                <NewHuntToaster/>
             </ErrorBoundary>
             <ErrorBoundary name="Deze pagina" variant="floating">
                 <Outlet context={{mapRef} satisfies OutletContextType}/>
             </ErrorBoundary>
-            <ErrorBoundary name="De kaart" className="mx-auto mt-[40dvh] w-fit">
-                <Map ref={mapRef}/>
-            </ErrorBoundary>
-            <ErrorBoundary name="Het hintbord" variant="floating">
-                <HintBoardDialog mapRef={mapRef}/>
-            </ErrorBoundary>
+            {/* After the outlet: at the same z-index the later element is on top, so the badge also shows above the hints page */}
+            <StaleDataBadge/>
+            {/* The hints page covers the map: keep keyboard focus and screen readers out of what is hidden underneath */}
+            <div inert={pathname === '/hints'}>
+                <ErrorBoundary name="De kaart" className="mx-auto mt-[40dvh] w-fit">
+                    <Map ref={mapRef}/>
+                </ErrorBoundary>
+            </div>
             <ErrorBoundary name="Dit venster" variant="floating">
                 <HuntersDialog mapRef={mapRef}/>
                 <UsersDialog/>

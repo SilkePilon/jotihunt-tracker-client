@@ -21,6 +21,14 @@ describe('hasExpectedShape', () => {
     expect(hasExpectedShape('/notifications/preferences', { message: 'x' })).toBe(false);
   });
 
+  test('assignments are a list; the read state needs read and readBy', () => {
+    expect(hasExpectedShape('/assignments', [])).toBe(true);
+    expect(hasExpectedShape('/assignments', { message: 'x' })).toBe(false);
+    expect(hasExpectedShape('/assignments/members', [{ _id: 'u1', name: 'Sanne' }])).toBe(true);
+    expect(hasExpectedShape('/articles/read', { read: [], readBy: {} })).toBe(true);
+    expect(hasExpectedShape('/articles/read', { read: [] })).toBe(false);
+  });
+
   test('the query string is ignored', () => {
     expect(hasExpectedShape('/markers?since=x', [])).toBe(true);
     expect(hasExpectedShape('/hints/rd-preview?answer=1', { rd: null })).toBe(true);

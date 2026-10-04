@@ -1,5 +1,4 @@
 import useSidebarStore, { SheetSnap, SidebarSectionId } from '@/stores/sidebar.store';
-import useHintBoardStore from '@/stores/hint-board.store';
 import useSettingsMenuStore from '@/stores/settings-menu.store';
 import { DEFAULT_VIEW } from '@/lib/map-view';
 import { tourSelector } from './targets';
@@ -33,16 +32,6 @@ export function sheetSnap(snap: SheetSnap): TourAction {
     name: `sheetSnap(${snap})`,
     run: (ctx) => {
       if (ctx.isMobile) useSidebarStore.getState().setSheetSnap(snap);
-    },
-  };
-}
-
-export function openHintBoard(): TourAction {
-  return {
-    name: 'openHintBoard',
-    run: () => {
-      useHintBoardStore.getState().openBoard();
-      return () => useHintBoardStore.getState().close();
     },
   };
 }

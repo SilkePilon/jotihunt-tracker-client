@@ -2,16 +2,18 @@ import { ReactNode } from 'react';
 import { CheckIcon, MapPinIcon, TriangleAlertIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { HintCell } from '@/types/HintCell';
-import { useHintBoard } from '@/hooks/hints.hook';
+import type { HintBoardActions } from '@/hooks/hints.hook';
 import { HintStepNumber } from '@/lib/hints';
 
 interface HintStepActionsProps {
   cell: HintCell;
   currentUserId?: string;
   isAdmin?: boolean;
-  actions: ReturnType<typeof useHintBoard>;
+  actions: HintBoardActions;
   busy: boolean;
   run: (action: () => Promise<unknown>, success?: string) => Promise<void>;
+  /** Claims the cell; when someone else has it the caller asks before taking it over */
+  onClaim: (overwrite?: boolean) => void;
   /** Whether the answer form of the current step was revealed */
   showForm: boolean;
   onRevealForm: (step: HintStepNumber) => void;
@@ -21,16 +23,16 @@ interface HintStepActionsProps {
 
 type StepProps = Omit<HintStepActionsProps, 'currentUserId'> & { noHintButton: ReactNode; releaseButton: ReactNode };
 
-function OpenStep({ cell, actions, busy, run, showForm, onRevealForm, answerForm, noHintButton }: StepProps) {
+function OpenStep({ busy, onClaim, showForm, onRevealForm, answerForm, noHintButton }: StepProps) {
   return (
     <>
       <p className="text-sm text-muted-foreground">Claim deze hint zodat anderen zien dat jij hem oplost.</p>
       <div className="flex flex-wrap items-center gap-2">
-        <Button disabled={busy} onClick={() => run(() => actions.claim(cell.articleId, cell.area))}>
+        <Button type="button" disabled={busy} onClick={() => onClaim()}>
           Claimen
         </Button>
         {!showForm && (
-          <Button variant="ghost" disabled={busy} onClick={() => onRevealForm(1)}>
+          <Button type="button" variant="ghost" disabled={busy} onClick={() => onRevealForm(1)}>
             Direct oplossen
           </Button>
         )}
@@ -41,7 +43,7 @@ function OpenStep({ cell, actions, busy, run, showForm, onRevealForm, answerForm
   );
 }
 
-function SolvingStep({ cell, isAdmin, showForm, onRevealForm, answerForm, noHintButton, releaseButton, claimedByMe, claimedByOther }: StepProps & { claimedByMe: boolean; claimedByOther: boolean }) {
+function SolvingStep({ cell, isAdmin, busy, onClaim, showForm, onRevealForm, answerForm, noHintButton, releaseButton, claimedByMe, claimedByOther }: StepProps & { claimedByMe: boolean; claimedByOther: boolean }) {
   if (claimedByOther && !showForm) {
     return (
       <>
@@ -49,7 +51,10 @@ function SolvingStep({ cell, isAdmin, showForm, onRevealForm, answerForm, noHint
           <span className="font-semibold">{cell.claimedBy?.name}</span> is hiermee bezig
         </p>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={() => onRevealForm(2)}>
+          <Button type="button" variant="outline" size="sm" disabled={busy} onClick={() => onClaim()}>
+            Overnemen
+          </Button>
+          <Button type="button" variant="ghost" size="sm" onClick={() => onRevealForm(2)}>
             Toch een antwoord invullen
           </Button>
           {isAdmin && releaseButton}
@@ -83,6 +88,7 @@ function SolvedStep({ cell, actions, busy, run, showForm, onRevealForm, answerFo
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <Button
+          type="button"
           variant={cell.check === 'verified' ? 'default' : 'outline'}
           disabled={busy}
           onClick={() => run(() => actions.setCheck(articleId, area, cell.check === 'verified' ? 'unchecked' : 'verified'))}
@@ -91,6 +97,7 @@ function SolvedStep({ cell, actions, busy, run, showForm, onRevealForm, answerFo
           Klopt
         </Button>
         <Button
+          type="button"
           variant={cell.check === 'disputed' ? 'destructive' : 'outline'}
           disabled={busy}
           onClick={() => run(() => actions.setCheck(articleId, area, cell.check === 'disputed' ? 'unchecked' : 'disputed'))}
@@ -99,7 +106,7 @@ function SolvedStep({ cell, actions, busy, run, showForm, onRevealForm, answerFo
           Twijfel
         </Button>
         {cell.answerLocation && (
-          <Button variant="secondary" onClick={() => onShowOnMap(cell.answerLocation![0], cell.answerLocation![1])}>
+          <Button type="button" variant="secondary" onClick={() => onShowOnMap(cell.answerLocation![0], cell.answerLocation![1])}>
             <MapPinIcon />
             Op kaart
           </Button>
@@ -110,7 +117,7 @@ function SolvedStep({ cell, actions, busy, run, showForm, onRevealForm, answerFo
         answerForm
       ) : (
         <div>
-          <Button variant="ghost" size="sm" className="-ml-2" onClick={() => onRevealForm(3)}>
+          <Button type="button" variant="ghost" size="sm" className="-ml-2" onClick={() => onRevealForm(3)}>
             Antwoord aanpassen
           </Button>
         </div>
@@ -127,13 +134,13 @@ export default function HintStepActions({ currentUserId, ...props }: HintStepAct
   const { articleId, area } = cell;
 
   const noHintButton = (
-    <Button variant="ghost" size="sm" disabled={busy} onClick={() => run(() => actions.setStatus(articleId, area, 'none'))}>
+    <Button type="button" variant="ghost" size="sm" disabled={busy} onClick={() => run(() => actions.setStatus(articleId, area, 'none'))}>
       Geen hint
     </Button>
   );
 
   const releaseButton = (
-    <Button variant="ghost" size="sm" disabled={busy} onClick={() => run(() => actions.release(articleId, area))}>
+    <Button type="button" variant="ghost" size="sm" disabled={busy} onClick={() => run(() => actions.release(articleId, area))}>
       Vrijgeven
     </Button>
   );

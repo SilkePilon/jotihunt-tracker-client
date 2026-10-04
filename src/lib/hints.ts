@@ -3,16 +3,16 @@ import type { HintArticle, HintBoard, HintCell } from '@/types/HintCell';
 
 export const HINT_WINDOW_MS = 20 * 60 * 1000;
 
-/** Hint board polling: quickly while a hint dialog is open (claims by others must show up fast), slowly for the sidebar mini grid. */
+/** Hint board polling: quickly while the hints page is open (claims by others must show up fast), slowly for the sidebar mini grid. */
 export const HINT_BOARD_LIVE_REFRESH_MS = 3000;
 export const HINT_BOARD_IDLE_REFRESH_MS = 10_000;
 
 /**
  * How often to poll the hint board.
- * @param dialogOpen Whether the hint board overview or a hint detail dialog is open
+ * @param live Whether the hints page is open (fast); false for the sidebar mini grid (slow)
  */
-export function hintBoardRefreshMs(dialogOpen: boolean): number {
-  return dialogOpen ? HINT_BOARD_LIVE_REFRESH_MS : HINT_BOARD_IDLE_REFRESH_MS;
+export function hintBoardRefreshMs(live: boolean): number {
+  return live ? HINT_BOARD_LIVE_REFRESH_MS : HINT_BOARD_IDLE_REFRESH_MS;
 }
 
 /**
@@ -22,11 +22,30 @@ export function remainingMs(publishAt: string, now: number) {
   return new Date(publishAt).getTime() + HINT_WINDOW_MS - now;
 }
 
+let hintPurifier: typeof DOMPurify | undefined;
+
 /**
- * Sanitise Jotihunt article HTML before rendering it.
+ * A DOMPurify instance of our own, so its hook does not run for other users of the shared one. Made on first use:
+ * there is no `window` when this module is imported outside a browser (the unit tests).
+ */
+function getHintPurifier(): typeof DOMPurify {
+  if (!hintPurifier) {
+    hintPurifier = DOMPurify(window);
+    // Runs after the attributes were filtered: `target` and `rel` are not allowed from the article, only as set here
+    hintPurifier.addHook('afterSanitizeAttributes', (node) => {
+      if (node.tagName !== 'A') return;
+      node.setAttribute('target', '_blank');
+      node.setAttribute('rel', 'noopener noreferrer');
+    });
+  }
+  return hintPurifier;
+}
+
+/**
+ * Sanitise Jotihunt article HTML before rendering it. Links open in a new tab, so a click does not leave the tracker.
  */
 export function sanitizeHintHtml(html: string) {
-  return DOMPurify.sanitize(html, {
+  return getHintPurifier().sanitize(html, {
     ALLOWED_TAGS: ['div', 'p', 'br', 'strong', 'em', 'b', 'i', 'u', 'span', 'ul', 'ol', 'li', 'blockquote', 'h1', 'h2', 'h3', 'img', 'a', 'figure', 'figcaption'],
     ALLOWED_ATTR: ['src', 'href', 'alt', 'width', 'height'],
   });
