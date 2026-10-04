@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
+import { useLocation } from 'react-router';
 import { useAuth } from '@/hooks/auth.hook';
 import { useFetcher } from '@/hooks/utils/api.hook';
 import { useIsMobile } from '@/hooks/media.hook';
@@ -42,15 +43,20 @@ export function useStartTour() {
   };
 }
 
-/** Start the tour automatically for users who have not seen this TOUR_VERSION yet, after the forced password change. */
+/**
+ * Start the tour automatically for users who have not seen this TOUR_VERSION yet, after the forced password change.
+ * Only on the map page: its steps point at the map and the sidebar, which other pages cover or do not mount. It stays
+ * `pending` there, so the prompts that wait for it keep waiting until the user is back on the map.
+ */
 export function useTourAutoStart() {
   const authUser = useAuthUser<User>();
   const active = useTourStore((state) => state.active);
   const adminDialogOpen = useAdminStore((state) => state.dialog !== null);
   const startTour = useStartTour();
+  const onMapPage = useLocation().pathname === '/';
 
   const due = !!authUser && (authUser.tutorialVersion ?? 0) < TOUR_VERSION;
-  const canStart = !!authUser && due && !authUser.requiresPasswordChange && !active && !adminDialogOpen;
+  const canStart = !!authUser && due && !authUser.requiresPasswordChange && !active && !adminDialogOpen && onMapPage;
 
   useEffect(() => {
     if (!canStart) return;

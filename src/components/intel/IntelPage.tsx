@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import ErrorBoundary from '@/components/ErrorBoundary';
@@ -59,6 +59,12 @@ export default function IntelPage() {
   const filtered = useMemo(() => filterIntelItems(items, filter), [items, filter]);
   const counts = useMemo(() => intelCounts(items), [items]);
 
+  // The page covers the map: start with the keyboard focus inside it, not on what is hidden underneath
+  const searchRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    searchRef.current?.focus({ preventScroll: true });
+  }, []);
+
   const [params, setParams] = useSearchParams();
   const selection = parseSelection(params);
   const selected = items.find((item) => item.id === selection.itemId);
@@ -106,7 +112,7 @@ export default function IntelPage() {
         <aside className="flex w-[290px] shrink-0 flex-col border-r" aria-label="Overzicht">
           <ErrorBoundary name="De lijst" variant="inline" className="p-3">
             <div className="flex flex-col gap-2 border-b p-3">
-              <IntelFilters filter={filter} counts={counts} onChange={setFilter} />
+              <IntelFilters filter={filter} counts={counts} onChange={setFilter} searchRef={searchRef} />
             </div>
             <IntelList
               items={filtered}

@@ -1,3 +1,4 @@
+import type { Ref } from 'react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import type { IntelFilter, IntelType } from '@/types/Intel';
@@ -18,10 +19,12 @@ interface IntelFiltersProps {
   filter: IntelFilter;
   counts: Record<IntelType | 'all', number>;
   onChange: (filter: IntelFilter) => void;
+  /** The search field, so the page can put the keyboard focus in it */
+  searchRef?: Ref<HTMLInputElement>;
 }
 
 /** The filters above the list: a chip per type with its count, the search field and the "only open" toggle */
-export default function IntelFilters({ filter, counts, onChange }: IntelFiltersProps) {
+export default function IntelFilters({ filter, counts, onChange, searchRef }: IntelFiltersProps) {
   return (
     <>
       <div className="flex flex-wrap gap-1.5">
@@ -35,6 +38,7 @@ export default function IntelFilters({ filter, counts, onChange }: IntelFiltersP
       </div>
       <div className="flex items-center gap-2">
         <Input
+          ref={searchRef}
           type="search"
           aria-label="Zoeken"
           placeholder="Zoeken in titel en tekst…"
