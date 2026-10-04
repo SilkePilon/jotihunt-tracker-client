@@ -17,6 +17,8 @@ const LIST_PATHS = new Set([
   '/tracker/devices',
   '/articles',
   '/admin/users',
+  '/assignments',
+  '/assignments/members',
 ]);
 
 const isObject = (data: unknown): data is Record<string, unknown> => typeof data === 'object' && data !== null && !Array.isArray(data);
@@ -26,6 +28,7 @@ const OBJECT_CHECKS: Record<string, (data: Record<string, unknown>) => boolean> 
   '/hints/board': (data) => Array.isArray(data.articles) && Array.isArray(data.cells),
   '/demo': (data) => typeof data.enabled === 'boolean',
   '/notifications/preferences': (data) => Array.isArray(data.disabledTypes),
+  '/articles/read': (data) => Array.isArray(data.read) && isObject(data.readBy),
 };
 
 /** Whether `data` has the shape the client expects for a GET of `url` (path, optionally with a query string). */

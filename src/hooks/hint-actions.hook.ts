@@ -41,7 +41,7 @@ export default function useHintActions(actions: ReturnType<typeof useHintBoard>,
   async function submitAnswer(answer: string, replaceMarker: boolean, { onSolved, onExistingMarker }: SubmitAnswerCallbacks) {
     setBusy(true);
     try {
-      const solved = await actions.solve(articleId, area, answer, replaceMarker);
+      const solved = await actions.solve(articleId, area, answer, { replaceMarker });
       onSolved();
       toast.success(solved.answerKind === 'rd' ? 'Opgelost, hint-marker geplaatst!' : 'Antwoord opgeslagen');
     } catch (error) {

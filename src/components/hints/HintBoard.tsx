@@ -28,7 +28,7 @@ export function HintLegend() {
  * Hint board overview: the grid of hints × fox teams. Clicking a cell opens its detail dialog.
  */
 export default function HintBoard() {
-  const { board, isLoading } = useHintBoard();
+  const { board, isLoading } = useHintBoard({ live: true });
   const openCell = useHintBoardStore((state) => state.openCell);
   const [now, setNow] = useState(() => Date.now());
 

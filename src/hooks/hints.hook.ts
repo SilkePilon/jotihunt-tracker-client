@@ -2,8 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
 import { hintBoardRefreshMs } from '@/lib/hints';
 import { fetcherWithMethod, useAuthSWR } from '@/lib/swr';
-import useHintBoardStore from '@/stores/hint-board.store';
 import { HintBoard, HintCell, HintCheck, RdPreview } from '@/types/HintCell';
+import type { WriteFlags } from '@/types/Intel';
 
 const RD_PREVIEW_DEBOUNCE_MS = 300;
 
@@ -24,11 +24,10 @@ const useDebouncedValue = <T>(value: T, delayMs: number): T => {
   return debounced;
 };
 
-export const useHintBoard = () => {
+export const useHintBoard = ({ live = false }: { live?: boolean } = {}) => {
   const authHeader = useAuthHeader() || '';
-  // Every user of the board agrees on the interval: fast only while a hint dialog is open (see hintBoardRefreshMs)
-  const dialogOpen = useHintBoardStore((state) => state.view !== null);
-  const { data, error, mutate } = useAuthSWR<HintBoard>('/hints/board', { refreshInterval: hintBoardRefreshMs(dialogOpen) });
+  // The hints page polls fast (claims by others must show up quickly); the sidebar mini grid slowly
+  const { data, error, mutate } = useAuthSWR<HintBoard>('/hints/board', { refreshInterval: hintBoardRefreshMs(live) });
   const refresh = useCallback(() => mutate(), [mutate]);
 
   /**
@@ -50,10 +49,10 @@ export const useHintBoard = () => {
     isError: error,
     /** Fetch the board now (e.g. when a dialog opens, the idle poll can be up to 10 s old). */
     refresh,
-    claim: (articleId: number, area: string) => post(articleId, area, 'claim'),
+    claim: (articleId: number, area: string, overwrite = false) => post(articleId, area, 'claim', { overwrite }),
     release: (articleId: number, area: string) => post(articleId, area, 'release'),
-    solve: (articleId: number, area: string, answer: string, replaceMarker = false) =>
-      post(articleId, area, 'solve', { answer, replaceMarker }),
+    solve: (articleId: number, area: string, answer: string, flags: Partial<WriteFlags> = {}) =>
+      post(articleId, area, 'solve', { answer, replaceMarker: flags.replaceMarker === true, overwrite: flags.overwrite === true }),
     setCheck: (articleId: number, area: string, check: HintCheck) => post(articleId, area, 'check', { check }),
     addNote: (articleId: number, area: string, text: string) => post(articleId, area, 'notes', { text }),
     setStatus: (articleId: number, area: string, status: 'open' | 'none') => post(articleId, area, 'status', { status }),

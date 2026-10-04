@@ -3,16 +3,16 @@ import type { HintArticle, HintBoard, HintCell } from '@/types/HintCell';
 
 export const HINT_WINDOW_MS = 20 * 60 * 1000;
 
-/** Hint board polling: quickly while a hint dialog is open (claims by others must show up fast), slowly for the sidebar mini grid. */
+/** Hint board polling: quickly while the hints page is open (claims by others must show up fast), slowly for the sidebar mini grid. */
 export const HINT_BOARD_LIVE_REFRESH_MS = 3000;
 export const HINT_BOARD_IDLE_REFRESH_MS = 10_000;
 
 /**
  * How often to poll the hint board.
- * @param dialogOpen Whether the hint board overview or a hint detail dialog is open
+ * @param live Whether the hints page is open (fast); false for the sidebar mini grid (slow)
  */
-export function hintBoardRefreshMs(dialogOpen: boolean): number {
-  return dialogOpen ? HINT_BOARD_LIVE_REFRESH_MS : HINT_BOARD_IDLE_REFRESH_MS;
+export function hintBoardRefreshMs(live: boolean): number {
+  return live ? HINT_BOARD_LIVE_REFRESH_MS : HINT_BOARD_IDLE_REFRESH_MS;
 }
 
 /**

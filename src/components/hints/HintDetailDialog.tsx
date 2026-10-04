@@ -12,14 +12,15 @@ import HintDetail from './HintDetail';
  */
 export default function HintDetailDialog({ onShowOnMap }: { onShowOnMap: (lng: number, lat: number) => void }) {
   const user = useAuthUser<User>();
-  const actions = useHintBoard();
+  // This dialog is always mounted: poll fast only while a hint dialog is open, like before
+  const dialogOpen = useHintBoardStore((state) => state.view !== null);
+  const actions = useHintBoard({ live: dialogOpen });
   const { board } = actions;
   const open = useHintBoardStore((state) => state.view === 'detail');
   const selected = useHintBoardStore((state) => state.selected);
   const close = useHintBoardStore((state) => state.close);
   const backToOverview = useHintBoardStore((state) => state.backToOverview);
-  // The board polls slowly while no hint dialog is open; fetch it right away when one opens (this dialog is always mounted)
-  const dialogOpen = useHintBoardStore((state) => state.view !== null);
+  // The board polls slowly while no hint dialog is open; fetch it right away when one opens
   const { refresh } = actions;
   useEffect(() => {
     if (dialogOpen) refresh();
