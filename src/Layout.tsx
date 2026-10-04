@@ -4,9 +4,6 @@ import {useEffect, useRef, useState} from 'react';
 import {SWRConfig} from 'swr';
 import Map, {MapRef} from './components/Map';
 import PWAPrompt from 'react-ios-pwa-prompt';
-import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
-import {User} from './types/User';
-import ResetPassword from './components/ResetPassword';
 import HintBoardDialog from './components/hints/HintBoardDialog';
 import HuntersDialog from './components/admin/HuntersDialog';
 import DemoReloader from './components/DemoReloader';
@@ -20,6 +17,7 @@ import {useTheme} from "@/hooks/theme.hook.ts";
 import {useNotificationFeed} from '@/hooks/notification-feed.hook';
 import {useFetcher} from '@/hooks/utils/api.hook';
 import {isUnauthorized} from '@/lib/session';
+import {isPasswordChangeRequired} from '@/lib/password-change';
 import {useSessionExpired} from '@/hooks/session.hook';
 import {resyncPush} from '@/lib/push';
 import type {OutletContextType} from '@/hooks/outlet.hook.ts';
@@ -31,9 +29,7 @@ const FETCH_ERROR_TOAST_ID = 'fetch-error';
 
 export default function Layout() {
     const endSession = useSessionExpired();
-    const auth = useAuthUser<User>();
     const mapRef = useRef<MapRef>(null);
-    const [resetPasswordOpen, setResetPasswordOpen] = useState(false);
 
     function sessionExpired() {
         toast.info("Je sessie is verlopen.", {
@@ -53,21 +49,8 @@ export default function Layout() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    /**
-     * If reset password is required, open the dialog.
-     * It opens after the first commit on purpose: on phones the sidebar is a vaul bottom sheet, which is a
-     * modal Radix layer and blocks pointer events and focus for every dialog that registered before it.
-     * Opening one tick later puts the password dialog on top of the sheet.
-     */
-    const requiresPasswordChange = !!auth?.requiresPasswordChange;
-    useEffect(() => {
-        if (!requiresPasswordChange) return;
-        const timeout = setTimeout(() => setResetPasswordOpen(true), 0);
-        return () => clearTimeout(timeout);
-    }, [requiresPasswordChange]);
-
     const tour = useTourAutoStart();
-    useNotificationsPrompt(tour.pending || requiresPasswordChange);
+    useNotificationsPrompt(tour.pending);
 
     // Which SWR keys are failing, and whether the error toast is up. Mutable, not state: every poll passes through here.
     const [errorToast] = useState(createFetchErrorToastState);
@@ -78,6 +61,8 @@ export default function Layout() {
             sessionExpired();
             return;
         }
+        // Not an outage: PasswordChangeGate replaces the app with the password change screen
+        if (isPasswordChangeRequired(error)) return;
         // One toast per outage, and not again within a minute when the connection flaps
         if (!errorToast.error(key)) return;
         toast.error("Oeps! Er is iets misgegaan.", {
@@ -96,9 +81,6 @@ export default function Layout() {
         <SWRConfig value={{onError: onSWRError, onSuccess: onSWRSuccess}}>
             <StaleDataBadge/>
             {/* Separate boundaries: one crashing part (a dialog, the map, a sidebar section) must not take the rest down */}
-            <ErrorBoundary name="Dit venster" variant="floating">
-                <ResetPassword open={resetPasswordOpen} setIsOpen={setResetPasswordOpen} allowClose={false}/>
-            </ErrorBoundary>
             <ErrorBoundary variant="floating">
                 <DemoReloader/>
             </ErrorBoundary>
