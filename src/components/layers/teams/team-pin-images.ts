@@ -76,7 +76,36 @@ export function addTeamPinImage(map: MaplibreMap, id: string): boolean {
   if (!pin) return false;
   if (map.hasImage(id)) return true;
   const pixelRatio = mapImagePixelRatio();
-  const image = drawPin(pin.color, pin.visited, pixelRatio);
+  let image: ImageData;
+  try {
+    image = drawPin(pin.color, pin.visited, pixelRatio);
+  } catch {
+    // No 2D canvas (e.g. iOS Safari over its canvas memory limit): a plain dot keeps the group on the map
+    image = fallbackDot(pin.color);
+    map.addImage(id, image, { pixelRatio: 1 });
+    return true;
+  }
   map.addImage(id, pin.hover ? brighten(image) : image, { pixelRatio });
   return true;
+}
+
+/** A 16 px dot in the pin colour (#rrggbb, otherwise orange), drawn pixel by pixel so it needs no canvas. */
+function fallbackDot(color: string): ImageData {
+  const size = 16;
+  const hex = /^#([0-9a-f]{6})$/i.exec(color)?.[1] ?? 'f97316';
+  const [r, g, b] = [0, 2, 4].map((offset) => parseInt(hex.slice(offset, offset + 2), 16));
+  const data = new Uint8ClampedArray(size * size * 4);
+  const center = (size - 1) / 2;
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const distance = Math.hypot(x - center, y - center);
+      const i = (y * size + x) * 4;
+      const ring = distance > size / 2 - 2.5;
+      data[i] = ring ? 255 : r;
+      data[i + 1] = ring ? 255 : g;
+      data[i + 2] = ring ? 255 : b;
+      data[i + 3] = distance <= size / 2 ? 255 : 0;
+    }
+  }
+  return new ImageData(data, size, size);
 }
