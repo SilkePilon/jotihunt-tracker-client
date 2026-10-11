@@ -7,7 +7,15 @@ const QUIET_ZONE = 2;
  * QR code as inline SVG. Always black on a white tile (also in dark mode): phone cameras
  * scan dark-on-light codes most reliably.
  */
-export default function TrackerQrCode({ value, size = 180 }: { value: string; size?: number }) {
+export default function TrackerQrCode({
+  value,
+  size = 180,
+  label = 'QR-code voor de Traccar Client-app',
+}: {
+  value: string;
+  size?: number;
+  label?: string;
+}) {
   const { size: modules, path } = useMemo(() => qrCodePath(value), [value]);
   const viewBox = `${-QUIET_ZONE} ${-QUIET_ZONE} ${modules + QUIET_ZONE * 2} ${modules + QUIET_ZONE * 2}`;
 
@@ -18,7 +26,7 @@ export default function TrackerQrCode({ value, size = 180 }: { value: string; si
         className="size-full"
         shapeRendering="crispEdges"
         role="img"
-        aria-label="QR-code voor de Traccar Client-app"
+        aria-label={label}
         data-tracker-qr
       >
         <path d={path} fill="#000" />

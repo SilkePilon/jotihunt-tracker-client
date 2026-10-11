@@ -3,11 +3,13 @@ import { ListOrderedIcon, QrCodeIcon, RefreshCwIcon, SmartphoneIcon } from 'luci
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useIsMobile } from '@/hooks/media.hook';
 import useInterval from '@/hooks/utils/interval.hook';
 import { formatAccuracy, formatBattery, formatDistance, formatLastUpdate, formatSpeed, notConfiguredText } from '@/lib/tracker';
 import type { TrackerMe, Vehicle } from '@/types/Tracker';
 import type { User } from '@/types/User';
+import AppPairingPanel from './AppPairingPanel';
 import TrackerQrCode from './TrackerQrCode';
 import VehiclePicker from './VehiclePicker';
 
@@ -28,6 +30,7 @@ export default function TrackerCard({ status, isError, savingVehicle, onVehicleC
   const [relink, setRelink] = useState(false);
   // On phones the QR code is hidden by default (you can't scan your own screen)
   const [showQr, setShowQr] = useState(false);
+  const [method, setMethod] = useState<'app' | 'traccar'>('app');
   const [now, setNow] = useState(() => Date.now());
   useInterval(() => setNow(Date.now()), CLOCK_TICK_MS);
 
@@ -78,7 +81,21 @@ export default function TrackerCard({ status, isError, savingVehicle, onVehicleC
 
   return (
     <div className="flex flex-col items-center gap-2" data-tracker-state="pairing">
-      {isMobile ? (
+      <ToggleGroup
+        type="single"
+        variant="outline"
+        size="sm"
+        className="grid w-full grid-cols-2"
+        aria-label="Koppelen met"
+        value={method}
+        onValueChange={(next) => next && setMethod(next as 'app' | 'traccar')}
+      >
+        <ToggleGroupItem value="app">Android-app</ToggleGroupItem>
+        <ToggleGroupItem value="traccar">Traccar Client</ToggleGroupItem>
+      </ToggleGroup>
+      {method === 'app' ? (
+        <AppPairingPanel />
+      ) : isMobile ? (
         <>
           <Button asChild className="w-full">
             <a href={status.deepLink}>
@@ -104,21 +121,25 @@ export default function TrackerCard({ status, isError, savingVehicle, onVehicleC
       ) : (
         <>
           <TrackerQrCode value={status.qrUrl} />
-          <p className="text-center text-xs text-muted-foreground">Scan deze code met de Traccar Client-app</p>
+          <p className="text-center text-xs text-muted-foreground">Scan deze code met de Traccar Client-app (iPhone)</p>
         </>
       )}
       {vehiclePicker}
-      <div className="flex w-full gap-2">
-        <Button variant="outline" size="sm" className="flex-1" onClick={onOpenGuide}>
-          <ListOrderedIcon />
-          Uitleg stap voor stap
-        </Button>
-        {status.connected && (
-          <Button variant="ghost" size="sm" onClick={() => setRelink(false)}>
-            Klaar
-          </Button>
-        )}
-      </div>
+      {(method === 'traccar' || status.connected) && (
+        <div className="flex w-full gap-2">
+          {method === 'traccar' && (
+            <Button variant="outline" size="sm" className="flex-1" onClick={onOpenGuide}>
+              <ListOrderedIcon />
+              Uitleg stap voor stap
+            </Button>
+          )}
+          {status.connected && (
+            <Button variant="ghost" size="sm" className={method === 'app' ? 'flex-1' : undefined} onClick={() => setRelink(false)}>
+              Klaar
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

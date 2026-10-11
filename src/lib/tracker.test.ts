@@ -19,6 +19,7 @@ const configured = (connected: boolean): TrackerMe => ({
   configured: true,
   qrUrl: 'http://tracker.test:5055/?id=jh-0123456789',
   deepLink: 'org.traccar.client://?url=http%3A%2F%2Ftracker.test%3A5055%2F&id=jh-0123456789',
+  osmandUrl: 'http://tracker.test:5055/',
   uniqueId: 'jh-0123456789',
   vehicle: 'walking',
   connected,
