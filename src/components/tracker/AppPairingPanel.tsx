@@ -15,7 +15,7 @@ export default function AppPairingPanel() {
   const { release } = useAppRelease();
   const { pairing, creating, failed, create } = usePairingCode();
   const [now, setNow] = useState(() => Date.now());
-  useInterval(() => setNow(Date.now()), pairing ? 1000 : null);
+  useInterval(() => setNow(Date.now()), pairing && Date.parse(pairing.expiresAt) > now ? 1000 : null);
 
   const left = pairing ? secondsLeft(pairing.expiresAt, now) : 0;
   const pairingUrl = pairing ? buildPairingUrl(apiBase, pairing.code, window.location.origin) : '';
