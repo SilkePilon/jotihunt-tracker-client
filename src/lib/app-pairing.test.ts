@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { absoluteUrl, buildPairingUrl, formatCountdown, formatPairingCode, secondsLeft } from './app-pairing';
+import { absoluteUrl, buildPairingUrl, fetchLatestRelease, formatCountdown, formatPairingCode, secondsLeft } from './app-pairing';
 
 describe('app pairing helpers', () => {
   test('pairing URL carries the absolute, encoded API base and the code', () => {
@@ -26,5 +26,24 @@ describe('app pairing helpers', () => {
     expect(secondsLeft(expiresAt, Date.parse('2026-10-17T10:06:00Z'))).toBe(0);
     expect(formatCountdown(245)).toBe('4:05');
     expect(formatCountdown(0)).toBe('0:00');
+  });
+});
+
+describe('fetchLatestRelease', () => {
+  const axiosError = (status: number) => ({ isAxiosError: true, response: { status } });
+
+  test('returns the value on success', async () => {
+    expect(await fetchLatestRelease(async () => ({ versionCode: 1 }))).toEqual({ versionCode: 1 });
+  });
+
+  test('404 means no release yet', async () => {
+    expect(await fetchLatestRelease(() => Promise.reject(axiosError(404)))).toBeNull();
+  });
+
+  test('other failures are rethrown', async () => {
+    const err = axiosError(500);
+    await expect(fetchLatestRelease(() => Promise.reject(err))).rejects.toBe(err);
+    const network = { isAxiosError: true };
+    await expect(fetchLatestRelease(() => Promise.reject(network))).rejects.toBe(network);
   });
 });

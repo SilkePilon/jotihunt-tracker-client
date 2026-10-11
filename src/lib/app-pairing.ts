@@ -1,3 +1,5 @@
+import { isAxiosError } from 'axios';
+
 /** Absolute API base (the configured base may be relative to the site, e.g. "/api"), without trailing slash. */
 function absoluteBase(apiBase: string, origin: string): string {
   return new URL(apiBase || '/', origin.endsWith('/') ? origin : `${origin}/`).toString().replace(/\/+$/, '');
@@ -26,4 +28,14 @@ export function secondsLeft(expiresAt: string, now: number): number {
 /** 245 → "4:05" */
 export function formatCountdown(seconds: number): string {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+}
+
+/** Runs the GET for the latest release: the release, or null when the server has none (404); anything else rethrows. */
+export async function fetchLatestRelease<T>(get: () => Promise<T>): Promise<T | null> {
+  try {
+    return await get();
+  } catch (error) {
+    if (isAxiosError(error) && error.response?.status === 404) return null;
+    throw error;
+  }
 }
