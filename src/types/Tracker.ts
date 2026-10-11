@@ -19,8 +19,25 @@ export type TrackerMe =
       configured: true;
       qrUrl: string;
       deepLink: string;
+      osmandUrl: string;
       uniqueId: string;
       vehicle: Vehicle;
       connected: boolean;
       stats: TrackerStats;
     };
+
+/** POST /tracker/pair */
+export interface PairingCode {
+  code: string;
+  /** ISO time */
+  expiresAt: string;
+}
+
+/** GET /app/latest */
+export interface AppRelease {
+  versionCode: number;
+  versionName: string;
+  sha256: string;
+  /** Path on the API server, e.g. /app/download/jotihunt-1.0.0.apk */
+  url: string;
+}
