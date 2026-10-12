@@ -19,16 +19,28 @@ export default function AppPairingPanel() {
 
   const left = pairing ? secondsLeft(pairing.expiresAt, now) : 0;
   const pairingUrl = pairing ? buildPairingUrl(apiBase, pairing.code, window.location.origin) : '';
+  const [showDownloadQr, setShowDownloadQr] = useState(false);
+  const downloadUrl = release ? absoluteUrl(apiBase, release.url, window.location.origin) : '';
 
   return (
     <div className="flex w-full flex-col items-center gap-2" data-app-pairing>
       {release && (
         <Button asChild variant={pairing ? 'outline' : 'default'} className="w-full">
-          <a href={absoluteUrl(apiBase, release.url, window.location.origin)} download>
+          <a href={downloadUrl} download>
             <DownloadIcon />
             Download de app ({release.versionName})
           </a>
         </Button>
+      )}
+      {release && !isMobile && !pairing && (
+        showDownloadQr ? (
+          <TrackerQrCode value={downloadUrl} label="QR-code om de Jotihunt-app te downloaden" />
+        ) : (
+          <Button variant="ghost" size="sm" onClick={() => setShowDownloadQr(true)}>
+            <QrCodeIcon />
+            Download-QR voor je telefoon
+          </Button>
+        )
       )}
       {release === null && <p className="text-center text-xs text-muted-foreground">De Android-app is nog niet beschikbaar.</p>}
 
