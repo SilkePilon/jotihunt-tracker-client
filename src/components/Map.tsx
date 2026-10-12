@@ -24,6 +24,7 @@ import useLayersStore from '../stores/layers.store';
 import useSettingsStore from '../stores/settings.store';
 import {MapStyle} from '@/types/MapStyle';
 import {getHybridSatelliteStyle, resolveStaticMapStyle} from '@/lib/map-styles';
+import {materialMapStyle} from '@/lib/map-style';
 import {useDarkMode} from '@/hooks/utils/darkmode.hook';
 import {useIsMobile} from '@/hooks/media.hook';
 import PickedLocationPopup from './map/PickedLocationPopup';
@@ -122,32 +123,28 @@ const Map = forwardRef<MapRef, { className?: string }>(({className}, ref) => {
     const markerPalette = useMarkerPalette();
     const meVehicle = tracker?.configured ? tracker.vehicle : undefined;
     const markerVars = useMemo(() => markerCssVars(markerPalette, vehicleGlyph(meVehicle ?? 'phone')), [markerPalette, meVehicle]);
-    let correctedMapStyle = mapStyle;
-    if (!correctedMapStyle) {
-        correctedMapStyle = isDarkMode ? MapStyle.Dark : MapStyle.Streets;
-    }
-
-    // Resolve the style id to a style URL/object. The satellite style starts
-    // out raster-only, then upgrades to the hybrid (labels on top) style
-    // once the OpenFreeMap liberty style JSON has been fetched.
-    const [resolvedMapStyle, setResolvedMapStyle] = useState<string | StyleSpecification>(() =>
-        resolveStaticMapStyle(correctedMapStyle),
+    // Resolve the style to a style URL/object. '' (automatic, the default) is the Material map, light or dark with the
+    // site's theme. The Material style is built synchronously from the bundled Liberty copy;
+    // a theme switch only changes paint colours, so react-map-gl's style diff keeps the overlay sources and markers.
+    // The satellite style starts out raster-only, then upgrades to the hybrid (labels on top) style once the
+    // OpenFreeMap liberty style JSON has been fetched.
+    const staticStyle = useMemo(
+        () => (mapStyle ? resolveStaticMapStyle(mapStyle) : materialMapStyle(isDarkMode)),
+        [mapStyle, isDarkMode],
     );
+    const [hybridSatellite, setHybridSatellite] = useState<StyleSpecification>();
+    const resolvedMapStyle = mapStyle === MapStyle.Satellite && hybridSatellite ? hybridSatellite : staticStyle;
 
     useEffect(() => {
+        if (mapStyle !== MapStyle.Satellite) return;
         let cancelled = false;
-        setResolvedMapStyle(resolveStaticMapStyle(correctedMapStyle));
-
-        if (correctedMapStyle === MapStyle.Satellite) {
-            getHybridSatelliteStyle().then((style) => {
-                if (!cancelled) setResolvedMapStyle(style);
-            });
-        }
-
+        getHybridSatelliteStyle().then((style) => {
+            if (!cancelled) setHybridSatellite(style);
+        });
         return () => {
             cancelled = true;
         };
-    }, [correctedMapStyle]);
+    }, [mapStyle]);
 
     /**
      * Open the current location popup when the map is clicked.
