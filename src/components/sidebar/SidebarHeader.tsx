@@ -5,7 +5,7 @@ import ThemeToggle from './ThemeToggle';
 
 export default function SidebarHeader() {
   const startTour = useStartTour();
-  const logoUrl: string = import.meta.env.LOGO_URL || '/pwa-512x512.png';
+  const logoUrl: string = import.meta.env.LOGO_URL || '/logo.svg';
   const groupName: string = import.meta.env.GROUP_NAME;
 
   return (

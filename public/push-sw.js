@@ -19,7 +19,8 @@ self.addEventListener('push', (event) => {
       await self.registration.showNotification(payload.title || 'Jotihunt Tracker', {
         body: payload.body || '',
         icon: '/pwa-192x192.png',
-        badge: '/pwa-64x64.png',
+        // Android draws only the badge's alpha channel: a white fox glyph on transparent
+        badge: '/badge-96x96.png',
         tag: `${payload.type || 'melding'}-${payload.id || Date.now()}`,
         requireInteraction: !!payload.urgent,
         data: { url: payload.url || '/' },
