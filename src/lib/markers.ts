@@ -1,9 +1,4 @@
-import foxHint from '@/assets/images/fox-hint.svg';
-import foxHunt from '@/assets/images/fox-hunt.svg';
-import foxSpot from '@/assets/images/fox-spot.svg';
-import fox from '@/assets/images/fox.svg';
 import type { Marker } from '@/types/Marker';
-import { MarkerType } from '@/types/MarkerType';
 
 /** Split between the two marker layers: 23:00 (local time) on the first hunt day. */
 export function markerSplitTime(huntStart: Date): Date {
@@ -40,20 +35,6 @@ export function groupMarkersByArea(markers: Marker[]): Record<string, Marker[]> 
     groups[area].sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
   }
   return groups;
-}
-
-/** Map icon for a marker type; unknown types get the plain fox. */
-export function markerIcon(type: MarkerType): string {
-  switch (type) {
-    case MarkerType.Hint:
-      return foxHint;
-    case MarkerType.Hunt:
-      return foxHunt;
-    case MarkerType.Spot:
-      return foxSpot;
-    default:
-      return fox;
-  }
 }
 
 /** HH:mm in Dutch notation. */

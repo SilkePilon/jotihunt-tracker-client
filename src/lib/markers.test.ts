@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import type { Marker } from '@/types/Marker';
 import { MarkerType } from '@/types/MarkerType';
-import { filterMarkers, formatMarkerTime, groupMarkersByArea, markerIcon, markerSplitTime } from './markers';
+import { filterMarkers, formatMarkerTime, groupMarkersByArea, markerSplitTime } from './markers';
 
 function marker(id: string, area: string, time: string, type = MarkerType.Hint): Marker {
   return { _id: id, area, time: time as unknown as Date, type, location: { type: 'Point', coordinates: [5.9, 52] } };
@@ -51,15 +51,6 @@ describe('groupMarkersByArea', () => {
 
   test('empty input gives no groups', () => {
     expect(groupMarkersByArea([])).toEqual({});
-  });
-});
-
-describe('markerIcon', () => {
-  test('one icon per type, plain fox otherwise', () => {
-    expect(markerIcon(MarkerType.Hint)).toContain('fox-hint');
-    expect(markerIcon(MarkerType.Hunt)).toContain('fox-hunt');
-    expect(markerIcon(MarkerType.Spot)).toContain('fox-spot');
-    expect(markerIcon('other' as MarkerType)).toMatch(/fox\.svg$/);
   });
 });
 

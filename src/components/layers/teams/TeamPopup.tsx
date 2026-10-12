@@ -21,6 +21,9 @@ interface TeamPopupProps {
   setTeamArea: (id: string, area: string | undefined) => Promise<boolean>;
 }
 
+// Above the group (28px circle, centred)
+const POPUP_OFFSET = { bottom: [0, -16] as [number, number] };
+
 /** Details of a group: address, visit status, area select (TEAMS_AREA_EDITING) and Google Maps. */
 export default function TeamPopup({ team, onClose, setTeamArea }: TeamPopupProps) {
   const { areas } = useAreas();
@@ -47,7 +50,7 @@ export default function TeamPopup({ team, onClose, setTeamArea }: TeamPopupProps
   const [lng, lat] = team.location.coordinates;
 
   return (
-    <MapPopup longitude={lng} latitude={lat} onClose={onClose}>
+    <MapPopup longitude={lng} latitude={lat} onClose={onClose} offset={POPUP_OFFSET}>
       <div className="mr-5 flex w-64 flex-col gap-2 text-sm">
         <div className="flex items-center gap-2.5">
           <TeamLogo name={team.name} logoUrl={team.logoUrl} className="size-11 rounded-lg" />

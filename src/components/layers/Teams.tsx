@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Layer, Source, useMap, type FillLayerSpecification, type SymbolLayerSpecification } from 'react-map-gl/maplibre';
 import { isHomeTeam, useTeams } from '@/hooks/teams.hook';
 import { useAreas } from '@/hooks/areas.hook';
@@ -7,7 +7,8 @@ import { useIsMobile } from '@/hooks/media.hook';
 import useLayersStore from '@/stores/layers.store';
 import { TEAM_PINS_LAYER, teamCircles, teamPinFeatures } from '@/lib/map-layers';
 import { featureId, useLayerInteractions, usePopupSelection } from './map-interactions';
-import { addTeamPinImage } from './teams/team-pin-images';
+import { themedIconExpression, type MarkerTheme } from '@/lib/marker-style';
+import { useMarkerTheme } from './marker-icons';
 import TeamPopup from './teams/TeamPopup';
 import TeamTooltip from './teams/TeamTooltip';
 
@@ -17,17 +18,22 @@ const MOBILE_CENTER_OFFSET: [number, number] = [0, -65];
 const TEAM_CIRCLES_SOURCE = 'team-circles';
 const TEAM_CIRCLES_PAINT: FillLayerSpecification['paint'] = { 'fill-color': ['get', 'color'], 'fill-opacity': 0.2 };
 
-// All group pins are one GeoJSON source + symbol layer instead of an HTML marker each
+// All groups are one GeoJSON source + symbol layer instead of an HTML marker each: a circle in the area colour with a
+// home glyph, centred on the group
 const TEAM_PINS_SOURCE = 'team-pins';
 const TEAM_PINS_HOVER_LAYER = 'team-pins-hover';
-const TEAM_PINS_LAYOUT: SymbolLayerSpecification['layout'] = { 'icon-image': ['get', 'icon'], 'icon-anchor': 'bottom', 'icon-allow-overlap': true, 'icon-ignore-placement': true };
-// Like the former HTML pin's hover: brighter (the hover image) and 5% larger
-const TEAM_PINS_HOVER_LAYOUT: SymbolLayerSpecification['layout'] = { ...TEAM_PINS_LAYOUT, 'icon-image': ['get', 'hoverIcon'], 'icon-size': 1.05 };
+function teamPinsLayout(theme: MarkerTheme): SymbolLayerSpecification['layout'] {
+  return { 'icon-image': themedIconExpression(theme), 'icon-allow-overlap': true, 'icon-ignore-placement': true };
+}
 const TEAM_INTERACTIVE_LAYERS = [TEAM_PINS_LAYER];
 
 export default function Teams() {
   const showGroupCircles = useLayersStore((state) => state.showGroupCircles);
   const map = useMap().current?.getMap();
+  const theme = useMarkerTheme();
+  const layout = useMemo(() => teamPinsLayout(theme), [theme]);
+  // Hovered: 10% larger
+  const hoverLayout = useMemo<SymbolLayerSpecification['layout']>(() => ({ ...layout, 'icon-size': 1.1 }), [layout]);
   const isMobile = useIsMobile();
   const { teams, setTeamArea } = useTeams();
   const { isVisible } = useAreas();
@@ -46,16 +52,6 @@ export default function Teams() {
   const circles = useMemo(() => teamCircles(visibleTeams.filter((team) => !isHomeTeam(team))), [visibleTeams]);
   const pins = useMemo(() => teamPinFeatures(visibleTeams, visitedIds), [visibleTeams, visitedIds]);
   const hoverFilter = useMemo<SymbolLayerSpecification['filter']>(() => ['==', ['get', 'id'], hoveredId ?? ''], [hoveredId]);
-
-  // Pin images are drawn when the map first needs them (and again after a style switch dropped them)
-  useEffect(() => {
-    if (!map) return;
-    const onMissing = (e: { id: string }) => addTeamPinImage(map, e.id);
-    map.on('styleimagemissing', onMissing);
-    return () => {
-      map.off('styleimagemissing', onMissing);
-    };
-  }, [map]);
 
   // Click → popup (clicking the selected group closes it again) and centre the group; hover → tooltip
   useLayerInteractions(map, TEAM_INTERACTIVE_LAYERS, {
@@ -89,8 +85,8 @@ export default function Teams() {
         </Source>
       )}
       <Source id={TEAM_PINS_SOURCE} type="geojson" data={pins}>
-        <Layer id={TEAM_PINS_LAYER} type="symbol" source={TEAM_PINS_SOURCE} layout={TEAM_PINS_LAYOUT} />
-        <Layer id={TEAM_PINS_HOVER_LAYER} type="symbol" source={TEAM_PINS_SOURCE} layout={TEAM_PINS_HOVER_LAYOUT} filter={hoverFilter} />
+        <Layer id={TEAM_PINS_LAYER} type="symbol" source={TEAM_PINS_SOURCE} layout={layout} />
+        <Layer id={TEAM_PINS_HOVER_LAYER} type="symbol" source={TEAM_PINS_SOURCE} layout={hoverLayout} filter={hoverFilter} />
       </Source>
       {hoveredTeam && <TeamTooltip team={hoveredTeam} />}
       {activeTeam && <TeamPopup key={active!.opened} team={activeTeam} onClose={closePopup} setTeamArea={setTeamArea} />}

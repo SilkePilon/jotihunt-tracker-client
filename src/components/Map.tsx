@@ -15,7 +15,7 @@ import type {LngLat, Map as MaplibreMap, StyleSpecification} from 'maplibre-gl';
 import Teams from './layers/Teams';
 import Devices from './layers/Devices';
 import Markers from './layers/Markers';
-import {forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState} from 'react';
+import {forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState} from 'react';
 import {useShallow} from 'zustand/react/shallow';
 import HomeCircle from './layers/HomeCircle';
 import Predictions from './layers/Predictions';
@@ -34,6 +34,10 @@ import type {SymbolLayerSpecification} from '@maplibre/maplibre-gl-style-spec';
 import {DEFAULT_VIEW} from '@/lib/map-view';
 import {FOX_MARKERS_LAYER, HUNTER_ARROWS_LAYER, HUNTERS_LAYER, TEAM_PINS_LAYER} from '@/lib/map-layers';
 import LayerStack from './layers/LayerStack';
+import MarkerImages from './layers/MarkerImages';
+import {markerCssVars, useMarkerPalette} from './layers/marker-icons';
+import {vehicleGlyph} from '@/lib/marker-style';
+import {useTrackerStatus} from '@/hooks/tracker.hook';
 import {tourTarget} from '@/components/tour/targets';
 
 // MapLibre resolves its worker relative to its own module, which bundlers don't emit;
@@ -113,6 +117,11 @@ const Map = forwardRef<MapRef, { className?: string }>(({className}, ref) => {
     const mapStyle = useSettingsStore((state) => state.mapStyle);
     const isDarkMode = useDarkMode();
     const isMobile = useIsMobile();
+    // Own position like the Android app's: the vehicle of our own tracker (a person without one)
+    const {status: tracker} = useTrackerStatus();
+    const markerPalette = useMarkerPalette();
+    const meVehicle = tracker?.configured ? tracker.vehicle : undefined;
+    const markerVars = useMemo(() => markerCssVars(markerPalette, vehicleGlyph(meVehicle ?? 'phone')), [markerPalette, meVehicle]);
     let correctedMapStyle = mapStyle;
     if (!correctedMapStyle) {
         correctedMapStyle = isDarkMode ? MapStyle.Dark : MapStyle.Streets;
@@ -150,7 +159,7 @@ const Map = forwardRef<MapRef, { className?: string }>(({className}, ref) => {
     }
 
     return (
-        <div className={className ?? "w-dvw h-dvh"} {...tourTarget('map')}>
+        <div className={className ?? "w-dvw h-dvh"} style={markerVars} {...tourTarget('map')}>
             <Maplibre
                 ref={mapRef}
                 reuseMaps
@@ -188,6 +197,8 @@ const Map = forwardRef<MapRef, { className?: string }>(({className}, ref) => {
                         <NavigationControl position="bottom-right" showCompass={false}/>
                     </>
                 )}
+                {/* Before the layers, so it listens for their images from the start */}
+                <MarkerImages/>
                 {popupPosition && <PickedLocationPopup lng={popupPosition.lng} lat={popupPosition.lat}
                                                        onClose={() => setPopupPosition(undefined)}/>}
                 {showPredictions && predictionEnabled !== false && <Predictions/>}

@@ -3,8 +3,8 @@ import { Badge } from '@/components/ui/badge';
 import { getColorFromArea } from '@/lib/utils';
 import type { Team } from '@/types/Team';
 
-// Above the hovered pin (34.8px high, anchored at its tip), where the Radix tooltip used to be
-const TOOLTIP_OFFSET: [number, number] = [0, -46];
+// Above the hovered group (28px circle, centred)
+const TOOLTIP_OFFSET: [number, number] = [0, -20];
 
 /** Hover tooltip of a group pin (same content and look as the former per-pin Radix tooltip). */
 export default function TeamTooltip({ team }: { team: Team }) {

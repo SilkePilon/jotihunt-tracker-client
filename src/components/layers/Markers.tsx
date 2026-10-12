@@ -1,28 +1,46 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Layer, Source, useMap, type CircleLayerSpecification, type LineLayerSpecification, type SymbolLayerSpecification } from 'react-map-gl/maplibre';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Layer, Source, useMap, type LineLayerSpecification, type SymbolLayerSpecification } from 'react-map-gl/maplibre';
+import type { ExpressionSpecification } from 'maplibre-gl';
 import { useMarkers } from '@/hooks/markers.hook';
 import { useAreas } from '@/hooks/areas.hook';
+import { useHintBoard } from '@/hooks/hints.hook';
 import { FOX_MARKERS_LAYER, markerFeatures, trailLines } from '@/lib/map-layers';
 import { filterMarkers, groupMarkersByArea, markerSplitTime } from '@/lib/markers';
-import { addFoxImages, loadFoxImages, type FoxImages } from './markers/fox-images';
+import { areaKey, HINT_LABEL_MS, hintNumbering, themedIconExpression, type MarkerTheme } from '@/lib/marker-style';
+import { MarkerType } from '@/types/MarkerType';
+import { HINT_ANCHOR_OFFSET, useMarkerTheme } from './marker-icons';
 import { featureId, useLayerInteractions, usePopupSelection } from './map-interactions';
 import MarkerPopup from './markers/MarkerPopup';
 import MarkerTooltip from './markers/MarkerTooltip';
 
 // Split between the two marker layers (static for the lifetime of the app): 23:00 on the first hunt day
 const SPLIT = markerSplitTime(new Date(import.meta.env.HUNT_START_TIME));
+// Hint numbers count the hints inside the hunt
+const HUNT = { startMs: Date.parse(import.meta.env.HUNT_START_TIME), endMs: Date.parse(import.meta.env.HUNT_END_TIME) };
+// Longest timer the browser accepts (about 24.8 days)
+const MAX_TIMEOUT_MS = 2 ** 31 - 1;
 
 const TRAILS_SOURCE = 'marker-trails';
 const TRAILS_LAYER = 'marker-trails-line';
 const TRAILS_PAINT: LineLayerSpecification['paint'] = { 'line-color': ['get', 'color'], 'line-width': 3 };
 
-// All foxes are one GeoJSON source + symbol layer: hundreds of HTML markers made panning stutter
+// All foxes are one GeoJSON source + symbol layer: hundreds of HTML markers made panning stutter. Spots, hunts and
+// unknown types are centred on their point; hint labels hang above it with their anchor dot on the point.
 const FOX_SOURCE = 'fox-markers';
 const FOX_HOVER_LAYER = 'fox-markers-hover';
-const FOX_LAYOUT: SymbolLayerSpecification['layout'] = { 'icon-image': ['get', 'icon'], 'icon-allow-overlap': true, 'icon-ignore-placement': true };
-const FOX_HOVER_LAYOUT: SymbolLayerSpecification['layout'] = { ...FOX_LAYOUT, 'icon-size': 1.1 };
-// Only when the icons could not be rasterised: plain dots, so the markers never disappear
-const FOX_FALLBACK_PAINT: CircleLayerSpecification['paint'] = { 'circle-radius': 7, 'circle-color': '#ea580c', 'circle-stroke-width': 2, 'circle-stroke-color': '#fff' };
+// Null-safe: features without the property count as no hint
+const IS_HINT: ExpressionSpecification = ['==', ['get', 'hint'], true];
+function foxLayout(theme: MarkerTheme): SymbolLayerSpecification['layout'] {
+  return {
+    'icon-image': themedIconExpression(theme),
+    'icon-anchor': ['case', IS_HINT, 'bottom-left', 'center'],
+    'icon-offset': ['case', IS_HINT, ['literal', HINT_ANCHOR_OFFSET], ['literal', [0, 0]]],
+    // Hint labels above the fox markers, like the Android app's separate hint layer
+    'symbol-sort-key': ['case', IS_HINT, 1, 0],
+    'icon-allow-overlap': true,
+    'icon-ignore-placement': true,
+  };
+}
 const FOX_INTERACTIVE_LAYERS = [FOX_MARKERS_LAYER];
 
 interface MarkersProps {
@@ -34,9 +52,11 @@ interface MarkersProps {
 
 export default function Markers({ part1, part2 }: MarkersProps) {
   const { markers, deleteMarker } = useMarkers();
-  const { isVisible } = useAreas();
+  const { areas, isVisible } = useAreas();
+  const { board } = useHintBoard();
   const map = useMap().current?.getMap();
-  const [icons, setIcons] = useState<'loading' | 'ready' | 'failed'>('loading');
+  const theme = useMarkerTheme();
+  const [nowMs, setNowMs] = useState(() => Date.now());
 
   const { active, open: openPopup, close: closePopup } = usePopupSelection<string>();
   const [hoveredId, setHoveredId] = useState<string>();
@@ -46,31 +66,21 @@ export default function Markers({ part1, part2 }: MarkersProps) {
 
   const visibleMarkers = useMemo(() => filterMarkers(markers ?? [], { part1, part2, split: SPLIT, isVisible }), [markers, part1, part2, isVisible]);
   const trails = useMemo(() => trailLines(groupMarkersByArea(visibleMarkers)), [visibleMarkers]);
-  const features = useMemo(() => markerFeatures(visibleMarkers), [visibleMarkers]);
+  const statusByArea = useMemo(() => new Map((areas ?? []).map((area) => [areaKey(area.name), area.status])), [areas]);
+  const statusOf = useCallback((area: string) => statusByArea.get(areaKey(area)), [statusByArea]);
+  const numbering = useMemo(() => hintNumbering(board, HUNT), [board]);
+  const features = useMemo(() => markerFeatures(visibleMarkers, { statusOf, numbering, nowMs }), [visibleMarkers, statusOf, numbering, nowMs]);
+  const layout = useMemo(() => foxLayout(theme), [theme]);
+  const hoverLayout = useMemo<SymbolLayerSpecification['layout']>(() => ({ ...layout, 'icon-size': 1.1 }), [layout]);
   const hoverFilter = useMemo<SymbolLayerSpecification['filter']>(() => ['==', ['get', 'id'], hoveredId ?? ''], [hoveredId]);
 
-  // Fox icons as map images; a style switch drops them, MapLibre then asks again via styleimagemissing
+  // Hint labels turn into dots after six hours: rebuild the features only when the next one does (not every minute)
   useEffect(() => {
-    if (!map) return;
-    let cancelled = false;
-    let images: FoxImages | undefined;
-    const onMissing = (e: { id: string }) => {
-      if (images) addFoxImages(map, images, e.id);
-    };
-    map.on('styleimagemissing', onMissing);
-    loadFoxImages()
-      .then((loaded) => {
-        if (cancelled) return;
-        images = loaded;
-        addFoxImages(map, loaded);
-        setIcons('ready');
-      })
-      .catch(() => !cancelled && setIcons('failed'));
-    return () => {
-      cancelled = true;
-      map.off('styleimagemissing', onMissing);
-    };
-  }, [map]);
+    const flips = visibleMarkers.filter((marker) => marker.type === MarkerType.Hint).map((marker) => new Date(marker.time).getTime() + HINT_LABEL_MS + 1).filter((ms) => ms > nowMs);
+    if (!flips.length) return;
+    const timeout = setTimeout(() => setNowMs(Date.now()), Math.min(MAX_TIMEOUT_MS, Math.min(...flips) - Date.now()));
+    return () => clearTimeout(timeout);
+  }, [visibleMarkers, nowMs]);
 
   // Click → popup, hover → pointer cursor + tooltip + slightly larger icon
   useLayerInteractions(map, FOX_INTERACTIVE_LAYERS, {
@@ -92,16 +102,10 @@ export default function Markers({ part1, part2 }: MarkersProps) {
       <Source id={TRAILS_SOURCE} type="geojson" data={trails}>
         <Layer id={TRAILS_LAYER} type="line" source={TRAILS_SOURCE} paint={TRAILS_PAINT} />
       </Source>
-      {icons !== 'loading' && (
-        <Source id={FOX_SOURCE} type="geojson" data={features}>
-          {icons === 'ready' ? (
-            <Layer id={FOX_MARKERS_LAYER} type="symbol" source={FOX_SOURCE} layout={FOX_LAYOUT} />
-          ) : (
-            <Layer id={FOX_MARKERS_LAYER} type="circle" source={FOX_SOURCE} paint={FOX_FALLBACK_PAINT} />
-          )}
-          {icons === 'ready' && <Layer id={FOX_HOVER_LAYER} type="symbol" source={FOX_SOURCE} layout={FOX_HOVER_LAYOUT} filter={hoverFilter} />}
-        </Source>
-      )}
+      <Source id={FOX_SOURCE} type="geojson" data={features}>
+        <Layer id={FOX_MARKERS_LAYER} type="symbol" source={FOX_SOURCE} layout={layout} />
+        <Layer id={FOX_HOVER_LAYER} type="symbol" source={FOX_SOURCE} layout={hoverLayout} filter={hoverFilter} />
+      </Source>
       {hoveredMarker && <MarkerTooltip marker={hoveredMarker} />}
       {activeMarker && <MarkerPopup key={active!.opened} marker={activeMarker} onClose={closePopup} deleteMarker={deleteMarker} />}
     </>

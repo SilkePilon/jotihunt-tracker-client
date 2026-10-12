@@ -9,8 +9,11 @@ import { formatMarkerTime } from '@/lib/markers';
 import { toRD } from '@/lib/rd';
 import { capitalizeFirstLetter } from '@/lib/utils';
 import type { Marker } from '@/types/Marker';
+import { MarkerType } from '@/types/MarkerType';
 
+// Above the fox (38px shape, centred), or above a hint's label (which hangs ~29px above its point)
 const POPUP_OFFSET = { bottom: [0, -20] as [number, number] };
+const HINT_POPUP_OFFSET = { bottom: [0, -32] as [number, number] };
 
 interface MarkerPopupProps {
   /** The marker from the current SWR data */
@@ -38,7 +41,7 @@ export default function MarkerPopup({ marker, onClose, deleteMarker }: MarkerPop
   }
 
   return (
-    <MapPopup longitude={lng} latitude={lat} onClose={onClose} offset={POPUP_OFFSET}>
+    <MapPopup longitude={lng} latitude={lat} onClose={onClose} offset={marker.type === MarkerType.Hint ? HINT_POPUP_OFFSET : POPUP_OFFSET}>
       <div className="flex flex-col gap-2">
         <div>
           <h2 className="font-semibold">

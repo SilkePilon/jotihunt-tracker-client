@@ -237,3 +237,99 @@ body.dark {
     stroke-dashoffset: 0;
   }
 }
+
+/*
+ * Own position (MapLibre's geolocate dot) and the picked location, in the Android app's marker style. The colours and
+ * the glyph come from CSS variables that Map.tsx sets from the marker palette (src/lib/marker-style.ts). The extra
+ * .maplibregl-map makes these win over maplibre-gl.css, which loads later with the map's chunk.
+ */
+@keyframes jh-marker-pulse {
+  from {
+    transform: scale(1);
+    opacity: 0.35;
+  }
+  to {
+    transform: scale(1.55);
+    opacity: 0;
+  }
+}
+
+/* "Me": 44px circle in primary (40px + 2px rim), the vehicle glyph in on-primary, a pulsing primary ring */
+.maplibregl-map .maplibregl-user-location-dot {
+  width: 40px;
+  height: 40px;
+  background-color: var(--jh-marker-primary);
+  box-shadow:
+    0 0 0 2px var(--jh-marker-rim),
+    0 1px 4.5px 2px rgba(0, 0, 0, 0.25);
+}
+
+.maplibregl-map .maplibregl-user-location-dot::before {
+  inset: -2px;
+  width: auto;
+  height: auto;
+  background-color: var(--jh-marker-primary);
+  animation: jh-marker-pulse 1.6s ease-out infinite;
+  z-index: -1;
+}
+
+.maplibregl-map .maplibregl-user-location-dot::after {
+  inset: 0;
+  width: auto;
+  height: auto;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  background-color: var(--jh-marker-on-primary);
+  -webkit-mask: var(--jh-me-glyph) center / 22px 22px no-repeat;
+  mask: var(--jh-me-glyph) center / 22px 22px no-repeat;
+}
+
+.maplibregl-map .maplibregl-user-location-dot-stale {
+  background-color: var(--jh-marker-stale);
+}
+
+.maplibregl-map .maplibregl-user-location-dot-stale::before {
+  display: none;
+}
+
+.maplibregl-map .maplibregl-user-location-dot-stale::after {
+  display: block;
+  background-color: var(--jh-marker-on-stale);
+  opacity: 0.6;
+}
+
+.maplibregl-map .maplibregl-user-location-accuracy-circle {
+  background-color: color-mix(in srgb, var(--jh-marker-primary) 12%, transparent);
+}
+
+/* Picked location: a 12px primary dot with the 2px rim and the same pulse */
+.jh-picked-dot {
+  position: relative;
+  display: block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: var(--jh-marker-primary);
+  box-shadow:
+    0 0 0 2px var(--jh-marker-rim),
+    0 1px 4.5px 2px rgba(0, 0, 0, 0.25);
+}
+
+.jh-picked-dot::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  background-color: var(--jh-marker-primary);
+  animation: jh-marker-pulse 1.6s ease-out infinite;
+  z-index: -1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .maplibregl-map .maplibregl-user-location-dot::before,
+  .jh-picked-dot::before {
+    animation: none;
+    opacity: 0;
+  }
+}

@@ -3,8 +3,12 @@ import type { Marker } from '@/types/Marker';
 import { MarkerType } from '@/types/MarkerType';
 import type { Position } from '@/types/Position';
 import type { Team } from '@/types/Team';
-import type { Vehicle } from '@/types/Tracker';
 import { createCircle, getColorFromArea } from '@/lib/utils';
+import { formatMarkerTime } from '@/lib/markers';
+import { areaKey, type AreaOrNone, foxStatus, hintIconKey, markerIconId, type FoxKind, type HintNumbering, type HunterIcon } from '@/lib/marker-style';
+import type { MapPin } from '@/lib/prediction';
+
+export type { HunterIcon } from '@/lib/marker-style';
 
 /** Symbol layer with the fox markers (hint/hunt/spot); Map.tsx doesn't open its location popup for clicks on it. */
 export const FOX_MARKERS_LAYER = 'fox-markers';
@@ -15,17 +19,20 @@ export const TEAM_PINS_LAYER = 'team-pins';
 export const HUNTERS_LAYER = 'hunters';
 /** Heading arrows next to moving hunters (clicking one is clicking the hunter, like the former HTML marker). */
 export const HUNTER_ARROWS_LAYER = 'hunter-arrows';
+/** Symbol layer with the AI prediction pins (not clickable). */
+export const PREDICTION_PINS_LAYER = 'prediction-pins';
 
 /**
  * The app's map layers from bottom to top. Within the first group the order is free; every later group is drawn above
- * all groups before it (the HTML markers stacked: foxes, then groups, then hunters, all above the canvas layers).
+ * all groups before it. The markers stack like the Android app's: groups, foxes (and hints), prediction pins, hunters.
  */
 export const MAP_LAYER_STACK: string[][] = [
   ['device-accuracy-fill', 'prediction-pin-lines', 'circle-layer-home', 'team-circles-fill', 'marker-trails-line'],
-  [FOX_MARKERS_LAYER],
-  ['fox-markers-hover'],
   [TEAM_PINS_LAYER],
   ['team-pins-hover'],
+  [FOX_MARKERS_LAYER],
+  ['fox-markers-hover'],
+  [PREDICTION_PINS_LAYER],
   [HUNTER_ARROWS_LAYER],
   [HUNTERS_LAYER],
   ['hunters-hover'],
@@ -54,27 +61,29 @@ export interface MarkerFeatureProperties {
   area: string;
   /** Epoch milliseconds */
   time: number;
-  /** Map image id, see {@link markerImageId} */
+  /** Theme-less marker image id, see {@link markerIconId} */
   icon: string;
+  /** Hint labels hang above their point (anchor bottom-left), the other markers are centred on it */
+  hint: boolean;
 }
 
 export interface TeamPinProperties {
   id: string;
-  /** Map image ids, see {@link teamPinImageId} */
+  /** Theme-less marker image id, see {@link markerIconId} */
   icon: string;
-  hoverIcon: string;
 }
 
-/** Hunter icon: the vehicle of the device's Traccar group, a phone when the group isn't a vehicle. */
-export type HunterIcon = Vehicle | 'phone';
-const HUNTER_ICONS: readonly string[] = ['walking', 'bike', 'car', 'motorcycle', 'phone'] satisfies HunterIcon[];
+export interface PredictionPinProperties {
+  area: string;
+  /** Theme-less marker image id, see {@link markerIconId} */
+  icon: string;
+}
 
 export interface HunterProperties {
   /** Traccar device id */
   id: number;
-  /** Map image ids, see {@link hunterImageId} */
+  /** Theme-less marker image id, see {@link markerIconId} */
   icon: string;
-  hoverIcon: string;
   /** Heading in degrees */
   course: number;
   /** Moving with a recent fix: show the heading arrow */
@@ -114,69 +123,49 @@ export function trailLines(groups: Record<string, Marker[]>, colorFor: (area: st
   );
 }
 
-/** Id of the map image (registered with map.addImage) for a marker type; unknown types get the plain fox. */
-export function markerImageId(type: MarkerType): string {
-  switch (type) {
-    case MarkerType.Hint:
-      return 'fox-hint';
-    case MarkerType.Hunt:
-      return 'fox-hunt';
-    case MarkerType.Spot:
-      return 'fox-spot';
-    default:
-      return 'fox';
-  }
+function foxKind(type: MarkerType): FoxKind {
+  return type === MarkerType.Spot ? 'spot' : type === MarkerType.Hunt ? 'hunt' : 'other';
 }
 
-/** One point per marker for the fox symbol layer (one canvas layer instead of an HTML element per marker). */
-export function markerFeatures(markers: Marker[]): FeatureCollection<Point, MarkerFeatureProperties> {
-  return collection(
-    markers.map((marker) => ({
-      type: 'Feature',
-      geometry: { type: 'Point', coordinates: marker.location.coordinates },
-      properties: { id: marker._id!, type: marker.type, area: marker.area, time: new Date(marker.time).getTime(), icon: markerImageId(marker.type) },
-    })),
-  );
+export interface MarkerFeatureContext {
+  /** Area name → status from /areas (spots take their area's status colour) */
+  statusOf: (area: string) => string | undefined;
+  /** Hint numbers from the hint board ("A · H3" labels) */
+  numbering: HintNumbering;
+  nowMs: number;
 }
 
 /**
- * Map image id of a group pin: the pin in the area colour, with the green "visited" badge, brightened when hovered.
- * The images are drawn on demand (styleimagemissing), so the id carries everything needed to draw it.
+ * One point per marker for the fox symbol layer (one canvas layer instead of an HTML element per marker): spots in
+ * their area's status colour, hunts, and hints as an "A · H3" label (the clock without a number; a dot when old).
  */
-export function teamPinImageId(color: string, visited: boolean, hover = false): string {
-  return `team-pin|${color}|${visited ? 'visited' : ''}${hover ? '|hover' : ''}`;
-}
-
-export function parseTeamPinImageId(id: string): { color: string; visited: boolean; hover: boolean } | undefined {
-  const [prefix, color, visited, hover] = id.split('|');
-  if (prefix !== 'team-pin' || !color) return undefined;
-  return { color, visited: visited === 'visited', hover: hover === 'hover' };
-}
-
-/** One point per group for the team pin layer (one canvas layer instead of an HTML marker per group). */
-export function teamPinFeatures(teams: Team[], visitedApiIds: Set<number>, colorFor: (area: string) => string = getColorFromArea): FeatureCollection<Point, TeamPinProperties> {
+export function markerFeatures(markers: Marker[], { statusOf, numbering, nowMs }: MarkerFeatureContext): FeatureCollection<Point, MarkerFeatureProperties> {
   return collection(
-    teams.map((team) => {
-      const color = colorFor(team.area || '');
-      const visited = visitedApiIds.has(team.apiId);
+    markers.map((marker) => {
+      const time = new Date(marker.time).getTime();
+      const area: AreaOrNone = areaKey(marker.area) ?? 'none';
+      const hint = marker.type === MarkerType.Hint;
+      const key = hint
+        ? hintIconKey(area, time, numbering.numberOf(marker._id ?? '', marker.area, time), nowMs, formatMarkerTime(time))
+        : { kind: 'fox' as const, type: foxKind(marker.type), status: foxStatus(statusOf(marker.area)), area };
       return {
         type: 'Feature',
-        geometry: { type: 'Point', coordinates: [team.location.coordinates[0], team.location.coordinates[1]] },
-        properties: { id: team._id, icon: teamPinImageId(color, visited), hoverIcon: teamPinImageId(color, visited, true) },
+        geometry: { type: 'Point', coordinates: marker.location.coordinates },
+        properties: { id: marker._id!, type: marker.type, area: marker.area, time, icon: markerIconId(key), hint },
       };
     }),
   );
 }
 
-/** Map image id of a hunter icon: greyed out when stale, brightened when hovered. */
-export function hunterImageId(icon: HunterIcon, stale: boolean, hover = false): string {
-  return `hunter|${icon}|${stale ? 'stale' : 'live'}${hover ? '|hover' : ''}`;
-}
-
-export function parseHunterImageId(id: string): { icon: HunterIcon; stale: boolean; hover: boolean } | undefined {
-  const [prefix, icon, state, hover] = id.split('|');
-  if (prefix !== 'hunter' || !HUNTER_ICONS.includes(icon)) return undefined;
-  return { icon: icon as HunterIcon, stale: state === 'stale', hover: hover === 'hover' };
+/** One point per group for the group layer: a circle in the area colour, with a check badge once visited. */
+export function teamPinFeatures(teams: Team[], visitedApiIds: Set<number>): FeatureCollection<Point, TeamPinProperties> {
+  return collection(
+    teams.map((team) => ({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [team.location.coordinates[0], team.location.coordinates[1]] },
+      properties: { id: team._id, icon: markerIconId({ kind: 'group', area: areaKey(team.area) ?? 'none', visited: visitedApiIds.has(team.apiId) }) },
+    })),
+  );
 }
 
 /** One point per tracker position for the hunter layers. */
@@ -184,13 +173,23 @@ export function hunterFeatures(positions: Position[], iconFor: (deviceId: number
   return collection(
     positions.map((position) => {
       const stale = isStale(position.fixTime);
-      const icon = iconFor(position.deviceId);
       return {
         type: 'Feature',
         geometry: { type: 'Point', coordinates: [position.longitude, position.latitude] },
-        properties: { id: position.deviceId, icon: hunterImageId(icon, stale), hoverIcon: hunterImageId(icon, stale, true), course: position.course, moving: position.speed > 0 && !stale },
+        properties: { id: position.deviceId, icon: markerIconId({ kind: 'hunter', icon: iconFor(position.deviceId), stale }), course: position.course, moving: position.speed > 0 && !stale },
       };
     }),
+  );
+}
+
+/** One point per AI prediction pin (greyed out when stale). */
+export function predictionPinFeatures(pins: MapPin[]): FeatureCollection<Point, PredictionPinProperties> {
+  return collection(
+    pins.map((pin) => ({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [pin.lng, pin.lat] },
+      properties: { area: pin.area, icon: markerIconId({ kind: 'prediction', area: areaKey(pin.area) ?? 'none', stale: pin.stale }) },
+    })),
   );
 }
 

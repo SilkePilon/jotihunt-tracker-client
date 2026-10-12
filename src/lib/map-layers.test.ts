@@ -6,17 +6,14 @@ import type { Team } from '@/types/Team';
 import {
   accuracyCircles,
   hunterFeatures,
-  hunterImageId,
   layerStackMoves,
   markerFeatures,
-  markerImageId,
-  parseHunterImageId,
-  parseTeamPinImageId,
+  predictionPinFeatures,
   teamCircles,
   teamPinFeatures,
-  teamPinImageId,
   trailLines,
 } from './map-layers';
+import { hintNumbering } from './marker-style';
 
 function team(id: string, area?: string): Team {
   return { _id: id, apiId: 1, name: id, area, location: { type: 'Point', coordinates: [5.9, 52] } } as Team;
@@ -77,51 +74,48 @@ describe('trailLines', () => {
 });
 
 describe('markerFeatures', () => {
+  const now = Date.parse('2026-10-17T12:00:00.000Z');
+  const at = (minutesAgo: number) => new Date(now - minutesAgo * 60_000).toISOString() as unknown as Date;
+  const fox = (id: string, type: MarkerType, area: string, minutesAgo = 1): Marker => ({ _id: id, area, time: at(minutesAgo), type, location: { type: 'Point', coordinates: [5.1, 52.2] } });
+  const statusOf = (area: string) => ({ alpha: 'green', bravo: 'orange' })[area.toLowerCase()];
+  const numbering = { numberOf: (id: string) => (id === 'h1' ? 3 : undefined) };
+
   test('one point per marker with what the symbol layer, tooltip and click need', () => {
-    const time = '2026-10-17T12:00:00.000Z';
-    const fc = markerFeatures([{ _id: 'm1', area: 'Alpha', time: time as unknown as Date, type: MarkerType.Hunt, location: { type: 'Point', coordinates: [5.1, 52.2] } }]);
+    const fc = markerFeatures([fox('m1', MarkerType.Hunt, 'Alpha')], { statusOf, numbering, nowMs: now });
     expect(fc.features).toEqual([
-      { type: 'Feature', geometry: { type: 'Point', coordinates: [5.1, 52.2] }, properties: { id: 'm1', type: MarkerType.Hunt, area: 'Alpha', time: Date.parse(time), icon: 'fox-hunt' } },
+      { type: 'Feature', geometry: { type: 'Point', coordinates: [5.1, 52.2] }, properties: { id: 'm1', type: MarkerType.Hunt, area: 'Alpha', time: now - 60_000, icon: 'fox|hunt|green|alpha', hint: false } },
     ]);
   });
-});
 
-describe('markerImageId', () => {
-  test('one map image per marker type, the plain fox for unknown types', () => {
-    expect(markerImageId(MarkerType.Hint)).toBe('fox-hint');
-    expect(markerImageId(MarkerType.Hunt)).toBe('fox-hunt');
-    expect(markerImageId(MarkerType.Spot)).toBe('fox-spot');
-    expect(markerImageId('other' as MarkerType)).toBe('fox');
+  test('spots take their area status (unknown = red); unknown types and areas still get a marker', () => {
+    const fc = markerFeatures([fox('a', MarkerType.Spot, 'alpha'), fox('b', MarkerType.Spot, 'bravo'), fox('c', MarkerType.Spot, 'charlie'), fox('d', 'other' as MarkerType, 'zulu')], { statusOf, numbering, nowMs: now });
+    expect(fc.features.map((f) => f.properties.icon)).toEqual(['fox|spot|green|alpha', 'fox|spot|orange|bravo', 'fox|spot|red|charlie', 'fox|other|red|none']);
+  });
+
+  test('hints: "H<n>" label, the clock without a number, a dot when old', () => {
+    const fc = markerFeatures([fox('h1', MarkerType.Hint, 'alpha'), fox('h2', MarkerType.Hint, 'bravo', 30), fox('h3', MarkerType.Hint, 'bravo', 7 * 60)], { statusOf, numbering, nowMs: now });
+    const clock = new Date(now - 30 * 60_000).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+    expect(fc.features.map((f) => [f.properties.icon, f.properties.hint])).toEqual([
+      ['hint|alpha|H3', true],
+      [`hint|bravo|${clock}`, true],
+      ['hintdot', true],
+    ]);
+  });
+
+  test('works with the real numbering', () => {
+    const fc = markerFeatures([fox('h1', MarkerType.Hint, 'alpha')], { statusOf, numbering: hintNumbering(undefined, { startMs: 0, endMs: 0 }), nowMs: now });
+    expect(fc.features[0].properties.icon).toStartWith('hint|alpha|');
   });
 });
 
 describe('teamPinFeatures', () => {
-  test('one point per team with its area colour, visited state and pin images', () => {
+  test('one point per team: a group marker in its area colour, with the visited badge', () => {
     const teams = [{ ...team('a', 'Alpha'), apiId: 7, name: 'Groep A' }, { ...team('b'), apiId: 8 }];
-    const fc = teamPinFeatures(teams, new Set([7]), colorFor);
+    const fc = teamPinFeatures(teams, new Set([7]));
     expect(fc.features).toEqual([
-      {
-        type: 'Feature',
-        geometry: { type: 'Point', coordinates: [5.9, 52] },
-        properties: { id: 'a', icon: 'team-pin|color-Alpha|visited', hoverIcon: 'team-pin|color-Alpha|visited|hover' },
-      },
-      { type: 'Feature', geometry: { type: 'Point', coordinates: [5.9, 52] }, properties: { id: 'b', icon: 'team-pin|none|', hoverIcon: 'team-pin|none||hover' } },
+      { type: 'Feature', geometry: { type: 'Point', coordinates: [5.9, 52] }, properties: { id: 'a', icon: 'group|alpha|visited' } },
+      { type: 'Feature', geometry: { type: 'Point', coordinates: [5.9, 52] }, properties: { id: 'b', icon: 'group|none|open' } },
     ]);
-  });
-});
-
-describe('teamPinImageId', () => {
-  test('round-trips colour, visited badge and hover', () => {
-    for (const [color, visited, hover] of [
-      ['#f87171', true, false],
-      ['#ffffff', false, true],
-    ] as const) {
-      expect(parseTeamPinImageId(teamPinImageId(color, visited, hover))).toEqual({ color, visited, hover });
-    }
-  });
-  test('other images are not team pins', () => {
-    expect(parseTeamPinImageId('fox-hunt')).toBeUndefined();
-    expect(parseTeamPinImageId('hunter|car|live')).toBeUndefined();
   });
 });
 
@@ -130,22 +124,24 @@ describe('hunterFeatures', () => {
   test('vehicle icon, grey when stale, heading arrow only when moving with a recent fix', () => {
     const fc = hunterFeatures([pos(1, 3, 'recent'), pos(2, 3, 'old'), pos(3, 0, 'recent')], (id) => (id === 1 ? 'car' : 'phone'), (fixTime) => fixTime === 'old');
     expect(fc.features.map((f) => f.properties)).toEqual([
-      { id: 1, icon: 'hunter|car|live', hoverIcon: 'hunter|car|live|hover', course: 90, moving: true },
-      { id: 2, icon: 'hunter|phone|stale', hoverIcon: 'hunter|phone|stale|hover', course: 90, moving: false },
-      { id: 3, icon: 'hunter|phone|live', hoverIcon: 'hunter|phone|live|hover', course: 90, moving: false },
+      { id: 1, icon: 'hunter|car|live', course: 90, moving: true },
+      { id: 2, icon: 'hunter|phone|stale', course: 90, moving: false },
+      { id: 3, icon: 'hunter|phone|live', course: 90, moving: false },
     ]);
     expect(fc.features[0].geometry).toEqual({ type: 'Point', coordinates: [5.9, 52] });
   });
 });
 
-describe('hunterImageId', () => {
-  test('round-trips icon, stale and hover', () => {
-    expect(parseHunterImageId(hunterImageId('bike', true, true))).toEqual({ icon: 'bike', stale: true, hover: true });
-    expect(parseHunterImageId(hunterImageId('phone', false))).toEqual({ icon: 'phone', stale: false, hover: false });
-  });
-  test('unknown icons and other images are not hunters', () => {
-    expect(parseHunterImageId('hunter|boat|live')).toBeUndefined();
-    expect(parseHunterImageId('team-pin|#fff|')).toBeUndefined();
+describe('predictionPinFeatures', () => {
+  test('one pin per prediction, greyed out when stale', () => {
+    const fc = predictionPinFeatures([
+      { area: 'alpha', lng: 5, lat: 52, color: '#f87171', stale: false },
+      { area: 'Hotel', lng: 6, lat: 51, color: '#6d45fd', stale: true },
+    ]);
+    expect(fc.features).toEqual([
+      { type: 'Feature', geometry: { type: 'Point', coordinates: [5, 52] }, properties: { area: 'alpha', icon: 'predict|alpha|live' } },
+      { type: 'Feature', geometry: { type: 'Point', coordinates: [6, 51] }, properties: { area: 'Hotel', icon: 'predict|hotel|stale' } },
+    ]);
   });
 });
 

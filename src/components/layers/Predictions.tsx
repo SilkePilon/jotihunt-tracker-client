@@ -1,38 +1,37 @@
 import { useMemo } from 'react';
-import { PawPrintIcon } from 'lucide-react';
-import { Layer, Marker, Source, type LineLayerSpecification } from 'react-map-gl/maplibre';
+import { Layer, Source, type LineLayerSpecification, type SymbolLayerSpecification } from 'react-map-gl/maplibre';
 import { useAreas } from '@/hooks/areas.hook';
 import { usePredictions } from '@/hooks/predictions.hook';
+import { PREDICTION_PINS_LAYER, predictionPinFeatures } from '@/lib/map-layers';
+import { themedIconExpression } from '@/lib/marker-style';
 import { buildPredictionMap } from '@/lib/prediction';
-import { cn, getColorFromArea } from '@/lib/utils';
+import { getColorFromArea } from '@/lib/utils';
+import { useMarkerTheme } from './marker-icons';
 
 const LINES_SOURCE = 'prediction-lines';
 const LINE_LAYOUT: LineLayerSpecification['layout'] = { 'line-cap': 'round' };
 const LINE_PAINT: LineLayerSpecification['paint'] = { 'line-color': ['get', 'color'], 'line-width': 2.5, 'line-opacity': 0.8, 'line-dasharray': [2, 2] };
-const PIN_STYLE = { pointerEvents: 'none' } as const;
+const PINS_SOURCE = 'prediction-pins';
 
-/** AI prediction: pulsing fox pin per area, dashed line from the last observation. */
+/** AI prediction: a fox pin per area (greyed out when stale), dashed line from the last observation. */
 export default function Predictions() {
   const { predictions } = usePredictions();
   const { isVisible } = useAreas();
+  const theme = useMarkerTheme();
 
   const data = useMemo(() => buildPredictionMap((predictions ?? []).filter((prediction) => isVisible(prediction.area)), getColorFromArea), [predictions, isVisible]);
+  const pins = useMemo(() => predictionPinFeatures(data.pins), [data.pins]);
+  const pinLayout = useMemo<SymbolLayerSpecification['layout']>(() => ({ 'icon-image': themedIconExpression(theme), 'icon-allow-overlap': true, 'icon-ignore-placement': true }), [theme]);
 
   return (
     <>
       <Source id={LINES_SOURCE} type="geojson" data={data.lines}>
         <Layer id="prediction-pin-lines" type="line" source={LINES_SOURCE} layout={LINE_LAYOUT} paint={LINE_PAINT} />
       </Source>
-      {data.pins.map((pin) => (
-        <Marker key={`pin-${pin.area}`} longitude={pin.lng} latitude={pin.lat} anchor="center" style={PIN_STYLE}>
-          <span className={cn('relative flex size-9 items-center justify-center', pin.stale && 'grayscale')}>
-            {!pin.stale && <span className="absolute inline-flex size-full animate-ping rounded-full opacity-60" style={{ backgroundColor: pin.color }} />}
-            <span className="relative flex size-7 items-center justify-center rounded-full text-white shadow-md ring-2 ring-white" style={{ backgroundColor: pin.color }}>
-              <PawPrintIcon className="size-4" aria-label={`Voorspelde positie ${pin.area}`} />
-            </span>
-          </span>
-        </Marker>
-      ))}
+      {/* Not clickable (not one of Map.tsx's interactive layers), like the former HTML pins */}
+      <Source id={PINS_SOURCE} type="geojson" data={pins}>
+        <Layer id={PREDICTION_PINS_LAYER} type="symbol" source={PINS_SOURCE} layout={pinLayout} />
+      </Source>
     </>
   );
 }

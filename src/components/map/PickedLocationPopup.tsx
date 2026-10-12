@@ -34,7 +34,7 @@ export default function PickedLocationPopup({lat, lng, onClose}: { lat: number; 
                 longitude={lng || 0}
                 latitude={lat || 0}
                 anchor="center">
-                <div className={"bg-blue-500 block w-4 h-4 rounded-full border border-white animate-pulse"}></div>
+                <span className="jh-picked-dot"/>
             </Marker>
             <MapPopup onClose={onClose} longitude={lng || 0} latitude={lat || 0} offset={{bottom: [0, -15]}}>
                 <div className="mr-6 flex flex-col gap-2 w-full">
