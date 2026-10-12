@@ -43,12 +43,12 @@ describe('mapPalette', () => {
     expect(dark.primaryContainer).toBe('#245024');
   });
 
-  test('the website seed is the site primary orange and tints the surfaces warm', () => {
-    expect(MAP_SEED).toBe(0xea580c);
+  test('the website seed is the app green, so parks and woods stay green', () => {
+    expect(MAP_SEED).toBe(ANDROID_SEED);
     const p = mapPalette(MAP_SEED, false);
-    // Orange-ish hue (HSL 15..45) for the primary container, which fills parks and woods
-    expect(hueOf(p.primaryContainer)).toBeGreaterThan(10);
-    expect(hueOf(p.primaryContainer)).toBeLessThan(45);
+    // Green hue (HSL 90..150) for the primary container, which fills parks and woods
+    expect(hueOf(p.primaryContainer)).toBeGreaterThan(90);
+    expect(hueOf(p.primaryContainer)).toBeLessThan(150);
     expect(mapPalette(MAP_SEED, true).dark).toBe(true);
   });
 

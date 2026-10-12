@@ -5,14 +5,14 @@
 import { Hct, SchemeTonalSpot } from '@material/material-color-utilities';
 import type { LayerSpecification, StyleSpecification } from 'maplibre-gl';
 
-/**
- * Seed of the map's Material 3 scheme (tonal spot): the site's primary orange, as the map markers use. For the Android
- * app's default green (its fallback scheme when dynamic colour is off) use {@link ANDROID_SEED} instead.
- */
-export const MAP_SEED = 0xea580c;
-
 /** The Android app's fallback seed (#4C8C4A). */
 export const ANDROID_SEED = 0x4c8c4a;
+
+/**
+ * Seed of the map's Material 3 scheme (tonal spot): the Android app's default green, so parks and woods stay green and
+ * water stays blue. The site's orange (#ea580c) works too but turns parks rust-brown in dark mode.
+ */
+export const MAP_SEED = ANDROID_SEED;
 
 /** The theme roles the map style uses, as CSS colours. */
 export interface MapPalette {
