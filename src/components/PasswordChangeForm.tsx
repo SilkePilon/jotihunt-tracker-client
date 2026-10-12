@@ -12,7 +12,8 @@ import { useSessionExpired } from '@/hooks/session.hook';
 const passwordChangeSchema = z
   .object({
     oldPassword: z.string().min(1, 'Oude wachtwoord mag niet leeg zijn.'),
-    newPassword: z.string().min(1, 'Nieuw wachtwoord mag niet leeg zijn.'),
+    // Same rule as the server (a 400 from the server would read as a wrong old password)
+    newPassword: z.string().min(8, 'Wachtwoord moet minstens 8 tekens zijn.').max(200, 'Wachtwoord mag maximaal 200 tekens zijn.'),
     confirmPassword: z.string().min(1, 'Nieuw wachtwoord bevestiging mag niet leeg zijn.'),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
