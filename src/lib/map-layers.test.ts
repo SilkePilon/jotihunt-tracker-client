@@ -8,6 +8,8 @@ import {
   hunterFeatures,
   layerStackMoves,
   markerFeatures,
+  predictionAreaCircles,
+  PREDICTION_RADIUS_M,
   predictionPinFeatures,
   teamCircles,
   teamPinFeatures,
@@ -94,7 +96,8 @@ describe('markerFeatures', () => {
 
   test('hints: "H<n>" label, the clock without a number, a dot when old', () => {
     const fc = markerFeatures([fox('h1', MarkerType.Hint, 'alpha'), fox('h2', MarkerType.Hint, 'bravo', 30), fox('h3', MarkerType.Hint, 'bravo', 7 * 60)], { statusOf, numbering, nowMs: now });
-    const clock = new Date(now - 30 * 60_000).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+    // 11:30 UTC is 13:30 in Amsterdam (summer time), whatever the test machine's zone
+    const clock = '13:30';
     expect(fc.features.map((f) => [f.properties.icon, f.properties.hint])).toEqual([
       ['hint|alpha|H3', true],
       [`hint|bravo|${clock}`, true],
@@ -135,13 +138,29 @@ describe('hunterFeatures', () => {
 describe('predictionPinFeatures', () => {
   test('one pin per prediction, greyed out when stale', () => {
     const fc = predictionPinFeatures([
-      { area: 'alpha', lng: 5, lat: 52, color: '#f87171', stale: false },
-      { area: 'Hotel', lng: 6, lat: 51, color: '#6d45fd', stale: true },
+      { area: 'alpha', lng: 5, lat: 52, color: '#f87171', stale: false, confidence: 'high' },
+      { area: 'Hotel', lng: 6, lat: 51, color: '#6d45fd', stale: true, confidence: null },
     ]);
     expect(fc.features).toEqual([
       { type: 'Feature', geometry: { type: 'Point', coordinates: [5, 52] }, properties: { area: 'alpha', icon: 'predict|alpha|live' } },
       { type: 'Feature', geometry: { type: 'Point', coordinates: [6, 51] }, properties: { area: 'Hotel', icon: 'predict|hotel|stale' } },
     ]);
+  });
+});
+
+describe('predictionAreaCircles', () => {
+  test('a circle around each pin, smaller when the AI is more sure (Android radii)', () => {
+    expect(PREDICTION_RADIUS_M).toEqual({ high: 200, medium: 400, low: 700 });
+    const fc = predictionAreaCircles([
+      { area: 'alpha', lng: 5, lat: 52, color: '#f87171', stale: false, confidence: 'high' },
+      { area: 'bravo', lng: 5, lat: 52, color: '#4ade80', stale: true, confidence: 'medium' },
+      { area: 'charlie', lng: 5, lat: 52, color: '#60a5fa', stale: false, confidence: null },
+    ]);
+    expect(fc.features.map((f) => f.properties)).toEqual([{ area: 'alpha' }, { area: 'bravo' }, { area: 'charlie' }]);
+    const northM = (i: number) => (Math.max(...fc.features[i].geometry.coordinates[0].map(([, lat]) => lat)) - 52) * 111_320;
+    expect(northM(0)).toBeCloseTo(200, -1);
+    expect(northM(1)).toBeCloseTo(400, -1);
+    expect(northM(2)).toBeCloseTo(700, -1);
   });
 });
 

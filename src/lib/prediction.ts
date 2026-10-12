@@ -8,6 +8,7 @@ export interface MapPin {
   lat: number;
   color: string;
   stale: boolean;
+  confidence: Confidence | null;
 }
 
 /** Number of filled bars in the confidence signal icon. */
@@ -61,7 +62,7 @@ export function buildPredictionMap(
     if (prediction.paused || !prediction.pin) continue;
     const color = colorFor(prediction.area);
     const { pin, lastObservation: last } = prediction;
-    pins.push({ area: prediction.area, lng: pin.lng, lat: pin.lat, color, stale: prediction.stale });
+    pins.push({ area: prediction.area, lng: pin.lng, lat: pin.lat, color, stale: prediction.stale, confidence: prediction.confidence });
     if (last) {
       lines.push({
         type: 'Feature',

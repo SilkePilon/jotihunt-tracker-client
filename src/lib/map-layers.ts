@@ -4,9 +4,9 @@ import { MarkerType } from '@/types/MarkerType';
 import type { Position } from '@/types/Position';
 import type { Team } from '@/types/Team';
 import { createCircle, getColorFromArea } from '@/lib/utils';
-import { formatMarkerTime } from '@/lib/markers';
-import { areaKey, type AreaOrNone, foxStatus, hintIconKey, markerIconId, type FoxKind, type HintNumbering, type HunterIcon } from '@/lib/marker-style';
+import { areaKey, type AreaOrNone, formatHintClock, foxStatus, hintIconKey, markerIconId, type FoxKind, type HintNumbering, type HunterIcon } from '@/lib/marker-style';
 import type { MapPin } from '@/lib/prediction';
+import type { Confidence } from '@/types/Prediction';
 
 export type { HunterIcon } from '@/lib/marker-style';
 
@@ -27,7 +27,7 @@ export const PREDICTION_PINS_LAYER = 'prediction-pins';
  * all groups before it. The markers stack like the Android app's: groups, foxes (and hints), prediction pins, hunters.
  */
 export const MAP_LAYER_STACK: string[][] = [
-  ['device-accuracy-fill', 'prediction-pin-lines', 'circle-layer-home', 'team-circles-fill', 'marker-trails-line'],
+  ['device-accuracy-fill', 'prediction-areas-fill', 'prediction-areas-line', 'prediction-pin-lines', 'circle-layer-home', 'team-circles-fill', 'marker-trails-line'],
   [TEAM_PINS_LAYER],
   ['team-pins-hover'],
   [FOX_MARKERS_LAYER],
@@ -146,7 +146,7 @@ export function markerFeatures(markers: Marker[], { statusOf, numbering, nowMs }
       const area: AreaOrNone = areaKey(marker.area) ?? 'none';
       const hint = marker.type === MarkerType.Hint;
       const key = hint
-        ? hintIconKey(area, time, numbering.numberOf(marker._id ?? '', marker.area, time), nowMs, formatMarkerTime(time))
+        ? hintIconKey(area, time, numbering.numberOf(marker._id ?? '', marker.area, time), nowMs, formatHintClock(time))
         : { kind: 'fox' as const, type: foxKind(marker.type), status: foxStatus(statusOf(marker.area)), area };
       return {
         type: 'Feature',
@@ -180,6 +180,14 @@ export function hunterFeatures(positions: Position[], iconFor: (deviceId: number
       };
     }),
   );
+}
+
+/** Radius of the prediction area circle per confidence (Android `buildOverlay`); unknown counts as low. */
+export const PREDICTION_RADIUS_M: Record<Confidence, number> = { high: 200, medium: 400, low: 700 };
+
+/** The area where the fox probably is: a circle around each pin, smaller when the AI is more sure. */
+export function predictionAreaCircles(pins: MapPin[]): FeatureCollection<Polygon, { area: string }> {
+  return collection(pins.map((pin) => circle(pin.lng, pin.lat, PREDICTION_RADIUS_M[pin.confidence ?? 'low'], { area: pin.area })));
 }
 
 /** One point per AI prediction pin (greyed out when stale). */

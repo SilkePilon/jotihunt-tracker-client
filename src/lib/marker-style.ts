@@ -8,7 +8,10 @@ import { getColorFromArea } from './utils';
 
 export type MarkerTheme = 'light' | 'dark';
 
-/** The Material 3 roles the markers use: the Android app's fallback scheme (seed #4C8C4A) + its status colours. */
+/**
+ * The Material 3 roles the markers use: the Android app's fallback scheme (seed #4C8C4A) + its status colours, with the
+ * website's orange in the primary roles (own position, hint labels, picked location).
+ */
 export interface MarkerPalette {
   surfaceContainerLowest: string;
   surfaceContainerHighest: string;
@@ -33,16 +36,20 @@ export interface MarkerPalette {
   onWarnContainer: string;
 }
 
-/** Android `LightFallbackScheme` / `DarkFallbackScheme` + `LightStatusColors` / `DarkStatusColors`. */
+/**
+ * Android `LightFallbackScheme` / `DarkFallbackScheme` + `LightStatusColors` / `DarkStatusColors`; primary is the site's
+ * orange (#ea580c, the dark theme's --primary: the light theme's #f97316 is too pale under a white glyph), the hint
+ * label containers Tailwind's orange-100 / orange-900.
+ */
 export const MARKER_PALETTES: Record<MarkerTheme, MarkerPalette> = {
   light: {
     surfaceContainerLowest: '#ffffff',
     surfaceContainerHighest: '#e0e4db',
     onSurfaceVariant: '#424940',
-    primary: '#3b6939',
+    primary: '#ea580c',
     onPrimary: '#ffffff',
-    primaryContainer: '#bcf0b4',
-    onPrimaryContainer: '#245024',
+    primaryContainer: '#ffedd5',
+    onPrimaryContainer: '#7c2d12',
     secondary: '#52634f',
     secondaryContainer: '#d6e8ce',
     onSecondaryContainer: '#3b4b38',
@@ -62,10 +69,10 @@ export const MARKER_PALETTES: Record<MarkerTheme, MarkerPalette> = {
     surfaceContainerLowest: '#0b0f0a',
     surfaceContainerHighest: '#323630',
     onSurfaceVariant: '#c2c9bd',
-    primary: '#a1d39a',
-    onPrimary: '#0a390f',
-    primaryContainer: '#245024',
-    onPrimaryContainer: '#bcf0b4',
+    primary: '#ea580c',
+    onPrimary: '#ffffff',
+    primaryContainer: '#7c2d12',
+    onPrimaryContainer: '#ffedd5',
     secondary: '#baccb3',
     secondaryContainer: '#3b4b38',
     onSecondaryContainer: '#d6e8ce',
@@ -272,6 +279,13 @@ export const HINT_LABEL_MS = 6 * 60 * 60_000;
 export function hintIconKey(area: AreaOrNone, timeMs: number, number: number | undefined, nowMs: number, clock: string): MarkerIconKey {
   if (nowMs - timeMs > HINT_LABEL_MS) return { kind: 'hintdot' };
   return { kind: 'hint', area, label: number !== undefined ? `H${number}` : clock };
+}
+
+const HINT_CLOCK = new Intl.DateTimeFormat('nl-NL', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Amsterdam' });
+
+/** Hint label clock: always Dutch time (the game is played in the Netherlands), whatever the viewer's time zone. */
+export function formatHintClock(timeMs: number): string {
+  return HINT_CLOCK.format(timeMs);
 }
 
 /** Test hints seeded on the server have ids from here on; they never get a number. */

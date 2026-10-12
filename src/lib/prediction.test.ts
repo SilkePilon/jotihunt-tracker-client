@@ -55,7 +55,7 @@ describe('prediction helpers', () => {
 
   test('buildPredictionMap: line last→pin, pin; paused and pinless skipped', () => {
     const map = buildPredictionMap([prediction(), prediction({ area: 'b', paused: true }), prediction({ area: 'c', pin: null })], () => '#f00');
-    expect(map.pins).toEqual([{ area: 'alpha', lng: 5.5, lat: 52.09, color: '#f00', stale: false }]);
+    expect(map.pins).toEqual([{ area: 'alpha', lng: 5.5, lat: 52.09, color: '#f00', stale: false, confidence: prediction().confidence }]);
     expect(buildPredictionMap([prediction({ stale: true })], () => '#f00').pins[0].stale).toBe(true);
     expect(map.lines.features).toHaveLength(1);
     expect(map.lines.features[0].geometry.coordinates).toEqual([

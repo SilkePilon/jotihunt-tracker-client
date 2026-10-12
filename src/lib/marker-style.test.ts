@@ -3,6 +3,7 @@ import type { HintBoard, HintCell } from '@/types/HintCell';
 import {
   areaKey,
   areaLetter,
+  formatHintClock,
   contrastRatio,
   foxStatus,
   groupColors,
@@ -74,6 +75,24 @@ describe('groupColors', () => {
   test('contrastRatio is the WCAG ratio', () => {
     expect(contrastRatio('#ffffff', '#000000')).toBeCloseTo(21, 5);
     expect(contrastRatio('#777777', '#777777')).toBeCloseTo(1, 5);
+  });
+});
+
+describe('palette', () => {
+  test('the website orange in the primary roles, readable, and clearly apart from the status green', () => {
+    for (const palette of Object.values(MARKER_PALETTES)) {
+      expect(palette.primary).toBe('#ea580c');
+      expect(contrastRatio(palette.primary, palette.onPrimary)).toBeGreaterThanOrEqual(3);
+      expect(contrastRatio(palette.primaryContainer, palette.onPrimaryContainer)).toBeGreaterThanOrEqual(4.5);
+      expect(palette.primary).not.toBe(palette.ok);
+    }
+  });
+});
+
+describe('formatHintClock', () => {
+  test('always Amsterdam time (summer and winter time)', () => {
+    expect(formatHintClock(Date.parse('2026-10-17T12:05:00Z'))).toBe('14:05');
+    expect(formatHintClock(Date.parse('2026-12-01T08:00:00Z'))).toBe('09:00');
   });
 });
 
