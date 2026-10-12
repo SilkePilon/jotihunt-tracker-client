@@ -15,6 +15,8 @@ const pwaManifest: Partial<VitePWAOptions> = {
     // The map chunk (maplibre) is larger than workbox's 2 MB default
     maximumFileSizeToCacheInBytes: 1024 * 1024 * 5,
     importScripts: ['push-sw.js'],
+    // The API shares the origin under /api (https://jotihunt.silkepilon.dev/api); its URLs (e.g. the APK download) are never app routes
+    navigateFallbackDenylist: [/^\/api(\/|$)/],
   },
   manifest: {
     name: 'Jotihunt Tracker',
