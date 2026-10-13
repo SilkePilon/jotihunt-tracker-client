@@ -3,6 +3,7 @@
 Date: 2026-10-13
 Status: approved in brainstorm (visual companion mockups in `.superpowers/brainstorm/3076851-1791876566/content/`, final screen `final-flow-v2.html`)
 Repo: `jotihunt-tracker-client` only (no server or API changes)
+Branch: `feat/tracker-card-redesign` (worktree `.worktrees/client-trackercard`)
 
 ## Goal
 
@@ -90,7 +91,7 @@ to the pairing screen. New rule (client only): `configured && !connected && stat
 - `TrackerPairing.tsx` — state 2 (replaces `AppPairingPanel.tsx`, which is deleted). Owns `usePairingCode` and
   the 1 s countdown interval; creates the code on mount.
 - `TrackerLive.tsx` — states 3 and 5 (prop `variant: 'connected' | 'no-signal'`).
-- `CookieBadge.tsx` — flat SVG cookie (9 lobes, amplitude 0.08) with `tone: 'ok' | 'warn'` and `size`; check mark
+- `CookieBadge.tsx` — flat SVG cookie (`cookiePath`) with `tone: 'ok' | 'warn'` and `size`; check mark
   for ok, "!" for warn. Path generated once by a pure helper.
 - `VehicleMenu.tsx` — the pill + dropdown (replaces `VehiclePicker.tsx`, which is deleted).
 
@@ -99,8 +100,10 @@ to the pairing screen. New rule (client only): `configured && !connected && stat
 - `trackerView(status, isError, pairing): 'loading' | 'error' | 'not-configured' | 'idle' | 'pairing' | 'connected' | 'no-signal'`
   — pure, unit tested.
 - `trackerSummary` gains the "Geen signaal" case.
-- `cookiePath(lobes, amplitude, size)` — pure SVG path helper (in `src/lib/cookie-shape.ts`), unit tested for
-  closed path / bounds.
+- `src/lib/cookie-shape.ts`: `cookiePoints(cx, cy, radius, steps)` with the formula the map's hunt marker already
+  uses (Android `cookie`, 9 lobes: r(θ) = R · (1 − 0.07 · (1 + cos 9θ) / 2)) and `cookiePath(size)` for SVG.
+  `Painter.cookie` in `marker-icons.ts` switches to `cookiePoints`, so web card, map and Android share one shape.
+  Unit tested (closed path, stays within the radius, 9 lobes).
 - `VEHICLE_OPTIONS` gains a `phrase` ("Op de fiets", …) for the pill.
 - The stat formatters (`formatSpeed`, `formatBattery`, …) stay: the admin Hunters panel and device popup use them.
 
@@ -112,6 +115,14 @@ to the pairing screen. New rule (client only): `configured && !connected && stat
 Keep `data-tracker-state` on each view root (values: `not-configured`, `idle`, `pairing`, `connected`,
 `no-signal`).
 
+## Map: visited group badge
+
+The group pins on the map (`marker-icons.ts`, `case 'group'`) show a check badge once the group is visited: today a
+white circle with a green (`palette.ok`) circle and the `check` glyph. It becomes the same cookie check as the card:
+the white rim and the green fill are cookies instead of circles (same 16 px badge size, same position, same
+colours, shadow unchanged), with the check glyph on top. `badged()` gets an option for a cookie-shaped badge base;
+area-letter badges stay round.
+
 ## Styling
 
 Tailwind + existing tokens. Green badge `#22c55e` (`fill-green-500`), amber `fill-amber-500`, works in light and
@@ -122,6 +133,7 @@ badge.
 
 - Unit (`bun test`): `trackerView` for every state including no-signal and re-pair; `trackerSummary` incl.
   "Geen signaal"; `cookiePath`.
+- Manual: visited group pins on the map show the cookie check (light + dark).
 - Manual in the browser (desktop + mobile width): idle → pairing → connected with the Android app; ✕; code
   expiry → "Nieuwe code"; vehicle change; no-signal after stopping the app for 5 minutes; light and dark mode;
   collapsed headers.
