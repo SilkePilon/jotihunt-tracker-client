@@ -37,7 +37,7 @@ site's dark mode), exposed as CSS variables so popup chrome, building blocks and
 | `errorContainer` / `onErrorContainer` | delete icon button |
 | warn (dark ≈ `#ffb68a`) | stale subtitle text |
 
-`surfaceContainer` and `surfaceContainerHigh` are new palette entries (M3 values for the app's green seed, light and dark).
+The values live as `--map-*` CSS variables in `src/index.css` (`:root` + `body.dark`), mirroring `MARKER_PALETTES` plus M3 `surfaceContainer` / `surfaceContainerHigh` for the app's green seed.
 Font: `"Google Sans Flex", "Google Sans", Roboto, system-ui, sans-serif` (the marker font). Numbers use
 `tabular-nums`. Icons stay lucide.
 
@@ -54,7 +54,7 @@ Font: `"Google Sans Flex", "Google Sans", Roboto, system-ui, sans-serif` (the ma
   (11.5px muted). `stale` turns the subtitle warn-coloured and greys the icon (`grayscale`, opacity .7). Leaves
   room for the close button.
 - **`PopupIcon`** variants matching the marker shapes: `circle` (hunter: `secondaryContainer` + vehicle glyph;
-  Life360: purple + initials/avatar), `square` (fox marker: area colour + area letter, 10px radius), `logo`
+  Life360: existing `Life360Avatar` at 32px), `square` (fox marker: area colour + area letter, 10px radius), `logo`
   (group: `TeamLogo` at 32px, 10px radius), `pin` (picked location: `primaryContainer` + `MapPinIcon`).
 - **`PopupFact`** `{ icon, children }`: 13px muted icon + text line; several facts on one line are separated by a
   muted `·`.
@@ -75,7 +75,7 @@ Font: `"Google Sans Flex", "Google Sans", Roboto, system-ui, sans-serif` (the ma
    never prompts.
 3. Otherwise `undefined`; the popup then shows no distance.
 
-Distance is great-circle (turf `distance`), formatted by a new pure `formatDistanceFromMe(metres)` in
+Distance is great-circle (haversine in `src/lib/own-position.ts`), formatted by a new pure `formatDistanceFromMe(metres)` in
 `src/lib/format.ts`: `< 1000` → `"350 m van jou"`, else one decimal km with a Dutch comma (`"2,4 km van jou"`).
 Hidden below 20 m (that is "you").
 
@@ -127,15 +127,15 @@ radius 10px, padding 6px 10px, hairline + `0 4px 12px rgb(0 0 0 / .5)` shadow, 8
 | Group | area colour | team name | area name |
 | Hunter | `onSecondaryContainer` (grey when stale) | device name | short age (`1 min`, `2 u`) |
 | Fox marker | area colour | type (`Spot`, `Hunt`, `Hint`) | `Alpha · 14:32` |
-| Life360 | Life360 purple | member name | short age |
+| Life360 | rim colour for its tone (`life360RimColor`) | member name | short age |
 
-Short age = new pure `formatShortAge(iso, now)` in `src/lib/format.ts`: `zojuist`, `N min`, `N u`, `N d`.
+Short age = existing `formatAgeShort(iso, now)` from `src/lib/life360.ts`: `nu`, `N min`, `N uur`.
 Tooltip offsets re-tuned to the marker image heights.
 
 ## Testing
 
-- Unit tests (bun) for `formatDistanceFromMe` and `formatShortAge` edge cases (0, 19 m, 999 m, 1000 m, 1 min,
-  59 min, 60 min, 24 h).
+- Unit tests (bun) for `formatDistanceFromMe` (0, 19 m, 999 m, 1000 m), `joinParts`, `distanceMetres` and
+  `ownTrackerPosition`.
 - Update any existing tests that assert the old labels ("Vos hunt", "Breedtegraad", …).
 - `tsc -b` and lint clean.
 - Manual check in the local preview (throwaway DB, not the live docker stack): each popup and tooltip in dark and
