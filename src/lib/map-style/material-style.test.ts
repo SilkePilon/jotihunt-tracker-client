@@ -218,6 +218,8 @@ function contrast(a: string, b: string): number {
 /** Liberty's `road_N` shield sprites are opaque white boxes with a grey border (not SDF, so they cannot be tinted). */
 const SHIELD_FILL = '#ffffff';
 
+const isShield = (l: LayerSpecification) => roleOf(l.type, l.id) === 'shield';
+
 function visibleLabels(p: ReturnType<typeof mapPalette>) {
   return materialStyle(liberty, p).layers.filter((l) => {
     const layout = (l as { layout?: Record<string, unknown> }).layout;
@@ -231,17 +233,20 @@ describe('label contrast', () => {
     ['dark', dark],
   ] as const) {
     test(`${name}: road-number text is dark on the white shield sprite`, () => {
-      const shields = visibleLabels(p).filter((l) => l.id.includes('shield'));
-      expect(shields).toHaveLength(3);
+      const shields = visibleLabels(p).filter(isShield);
+      expect(shields.map((l) => l.id)).toEqual(
+        expect.arrayContaining(['highway-shield-non-us', 'highway-shield-us-interstate', 'road_shield_us']),
+      );
       for (const l of shields) {
         const ratio = contrast(paint(l, 'text-color') as string, SHIELD_FILL);
         expect({ id: l.id, ok: ratio >= 4.5, ratio }).toMatchObject({ ok: true });
+        expect(paint(l, 'text-halo-color')).toBeUndefined();
       }
     });
 
     test(`${name}: map labels contrast with their halo and the map`, () => {
       const grounds = { surface: p.surface, ground: p.surfaceContainerLow, landuse: p.surfaceContainer };
-      for (const l of visibleLabels(p).filter((l) => !l.id.includes('shield'))) {
+      for (const l of visibleLabels(p).filter((l) => !isShield(l))) {
         const text = paint(l, 'text-color') as string;
         const bgs: Record<string, string> = {
           halo: paint(l, 'text-halo-color') as string,
