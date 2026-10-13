@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { formatClock, formatCountdown } from './format';
+import { formatClock, formatCountdown, formatDistanceFromMe, joinParts } from './format';
 
 describe('formatClock', () => {
   test('HH:mm in Dutch time, regardless of the device time zone', () => {
@@ -28,5 +28,31 @@ describe('formatCountdown', () => {
   test('h:mm:ss from one hour, Xd Yu from one day', () => {
     expect(formatCountdown(3 * 3_600_000 + 5 * 60_000 + 7_000)).toBe('3:05:07');
     expect(formatCountdown(19 * 86_400_000 + 12 * 3_600_000 + 36 * 60_000)).toBe('19d 12u');
+  });
+});
+
+describe('formatDistanceFromMe', () => {
+  test('hidden when unknown or under 20 m', () => {
+    expect(formatDistanceFromMe(undefined)).toBeUndefined();
+    expect(formatDistanceFromMe(Number.NaN)).toBeUndefined();
+    expect(formatDistanceFromMe(0)).toBeUndefined();
+    expect(formatDistanceFromMe(19.9)).toBeUndefined();
+  });
+
+  test('metres below 1 km, km with a Dutch comma from 1 km', () => {
+    expect(formatDistanceFromMe(20)).toBe('20 m van jou');
+    expect(formatDistanceFromMe(349.6)).toBe('350 m van jou');
+    expect(formatDistanceFromMe(999)).toBe('999 m van jou');
+    expect(formatDistanceFromMe(1000)).toBe('1,0 km van jou');
+    expect(formatDistanceFromMe(2449)).toBe('2,4 km van jou');
+    expect(formatDistanceFromMe(12_345)).toBe('12,3 km van jou');
+  });
+});
+
+describe('joinParts', () => {
+  test('joins the present parts with a middle dot', () => {
+    expect(joinParts('Bravo', undefined, '2,4 km van jou')).toBe('Bravo · 2,4 km van jou');
+    expect(joinParts(false, null, '')).toBe('');
+    expect(joinParts('alleen')).toBe('alleen');
   });
 });
