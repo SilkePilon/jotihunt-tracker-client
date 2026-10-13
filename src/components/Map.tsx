@@ -16,7 +16,7 @@ import Teams from './layers/Teams';
 import Devices from './layers/Devices';
 import Life360 from './layers/Life360';
 import Markers from './layers/Markers';
-import {forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState} from 'react';
+import {forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, type ReactNode} from 'react';
 import {useShallow} from 'zustand/react/shallow';
 import HomeCircle from './layers/HomeCircle';
 import Predictions from './layers/Predictions';
@@ -48,11 +48,22 @@ import {tourTarget} from '@/components/tour/targets';
 setWorkerUrl(maplibreWorkerUrl);
 
 type FlyToOpts = NonNullable<Parameters<MaplibreMap["flyTo"]>[0]>;
+type FitBoundsArgs = Parameters<MaplibreMap["fitBounds"]>;
 
 export interface MapRef {
     flyTo(options: FlyToOpts): void;
 
+    fitBounds(bounds: FitBoundsArgs[0], options?: FitBoundsArgs[1]): void;
+
     markPoint(lngLat: LngLat): void;
+}
+
+interface MapProps {
+    className?: string;
+    /** HQ wall screen: no controls, no location popup, no user interaction */
+    wall?: boolean;
+    /** Rendered inside the map, e.g. react-map-gl Markers */
+    overlay?: ReactNode;
 }
 
 // react-map-gl/maplibre's maxBounds prop expects a flat [west, south, east, north] tuple.
@@ -78,7 +89,7 @@ const RULER_LABEL_PAINT = {'text-color': '#fff', 'text-halo-color': RULER_COLOR,
 // Clicks on these canvas layers open their own popup instead of the location popup
 const INTERACTIVE_LAYER_IDS = [FOX_MARKERS_LAYER, TEAM_PINS_LAYER, HUNTERS_LAYER, HUNTER_ARROWS_LAYER, LIFE360_LAYER];
 
-const Map = forwardRef<MapRef, { className?: string }>(({className}, ref) => {
+const Map = forwardRef<MapRef, MapProps>(({className, wall = false, overlay}, ref) => {
 
     const GROUP_NAME: string = import.meta.env.GROUP_NAME;
 
@@ -89,6 +100,9 @@ const Map = forwardRef<MapRef, { className?: string }>(({className}, ref) => {
             if (mapRef.current) {
                 mapRef.current.flyTo(options);
             }
+        },
+        fitBounds: (bounds, options) => {
+            mapRef.current?.fitBounds(bounds, options);
         },
         markPoint: (lngLat: LngLat) => {
             if (mapRef.current) {
@@ -125,6 +139,9 @@ const Map = forwardRef<MapRef, { className?: string }>(({className}, ref) => {
     const markerPalette = useMarkerPalette();
     const meVehicle = tracker?.configured ? tracker.vehicle : undefined;
     const markerVars = useMemo(() => markerCssVars(markerPalette, vehicleGlyph(meVehicle ?? 'phone')), [markerPalette, meVehicle]);
+    // Wall: MapLibre still fires click/mousemove with interactive={false}, which would open the layers' popups and
+    // hover tooltips; no pointer events at all keeps the wall display-only
+    const wrapperStyle = useMemo(() => (wall ? {...markerVars, pointerEvents: 'none' as const} : markerVars), [markerVars, wall]);
     // Resolve the style to a style URL/object. '' (automatic, the default) is the Material map, light or dark with the
     // site's theme. The Material style is built synchronously from the bundled Liberty copy;
     // a theme switch only changes paint colours, so react-map-gl's style diff keeps the overlay sources and markers.
@@ -158,7 +175,7 @@ const Map = forwardRef<MapRef, { className?: string }>(({className}, ref) => {
     }
 
     return (
-        <div className={className ?? "w-dvw h-dvh"} style={markerVars} {...tourTarget('map')}>
+        <div className={className ?? "w-dvw h-dvh"} style={wrapperStyle} {...tourTarget('map')}>
             <Maplibre
                 ref={mapRef}
                 reuseMaps
@@ -167,7 +184,8 @@ const Map = forwardRef<MapRef, { className?: string }>(({className}, ref) => {
                 attributionControl={false}
                 mapStyle={resolvedMapStyle}
                 maxBounds={maxBounds}
-                onClick={openPopup}
+                interactive={!wall}
+                onClick={wall ? undefined : openPopup}
                 interactiveLayerIds={INTERACTIVE_LAYER_IDS}
                 // No symbol fade: every tracker poll moves the hunter icons, which then faded in again (about 20 extra
                 // full map repaints per poll); the HTML markers they replace moved instantly
@@ -182,7 +200,7 @@ const Map = forwardRef<MapRef, { className?: string }>(({className}, ref) => {
                     <AttributionControl position={isMobile ? 'top-right' : 'bottom-right'} customAttribution={GROUP_NAME ? `Jotihunt Tracker | ${GROUP_NAME}` : 'Jotihunt Tracker'} compact={true}/>
                 </div>
                 {/* Phones: no map controls, the map is navigated by touch and the bottom sheet needs the room */}
-                {!isMobile && (
+                {!isMobile && !wall && (
                     <>
                         <ScaleControl/>
                         {/* Bottom corners stack upwards (the last added control ends up on top), so add bottom-to-top:
@@ -198,7 +216,7 @@ const Map = forwardRef<MapRef, { className?: string }>(({className}, ref) => {
                 )}
                 {/* Before the layers, so it listens for their images from the start */}
                 <MarkerImages/>
-                {popupPosition && <PickedLocationPopup lng={popupPosition.lng} lat={popupPosition.lat}
+                {popupPosition && !wall && <PickedLocationPopup lng={popupPosition.lng} lat={popupPosition.lat}
                                                        onClose={() => setPopupPosition(undefined)}/>}
                 {showPredictions && predictionEnabled !== false && <Predictions/>}
                 {showTeams && <Teams/>}
@@ -207,6 +225,7 @@ const Map = forwardRef<MapRef, { className?: string }>(({className}, ref) => {
                 {(showMarkersPart1 || showMarkersPart2) && <Markers part1={showMarkersPart1} part2={showMarkersPart2}/>}
                 <HomeCircle showCircle={showHomeCircle}/>
                 <LayerStack/>
+                {overlay}
             </Maplibre>
         </div>
     );
