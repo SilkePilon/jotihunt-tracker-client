@@ -168,26 +168,67 @@
  * just like they did with Tailwind v3.
  */
 
-/* MapLibre popup styling */
+/* Map surfaces (popups, tooltips): the sidebar's theme tokens, so map cards look like the sidebar cards. Declared on
+   body (not :root) because the theme's `.dark` class sits on body: there var(--card) resolves to the dark value. */
+body {
+  --map-font: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
+  --map-surface: var(--card);
+  --map-surface-high: var(--muted);
+  --map-on-surface: var(--card-foreground);
+  --map-on-surface-variant: color-mix(in oklab, var(--card-foreground) 85%, var(--muted-foreground));
+  --map-muted: var(--muted-foreground);
+  --map-hairline: var(--border);
+  --map-warn: #9a4a00;
+  --map-danger-bg: #ffdad6;
+  --map-danger-fg: #93000a;
+  --map-selected-bg: #ffedd5;
+  --map-selected-fg: #7c2d12;
+}
+
+body.dark {
+  --map-warn: #ffb68a;
+  --map-danger-bg: rgb(147 0 10 / 0.35);
+  --map-danger-fg: #ffb4ab;
+  --map-selected-bg: #7c2d12;
+  --map-selected-fg: #ffedd5;
+}
+
+/* MapLibre popup styling: compact card like the markers */
 .maplibregl-popup-content {
-  @apply animate-in fade-in bg-background!;
-  border-radius: 0.75rem !important;
-  padding: 1rem;
-  font-size: 0.875rem;
+  @apply animate-in fade-in;
+  background: var(--map-surface) !important;
+  color: var(--map-on-surface);
+  font-family: var(--map-font);
+  font-size: 12.5px;
+  line-height: 1.35;
+  border-radius: 16px !important;
+  padding: 10px;
+  box-shadow:
+    0 0 0 1px var(--map-hairline),
+    0 6px 20px rgb(0 0 0 / 0.5);
 }
 
 .maplibregl-popup-close-button {
-  width: 30px;
-  height: 30px;
-  font-size: large;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 9999px;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--map-muted);
 }
 
 .maplibregl-popup-close-button:hover {
-  @apply bg-accent! rounded-tr-lg;
+  background: var(--map-surface-high) !important;
 }
 
 .maplibregl-popup-tip {
   @apply animate-in fade-in;
+}
+
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
+  border-top-color: var(--map-surface) !important;
 }
 
 .card {
@@ -232,10 +273,6 @@ body.dark {
   .maplibregl-ctrl-attrib-button,
   .mapbox-ctrl-ruler svg {
     filter: invert(1);
-  }
-
-  .maplibregl-popup-tip {
-    @apply border-t-background;
   }
 
   ::-webkit-calendar-picker-indicator {
