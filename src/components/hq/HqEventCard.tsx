@@ -2,7 +2,7 @@ import { useState } from 'react';
 import StepDots from '@/components/tour/StepDots';
 import TimerRing from '@/components/tour/TimerRing';
 import CookieBadge from '@/components/tracker/CookieBadge';
-import { EVENT_HOLD_MS, FLY_MS, type HqEvent, type HqTone } from '@/lib/hq-director';
+import { eventHoldMs, type HqEvent, type HqTone } from '@/lib/hq-director';
 import { cn } from '@/lib/utils';
 
 const RING_CLASS: Record<HqTone, string> = { ok: 'stroke-green-500', warn: 'stroke-amber-500', danger: 'stroke-red-600', neutral: 'stroke-primary' };
@@ -23,7 +23,7 @@ export default function HqEventCard({ event, queued, step }: { event: HqEvent | 
     >
       {shown && (
         <>
-          <TimerRing className="size-16 shrink-0" durationMs={FLY_MS + EVENT_HOLD_MS} runKey={step} progressClassName={RING_CLASS[shown.tone]}>
+          <TimerRing className="size-16 shrink-0" durationMs={eventHoldMs(shown)} runKey={step} progressClassName={RING_CLASS[shown.tone]}>
             <CookieBadge tone={shown.tone} size={44} glyph={shown.tone === 'neutral' ? 'i' : undefined} className="size-11" />
           </TimerRing>
           <div className="min-w-0 flex-1">

@@ -89,8 +89,12 @@ function HqScreen({ onUnauthorized }: { onUnauthorized: () => void }) {
         <ErrorBoundary name="De kaart" className="m-auto w-fit">
           <Map ref={mapRef} wall className="absolute inset-0" overlay={focusFox?.center && <FocusPulse center={focusFox.center} color={getColorFromArea(focusFox.key)} />} />
         </ErrorBoundary>
-        <TourChip stop={director.stop} index={director.stopIndex} count={director.stopCount} step={director.step} hidden={!!director.current} />
-        <HqEventCard event={director.current} queued={director.queued} step={director.step} />
+        <ErrorBoundary name="De tourchip" className="absolute left-4 top-4 z-10">
+          <TourChip stop={director.stop} index={director.stopIndex} count={director.stopCount} step={director.step} hidden={!!director.current} />
+        </ErrorBoundary>
+        <ErrorBoundary name="De melding" className="absolute inset-x-4 bottom-4 z-10">
+          <HqEventCard event={director.current} queued={director.queued} step={director.step} />
+        </ErrorBoundary>
       </div>
       <aside className="flex min-h-0 flex-col gap-2 p-3">
         <ErrorBoundary>

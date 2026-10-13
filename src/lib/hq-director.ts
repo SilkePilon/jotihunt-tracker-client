@@ -112,6 +112,11 @@ export interface HqEvent {
   camera: HqCamera | null;
 }
 
+/** How long an event stays on screen: 30 s after the flight, or just 30 s when the camera holds still. */
+export function eventHoldMs(event: HqEvent): number {
+  return event.camera ? FLY_MS + EVENT_HOLD_MS : EVENT_HOLD_MS;
+}
+
 const STATUS_WORD: Record<string, string> = { green: 'Actief', orange: 'Onderweg', red: 'Inactief' };
 
 export function eventFromNotification(notification: AppNotification): HqEvent | null {

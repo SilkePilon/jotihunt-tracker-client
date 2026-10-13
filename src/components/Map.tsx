@@ -197,7 +197,7 @@ const Map = forwardRef<MapRef, MapProps>(({className, wall = false, overlay}, re
             >
                 <div className="bg-background">
                     {/* Credits on the right: bottom-right on desktop; on phones top-right, above the bottom sheet. */}
-                    <AttributionControl position={isMobile ? 'top-right' : 'bottom-right'} customAttribution={GROUP_NAME ? `Jotihunt Tracker | ${GROUP_NAME}` : 'Jotihunt Tracker'} compact={true}/>
+                    <AttributionControl position={isMobile || wall ? 'top-right' : 'bottom-right'} customAttribution={GROUP_NAME ? `Jotihunt Tracker | ${GROUP_NAME}` : 'Jotihunt Tracker'} compact={true}/>
                 </div>
                 {/* Phones: no map controls, the map is navigated by touch and the bottom sheet needs the room */}
                 {!isMobile && !wall && (

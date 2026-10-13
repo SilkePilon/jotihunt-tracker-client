@@ -5,7 +5,10 @@ import {
   cooldownEvent,
   endedCooldowns,
   enqueue,
+  EVENT_HOLD_MS,
   eventFromNotification,
+  eventHoldMs,
+  FLY_MS,
   focusPoint,
   foxGroup,
   homeTarget,
@@ -180,4 +183,17 @@ describe('director queue', () => {
     expect(state.step).toBe(3);
   });
   test('advance on the tour goes to the next stop', () => expect(advance(INITIAL_DIRECTOR)).toEqual({ current: null, queue: [], tourIndex: 1, step: 1 }));
+});
+
+describe('eventHoldMs', () => {
+  const event = (camera: HqEvent['camera']): HqEvent => ({ key: 'k', title: 't', detail: 'd', tone: 'neutral', camera });
+
+  test('an event without a camera holds 30 s, no flight', () => {
+    expect(eventHoldMs(event(null))).toBe(EVENT_HOLD_MS);
+  });
+
+  test('an event with a camera holds 30 s after the flight', () => {
+    expect(eventHoldMs(event({ kind: 'area', area: 'alpha', zoom: 12.4 }))).toBe(FLY_MS + EVENT_HOLD_MS);
+    expect(eventHoldMs(event({ kind: 'home', direction: null }))).toBe(FLY_MS + EVENT_HOLD_MS);
+  });
 });
