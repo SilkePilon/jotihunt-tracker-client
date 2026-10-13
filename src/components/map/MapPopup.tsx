@@ -25,7 +25,7 @@ export default function MapPopup({ longitude, latitude, onClose, offset = defaul
       onClose={onClose}
       closeOnClick={true}
       offset={offset as PopupProps['offset']}
-      maxWidth="none"
+      maxWidth="236px"
       className="z-20"
     >
       <div className="flex w-[216px] flex-col">{children}</div>

@@ -183,6 +183,8 @@ body {
   --map-danger-fg: #93000a;
   --map-selected-bg: #ffedd5;
   --map-selected-fg: #7c2d12;
+  --map-success: #1b6d2f;
+  --map-success-bg: rgb(27 109 47 / 0.12);
 }
 
 body.dark {
@@ -191,6 +193,8 @@ body.dark {
   --map-danger-fg: #ffb4ab;
   --map-selected-bg: #7c2d12;
   --map-selected-fg: #ffedd5;
+  --map-success: #86efac;
+  --map-success-bg: rgb(22 163 74 / 0.2);
 }
 
 /* MapLibre popup styling: compact card like the markers */

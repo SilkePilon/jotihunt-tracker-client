@@ -15,8 +15,8 @@ export function VisitStatusFact({ teamApiId }: { teamApiId: number }) {
   const manualVisited = visitSelection(visit) === 'visited';
   return (
     <PopupFact>
-      {manualVisited ? <CheckIcon className="text-green-500!" /> : <SparklesIcon />}
-      <span className={cn('truncate', manualVisited ? 'text-green-500' : 'text-(--map-muted)')}>{visitStatusText(visit)}</span>
+      {manualVisited ? <CheckIcon className="text-(--map-success)!" /> : <SparklesIcon />}
+      <span className={cn('truncate', manualVisited ? 'text-(--map-success)' : 'text-(--map-muted)')}>{visitStatusText(visit)}</span>
     </PopupFact>
   );
 }
@@ -28,7 +28,7 @@ export function VisitToggleButton({ teamApiId }: { teamApiId: number }) {
   const visit = visits?.find((candidate) => candidate.teamApiId === teamApiId);
   const selection = visitSelection(visit);
   const visited = selection === 'visited';
-  const label = visited ? 'Bezocht — terug naar AI' : 'Markeer als bezocht';
+  const title = visited ? 'Bezocht — terug naar AI' : 'Markeer als bezocht';
 
   async function toggle() {
     setBusy(true);
@@ -45,11 +45,11 @@ export function VisitToggleButton({ teamApiId }: { teamApiId: number }) {
     <button
       type="button"
       aria-pressed={visited}
-      aria-label={label}
-      title={label}
+      aria-label="Bezocht"
+      title={title}
       disabled={busy}
       onClick={toggle}
-      className={popupActionClass('neutral', cn('w-[30px] px-0', visited && 'bg-green-600/20 text-green-500'))}
+      className={popupActionClass('neutral', cn('w-[30px] px-0', visited && 'bg-(--map-success-bg) text-(--map-success)'))}
     >
       <MarkerGlyph name="home" />
     </button>

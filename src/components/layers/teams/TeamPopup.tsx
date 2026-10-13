@@ -64,8 +64,8 @@ export default function TeamPopup({ team, onClose, setTeamArea }: TeamPopupProps
         subtitle={
           <>
             {area ? (
-              <span className="font-semibold capitalize" style={{ color: getColorFromArea(area) }}>
-                ● {area}
+              <span className="capitalize">
+                <span style={{ color: getColorFromArea(area) }}>●</span> {area}
               </span>
             ) : (
               'Geen deelgebied'

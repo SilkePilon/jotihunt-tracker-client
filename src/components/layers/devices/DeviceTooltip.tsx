@@ -11,7 +11,7 @@ const TOOLTIP_OFFSET: [number, number] = [0, -30];
 /** Hover tooltip of a hunter: name and how long ago (grey dot when stale); follows every poll. */
 export default function DeviceTooltip({ position }: { position: Position }) {
   const palette = useMarkerPalette();
-  const now = useNow(false);
+  const now = useNow(true);
   const stale = isMoreThanFiveMinutesAgo(position.fixTime);
   return (
     <MapTooltip
