@@ -18,6 +18,7 @@ import PredictionList from './PredictionList';
 import TrackerSection from './TrackerSection';
 import CounterHuntSection from './CounterHuntSection';
 import TelegramSection from './TelegramSection';
+import Life360Section from './Life360Section';
 import ErrorBoundary from '@/components/ErrorBoundary';
 
 export default function SidebarSections({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
@@ -58,6 +59,9 @@ export default function SidebarSections({ mapRef }: { mapRef: RefObject<MapRef |
       </ErrorBoundary>
       <ErrorBoundary name="Tracker">
         <TrackerSection />
+      </ErrorBoundary>
+      <ErrorBoundary name="Life360">
+        <Life360Section mapRef={mapRef} />
       </ErrorBoundary>
       <SidebarSection id="hunters" title="Actieve hunters" summary={activeCount ? String(activeCount) : 'Niemand'}>
         <ActiveDevices mapRef={mapRef} showLabel={false} />

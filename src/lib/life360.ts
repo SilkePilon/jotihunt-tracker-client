@@ -1,4 +1,4 @@
-import type { Life360AdminStatus, Life360LinkedStatus, Life360Location, Life360Members } from '@/types/Life360';
+import type { Life360AdminStatus, Life360LinkedStatus, Life360Location, Life360Member, Life360Members } from '@/types/Life360';
 import { formatCountdown, secondsLeft } from '@/lib/app-pairing';
 
 export const LIFE360_ADMIN_URL = '/admin/life360';
@@ -125,4 +125,31 @@ export function resendCountdown(resendAt: string, now: number): string | null {
 /** A complete login code: exactly 6 digits. */
 export function isSixDigits(code: string): boolean {
   return /^\d{6}$/.test(code);
+}
+
+/** Background of a member without photo (the mockups' avatar colours). */
+const INITIALS_COLORS = ['#0ea5e9', '#22c55e', '#eab308', '#ec4899', '#8b5cf6', '#f97316', '#14b8a6', '#ef4444'];
+
+/** A stable colour per member id for the initials avatar (card and map). */
+export function initialsColor(id: string): string {
+  let hash = 0;
+  for (const char of id) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+  return INITIALS_COLORS[hash % INITIALS_COLORS.length];
+}
+
+/** Members dropdown: "nu", "2 min", "3 uur", or "uit" when the member shares no location. */
+export function memberAgeLabel(member: Pick<Life360Member, 'location'>, now: number): string {
+  return member.location ? formatAgeShort(member.location.at, now) : 'uit';
+}
+
+/** "ververs" is clickable: no limit known, or the server's next allowed time has passed. */
+export function refreshAllowed(refreshAvailableAt: string | null, now: number): boolean {
+  if (!refreshAvailableAt) return true;
+  const time = Date.parse(refreshAvailableAt);
+  return Number.isNaN(time) || time <= now;
+}
+
+/** Members dropdown order: sharing first, then by name (Dutch collation). Returns a new array. */
+export function sortMembersForList<T extends Pick<Life360Member, 'name' | 'location'>>(members: readonly T[]): T[] {
+  return [...members].sort((a, b) => Number(a.location === null) - Number(b.location === null) || a.name.localeCompare(b.name, 'nl'));
 }
