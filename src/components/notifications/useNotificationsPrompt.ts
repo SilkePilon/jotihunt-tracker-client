@@ -5,7 +5,7 @@ import useNotificationsDialogStore from '@/stores/notifications-dialog.store';
 
 const PROMPT_DELAY_MS = 1500;
 
-/** Open the "Meldingen" dialog once per NOTIFICATIONS_PROMPT_VERSION, when nothing else (tour, password) is in the way. */
+/** Open the "Meldingen" dialog once per NOTIFICATIONS_PROMPT_VERSION, when nothing else (e.g. the tour) is in the way. */
 export function useNotificationsPrompt(blocked: boolean) {
   const { prefs } = useNotificationPrefs();
   const setOpen = useNotificationsDialogStore((state) => state.setOpen);

@@ -44,7 +44,7 @@ export function useStartTour() {
 }
 
 /**
- * Start the tour automatically for users who have not seen this TOUR_VERSION yet, after the forced password change.
+ * Start the tour automatically for users who have not seen this TOUR_VERSION yet.
  * Only on the map page: its steps point at the map and the sidebar, which other pages cover or do not mount. It stays
  * `pending` there, so the prompts that wait for it keep waiting until the user is back on the map.
  */
