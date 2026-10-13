@@ -32,9 +32,11 @@ describe('hasExpectedShape', () => {
   test('tegenhunt and Telegram answers', () => {
     expect(hasExpectedShape('/counter-hunt', { active: false })).toBe(true);
     expect(hasExpectedShape('/counter-hunt', { message: 'x' })).toBe(false);
-    expect(hasExpectedShape('/telegram/messages?limit=50', { linked: true, messages: [] })).toBe(true);
-    expect(hasExpectedShape('/telegram/messages?limit=50', { linked: true })).toBe(false);
-    expect(hasExpectedShape('/admin/telegram', { state: 'linked' })).toBe(true);
+    expect(hasExpectedShape('/telegram/messages?limit=50', { linked: true, connected: false, messages: [] })).toBe(true);
+    expect(hasExpectedShape('/telegram/messages?limit=50', { linked: true, connected: true })).toBe(false);
+    expect(hasExpectedShape('/telegram/messages?limit=50', { linked: true, messages: [] })).toBe(false);
+    expect(hasExpectedShape('/admin/telegram', { state: 'linked', connected: true, lastError: 'x' })).toBe(true);
+    expect(hasExpectedShape('/admin/telegram', { state: 'linked' })).toBe(false);
     expect(hasExpectedShape('/admin/telegram', { message: 'x' })).toBe(false);
   });
 

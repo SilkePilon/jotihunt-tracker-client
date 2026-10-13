@@ -1,4 +1,14 @@
-import type { TelegramAdminStatus } from '@/types/Telegram';
+import type { TelegramAdminStatus, TelegramMessages } from '@/types/Telegram';
+
+/** Can tegenhunts come in: linked and connected, linked but disconnected (reconnecting), or not linked at all. */
+export type TelegramLink = 'connected' | 'disconnected' | 'unlinked';
+
+/** From GET /telegram/messages; undefined while loading. */
+export function telegramLink(data: Pick<TelegramMessages, 'linked' | 'connected'> | undefined): TelegramLink | undefined {
+  if (!data) return undefined;
+  if (!data.linked) return 'unlinked';
+  return data.connected === false ? 'disconnected' : 'connected';
+}
 
 export const TELEGRAM_MESSAGES_URL = '/telegram/messages?limit=50';
 export const TELEGRAM_MESSAGES_POLL_MS = 30_000;

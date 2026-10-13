@@ -23,7 +23,7 @@ const SUMMARY_TONE = { danger: 'font-medium text-red-600 dark:text-red-400', war
  */
 export default function CounterHuntSection({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
   const { state, now } = useCounterHunt();
-  const { linked } = useTelegramMessages();
+  const { link } = useTelegramMessages();
   const user = useAuthUser<User>();
   const homeTeam = useHomeTeam();
   const open = useSidebarStore((store) => store.openSections.counterHunt);
@@ -45,7 +45,7 @@ export default function CounterHuntSection({ mapRef }: { mapRef: RefObject<MapRe
     setSheetSnap('peek');
   }
 
-  const summary = counterHuntSummary(state, linked, now);
+  const summary = counterHuntSummary(state, link, now);
 
   return (
     <SidebarSection
@@ -56,7 +56,7 @@ export default function CounterHuntSection({ mapRef }: { mapRef: RefObject<MapRe
       onOpenChange={(next) => setSectionOpen('counterHunt', next)}
       className={cn(active && 'bg-linear-160 from-red-500/18 to-red-500/4 outline outline-red-500/30')}
     >
-      <CounterHuntCard state={state} linked={linked} admin={!!user?.admin} now={now} onShowOnMap={homeTeam && direction !== null ? showOnMap : undefined} />
+      <CounterHuntCard state={state} link={link} admin={!!user?.admin} now={now} onShowOnMap={homeTeam && direction !== null ? showOnMap : undefined} />
     </SidebarSection>
   );
 }

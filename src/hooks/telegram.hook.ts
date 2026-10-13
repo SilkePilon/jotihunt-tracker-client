@@ -5,6 +5,7 @@ import { SLOW_REQUEST_TIMEOUT_MS } from '@/lib/http';
 import { fetcherWithMethod, useAuthSWR } from '@/lib/swr';
 import {
   HAPPY_HOUR_VIEW_PATHS,
+  telegramLink,
   swrKeyFor,
   telegramAdminRefreshInterval,
   TELEGRAM_MESSAGES_POLL_MS,
@@ -23,10 +24,10 @@ export function revalidateHappyHour() {
   void mutateGlobal(swrKeyFor(HAPPY_HOUR_VIEW_PATHS));
 }
 
-/** The @Jotihunt_bot messages (newest first) and whether the group's Telegram account is linked. */
+/** The @Jotihunt_bot messages (newest first), whether the group's Telegram account is linked and connected. */
 export function useTelegramMessages() {
   const { data, error } = useAuthSWR<TelegramMessages>(TELEGRAM_MESSAGES_URL, { refreshInterval: TELEGRAM_MESSAGES_POLL_MS });
-  return { messages: data?.messages, linked: data?.linked, isError: !!error };
+  return { messages: data?.messages, linked: data?.linked, link: telegramLink(data), isError: !!error };
 }
 
 /**

@@ -1,4 +1,5 @@
 import { formatClock } from '@/lib/format';
+import type { TelegramLink } from '@/lib/telegram';
 import type { CounterHuntView } from '@/types/Telegram';
 
 /** The wind directions a tegenhunt can come from (degrees), with Dutch labels. Keep in sync with the server's notifier.helpers. */
@@ -57,8 +58,8 @@ export function counterHuntLastText(last: { direction: number | null; startedAt:
   return `Laatste: ${formatClock(last.startedAt)}${item ? ` uit ${item.from}` : ''}`;
 }
 
-/** Collapsed-section summary and its colour. `linked` is false only when the server says Telegram isn't linked. */
-export function counterHuntSummary(state: CounterHuntState | undefined, linked: boolean | undefined, now: number): { text: string; tone?: 'danger' | 'warn' } | undefined {
+/** Collapsed-section summary and its colour; `link` is undefined while unknown (no warning then). */
+export function counterHuntSummary(state: CounterHuntState | undefined, link: TelegramLink | undefined, now: number): { text: string; tone?: 'danger' | 'warn' } | undefined {
   if (!state) return undefined;
   if (state.kind === 'active') {
     const left = `nog ${minutesLeft(state.endsAt, now)} min`;
@@ -66,7 +67,8 @@ export function counterHuntSummary(state: CounterHuntState | undefined, linked: 
     // U+FE0E: text presentation, some fonts draw ↗ ↘ ↙ ↖ as emoji
     return { text: item ? `${item.short} ${item.arrow}\uFE0E · ${left}` : left, tone: 'danger' };
   }
-  if (linked === false) return { text: 'Niet gekoppeld', tone: 'warn' };
+  if (link === 'unlinked') return { text: 'Niet gekoppeld', tone: 'warn' };
+  if (link === 'disconnected') return { text: 'Geen verbinding', tone: 'warn' };
   return { text: 'Geen' };
 }
 

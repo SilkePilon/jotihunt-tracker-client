@@ -10,6 +10,10 @@ export interface TelegramAdminStatus {
   account?: { name: string; username?: string; phoneMasked?: string };
   linkedAt?: string;
   lastMessageAt?: string;
+  /** Whether the server's Telegram client is connected right now (linked but false = it is reconnecting) */
+  connected: boolean;
+  /** Why the connection failed (Dutch, safe to show) */
+  lastError?: string;
 }
 
 export type BotMessageKind = 'tegenhunt' | 'hunt-approved' | 'hunt-rejected' | 'assignment' | 'happy-hour' | 'other';
@@ -24,6 +28,8 @@ export interface BotMessage {
 /** GET /telegram/messages: newest first. */
 export interface TelegramMessages {
   linked: boolean;
+  /** Linked but false: the server lost the connection to Telegram and is reconnecting */
+  connected: boolean;
   messages: BotMessage[];
 }
 

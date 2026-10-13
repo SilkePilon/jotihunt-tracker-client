@@ -1,5 +1,6 @@
 import { formatClock } from '@/lib/format';
 import type { GlyphName, MarkerPalette } from '@/lib/marker-style';
+import type { TelegramLink } from '@/lib/telegram';
 import type { BotMessage, BotMessageKind } from '@/types/Telegram';
 
 /** Solid red of the tegenhunt cookie (also the Tegenhunt card's cookie), with a white glyph in both themes. */
@@ -41,4 +42,15 @@ export function botMarkerColors(kind: string, palette: MarkerPalette): { shape: 
 export function telegramSummary(messages: BotMessage[] | undefined): string | undefined {
   const newest = messages?.[0];
   return newest ? `${formatClock(newest.receivedAt)} · ${botMessageStyle(newest.kind).label}` : undefined;
+}
+
+/**
+ * The collapsed "Jotihunt-berichten" header: amber "Geen verbinding" while the server is reconnecting (messages can't
+ * come in), else the newest message, else "Niet gekoppeld" when not linked.
+ */
+export function telegramHeaderSummary(messages: BotMessage[] | undefined, link: TelegramLink | undefined): { text: string; tone?: 'warn' } | undefined {
+  if (link === 'disconnected') return { text: 'Geen verbinding', tone: 'warn' };
+  const newest = telegramSummary(messages);
+  if (newest) return { text: newest };
+  return link === 'unlinked' ? { text: 'Niet gekoppeld' } : undefined;
 }

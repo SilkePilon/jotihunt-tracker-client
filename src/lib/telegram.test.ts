@@ -1,5 +1,12 @@
 import { describe, expect, test } from 'bun:test';
-import { swrKeyFor, telegramAdminRefreshInterval, TELEGRAM_VIEW_PATHS } from './telegram';
+import { swrKeyFor, telegramAdminRefreshInterval, telegramLink, TELEGRAM_VIEW_PATHS } from './telegram';
+
+test('telegramLink: connected, disconnected (reconnecting) or unlinked', () => {
+  expect(telegramLink({ linked: true, connected: true })).toBe('connected');
+  expect(telegramLink({ linked: true, connected: false })).toBe('disconnected');
+  expect(telegramLink({ linked: false, connected: false })).toBe('unlinked');
+  expect(telegramLink(undefined)).toBeUndefined();
+});
 
 test('telegramAdminRefreshInterval: 2 s while linking, 30 s while linked, else off', () => {
   expect(telegramAdminRefreshInterval({ state: 'qr' })).toBe(2000);

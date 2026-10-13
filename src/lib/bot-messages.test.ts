@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { GLYPHS } from '@/components/layers/marker-glyphs';
-import { BOT_MESSAGE_STYLE, botMarkerColors, botMessageStyle, telegramSummary, TEGENHUNT_RED } from './bot-messages';
+import { BOT_MESSAGE_STYLE, botMarkerColors, botMessageStyle, telegramHeaderSummary, telegramSummary, TEGENHUNT_RED } from './bot-messages';
 import { formatClock } from './format';
 import { MARKER_PALETTES } from './marker-style';
 import type { BotMessage, BotMessageKind } from '@/types/Telegram';
@@ -53,5 +53,23 @@ describe('telegramSummary', () => {
   test('nothing without messages', () => {
     expect(telegramSummary([])).toBeUndefined();
     expect(telegramSummary(undefined)).toBeUndefined();
+  });
+});
+
+describe('telegramHeaderSummary', () => {
+  const newest = '2026-10-17T19:14:00.000Z';
+  const messages: BotMessage[] = [{ id: '1', text: '', kind: 'happy-hour', receivedAt: newest }];
+
+  test('amber "Geen verbinding" wins while reconnecting', () => {
+    expect(telegramHeaderSummary(messages, 'disconnected')).toEqual({ text: 'Geen verbinding', tone: 'warn' });
+    expect(telegramHeaderSummary([], 'disconnected')).toEqual({ text: 'Geen verbinding', tone: 'warn' });
+  });
+
+  test('else the newest message, else "Niet gekoppeld", else nothing', () => {
+    expect(telegramHeaderSummary(messages, 'connected')).toEqual({ text: `${formatClock(newest)} · Happy hour` });
+    expect(telegramHeaderSummary(messages, 'unlinked')).toEqual({ text: `${formatClock(newest)} · Happy hour` });
+    expect(telegramHeaderSummary([], 'unlinked')).toEqual({ text: 'Niet gekoppeld' });
+    expect(telegramHeaderSummary([], 'connected')).toBeUndefined();
+    expect(telegramHeaderSummary(undefined, undefined)).toBeUndefined();
   });
 });

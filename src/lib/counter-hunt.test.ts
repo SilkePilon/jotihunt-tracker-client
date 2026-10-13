@@ -74,21 +74,23 @@ describe('counterHuntSummary', () => {
   const now = at('2026-10-17T19:20:00.000Z');
 
   test('active: direction and minutes in red', () => {
-    expect(counterHuntSummary(counterHuntState(active(45), now), true, now)).toEqual({ text: 'NO ↗\uFE0E · nog 24 min', tone: 'danger' });
-    expect(counterHuntSummary(counterHuntState(active(null), now), true, now)).toEqual({ text: 'nog 24 min', tone: 'danger' });
+    expect(counterHuntSummary(counterHuntState(active(45), now), 'connected', now)).toEqual({ text: 'NO ↗\uFE0E · nog 24 min', tone: 'danger' });
+    expect(counterHuntSummary(counterHuntState(active(null), now), 'connected', now)).toEqual({ text: 'nog 24 min', tone: 'danger' });
   });
 
-  test('quiet: "Geen", or an amber warning when Telegram is not linked', () => {
-    expect(counterHuntSummary({ kind: 'quiet' }, true, now)).toEqual({ text: 'Geen' });
+  test('quiet: "Geen", or an amber warning when Telegram is not linked or not connected', () => {
+    expect(counterHuntSummary({ kind: 'quiet' }, 'connected', now)).toEqual({ text: 'Geen' });
     expect(counterHuntSummary({ kind: 'quiet' }, undefined, now)).toEqual({ text: 'Geen' });
-    expect(counterHuntSummary({ kind: 'quiet' }, false, now)).toEqual({ text: 'Niet gekoppeld', tone: 'warn' });
+    expect(counterHuntSummary({ kind: 'quiet' }, 'unlinked', now)).toEqual({ text: 'Niet gekoppeld', tone: 'warn' });
+    expect(counterHuntSummary({ kind: 'quiet' }, 'disconnected', now)).toEqual({ text: 'Geen verbinding', tone: 'warn' });
   });
 
-  test('an active tegenhunt wins over "not linked"', () => {
-    expect(counterHuntSummary(counterHuntState(active(0), now), false, now)?.tone).toBe('danger');
+  test('an active tegenhunt wins over "not linked" / "no connection"', () => {
+    expect(counterHuntSummary(counterHuntState(active(0), now), 'unlinked', now)?.tone).toBe('danger');
+    expect(counterHuntSummary(counterHuntState(active(0), now), 'disconnected', now)?.tone).toBe('danger');
   });
 
   test('nothing while loading', () => {
-    expect(counterHuntSummary(undefined, true, now)).toBeUndefined();
+    expect(counterHuntSummary(undefined, 'connected', now)).toBeUndefined();
   });
 });

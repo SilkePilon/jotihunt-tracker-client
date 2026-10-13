@@ -43,12 +43,13 @@ export default function TelegramCard({ messages, admin }: TelegramCardProps) {
           <div className="h-px bg-border" />
           <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
             <span className="min-w-0 truncate">
-              Luistert via <b className="font-semibold text-foreground">{linkedAccount?.name ?? 'Telegram'}</b>
+              {status.connected === false ? 'Geen verbinding via' : 'Luistert via'} <b className="font-semibold text-foreground">{linkedAccount?.name ?? 'Telegram'}</b>
             </span>
             <button type="button" className={inlineLinkClass} onClick={() => setConfirmOpen(true)}>
               ontkoppelen
             </button>
           </div>
+          {status.connected === false && status.lastError && <p className="-mt-2 text-[11px] leading-snug text-muted-foreground">{status.lastError}</p>}
           <ConfirmDialog
             open={confirmOpen}
             onOpenChange={setConfirmOpen}

@@ -4,12 +4,13 @@ import MaterialGlyph from '@/components/MaterialGlyph';
 import { inlineLinkClass } from '@/components/tracker/styles';
 import { counterHuntDirection, counterHuntLastText, counterHuntTitle, minutesLeft, type CounterHuntState } from '@/lib/counter-hunt';
 import { formatClock } from '@/lib/format';
+import type { TelegramLink } from '@/lib/telegram';
 
 interface CounterHuntCardProps {
   /** undefined while loading */
   state: CounterHuntState | undefined;
-  /** false when the server says Telegram is not linked (tegenhunts can't come in) */
-  linked: boolean | undefined;
+  /** Whether tegenhunts can come in: Telegram not linked or not connected shows a warning; undefined = unknown */
+  link: TelegramLink | undefined;
   /** Admins get the hint where to link Telegram */
   admin?: boolean;
   now: number;
@@ -21,7 +22,7 @@ interface CounterHuntCardProps {
  * The "Tegenhunt" card, fully automatic: the server starts a tegenhunt from the @Jotihunt_bot message, this card shows
  * it (direction, minutes left) for 30 minutes and then goes back to quiet.
  */
-export default function CounterHuntCard({ state, linked, admin, now, onShowOnMap }: CounterHuntCardProps) {
+export default function CounterHuntCard({ state, link, admin, now, onShowOnMap }: CounterHuntCardProps) {
   if (!state) return null;
 
   if (state.kind === 'active') {
@@ -63,7 +64,19 @@ export default function CounterHuntCard({ state, linked, admin, now, onShowOnMap
     );
   }
 
-  if (linked === false) {
+  if (link === 'disconnected') {
+    return (
+      <div className="flex flex-col items-center gap-2.5 text-center" data-counter-hunt="disconnected">
+        <CookieBadge tone="warn" size={48} />
+        <div className="flex flex-col gap-0.5">
+          <span className="text-sm font-semibold">Geen verbinding met Telegram</span>
+          <span className="text-xs text-muted-foreground">Tegenhunts komen nu niet binnen. De server probeert opnieuw te verbinden.</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (link === 'unlinked') {
     return (
       <div className="flex flex-col items-center gap-2.5 text-center" data-counter-hunt="not-linked">
         <CookieBadge tone="warn" size={48} />

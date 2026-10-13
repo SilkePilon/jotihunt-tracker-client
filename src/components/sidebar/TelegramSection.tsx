@@ -4,7 +4,7 @@ import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import TelegramCard, { type TelegramAdminProps } from '@/components/cards/telegram/TelegramCard';
 import { revalidateTelegramViews, useTelegramAdmin, useTelegramMessages } from '@/hooks/telegram.hook';
 import { apiErrorMessage } from '@/lib/api-error';
-import { telegramSummary } from '@/lib/bot-messages';
+import { telegramHeaderSummary } from '@/lib/bot-messages';
 import type { User } from '@/types/User';
 import SidebarSection from './SidebarSection';
 
@@ -12,7 +12,7 @@ import SidebarSection from './SidebarSection';
 export default function TelegramSection() {
   const user = useAuthUser<User>();
   const isAdmin = !!user?.admin;
-  const { messages, linked } = useTelegramMessages();
+  const { messages, linked, link: connection } = useTelegramMessages();
   const { status, link, submitPassword, unlink, refresh } = useTelegramAdmin(isAdmin);
 
   // The QR scan (or password) completes on the server; the admin poll notices it: refresh the "linked" views
@@ -70,7 +70,8 @@ export default function TelegramSection() {
       }
     : undefined;
 
-  const summary = telegramSummary(messages) ?? (linked === false ? 'Niet gekoppeld' : undefined);
+  const header = telegramHeaderSummary(messages, connection);
+  const summary = header && <span className={header.tone === 'warn' ? 'font-medium text-amber-600 dark:text-amber-400' : undefined}>{header.text}</span>;
 
   return (
     <SidebarSection id="telegram" title="Jotihunt-berichten" summary={summary}>
