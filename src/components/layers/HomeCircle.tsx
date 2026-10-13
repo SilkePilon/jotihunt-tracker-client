@@ -20,9 +20,9 @@ const HOME_PAINT: FillLayerSpecification['paint'] = {
  */
 export default function HomeCircle({ showCircle }: { showCircle: boolean }) {
   const homeTeam = useHomeTeam();
-  const { view } = useCounterHunt();
-  // The server keeps `active` for 30 minutes; the sector goes when the next poll says it ended
-  const direction = view?.active ? view.direction : null;
+  const { state } = useCounterHunt(!!homeTeam);
+  // Gone right at the end of the 30 minutes, not only at the next poll
+  const direction = state?.kind === 'active' ? state.direction : null;
 
   const lng = homeTeam?.location.coordinates[0];
   const lat = homeTeam?.location.coordinates[1];

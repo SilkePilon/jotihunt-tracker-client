@@ -10,6 +10,8 @@ interface CounterHuntCardProps {
   state: CounterHuntState | undefined;
   /** false when the server says Telegram is not linked (tegenhunts can't come in) */
   linked: boolean | undefined;
+  /** Admins get the hint where to link Telegram */
+  admin?: boolean;
   now: number;
   /** Fly to the wind sector; only offered when the direction is known */
   onShowOnMap?: () => void;
@@ -19,7 +21,7 @@ interface CounterHuntCardProps {
  * The "Tegenhunt" card, fully automatic: the server starts a tegenhunt from the @Jotihunt_bot message, this card shows
  * it (direction, minutes left) for 30 minutes and then goes back to quiet.
  */
-export default function CounterHuntCard({ state, linked, now, onShowOnMap }: CounterHuntCardProps) {
+export default function CounterHuntCard({ state, linked, admin, now, onShowOnMap }: CounterHuntCardProps) {
   if (!state) return null;
 
   if (state.kind === 'active') {
@@ -67,7 +69,9 @@ export default function CounterHuntCard({ state, linked, now, onShowOnMap }: Cou
         <CookieBadge tone="warn" size={48} />
         <div className="flex flex-col gap-0.5">
           <span className="text-sm font-semibold">Tegenhunts komen niet binnen</span>
-          <span className="text-xs text-muted-foreground">Telegram is niet gekoppeld. Koppelen kan in de kaart Jotihunt-berichten (admins).</span>
+          <span className="text-xs text-muted-foreground">
+            {admin ? 'Telegram is niet gekoppeld. Koppelen kan in de kaart Jotihunt-berichten (admins).' : 'Telegram is niet gekoppeld.'}
+          </span>
         </div>
       </div>
     );

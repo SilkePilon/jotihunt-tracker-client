@@ -23,6 +23,10 @@ interface SidebarState {
   /** Force a section open, e.g. when another part of the UI needs it visible. */
   openSection: (id: SidebarSectionId) => void;
   setSectionOpen: (id: SidebarSectionId, open: boolean) => void;
+  /** Per section, the last event that forced it open (e.g. a tegenhunt's start time), so each event opens it once */
+  forcedOpenFor: Partial<Record<SidebarSectionId, string>>;
+  /** Open the section for `event` unless it was already opened for it (also across reloads) */
+  openOnceFor: (id: SidebarSectionId, event: string) => void;
   sheetSnap: SheetSnap;
   setSheetSnap: (snap: SheetSnap) => void;
 }
@@ -34,14 +38,21 @@ const useSidebarStore = create<SidebarState>()(
       toggleSection: (id) => set((state) => ({ openSections: { ...state.openSections, [id]: !state.openSections[id] } })),
       openSection: (id) => set((state) => ({ openSections: { ...state.openSections, [id]: true } })),
       setSectionOpen: (id, open) => set((state) => ({ openSections: { ...state.openSections, [id]: open } })),
+      forcedOpenFor: {},
+      openOnceFor: (id, event) =>
+        set((state) =>
+          state.forcedOpenFor[id] === event
+            ? state
+            : { openSections: { ...state.openSections, [id]: true }, forcedOpenFor: { ...state.forcedOpenFor, [id]: event } },
+        ),
       sheetSnap: 'peek',
       setSheetSnap: (sheetSnap) => set({ sheetSnap }),
     }),
     {
       name: 'sidebar-storage',
       storage: createJSONStorage(() => localStorage),
-      // Only remember which sections are open; the sheet always starts at peek
-      partialize: (state) => ({ openSections: state.openSections }),
+      // Only remember which sections are open (and what forced them open); the sheet always starts at peek
+      partialize: (state) => ({ openSections: state.openSections, forcedOpenFor: state.forcedOpenFor }),
       version: 1,
       // Spread defaults under the persisted value so newly added section ids
       // (not present in older persisted state) still get their default.

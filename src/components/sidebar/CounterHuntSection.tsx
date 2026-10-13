@@ -1,12 +1,13 @@
-import { RefObject, useState } from 'react';
+import { RefObject, useEffect } from 'react';
 import { destination } from '@turf/turf';
 import CounterHuntCard from '@/components/cards/counter-hunt/CounterHuntCard';
 import type { MapRef } from '@/components/Map';
 import { useCounterHunt } from '@/hooks/counter-hunt.hook';
 import { useTelegramMessages } from '@/hooks/telegram.hook';
 import { useHomeTeam } from '@/hooks/teams.hook';
-import useInterval from '@/hooks/utils/interval.hook';
-import { counterHuntState, counterHuntSummary } from '@/lib/counter-hunt';
+import { counterHuntSummary } from '@/lib/counter-hunt';
+import type { User } from '@/types/User';
+import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import { cn } from '@/lib/utils';
 import useSidebarStore from '@/stores/sidebar.store';
 import SidebarSection from './SidebarSection';
@@ -17,36 +18,24 @@ const SECTOR_CENTRE_M = 250;
 const SUMMARY_TONE = { danger: 'font-medium text-red-600 dark:text-red-400', warn: 'font-medium text-amber-600 dark:text-amber-400' } as const;
 
 /**
- * "Tegenhunt": the server's latest tegenhunt. Forced open when one becomes active and left open when it ends; the user
- * collapses it (persisted like the other sections).
+ * "Tegenhunt": the server's latest tegenhunt. Opened once per tegenhunt (also across reloads) and left open when it
+ * ends; the user collapses it (persisted like the other sections).
  */
 export default function CounterHuntSection({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
-  const { view } = useCounterHunt();
+  const { state, now } = useCounterHunt();
   const { linked } = useTelegramMessages();
+  const user = useAuthUser<User>();
   const homeTeam = useHomeTeam();
-  const storedOpen = useSidebarStore((state) => state.openSections.counterHunt);
-  const setSectionOpen = useSidebarStore((state) => state.setSectionOpen);
-  const setSheetSnap = useSidebarStore((state) => state.setSheetSnap);
+  const open = useSidebarStore((store) => store.openSections.counterHunt);
+  const setSectionOpen = useSidebarStore((store) => store.setSectionOpen);
+  const openOnceFor = useSidebarStore((store) => store.openOnceFor);
+  const setSheetSnap = useSidebarStore((store) => store.setSheetSnap);
 
-  // Minutes left tick while the server reports an active tegenhunt (also to notice its end before the next poll)
-  const [now, setNow] = useState(() => Date.now());
-  useInterval(() => setNow(Date.now()), view?.active ? 1000 : null);
-
-  const state = counterHuntState(view, now);
   const active = state?.kind === 'active';
-
-  // Adjust the open state during render when a tegenhunt starts (no effect, no ref)
-  const [prevActive, setPrevActive] = useState(false);
-  const [forcedOpen, setForcedOpen] = useState<boolean | null>(null);
-  if (active !== prevActive) {
-    setPrevActive(active);
-    if (active) setForcedOpen(true);
-  }
-
-  function handleOpenChange(open: boolean) {
-    setForcedOpen(null);
-    setSectionOpen('counterHunt', open);
-  }
+  const activeSince = state?.kind === 'active' ? state.startedAt : undefined;
+  useEffect(() => {
+    if (activeSince) openOnceFor('counterHunt', activeSince);
+  }, [activeSince, openOnceFor]);
 
   const direction = state?.kind === 'active' ? state.direction : null;
   function showOnMap() {
@@ -63,11 +52,11 @@ export default function CounterHuntSection({ mapRef }: { mapRef: RefObject<MapRe
       id="counterHunt"
       title="Tegenhunt"
       summary={summary && <span className={summary.tone && SUMMARY_TONE[summary.tone]}>{summary.text}</span>}
-      open={forcedOpen ?? storedOpen}
-      onOpenChange={handleOpenChange}
+      open={open}
+      onOpenChange={(next) => setSectionOpen('counterHunt', next)}
       className={cn(active && 'bg-linear-160 from-red-500/18 to-red-500/4 outline outline-red-500/30')}
     >
-      <CounterHuntCard state={state} linked={linked} now={now} onShowOnMap={homeTeam && direction !== null ? showOnMap : undefined} />
+      <CounterHuntCard state={state} linked={linked} admin={!!user?.admin} now={now} onShowOnMap={homeTeam && direction !== null ? showOnMap : undefined} />
     </SidebarSection>
   );
 }
