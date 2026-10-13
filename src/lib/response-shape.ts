@@ -29,6 +29,9 @@ const OBJECT_CHECKS: Record<string, (data: Record<string, unknown>) => boolean> 
   '/demo': (data) => typeof data.enabled === 'boolean',
   '/notifications/preferences': (data) => Array.isArray(data.disabledTypes),
   '/articles/read': (data) => Array.isArray(data.read) && isObject(data.readBy),
+  '/counter-hunt': (data) => typeof data.active === 'boolean',
+  '/telegram/messages': (data) => typeof data.linked === 'boolean' && Array.isArray(data.messages),
+  '/admin/telegram': (data) => typeof data.state === 'string',
 };
 
 /** Whether `data` has the shape the client expects for a GET of `url` (path, optionally with a query string). */

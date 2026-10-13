@@ -29,6 +29,15 @@ describe('hasExpectedShape', () => {
     expect(hasExpectedShape('/articles/read', { read: [] })).toBe(false);
   });
 
+  test('tegenhunt and Telegram answers', () => {
+    expect(hasExpectedShape('/counter-hunt', { active: false })).toBe(true);
+    expect(hasExpectedShape('/counter-hunt', { message: 'x' })).toBe(false);
+    expect(hasExpectedShape('/telegram/messages?limit=50', { linked: true, messages: [] })).toBe(true);
+    expect(hasExpectedShape('/telegram/messages?limit=50', { linked: true })).toBe(false);
+    expect(hasExpectedShape('/admin/telegram', { state: 'linked' })).toBe(true);
+    expect(hasExpectedShape('/admin/telegram', { message: 'x' })).toBe(false);
+  });
+
   test('the query string is ignored', () => {
     expect(hasExpectedShape('/markers?since=x', [])).toBe(true);
     expect(hasExpectedShape('/hints/rd-preview?answer=1', { rd: null })).toBe(true);

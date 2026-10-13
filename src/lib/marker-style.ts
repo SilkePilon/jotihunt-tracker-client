@@ -167,7 +167,20 @@ export function statusColors(status: FoxStatus, palette: MarkerPalette): { conta
 export type HunterIcon = 'walking' | 'bike' | 'car' | 'motorcycle' | 'phone';
 const HUNTER_ICONS: readonly string[] = ['walking', 'bike', 'car', 'motorcycle', 'phone'] satisfies HunterIcon[];
 
-export type GlyphName = 'directions_walk' | 'directions_bike' | 'directions_car' | 'two_wheeler' | 'person' | 'photo_camera' | 'home' | 'check';
+export type GlyphName =
+  | 'directions_walk'
+  | 'directions_bike'
+  | 'directions_car'
+  | 'two_wheeler'
+  | 'person'
+  | 'photo_camera'
+  | 'home'
+  | 'check'
+  | 'close'
+  | 'assignment_turned_in'
+  | 'celebration'
+  | 'chat'
+  | 'e911_emergency';
 
 /** Material Symbol per vehicle (Android `vehicleGlyph`); a device without vehicle is a person. */
 export function vehicleGlyph(icon: HunterIcon): GlyphName {
