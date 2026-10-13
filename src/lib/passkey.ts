@@ -41,3 +41,13 @@ export const INVITE_REASON_TEXT: Record<InviteReason, string> = {
   paused: 'Uitnodigen staat even uit. Probeer het later opnieuw.',
   unknown: 'Deze link bestaat niet. Controleer of je hem helemaal hebt gekopieerd.',
 };
+
+const INVITE_REASONS: readonly InviteReason[] = ['expired', 'revoked', 'full', 'paused', 'unknown'];
+
+/** Why the server refused a signup with a 410 (the invite expired, was revoked, ...); null for any other error. */
+export function inviteGoneReason(error: unknown): InviteReason | null {
+  if (!isAxiosError<{ reason?: unknown }>(error) || error.response?.status !== 410) return null;
+  const reason = error.response.data?.reason;
+  if (!reason) return null;
+  return INVITE_REASONS.includes(reason as InviteReason) ? (reason as InviteReason) : 'unknown';
+}

@@ -7,7 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import AuthScreen from '@/components/auth/AuthScreen';
 import WelcomeCard from '@/components/auth/WelcomeCard';
 import { fetchInvite, passkeysSupported, registerWithInvite, registerWithInviteWithoutPasskey, type InviteInfo } from '@/lib/auth-api';
-import { classifyPasskeyError, INVITE_REASON_TEXT, PASSKEY_MESSAGES } from '@/lib/passkey';
+import { classifyPasskeyError, INVITE_REASON_TEXT, inviteGoneReason, PASSKEY_MESSAGES, type InviteReason } from '@/lib/passkey';
 import { useStartSession } from '@/hooks/start-session.hook';
 
 const FALLBACK_LOGO = import.meta.env.LOGO_URL || '/logo.svg';
@@ -40,7 +40,8 @@ export default function Invite() {
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [gone, setGone] = useState(false);
+  /** Why the server refused the signup (410); the invite info loaded earlier is stale then */
+  const [goneReason, setGoneReason] = useState<InviteReason | null>(null);
   const [done, setDone] = useState<{ name: string; withPasskey: boolean } | null>(null);
   const supported = passkeysSupported();
 
@@ -64,9 +65,9 @@ export default function Invite() {
       startSession(result);
       setDone({ name: result.user.name, withPasskey: (result.user.passkeyCount ?? 0) > 0 });
     } catch (failure) {
-      const kind = classifyPasskeyError(failure);
-      if (kind === 'invite-gone') setGone(true);
-      else setError(PASSKEY_MESSAGES[kind]);
+      const reason = inviteGoneReason(failure);
+      if (reason) setGoneReason(reason);
+      else setError(PASSKEY_MESSAGES[classifyPasskeyError(failure)]);
     } finally {
       setBusy(false);
     }
@@ -75,7 +76,8 @@ export default function Invite() {
   if (done) return <AuthScreen><WelcomeCard name={done.name} withPasskey={done.withPasskey} /></AuthScreen>;
   if (loadError) return <AuthScreen><InvalidCard text={loadError} /></AuthScreen>;
   if (!invite) return <AuthScreen><Skeleton className="h-72 w-full max-w-[760px] rounded-xl" /></AuthScreen>;
-  if (!invite.valid || gone) return <AuthScreen><InvalidCard text={INVITE_REASON_TEXT[invite.reason ?? 'unknown']} /></AuthScreen>;
+  if (goneReason) return <AuthScreen><InvalidCard text={INVITE_REASON_TEXT[goneReason]} /></AuthScreen>;
+  if (!invite.valid) return <AuthScreen><InvalidCard text={INVITE_REASON_TEXT[invite.reason ?? 'unknown']} /></AuthScreen>;
 
   const counts = `${invite.memberCount} ${invite.memberCount === 1 ? 'lid' : 'leden'} · ${invite.onlineCount} online`;
 

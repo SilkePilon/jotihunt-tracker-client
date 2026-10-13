@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { AxiosError, AxiosHeaders } from 'axios';
-import { classifyPasskeyError, PASSKEY_MESSAGES } from './passkey';
+import { classifyPasskeyError, inviteGoneReason, PASSKEY_MESSAGES } from './passkey';
 
 function httpError(status: number | undefined, data: unknown = {}) {
   const error = new AxiosError('fail');
@@ -33,5 +33,19 @@ describe('classifyPasskeyError', () => {
       expect(message.length).toBeGreaterThan(10);
       expect(message).not.toMatch(/Error/);
     }
+  });
+});
+
+describe('inviteGoneReason', () => {
+  test("a 410 from the invite endpoints gives the server's reason", () => {
+    for (const reason of ['expired', 'revoked', 'full', 'paused', 'unknown'] as const) expect(inviteGoneReason(httpError(410, { valid: false, reason }))).toBe(reason);
+  });
+
+  test('anything else is null; an unexpected reason counts as unknown', () => {
+    expect(inviteGoneReason(httpError(410, { message: 'Deze herstel-link werkt niet meer.' }))).toBeNull();
+    expect(inviteGoneReason(httpError(400, { reason: 'full' }))).toBeNull();
+    expect(inviteGoneReason(httpError(undefined))).toBeNull();
+    expect(inviteGoneReason(Object.assign(new Error('x'), { name: 'NotAllowedError' }))).toBeNull();
+    expect(inviteGoneReason(httpError(410, { reason: 'weird' }))).toBe('unknown');
   });
 });
