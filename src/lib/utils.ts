@@ -1,5 +1,4 @@
 import * as turf from '@turf/turf';
-import type { Device } from '@/types/Device';
 import { isActive } from '@/lib/tracker';
 
 // Class-name merging (clsx + tailwind-merge compatible), the same helper the shadcn components use
@@ -117,12 +116,6 @@ export function isMoreThanFiveMinutesAgo(fixTime: string) {
     return !isActive(fixTime);
 }
 
-/**
- * Devices that reported a position in the last five minutes.
- */
-export function filterActiveDevices(devices?: Device[], now = Date.now()): Device[] {
-  return devices?.filter((device) => isActive(device.lastUpdate, now)) ?? [];
-}
 /**
  * Random UUID v4. `crypto.randomUUID()` only exists in secure contexts (HTTPS / localhost); the app is also opened
  * over plain HTTP (e.g. Tailscale IP), where `crypto.getRandomValues()` is still available.

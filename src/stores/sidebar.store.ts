@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-export type SidebarSectionId = 'foxes' | 'hints' | 'hunts' | 'predictions' | 'hintEntry' | 'counterHunt' | 'telegram' | 'tracking' | 'life360' | 'hunters';
+export type SidebarSectionId = 'foxes' | 'hints' | 'hunts' | 'predictions' | 'hintEntry' | 'counterHunt' | 'telegram' | 'tracking' | 'life360';
 export type SheetSnap = 'peek' | 'half' | 'full';
 
 const DEFAULT_OPEN_SECTIONS: Record<SidebarSectionId, boolean> = {
@@ -15,7 +15,6 @@ const DEFAULT_OPEN_SECTIONS: Record<SidebarSectionId, boolean> = {
   // Closed by default: the section forces itself open while the user's phone is not connected
   tracking: false,
   life360: false,
-  hunters: false,
 };
 
 interface SidebarState {

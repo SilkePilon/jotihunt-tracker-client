@@ -86,13 +86,6 @@ export const TOUR_STEPS: TourStep[] = [
     actions: [sheetSnap('full'), openSection('tracking')],
   },
   {
-    id: 'hunters',
-    target: 'sidebar.hunters',
-    title: 'Actieve hunters',
-    body: 'Wie er nu onderweg is. Tik op een hunter om naar die plek op de kaart te gaan.',
-    actions: [sheetSnap('full'), openSection('hunters')],
-  },
-  {
     id: 'hunt-capture',
     target: 'huntCapture.button',
     title: 'Snel een hunt vastleggen',

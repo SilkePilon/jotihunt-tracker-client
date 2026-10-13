@@ -1,15 +1,12 @@
 import { RefObject } from 'react';
 import { MapRef } from '@/components/Map';
 import HintEntryCard from '@/components/cards/hint-entry/HintEntryCard';
-import ActiveDevices from '@/components/map/ActiveDevices';
 import { useAreas } from '@/hooks/areas.hook';
-import { useDevices } from '@/hooks/devices.hook';
 import { useHintBoard } from '@/hooks/hints.hook';
 import { usePredictions, usePredictionSetting } from '@/hooks/predictions.hook';
 import { statusSummary } from '@/lib/fox-status';
 import { hintProgress } from '@/lib/hints';
 import { predictionSummary } from '@/lib/prediction';
-import { filterActiveDevices } from '@/lib/utils';
 import HuntsSection from '@/components/hunts/HuntsSection';
 import SidebarSection from './SidebarSection';
 import FoxPills from './FoxPills';
@@ -24,10 +21,8 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 export default function SidebarSections({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
   const { areas } = useAreas();
   const { board } = useHintBoard();
-  const { devices } = useDevices();
   const { predictions } = usePredictions();
   const { enabled: predictionEnabled } = usePredictionSetting();
-  const activeCount = filterActiveDevices(devices).length;
   const progress = board ? hintProgress(board) : undefined;
 
   return (
@@ -63,9 +58,6 @@ export default function SidebarSections({ mapRef }: { mapRef: RefObject<MapRef |
       <ErrorBoundary name="Life360">
         <Life360Section mapRef={mapRef} />
       </ErrorBoundary>
-      <SidebarSection id="hunters" title="Actieve hunters" summary={activeCount ? String(activeCount) : 'Niemand'}>
-        <ActiveDevices mapRef={mapRef} showLabel={false} />
-      </SidebarSection>
     </>
   );
 }
