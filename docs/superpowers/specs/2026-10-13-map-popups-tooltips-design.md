@@ -93,10 +93,12 @@ Hidden below 20 m (that is "you").
 **Groep**
 - Header: `logo` icon, team name, subtitle = `● Area` in the area colour (or "Geen deelgebied" muted) · distance.
 - Fact: `MapPin` · `accomodation · street number[addition], city` (postcode dropped for width).
-- `VisitControls` restyled: status text 11px muted, then a 3-way connected button group (26px high, 2px gaps,
-  outer corners 9px, inner 4px); selected = `primaryContainer`. Logic unchanged.
+- Visit status (only when the group has an area and predictions are on), chosen 2026-10-13 instead of the 3-way
+  buttons: a muted fact line with `visitStatusText` (green ✓ when manually visited, sparkles otherwise), and a 30px
+  house icon button next to Google Maps. Tap = mark visited (button turns green); tap again = back to AI
+  (`nextVisitChoice`). Manual "niet bezocht" is no longer offered in the popup.
 - Area editing select (when `TEAMS_AREA_EDITING`) stays, `size="sm"`, full width.
-- Actions: full-width labelled "Google Maps" (`surfaceContainerHigh`).
+- Actions: labelled "Google Maps" (flex 1) + the house visit button.
 
 **Hunter (Traccar)**
 - Header: `circle` icon with the device's vehicle glyph, device name, subtitle = age (`formatDistanceToNow`) · distance.

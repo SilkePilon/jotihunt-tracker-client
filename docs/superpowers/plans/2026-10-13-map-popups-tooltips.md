@@ -43,7 +43,8 @@ Mockups: `/home/silke/Documents/Jotihunt 2026/.superpowers/brainstorm/3595344-17
 | `src/components/map/popup/PopupActions.tsx` (create) | `PopupActions`, `popupActionClass`, `MapsAction` |
 | `src/components/CopyButton.tsx` (modify) | optional `variant` |
 | `src/components/map/MarkerRegistration.tsx` (modify) | compact Hunt / Spot buttons |
-| `src/components/map/VisitControls.tsx` (modify) | connected 3-way group |
+| `src/components/map/VisitControls.tsx` (rewrite) | `VisitStatusFact` + `VisitToggleButton` |
+| `src/lib/prediction.ts` (modify) | `nextVisitChoice` |
 | 5 popups (modify) | use the building blocks |
 | `src/components/map/MapTooltip.tsx` + 4 tooltips (modify) | one-line tooltip |
 | `src/components/map/GoogleMapsButton.tsx` (delete) | replaced by `MapsAction` |
@@ -834,61 +835,137 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 ---
 
-### Task 4: Group popup and visit controls
+### Task 4: Group popup and one-button visit toggle
+
+Chosen in brainstorming (mockup `visit-controls.html`, option 3): no more 3-way buttons. The visit status is a muted
+fact line; a house icon button next to Google Maps marks the group visited (green when manually visited); tapping it
+again returns the group to the AI. Manual "niet bezocht" is no longer offered in the popup (existing manual
+`not_visited` states still display, and tapping the button then sets `visited`).
 
 **Files:**
-- Modify: `src/components/layers/teams/TeamPopup.tsx` (the returned JSX, ~lines 49-91)
-- Modify: `src/components/map/VisitControls.tsx` (the returned JSX)
+- Modify: `src/lib/prediction.ts` (add `nextVisitChoice`)
+- Modify: `src/lib/prediction.test.ts` (create if missing; same bun:test style as `src/lib/format.test.ts`)
+- Rewrite: `src/components/map/VisitControls.tsx` (exports `VisitStatusFact` and `VisitToggleButton`; no default export)
+- Modify: `src/components/layers/teams/TeamPopup.tsx` (imports + returned JSX)
 
 **Interfaces:**
-- Consumes: Task 2 blocks, `useDistanceFromMe`, `joinParts`, `TeamLogo`.
-- Produces: nothing new.
+- Consumes: Task 2 blocks (`PopupFact`, `PopupActions`, `MapsAction`, `popupActionClass`, `PopupHeader`), `useDistanceFromMe`, `joinParts`, `TeamLogo`, existing `useVisits()` → `{ visits, setVisit(teamApiId: number, state: VisitChoice): Promise<…> }`, `visitSelection(visit?)`, `visitStatusText(visit?)`.
+- Produces: `nextVisitChoice(selection: VisitChoice): VisitChoice`; `VisitStatusFact({ teamApiId: number })`; `VisitToggleButton({ teamApiId: number })`.
 
-- [ ] **Step 1: Visit controls as a connected group**
+- [ ] **Step 1: Failing test**
 
-In `src/components/map/VisitControls.tsx` replace the returned JSX with:
+Add to `src/lib/prediction.test.ts` (import `nextVisitChoice` from `./prediction`; add `import { describe, expect, test } from 'bun:test';` if the file is new):
 
-```tsx
-  return (
-    <div className="mt-2 flex flex-col gap-1">
-      <p className="text-[11px] text-(--map-muted)">{visitStatusText(visit)}</p>
-      <div className="grid grid-cols-3 gap-0.5">
-        {OPTIONS.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            aria-pressed={selected === option.value}
-            disabled={busy}
-            onClick={() => choose(option.value)}
-            className={cn(
-              'h-[26px] rounded-[4px] text-[11.5px] font-semibold transition-[filter] first:rounded-l-[9px] last:rounded-r-[9px] hover:brightness-110 disabled:opacity-50',
-              selected === option.value ? 'bg-(--map-selected-bg) text-(--map-selected-fg)' : 'bg-(--map-surface-high) text-(--map-on-surface-variant)',
-            )}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
+```ts
+describe('nextVisitChoice', () => {
+  test('the house button marks visited, and from visited goes back to the AI', () => {
+    expect(nextVisitChoice('auto')).toBe('visited');
+    expect(nextVisitChoice('not_visited')).toBe('visited');
+    expect(nextVisitChoice('visited')).toBe('auto');
+  });
+});
 ```
 
-Import `cn` from `@/lib/utils`; remove the `Button` import if now unused.
+- [ ] **Step 2: Run it, expect FAIL**
 
-- [ ] **Step 2: Group popup**
+Run: `npx --yes bun test src/lib/prediction.test.ts`
+Expected: FAIL — `nextVisitChoice` is not exported.
+
+- [ ] **Step 3: Implement**
+
+Append to `src/lib/prediction.ts`:
+
+```ts
+/** The group popup's house button: mark visited, or (when manually visited) hand the group back to the AI. */
+export function nextVisitChoice(selection: VisitChoice): VisitChoice {
+  return selection === 'visited' ? 'auto' : 'visited';
+}
+```
+
+(Import `VisitChoice` from `@/types/Prediction` if `prediction.ts` does not already.)
+
+Run: `npx --yes bun test src/lib/prediction.test.ts` — expected PASS.
+
+- [ ] **Step 4: VisitControls → status fact + toggle button**
+
+Replace `src/components/map/VisitControls.tsx`:
+
+```tsx
+import { useState } from 'react';
+import { CheckIcon, SparklesIcon } from 'lucide-react';
+import { toast } from 'sonner';
+import { useVisits } from '@/hooks/predictions.hook';
+import { nextVisitChoice, visitSelection, visitStatusText } from '@/lib/prediction';
+import { cn } from '@/lib/utils';
+import MarkerGlyph from './popup/MarkerGlyph';
+import { popupActionClass } from './popup/PopupActions';
+import { PopupFact } from './popup/PopupFacts';
+
+/** The group's visit status as a fact line: green check when manually visited, sparkles for the AI's view. */
+export function VisitStatusFact({ teamApiId }: { teamApiId: number }) {
+  const { visits } = useVisits();
+  const visit = visits?.find((candidate) => candidate.teamApiId === teamApiId);
+  const manualVisited = visitSelection(visit) === 'visited';
+  return (
+    <PopupFact>
+      {manualVisited ? <CheckIcon className="text-green-500!" /> : <SparklesIcon />}
+      <span className={cn('truncate', manualVisited ? 'text-green-500' : 'text-(--map-muted)')}>{visitStatusText(visit)}</span>
+    </PopupFact>
+  );
+}
+
+/** House button next to Google Maps: marks the group visited (green), tapping again hands it back to the AI. */
+export function VisitToggleButton({ teamApiId }: { teamApiId: number }) {
+  const { visits, setVisit } = useVisits();
+  const [busy, setBusy] = useState(false);
+  const visit = visits?.find((candidate) => candidate.teamApiId === teamApiId);
+  const selection = visitSelection(visit);
+  const visited = selection === 'visited';
+  const label = visited ? 'Bezocht — terug naar AI' : 'Markeer als bezocht';
+
+  async function toggle() {
+    setBusy(true);
+    try {
+      await setVisit(teamApiId, nextVisitChoice(selection));
+    } catch {
+      toast.error('Bezoekstatus opslaan is mislukt');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      aria-pressed={visited}
+      aria-label={label}
+      title={label}
+      disabled={busy}
+      onClick={toggle}
+      className={popupActionClass('neutral', cn('w-[30px] px-0', visited && 'bg-green-600/20 text-green-500'))}
+    >
+      <MarkerGlyph name="home" />
+    </button>
+  );
+}
+```
+
+- [ ] **Step 5: Group popup**
 
 In `src/components/layers/teams/TeamPopup.tsx`:
-- Remove imports of `GoogleMapsButton` and `Badge`; add:
+- Remove imports of `GoogleMapsButton`, `Badge` and the default `VisitControls`; add:
 
 ```tsx
 import { MapPinIcon } from 'lucide-react';
 import { MapsAction, PopupActions } from '../../map/popup/PopupActions';
 import { PopupFact, PopupFacts } from '../../map/popup/PopupFacts';
 import PopupHeader from '../../map/popup/PopupHeader';
+import { VisitStatusFact, VisitToggleButton } from '../../map/VisitControls';
 import { useDistanceFromMe } from '@/hooks/distance-from-me.hook';
+import { joinParts } from '@/lib/format';
 ```
 
-- After `const [lng, lat] = team.location.coordinates;` add `const distance = useDistanceFromMe(lat, lng);` — move the `[lng, lat]` line above the `handleAreaChange` function if needed so the hook call stays unconditional at the top level (it already is; hooks just must not be after an early return — there is none).
+- Move `const [lng, lat] = team.location.coordinates;` up next to the other hooks and add `const distance = useDistanceFromMe(lat, lng);` and `const showVisits = !!area && predictionEnabled !== false;`.
 - Replace the returned JSX with:
 
 ```tsx
@@ -917,8 +994,8 @@ import { useDistanceFromMe } from '@/hooks/distance-from-me.hook';
           <MapPinIcon />
           <span className="truncate">{joinParts(team.accomodation, address)}</span>
         </PopupFact>
+        {showVisits && <VisitStatusFact teamApiId={team.apiId} />}
       </PopupFacts>
-      {area && predictionEnabled !== false && <VisitControls teamApiId={team.apiId} />}
       {TEAMS_AREA_EDITING && (
         <Select onValueChange={handleAreaChange} value={area ?? 'onbekend'}>
           <SelectTrigger autoFocus={false} size="sm" className="mt-2 w-full">
@@ -936,23 +1013,24 @@ import { useDistanceFromMe } from '@/hooks/distance-from-me.hook';
       )}
       <PopupActions>
         <MapsAction lat={lat} lng={lng} label="Google Maps" />
+        {showVisits && <VisitToggleButton teamApiId={team.apiId} />}
       </PopupActions>
     </MapPopup>
   );
 ```
 
-Add `import { joinParts } from '@/lib/format';`. `TeamLogo`'s fallback letter uses `text-xl`; that is fine at 32px.
+`TeamLogo`'s fallback letter uses `text-xl`; that is fine at 32px. Check `grep -rn "VisitControls" src` — `TeamPopup.tsx` must be the only user of the old default export; update any other import the same way.
 
-- [ ] **Step 3: Type-check, lint, tests**
+- [ ] **Step 6: Type-check, lint, tests**
 
 Run: `npx --yes bun x tsc -b && npx --yes bun run lint && npx --yes bun test`
 Expected: all pass.
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
-git add src/components/layers/teams/TeamPopup.tsx src/components/map/VisitControls.tsx
-git commit -m "feat(map): compact group popup with connected visit buttons
+git add src/lib/prediction.ts src/lib/prediction.test.ts src/components/map/VisitControls.tsx src/components/layers/teams/TeamPopup.tsx
+git commit -m "feat(map): compact group popup with a one-button visit toggle
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
@@ -1302,7 +1380,7 @@ Do not use the docker stack. Start a throwaway server per `memory: dev-environme
 
 Compare against `combined-v3.html`, and put an open popup next to the left sidebar in dark mode: background, border, muted text and tinted rows must match the sidebar cards exactly.
 - Picked location: distance shown only when own tracker is fresh or location permission granted; copy WGS84 copies 7 decimals; lightbulb fills the hint form and opens the section; Hunt/Spot open the registration dialog.
-- Group: area dot colour, address truncates, visit group selects and disables while saving, team without area shows "Geen deelgebied" and no visit buttons.
+- Group: area dot colour, address truncates; house button marks visited (turns green, status line green ✓) and tapping again returns to AI; disabled while saving; team without area shows "Geen deelgebied" and no visit line/button.
 - Hunter: fresh vs stale (> 5 min: grey icon, orange "laatst bekend", no speed).
 - Fox marker: area letter square, hint marker popup and tooltip sit above the hint label, delete opens the confirmation.
 - Life360: avatar or initials, driving line only when driving, stale "laatst bekend".
