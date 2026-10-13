@@ -49,7 +49,8 @@ Non-goals: email sending, password fallback, approval queues, roles beyond `admi
 - Migration (one-off script, idempotent): unset the removed fields on all users, generate `webauthnUserId` where missing. Existing accounts keep their name/admin/tracker/devices.
 
 **Session** (new)
-- `tokenHash` (SHA-256 of a 32-byte random token, unique), `user`, `label` (parsed from User-Agent, e.g. "Firefox op Linux"), `createdAt`, `lastUsedAt`, `expiresAt`, `via: 'passkey' | 'invite' | 'herstel' | 'qr'`.
+- `user`, `label` (parsed from User-Agent, e.g. "Firefox op Linux"), `createdAt`, `lastUsedAt`, `expiresAt`, `via: 'passkey' | 'invite' | 'herstel' | 'qr' | 'cli'`.
+- The web token is a JWT `{ sid, kind: "web" }` signed with `JWT_SECRET`, `exp` 365 days (react-auth-kit v3 only accepts JWTs with `exp`). The real lifetime is the session document: a token whose session is gone or expired is a 401. Revoking = deleting the session.
 - TTL index on `expiresAt`.
 - Sliding: on an authenticated request, when `lastUsedAt` is more than 1 hour old, set `lastUsedAt = now`, `expiresAt = now + 30 days`.
 
@@ -65,12 +66,16 @@ Non-goals: email sending, password fallback, approval queues, roles beyond `admi
 **QrLogin** (new)
 - `codeHash` (code is the URL secret shown in the QR), `pollSecretHash` (only the laptop knows it), `status: 'waiting' | 'scanned' | 'approved' | 'denied'`, `requester: { label, ip }`, `scannedBy: user | null`, `challenge` (for the phone's passkey assertion), `expiresAt` (2 minutes; extended to 2 minutes after scan), `session token` handed over once on approval.
 
-**Setting** (existing prediction-setting store pattern) gains `invitesPaused: boolean`.
+**Invite setting**: document `{ key: "invites", paused }` in the `settings` collection.
+
+**Where auth data lives (demo mode).** Sessions, invites, herstel-links, WebAuthn challenges and the invite setting live in the **real** database (the demo state store connection), so switching demo mode never logs anyone out or loses invites. User creation and passkey changes are written to the current (default) database and, while demo mode is on, mirrored to the real database, so accounts made during a demo survive it.
+
+**Group info** for the invite page: server env `HOME_TEAM_API_ID` (Team `apiId`) and `GROUP_NAME` (fallback name).
 
 ### Auth middleware
 
-- `verifyToken` reads `Authorization: Bearer <token>`.
-  - Web: opaque session token → `Session` lookup by hash → user. Expired/missing → 401.
+- `verifyToken` reads `Authorization: Bearer <token>` (always a JWT).
+  - Web: `sid` claim → `Session` lookup → user. Missing/expired session → 401. JWTs with neither `sid` nor `did` (old password-era tokens) → 401.
   - Android: keeps the existing device JWT (`kind: "device"`, `did`) path untouched.
 - Remove the password-change gate (`PASSWORD_CHANGE_REQUIRED`) and `verifyTokenAllowingPasswordChange`.
 - `lastActiveAt` updated together with the sliding refresh (max once per hour).
@@ -123,7 +128,7 @@ Removed: `POST /auth/login`, `POST /auth/update-password`, `POST /admin/users` (
 ### Security notes
 
 - `userVerification: 'required'` on every ceremony. Counter regression → reject and log.
-- All link secrets (session tokens, herstel tokens, QR codes/poll secrets) are stored only as SHA-256 hashes. Invite codes are not secret-grade (they are shared), so they are stored plainly but rate-limited.
+- Herstel tokens, QR codes and QR poll secrets are stored only as SHA-256 hashes. Session tokens are signed JWTs pointing at a session document. Invite codes are not secret-grade (they are shared), so they are stored plainly but rate-limited.
 - QR approve requires an assertion from the **scanning** user and binds to that QR login's challenge, so a phished QR cannot be approved without a fresh biometric. The confirm drawer shows device label + approximate location + "Alleen bevestigen als jij net zelf deze code scande."
 - Deleting a user or removing their last passkey does not leave dangling sessions: delete user → delete sessions; "log out everywhere" in Account deletes all other sessions.
 
@@ -142,7 +147,7 @@ Passkey errors (Dutch, three-part pattern): cancelled/timeout (`NotAllowedError`
 
 ### Auth plumbing
 
-- `react-auth-kit` keeps storing the token (now an opaque session token) in its cookie; the 36 h expiry becomes 30 days. On a 401 the client signs out and routes to `/login`.
+- `react-auth-kit` keeps storing the token (now a session JWT with a 365-day `exp`) in its cookie; the server's 30-day sliding session decides the real lifetime. On a 401 the client signs out and routes to `/login`.
 - Remove `PasswordChangeGate`, `PasswordChangeForm`, `ResetPassword`, `lib/password-change.ts` and the password parts of `auth.hook.ts`.
 - Banner (sidebar, dismissible per session) when the user has 0 passkeys and the browser supports them: "Voeg een passkey toe om sneller in te loggen" → add passkey.
 
