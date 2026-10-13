@@ -31,3 +31,6 @@ export interface TelegramMessages {
 export type CounterHuntView =
   | { active: true; direction: number | null; startedAt: string; endsAt: string; text?: string }
   | { active: false; last?: { direction: number | null; startedAt: string } };
+
+/** GET /happy-hour: hunts count double between startsAt and endsAt; ended windows are `none`. */
+export type HappyHourView = { state: 'none' } | { state: 'upcoming' | 'active'; startsAt: string; endsAt: string; text: string };

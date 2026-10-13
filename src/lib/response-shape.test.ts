@@ -38,6 +38,13 @@ describe('hasExpectedShape', () => {
     expect(hasExpectedShape('/admin/telegram', { message: 'x' })).toBe(false);
   });
 
+  test('happy hour answers', () => {
+    expect(hasExpectedShape('/happy-hour', { state: 'none' })).toBe(true);
+    expect(hasExpectedShape('/happy-hour', { state: 'active', startsAt: 'a', endsAt: 'b', text: '' })).toBe(true);
+    expect(hasExpectedShape('/happy-hour', { state: 'active' })).toBe(false);
+    expect(hasExpectedShape('/happy-hour', { message: 'x' })).toBe(false);
+  });
+
   test('the query string is ignored', () => {
     expect(hasExpectedShape('/markers?since=x', [])).toBe(true);
     expect(hasExpectedShape('/hints/rd-preview?answer=1', { rd: null })).toBe(true);

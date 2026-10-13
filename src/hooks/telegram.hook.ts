@@ -1,12 +1,17 @@
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
 import { mutate as mutateGlobal } from 'swr';
 import { fetcherWithMethod, useAuthSWR } from '@/lib/swr';
-import { swrKeyFor, telegramAdminRefreshInterval, TELEGRAM_MESSAGES_POLL_MS, TELEGRAM_MESSAGES_URL, TELEGRAM_VIEW_PATHS } from '@/lib/telegram';
+import { swrKeyFor, telegramAdminRefreshInterval, TELEGRAM_MESSAGES_POLL_MS, TELEGRAM_MESSAGES_URL, TELEGRAM_VIEW_PATHS, HAPPY_HOUR_VIEW_PATHS } from '@/lib/telegram';
 import type { TelegramAdminStatus, TelegramMessages } from '@/types/Telegram';
 
 /** Refetch the tegenhunt view and the bot messages (after a tegenhunt notification or a link change). */
 export function revalidateTelegramViews() {
   void mutateGlobal(swrKeyFor(TELEGRAM_VIEW_PATHS));
+}
+
+/** Refetch the happy hour (and the bot messages) after a happy-hour notification. */
+export function revalidateHappyHour() {
+  void mutateGlobal(swrKeyFor(HAPPY_HOUR_VIEW_PATHS));
 }
 
 /** The @Jotihunt_bot messages (newest first) and whether the group's Telegram account is linked. */

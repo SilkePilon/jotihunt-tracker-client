@@ -30,6 +30,7 @@ const OBJECT_CHECKS: Record<string, (data: Record<string, unknown>) => boolean> 
   '/notifications/preferences': (data) => Array.isArray(data.disabledTypes),
   '/articles/read': (data) => Array.isArray(data.read) && isObject(data.readBy),
   '/counter-hunt': (data) => typeof data.active === 'boolean',
+  '/happy-hour': (data) => data.state === 'none' || ((data.state === 'upcoming' || data.state === 'active') && typeof data.startsAt === 'string' && typeof data.endsAt === 'string'),
   '/telegram/messages': (data) => typeof data.linked === 'boolean' && Array.isArray(data.messages),
   '/admin/telegram': (data) => typeof data.state === 'string',
 };

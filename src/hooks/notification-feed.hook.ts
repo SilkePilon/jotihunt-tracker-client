@@ -8,7 +8,7 @@ import { playNotificationSound } from '@/lib/notification-sounds';
 import { showHighlightToast } from '@/components/notifications/HighlightToast';
 import { useNotificationPrefs } from '@/hooks/notification-prefs.hook';
 import useSettingsStore from '@/stores/settings.store';
-import { revalidateTelegramViews } from '@/hooks/telegram.hook';
+import { revalidateHappyHour, revalidateTelegramViews } from '@/hooks/telegram.hook';
 
 const POLL_MS = 5000;
 /** Re-ask this far back each poll: a notification can be stored just after a poll read the server time. */
@@ -66,6 +66,8 @@ export function useNotificationFeed({ respectPreferences = true, toasts = true, 
         cursor = response.serverTime;
         // A tegenhunt came in: show it in the Tegenhunt card and on the map now, not at the next poll of /counter-hunt
         if (fresh.some((n) => n.type === 'counter-hunt')) revalidateTelegramViews();
+        // Same for a happy hour: the pill appears, starts or goes right away
+        if (fresh.some((n) => n.type === 'happy-hour')) revalidateHappyHour();
         const options = latest.current;
         const alertable = fresh.filter((n) => isRecent(n, response.serverTime, MAX_ALERT_AGE_MS) && (!options.respectPreferences || shouldAlert(n.type, options.disabledTypes)));
         if (alertable.length === 0) return;

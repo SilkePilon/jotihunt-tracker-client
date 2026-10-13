@@ -20,3 +20,5 @@ export function swrKeyFor(paths: readonly string[]) {
 
 /** What changes when a tegenhunt comes in or the Telegram link changes. */
 export const TELEGRAM_VIEW_PATHS = ['/counter-hunt', '/telegram/messages'] as const;
+/** What changes when a happy hour is announced, starts or ends. */
+export const HAPPY_HOUR_VIEW_PATHS = ['/happy-hour', '/telegram/messages'] as const;
