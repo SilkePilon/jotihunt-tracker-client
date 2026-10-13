@@ -6,6 +6,7 @@ import {
   formatAgo,
   isLocationStale,
   LIFE360_STALE_MS,
+  firstPollLanded,
   life360AdminRefreshInterval,
   life360HeaderSummary,
   life360LiveLine,
@@ -51,15 +52,26 @@ test('life360HeaderSummary: live count with an ok cookie, warnings in amber', ()
   expect(life360HeaderSummary(life360Fixture('paused', NOW).status)).toEqual({ text: 'Gepauzeerd', tone: 'warn' });
 });
 
-test('life360AdminRefreshInterval: 2 s while linking, 30 s once linked (also logged out / paused), else off', () => {
+test('life360AdminRefreshInterval: 2 s while linking (until the first poll), 30 s once linked (also logged out / paused), else off', () => {
   expect(life360AdminRefreshInterval(life360Fixture('code', NOW).status)).toBe(2000);
   expect(life360AdminRefreshInterval(life360Fixture('circle', NOW).status)).toBe(2000);
   expect(life360AdminRefreshInterval(linked)).toBe(30_000);
+  // Just linked: the server's first poll is still running, so the counts are 0 until it lands
+  expect(life360AdminRefreshInterval({ ...linked, lastPollAt: null })).toBe(2000);
   expect(life360AdminRefreshInterval(life360Fixture('loggedOut', NOW).status)).toBe(30_000);
   expect(life360AdminRefreshInterval(life360Fixture('paused', NOW).status)).toBe(30_000);
   expect(life360AdminRefreshInterval({ state: 'unlinked' })).toBe(0);
   expect(life360AdminRefreshInterval({ state: 'unavailable' })).toBe(0);
   expect(life360AdminRefreshInterval(undefined)).toBe(0);
+});
+
+test('firstPollLanded: only when a linked status gets its first lastPollAt', () => {
+  const fresh = { ...linked, lastPollAt: null };
+  expect(firstPollLanded(fresh, linked)).toBe(true);
+  expect(firstPollLanded(linked, { ...linked, lastPollAt: ago(1000) })).toBe(false);
+  expect(firstPollLanded(fresh, fresh)).toBe(false);
+  expect(firstPollLanded(undefined, linked)).toBe(false);
+  expect(firstPollLanded({ state: 'code', email: 'a@b.nl', resendAt: ago(0) }, linked)).toBe(false);
 });
 
 test('life360MembersRefreshInterval: 15 s while linked, 60 s otherwise', () => {

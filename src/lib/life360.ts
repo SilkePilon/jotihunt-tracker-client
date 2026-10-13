@@ -17,8 +17,8 @@ export const LIFE360_STALE_MS = 15 * 60_000;
 export const LIFE360_PURPLE = '#7875ea';
 
 /**
- * SWR refresh interval of the admin status: 2 s while linking (code / circle), 30 s once linked (also logged out or
- * paused), else no polling. Pass it as a number (see telegramAdminRefreshInterval: SWR never re-reads a function form
+ * SWR refresh interval of the admin status: 2 s while linking (code / circle, and linked until the server's first poll
+ * landed: its counts are 0 until then), 30 s once linked (also logged out or paused), else no polling. Pass it as a number (see telegramAdminRefreshInterval: SWR never re-reads a function form
  * that returned 0).
  */
 export function life360AdminRefreshInterval(status: Life360AdminStatus | undefined): number {
@@ -27,6 +27,7 @@ export function life360AdminRefreshInterval(status: Life360AdminStatus | undefin
     case 'circle':
       return LIFE360_LINKING_POLL_MS;
     case 'linked':
+      return status.lastPollAt === null ? LIFE360_LINKING_POLL_MS : LIFE360_STATUS_POLL_MS;
     case 'loggedOut':
     case 'paused':
       return LIFE360_STATUS_POLL_MS;
@@ -35,7 +36,15 @@ export function life360AdminRefreshInterval(status: Life360AdminStatus | undefin
   }
 }
 
-/** SWR refresh interval of GET /life360/members (never 0, so SWR's function form is fine). */
+/** Whether the server's first poll after linking landed between two admin statuses (the members are worth a refetch). */
+export function firstPollLanded(previous: Life360AdminStatus | undefined, current: Life360AdminStatus | undefined): boolean {
+  return previous?.state === 'linked' && previous.lastPollAt === null && current?.state === 'linked' && current.lastPollAt !== null;
+}
+
+/**
+ * SWR refresh interval of GET /life360/members. Pass it as a number: SWR only reads a function form when a timer fires,
+ * so a revalidation that turns linked on (after the admin linked) would keep the 60 s timer already running.
+ */
 export function life360MembersRefreshInterval(data: Life360Members | undefined): number {
   return data?.linked ? LIFE360_MEMBERS_POLL_MS : LIFE360_MEMBERS_IDLE_POLL_MS;
 }

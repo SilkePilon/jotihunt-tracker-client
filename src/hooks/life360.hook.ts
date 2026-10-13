@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
 import { mutate as mutateGlobal } from 'swr';
 import { SLOW_REQUEST_TIMEOUT_MS } from '@/lib/http';
-import { LIFE360_ADMIN_URL, LIFE360_MEMBERS_URL, life360AdminRefreshInterval, life360MembersRefreshInterval } from '@/lib/life360';
+import { firstPollLanded, LIFE360_ADMIN_URL, LIFE360_MEMBERS_IDLE_POLL_MS, LIFE360_MEMBERS_URL, life360AdminRefreshInterval, life360MembersRefreshInterval } from '@/lib/life360';
 import { life360DevFixture } from '@/lib/life360-fixtures';
 import { fetcherWithMethod, useAuthSWR } from '@/lib/swr';
 import { swrKeyFor } from '@/lib/telegram';
@@ -19,7 +19,11 @@ export function revalidateLife360Members() {
  */
 export function useLife360Members(enabled: boolean) {
   const fixture = import.meta.env.DEV ? life360DevFixture() : undefined;
-  const { data, error } = useAuthSWR<Life360Members>(enabled && !fixture ? LIFE360_MEMBERS_URL : null, { refreshInterval: life360MembersRefreshInterval });
+  // The interval follows the latest data as a plain number (see life360MembersRefreshInterval), adjusted during render
+  const [refreshInterval, setRefreshInterval] = useState(LIFE360_MEMBERS_IDLE_POLL_MS);
+  const { data, error } = useAuthSWR<Life360Members>(enabled && !fixture ? LIFE360_MEMBERS_URL : null, { refreshInterval });
+  const nextInterval = life360MembersRefreshInterval(data);
+  if (nextInterval !== refreshInterval) setRefreshInterval(nextInterval);
   return { data: enabled ? (fixture?.members ?? data) : undefined, isError: !!error };
 }
 
@@ -35,6 +39,12 @@ export function useLife360Admin(enabled: boolean) {
   const { data, error, mutate } = useAuthSWR<Life360AdminStatus>(enabled && !fixture ? LIFE360_ADMIN_URL : null, { refreshInterval });
   const nextInterval = life360AdminRefreshInterval(data);
   if (nextInterval !== refreshInterval) setRefreshInterval(nextInterval);
+  // Right after linking the members are still empty: fetch them as soon as the server's first poll landed
+  const previousData = useRef(data);
+  useEffect(() => {
+    if (firstPollLanded(previousData.current, data)) revalidateLife360Members();
+    previousData.current = data;
+  }, [data]);
 
   async function post(path: string, body?: unknown): Promise<Life360AdminStatus> {
     try {
