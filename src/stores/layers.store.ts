@@ -9,6 +9,7 @@ interface LayersState {
   showHomeCircle: boolean;
   showGroupCircles: boolean;
   showPredictions: boolean;
+  showLife360: boolean;
   toggleTeams: () => void;
   toggleDevices: () => void;
   toggleMarkersPart1: () => void;
@@ -16,6 +17,7 @@ interface LayersState {
   toggleHomeCircle: () => void;
   toggleGroupCircles: () => void;
   togglePredictions: () => void;
+  toggleLife360: () => void;
 }
 
 const useLayersStore = create<LayersState>()(
@@ -28,6 +30,7 @@ const useLayersStore = create<LayersState>()(
       showHomeCircle: true,
       showGroupCircles: false,
       showPredictions: true,
+      showLife360: true,
       toggleTeams: () => {
         set((state) => ({ showTeams: !state.showTeams }));
       },
@@ -48,6 +51,9 @@ const useLayersStore = create<LayersState>()(
       },
       togglePredictions: () => {
         set((state) => ({ showPredictions: !state.showPredictions }));
+      },
+      toggleLife360: () => {
+        set((state) => ({ showLife360: !state.showLife360 }));
       },
     }),
     {

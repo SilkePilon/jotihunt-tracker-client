@@ -21,21 +21,27 @@ export const HUNTERS_LAYER = 'hunters';
 export const HUNTER_ARROWS_LAYER = 'hunter-arrows';
 /** Symbol layer with the AI prediction pins (not clickable). */
 export const PREDICTION_PINS_LAYER = 'prediction-pins';
+/** Symbol layer with the Life360 members (avatar cookies); clicks open the member popup. */
+export const LIFE360_LAYER = 'life360-members';
+/** The hovered Life360 member, 10% larger. */
+export const LIFE360_HOVER_LAYER = 'life360-members-hover';
+/** Accuracy circles of the Life360 members. */
+export const LIFE360_ACCURACY_LAYER = 'life360-accuracy-fill';
 
 /**
  * The app's map layers from bottom to top. Within the first group the order is free; every later group is drawn above
  * all groups before it. The markers stack like the Android app's: groups, foxes (and hints), prediction pins, hunters.
  */
 export const MAP_LAYER_STACK: string[][] = [
-  ['device-accuracy-fill', 'prediction-areas-fill', 'prediction-areas-line', 'prediction-pin-lines', 'circle-layer-home', 'team-circles-fill', 'marker-trails-line'],
+  ['device-accuracy-fill', LIFE360_ACCURACY_LAYER, 'prediction-areas-fill', 'prediction-areas-line', 'prediction-pin-lines', 'circle-layer-home', 'team-circles-fill', 'marker-trails-line'],
   [TEAM_PINS_LAYER],
   ['team-pins-hover'],
   [FOX_MARKERS_LAYER],
   ['fox-markers-hover'],
   [PREDICTION_PINS_LAYER],
   [HUNTER_ARROWS_LAYER],
-  [HUNTERS_LAYER],
-  ['hunters-hover'],
+  [HUNTERS_LAYER, LIFE360_LAYER],
+  ['hunters-hover', LIFE360_HOVER_LAYER],
 ];
 
 /** Radius of the circle drawn around each group (metres). */

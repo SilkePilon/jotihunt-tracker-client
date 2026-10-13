@@ -14,6 +14,7 @@ import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&ur
 import type {LngLat, Map as MaplibreMap, StyleSpecification} from 'maplibre-gl';
 import Teams from './layers/Teams';
 import Devices from './layers/Devices';
+import Life360 from './layers/Life360';
 import Markers from './layers/Markers';
 import {forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState} from 'react';
 import {useShallow} from 'zustand/react/shallow';
@@ -33,7 +34,7 @@ import '@mapbox-controls/ruler/src/index.css';
 import Ruler from "@/components/map/RulerControl.tsx";
 import type {SymbolLayerSpecification} from '@maplibre/maplibre-gl-style-spec';
 import {DEFAULT_VIEW} from '@/lib/map-view';
-import {FOX_MARKERS_LAYER, HUNTER_ARROWS_LAYER, HUNTERS_LAYER, TEAM_PINS_LAYER} from '@/lib/map-layers';
+import {FOX_MARKERS_LAYER, HUNTER_ARROWS_LAYER, HUNTERS_LAYER, LIFE360_LAYER, TEAM_PINS_LAYER} from '@/lib/map-layers';
 import LayerStack from './layers/LayerStack';
 import MarkerImages from './layers/MarkerImages';
 import {markerCssVars, useMarkerPalette} from './layers/marker-icons';
@@ -75,7 +76,7 @@ const RULER_LABEL_LAYOUT: SymbolLayerSpecification['layout'] = {
 const RULER_LABEL_PAINT = {'text-color': '#fff', 'text-halo-color': RULER_COLOR, 'text-halo-width': 3.5};
 
 // Clicks on these canvas layers open their own popup instead of the location popup
-const INTERACTIVE_LAYER_IDS = [FOX_MARKERS_LAYER, TEAM_PINS_LAYER, HUNTERS_LAYER, HUNTER_ARROWS_LAYER];
+const INTERACTIVE_LAYER_IDS = [FOX_MARKERS_LAYER, TEAM_PINS_LAYER, HUNTERS_LAYER, HUNTER_ARROWS_LAYER, LIFE360_LAYER];
 
 const Map = forwardRef<MapRef, { className?: string }>(({className}, ref) => {
 
@@ -97,7 +98,7 @@ const Map = forwardRef<MapRef, { className?: string }>(({className}, ref) => {
     }));
 
     // Store for all layers
-    const {showTeams, showDevices, showMarkersPart1, showMarkersPart2, showHomeCircle, showPredictions} = useLayersStore(
+    const {showTeams, showDevices, showMarkersPart1, showMarkersPart2, showHomeCircle, showPredictions, showLife360} = useLayersStore(
         useShallow((state) => ({
             showTeams: state.showTeams,
             showDevices: state.showDevices,
@@ -105,6 +106,7 @@ const Map = forwardRef<MapRef, { className?: string }>(({className}, ref) => {
             showMarkersPart2: state.showMarkersPart2,
             showHomeCircle: state.showHomeCircle,
             showPredictions: state.showPredictions,
+            showLife360: state.showLife360,
         })),
     );
     const {enabled: predictionEnabled} = usePredictionSetting();
@@ -201,6 +203,7 @@ const Map = forwardRef<MapRef, { className?: string }>(({className}, ref) => {
                 {showPredictions && predictionEnabled !== false && <Predictions/>}
                 {showTeams && <Teams/>}
                 {showDevices && <Devices/>}
+                {showLife360 && <Life360/>}
                 {(showMarkersPart1 || showMarkersPart2) && <Markers part1={showMarkersPart1} part2={showMarkersPart2}/>}
                 <HomeCircle showCircle={showHomeCircle}/>
                 <LayerStack/>
