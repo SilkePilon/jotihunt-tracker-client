@@ -1,27 +1,39 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate } from 'react-router';
 import { SWRConfig } from 'swr';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
-import Map from '@/components/Map';
-import HqClock from '@/components/hq/HqClock';
-import AreaTiles from '@/components/hq/AreaTiles';
-import HuntFeed from '@/components/hq/HuntFeed';
-import LatestArticle from '@/components/hq/LatestArticle';
-import AlertBanner from '@/components/hq/AlertBanner';
+import Map, { type MapRef } from '@/components/Map';
 import AudioUnlock from '@/components/hq/AudioUnlock';
+import FocusPulse from '@/components/hq/FocusPulse';
+import FoxBoard from '@/components/hq/FoxBoard';
+import HqEventCard from '@/components/hq/HqEventCard';
+import HqHunts from '@/components/hq/HqHunts';
+import HqTopCard from '@/components/hq/HqTopCard';
+import TourChip from '@/components/hq/TourChip';
 import DemoReloader from '@/components/DemoReloader';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import StaleDataBadge from '@/components/StaleDataBadge';
+import { useAreas } from '@/hooks/areas.hook';
+import { useHqDirector } from '@/hooks/hq-director.hook';
+import { useHqEventSources } from '@/hooks/hq-events.hook';
+import { useHuntReports } from '@/hooks/hunt-reports.hook';
+import { useHunts } from '@/hooks/hunts.hook';
 import { useNotificationFeed } from '@/hooks/notification-feed.hook';
-import { useTheme } from '@/hooks/theme.hook';
-import { isUnauthorized } from '@/lib/session';
+import { useNow } from '@/hooks/now.hook';
+import { usePredictions } from '@/hooks/predictions.hook';
 import { useSessionExpired } from '@/hooks/session.hook';
-import { pickPrimary, type AppNotification } from '@/lib/notifications';
+import { isHomeTeam, useTeams } from '@/hooks/teams.hook';
+import { useTheme } from '@/hooks/theme.hook';
+import { buildFoxes, eventFromNotification, type HqEvent } from '@/lib/hq-director';
+import { isUnauthorized } from '@/lib/session';
+import { getColorFromArea } from '@/lib/utils';
+import useHqDirectorStore from '@/stores/hq-director.store';
 import type { User } from '@/types/User';
 
-const BANNER_MS = 8000;
+/** Everything on the screen is sized in rem: scale the root font with the screen width, so 1080p and a beamer look alike. */
+const WALL_FONT_SIZE = '1.3vw';
 
-/** Admin-only wall display for the HQ TV: map, area tiles, hunts, latest article, loud alerts for everything. */
+/** Admin-only wall display for the HQ beamer: a map that tours the active foxes and flies to events, plus the fox board. */
 export default function Hq() {
   const endSession = useSessionExpired();
   // Outside Layout, so it needs its own handler: an expired session sends the TV to the login page
@@ -37,44 +49,60 @@ export default function Hq() {
 function HqScreen({ onUnauthorized }: { onUnauthorized: () => void }) {
   const user = useAuthUser<User>();
   const [audioUnlocked, setAudioUnlocked] = useState(false);
-  const [banner, setBanner] = useState<AppNotification | null>(null);
-  const timeout = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const mapRef = useRef<MapRef>(null);
+  const push = useHqDirectorStore((state) => state.push);
   useTheme();
+
+  useEffect(() => {
+    const html = document.documentElement;
+    const previous = html.style.fontSize;
+    html.style.fontSize = WALL_FONT_SIZE;
+    return () => {
+      html.style.fontSize = previous;
+    };
+  }, []);
 
   useNotificationFeed({
     respectPreferences: false,
     toasts: false,
     onUnauthorized,
-    onPoll: (alerted) => {
-      setBanner(pickPrimary(alerted));
-      clearTimeout(timeout.current);
-      timeout.current = setTimeout(() => setBanner(null), BANNER_MS);
-    },
+    onPoll: (alerted) => push(alerted.map(eventFromNotification).filter((event): event is HqEvent => event !== null)),
   });
-  useEffect(() => () => clearTimeout(timeout.current), []);
+
+  const now = useNow(true);
+  const { areas } = useAreas();
+  const { hunts } = useHunts();
+  const { reports } = useHuntReports();
+  const { predictions } = usePredictions();
+  const { teams } = useTeams();
+  const homeTeam = teams?.find(isHomeTeam);
+  const foxes = useMemo(() => buildFoxes({ areas, hunts, reports, predictions, teams, now }), [areas, hunts, reports, predictions, teams, now]);
+  useHqEventSources(foxes, reports);
+  const director = useHqDirector({ mapRef, foxes, teams, homeTeam });
+  const focusFox = foxes.find((fox) => fox.key === director.focusArea);
 
   if (!user?.admin) return <Navigate to="/" replace />;
 
   return (
-    <div className="grid h-dvh w-dvw grid-cols-[65fr_35fr] overflow-hidden bg-background text-foreground">
-      <ErrorBoundary name="De kaart" className="m-auto w-fit">
-        <Map className="relative h-full w-full" />
-      </ErrorBoundary>
-      <aside className="flex min-h-0 flex-col gap-4 overflow-y-auto border-l p-4">
+    <div className="grid h-dvh w-dvw grid-cols-[58fr_42fr] overflow-hidden bg-background text-foreground">
+      <div className="relative min-h-0 overflow-hidden rounded-r-2xl">
+        <ErrorBoundary name="De kaart" className="m-auto w-fit">
+          <Map ref={mapRef} wall className="absolute inset-0" overlay={focusFox?.center && <FocusPulse center={focusFox.center} color={getColorFromArea(focusFox.key)} />} />
+        </ErrorBoundary>
+        <TourChip stop={director.stop} index={director.stopIndex} count={director.stopCount} step={director.step} hidden={!!director.current} />
+        <HqEventCard event={director.current} queued={director.queued} step={director.step} />
+      </div>
+      <aside className="flex min-h-0 flex-col gap-2 p-3">
         <ErrorBoundary>
-          <HqClock />
+          <HqTopCard now={now} />
         </ErrorBoundary>
         <ErrorBoundary>
-          <AreaTiles />
+          <FoxBoard foxes={foxes} focusArea={director.focusArea} />
         </ErrorBoundary>
         <ErrorBoundary>
-          <HuntFeed />
-        </ErrorBoundary>
-        <ErrorBoundary>
-          <LatestArticle />
+          <HqHunts now={now} />
         </ErrorBoundary>
       </aside>
-      <AlertBanner notification={banner} onDismiss={() => setBanner(null)} />
       {!audioUnlocked && <AudioUnlock onUnlock={() => setAudioUnlocked(true)} />}
     </div>
   );
