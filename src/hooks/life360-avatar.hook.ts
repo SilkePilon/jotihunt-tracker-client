@@ -23,7 +23,13 @@ async function fetchAvatar(path: string, authHeader: string): Promise<Life360Ava
     : URL.createObjectURL((await axios.get<Blob>(`${import.meta.env.API_BASE_URL}${path}`, { headers: { Authorization: authHeader }, responseType: 'blob' })).data);
   const image = new Image();
   image.src = url;
-  await image.decode();
+  try {
+    await image.decode();
+  } catch (error) {
+    // Not an image (or a broken one): free the blob, the next poll fetches it again
+    if (url !== path) URL.revokeObjectURL(url);
+    throw error;
+  }
   return { url, image };
 }
 

@@ -21,6 +21,7 @@ export default function Life360Problem({ status, onSendCode }: Life360ProblemPro
 
   async function sendCode() {
     setBusy(true);
+    setError(null);
     setError(await onSendCode(status.email));
     setBusy(false);
   }
