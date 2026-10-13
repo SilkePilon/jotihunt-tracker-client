@@ -82,7 +82,7 @@ export const TOUR_STEPS: TourStep[] = [
     id: 'tracker',
     target: 'sidebar.tracking',
     title: 'Mijn tracker',
-    body: 'Koppel je telefoon als GPS-tracker, zodat iedereen ziet waar je rijdt. Tijdens het koppelen vind je in deze kaart ook een uitleg stap voor stap.',
+    body: 'Koppel je telefoon als GPS-tracker, zodat iedereen ziet waar je bent. Kies hier ook of je loopt, fietst of rijdt.',
     actions: [sheetSnap('full'), openSection('tracking')],
   },
   {

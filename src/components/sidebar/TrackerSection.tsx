@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { CircleCheckIcon } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import CookieBadge from '@/components/tracker/CookieBadge';
 import TrackerCard from '@/components/tracker/TrackerCard';
 import TrackerGuideDialog from '@/components/tracker/TrackerGuideDialog';
 import { useTrackerStatus } from '@/hooks/tracker.hook';
-import { sectionTransition, trackerSummary } from '@/lib/tracker';
+import { hasSignalLost, sectionTransition, trackerSummary } from '@/lib/tracker';
 import useSidebarStore from '@/stores/sidebar.store';
 import type { Vehicle } from '@/types/Tracker';
 import SidebarSection from './SidebarSection';
@@ -48,11 +47,12 @@ export default function TrackerSection() {
   }
 
   const summaryText = trackerSummary(status);
-  const summary = connected ? (
-    <Badge className="border-green-200 bg-green-100 text-green-700 dark:border-green-500/30 dark:bg-green-500/15 dark:text-green-400">
-      <CircleCheckIcon data-icon="inline-start" />
+  const summaryTone = connected ? 'ok' : hasSignalLost(status) ? 'warn' : undefined;
+  const summary = summaryTone ? (
+    <span className="inline-flex items-center gap-1.5">
       {summaryText}
-    </Badge>
+      <CookieBadge tone={summaryTone} size={18} />
+    </span>
   ) : (
     summaryText
   );

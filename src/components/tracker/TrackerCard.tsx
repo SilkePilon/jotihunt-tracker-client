@@ -1,19 +1,13 @@
 import { useState } from 'react';
-import { ListOrderedIcon, QrCodeIcon, RefreshCwIcon, SmartphoneIcon } from 'lucide-react';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
-import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { useIsMobile } from '@/hooks/media.hook';
-import useInterval from '@/hooks/utils/interval.hook';
-import { formatAccuracy, formatBattery, formatDistance, formatLastUpdate, formatSpeed, notConfiguredText } from '@/lib/tracker';
+import { usePairingCode } from '@/hooks/app-pairing.hook';
+import { notConfiguredText, trackerView } from '@/lib/tracker';
 import type { TrackerMe, Vehicle } from '@/types/Tracker';
 import type { User } from '@/types/User';
-import AppPairingPanel from './AppPairingPanel';
-import TrackerQrCode from './TrackerQrCode';
-import VehiclePicker from './VehiclePicker';
-
-const CLOCK_TICK_MS = 30_000;
+import TrackerIdle from './TrackerIdle';
+import TrackerLive from './TrackerLive';
+import TrackerPairing from './TrackerPairing';
 
 interface TrackerCardProps {
   status: TrackerMe | undefined;
@@ -23,21 +17,29 @@ interface TrackerCardProps {
   onOpenGuide: () => void;
 }
 
-/** Content of the "Mijn tracker" section: not configured / QR to connect / stats when connected. */
+/** Content of the "Mijn tracker" section: one view per state (see `trackerView`). */
 export default function TrackerCard({ status, isError, savingVehicle, onVehicleChange, onOpenGuide }: TrackerCardProps) {
   const auth = useAuthUser<User>();
-  const isMobile = useIsMobile();
-  const [relink, setRelink] = useState(false);
-  // On phones the QR code is hidden by default (you can't scan your own screen)
-  const [showQr, setShowQr] = useState(false);
-  const [method, setMethod] = useState<'app' | 'traccar'>('app');
-  const [now, setNow] = useState(() => Date.now());
-  useInterval(() => setNow(Date.now()), CLOCK_TICK_MS);
+  const { pairing, creating, failed, create } = usePairingCode();
+  const [pairingOpen, setPairingOpen] = useState(false);
 
-  if (!status) {
-    if (isError) return <p className="text-xs text-muted-foreground">Trackerstatus kan niet worden geladen.</p>;
-    return <Skeleton className="h-52 rounded-md" />;
+  // Leave the pairing panel once the phone connects (adjusted during render, like TrackerSection). Re-pairing while
+  // already connected has no such transition, so there only ✕ closes it.
+  const connected = status?.configured ? status.connected : undefined;
+  const [prevConnected, setPrevConnected] = useState(connected);
+  if (connected !== prevConnected) {
+    setPrevConnected(connected);
+    if (connected && prevConnected === false) setPairingOpen(false);
   }
+
+  function startPairing() {
+    setPairingOpen(true);
+    void create();
+  }
+
+  const view = trackerView(status, isError, pairingOpen);
+  if (view === 'error') return <p className="text-xs text-muted-foreground">Trackerstatus kan niet worden geladen.</p>;
+  if (!status || view === 'loading') return <Skeleton className="h-40 rounded-md" />;
 
   if (!status.configured) {
     const text = notConfiguredText(status.reason, !!auth?.admin);
@@ -49,97 +51,9 @@ export default function TrackerCard({ status, isError, savingVehicle, onVehicleC
     );
   }
 
-  const vehiclePicker = <VehiclePicker value={status.vehicle} disabled={savingVehicle} onChange={onVehicleChange} />;
-
-  if (status.connected && !relink) {
-    const { stats } = status;
-    const rows: [string, string][] = [
-      ['Laatste update', formatLastUpdate(stats.lastUpdate, now)],
-      ['Snelheid', formatSpeed(stats.speedKmh)],
-      ['Batterij', formatBattery(stats.battery)],
-      ['Nauwkeurigheid', formatAccuracy(stats.accuracyM)],
-      ['Afstand vandaag', formatDistance(stats.distanceTodayM)],
-    ];
-    return (
-      <div className="flex flex-col gap-2" data-tracker-state="connected">
-        <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">
-          {rows.map(([label, value]) => (
-            <div key={label} className="contents">
-              <dt className="text-muted-foreground">{label}</dt>
-              <dd className="text-right font-medium tabular-nums">{value}</dd>
-            </div>
-          ))}
-        </dl>
-        {vehiclePicker}
-        <Button variant="outline" size="sm" onClick={() => setRelink(true)}>
-          <RefreshCwIcon />
-          Opnieuw koppelen
-        </Button>
-      </div>
-    );
+  if (view === 'pairing') {
+    return <TrackerPairing pairing={pairing} creating={creating} failed={failed} onRetry={() => void create()} onClose={() => setPairingOpen(false)} />;
   }
-
-  return (
-    <div className="flex flex-col items-center gap-2" data-tracker-state="pairing">
-      <ToggleGroup
-        type="single"
-        variant="outline"
-        size="sm"
-        className="grid w-full grid-cols-2"
-        aria-label="Koppelen met"
-        value={method}
-        onValueChange={(next) => next && setMethod(next as 'app' | 'traccar')}
-      >
-        <ToggleGroupItem value="app">Android-app</ToggleGroupItem>
-        <ToggleGroupItem value="traccar">Traccar Client</ToggleGroupItem>
-      </ToggleGroup>
-      {method === 'app' ? (
-        <AppPairingPanel />
-      ) : isMobile ? (
-        <>
-          <Button asChild className="w-full">
-            <a href={status.deepLink}>
-              <SmartphoneIcon />
-              Verbinden met Traccar-app
-            </a>
-          </Button>
-          <p className="text-center text-xs text-muted-foreground">
-            Opent de Traccar Client-app met de juiste instellingen. Nog geen app? Installeer hem eerst via de uitleg.
-          </p>
-          {showQr ? (
-            <>
-              <TrackerQrCode value={status.qrUrl} />
-              <p className="text-center text-xs text-muted-foreground">Of scan deze code met een andere telefoon</p>
-            </>
-          ) : (
-            <Button variant="ghost" size="sm" onClick={() => setShowQr(true)}>
-              <QrCodeIcon />
-              QR-code tonen
-            </Button>
-          )}
-        </>
-      ) : (
-        <>
-          <TrackerQrCode value={status.qrUrl} />
-          <p className="text-center text-xs text-muted-foreground">Scan deze code met de Traccar Client-app (iPhone)</p>
-        </>
-      )}
-      {vehiclePicker}
-      {(method === 'traccar' || status.connected) && (
-        <div className="flex w-full gap-2">
-          {method === 'traccar' && (
-            <Button variant="outline" size="sm" className="flex-1" onClick={onOpenGuide}>
-              <ListOrderedIcon />
-              Uitleg stap voor stap
-            </Button>
-          )}
-          {status.connected && (
-            <Button variant="ghost" size="sm" className={method === 'app' ? 'flex-1' : undefined} onClick={() => setRelink(false)}>
-              Klaar
-            </Button>
-          )}
-        </div>
-      )}
-    </div>
-  );
+  if (view === 'idle') return <TrackerIdle onPair={startPairing} onOpenGuide={onOpenGuide} />;
+  return <TrackerLive status={status} savingVehicle={savingVehicle} onVehicleChange={onVehicleChange} onRepair={startPairing} />;
 }
