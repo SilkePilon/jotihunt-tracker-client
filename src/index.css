@@ -100,6 +100,26 @@
 
   --animate-accordion-down: accordion-down 0.2s ease-out;
   --animate-accordion-up: accordion-up 0.2s ease-out;
+  /* Sidebar sections: height slides in 200 ms with Material's standard decelerate curve */
+  --animate-collapsible-down: collapsible-down 0.2s cubic-bezier(0.2, 0, 0, 1);
+  --animate-collapsible-up: collapsible-up 0.2s cubic-bezier(0.2, 0, 0, 1);
+
+  @keyframes collapsible-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-collapsible-content-height);
+    }
+  }
+  @keyframes collapsible-up {
+    from {
+      height: var(--radix-collapsible-content-height);
+    }
+    to {
+      height: 0;
+    }
+  }
 
   @keyframes accordion-down {
     from {

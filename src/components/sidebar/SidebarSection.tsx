@@ -34,8 +34,11 @@ export default function SidebarSection({ id, title, summary, open: openProp, onO
           <ChevronDownIcon className={cn('size-4 shrink-0 transition-transform', open && 'rotate-180')} />
         </span>
       </CollapsibleTrigger>
-      <CollapsibleContent className="pt-2">
-        <ErrorBoundary variant="inline">{children}</ErrorBoundary>
+      {/* Vertical padding on the inner div so the animated height reaches 0; -mx-1 px-1 keeps focus rings unclipped */}
+      <CollapsibleContent className="-mx-1 overflow-hidden px-1 data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down motion-reduce:animate-none">
+        <div className="pt-2">
+          <ErrorBoundary variant="inline">{children}</ErrorBoundary>
+        </div>
       </CollapsibleContent>
     </Collapsible>
   );
