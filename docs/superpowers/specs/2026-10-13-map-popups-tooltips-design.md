@@ -2,7 +2,7 @@
 
 Date: 2026-10-13
 Branch: `feat/popup-redesign` (client, off `main` at e410e29)
-Mockups: `.superpowers/brainstorm/3595344-1791900905/content/` (`popups-a-v2.html` = chosen popup style, `tooltips.html` row 1 = chosen tooltip style)
+Mockups: `.superpowers/brainstorm/3595344-1791900905/content/` (`popups-a-v2.html` = chosen popup layout, `tooltips.html` row 1 = chosen tooltip, `combined-v3.html` = both in the sidebar colours)
 
 ## Goal
 
@@ -23,28 +23,30 @@ Out of scope: the marker images themselves, the hunt registration dialogs, sideb
 
 ## Visual language
 
-Colours come from `MARKER_PALETTES` in `src/lib/marker-style.ts` for the current theme (dark/light, following the
-site's dark mode), exposed as CSS variables so popup chrome, building blocks and tooltips use the same values:
+Colours match the left sidebar (user feedback 2026-10-13: the green-tinted M3 surfaces of the first mockups and the
+current `--background` popups both clash with the sidebar in dark mode). `--map-*` CSS variables in `src/index.css`
+point at the site's theme tokens; only accents are fixed values:
 
-| Token | Use |
-|---|---|
-| `surfaceContainer` (dark ≈ `#1d211c`) | popup and tooltip background |
-| `surfaceContainerHigh` (dark ≈ `#272b26`) | coordinate rows, neutral buttons, visit button group |
-| `onSurface` / `onSurfaceVariant` | title / body text |
-| muted (dark ≈ `#8c9388`) | subtitles, labels, close icon, tooltip meta |
-| `primary` `#ea580c` | Hunt / Spot buttons |
-| `primaryContainer` / `onPrimaryContainer` | picked-location icon, selected visit option |
-| `errorContainer` / `onErrorContainer` | delete icon button |
-| warn (dark ≈ `#ffb68a`) | stale subtitle text |
+| Variable | Value | Use |
+|---|---|---|
+| `--map-surface` | `var(--card)` | popup and tooltip background |
+| `--map-surface-high` | `var(--muted)` | coordinate rows, neutral buttons, visit button group |
+| `--map-on-surface` | `var(--card-foreground)` | title text |
+| `--map-on-surface-variant` | card-foreground mixed 15% toward muted-foreground | body text |
+| `--map-muted` | `var(--muted-foreground)` | subtitles, labels, close icon, tooltip meta |
+| `--map-hairline` | `var(--border)` | 1px outline, like the sidebar cards' border |
+| `--primary` | site orange | Hunt / Spot buttons |
+| `--map-selected-*` | orange container (`#7c2d12` / `#ffedd5` dark) | picked-location icon, selected visit option |
+| `--map-danger-*` | error container | delete icon button |
+| `--map-warn` | `#ffb68a` dark / `#9a4a00` light | stale subtitle text |
 
-The values live as `--map-*` CSS variables in `src/index.css` (`:root` + `body.dark`), mirroring `MARKER_PALETTES` plus M3 `surfaceContainer` / `surfaceContainerHigh` for the app's green seed.
-Font: `"Google Sans Flex", "Google Sans", Roboto, system-ui, sans-serif` (the marker font). Numbers use
-`tabular-nums`. Icons stay lucide.
+Font: the site font (`--font-sans`), same as the sidebar. Numbers use `tabular-nums`. Icons stay lucide. Marker-shaped
+header icons keep the marker colours (hunter `secondaryContainer`, area colours, Life360 avatar).
 
 ## Popup chrome (`MapPopup` + `index.css`)
 
 - Width 236px (fixed, `maxWidth` stays as a guard), padding 10px, radius 16px, background `surfaceContainer`,
-  1px `#ffffff10` hairline + `0 6px 20px rgb(0 0 0 / .5)` shadow, base text 12.5px.
+  1px `var(--border)` hairline + `0 6px 20px rgb(0 0 0 / .5)` shadow, base text 12.5px.
 - MapLibre tip recoloured to `surfaceContainer`; close button 24px round, muted icon 14px, top-right 8px.
 - Per-popup offsets re-tuned so the tip sits just above each marker image.
 

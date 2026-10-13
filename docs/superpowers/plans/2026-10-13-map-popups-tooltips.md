@@ -4,12 +4,12 @@
 
 **Goal:** Restyle all map popups (picked location, group, hunter, fox marker, Life360) as compact M3 cards (style A) and all hover tooltips as one-line labels (style 1), matching the Android-style markers.
 
-**Architecture:** Map-surface colours become CSS variables in `src/index.css` (light + `body.dark`), mirroring `MARKER_PALETTES`. A small set of popup building blocks in `src/components/map/popup/` (header, icon, facts, coordinate rows, action buttons) is shared by the five popups. A `useDistanceFromMe` hook gives the "2,4 km van jou" subtitle from the user's own tracker position or an already-granted browser position. `MapTooltip` switches from free children to `{ color, title, meta }`.
+**Architecture:** Map-surface colours become `--map-*` CSS variables in `src/index.css` that point at the site's theme tokens (`--card`, `--muted`, `--muted-foreground`, `--border`), so popups and tooltips match the sidebar cards in light and dark mode; only the orange/red/warn accents are fixed values. A small set of popup building blocks in `src/components/map/popup/` (header, icon, facts, coordinate rows, action buttons) is shared by the five popups. A `useDistanceFromMe` hook gives the "2,4 km van jou" subtitle from the user's own tracker position or an already-granted browser position. `MapTooltip` switches from free children to `{ color, title, meta }`.
 
 **Tech Stack:** React 19, TypeScript, Tailwind v4 (`bg-(--var)` syntax), react-map-gl/maplibre, lucide-react, bun test.
 
 Spec: `docs/superpowers/specs/2026-10-13-map-popups-tooltips-design.md`.
-Mockups: `/home/silke/Documents/Jotihunt 2026/.superpowers/brainstorm/3595344-1791900905/content/popups-a-v2.html` (popups) and `tooltips.html` (row 1).
+Mockups: `/home/silke/Documents/Jotihunt 2026/.superpowers/brainstorm/3595344-1791900905/content/combined-v3.html` (popups + tooltips in the sidebar colours; layout from `popups-a-v2.html`).
 
 ## Global Constraints
 
@@ -18,7 +18,7 @@ Mockups: `/home/silke/Documents/Jotihunt 2026/.superpowers/brainstorm/3595344-17
 - `bun` is not on PATH: tests `npx --yes bun test <file>`, types `npx --yes bun x tsc -b`, lint `npx --yes bun run lint`.
 - Never restart or touch the docker stack (server :3000, client :8080) — it is the user's live instance. Never `pkill -f`.
 - All UI copy Dutch, exactly as written in this plan.
-- Font everywhere in popups/tooltips: `"Google Sans Flex", "Google Sans", Roboto, system-ui, sans-serif`.
+- Popups/tooltips use the site font (`--font-sans`) and the sidebar's theme tokens (`--card`, `--muted`, `--muted-foreground`, `--border`) — they must look like the sidebar cards in dark mode. No green-tinted M3 surfaces.
 - Popup width 236px (216px content + 2×10px padding), radius 16px. Tooltip radius 10px, padding 6px 10px.
 - Distance subtitle text: `"<n> m van jou"` below 1000 m, `"<n,n> km van jou"` from 1000 m, hidden below 20 m or when unknown.
 - Labels: "Hunt" / "Spot" (not "Vos hunt" / "Vos spot").
@@ -255,15 +255,16 @@ No unit tests (presentational); verified by `tsc -b`, lint, and visually in Task
 In `src/index.css`, replace the block from `/* MapLibre popup styling */` through the `.maplibregl-popup-tip { @apply animate-in fade-in; }` rule with:
 
 ```css
-/* Map surfaces (popups, tooltips): the markers' Material 3 palette (lib/marker-style.ts), light and dark */
-:root {
-  --map-font: 'Google Sans Flex', 'Google Sans', Roboto, system-ui, sans-serif;
-  --map-surface: #ebefe6;
-  --map-surface-high: #dfe4d9;
-  --map-on-surface: #181d17;
-  --map-on-surface-variant: #424940;
-  --map-muted: #72796f;
-  --map-hairline: rgb(0 0 0 / 0.08);
+/* Map surfaces (popups, tooltips): the sidebar's theme tokens, so map cards look like the sidebar cards. Declared on
+   body (not :root) because the theme's `.dark` class sits on body: there var(--card) resolves to the dark value. */
+body {
+  --map-font: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
+  --map-surface: var(--card);
+  --map-surface-high: var(--muted);
+  --map-on-surface: var(--card-foreground);
+  --map-on-surface-variant: color-mix(in oklab, var(--card-foreground) 85%, var(--muted-foreground));
+  --map-muted: var(--muted-foreground);
+  --map-hairline: var(--border);
   --map-warn: #9a4a00;
   --map-danger-bg: #ffdad6;
   --map-danger-fg: #93000a;
@@ -272,12 +273,6 @@ In `src/index.css`, replace the block from `/* MapLibre popup styling */` throug
 }
 
 body.dark {
-  --map-surface: #1d211c;
-  --map-surface-high: #272b26;
-  --map-on-surface: #e1e4dc;
-  --map-on-surface-variant: #c2c9bd;
-  --map-muted: #8c9388;
-  --map-hairline: rgb(255 255 255 / 0.06);
   --map-warn: #ffb68a;
   --map-danger-bg: rgb(147 0 10 / 0.35);
   --map-danger-fg: #ffb4ab;
@@ -1305,7 +1300,7 @@ Do not use the docker stack. Start a throwaway server per `memory: dev-environme
 
 - [ ] **Step 2: Check each popup and tooltip, dark and light mode**
 
-Compare against `popups-a-v2.html` / `tooltips.html` row 1:
+Compare against `combined-v3.html`, and put an open popup next to the left sidebar in dark mode: background, border, muted text and tinted rows must match the sidebar cards exactly.
 - Picked location: distance shown only when own tracker is fresh or location permission granted; copy WGS84 copies 7 decimals; lightbulb fills the hint form and opens the section; Hunt/Spot open the registration dialog.
 - Group: area dot colour, address truncates, visit group selects and disables while saving, team without area shows "Geen deelgebied" and no visit buttons.
 - Hunter: fresh vs stale (> 5 min: grey icon, orange "laatst bekend", no speed).
