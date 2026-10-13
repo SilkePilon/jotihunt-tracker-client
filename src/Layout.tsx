@@ -17,7 +17,6 @@ import {useTheme} from "@/hooks/theme.hook.ts";
 import {useNotificationFeed} from '@/hooks/notification-feed.hook';
 import {useFetcher} from '@/hooks/utils/api.hook';
 import {isUnauthorized} from '@/lib/session';
-import {isPasswordChangeRequired} from '@/lib/password-change';
 import {useSessionExpired} from '@/hooks/session.hook';
 import {resyncPush} from '@/lib/push';
 import type {OutletContextType} from '@/hooks/outlet.hook.ts';
@@ -63,8 +62,6 @@ export default function Layout() {
             sessionExpired();
             return;
         }
-        // Not an outage: PasswordChangeGate replaces the app with the password change screen
-        if (isPasswordChangeRequired(error)) return;
         // One toast per outage, and not again within a minute when the connection flaps
         if (!errorToast.error(key)) return;
         toast.error("Oeps! Er is iets misgegaan.", {

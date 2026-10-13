@@ -1,3 +1,5 @@
+import { useCallback } from 'react';
+import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
 import { useAuthSWR } from '@/lib/swr';
 import type { Vehicle } from '@/types/Tracker';
 import { User } from '@/types/User';
@@ -7,6 +9,7 @@ import { asList } from '@/lib/response-shape';
 export const useAdmin = () => {
   const { data, error, mutate } = useAuthSWR<User[]>('/admin/users');
   const { fetch } = useFetcher();
+  const authHeader = useAuthHeader();
 
   /**
    * Run a request; resolves to null on success, else to the error (axios throws on 4xx/5xx, so the server's message
@@ -33,10 +36,19 @@ export const useAdmin = () => {
     return failure(() => fetch(`/admin/users/${id}`, 'DELETE'), 200);
   }
 
-  /** Resolves to null on success, else to the error */
-  function createUser(user: User): Promise<unknown> {
-    return failure(() => fetch('/admin/users', 'POST', user), 201);
-  }
+  /**
+   * One-time herstel-link (1 hour) for a user who lost their passkey. Throws the axios error on failure.
+   * Stable while the session token stays the same, so a dialog can make the link in an effect.
+   */
+  const createRecoveryLink = useCallback(
+    async (id: string): Promise<{ url: string; expiresAt: string }> => {
+      const { data } = await fetch<{ url: string; expiresAt: string }>(`/admin/users/${id}/recovery-link`, 'POST');
+      return data;
+    },
+    // fetch is a new function every render; it only changes meaningfully with the auth header
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [authHeader],
+  );
 
   /** Move any hunter's Traccar device to a vehicle group (map icon). Throws the axios error on failure. */
   async function setDeviceVehicle(deviceId: number, vehicle: Vehicle): Promise<void> {
@@ -50,7 +62,7 @@ export const useAdmin = () => {
     isError: error,
     updateUser,
     deleteUser,
-    createUser,
+    createRecoveryLink,
     setDeviceVehicle,
   };
 };

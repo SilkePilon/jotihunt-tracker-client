@@ -84,7 +84,7 @@ function LocationActions({ row, onShowOnMap }: { row: HunterRow; onShowOnMap: Sh
 
 function subtitle(row: HunterRow): string {
   if (!row.user) return 'Geen gekoppelde gebruiker';
-  return row.user.email;
+  return row.user.name;
 }
 
 /** All details of one hunter (phones: after tapping a row; desktop: after clicking the name). */
@@ -96,7 +96,7 @@ function HunterDetail({ row, now, onBack, onShowOnMap }: { row: HunterRow; now: 
     ['Snelheid', formatSpeed(row.speedKmh)],
     ['Batterij', <Battery key="battery" percent={row.batteryPercent} />],
     ['Nauwkeurigheid', formatAccuracy(row.accuracyM)],
-    ['Gebruiker', row.user ? `${row.user.name} (${row.user.email})` : '–'],
+    ['Gebruiker', row.user ? row.user.name : '–'],
   ];
 
   return (
@@ -169,7 +169,7 @@ export default function HuntersPanel({ onShowOnMap }: { onShowOnMap: ShowOnMap }
   const term = search.trim().toLowerCase();
   const shown = rows
     .filter((row) => filter === 'all' || row.active)
-    .filter((row) => !term || row.device.name.toLowerCase().includes(term) || row.user?.name.toLowerCase().includes(term) || row.user?.email.toLowerCase().includes(term));
+    .filter((row) => !term || row.device.name.toLowerCase().includes(term) || row.user?.name.toLowerCase().includes(term));
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">

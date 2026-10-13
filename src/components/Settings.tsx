@@ -2,7 +2,6 @@ import {
     BugIcon,
     CogIcon,
     DownloadIcon,
-    KeyIcon,
     LogOutIcon,
     CompassIcon,
     BellIcon,
@@ -25,7 +24,6 @@ import {User} from '@/types/User';
 import usePWA from 'react-pwa-install-prompt';
 import {Dialog, DialogTrigger} from './ui/dialog';
 import DebugInfo from './DebugInfo';
-import ResetPassword from './ResetPassword';
 import {useState} from 'react';
 import useNotificationsDialogStore from '@/stores/notifications-dialog.store';
 import useSettingsMenuStore from '@/stores/settings-menu.store';
@@ -59,7 +57,6 @@ export default function Settings({onReplayTour}: SettingsProps) {
     const soundMuted = useSettingsStore((state) => state.soundMuted);
     const setSoundMuted = useSettingsStore((state) => state.setSoundMuted);
     const {isStandalone, isInstallPromptSupported, promptInstall} = usePWA();
-    const [resetPasswordOpen, setResetPasswordOpen] = useState(false);
     const [reloadTeamsOpen, setReloadTeamsOpen] = useState(false);
     const [demoDialogOpen, setDemoDialogOpen] = useState(false);
 
@@ -126,9 +123,6 @@ export default function Settings({onReplayTour}: SettingsProps) {
                             </a>
                         </DropdownMenuItem>
                     )}
-                    <DropdownMenuItem onClick={() => setResetPasswordOpen(true)}>
-                        <KeyIcon/> Wachtwoord wijzigen
-                    </DropdownMenuItem>
                     <DropdownMenuItem className="text-red-500" onClick={logout}>
                         <LogOutIcon/>
                         Uitloggen
@@ -136,7 +130,6 @@ export default function Settings({onReplayTour}: SettingsProps) {
                 </DropdownMenuContent>
             </DropdownMenu>
 
-            <ResetPassword open={resetPasswordOpen} setIsOpen={setResetPasswordOpen} allowClose={true}/>
             <DebugInfo/>
             <ReloadTeamsDialog open={reloadTeamsOpen} onOpenChange={setReloadTeamsOpen}/>
             <DemoModeDialog open={demoDialogOpen} onOpenChange={setDemoDialogOpen}/>

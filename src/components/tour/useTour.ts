@@ -56,7 +56,7 @@ export function useTourAutoStart() {
   const onMapPage = useLocation().pathname === '/';
 
   const due = !!authUser && (authUser.tutorialVersion ?? 0) < TOUR_VERSION;
-  const canStart = !!authUser && due && !authUser.requiresPasswordChange && !active && !adminDialogOpen && onMapPage;
+  const canStart = !!authUser && due && !active && !adminDialogOpen && onMapPage;
 
   useEffect(() => {
     if (!canStart) return;
