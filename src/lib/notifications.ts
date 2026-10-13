@@ -26,7 +26,7 @@ export const NOTIFICATION_OPTIONS: { type: OptionalNotificationType; label: stri
   { type: 'hint', label: 'Nieuwe hint', description: 'Zodra de organisatie een hint publiceert.' },
   { type: 'article', label: 'Opdrachten en nieuws', description: 'Nieuwe opdrachten en nieuwsberichten.' },
   { type: 'hunt-deadline', label: 'Hunt deadline', description: '10 minuten voordat een hunt ingestuurd moet zijn.' },
-  { type: 'counter-hunt', label: 'Tegenhunt', description: 'Als HQ meldt dat er een tegenhunt is, en in welke richting.' },
+  { type: 'counter-hunt', label: 'Tegenhunt', description: 'Als de Jotihunt-bot een tegenhunt meldt, en uit welke richting.' },
 ];
 
 export function shouldAlert(type: NotificationType, disabledTypes: readonly string[]): boolean {
