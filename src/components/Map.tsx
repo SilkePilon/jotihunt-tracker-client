@@ -193,13 +193,13 @@ const Map = forwardRef<MapRef, MapProps>(({className, wall = false, overlay}, re
                 // No symbol fade: every tracker poll moves the hunter icons, which then faded in again (about 20 extra
                 // full map repaints per poll); the HTML markers they replace moved instantly
                 fadeDuration={0}
-                // Phones: start with the credits collapsed to the (i) button; MapLibre opens them on load
+                // Phones and the HQ wall: start with the credits collapsed to the (i) button; MapLibre opens them on load
                 onLoad={(event) => {
-                    if (isMobile) event.target.getContainer().querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show');
+                    if (isMobile || wall) event.target.getContainer().querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show');
                 }}
             >
                 <div className="bg-background">
-                    {/* Credits on the right: bottom-right on desktop; on phones top-right, above the bottom sheet. */}
+                    {/* Credits on the right: bottom-right on desktop; on phones top-right, above the bottom sheet; on the HQ wall top-right, above the event card. */}
                     <AttributionControl position={isMobile || wall ? 'top-right' : 'bottom-right'} customAttribution={GROUP_NAME ? `Jotihunt Tracker | ${GROUP_NAME}` : 'Jotihunt Tracker'} compact={true}/>
                 </div>
                 {/* Phones: no map controls, the map is navigated by touch and the bottom sheet needs the room */}
