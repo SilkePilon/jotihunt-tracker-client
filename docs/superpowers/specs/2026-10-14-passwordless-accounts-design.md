@@ -193,4 +193,4 @@ Same Beheer row style, no side menu.
 
 ## Rollout
 
-No one is logged in, so the hard switch is fine: deploy server + client together, run the migration, run `login-link --user Silke` to get back in, then hand out invites / herstel-links. Set `WEBAUTHN_RP_ID`, `WEBAUTHN_ORIGINS` and `PUBLIC_APP_URL` in the homelab manifests.
+No one is logged in, so the hard switch is fine: deploy server + client together, run `login-link --user Silke` to get back in, then hand out invites / herstel-links. The migration runs at every server start (idempotent: password data, `webauthnUserId`s, dropping the `email_1` index, User indexes via `createIndexes`), so the deploy order doesn't matter; `migrate-passwordless` stays as a manual script. Set `WEBAUTHN_RP_ID`, `WEBAUTHN_ORIGINS` and `PUBLIC_APP_URL` in the homelab manifests.
