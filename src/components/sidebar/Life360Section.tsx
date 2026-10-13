@@ -64,8 +64,10 @@ export default function Life360Section({ mapRef }: { mapRef: RefObject<MapRef | 
         onCancel={async () => {
           try {
             await unlink();
+            return true;
           } catch (error) {
             toast.error(apiErrorMessage(error, 'Annuleren is mislukt, probeer het opnieuw.'));
+            return false;
           }
         }}
         onRefresh={async () => {

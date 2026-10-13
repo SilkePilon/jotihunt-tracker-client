@@ -23,8 +23,8 @@ export interface Life360LinkActions {
   onChooseCircle: (circleId: string) => Promise<string | null>;
   /** Fallback: a LIFE360_AUTH_TOKEN pasted by hand */
   onSubmitToken: (token: string) => Promise<string | null>;
-  /** Cancel a pending login (code or circle step) */
-  onCancel: () => Promise<unknown>;
+  /** Cancel a pending login (code or circle step); resolves to true once cancelled */
+  onCancel: () => Promise<boolean>;
 }
 
 export type Life360LinkView = 'unavailable' | 'unlinked' | 'email' | 'code' | 'circle';
@@ -249,7 +249,10 @@ function CodeStep({
       )}
       {resendError && <ErrorText>{resendError}</ErrorText>}
       <p className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
-        {countdown ? (
+        {/* After a wrong code the "Stuur nieuwe code" button already carries the countdown */}
+        {error ? (
+          <span />
+        ) : countdown ? (
           <span className="tabular-nums">Opnieuw sturen over {countdown}</span>
         ) : (
           <button type="button" className={inlineLinkClass} disabled={resending} onClick={() => void resend()}>

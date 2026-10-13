@@ -113,7 +113,7 @@ export default function Life360() {
         <Layer id={LIFE360_HOVER_LAYER} type="symbol" source={MEMBERS_SOURCE} layout={HOVER_LAYOUT} filter={hoverFilter} />
       </Source>
       {hoveredMember?.location && <Life360Tooltip member={hoveredMember} location={hoveredMember.location} />}
-      {active && activeMember?.location && <Life360Popup key={active.opened} member={activeMember} location={activeMember.location} linkStale={linkStale} onClose={closePopup} />}
+      {active && activeMember?.location && <Life360Popup key={active.opened} member={activeMember} location={activeMember.location} linkStale={linkStale} now={now} onClose={closePopup} />}
     </>
   );
 }

@@ -10,6 +10,7 @@ import {
   life360AccuracyCircles,
   life360Age,
   life360AvatarKey,
+  life360DrivingText,
   life360Features,
   life360ImageId,
   life360RimColor,
@@ -30,6 +31,16 @@ describe('life360Tone', () => {
     expect(life360Tone(byId('m-mila').location!, false, NOW)).toBe('live');
     expect(life360Tone(byId('m-lars').location!, false, NOW)).toBe('stale');
     expect(life360Tone(byId('m-jesse').location!, true, NOW)).toBe('stale');
+  });
+
+  test('driving text only for a live (not stale) driving member', () => {
+    expect(life360DrivingText(byId('m-jesse').location!, false, NOW)).toBe('Rijdt 42 km/u');
+    expect(life360DrivingText({ ...byId('m-jesse').location!, speedKmh: null }, false, NOW)).toBe('Rijdt');
+    // Logged out / paused link: the last known position, no longer driving
+    expect(life360DrivingText(byId('m-jesse').location!, true, NOW)).toBeUndefined();
+    // An old fix that still says driving
+    expect(life360DrivingText({ ...byId('m-lars').location!, driving: true, speedKmh: 30 }, false, NOW)).toBeUndefined();
+    expect(life360DrivingText(byId('m-mila').location!, false, NOW)).toBeUndefined();
   });
 
   test('rim colours: purple, green while driving, grey when stale', () => {

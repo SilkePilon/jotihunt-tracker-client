@@ -2,6 +2,7 @@ import { formatDistance } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import type { Feature, FeatureCollection, Point, Polygon } from 'geojson';
 import { isLocationStale, LIFE360_PURPLE } from '@/lib/life360';
+import { formatSpeed } from '@/lib/tracker';
 import { createCircle } from '@/lib/utils';
 import type { Life360Location, Life360Member } from '@/types/Life360';
 
@@ -16,6 +17,12 @@ export const LIFE360_STALE_GREY = '#a1a1aa';
 export function life360Tone(location: Life360Location, linkStale: boolean, now: number): Life360Tone {
   if (isLocationStale(location, linkStale, now)) return 'stale';
   return location.driving ? 'driving' : 'live';
+}
+
+/** "Rijdt 42 km/u" for the popup; undefined unless driving on a fresh fix (a stale one is only the last known spot). */
+export function life360DrivingText(location: Life360Location, linkStale: boolean, now: number): string | undefined {
+  if (life360Tone(location, linkStale, now) !== 'driving') return undefined;
+  return location.speedKmh === null ? 'Rijdt' : `Rijdt ${formatSpeed(location.speedKmh)}`;
 }
 
 export function life360RimColor(tone: Life360Tone): string {

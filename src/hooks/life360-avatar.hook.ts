@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
+import useInterval from '@/hooks/utils/interval.hook';
 
 /** A loaded member photo: an object URL for <img> and the decoded image for the map's canvas. */
 export interface Life360Avatar {
@@ -11,8 +12,9 @@ export interface Life360Avatar {
 /*
  * The API authenticates with an Authorization header, which <img src> and canvas image loads can't send. Each avatar
  * is fetched once as a blob with the header and shared by the card and the map. Kept for the session (a circle has
- * a handful of members); a failed load is forgotten, so the next poll tries again.
+ * a handful of members); a failed load is forgotten and the hooks try it again every RETRY_MS until it loads.
  */
+const RETRY_MS = 60_000;
 const pending = new Map<string, Promise<Life360Avatar | null>>();
 const loaded = new Map<string, Life360Avatar>();
 
@@ -61,6 +63,8 @@ export function getLife360Avatar(path: string): Life360Avatar | undefined {
 export function useLife360Avatar(path: string | null): string | undefined {
   const authHeader = useAuthHeader() || '';
   const [, setLoadedCount] = useState(0);
+  const [retry, setRetry] = useState(0);
+  useInterval(() => setRetry((count) => count + 1), path && !loaded.has(path) ? RETRY_MS : null);
 
   useEffect(() => {
     if (!path || loaded.has(path)) return;
@@ -71,7 +75,7 @@ export function useLife360Avatar(path: string | null): string | undefined {
     return () => {
       cancelled = true;
     };
-  }, [path, authHeader]);
+  }, [path, authHeader, retry]);
 
   return path ? loaded.get(path)?.url : undefined;
 }
@@ -81,6 +85,8 @@ export function useLife360Avatars(paths: readonly string[]): ReadonlySet<string>
   const authHeader = useAuthHeader() || '';
   const [ready, setReady] = useState<ReadonlySet<string>>(() => new Set(paths.filter((path) => loaded.has(path))));
   const key = paths.join('\n');
+  const [retry, setRetry] = useState(0);
+  useInterval(() => setRetry((count) => count + 1), paths.some((path) => !loaded.has(path)) ? RETRY_MS : null);
 
   useEffect(() => {
     let cancelled = false;
@@ -92,7 +98,7 @@ export function useLife360Avatars(paths: readonly string[]): ReadonlySet<string>
     return () => {
       cancelled = true;
     };
-  }, [key, authHeader]);
+  }, [key, authHeader, retry]);
 
   return ready;
 }

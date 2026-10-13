@@ -35,10 +35,12 @@ export default function Life360Card({ status, isError, members, onRefresh, onUnl
   }
 
   /** "ander adres": cancel the pending login and reopen the e-mail step with the old address. */
-  function otherAddress() {
-    if (status && 'email' in status) setEmailPrefill(status.email);
+  async function otherAddress() {
+    const email = status && 'email' in status ? status.email : undefined;
+    // Only after the cancel succeeded: a failed one (409) leaves the code step as it is
+    if (!(await actions.onCancel())) return;
+    if (email !== undefined) setEmailPrefill(email);
     setEmailStep(true);
-    void actions.onCancel();
   }
 
   async function unlink() {
@@ -67,7 +69,7 @@ export default function Life360Card({ status, isError, members, onRefresh, onUnl
           emailPrefill={emailPrefill}
           onOpenEmail={() => setEmailStep(true)}
           onCloseEmail={() => setEmailStep(false)}
-          onOtherAddress={otherAddress}
+          onOtherAddress={() => void otherAddress()}
           {...actions}
         />
       );
