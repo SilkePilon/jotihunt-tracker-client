@@ -32,6 +32,9 @@ export interface MapPalette {
   onWater: string;
 }
 
+/** Road-number text on Liberty's white `road_N` shield sprites, in light and dark (Android `MapStyles.SHIELD_TEXT`). */
+export const SHIELD_TEXT = '#191d17';
+
 /** The app's `LightStatusColors` / `DarkStatusColors` warn container (amber; Material 3 has no warn role). */
 const WARN_CONTAINER = { light: '#ffddb8', dark: '#693c00' };
 
@@ -173,6 +176,7 @@ export type Role =
   | 'runway'
   | 'parkOutline'
   | 'waterLabel'
+  | 'shield'
   | 'label'
   | 'keep';
 
@@ -187,6 +191,7 @@ export function roleOf(type: string, id: string): Role {
       return 'hide';
     case 'symbol':
       if (id.startsWith('poi_') || id === 'airport') return 'hide';
+      if (id.includes('shield')) return 'shield';
       return id.includes('water') ? 'waterLabel' : 'label';
     case 'fill':
       if (id === 'water') return 'water';
@@ -247,6 +252,9 @@ function paintFor(role: Role, p: MapPalette): { set: Paint; remove?: string[] } 
       return { set: { 'line-color': p.primaryContainer } };
     case 'waterLabel':
       return { set: { 'text-color': p.onWater, 'text-halo-color': p.surface } };
+    case 'shield':
+      // The road_N shield sprites are opaque white in both themes (not SDF, so not tintable): always dark text.
+      return { set: { 'text-color': SHIELD_TEXT } };
     case 'label':
       return { set: { 'text-color': p.onSurfaceVariant, 'text-halo-color': p.surface } };
     case 'hide':

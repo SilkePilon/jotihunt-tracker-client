@@ -126,7 +126,9 @@ describe('roleOf', () => {
     expect(roleOf('line', 'park_outline')).toBe('parkOutline');
     expect(roleOf('line', 'boundary_disputed')).toBe('boundary');
     expect(roleOf('symbol', 'waterway_line_label')).toBe('waterLabel');
-    expect(roleOf('symbol', 'highway-shield-non-us')).toBe('label');
+    expect(roleOf('symbol', 'highway-name-major')).toBe('label');
+    expect(roleOf('symbol', 'highway-shield-non-us')).toBe('shield');
+    expect(roleOf('symbol', 'road_shield_us')).toBe('shield');
     expect(roleOf('circle', 'something')).toBe('keep');
   });
 });
@@ -195,4 +197,62 @@ describe('materialMapStyle', () => {
     const bg = materialMapStyle(true).layers.find((l) => l.id === 'background') as { paint: Record<string, unknown> };
     expect(bg.paint['background-color']).toBe(mapPalette(MAP_SEED, true).surface);
   });
+});
+
+// ---- Label contrast: every visible label meets WCAG 4.5:1 against its own background (Android MapLabelContrastTest) ----
+
+/** WCAG 2 contrast ratio of two opaque "#rrggbb" colours (1..21). */
+function contrast(a: string, b: string): number {
+  const lum = (css: string) => {
+    if (!/^#[0-9a-f]{6}$/.test(css)) throw new Error(`not an opaque #rrggbb colour: ${css}`);
+    const ch = (i: number) => {
+      const s = Number.parseInt(css.slice(i, i + 2), 16) / 255;
+      return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+    };
+    return 0.2126 * ch(1) + 0.7152 * ch(3) + 0.0722 * ch(5);
+  };
+  const [la, lb] = [lum(a), lum(b)];
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+
+/** Liberty's `road_N` shield sprites are opaque white boxes with a grey border (not SDF, so they cannot be tinted). */
+const SHIELD_FILL = '#ffffff';
+
+function visibleLabels(p: ReturnType<typeof mapPalette>) {
+  return materialStyle(liberty, p).layers.filter((l) => {
+    const layout = (l as { layout?: Record<string, unknown> }).layout;
+    return l.type === 'symbol' && layout?.['text-field'] !== undefined && layout.visibility !== 'none';
+  });
+}
+
+describe('label contrast', () => {
+  for (const [name, p] of [
+    ['light', light],
+    ['dark', dark],
+  ] as const) {
+    test(`${name}: road-number text is dark on the white shield sprite`, () => {
+      const shields = visibleLabels(p).filter((l) => l.id.includes('shield'));
+      expect(shields).toHaveLength(3);
+      for (const l of shields) {
+        const ratio = contrast(paint(l, 'text-color') as string, SHIELD_FILL);
+        expect({ id: l.id, ok: ratio >= 4.5, ratio }).toMatchObject({ ok: true });
+      }
+    });
+
+    test(`${name}: map labels contrast with their halo and the map`, () => {
+      const grounds = { surface: p.surface, ground: p.surfaceContainerLow, landuse: p.surfaceContainer };
+      for (const l of visibleLabels(p).filter((l) => !l.id.includes('shield'))) {
+        const text = paint(l, 'text-color') as string;
+        const bgs: Record<string, string> = {
+          halo: paint(l, 'text-halo-color') as string,
+          ...grounds,
+          ...(l.id.includes('water') ? { water: p.water } : {}),
+        };
+        for (const [bg, colour] of Object.entries(bgs)) {
+          const ratio = contrast(text, colour);
+          expect({ id: l.id, bg, ok: ratio >= 4.5, ratio }).toMatchObject({ ok: true });
+        }
+      }
+    });
+  }
 });
