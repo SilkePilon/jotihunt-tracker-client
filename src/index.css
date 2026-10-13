@@ -394,3 +394,15 @@ body.dark {
     opacity: 0;
   }
 }
+
+/* HQ screen: ring around the fox the camera looks at */
+@keyframes hq-pulse {
+  from {
+    transform: scale(0.5);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
