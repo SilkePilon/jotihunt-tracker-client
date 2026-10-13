@@ -8,6 +8,7 @@ import {
   DropdownMenuSubTrigger,
 } from '@/components/ui/dropdown-menu';
 import useLayersStore from '@/stores/layers.store';
+import { useLife360Members } from '@/hooks/life360.hook';
 import { usePredictionSetting } from '@/hooks/predictions.hook';
 
 /** Keep the menu open while toggling layers */
@@ -24,6 +25,7 @@ export default function LayersSubmenu() {
       showHomeCircle: state.showHomeCircle,
       showGroupCircles: state.showGroupCircles,
       showPredictions: state.showPredictions,
+      showLife360: state.showLife360,
       toggleTeams: state.toggleTeams,
       toggleDevices: state.toggleDevices,
       toggleMarkersPart1: state.toggleMarkersPart1,
@@ -31,9 +33,12 @@ export default function LayersSubmenu() {
       toggleHomeCircle: state.toggleHomeCircle,
       toggleGroupCircles: state.toggleGroupCircles,
       togglePredictions: state.togglePredictions,
+      toggleLife360: state.toggleLife360,
     })),
   );
   const { enabled: predictionEnabled } = usePredictionSetting();
+  // Fetched while the settings menu is open, so the item also appears when the layer is off
+  const { data: life360 } = useLife360Members(true);
 
   return (
     <DropdownMenuSub>
@@ -64,6 +69,11 @@ export default function LayersSubmenu() {
           {predictionEnabled !== false && (
             <DropdownMenuCheckboxItem checked={layers.showPredictions} onCheckedChange={layers.togglePredictions} onSelect={keepOpen}>
               Voorspelling
+            </DropdownMenuCheckboxItem>
+          )}
+          {life360?.linked && (
+            <DropdownMenuCheckboxItem checked={layers.showLife360} onCheckedChange={layers.toggleLife360} onSelect={keepOpen}>
+              Life360
             </DropdownMenuCheckboxItem>
           )}
         </DropdownMenuSubContent>
