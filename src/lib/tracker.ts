@@ -80,12 +80,10 @@ export function notConfiguredText(reason: TrackerNotConfiguredReason, admin: boo
 
 /**
  * How the "Mijn tracker" section should react when `connected` changes (undefined = unknown / not configured):
- * open when we learn the phone is not connected, collapse once when it becomes connected.
+ * open when we learn the phone is not connected. Connecting leaves it open, so the user sees the green badge.
  */
-export function sectionTransition(previous: boolean | undefined, next: boolean | undefined): 'open' | 'close' | null {
-  if (next === false && previous !== false) return 'open';
-  if (next === true && previous === false) return 'close';
-  return null;
+export function sectionTransition(previous: boolean | undefined, next: boolean | undefined): 'open' | null {
+  return next === false && previous !== false ? 'open' : null;
 }
 
 const decimal = (value: number, digits: number) =>

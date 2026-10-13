@@ -97,10 +97,8 @@ describe('sectionTransition', () => {
     expect(sectionTransition(undefined, false)).toBe('open');
     expect(sectionTransition(true, false)).toBe('open');
   });
-  test('collapses once when the phone connects', () => {
-    expect(sectionTransition(false, true)).toBe('close');
-  });
-  test('no change otherwise (already connected on load, unchanged, not configured)', () => {
+  test('no change otherwise (connecting, already connected on load, unchanged, not configured)', () => {
+    expect(sectionTransition(false, true)).toBeNull();
     expect(sectionTransition(undefined, true)).toBeNull();
     expect(sectionTransition(false, false)).toBeNull();
     expect(sectionTransition(true, true)).toBeNull();

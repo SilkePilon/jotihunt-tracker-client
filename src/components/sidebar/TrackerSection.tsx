@@ -10,8 +10,8 @@ import type { Vehicle } from '@/types/Tracker';
 import SidebarSection from './SidebarSection';
 
 /**
- * "Mijn tracker": connect this user's phone as GPS tracker. Forced open while the phone is not connected,
- * collapsed once when it connects; after that the user decides (persisted like the other sections).
+ * "Mijn tracker": connect this user's phone as GPS tracker. Forced open when the phone is not connected and left
+ * open when it connects; the user collapses it (persisted like the other sections).
  */
 export default function TrackerSection() {
   const { status, isError, setVehicle } = useTrackerStatus();
@@ -27,7 +27,7 @@ export default function TrackerSection() {
   if (connected !== prevConnected) {
     setPrevConnected(connected);
     const transition = sectionTransition(prevConnected, connected);
-    if (transition) setForcedOpen(transition === 'open');
+    if (transition) setForcedOpen(true);
   }
 
   function handleOpenChange(open: boolean) {
