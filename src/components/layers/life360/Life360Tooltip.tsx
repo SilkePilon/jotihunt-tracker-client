@@ -1,7 +1,6 @@
-import { formatDistanceToNow } from 'date-fns';
-import { nl } from 'date-fns/locale';
 import MapTooltip from '@/components/map/MapTooltip';
 import { Badge } from '@/components/ui/badge';
+import { life360Age } from '@/lib/life360-map';
 import type { Life360Location, Life360Member } from '@/types/Life360';
 
 // Above the hovered 44 px cookie
@@ -12,7 +11,7 @@ export default function Life360Tooltip({ member, location }: { member: Life360Me
   return (
     <MapTooltip longitude={location.lon} latitude={location.lat} offset={TOOLTIP_OFFSET}>
       <span className="text-sm font-medium">{member.name}</span>
-      <Badge>{formatDistanceToNow(location.at, { locale: nl, addSuffix: true })}</Badge>
+      <Badge>{life360Age(location.at) ?? 'onbekend'}</Badge>
     </MapTooltip>
   );
 }

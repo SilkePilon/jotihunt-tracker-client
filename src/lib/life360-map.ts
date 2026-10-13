@@ -1,3 +1,5 @@
+import { formatDistance } from 'date-fns';
+import { nl } from 'date-fns/locale';
 import type { Feature, FeatureCollection, Point, Polygon } from 'geojson';
 import { isLocationStale, LIFE360_PURPLE } from '@/lib/life360';
 import { createCircle } from '@/lib/utils';
@@ -27,22 +29,44 @@ export interface Life360IconSpec {
   /** The avatar has loaded (else the initials are drawn) */
   photo: boolean;
   initials: string;
+  /** {@link life360AvatarKey} of the avatar path, so a changed avatar is a new image */
+  avatar: string;
 }
 
 const IMAGE_PREFIX = 'l360';
 
-/** Map image id, e.g. `l360|m-1|driving|photo|JS`; a new look (tone, photo loaded) is a new image. */
+/** Short stable hash (FNV-1a, base 36) of an avatar path; `-` without an avatar. */
+export function life360AvatarKey(avatarUrl: string | null): string {
+  if (!avatarUrl) return '-';
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < avatarUrl.length; i++) hash = Math.imul(hash ^ avatarUrl.charCodeAt(i), 0x01000193) >>> 0;
+  return hash.toString(36);
+}
+
+/** Map image id, e.g. `l360|m-1|driving|photo|JS|1x2y3z`; a new look (tone, photo loaded, avatar) is a new image. */
 export function life360ImageId(spec: Life360IconSpec): string {
-  return [IMAGE_PREFIX, spec.memberId, spec.tone, spec.photo ? 'photo' : 'initials', spec.initials].join('|');
+  return [IMAGE_PREFIX, spec.memberId, spec.tone, spec.photo ? 'photo' : 'initials', spec.initials, spec.avatar].join('|');
 }
 
 /** The spec of one of our images, undefined for any other image id. */
 export function parseLife360ImageId(id: string): Life360IconSpec | undefined {
   const parts = id.split('|');
-  if (parts.length !== 5 || parts[0] !== IMAGE_PREFIX) return undefined;
-  const [, memberId, tone, variant, initials] = parts;
-  if (!memberId || !TONES.includes(tone) || (variant !== 'photo' && variant !== 'initials')) return undefined;
-  return { memberId, tone: tone as Life360Tone, photo: variant === 'photo', initials };
+  if (parts.length !== 6 || parts[0] !== IMAGE_PREFIX) return undefined;
+  const [, memberId, tone, variant, initials, avatar] = parts;
+  if (!memberId || !avatar || !TONES.includes(tone) || (variant !== 'photo' && variant !== 'initials')) return undefined;
+  return { memberId, tone: tone as Life360Tone, photo: variant === 'photo', initials, avatar };
+}
+
+/** An accuracy worth showing (circle and popup line): a positive, finite radius. */
+export function hasUsableAccuracy(accuracyM: number): boolean {
+  return Number.isFinite(accuracyM) && accuracyM > 0;
+}
+
+/** "5 minuten geleden"; undefined for an unreadable time. */
+export function life360Age(at: string, now = Date.now()): string | undefined {
+  const time = Date.parse(at);
+  if (Number.isNaN(time)) return undefined;
+  return formatDistance(time, now, { locale: nl, addSuffix: true });
 }
 
 export interface Life360FeatureProperties {
@@ -74,7 +98,13 @@ export function life360Features(
       geometry: { type: 'Point', coordinates: [member.location.lon, member.location.lat] },
       properties: {
         id: member.id,
-        icon: life360ImageId({ memberId: member.id, tone: life360Tone(member.location, linkStale, now), photo: hasPhoto(member), initials: member.initials }),
+        icon: life360ImageId({
+          memberId: member.id,
+          tone: life360Tone(member.location, linkStale, now),
+          photo: hasPhoto(member),
+          initials: member.initials,
+          avatar: life360AvatarKey(member.avatarUrl),
+        }),
       },
     })),
   };
@@ -85,7 +115,7 @@ export function life360AccuracyCircles(members: readonly Life360Member[], linkSt
   return {
     type: 'FeatureCollection',
     features: located(members)
-      .filter((member) => Number.isFinite(member.location.accuracyM) && member.location.accuracyM > 0)
+      .filter((member) => hasUsableAccuracy(member.location.accuracyM))
       .map(
         (member) =>
           ({

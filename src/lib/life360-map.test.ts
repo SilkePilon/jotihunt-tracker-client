@@ -4,9 +4,12 @@ import { life360Fixture } from './life360-fixtures';
 import {
   coverRect,
   greyOut,
+  hasUsableAccuracy,
   LIFE360_DRIVING_GREEN,
   LIFE360_STALE_GREY,
   life360AccuracyCircles,
+  life360Age,
+  life360AvatarKey,
   life360Features,
   life360ImageId,
   life360RimColor,
@@ -38,18 +41,27 @@ describe('life360Tone', () => {
 
 describe('image ids', () => {
   test('round trip', () => {
-    const spec = { memberId: 'm-jesse', tone: 'driving' as const, photo: true, initials: 'JS' };
-    expect(life360ImageId(spec)).toBe('l360|m-jesse|driving|photo|JS');
+    const spec = { memberId: 'm-jesse', tone: 'driving' as const, photo: true, initials: 'JS', avatar: 'abc123' };
+    expect(life360ImageId(spec)).toBe('l360|m-jesse|driving|photo|JS|abc123');
     expect(parseLife360ImageId(life360ImageId(spec))).toEqual(spec);
-    expect(parseLife360ImageId('l360|m-lars|stale|initials|LB')).toEqual({ memberId: 'm-lars', tone: 'stale', photo: false, initials: 'LB' });
+    expect(parseLife360ImageId('l360|m-lars|stale|initials|LB|-')).toEqual({ memberId: 'm-lars', tone: 'stale', photo: false, initials: 'LB', avatar: '-' });
   });
 
   test('other images are not ours', () => {
     expect(parseLife360ImageId('jh|light|arrow')).toBeUndefined();
-    expect(parseLife360ImageId('l360|m-1|fast|photo|JS')).toBeUndefined();
-    expect(parseLife360ImageId('l360|m-1|live|video|JS')).toBeUndefined();
-    expect(parseLife360ImageId('l360|m-1|live|photo')).toBeUndefined();
-    expect(parseLife360ImageId('l360||live|photo|JS')).toBeUndefined();
+    expect(parseLife360ImageId('l360|m-1|fast|photo|JS|a')).toBeUndefined();
+    expect(parseLife360ImageId('l360|m-1|live|video|JS|a')).toBeUndefined();
+    expect(parseLife360ImageId('l360|m-1|live|photo|JS')).toBeUndefined();
+    expect(parseLife360ImageId('l360||live|photo|JS|a')).toBeUndefined();
+    expect(parseLife360ImageId('l360|m-1|live|photo|JS|')).toBeUndefined();
+  });
+
+  test('avatar key: short, stable, changes with the avatar, "-" without one', () => {
+    const key = life360AvatarKey('/life360/avatars/m-jesse?v=1');
+    expect(key).toMatch(/^[0-9a-z]{1,7}$/);
+    expect(life360AvatarKey('/life360/avatars/m-jesse?v=1')).toBe(key);
+    expect(life360AvatarKey('/life360/avatars/m-jesse?v=2')).not.toBe(key);
+    expect(life360AvatarKey(null)).toBe('-');
   });
 });
 
@@ -58,14 +70,41 @@ describe('life360Features', () => {
     const features = life360Features(members, false, hasPhoto, NOW).features;
     expect(features.map((feature) => feature.properties.id)).toEqual(['m-jesse', 'm-mila', 'm-lars', 'm-sem', 'm-noor']);
     expect(features[0].geometry.coordinates).toEqual([5.1214, 52.0907]);
-    expect(features[0].properties.icon).toBe('l360|m-jesse|driving|photo|JS');
-    expect(features[2].properties.icon).toBe('l360|m-lars|stale|initials|LB');
+    expect(features[0].properties.icon).toBe(`l360|m-jesse|driving|photo|JS|${life360AvatarKey(byId('m-jesse').avatarUrl)}`);
+    expect(features[2].properties.icon).toBe(`l360|m-lars|stale|initials|LB|${life360AvatarKey(byId('m-lars').avatarUrl)}`);
   });
 
   test('a stale link greys every member; a photo only once loaded', () => {
     const features = life360Features(members, true, () => false, NOW).features;
     expect(features.every((feature) => feature.properties.icon.includes('|stale|initials|'))).toBe(true);
   });
+
+  test('greys an idle member once the clock passes 15 min, without new data', () => {
+    const at = new Date(NOW - 14 * 60_000).toISOString();
+    const idle = [{ ...byId('m-mila'), location: { ...byId('m-mila').location!, at } }];
+    expect(life360Features(idle, false, hasPhoto, NOW).features[0].properties.icon).toContain('|live|');
+    expect(life360Features(idle, false, hasPhoto, NOW + 2 * 60_000).features[0].properties.icon).toContain('|stale|');
+  });
+
+  test('a new avatar is a new image', () => {
+    const jesse = byId('m-jesse');
+    const before = life360Features([jesse], false, hasPhoto, NOW).features[0].properties.icon;
+    const after = life360Features([{ ...jesse, avatarUrl: `${jesse.avatarUrl}-new` }], false, hasPhoto, NOW).features[0].properties.icon;
+    expect(after).not.toBe(before);
+  });
+});
+
+test('hasUsableAccuracy: only a positive, finite radius', () => {
+  expect(hasUsableAccuracy(12)).toBe(true);
+  expect(hasUsableAccuracy(0)).toBe(false);
+  expect(hasUsableAccuracy(-5)).toBe(false);
+  expect(hasUsableAccuracy(Number.NaN)).toBe(false);
+});
+
+test('life360Age: Dutch relative age, undefined for an unreadable time', () => {
+  expect(life360Age(new Date(NOW - 5 * 60_000).toISOString(), NOW)).toBe('5 minuten geleden');
+  expect(life360Age('not a date', NOW)).toBeUndefined();
+  expect(life360Age('', NOW)).toBeUndefined();
 });
 
 test('life360AccuracyCircles: a polygon per sharing member, in the rim colour', () => {

@@ -1,7 +1,6 @@
-import { formatDistanceToNow } from 'date-fns';
-import { nl } from 'date-fns/locale';
 import GoogleMapsButton from '@/components/map/GoogleMapsButton';
 import MapPopup from '@/components/map/MapPopup';
+import { hasUsableAccuracy, life360Age } from '@/lib/life360-map';
 import { formatAccuracy, formatBattery, formatSpeed } from '@/lib/tracker';
 import type { Life360Location, Life360Member } from '@/types/Life360';
 
@@ -24,7 +23,7 @@ export default function Life360Popup({ member, location, linkStale, onClose }: L
         <div>
           <h2 className="font-semibold">{member.name}</h2>
           <p>
-            {formatDistanceToNow(location.at, { locale: nl, addSuffix: true })}
+            {life360Age(location.at) ?? 'onbekend'}
             {linkStale && ' · laatst bekend'}
           </p>
           {location.driving && <p>Rijdt{location.speedKmh !== null && ` ${formatSpeed(location.speedKmh)}`}</p>}
@@ -32,7 +31,7 @@ export default function Life360Popup({ member, location, linkStale, onClose }: L
             Batterij: {formatBattery(location.battery ?? undefined)}
             {location.charging && ' (laadt)'}
           </p>
-          <p>Nauwkeurigheid: {formatAccuracy(location.accuracyM)}</p>
+          {hasUsableAccuracy(location.accuracyM) && <p>Nauwkeurigheid: {formatAccuracy(location.accuracyM)}</p>}
         </div>
         <GoogleMapsButton lat={location.lat} lng={location.lon} label="Navigeer" />
       </div>

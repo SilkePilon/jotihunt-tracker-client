@@ -3,6 +3,7 @@ import { Layer, Source, useMap, type FillLayerSpecification, type SymbolLayerSpe
 import type { Map as MaplibreMap } from 'maplibre-gl';
 import { getLife360Avatar, useLife360Avatars } from '@/hooks/life360-avatar.hook';
 import { useLife360Members } from '@/hooks/life360.hook';
+import useInterval from '@/hooks/utils/interval.hook';
 import { life360AccuracyCircles, life360Features, parseLife360ImageId } from '@/lib/life360-map';
 import { LIFE360_ACCURACY_LAYER, LIFE360_HOVER_LAYER, LIFE360_LAYER } from '@/lib/map-layers';
 import type { Life360Member } from '@/types/Life360';
@@ -20,6 +21,8 @@ const LAYOUT: SymbolLayerSpecification['layout'] = { 'icon-image': ['get', 'icon
 const HOVER_LAYOUT: SymbolLayerSpecification['layout'] = { ...LAYOUT, 'icon-size': 1.1 };
 const ACCURACY_PAINT: FillLayerSpecification['paint'] = { 'fill-color': ['get', 'color'], 'fill-opacity': 0.14, 'fill-outline-color': ['get', 'color'] };
 const INTERACTIVE_LAYERS = [LIFE360_LAYER];
+/** Re-decide staleness this often: SWR keeps the same members object when a poll returns the same data. */
+const STALE_TICK_MS = 30_000;
 
 /**
  * Draw and add the Life360 image `id` (see life360ImageId) unless the map has it.
@@ -50,9 +53,11 @@ export default function Life360() {
 
   const avatarPaths = useMemo(() => members.flatMap((member) => (member.avatarUrl ? [member.avatarUrl] : [])), [members]);
   const loadedAvatars = useLife360Avatars(avatarPaths);
-  // Staleness is decided on each poll (every 15 s), like the hunters
-  const features = useMemo(() => life360Features(members, linkStale, (member) => !!member.avatarUrl && loadedAvatars.has(member.avatarUrl)), [members, linkStale, loadedAvatars]);
-  const circles = useMemo(() => life360AccuracyCircles(members, linkStale), [members, linkStale]);
+  // Staleness is decided on each poll and on a coarse clock tick, so an idle member greys out on time
+  const [now, setNow] = useState(() => Date.now());
+  useInterval(() => setNow(Date.now()), data?.linked ? STALE_TICK_MS : null);
+  const features = useMemo(() => life360Features(members, linkStale, (member) => !!member.avatarUrl && loadedAvatars.has(member.avatarUrl), now), [members, linkStale, loadedAvatars, now]);
+  const circles = useMemo(() => life360AccuracyCircles(members, linkStale, now), [members, linkStale, now]);
 
   // The image drawer looks up avatar paths through a ref, so the styleimagemissing listener stays subscribed
   const avatarOf = useRef(new Map<string, string | null>());
