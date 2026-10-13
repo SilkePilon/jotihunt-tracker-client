@@ -73,3 +73,8 @@ export function buildPredictionMap(
   }
   return { lines: { type: 'FeatureCollection', features: lines }, pins };
 }
+
+/** The group popup's house button: mark visited, or (when manually visited) hand the group back to the AI. */
+export function nextVisitChoice(selection: VisitChoice): VisitChoice {
+  return selection === 'visited' ? 'auto' : 'visited';
+}

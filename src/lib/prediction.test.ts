@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { Prediction } from '@/types/Prediction';
-import { ageLabel, buildPredictionMap, CONFIDENCE_LEVEL, predictionStatusText, predictionSummary, visitSelection, visitStatusText } from './prediction';
+import { ageLabel, buildPredictionMap, CONFIDENCE_LEVEL, nextVisitChoice, predictionStatusText, predictionSummary, visitSelection, visitStatusText } from './prediction';
 
 function prediction(overrides: Partial<Prediction> = {}): Prediction {
   return {
@@ -62,5 +62,13 @@ describe('prediction helpers', () => {
       [5.48, 52.08],
       [5.5, 52.09],
     ]);
+  });
+});
+
+describe('nextVisitChoice', () => {
+  test('the house button marks visited, and from visited goes back to the AI', () => {
+    expect(nextVisitChoice('auto')).toBe('visited');
+    expect(nextVisitChoice('not_visited')).toBe('visited');
+    expect(nextVisitChoice('visited')).toBe('auto');
   });
 });

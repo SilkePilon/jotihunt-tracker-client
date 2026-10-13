@@ -1,13 +1,17 @@
 import { useState } from 'react';
+import { MapPinIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import MapPopup from '../../map/MapPopup';
-import GoogleMapsButton from '../../map/GoogleMapsButton';
-import VisitControls from '../../map/VisitControls';
+import { MapsAction, PopupActions } from '../../map/popup/PopupActions';
+import { PopupFact, PopupFacts } from '../../map/popup/PopupFacts';
+import PopupHeader from '../../map/popup/PopupHeader';
 import TeamLogo from '../../map/TeamLogo';
-import { Badge } from '@/components/ui/badge';
+import { VisitStatusFact, VisitToggleButton } from '../../map/VisitControls';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAreas } from '@/hooks/areas.hook';
+import { useDistanceFromMe } from '@/hooks/distance-from-me.hook';
 import { usePredictionSetting } from '@/hooks/predictions.hook';
+import { joinParts } from '@/lib/format';
 import { getColorFromArea } from '@/lib/utils';
 import type { Team } from '@/types/Team';
 
@@ -31,6 +35,9 @@ export default function TeamPopup({ team, onClose, setTeamArea }: TeamPopupProps
   // Optimistic area while saving; dropped once the save settles, so the (revalidated) team list shows the outcome
   const [pendingArea, setPendingArea] = useState<{ teamId: string; area: string | undefined }>();
   const area = pendingArea?.teamId === team._id ? pendingArea.area : team.area;
+  const [lng, lat] = team.location.coordinates;
+  const distance = useDistanceFromMe(lat, lng);
+  const showVisits = !!area && predictionEnabled !== false;
 
   /**
    * Handle area change from the select.
@@ -47,50 +54,52 @@ export default function TeamPopup({ team, onClose, setTeamArea }: TeamPopupProps
     if (!saved) toast.error('Deelgebied opslaan mislukt');
   }
 
-  const [lng, lat] = team.location.coordinates;
+  const address = `${team.street} ${team.houseNumber}${team.housenumberAddition ? ` ${team.housenumberAddition}` : ''}, ${team.city}`;
 
   return (
     <MapPopup longitude={lng} latitude={lat} onClose={onClose} offset={POPUP_OFFSET}>
-      <div className="mr-5 flex w-64 flex-col gap-2 text-sm">
-        <div className="flex items-center gap-2.5">
-          <TeamLogo name={team.name} logoUrl={team.logoUrl} className="size-11 rounded-lg" />
-          <div className="min-w-0">
-            <h2 className="font-semibold leading-tight">{team.name}</h2>
-            <div className="mt-1">
-              {area ? (
-                <Badge className="border-0 text-white capitalize" style={{ backgroundColor: getColorFromArea(area) }}>
-                  {area}
-                </Badge>
-              ) : (
-                <span className="text-xs text-muted-foreground">Geen deelgebied</span>
-              )}
-            </div>
-          </div>
-        </div>
-        <p className="text-xs leading-snug text-muted-foreground">
-          {team.accomodation} · {team.street} {team.houseNumber}
-          {team.housenumberAddition ? ` ${team.housenumberAddition}` : ''}, {team.postCode} {team.city}
-        </p>
-        {area && predictionEnabled !== false && <VisitControls teamApiId={team.apiId} />}
-        <div className="flex flex-col gap-2">
-          {TEAMS_AREA_EDITING && (
-            <Select onValueChange={handleAreaChange} value={area ?? 'onbekend'}>
-              <SelectTrigger autoFocus={false} className="w-full">
-                <SelectValue placeholder="Kies deelgebied..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="onbekend">Onbekend deelgebied</SelectItem>
-                {areas?.map((option) => (
-                  <SelectItem key={option._id} value={option.name}>
-                    {option.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-          <GoogleMapsButton lat={lat} lng={lng} />
-        </div>
-      </div>
+      <PopupHeader
+        icon={<TeamLogo name={team.name} logoUrl={team.logoUrl} className="size-8 rounded-[10px] border-0 shadow-none" />}
+        title={team.name}
+        subtitle={
+          <>
+            {area ? (
+              <span className="font-semibold capitalize" style={{ color: getColorFromArea(area) }}>
+                ● {area}
+              </span>
+            ) : (
+              'Geen deelgebied'
+            )}
+            {distance && ` · ${distance}`}
+          </>
+        }
+      />
+      <PopupFacts>
+        <PopupFact>
+          <MapPinIcon />
+          <span className="truncate">{joinParts(team.accomodation, address)}</span>
+        </PopupFact>
+        {showVisits && <VisitStatusFact teamApiId={team.apiId} />}
+      </PopupFacts>
+      {TEAMS_AREA_EDITING && (
+        <Select onValueChange={handleAreaChange} value={area ?? 'onbekend'}>
+          <SelectTrigger autoFocus={false} size="sm" className="mt-2 w-full">
+            <SelectValue placeholder="Kies deelgebied..." />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="onbekend">Onbekend deelgebied</SelectItem>
+            {areas?.map((option) => (
+              <SelectItem key={option._id} value={option.name}>
+                {option.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+      <PopupActions>
+        <MapsAction lat={lat} lng={lng} label="Google Maps" />
+        {showVisits && <VisitToggleButton teamApiId={team.apiId} />}
+      </PopupActions>
     </MapPopup>
   );
 }
