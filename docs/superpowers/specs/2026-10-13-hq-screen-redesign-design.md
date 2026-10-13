@@ -32,8 +32,8 @@ clock, plain list) and a pulsing full-screen colour flash on every alert. All of
   3. **Hunts card** (fills remaining height): title "Hunts" + summary "laatste 3", the 3 newest reports rendered with
      `HuntTimelineItem` (no-op `onSelect`). A newly arrived report slides in (fade + translate, 1 s, decelerate).
 
-All sizes are em-based from one root font size on the HQ container (`font-size: 1.3cqw` equivalent, i.e. scales with
-the viewport width), so the screen looks the same at 1080p and on a beamer. Colours only from theme tokens and the
+All sizes scale with the viewport: while `/hq` is mounted the root font size is set to `1.3vw` (restored on unmount),
+so every rem-based class (including reused components like `HuntTimelineItem`) scales, so the screen looks the same at 1080p and on a beamer. Colours only from theme tokens and the
 existing group colours (`text-green-700 dark:text-green-400`, etc.). System font, `tabular-nums` on every number.
 
 ## Map director
@@ -68,7 +68,7 @@ tour resumes from where it was.
 | New hunt | new id in `useHuntReports` (after first load) | fly to area focus, zoom 12.4 | "Hunt op Bravo!" · code · reporter · cooldown started |
 | Cooldown over | client clock: area's cooldown crosses 0 | fly to area focus | "Foxtrot is weer te hunten" |
 | Tegenhunt | notification feed `counter-hunt` | fly to home team (clubhouse), zoom ~12.2, sector visible | "Tegenhunt!" · direction |
-| Broadcast, new hint, article, hunt deadline, happy hour | notification feed | **no camera move** (tour keeps running) | card only |
+| Broadcast, new hint, article, hunt deadline, happy hour | notification feed | **no camera move** (camera holds where it is while the card shows) | card only |
 
 Duplicate events for the same thing within the hold window are collapsed (e.g. a hunt and its status change).
 
