@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, type RefObject } from 'react';
+import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import type { MapRef } from '@/components/Map';
-import { AREA_ZOOM, eventHoldMs, FLY_MS, HOME_ZOOM, homeTarget, teamsBounds, tourStops, TOUR_DWELL_MS, type HqFox, type LngLat } from '@/lib/hq-director';
+import { AREA_ZOOM, eventHoldMs, eventTarget, FLY_MS, teamsBounds, tourStops, TOUR_DWELL_MS, type HqFox } from '@/lib/hq-director';
 import useHqDirectorStore from '@/stores/hq-director.store';
 import type { Team } from '@/types/Team';
 
@@ -20,51 +20,48 @@ export function useHqDirector({ mapRef, foxes, teams, homeTeam }: { mapRef: RefO
   const stopIndex = tourIndex % stops.length;
   const stop = stops[stopIndex];
 
+  // The event's flight target, fixed when its step starts: a centre that turns up halfway doesn't move the camera,
+  // so the highlight and the hold time follow what the camera actually did
+  const [shot, setShot] = useState(() => ({ step, target: current ? eventTarget(current, foxes, homeTeam) : null }));
+  if (shot.step !== step) setShot({ step, target: current ? eventTarget(current, foxes, homeTeam) : null });
+  const target = shot.step === step ? shot.target : null;
+
   // Read by the step effect: the data changes every second, the camera only per step
-  const latest = useRef({ stop, foxes, teams, homeTeam, current });
+  const latest = useRef({ stop, teams, current, target });
   useEffect(() => {
-    latest.current = { stop, foxes, teams, homeTeam, current };
+    latest.current = { stop, teams, current, target };
   });
 
   // The step the overview was last fitted for; the teams usually load after the first (overview) step started
   const overviewFitStep = useRef<number | null>(null);
 
   useEffect(() => {
-    const { stop, foxes, teams, homeTeam, current } = latest.current;
+    const { stop, teams, current, target } = latest.current;
     const map = mapRef.current;
-    const fly = (center: LngLat, zoom: number) => map?.flyTo({ center, zoom, ...FLIGHT });
     if (current) {
-      const camera = current.camera;
-      if (camera?.kind === 'area') {
-        const center = foxes.find((fox) => fox.key === camera.area)?.center;
-        if (center) fly(center, camera.zoom);
-      } else if (camera?.kind === 'home' && homeTeam) {
-        fly(homeTarget(homeTeam.location.coordinates as LngLat, camera.direction), HOME_ZOOM);
-      }
+      if (target) map?.flyTo({ ...target, ...FLIGHT });
     } else if (stop.kind === 'area') {
-      fly(stop.center, AREA_ZOOM);
+      map?.flyTo({ center: stop.center, zoom: AREA_ZOOM, ...FLIGHT });
     } else {
       const bounds = teamsBounds(teams);
-      if (bounds) {
-        map?.fitBounds(bounds, { padding: OVERVIEW_PADDING, duration: FLY_MS });
-        overviewFitStep.current = step;
-      }
+      if (bounds && map?.fitBounds(bounds, { padding: OVERVIEW_PADDING, duration: FLY_MS })) overviewFitStep.current = step;
     }
-    const timer = setTimeout(advance, current ? eventHoldMs(current) : FLY_MS + TOUR_DWELL_MS);
+    const timer = setTimeout(advance, current ? eventHoldMs(target !== null) : FLY_MS + TOUR_DWELL_MS);
     return () => clearTimeout(timer);
   }, [step, mapRef, advance]);
 
-  // Teams arrived during the overview stop: fit it now, without restarting the step's timer
-  const overviewReady = !current && stop.kind === 'overview' && teamsBounds(teams) !== null;
+  // The overview stop wasn't fitted yet (teams or the map arrived later): fit it now, without restarting the step's
+  // timer. Runs after every render (the clock re-renders every second), as the map ref filling in doesn't re-render.
+  const overviewPending = !current && stop.kind === 'overview';
   useEffect(() => {
+    if (!overviewPending || overviewFitStep.current === step) return;
     const bounds = teamsBounds(latest.current.teams);
-    if (!overviewReady || !bounds || overviewFitStep.current === step) return;
-    mapRef.current?.fitBounds(bounds, { padding: OVERVIEW_PADDING, duration: FLY_MS });
-    overviewFitStep.current = step;
-  }, [overviewReady, step, mapRef]);
+    if (bounds && mapRef.current?.fitBounds(bounds, { padding: OVERVIEW_PADDING, duration: FLY_MS })) overviewFitStep.current = step;
+  });
 
   useEffect(() => reset, [reset]);
 
-  const focusArea = current ? (current.camera?.kind === 'area' ? current.camera.area : null) : stop.kind === 'area' ? stop.area : null;
-  return { current, queued: queue.length, stop, stopIndex, stopCount: stops.length, step, focusArea };
+  const focusArea = current ? (target && current.camera?.kind === 'area' ? current.camera.area : null) : stop.kind === 'area' ? stop.area : null;
+  const holdMs = current ? eventHoldMs(target !== null) : 0;
+  return { current, queued: queue.length, stop, stopIndex, stopCount: stops.length, step, focusArea, holdMs };
 }

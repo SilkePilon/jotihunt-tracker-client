@@ -4,6 +4,7 @@ import type { Hunt } from '@/types/Hunt';
 import type { HuntReport } from '@/types/HuntReport';
 import type { Prediction } from '@/types/Prediction';
 import type { Team } from '@/types/Team';
+import { counterHuntDirection, counterHuntTitle } from './counter-hunt';
 import { huntCooldownMs, lastHuntTimeFor } from './fox-status';
 import { formatClock, joinParts } from './format';
 import type { AppNotification } from './notifications';
@@ -102,9 +103,13 @@ export function homeTarget(home: LngLat, direction: number | null): LngLat {
 export type HqTone = 'ok' | 'warn' | 'danger' | 'neutral';
 export type HqCamera = { kind: 'area'; area: string; zoom: number } | { kind: 'home'; direction: number | null };
 
+/** Where an event came from; a queued hunt is not replaced by a status change on the same area. */
+export type HqEventKind = 'hunt' | 'fox-status' | 'cooldown' | 'counter-hunt' | 'message';
+
 /** Something shown in the event card; `key` collapses repeats (e.g. a hunt and its status change on one area). */
 export interface HqEvent {
   key: string;
+  kind: HqEventKind;
   title: string;
   detail: string;
   tone: HqTone;
@@ -112,9 +117,20 @@ export interface HqEvent {
   camera: HqCamera | null;
 }
 
+/** Where the camera flies for an event; null when it holds still (no camera, a fox without a centre, or no home team yet). */
+export function eventTarget(event: HqEvent, foxes: HqFox[], homeTeam: Team | undefined): { center: LngLat; zoom: number } | null {
+  const camera = event.camera;
+  if (camera?.kind === 'area') {
+    const center = foxes.find((fox) => fox.key === camera.area)?.center;
+    return center ? { center, zoom: camera.zoom } : null;
+  }
+  if (camera?.kind === 'home' && homeTeam) return { center: homeTarget(homeTeam.location.coordinates as LngLat, camera.direction), zoom: HOME_ZOOM };
+  return null;
+}
+
 /** How long an event stays on screen: 30 s after the flight, or just 30 s when the camera holds still. */
-export function eventHoldMs(event: HqEvent): number {
-  return event.camera ? FLY_MS + EVENT_HOLD_MS : EVENT_HOLD_MS;
+export function eventHoldMs(flies: boolean): number {
+  return flies ? FLY_MS + EVENT_HOLD_MS : EVENT_HOLD_MS;
 }
 
 const STATUS_WORD: Record<string, string> = { green: 'Actief', orange: 'Onderweg', red: 'Inactief' };
@@ -129,20 +145,32 @@ export function eventFromNotification(notification: AppNotification): HqEvent | 
       const previous = data.previousStatus && STATUS_WORD[data.previousStatus];
       return {
         key: `area:${area}`,
+        kind: 'fox-status',
         title: `${capitalizeFirstLetter(area)} is ${STATUS_WORD[status] ?? status}`,
         detail: previous ? `Was ${previous}` : body,
         tone: status === 'green' ? 'ok' : status === 'orange' ? 'warn' : 'neutral',
         camera: { kind: 'area', area, zoom: AREA_ZOOM },
       };
     }
-    case 'counter-hunt':
-      return { key: 'counter-hunt', title: title || 'Tegenhunt!', detail: body, tone: 'danger', camera: { kind: 'home', direction: data.direction ?? null } };
+    case 'counter-hunt': {
+      const direction = data.direction ?? null;
+      // The server's text says "richting oost" where the client says "uit het oosten": show only the client's wording
+      const known = counterHuntDirection(direction) !== undefined;
+      return {
+        key: `counter-hunt:${id}`,
+        kind: 'counter-hunt',
+        title: known ? counterHuntTitle(direction) : title || 'Tegenhunt!',
+        detail: known ? 'Zoek de sticker binnen 500 m van het clubhuis' : body,
+        tone: 'danger',
+        camera: { kind: 'home', direction },
+      };
+    }
     case 'broadcast':
     case 'hunt-deadline':
     case 'happy-hour':
-      return { key: id, title, detail: body, tone: 'warn', camera: null };
+      return { key: id, kind: 'message', title, detail: body, tone: 'warn', camera: null };
     default:
-      return { key: id, title, detail: body, tone: 'neutral', camera: null };
+      return { key: id, kind: 'message', title, detail: body, tone: 'neutral', camera: null };
   }
 }
 
@@ -156,6 +184,7 @@ export function huntEvent(report: HuntReport): HqEvent {
   const area = report.area.toLowerCase();
   return {
     key: `area:${area}`,
+    kind: 'hunt',
     title: `Hunt op ${capitalizeFirstLetter(area)}!`,
     detail: joinParts(report.huntCode ?? 'Code wordt gelezen', `door ${report.reportedByName}`, 'cooldown gestart'),
     tone: 'ok',
@@ -172,6 +201,7 @@ export function endedCooldowns(previous: ReadonlyMap<string, number> | null, fox
 export function cooldownEvent(fox: HqFox): HqEvent {
   return {
     key: `area:${fox.key}`,
+    kind: 'cooldown',
     title: `${fox.name} is weer te hunten`,
     detail: fox.lastHunt ? `Cooldown voorbij · laatste hunt ${formatClock(fox.lastHunt)}` : 'Cooldown voorbij',
     tone: 'ok',
@@ -189,12 +219,16 @@ export interface DirectorState {
 
 export const INITIAL_DIRECTOR: DirectorState = { current: null, queue: [], tourIndex: 0, step: 0 };
 
-/** Queue events (FIFO); a repeat of what's on screen is dropped, a repeat of a queued one replaces it. The first event interrupts the tour. */
+/**
+ * Queue events (FIFO); a repeat of what's on screen is dropped, a repeat of a queued one replaces it (but a status change
+ * doesn't replace a queued hunt: the hunt card says more). The first event interrupts the tour.
+ */
 export function enqueue(state: DirectorState, events: HqEvent[]): DirectorState {
   let queue = state.queue;
   for (const event of events) {
     if (state.current?.key === event.key) continue;
     const index = queue.findIndex((queued) => queued.key === event.key);
+    if (index >= 0 && queue[index].kind === 'hunt' && event.kind === 'fox-status') continue;
     queue = index >= 0 ? queue.map((queued, i) => (i === index ? event : queued)) : [...queue, event];
   }
   if (state.current || queue.length === 0) return { ...state, queue };

@@ -53,7 +53,8 @@ type FitBoundsArgs = Parameters<MaplibreMap["fitBounds"]>;
 export interface MapRef {
     flyTo(options: FlyToOpts): void;
 
-    fitBounds(bounds: FitBoundsArgs[0], options?: FitBoundsArgs[1]): void;
+    /** False while the map isn't created yet (react-map-gl fills its ref after the first render). */
+    fitBounds(bounds: FitBoundsArgs[0], options?: FitBoundsArgs[1]): boolean;
 
     markPoint(lngLat: LngLat): void;
 }
@@ -102,7 +103,9 @@ const Map = forwardRef<MapRef, MapProps>(({className, wall = false, overlay}, re
             }
         },
         fitBounds: (bounds, options) => {
-            mapRef.current?.fitBounds(bounds, options);
+            if (!mapRef.current) return false;
+            mapRef.current.fitBounds(bounds, options);
+            return true;
         },
         markPoint: (lngLat: LngLat) => {
             if (mapRef.current) {

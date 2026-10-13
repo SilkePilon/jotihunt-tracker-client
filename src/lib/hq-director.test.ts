@@ -6,6 +6,7 @@ import {
   endedCooldowns,
   enqueue,
   EVENT_HOLD_MS,
+  eventTarget,
   eventFromNotification,
   eventHoldMs,
   FLY_MS,
@@ -101,12 +102,13 @@ describe('homeTarget', () => {
 });
 
 const note = (type: AppNotification['type'], data: AppNotification['data'] = {}): AppNotification => ({ id: `n-${type}`, type, title: 'Titel', body: 'Tekst', urgent: true, data, createdAt: '' });
-const ev = (key: string): HqEvent => ({ key, title: key, detail: '', tone: 'neutral', camera: null });
+const ev = (key: string, kind: HqEvent['kind'] = 'message'): HqEvent => ({ key, kind, title: key, detail: '', tone: 'neutral', camera: null });
 
 describe('eventFromNotification', () => {
   test('fox status flies to the area', () => {
     expect(eventFromNotification(note('fox-status', { area: 'Delta', status: 'green', previousStatus: 'orange' }))).toEqual({
       key: 'area:delta',
+      kind: 'fox-status',
       title: 'Delta is Actief',
       detail: 'Was Onderweg',
       tone: 'ok',
@@ -116,12 +118,30 @@ describe('eventFromNotification', () => {
   test('fox status without an area is ignored', () => expect(eventFromNotification(note('fox-status', { status: 'green' }))).toBeNull());
   test('tegenhunt flies home with the direction', () => {
     const event = eventFromNotification(note('counter-hunt', { direction: 90 }))!;
+    expect(event.kind).toBe('counter-hunt');
     expect(event.tone).toBe('danger');
     expect(event.camera).toEqual({ kind: 'home', direction: 90 });
   });
+  test('tegenhunt: the direction in the title, the task in the detail (no server body that says "richting")', () => {
+    const event = eventFromNotification(note('counter-hunt', { direction: 45 }))!;
+    expect(event.title).toBe('Tegenhunt uit het noordoosten');
+    expect(event.detail).toBe('Zoek de sticker binnen 500 m van het clubhuis');
+  });
+  test('tegenhunt without a known direction: the notification title and body', () => {
+    const event = eventFromNotification(note('counter-hunt'))!;
+    expect(event.title).toBe('Titel');
+    expect(event.detail).toBe('Tekst');
+    expect(eventFromNotification({ ...note('counter-hunt'), title: '' })!.title).toBe('Tegenhunt!');
+  });
+  test('every tegenhunt gets its own key, so a second one is not dropped', () => {
+    const first = eventFromNotification({ ...note('counter-hunt', { direction: 0 }), id: 'a' })!;
+    const second = eventFromNotification({ ...note('counter-hunt', { direction: 90 }), id: 'b' })!;
+    expect(first.key).not.toBe(second.key);
+    expect(enqueue(enqueue(INITIAL_DIRECTOR, [first]), [second]).queue).toEqual([second]);
+  });
   test('broadcast, deadline and happy hour: warn card, no camera', () => {
     for (const type of ['broadcast', 'hunt-deadline', 'happy-hour'] as const) {
-      expect(eventFromNotification(note(type))).toEqual({ key: `n-${type}`, title: 'Titel', detail: 'Tekst', tone: 'warn', camera: null });
+      expect(eventFromNotification(note(type))).toEqual({ key: `n-${type}`, kind: 'message', title: 'Titel', detail: 'Tekst', tone: 'warn', camera: null });
     }
   });
   test('hint and article: neutral card, no camera', () => expect(eventFromNotification(note('hint'))?.tone).toBe('neutral'));
@@ -134,6 +154,7 @@ describe('new hunts', () => {
   test('hunt event', () => {
     expect(huntEvent(report('b'))).toEqual({
       key: 'area:bravo',
+      kind: 'hunt',
       title: 'Hunt op Bravo!',
       detail: '7KQ2XM · door Jesse · cooldown gestart',
       tone: 'ok',
@@ -152,6 +173,7 @@ describe('ended cooldowns', () => {
   test('cooldown event', () => {
     expect(cooldownEvent({ ...fox('foxtrot', 'green'), lastHunt: '2026-10-17T18:31:00Z' })).toEqual({
       key: 'area:foxtrot',
+      kind: 'cooldown',
       title: 'Foxtrot is weer te hunten',
       detail: 'Cooldown voorbij · laatste hunt 20:31',
       tone: 'ok',
@@ -172,6 +194,14 @@ describe('director queue', () => {
     expect(state.queue.map((e) => e.title)).toEqual(['nieuw', 'c']);
     expect(state.step).toBe(1);
   });
+  test('a status change does not replace a queued hunt on the same area', () => {
+    const state = enqueue(enqueue(INITIAL_DIRECTOR, [ev('a'), ev('area:bravo', 'hunt')]), [ev('area:bravo', 'fox-status')]);
+    expect(state.queue.map((e) => e.kind)).toEqual(['hunt']);
+  });
+  test('a hunt still replaces a queued status change on the same area', () => {
+    const state = enqueue(enqueue(INITIAL_DIRECTOR, [ev('a'), ev('area:bravo', 'fox-status')]), [ev('area:bravo', 'hunt')]);
+    expect(state.queue.map((e) => e.kind)).toEqual(['hunt']);
+  });
   test('an event for what is on screen is dropped', () => expect(enqueue(enqueue(INITIAL_DIRECTOR, [ev('a')]), [ev('a')]).queue).toEqual([]));
   test('advance plays the queue, then resumes the tour at the next stop', () => {
     let state = enqueue({ ...INITIAL_DIRECTOR, tourIndex: 2 }, [ev('a'), ev('b')]);
@@ -186,14 +216,24 @@ describe('director queue', () => {
 });
 
 describe('eventHoldMs', () => {
-  const event = (camera: HqEvent['camera']): HqEvent => ({ key: 'k', title: 't', detail: 'd', tone: 'neutral', camera });
+  test('no flight: 30 s', () => expect(eventHoldMs(false)).toBe(EVENT_HOLD_MS));
+  test('with a flight: 30 s after the flight', () => expect(eventHoldMs(true)).toBe(FLY_MS + EVENT_HOLD_MS));
+});
 
-  test('an event without a camera holds 30 s, no flight', () => {
-    expect(eventHoldMs(event(null))).toBe(EVENT_HOLD_MS);
-  });
+describe('eventTarget', () => {
+  const event = (camera: HqEvent['camera']): HqEvent => ({ key: 'k', kind: 'message', title: 't', detail: 'd', tone: 'neutral', camera });
+  const home = { location: { type: 'Point', coordinates: [5.5, 52.1] } } as Team;
 
-  test('an event with a camera holds 30 s after the flight', () => {
-    expect(eventHoldMs(event({ kind: 'area', area: 'alpha', zoom: 12.4 }))).toBe(FLY_MS + EVENT_HOLD_MS);
-    expect(eventHoldMs(event({ kind: 'home', direction: null }))).toBe(FLY_MS + EVENT_HOLD_MS);
+  test('no camera: no flight', () => expect(eventTarget(event(null), [fox('alpha', 'green')], home)).toBeNull());
+  test('area: the fox centre at the event zoom', () => {
+    expect(eventTarget(event({ kind: 'area', area: 'alpha', zoom: 12.4 }), [fox('alpha', 'green', [5.1, 52.2])], home)).toEqual({ center: [5.1, 52.2], zoom: 12.4 });
   });
+  test('area whose fox has no centre: no flight', () => {
+    expect(eventTarget(event({ kind: 'area', area: 'alpha', zoom: 12.4 }), [fox('alpha', 'green', null)], home)).toBeNull();
+    expect(eventTarget(event({ kind: 'area', area: 'alpha', zoom: 12.4 }), [], home)).toBeNull();
+  });
+  test('home: the clubhouse at the tegenhunt zoom', () => {
+    expect(eventTarget(event({ kind: 'home', direction: null }), [], home)).toEqual({ center: [5.5, 52.1], zoom: 12.2 });
+  });
+  test('home before the home team is known: no flight', () => expect(eventTarget(event({ kind: 'home', direction: 90 }), [], undefined)).toBeNull());
 });

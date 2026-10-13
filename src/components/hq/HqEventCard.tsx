@@ -2,16 +2,18 @@ import { useState } from 'react';
 import StepDots from '@/components/tour/StepDots';
 import TimerRing from '@/components/tour/TimerRing';
 import CookieBadge from '@/components/tracker/CookieBadge';
-import { eventHoldMs, type HqEvent, type HqTone } from '@/lib/hq-director';
+import { type HqEvent, type HqTone } from '@/lib/hq-director';
 import { cn } from '@/lib/utils';
 
 const RING_CLASS: Record<HqTone, string> = { ok: 'stroke-green-500', warn: 'stroke-amber-500', danger: 'stroke-red-600', neutral: 'stroke-primary' };
 
-/** Bottom of the map: the current event, its hold time (tour ring in the event colour) and how many are queued (tour dots). */
-export default function HqEventCard({ event, queued, step }: { event: HqEvent | null; queued: number; step: number }) {
+/** Bottom of the map: the current event, its hold time (`holdMs`, from the director) (tour ring in the event colour) and how many are queued (tour dots). */
+export default function HqEventCard({ event, queued, step, holdMs }: { event: HqEvent | null; queued: number; step: number; holdMs: number }) {
   // Keep the last event while the card slides out
   const [shown, setShown] = useState(event);
+  const [shownHoldMs, setShownHoldMs] = useState(holdMs);
   if (event && event !== shown) setShown(event);
+  if (event && holdMs !== shownHoldMs) setShownHoldMs(holdMs);
 
   return (
     <div
@@ -23,7 +25,7 @@ export default function HqEventCard({ event, queued, step }: { event: HqEvent | 
     >
       {shown && (
         <>
-          <TimerRing className="size-16 shrink-0" durationMs={eventHoldMs(shown)} runKey={step} progressClassName={RING_CLASS[shown.tone]}>
+          <TimerRing className="size-16 shrink-0" durationMs={shownHoldMs} runKey={step} progressClassName={RING_CLASS[shown.tone]}>
             <CookieBadge tone={shown.tone} size={44} glyph={shown.tone === 'neutral' ? 'i' : undefined} className="size-11" />
           </TimerRing>
           <div className="min-w-0 flex-1">

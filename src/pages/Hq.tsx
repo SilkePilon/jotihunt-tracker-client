@@ -93,7 +93,7 @@ function HqScreen({ onUnauthorized }: { onUnauthorized: () => void }) {
           <TourChip stop={director.stop} index={director.stopIndex} count={director.stopCount} step={director.step} hidden={!!director.current} />
         </ErrorBoundary>
         <ErrorBoundary name="De melding" className="absolute inset-x-4 bottom-4 z-10">
-          <HqEventCard event={director.current} queued={director.queued} step={director.step} />
+          <HqEventCard event={director.current} queued={director.queued} step={director.step} holdMs={director.holdMs} />
         </ErrorBoundary>
       </div>
       <aside className="flex min-h-0 flex-col gap-2 p-3">
