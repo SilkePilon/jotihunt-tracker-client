@@ -22,7 +22,8 @@ export function formatCountdown(ms: number): string {
 /** "350 m van jou" / "2,4 km van jou" for the popups; undefined when unknown or under 20 m (that is you). */
 export function formatDistanceFromMe(metres: number | undefined): string | undefined {
   if (metres === undefined || !Number.isFinite(metres) || metres < 20) return undefined;
-  if (metres < 1000) return `${Math.round(metres)} m van jou`;
+  const rounded = Math.round(metres);
+  if (rounded < 1000) return `${rounded} m van jou`;
   return `${(metres / 1000).toFixed(1).replace('.', ',')} km van jou`;
 }
 

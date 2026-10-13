@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
-import { distanceMetres, ownTrackerPosition } from './own-position';
+import { distanceMetres, ownDeviceId, ownTrackerPosition } from './own-position';
+import type { Device } from '@/types/Device';
 import type { Position } from '@/types/Position';
 
 const NOW = Date.parse('2026-10-17T12:00:00Z');
@@ -44,5 +45,23 @@ describe('ownTrackerPosition', () => {
     expect(ownTrackerPosition(undefined, 7, NOW)).toBeUndefined();
     expect(ownTrackerPosition([position(1, '2026-10-17T11:59:00Z')], 7, NOW)).toBeUndefined();
     expect(ownTrackerPosition([position(7, '2026-10-17T11:50:00Z')], 7, NOW)).toBeUndefined();
+  });
+});
+
+describe('ownDeviceId', () => {
+  const devices = [
+    { id: 0, uniqueId: 'abc' },
+    { id: 7, uniqueId: 'xyz' },
+  ] as Device[];
+
+  test('the device id whose uniqueId matches the own tracker (id 0 is valid)', () => {
+    expect(ownDeviceId(devices, 'xyz')).toBe(7);
+    expect(ownDeviceId(devices, 'abc')).toBe(0);
+  });
+
+  test('undefined when there is no uniqueId, no devices or no match', () => {
+    expect(ownDeviceId(devices, undefined)).toBeUndefined();
+    expect(ownDeviceId(undefined, 'xyz')).toBeUndefined();
+    expect(ownDeviceId(devices, 'nope')).toBeUndefined();
   });
 });

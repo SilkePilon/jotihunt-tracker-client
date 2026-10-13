@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
-import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import { useDevices } from '@/hooks/devices.hook';
 import { useNow } from '@/hooks/now.hook';
+import { useTrackerStatus } from '@/hooks/tracker.hook';
 import { formatDistanceFromMe } from '@/lib/format';
-import { distanceMetres, ownTrackerPosition, type LatLng } from '@/lib/own-position';
-import type { User } from '@/types/User';
+import { distanceMetres, ownDeviceId, ownTrackerPosition, type LatLng } from '@/lib/own-position';
 
 /** The browser's position, only when location access was already granted: never prompts. */
 function useGrantedBrowserPosition(): LatLng | undefined {
@@ -36,10 +35,10 @@ function useGrantedBrowserPosition(): LatLng | undefined {
 
 /** "2,4 km van jou" from the own tracker (fresh) or an already-granted browser position; undefined otherwise. */
 export function useDistanceFromMe(lat: number, lng: number): string | undefined {
-  const user = useAuthUser<User>();
-  const { positions } = useDevices();
+  const { status } = useTrackerStatus();
+  const { positions, devices } = useDevices();
   const now = useNow(false);
   const browser = useGrantedBrowserPosition();
-  const own = ownTrackerPosition(positions, user?.tracker?.deviceId, now) ?? browser;
+  const own = ownTrackerPosition(positions, ownDeviceId(devices, status?.configured ? status.uniqueId : undefined), now) ?? browser;
   return formatDistanceFromMe(own ? distanceMetres(own, { lat, lng }) : undefined);
 }

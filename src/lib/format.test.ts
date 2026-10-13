@@ -43,6 +43,7 @@ describe('formatDistanceFromMe', () => {
     expect(formatDistanceFromMe(20)).toBe('20 m van jou');
     expect(formatDistanceFromMe(349.6)).toBe('350 m van jou');
     expect(formatDistanceFromMe(999)).toBe('999 m van jou');
+    expect(formatDistanceFromMe(999.7)).toBe('1,0 km van jou');
     expect(formatDistanceFromMe(1000)).toBe('1,0 km van jou');
     expect(formatDistanceFromMe(2449)).toBe('2,4 km van jou');
     expect(formatDistanceFromMe(12_345)).toBe('12,3 km van jou');

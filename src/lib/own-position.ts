@@ -1,4 +1,5 @@
 import { isActive } from './tracker';
+import type { Device } from '@/types/Device';
 import type { Position } from '@/types/Position';
 
 export interface LatLng {
@@ -23,4 +24,10 @@ export function ownTrackerPosition(positions: Position[] | undefined, deviceId: 
   const own = positions?.find((candidate) => candidate.deviceId === deviceId);
   if (!own || !isActive(own.fixTime, now)) return undefined;
   return { lat: own.latitude, lng: own.longitude };
+}
+
+/** The Traccar device id of the own tracker (matched on its uniqueId from /tracker/me). Device id 0 is valid. */
+export function ownDeviceId(devices: Device[] | undefined, uniqueId: string | undefined): number | undefined {
+  if (uniqueId === undefined) return undefined;
+  return devices?.find((device) => device.uniqueId === uniqueId)?.id;
 }
