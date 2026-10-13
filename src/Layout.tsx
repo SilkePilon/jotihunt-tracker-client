@@ -6,6 +6,7 @@ import Map, {MapRef} from './components/Map';
 import PWAPrompt from 'react-ios-pwa-prompt';
 import HuntersDialog from './components/admin/HuntersDialog';
 import DemoReloader from './components/DemoReloader';
+import AddPasskeyPrompt from './components/AddPasskeyPrompt';
 import ErrorBoundary from './components/ErrorBoundary';
 import StaleDataBadge from './components/StaleDataBadge';
 import NewHuntToaster from './components/hunts/NewHuntToaster';
@@ -81,6 +82,7 @@ export default function Layout() {
             {/* Separate boundaries: one crashing part (a dialog, the map, a sidebar section) must not take the rest down */}
             <ErrorBoundary variant="floating">
                 <DemoReloader/>
+                <AddPasskeyPrompt/>
                 {/* Here and not on the map page: hunts registered while another page is open are announced too */}
                 <NewHuntToaster/>
             </ErrorBoundary>
