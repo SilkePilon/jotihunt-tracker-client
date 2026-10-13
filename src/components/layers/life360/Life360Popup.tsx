@@ -1,5 +1,12 @@
-import GoogleMapsButton from '@/components/map/GoogleMapsButton';
+import { BatteryIcon, CrosshairIcon, GaugeIcon } from 'lucide-react';
+import Life360Avatar from '@/components/cards/life360/Life360Avatar';
 import MapPopup from '@/components/map/MapPopup';
+import { MapsAction, PopupActions } from '@/components/map/popup/PopupActions';
+import { FactDot, PopupFact, PopupFacts } from '@/components/map/popup/PopupFacts';
+import PopupHeader from '@/components/map/popup/PopupHeader';
+import { useDistanceFromMe } from '@/hooks/distance-from-me.hook';
+import { joinParts } from '@/lib/format';
+import { isLocationStale } from '@/lib/life360';
 import { hasUsableAccuracy, life360Age, life360DrivingText } from '@/lib/life360-map';
 import { formatAccuracy, formatBattery } from '@/lib/tracker';
 import type { Life360Location, Life360Member } from '@/types/Life360';
@@ -17,27 +24,43 @@ interface Life360PopupProps {
   onClose: () => void;
 }
 
-/** Like the hunter popup: name, age, driving speed, battery, accuracy, Navigeer. */
+/** Like the hunter popup: age, distance, driving speed, battery, accuracy, Navigeer. */
 export default function Life360Popup({ member, location, linkStale, now, onClose }: Life360PopupProps) {
   const driving = life360DrivingText(location, linkStale, now);
+  const stale = isLocationStale(location, linkStale, now);
+  const distance = useDistanceFromMe(location.lat, location.lon);
+  const battery = `${formatBattery(location.battery ?? undefined)}${location.charging ? ' (laadt)' : ''}`;
+
   return (
     <MapPopup longitude={location.lon} latitude={location.lat} onClose={onClose} offset={POPUP_OFFSET}>
-      <div className="mr-6 flex w-full flex-col gap-2">
-        <div>
-          <h2 className="font-semibold">{member.name}</h2>
-          <p>
-            {life360Age(location.at) ?? 'onbekend'}
-            {linkStale && ' · laatst bekend'}
-          </p>
-          {driving && <p>{driving}</p>}
-          <p>
-            Batterij: {formatBattery(location.battery ?? undefined)}
-            {location.charging && ' (laadt)'}
-          </p>
-          {hasUsableAccuracy(location.accuracyM) && <p>Nauwkeurigheid: {formatAccuracy(location.accuracyM)}</p>}
-        </div>
-        <GoogleMapsButton lat={location.lat} lng={location.lon} label="Navigeer" />
-      </div>
+      <PopupHeader
+        icon={<Life360Avatar member={member} size={32} />}
+        title={member.name}
+        subtitle={joinParts(life360Age(location.at, now) ?? 'onbekend', stale ? 'laatst bekend' : distance)}
+        stale={stale}
+      />
+      <PopupFacts>
+        <PopupFact>
+          {driving && (
+            <>
+              <GaugeIcon />
+              {driving.toLowerCase()}
+              <FactDot />
+            </>
+          )}
+          <BatteryIcon />
+          {battery}
+        </PopupFact>
+        {hasUsableAccuracy(location.accuracyM) && (
+          <PopupFact>
+            <CrosshairIcon />
+            {formatAccuracy(location.accuracyM)} nauwkeurig
+          </PopupFact>
+        )}
+      </PopupFacts>
+      <PopupActions>
+        <MapsAction lat={location.lat} lng={location.lon} label="Navigeer" />
+      </PopupActions>
     </MapPopup>
   );
 }

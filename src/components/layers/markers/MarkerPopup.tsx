@@ -2,12 +2,15 @@ import { useState } from 'react';
 import { Trash2Icon } from 'lucide-react';
 import { toast } from 'sonner';
 import MapPopup from '../../map/MapPopup';
-import GoogleMapsButton from '../../map/GoogleMapsButton';
+import CoordRows from '../../map/popup/CoordRows';
+import { MapsAction, PopupActions, popupActionClass } from '../../map/popup/PopupActions';
+import PopupHeader, { PopupIcon } from '../../map/popup/PopupHeader';
 import ConfirmDialog from '@/components/ConfirmDialog';
-import { Button } from '@/components/ui/button';
+import { useDistanceFromMe } from '@/hooks/distance-from-me.hook';
+import { joinParts } from '@/lib/format';
+import { areaKey, areaLetter } from '@/lib/marker-style';
 import { formatMarkerTime } from '@/lib/markers';
-import { toRD } from '@/lib/rd';
-import { capitalizeFirstLetter } from '@/lib/utils';
+import { capitalizeFirstLetter, getColorFromArea } from '@/lib/utils';
 import type { Marker } from '@/types/Marker';
 import { MarkerType } from '@/types/MarkerType';
 
@@ -27,7 +30,7 @@ interface MarkerPopupProps {
 export default function MarkerPopup({ marker, onClose, deleteMarker }: MarkerPopupProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [lng, lat] = marker.location.coordinates;
-  const rd = toRD(lng, lat);
+  const distance = useDistanceFromMe(lat, lng);
 
   async function handleDelete() {
     const deleted = await deleteMarker(marker._id!);
@@ -42,33 +45,31 @@ export default function MarkerPopup({ marker, onClose, deleteMarker }: MarkerPop
 
   return (
     <MapPopup longitude={lng} latitude={lat} onClose={onClose} offset={marker.type === MarkerType.Hint ? HINT_POPUP_OFFSET : POPUP_OFFSET}>
-      <div className="flex flex-col gap-2">
-        <div>
-          <h2 className="font-semibold">
-            {capitalizeFirstLetter(marker.area)} - {formatMarkerTime(marker.time)}
-          </h2>
-          <p>Soort marker: {capitalizeFirstLetter(marker.type)}</p>
-          <p>Breedtegraad: {lat.toFixed(7)}</p>
-          <p>Lengtegraad: {lng.toFixed(7)}</p>
-          <p>RD-x: {rd.x.toFixed(0)}</p>
-          <p>RD-y: {rd.y.toFixed(0)}</p>
-        </div>
-        <div className="flex flex-col gap-2 w-full">
-          <GoogleMapsButton lat={lat} lng={lng} />
-          <Button variant="destructive" size="sm" className="w-full" onClick={() => setConfirmOpen(true)}>
-            <Trash2Icon /> Verwijderen
-          </Button>
-          <ConfirmDialog
-            open={confirmOpen}
-            onOpenChange={setConfirmOpen}
-            title="Weet je het zeker?"
-            description="Deze actie kan niet ongedaan gemaakt worden. Dit zal alle informatie van deze marker permanent verwijderen."
-            confirmLabel="Doorgaan"
-            destructive
-            onConfirm={handleDelete}
-          />
-        </div>
-      </div>
+      <PopupHeader
+        icon={
+          <PopupIcon shape="square" background={getColorFromArea(marker.area)} color="#1a1a1a">
+            {areaLetter(areaKey(marker.area) ?? 'none') || '?'}
+          </PopupIcon>
+        }
+        title={`${capitalizeFirstLetter(marker.area)} · ${capitalizeFirstLetter(marker.type)}`}
+        subtitle={joinParts(formatMarkerTime(marker.time), distance)}
+      />
+      <CoordRows lat={lat} lng={lng} />
+      <PopupActions>
+        <MapsAction lat={lat} lng={lng} label="Google Maps" />
+        <button type="button" aria-label="Verwijderen" title="Verwijderen" className={popupActionClass('danger', 'w-[30px] px-0')} onClick={() => setConfirmOpen(true)}>
+          <Trash2Icon />
+        </button>
+      </PopupActions>
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Weet je het zeker?"
+        description="Deze actie kan niet ongedaan gemaakt worden. Dit zal alle informatie van deze marker permanent verwijderen."
+        confirmLabel="Doorgaan"
+        destructive
+        onConfirm={handleDelete}
+      />
     </MapPopup>
   );
 }
