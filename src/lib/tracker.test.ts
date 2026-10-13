@@ -13,6 +13,7 @@ import {
   sectionTransition,
   trackerRefreshInterval,
   trackerSummary,
+  trackerView,
 } from './tracker';
 
 const configured = (connected: boolean): TrackerMe => ({
@@ -25,6 +26,7 @@ const configured = (connected: boolean): TrackerMe => ({
   connected,
   stats: {},
 });
+const signalLost: TrackerMe = { ...configured(false), stats: { lastUpdate: '2026-10-13T10:00:00Z' } } as TrackerMe;
 const notConfigured: TrackerMe = { configured: false, reason: 'client_url_missing', connected: false };
 const unreachable: TrackerMe = { configured: false, reason: 'unreachable', connected: false };
 
@@ -44,6 +46,28 @@ describe('trackerSummary', () => {
     expect(trackerSummary(unreachable)).toBe('Niet bereikbaar');
     expect(trackerSummary(configured(false))).toBe('Niet verbonden');
     expect(trackerSummary(configured(true))).toBe('Verbonden');
+    expect(trackerSummary(signalLost)).toBe('Geen signaal');
+  });
+});
+
+describe('trackerView', () => {
+  test('loading and error only without a status', () => {
+    expect(trackerView(undefined, false, false)).toBe('loading');
+    expect(trackerView(undefined, true, false)).toBe('error');
+    expect(trackerView(configured(true), true, false)).toBe('connected');
+  });
+  test('not configured wins over pairing', () => {
+    expect(trackerView(notConfigured, false, true)).toBe('not-configured');
+  });
+  test('pairing over every configured state', () => {
+    expect(trackerView(configured(false), false, true)).toBe('pairing');
+    expect(trackerView(configured(true), false, true)).toBe('pairing');
+    expect(trackerView(signalLost, false, true)).toBe('pairing');
+  });
+  test('idle without any update, no-signal after one, connected', () => {
+    expect(trackerView(configured(false), false, false)).toBe('idle');
+    expect(trackerView(signalLost, false, false)).toBe('no-signal');
+    expect(trackerView(configured(true), false, false)).toBe('connected');
   });
 });
 

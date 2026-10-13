@@ -5,11 +5,12 @@ export const TRACKER_POLL_CONNECTED_MS = 30_000;
 /** Nothing changes quickly while live tracking isn't set up; don't poll as often. */
 export const TRACKER_POLL_NOT_CONFIGURED_MS = 60_000;
 
-export const VEHICLE_OPTIONS: { value: Vehicle; label: string }[] = [
-  { value: 'walking', label: 'Lopend' },
-  { value: 'bike', label: 'Fiets' },
-  { value: 'car', label: 'Auto' },
-  { value: 'motorcycle', label: 'Motor' },
+/** `phrase` is the "Mijn tracker" pill text. */
+export const VEHICLE_OPTIONS: { value: Vehicle; label: string; phrase: string }[] = [
+  { value: 'walking', label: 'Lopend', phrase: 'Lopend' },
+  { value: 'bike', label: 'Fiets', phrase: 'Op de fiets' },
+  { value: 'car', label: 'Auto', phrase: 'In de auto' },
+  { value: 'motorcycle', label: 'Motor', phrase: 'Op de motor' },
 ];
 
 /** A tracker counts as active when it reported in the last 5 minutes. */
@@ -36,11 +37,28 @@ export function trackerRefreshInterval(status: TrackerMe | undefined): number {
   return status.connected ? TRACKER_POLL_CONNECTED_MS : TRACKER_POLL_NOT_CONNECTED_MS;
 }
 
+/** Paired before (Traccar has an update) but nothing in the last 5 minutes: the app stopped or lost signal. */
+export function hasSignalLost(status: TrackerMe | undefined): boolean {
+  return !!status?.configured && !status.connected && !!status.stats.lastUpdate;
+}
+
 /** Collapsed-section summary. */
 export function trackerSummary(status: TrackerMe | undefined): string | undefined {
   if (!status) return undefined;
   if (!status.configured) return status.reason === 'unreachable' ? 'Niet bereikbaar' : 'Niet ingesteld';
+  if (hasSignalLost(status)) return 'Geen signaal';
   return status.connected ? 'Verbonden' : 'Niet verbonden';
+}
+
+export type TrackerView = 'loading' | 'error' | 'not-configured' | 'idle' | 'pairing' | 'connected' | 'no-signal';
+
+/** Which "Mijn tracker" view to show; `pairing` = the user opened the pairing panel. */
+export function trackerView(status: TrackerMe | undefined, isError: boolean, pairing: boolean): TrackerView {
+  if (!status) return isError ? 'error' : 'loading';
+  if (!status.configured) return 'not-configured';
+  if (pairing) return 'pairing';
+  if (status.connected) return 'connected';
+  return hasSignalLost(status) ? 'no-signal' : 'idle';
 }
 
 /** Text for the "not configured" state; admins also get the fix. */
