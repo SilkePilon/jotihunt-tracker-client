@@ -17,6 +17,7 @@ import HintMiniGrid from './HintMiniGrid';
 import PredictionList from './PredictionList';
 import TrackerSection from './TrackerSection';
 import CounterHuntSection from './CounterHuntSection';
+import TelegramSection from './TelegramSection';
 import ErrorBoundary from '@/components/ErrorBoundary';
 
 export default function SidebarSections({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
@@ -52,6 +53,9 @@ export default function SidebarSections({ mapRef }: { mapRef: RefObject<MapRef |
           <CounterHuntSection mapRef={mapRef} />
         </ErrorBoundary>
       )}
+      <ErrorBoundary name="Jotihunt-berichten">
+        <TelegramSection />
+      </ErrorBoundary>
       <ErrorBoundary name="Tracker">
         <TrackerSection />
       </ErrorBoundary>

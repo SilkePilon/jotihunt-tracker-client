@@ -63,7 +63,8 @@ export function counterHuntSummary(state: CounterHuntState | undefined, linked: 
   if (state.kind === 'active') {
     const left = `nog ${minutesLeft(state.endsAt, now)} min`;
     const item = counterHuntDirection(state.direction);
-    return { text: item ? `${item.short} ${item.arrow} · ${left}` : left, tone: 'danger' };
+    // U+FE0E: text presentation, some fonts draw ↗ ↘ ↙ ↖ as emoji
+    return { text: item ? `${item.short} ${item.arrow}\uFE0E · ${left}` : left, tone: 'danger' };
   }
   if (linked === false) return { text: 'Niet gekoppeld', tone: 'warn' };
   return { text: 'Geen' };

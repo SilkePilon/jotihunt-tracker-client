@@ -74,7 +74,7 @@ describe('counterHuntSummary', () => {
   const now = at('2026-10-17T19:20:00.000Z');
 
   test('active: direction and minutes in red', () => {
-    expect(counterHuntSummary(counterHuntState(active(45), now), true, now)).toEqual({ text: 'NO ↗ · nog 24 min', tone: 'danger' });
+    expect(counterHuntSummary(counterHuntState(active(45), now), true, now)).toEqual({ text: 'NO ↗\uFE0E · nog 24 min', tone: 'danger' });
     expect(counterHuntSummary(counterHuntState(active(null), now), true, now)).toEqual({ text: 'nog 24 min', tone: 'danger' });
   });
 
