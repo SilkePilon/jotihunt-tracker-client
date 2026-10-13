@@ -1,5 +1,4 @@
 import MapTooltip from '@/components/map/MapTooltip';
-import { Badge } from '@/components/ui/badge';
 import { formatMarkerTime } from '@/lib/markers';
 import { capitalizeFirstLetter, getColorFromArea } from '@/lib/utils';
 import type { Marker as FoxMarker } from '@/types/Marker';
@@ -9,17 +8,17 @@ import { MarkerType } from '@/types/MarkerType';
 const TOOLTIP_OFFSET: [number, number] = [0, -25];
 const HINT_TOOLTIP_OFFSET: [number, number] = [0, -34];
 
-/** Hover tooltip of a fox marker (same content and look as the former per-marker Radix tooltip). */
+/** Hover tooltip of a fox marker: area colour, type, area and time. */
 export default function MarkerTooltip({ marker }: { marker: FoxMarker }) {
   const [lng, lat] = marker.location.coordinates;
   return (
-    <MapTooltip longitude={lng} latitude={lat} offset={marker.type === MarkerType.Hint ? HINT_TOOLTIP_OFFSET : TOOLTIP_OFFSET}>
-      <div>
-        {capitalizeFirstLetter(marker.type)} - {formatMarkerTime(marker.time)}
-      </div>
-      <Badge className="text-white border-0" style={{ backgroundColor: getColorFromArea(marker.area) }}>
-        {capitalizeFirstLetter(marker.area)}
-      </Badge>
-    </MapTooltip>
+    <MapTooltip
+      longitude={lng}
+      latitude={lat}
+      offset={marker.type === MarkerType.Hint ? HINT_TOOLTIP_OFFSET : TOOLTIP_OFFSET}
+      color={getColorFromArea(marker.area)}
+      title={capitalizeFirstLetter(marker.type)}
+      meta={`${capitalizeFirstLetter(marker.area)} · ${formatMarkerTime(marker.time)}`}
+    />
   );
 }
