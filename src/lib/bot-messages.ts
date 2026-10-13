@@ -30,12 +30,11 @@ export function botMessageStyle(kind: string): BotMessageStyle {
   return BOT_MESSAGE_STYLE[kind as BotMessageKind] ?? BOT_MESSAGE_STYLE.other;
 }
 
-/** The marker's colours in a theme: fill, glyph and the 2 px rim. */
-export function botMarkerColors(kind: string, palette: MarkerPalette): { shape: 'circle' | 'cookie'; fill: string; glyph: string; rim: string } {
+/** The marker's colours in a theme: fill and glyph. */
+export function botMarkerColors(kind: string, palette: MarkerPalette): { shape: 'circle' | 'cookie'; fill: string; glyph: string } {
   const style = botMessageStyle(kind);
-  const rim = palette.surfaceContainerLowest;
-  if (style.container === 'tegenhunt' || style.on === 'tegenhunt') return { shape: 'cookie', fill: TEGENHUNT_RED, glyph: '#ffffff', rim };
-  return { shape: 'circle', fill: palette[style.container], glyph: palette[style.on], rim };
+  if (style.container === 'tegenhunt' || style.on === 'tegenhunt') return { shape: 'cookie', fill: TEGENHUNT_RED, glyph: '#ffffff' };
+  return { shape: 'circle', fill: palette[style.container], glyph: palette[style.on] };
 }
 
 /** Collapsed "Jotihunt-berichten" summary: "21:14 · Tegenhunt" for the newest message; undefined without messages. */

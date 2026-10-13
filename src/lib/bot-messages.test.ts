@@ -28,16 +28,16 @@ describe('BOT_MESSAGE_STYLE', () => {
 });
 
 describe('botMarkerColors', () => {
-  test('palette container + on colour with a surfaceContainerLowest rim', () => {
+  test('palette container + on colour', () => {
     const dark = MARKER_PALETTES.dark;
-    expect(botMarkerColors('hunt-approved', dark)).toEqual({ shape: 'circle', fill: dark.okContainer, glyph: dark.onOkContainer, rim: dark.surfaceContainerLowest });
+    expect(botMarkerColors('hunt-approved', dark)).toEqual({ shape: 'circle', fill: dark.okContainer, glyph: dark.onOkContainer });
     expect(botMarkerColors('happy-hour', MARKER_PALETTES.light).fill).toBe(MARKER_PALETTES.light.warnContainer);
     expect(botMarkerColors('other', MARKER_PALETTES.light).glyph).toBe(MARKER_PALETTES.light.onSurfaceVariant);
   });
 
   test('the tegenhunt is a solid red cookie with a white glyph in both themes', () => {
     for (const palette of Object.values(MARKER_PALETTES)) {
-      expect(botMarkerColors('tegenhunt', palette)).toEqual({ shape: 'cookie', fill: TEGENHUNT_RED, glyph: '#ffffff', rim: palette.surfaceContainerLowest });
+      expect(botMarkerColors('tegenhunt', palette)).toEqual({ shape: 'cookie', fill: TEGENHUNT_RED, glyph: '#ffffff' });
     }
   });
 });
