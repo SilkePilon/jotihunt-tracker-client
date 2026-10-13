@@ -16,6 +16,7 @@ import {
 } from '@/lib/marker-style';
 import { FOX_OUTLINE, GLYPHS } from './marker-glyphs';
 import { mapImagePixelRatio } from './map-images';
+import { BADGE_COOKIE_DEPTH, cookiePoints, MARKER_COOKIE_DEPTH } from '@/lib/cookie-shape';
 
 /*
  * The map marker images, drawn like the Android app's MarkerIconFactory: every shape has a 2px surfaceContainerLowest
@@ -90,19 +91,12 @@ class Painter {
     ctx.fill();
   }
 
-  /** 9-lobe cookie (Android `cookie`): r(θ) = R · (1 − 0.07 · (1 + cos 9θ) / 2). */
-  cookie(cx: number, cy: number, radius: number, color: string) {
+  /** 9-lobe cookie (Android `cookie`), see {@link cookiePoints}. */
+  cookie(cx: number, cy: number, radius: number, color: string, depth = MARKER_COOKIE_DEPTH) {
     const { ctx } = this;
     ctx.fillStyle = color;
     ctx.beginPath();
-    for (let i = 0; i <= 180; i++) {
-      const t = (2 * Math.PI * i) / 180;
-      const r = radius * (1 - (0.07 * (1 + Math.cos(9 * t))) / 2);
-      const x = cx + r * Math.sin(t);
-      const y = cy - r * Math.cos(t);
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
+    for (const [x, y] of cookiePoints(cx, cy, radius, depth)) ctx.lineTo(x, y);
     ctx.closePath();
     ctx.fill();
   }
@@ -169,9 +163,15 @@ function circleIcon(size: number, fill: string, content: (p: Painter, size: numb
 
 /**
  * Shape of `size` drawn at (0, 0) plus a 16px badge over its bottom-right corner (an area letter, or `badge` for
- * other contents). The overhang is added on all sides, so the shape stays centred on the point.
+ * other contents) on a round or cookie-shaped rim. The overhang is added on all sides, so the shape stays centred
+ * on the point.
  */
-function badged(size: number, shape: (p: Painter, size: number) => void, badge?: (p: Painter, cx: number, cy: number) => void): Drawing {
+function badged(
+  size: number,
+  shape: (p: Painter, size: number) => void,
+  badge?: (p: Painter, cx: number, cy: number) => void,
+  base: 'round' | 'cookie' = 'round',
+): Drawing {
   const overhang = BADGE / 4;
   const side = size + overhang + 2 * PAD;
   return {
@@ -183,7 +183,8 @@ function badged(size: number, shape: (p: Painter, size: number) => void, badge?:
       if (!badge) return;
       const c = size - BADGE / 2 + overhang / 2;
       p.shadow(1.5, 0.5);
-      p.circle(c, c, BADGE / 2, p.palette.surfaceContainerLowest);
+      if (base === 'cookie') p.cookie(c, c, BADGE / 2, p.palette.surfaceContainerLowest, BADGE_COOKIE_DEPTH);
+      else p.circle(c, c, BADGE / 2, p.palette.surfaceContainerLowest);
       p.noShadow();
       badge(p, c, c);
     },
@@ -268,11 +269,16 @@ function drawing(key: MarkerIconKey, palette: MarkerPalette, measure: Ctx): Draw
         p.glyph('home', s / 2, s / 2, 16, colors?.on ?? palette.secondary);
       };
       if (!key.visited) return circleIcon(GROUP_SIZE, colors?.fill ?? palette.surfaceContainerLowest, (p, s) => shape(p, s));
-      // Visited (web only): a badge like the area letter's, with a check on the ok colour
-      return badged(GROUP_SIZE, shape, (p, cx, cy) => {
-        p.circle(cx, cy, BADGE / 2 - 1.5, palette.ok);
-        p.glyph('check', cx, cy, 12, palette.surfaceContainerLowest);
-      });
+      // Visited (web only): the cookie check badge of the "Mijn tracker" card, on the ok colour
+      return badged(
+        GROUP_SIZE,
+        shape,
+        (p, cx, cy) => {
+          p.cookie(cx, cy, BADGE / 2 - 1.5, palette.ok, BADGE_COOKIE_DEPTH);
+          p.glyph('check', cx, cy, 11, palette.surfaceContainerLowest);
+        },
+        'cookie',
+      );
     }
     case 'hint': {
       const letter = areaLetter(key.area);
