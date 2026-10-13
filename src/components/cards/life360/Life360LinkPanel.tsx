@@ -29,8 +29,9 @@ export interface Life360LinkActions {
 
 export type Life360LinkView = 'unavailable' | 'unlinked' | 'email' | 'code' | 'circle';
 
-/** Six 34 × 42 boxes like the mockup; purple focus ring, red when the code was wrong. */
-const OTP_SLOT = 'h-[42px] w-[34px] rounded-lg border font-mono text-lg font-bold first:rounded-lg last:rounded-lg data-[active=true]:border-[#7875ea] data-[active=true]:ring-[#7875ea]/30';
+/** One joined 42px bar split by hairlines; purple inset focus ring, red when the code was wrong. */
+const OTP_SLOT =
+  'h-[42px] flex-1 font-mono text-lg font-bold first:rounded-l-lg last:rounded-r-lg data-[active=true]:border-[#7875ea] data-[active=true]:ring-2 data-[active=true]:ring-inset data-[active=true]:ring-[#7875ea]/40';
 
 function Header({ title, onCancel }: { title: string; onCancel: () => void }) {
   return (
@@ -229,7 +230,7 @@ function CodeStep({
         onComplete={(value: string) => void verify(value)}
         containerClassName="w-full"
       >
-        <InputOTPGroup className="w-full justify-between">
+        <InputOTPGroup className="w-full">
           {[0, 1, 2, 3, 4, 5].map((index) => (
             <InputOTPSlot key={index} index={index} aria-invalid={!!error} className={OTP_SLOT} />
           ))}
