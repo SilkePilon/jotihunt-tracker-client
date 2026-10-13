@@ -10,8 +10,8 @@ const pwaManifest: Partial<VitePWAOptions> = {
   registerType: 'prompt',
   workbox: {
     globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
-    // The store screenshots (5 MB) are only for the install dialog, never needed offline
-    globIgnores: ['**/screenshot_*.png'],
+    // The store screenshots are only for the install dialog, never needed offline
+    globIgnores: ['**/screenshot_*'],
     // The map chunk (maplibre) is larger than workbox's 2 MB default
     maximumFileSizeToCacheInBytes: 1024 * 1024 * 5,
     importScripts: ['push-sw.js'],
@@ -45,18 +45,35 @@ const pwaManifest: Partial<VitePWAOptions> = {
         purpose: 'maskable',
       },
     ],
+    // Demo-mode data, light and dark (the install dialog shows them as a carousel)
     screenshots: [
       {
-        src: 'screenshot_narrow.png',
-        sizes: '900x1600',
-        type: 'image/png',
-        form_factor: 'narrow',
+        src: 'screenshot_wide_light.webp',
+        sizes: '3800x2136',
+        type: 'image/webp',
+        form_factor: 'wide',
+        label: 'Jotihunt Tracker: kaart met vossen, hints en hunts (licht)',
       },
       {
-        src: 'screenshot_wide.png',
+        src: 'screenshot_wide_dark.webp',
         sizes: '3800x2136',
-        type: 'image/png',
+        type: 'image/webp',
         form_factor: 'wide',
+        label: 'Jotihunt Tracker: kaart met vossen, hints en hunts (donker)',
+      },
+      {
+        src: 'screenshot_narrow_light.webp',
+        sizes: '900x1600',
+        type: 'image/webp',
+        form_factor: 'narrow',
+        label: 'Jotihunt Tracker: kaart met vossen, hints en hunts (licht)',
+      },
+      {
+        src: 'screenshot_narrow_dark.webp',
+        sizes: '900x1600',
+        type: 'image/webp',
+        form_factor: 'narrow',
+        label: 'Jotihunt Tracker: kaart met vossen, hints en hunts (donker)',
       },
     ],
   },
