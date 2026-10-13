@@ -1,7 +1,6 @@
 import { RefObject } from 'react';
 import { MapRef } from '@/components/Map';
 import HintEntryCard from '@/components/cards/hint-entry/HintEntryCard';
-import CounterHuntCard from '@/components/cards/counter-hunt/CounterHuntCard';
 import ActiveDevices from '@/components/map/ActiveDevices';
 import { useAreas } from '@/hooks/areas.hook';
 import { useDevices } from '@/hooks/devices.hook';
@@ -17,6 +16,7 @@ import FoxPills from './FoxPills';
 import HintMiniGrid from './HintMiniGrid';
 import PredictionList from './PredictionList';
 import TrackerSection from './TrackerSection';
+import CounterHuntSection from './CounterHuntSection';
 import ErrorBoundary from '@/components/ErrorBoundary';
 
 export default function SidebarSections({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
@@ -48,9 +48,9 @@ export default function SidebarSections({ mapRef }: { mapRef: RefObject<MapRef |
         <HintEntryCard mapRef={mapRef} />
       </SidebarSection>
       {import.meta.env.HOME_TEAM_API_ID && (
-        <SidebarSection id="counterHunt" title="Tegenhunt">
-          <CounterHuntCard mapRef={mapRef} />
-        </SidebarSection>
+        <ErrorBoundary name="Tegenhunt">
+          <CounterHuntSection mapRef={mapRef} />
+        </ErrorBoundary>
       )}
       <ErrorBoundary name="Tracker">
         <TrackerSection />

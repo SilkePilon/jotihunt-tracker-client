@@ -1,89 +1,87 @@
-import { Eye, Trash } from 'lucide-react';
-import { Button } from '../../ui/button.tsx';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.tsx';
-import useCounterHuntStore from '@/stores/counterhunt.store.ts';
-import { useState } from 'react';
-import PropTypes, { InferProps } from 'prop-types';
-import { MapRef } from '@/components/Map.tsx';
-import useSidebarStore from '@/stores/sidebar.store.ts';
-import { useHomeTeam } from '@/hooks/teams.hook.ts';
-import CounterHuntAlertButton from './CounterHuntAlertButton';
-import { destination } from '@turf/turf';
+import { ArrowUpIcon } from 'lucide-react';
+import CookieBadge from '@/components/tracker/CookieBadge';
+import MaterialGlyph from '@/components/MaterialGlyph';
+import { inlineLinkClass } from '@/components/tracker/styles';
+import { counterHuntDirection, counterHuntLastText, counterHuntTitle, minutesLeft, type CounterHuntState } from '@/lib/counter-hunt';
+import { formatClock } from '@/lib/format';
 
-export default function CounterHuntCard({ mapRef }: InferProps<typeof CounterHuntCard.propTypes>) {
-  // Home coordinates for zooming to the counter hunt
-  const homeTeam = useHomeTeam();
+interface CounterHuntCardProps {
+  /** undefined while loading */
+  state: CounterHuntState | undefined;
+  /** false when the server says Telegram is not linked (tegenhunts can't come in) */
+  linked: boolean | undefined;
+  now: number;
+  /** Fly to the wind sector; only offered when the direction is known */
+  onShowOnMap?: () => void;
+}
 
-  const setSheetSnap = useSidebarStore((state) => state.setSheetSnap);
-  const { direction, setDirection, setVisible } = useCounterHuntStore();
-  const [chosenDirection, setChosenDirection] = useState(direction);
+/**
+ * The "Tegenhunt" card, fully automatic: the server starts a tegenhunt from the @Jotihunt_bot message, this card shows
+ * it (direction, minutes left) for 30 minutes and then goes back to quiet.
+ */
+export default function CounterHuntCard({ state, linked, now, onShowOnMap }: CounterHuntCardProps) {
+  if (!state) return null;
 
-  /**
-   * Show the counter hunt on the map.
-   * Sets the zustand store to visible, sets the direction and makes sure the layer is enabled on the map.
-   */
-  function showCounterHunt() {
-    setVisible(true);
-    setDirection(chosenDirection);
-    if (homeTeam) {
-      // Center on the middle of the wind sector (500 m radius, see HomeCircle), not on the HQ itself
-      const [longitude, latitude] = destination(homeTeam.location.coordinates, 250, chosenDirection, { units: 'meters' }).geometry.coordinates;
-      mapRef.current?.flyTo({
-        center: [longitude, latitude],
-        duration: 2000,
-        zoom: 16,
-      });
-    }
-    setSheetSnap('peek');
+  if (state.kind === 'active') {
+    const direction = counterHuntDirection(state.direction);
+    return (
+      <div className="flex flex-col items-center gap-2.5 text-center" data-counter-hunt="active">
+        <CookieBadge
+          tone="danger"
+          size={64}
+          glyph={direction ? <ArrowUpIcon className="size-8" strokeWidth={3} style={{ transform: `rotate(${direction.degrees}deg)` }} /> : '?'}
+        />
+        <div className="flex w-full flex-col gap-0.5">
+          <span className="text-base font-semibold">{counterHuntTitle(state.direction)}</span>
+          {direction ? (
+            <>
+              <span className="text-xs text-muted-foreground">
+                Gestart {formatClock(state.startedAt)} · <b className="text-red-600 dark:text-red-400">nog {minutesLeft(state.endsAt, now)} min</b>
+              </span>
+              <span className="mt-0.5 text-xs text-muted-foreground">
+                Zoek de sticker binnen 500 m
+                {onShowOnMap && (
+                  <>
+                    {' · '}
+                    <button type="button" className={inlineLinkClass} onClick={onShowOnMap}>
+                      toon op kaart
+                    </button>
+                  </>
+                )}
+              </span>
+            </>
+          ) : (
+            <span className="text-xs text-muted-foreground">Richting niet herkend; lees het bericht:</span>
+          )}
+        </div>
+        {!direction && state.text && (
+          <blockquote className="w-full rounded-lg bg-black/5 p-2 text-left text-xs whitespace-pre-line break-words dark:bg-black/20">{state.text}</blockquote>
+        )}
+      </div>
+    );
   }
 
-  /**
-   * Remove the counter hunt from the map.
-   */
-  function removeCounterHunt() {
-    setVisible(false);
-    setDirection(0);
+  if (linked === false) {
+    return (
+      <div className="flex flex-col items-center gap-2.5 text-center" data-counter-hunt="not-linked">
+        <CookieBadge tone="warn" size={48} />
+        <div className="flex flex-col gap-0.5">
+          <span className="text-sm font-semibold">Tegenhunts komen niet binnen</span>
+          <span className="text-xs text-muted-foreground">Telegram is niet gekoppeld. Koppelen kan in de kaart Jotihunt-berichten (admins).</span>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="flex w-full flex-col gap-2">
-      <div className="flex w-full items-center gap-2">
-        <Select onValueChange={(value) => setChosenDirection(Number(value))} value={chosenDirection.toString()}>
-          <SelectTrigger className="w-full min-w-0 flex-1" aria-label="Windrichting">
-            <SelectValue placeholder="Kies windrichting..." />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectItem value="0">N - Noord</SelectItem>
-              <SelectItem value="45">NO - Noordoost</SelectItem>
-              <SelectItem value="90">O - Oost</SelectItem>
-              <SelectItem value="135">ZO - Zuidoost</SelectItem>
-              <SelectItem value="180">Z - Zuid</SelectItem>
-              <SelectItem value="225">ZW - Zuidwest</SelectItem>
-              <SelectItem value="270">W - West</SelectItem>
-              <SelectItem value="315">NW - Noordwest</SelectItem>
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-        <Button onClick={showCounterHunt}>
-          <Eye data-icon="inline-start" />
-          Toon
-        </Button>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="outline" size="icon" aria-label="Tegenhunt verwijderen" onClick={removeCounterHunt}>
-              <Trash />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Tegenhunt verwijderen</TooltipContent>
-        </Tooltip>
+    <div className="flex flex-col items-center gap-2.5 text-center" data-counter-hunt="quiet">
+      <CookieBadge tone="neutral" size={48} glyph={<MaterialGlyph name="home" size={24} />} />
+      <div className="flex flex-col gap-0.5">
+        <span className="text-sm font-semibold">Geen tegenhunt</span>
+        <span className="text-xs text-muted-foreground">
+          {state.last ? counterHuntLastText(state.last) : 'Komt er een, dan zie je hem hier en op de kaart, en krijgt iedereen een melding.'}
+        </span>
       </div>
-      <CounterHuntAlertButton direction={chosenDirection} />
     </div>
   );
 }
-
-CounterHuntCard.propTypes = {
-  mapRef: PropTypes.object.isRequired as PropTypes.Validator<React.RefObject<MapRef | null>>,
-};

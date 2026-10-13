@@ -69,8 +69,3 @@ export function counterHuntSummary(state: CounterHuntState | undefined, linked: 
   return { text: 'Geen' };
 }
 
-/** The alert title everyone gets, as the server builds it; null for an unknown direction. */
-export function counterHuntAlertTitle(degrees: number): string | null {
-  const direction = counterHuntDirection(degrees);
-  return direction ? `Tegenhunt! Richting ${direction.short} ${direction.arrow}` : null;
-}

@@ -74,7 +74,7 @@ export const TOUR_STEPS: TourStep[] = [
     id: 'counter-hunt',
     target: 'sidebar.counterHunt',
     title: 'Tegenhunt',
-    body: 'Kies een windrichting en tik op Toon om de tegenhunt rond ons clubhuis op de kaart te zien.',
+    body: 'Wordt ons clubhuis gehunt? Dan zie je hier automatisch uit welke richting, en op de kaart.',
     actions: [sheetSnap('full'), openSection('counterHunt')],
     optional: true,
   },

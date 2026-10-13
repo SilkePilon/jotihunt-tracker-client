@@ -202,7 +202,7 @@ const Map = forwardRef<MapRef, { className?: string }>(({className}, ref) => {
                 {showTeams && <Teams/>}
                 {showDevices && <Devices/>}
                 {(showMarkersPart1 || showMarkersPart2) && <Markers part1={showMarkersPart1} part2={showMarkersPart2}/>}
-                {showHomeCircle && <HomeCircle/>}
+                <HomeCircle showCircle={showHomeCircle}/>
                 <LayerStack/>
             </Maplibre>
         </div>

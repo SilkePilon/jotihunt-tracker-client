@@ -15,16 +15,18 @@ interface SidebarSectionProps {
   open?: boolean;
   /** Called instead of toggling the store when the user opens/closes the section */
   onOpenChange?: (open: boolean) => void;
+  /** Extra classes on the card, e.g. a tinted background */
+  className?: string;
   children: ReactNode;
 }
 
-export default function SidebarSection({ id, title, summary, open: openProp, onOpenChange, children }: SidebarSectionProps) {
+export default function SidebarSection({ id, title, summary, open: openProp, onOpenChange, className, children }: SidebarSectionProps) {
   const storedOpen = useSidebarStore((state) => state.openSections[id]);
   const toggleSection = useSidebarStore((state) => state.toggleSection);
   const open = openProp ?? storedOpen;
 
   return (
-    <Collapsible {...tourTarget(`sidebar.${id}`)} open={open} onOpenChange={onOpenChange ?? (() => toggleSection(id))} className="card rounded-xl bg-card px-3 py-2 text-card-foreground">
+    <Collapsible {...tourTarget(`sidebar.${id}`)} open={open} onOpenChange={onOpenChange ?? (() => toggleSection(id))} className={cn('card rounded-xl bg-card px-3 py-2 text-card-foreground', className)}>
       <CollapsibleTrigger className="flex w-full cursor-pointer items-center justify-between gap-2 text-left">
         <span className="text-sm font-semibold">{title}</span>
         <span className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
