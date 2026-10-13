@@ -14,6 +14,7 @@ import { Marker } from '@/types/Marker';
 import { useMarkers } from '@/hooks/markers.hook';
 import {toast} from "sonner";
 import { apiErrorMessage } from '@/lib/api-error';
+import { popupActionClass } from './popup/PopupActions';
 
 const HUNT_START_TIME = new Date(import.meta.env.HUNT_START_TIME);
 const HUNT_END_TIME = new Date(import.meta.env.HUNT_END_TIME);
@@ -24,6 +25,7 @@ const FormSchema = z.object({
   time: z.date(),
 });
 
+/** Hunt / Spot buttons (fragment children, for inside `PopupActions`) plus the dialog to register a marker at this point. */
 export default function MarkerRegistration({ lat, lng }: { lat: number; lng: number }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [markerType, setMarkerType] = useState<MarkerType>();
@@ -241,14 +243,12 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
   return (
     <>
       {dialog()}
-      <div className="flex gap-2 w-full">
-        <Button variant="default" size="sm" className="min-w-0 flex-1" onClick={() => openDialog(MarkerType.Hunt)}>
-          <LocateFixedIcon data-icon="inline-start" /> Vos hunt
-        </Button>
-        <Button variant="default" size="sm" className="min-w-0 flex-1" onClick={() => openDialog(MarkerType.Spot)}>
-          <GlassesIcon data-icon="inline-start" /> Vos spot
-        </Button>
-      </div>
+      <button type="button" className={popupActionClass('primary', 'min-w-0 flex-1')} onClick={() => openDialog(MarkerType.Hunt)}>
+        <LocateFixedIcon /> Hunt
+      </button>
+      <button type="button" className={popupActionClass('primary', 'min-w-0 flex-1')} onClick={() => openDialog(MarkerType.Spot)}>
+        <GlassesIcon /> Spot
+      </button>
     </>
   );
 }
