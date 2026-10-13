@@ -1,4 +1,5 @@
 import type { Life360AdminStatus, Life360LinkedStatus, Life360Location, Life360Members } from '@/types/Life360';
+import { formatCountdown, secondsLeft } from '@/lib/app-pairing';
 
 export const LIFE360_ADMIN_URL = '/admin/life360';
 export const LIFE360_MEMBERS_URL = '/life360/members';
@@ -113,4 +114,15 @@ export function life360LiveLine(status: Life360LinkedStatus, now: number): strin
 /** "Jotihunt 2026 · 6 leden" (the members pill). */
 export function membersPillText(circleName: string, memberCount: number): string {
   return `${circleName} · ${memberCount} ${memberCount === 1 ? 'lid' : 'leden'}`;
+}
+
+/** "0:42" while a new code can't be sent yet, null once it can (also for an unreadable time). */
+export function resendCountdown(resendAt: string, now: number): string | null {
+  const seconds = secondsLeft(resendAt, now);
+  return seconds > 0 ? formatCountdown(seconds) : null;
+}
+
+/** A complete login code: exactly 6 digits. */
+export function isSixDigits(code: string): boolean {
+  return /^\d{6}$/.test(code);
 }
