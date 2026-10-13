@@ -40,6 +40,14 @@ describe('hasExpectedShape', () => {
     expect(hasExpectedShape('/admin/telegram', { message: 'x' })).toBe(false);
   });
 
+  test('Life360 answers', () => {
+    expect(hasExpectedShape('/admin/life360', { state: 'unlinked' })).toBe(true);
+    expect(hasExpectedShape('/admin/life360', { message: 'x' })).toBe(false);
+    expect(hasExpectedShape('/life360/members', { linked: false, stale: false, members: [] })).toBe(true);
+    expect(hasExpectedShape('/life360/members', { linked: true, members: [] })).toBe(false);
+    expect(hasExpectedShape('/life360/members', { linked: true, stale: false })).toBe(false);
+  });
+
   test('happy hour answers', () => {
     expect(hasExpectedShape('/happy-hour', { state: 'none' })).toBe(true);
     expect(hasExpectedShape('/happy-hour', { state: 'active', startsAt: 'a', endsAt: 'b', text: '' })).toBe(true);

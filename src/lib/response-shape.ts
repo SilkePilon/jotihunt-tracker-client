@@ -33,6 +33,8 @@ const OBJECT_CHECKS: Record<string, (data: Record<string, unknown>) => boolean> 
   '/happy-hour': (data) => data.state === 'none' || ((data.state === 'upcoming' || data.state === 'active') && typeof data.startsAt === 'string' && typeof data.endsAt === 'string'),
   '/telegram/messages': (data) => typeof data.linked === 'boolean' && typeof data.connected === 'boolean' && Array.isArray(data.messages),
   '/admin/telegram': (data) => typeof data.state === 'string' && typeof data.connected === 'boolean',
+  '/admin/life360': (data) => typeof data.state === 'string',
+  '/life360/members': (data) => typeof data.linked === 'boolean' && typeof data.stale === 'boolean' && Array.isArray(data.members),
 };
 
 /** Whether `data` has the shape the client expects for a GET of `url` (path, optionally with a query string). */
