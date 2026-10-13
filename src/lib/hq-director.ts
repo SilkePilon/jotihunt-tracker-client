@@ -5,6 +5,8 @@ import type { HuntReport } from '@/types/HuntReport';
 import type { Prediction } from '@/types/Prediction';
 import type { Team } from '@/types/Team';
 import { huntCooldownMs, lastHuntTimeFor } from './fox-status';
+import { formatClock, joinParts } from './format';
+import type { AppNotification } from './notifications';
 import { capitalizeFirstLetter } from './utils';
 
 /** Camera flight duration (MapLibre flyTo/fitBounds). */
@@ -94,4 +96,113 @@ export function tourStops(foxes: HqFox[]): TourStop[] {
 export function homeTarget(home: LngLat, direction: number | null): LngLat {
   if (direction === null) return home;
   return destination(home, SECTOR_CENTRE_M, direction, { units: 'meters' }).geometry.coordinates as LngLat;
+}
+
+/** Card colour (same values as CookieBadge's tone). */
+export type HqTone = 'ok' | 'warn' | 'danger' | 'neutral';
+export type HqCamera = { kind: 'area'; area: string; zoom: number } | { kind: 'home'; direction: number | null };
+
+/** Something shown in the event card; `key` collapses repeats (e.g. a hunt and its status change on one area). */
+export interface HqEvent {
+  key: string;
+  title: string;
+  detail: string;
+  tone: HqTone;
+  /** null = the camera holds still while the card shows */
+  camera: HqCamera | null;
+}
+
+const STATUS_WORD: Record<string, string> = { green: 'Actief', orange: 'Onderweg', red: 'Inactief' };
+
+export function eventFromNotification(notification: AppNotification): HqEvent | null {
+  const { type, data, title, body, id } = notification;
+  switch (type) {
+    case 'fox-status': {
+      const area = data.area?.toLowerCase();
+      if (!area) return null;
+      const status = data.status ?? '';
+      const previous = data.previousStatus && STATUS_WORD[data.previousStatus];
+      return {
+        key: `area:${area}`,
+        title: `${capitalizeFirstLetter(area)} is ${STATUS_WORD[status] ?? status}`,
+        detail: previous ? `Was ${previous}` : body,
+        tone: status === 'green' ? 'ok' : status === 'orange' ? 'warn' : 'neutral',
+        camera: { kind: 'area', area, zoom: AREA_ZOOM },
+      };
+    }
+    case 'counter-hunt':
+      return { key: 'counter-hunt', title: title || 'Tegenhunt!', detail: body, tone: 'danger', camera: { kind: 'home', direction: data.direction ?? null } };
+    case 'broadcast':
+    case 'hunt-deadline':
+    case 'happy-hour':
+      return { key: id, title, detail: body, tone: 'warn', camera: null };
+    default:
+      return { key: id, title, detail: body, tone: 'neutral', camera: null };
+  }
+}
+
+/** Reports that weren't there at the previous check; none on the first check (no replay after a reload). */
+export function newReports(previousIds: ReadonlySet<string> | null, reports: HuntReport[]): HuntReport[] {
+  if (!previousIds) return [];
+  return reports.filter((report) => !previousIds.has(report._id));
+}
+
+export function huntEvent(report: HuntReport): HqEvent {
+  const area = report.area.toLowerCase();
+  return {
+    key: `area:${area}`,
+    title: `Hunt op ${capitalizeFirstLetter(area)}!`,
+    detail: joinParts(report.huntCode ?? 'Code wordt gelezen', `door ${report.reportedByName}`, 'cooldown gestart'),
+    tone: 'ok',
+    camera: { kind: 'area', area, zoom: HUNT_ZOOM },
+  };
+}
+
+/** Foxes whose cooldown ran out since the previous check and that can be hunted (not red); none on the first check. */
+export function endedCooldowns(previous: ReadonlyMap<string, number> | null, foxes: HqFox[]): HqFox[] {
+  if (!previous) return [];
+  return foxes.filter((fox) => (previous.get(fox.key) ?? 0) > 0 && fox.cooldownMs === 0 && fox.group !== 'red');
+}
+
+export function cooldownEvent(fox: HqFox): HqEvent {
+  return {
+    key: `area:${fox.key}`,
+    title: `${fox.name} is weer te hunten`,
+    detail: fox.lastHunt ? `Cooldown voorbij · laatste hunt ${formatClock(fox.lastHunt)}` : 'Cooldown voorbij',
+    tone: 'ok',
+    camera: { kind: 'area', area: fox.key, zoom: AREA_ZOOM },
+  };
+}
+
+/** `step` changes on every camera move: the director flies and restarts its timer per step. */
+export interface DirectorState {
+  current: HqEvent | null;
+  queue: HqEvent[];
+  tourIndex: number;
+  step: number;
+}
+
+export const INITIAL_DIRECTOR: DirectorState = { current: null, queue: [], tourIndex: 0, step: 0 };
+
+/** Queue events (FIFO); a repeat of what's on screen is dropped, a repeat of a queued one replaces it. The first event interrupts the tour. */
+export function enqueue(state: DirectorState, events: HqEvent[]): DirectorState {
+  let queue = state.queue;
+  for (const event of events) {
+    if (state.current?.key === event.key) continue;
+    const index = queue.findIndex((queued) => queued.key === event.key);
+    queue = index >= 0 ? queue.map((queued, i) => (i === index ? event : queued)) : [...queue, event];
+  }
+  if (state.current || queue.length === 0) return { ...state, queue };
+  const [current, ...rest] = queue;
+  return { ...state, current, queue: rest, step: state.step + 1 };
+}
+
+/** Timer ran out: next queued event, else back to the tour at its next stop, else the next tour stop. */
+export function advance(state: DirectorState): DirectorState {
+  if (state.current) {
+    const [next, ...rest] = state.queue;
+    if (next) return { ...state, current: next, queue: rest, step: state.step + 1 };
+    return { ...state, current: null, queue: [], tourIndex: state.tourIndex + 1, step: state.step + 1 };
+  }
+  return { ...state, tourIndex: state.tourIndex + 1, step: state.step + 1 };
 }
