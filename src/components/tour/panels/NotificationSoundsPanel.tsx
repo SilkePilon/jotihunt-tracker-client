@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ComponentType } from 'react';
 import { BellRingIcon, FlagIcon, MegaphoneIcon, NewspaperIcon, PlayIcon, PuzzleIcon, SirenIcon, SquareIcon, TimerIcon, Volume2Icon } from 'lucide-react';
+import { CelebrationIcon } from '@/components/MaterialGlyph';
 import { playNotificationSound } from '@/lib/notification-sounds';
 import type { SoundKey } from '@/lib/notifications';
 import { cn } from '@/lib/utils';
@@ -19,6 +20,7 @@ const SOUNDS: SoundItem[] = [
   { key: 'fox-green', label: 'Vos op groen', when: 'Jagen mag! Het belangrijkste geluid.', icon: FlagIcon, tone: 'bg-green-500/15 text-green-600 dark:text-green-400' },
   { key: 'counter-hunt', label: 'Tegenhunt', when: 'Er is een tegenhunt bij ons clubhuis, met de richting.', icon: SirenIcon, tone: 'bg-red-500/15 text-red-600 dark:text-red-400' },
   { key: 'broadcast', label: 'Bericht van HQ', when: 'Altijd aan. Lees het bericht meteen.', icon: MegaphoneIcon, tone: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400' },
+  { key: 'happy-hour', label: 'Happy hour', when: 'Hunts tellen dubbel. Tegenhunts tellen niet mee.', icon: CelebrationIcon, tone: 'bg-amber-500/15 text-amber-600 dark:text-amber-400' },
   { key: 'deadline', label: 'Hunt deadline', when: 'Nog 10 minuten om een hunt in te sturen.', icon: TimerIcon, tone: 'bg-amber-500/15 text-amber-600 dark:text-amber-400' },
   { key: 'fox-status', label: 'Vos rood of oranje', when: 'Een deelgebied verandert van status.', icon: BellRingIcon, tone: 'bg-orange-500/15 text-orange-600 dark:text-orange-400' },
   { key: 'hint', label: 'Nieuwe hint', when: 'De organisatie heeft een hint gepubliceerd.', icon: PuzzleIcon, tone: 'bg-sky-500/15 text-sky-600 dark:text-sky-400' },

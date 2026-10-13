@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { isRecent, mergeFeed, pickPrimary, pickSound, shouldAlert, soundKey, toastKind, type AppNotification } from './notifications';
+import { isSilent, isRecent, mergeFeed, pickPrimary, pickSound, shouldAlert, soundKey, toastKind, type AppNotification } from './notifications';
 
 const n = (overrides: Partial<AppNotification>): AppNotification => ({ id: '1', type: 'hint', title: 't', body: '', urgent: false, data: {}, createdAt: '2026-10-17T20:00:00Z', ...overrides });
 
@@ -76,5 +76,23 @@ describe('isRecent', () => {
   });
   test('slightly ahead of the server clock still counts', () => {
     expect(isRecent(n({ createdAt: '2026-10-17T20:10:01Z' }), serverTime, 60_000)).toBe(true);
+  });
+});
+
+describe('happy hour', () => {
+  test('own sound key, below broadcast and above the deadline', () => {
+    const happyHour = n({ id: 'h', type: 'happy-hour', urgent: true });
+    expect(soundKey(happyHour)).toBe('happy-hour');
+    expect(toastKind(happyHour)).toBe('warning');
+    expect(pickSound([n({ id: 'd', type: 'hunt-deadline' }), happyHour])).toBe('happy-hour');
+    expect(pickSound([happyHour, n({ id: 'c', type: 'broadcast' })])).toBe('broadcast');
+  });
+
+  test('the non-urgent "voorbij" notification is silent', () => {
+    const ended = n({ id: 'e', type: 'happy-hour', urgent: false });
+    expect(isSilent(ended)).toBe(true);
+    expect(isSilent(n({ type: 'hint', urgent: false }))).toBe(false);
+    expect(pickSound([ended])).toBeNull();
+    expect(pickSound([ended, n({ id: 'i', type: 'hint' })])).toBe('hint');
   });
 });

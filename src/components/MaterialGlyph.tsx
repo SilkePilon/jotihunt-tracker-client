@@ -9,3 +9,8 @@ export default function MaterialGlyph({ name, size, color, className }: { name: 
     </svg>
   );
 }
+
+/** The happy-hour icon (Material `celebration`), usable where a lucide-style icon component is expected. */
+export function CelebrationIcon({ className }: { className?: string }) {
+  return <MaterialGlyph name="celebration" size={16} className={className} />;
+}
