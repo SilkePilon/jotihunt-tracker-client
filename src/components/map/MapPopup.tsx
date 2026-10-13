@@ -1,41 +1,34 @@
-import {Popup, type PopupProps} from 'react-map-gl/maplibre';
-import PropTypes from 'prop-types';
-import {ReactNode} from "react";
-import type {PositionAnchor} from "maplibre-gl";
+import type { ReactNode } from 'react';
+import type { PositionAnchor } from 'maplibre-gl';
+import { Popup, type PopupProps } from 'react-map-gl/maplibre';
 
 type OffsetObject = Partial<Record<PositionAnchor, [number, number]>>;
 
-type MapPopupProps = {
-    longitude: number;
-    latitude: number;
-    onClose: () => void;
-    children: ReactNode;
-    // MapLibre's Offset type requires every anchor key to be present; we
-    // only ever set one (e.g. `bottom`), so accept a partial map here and
-    // cast when handing it to <Popup>. Partial offsets work fine at runtime.
-    offset?: number | [number, number] | OffsetObject;
-};
-
-const defaultOffset: OffsetObject = {bottom: [0, -45]};
-
-export default function MapPopup({longitude, latitude, onClose, offset = defaultOffset, children}: MapPopupProps) {
-    return (
-        <Popup anchor="bottom" longitude={longitude} latitude={latitude} onClose={onClose} closeOnClick={true}
-               offset={offset as PopupProps['offset']} maxWidth="400px" className="z-20">
-            <div>{children}</div>
-        </Popup>
-    );
+interface MapPopupProps {
+  longitude: number;
+  latitude: number;
+  onClose: () => void;
+  children: ReactNode;
+  // MapLibre's Offset type requires every anchor key; we only ever set `bottom`, so accept a partial map and cast.
+  offset?: number | [number, number] | OffsetObject;
 }
 
-MapPopup.propTypes = {
-    longitude: PropTypes.number.isRequired,
-    latitude: PropTypes.number.isRequired,
-    onClose: PropTypes.func.isRequired,
-    offset: PropTypes.oneOfType([
-        PropTypes.number,
-        PropTypes.array,
-        PropTypes.object,
-        PropTypes.func,
-    ]),
-    children: PropTypes.node.isRequired,
-};
+const defaultOffset: OffsetObject = { bottom: [0, -45] };
+
+/** Compact map card (236px, styled in index.css) above a point. */
+export default function MapPopup({ longitude, latitude, onClose, offset = defaultOffset, children }: MapPopupProps) {
+  return (
+    <Popup
+      anchor="bottom"
+      longitude={longitude}
+      latitude={latitude}
+      onClose={onClose}
+      closeOnClick={true}
+      offset={offset as PopupProps['offset']}
+      maxWidth="236px"
+      className="z-20"
+    >
+      <div className="flex w-[216px] flex-col">{children}</div>
+    </Popup>
+  );
+}

@@ -19,6 +19,8 @@ interface CopyButtonProps {
   /** Overrides the default "<label> gekopieerd" toast */
   successMessage?: string;
   size?: 'icon-xs' | 'icon-sm' | 'icon';
+  /** Outline (default) or ghost, for buttons on a tinted row */
+  variant?: 'outline' | 'ghost';
 }
 
 /**
@@ -26,7 +28,7 @@ interface CopyButtonProps {
  * Copying goes through copyToClipboard (toast either way, also when the clipboard API is missing on plain http),
  * so animate-ui's button is used controlled and never copies by itself.
  */
-export default function CopyButton({ value, label, successMessage, size = 'icon-xs' }: CopyButtonProps) {
+export default function CopyButton({ value, label, successMessage, size = 'icon-xs', variant = 'outline' }: CopyButtonProps) {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -38,7 +40,7 @@ export default function CopyButton({ value, label, successMessage, size = 'icon-
   return (
     <AnimatedCopyButton
       type="button"
-      variant="outline"
+      variant={variant}
       size={SIZES[size].size}
       className={SIZES[size].className}
       aria-label={`${label} kopiëren`}

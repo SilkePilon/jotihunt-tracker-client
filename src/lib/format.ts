@@ -18,3 +18,16 @@ export function formatCountdown(ms: number): string {
   const seconds = String(totalSeconds % 60).padStart(2, '0');
   return hours > 0 ? `${hours}:${String(minutes).padStart(2, '0')}:${seconds}` : `${minutes}:${seconds}`;
 }
+
+/** "350 m van jou" / "2,4 km van jou" for the popups; undefined when unknown or under 20 m (that is you). */
+export function formatDistanceFromMe(metres: number | undefined): string | undefined {
+  if (metres === undefined || !Number.isFinite(metres) || metres < 20) return undefined;
+  const rounded = Math.round(metres);
+  if (rounded < 1000) return `${rounded} m van jou`;
+  return `${(metres / 1000).toFixed(1).replace('.', ',')} km van jou`;
+}
+
+/** The present parts joined with " · " (popup subtitles). */
+export function joinParts(...parts: (string | false | null | undefined)[]): string {
+  return parts.filter(Boolean).join(' · ');
+}

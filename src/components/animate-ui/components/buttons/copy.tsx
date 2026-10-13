@@ -100,7 +100,8 @@ function CopyButton({
       onClick={handleCopy}
       {...props}
     >
-      <AnimatePresence mode="popLayout">
+      {/* initial={false}: no pop-in when the button mounts, only the copy ↔ check swap animates */}
+      <AnimatePresence mode="popLayout" initial={false}>
         <motion.span
           key={isCopied ? 'check' : 'copy'}
           data-slot="copy-button-icon"

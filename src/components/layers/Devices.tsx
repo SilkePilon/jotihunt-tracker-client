@@ -95,7 +95,7 @@ export default function Devices() {
         <Layer id={HUNTERS_HOVER_LAYER} type="symbol" source={HUNTERS_SOURCE} layout={hoverLayout} filter={hoverFilter} />
       </Source>
       {hoveredDevice && <DeviceTooltip position={hoveredDevice} />}
-      {activeDevice && <DevicePopup key={active!.opened} position={activeDevice} onClose={closePopup} />}
+      {activeDevice && <DevicePopup key={active!.opened} position={activeDevice} icon={iconByDevice.get(activeDevice.deviceId) ?? 'phone'} onClose={closePopup} />}
     </>
   );
 }
