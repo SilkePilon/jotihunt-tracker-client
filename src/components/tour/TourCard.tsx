@@ -1,14 +1,10 @@
-import { forwardRef, useState, type CSSProperties } from 'react';
+import { forwardRef, useState } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon, PauseIcon, PlayIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-
-// Ring around the pause button: 36px box, 2.5px stroke
-const RING_SIZE = 36;
-const RING_STROKE = 2.5;
-const RING_RADIUS = (RING_SIZE - RING_STROKE) / 2;
-const RING_LENGTH = 2 * Math.PI * RING_RADIUS;
+import StepDots from './StepDots';
+import TimerRing from './TimerRing';
 
 interface TourCardProps {
   title: string;
@@ -72,19 +68,7 @@ const TourCard = forwardRef<HTMLDivElement, TourCardProps>(function TourCard(pro
         <p className="text-base font-semibold">{title}</p>
         <p className="text-sm text-muted-foreground">{body}</p>
       </div>
-      <div className="flex flex-wrap items-center gap-1 px-4" aria-hidden>
-        {Array.from({ length: stepCount }, (_, i) => (
-          <span
-            key={i}
-            className={cn(
-              'h-1.5 rounded-full transition-[width] duration-200 motion-reduce:transition-none',
-              i === stepIndex ? 'w-4 bg-primary' : 'w-1.5',
-              i < stepIndex && 'bg-primary',
-              i > stepIndex && 'bg-muted-foreground/30',
-            )}
-          />
-        ))}
-      </div>
+      <StepDots count={stepCount} index={stepIndex} className="px-4" />
       <span className="sr-only">
         Stap {stepIndex + 1} van {stepCount}
       </span>
@@ -92,32 +76,7 @@ const TourCard = forwardRef<HTMLDivElement, TourCardProps>(function TourCard(pro
         <Button variant="ghost" size="sm" onClick={onSkip} className="mr-auto">
           Overslaan
         </Button>
-        <div className="relative flex size-9 items-center justify-center">
-          <svg aria-hidden className="pointer-events-none absolute inset-0 -rotate-90" viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`}>
-            <circle cx={RING_SIZE / 2} cy={RING_SIZE / 2} r={RING_RADIUS} fill="none" strokeWidth={RING_STROKE} className="stroke-muted" />
-            {durationMs !== undefined && (
-              <circle
-                // Remount per step so the animation restarts
-                key={stepIndex}
-                cx={RING_SIZE / 2}
-                cy={RING_SIZE / 2}
-                r={RING_RADIUS}
-                fill="none"
-                strokeWidth={RING_STROKE}
-                strokeLinecap="round"
-                strokeDasharray={RING_LENGTH}
-                className="stroke-primary"
-                style={
-                  {
-                    '--tour-ring-length': RING_LENGTH,
-                    animation: `tour-ring ${durationMs}ms linear forwards`,
-                    animationPlayState: paused || hovered ? 'paused' : 'running',
-                  } as CSSProperties
-                }
-                onAnimationEnd={onTimeUp}
-              />
-            )}
-          </svg>
+        <TimerRing className="size-9" durationMs={durationMs} runKey={stepIndex} paused={paused || hovered} onDone={onTimeUp}>
           <Button
             variant="ghost"
             size="icon-sm"
@@ -128,7 +87,7 @@ const TourCard = forwardRef<HTMLDivElement, TourCardProps>(function TourCard(pro
           >
             {paused ? <PlayIcon /> : <PauseIcon />}
           </Button>
-        </div>
+        </TimerRing>
         <Button variant="outline" size="icon" aria-label="Vorige" onClick={onPrev} disabled={stepIndex === 0}>
           <ChevronLeftIcon />
         </Button>
