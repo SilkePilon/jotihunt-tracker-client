@@ -6,14 +6,17 @@ import {
   greyOut,
   hasUsableAccuracy,
   LIFE360_DRIVING_GREEN,
+  LIFE360_LOW_BATTERY,
   LIFE360_STALE_GREY,
+  LIFE360_WALKING_KMH,
   life360AccuracyCircles,
+  life360AccuracyColor,
   life360Age,
   life360AvatarKey,
+  life360Badge,
   life360DrivingText,
   life360Features,
   life360ImageId,
-  life360RimColor,
   life360Tone,
   parseLife360ImageId,
 } from './life360-map';
@@ -43,28 +46,76 @@ describe('life360Tone', () => {
     expect(life360DrivingText(byId('m-mila').location!, false, NOW)).toBeUndefined();
   });
 
-  test('rim colours: purple, green while driving, grey when stale', () => {
-    expect(life360RimColor('live')).toBe(LIFE360_PURPLE);
-    expect(life360RimColor('driving')).toBe(LIFE360_DRIVING_GREEN);
-    expect(life360RimColor('stale')).toBe(LIFE360_STALE_GREY);
+  test('accuracy colours: purple, green while driving, grey when stale', () => {
+    expect(life360AccuracyColor('live')).toBe(LIFE360_PURPLE);
+    expect(life360AccuracyColor('driving')).toBe(LIFE360_DRIVING_GREEN);
+    expect(life360AccuracyColor('stale')).toBe(LIFE360_STALE_GREY);
+  });
+});
+
+describe('life360Badge', () => {
+  // Mila: fresh fix, not driving, no speed, battery 54 %, not charging
+  const mila = byId('m-mila').location!;
+  const badge = (overrides: Partial<typeof mila>, linkStale = false) => life360Badge({ ...mila, ...overrides }, linkStale, NOW);
+
+  test('one badge per state', () => {
+    expect(badge({})).toBe('still');
+    expect(badge({ driving: true, speedKmh: 42 })).toBe('driving');
+    expect(badge({ speedKmh: 5 })).toBe('walking');
+    expect(badge({ battery: 8 })).toBe('battery');
+    expect(life360Badge(byId('m-lars').location!, false, NOW)).toBe('stale');
+  });
+
+  test('priority: stale, driving, walking, low battery', () => {
+    expect(badge({ driving: true, speedKmh: 42, battery: 5 }, true)).toBe('stale');
+    expect(badge({ driving: true, speedKmh: 42, battery: 5 })).toBe('driving');
+    expect(badge({ speedKmh: 5, battery: 5 })).toBe('walking');
+  });
+
+  test('walking from 3 km/h; no speed known is still', () => {
+    expect(badge({ speedKmh: LIFE360_WALKING_KMH - 0.1 })).toBe('still');
+    expect(badge({ speedKmh: LIFE360_WALKING_KMH })).toBe('walking');
+    expect(badge({ speedKmh: null })).toBe('still');
+    // Driving without a speed is still driving
+    expect(badge({ driving: true, speedKmh: null })).toBe('driving');
+  });
+
+  test('low battery at 15 % or less, not while charging, not when unknown', () => {
+    expect(badge({ battery: LIFE360_LOW_BATTERY })).toBe('battery');
+    expect(badge({ battery: LIFE360_LOW_BATTERY + 1 })).toBe('still');
+    expect(badge({ battery: 0 })).toBe('battery');
+    expect(badge({ battery: LIFE360_LOW_BATTERY, charging: true })).toBe('still');
+    expect(badge({ battery: null })).toBe('still');
   });
 });
 
 describe('image ids', () => {
   test('round trip', () => {
-    const spec = { memberId: 'm-jesse', tone: 'driving' as const, photo: true, initials: 'JS', avatar: 'abc123' };
-    expect(life360ImageId(spec)).toBe('l360|m-jesse|driving|photo|JS|abc123');
+    const spec = { theme: 'light' as const, memberId: 'm-jesse', badge: 'driving' as const, photo: true, initials: 'JS', avatar: 'abc123' };
+    expect(life360ImageId(spec)).toBe('l360|light|m-jesse|driving|photo|JS|abc123');
     expect(parseLife360ImageId(life360ImageId(spec))).toEqual(spec);
-    expect(parseLife360ImageId('l360|m-lars|stale|initials|LB|-')).toEqual({ memberId: 'm-lars', tone: 'stale', photo: false, initials: 'LB', avatar: '-' });
+    expect(parseLife360ImageId('l360|dark|m-lars|stale|initials|LB|-')).toEqual({ theme: 'dark', memberId: 'm-lars', badge: 'stale', photo: false, initials: 'LB', avatar: '-' });
+  });
+
+  test('round trip for every badge, theme and variant', () => {
+    for (const theme of ['light', 'dark'] as const)
+      for (const badge of ['still', 'walking', 'driving', 'battery', 'stale'] as const)
+        for (const photo of [true, false]) {
+          const spec = { theme, memberId: 'm-1', badge, photo, initials: 'AB', avatar: 'k1' };
+          expect(parseLife360ImageId(life360ImageId(spec))).toEqual(spec);
+        }
   });
 
   test('other images are not ours', () => {
     expect(parseLife360ImageId('jh|light|arrow')).toBeUndefined();
-    expect(parseLife360ImageId('l360|m-1|fast|photo|JS|a')).toBeUndefined();
-    expect(parseLife360ImageId('l360|m-1|live|video|JS|a')).toBeUndefined();
-    expect(parseLife360ImageId('l360|m-1|live|photo|JS')).toBeUndefined();
-    expect(parseLife360ImageId('l360||live|photo|JS|a')).toBeUndefined();
-    expect(parseLife360ImageId('l360|m-1|live|photo|JS|')).toBeUndefined();
+    expect(parseLife360ImageId('l360|light|m-1|fast|photo|JS|a')).toBeUndefined();
+    expect(parseLife360ImageId('l360|sepia|m-1|still|photo|JS|a')).toBeUndefined();
+    expect(parseLife360ImageId('l360|light|m-1|still|video|JS|a')).toBeUndefined();
+    expect(parseLife360ImageId('l360|light|m-1|still|photo|JS')).toBeUndefined();
+    expect(parseLife360ImageId('l360|light||still|photo|JS|a')).toBeUndefined();
+    expect(parseLife360ImageId('l360|light|m-1|still|photo|JS|')).toBeUndefined();
+    // The old (tone) ids
+    expect(parseLife360ImageId('l360|m-1|live|photo|JS|a')).toBeUndefined();
   });
 
   test('avatar key: short, stable, changes with the avatar, "-" without one', () => {
@@ -78,29 +129,36 @@ describe('image ids', () => {
 
 describe('life360Features', () => {
   test('one point per sharing member, with its icon', () => {
-    const features = life360Features(members, false, hasPhoto, NOW).features;
+    const features = life360Features(members, false, hasPhoto, 'light', NOW).features;
     expect(features.map((feature) => feature.properties.id)).toEqual(['m-jesse', 'm-mila', 'm-lars', 'm-sem', 'm-noor']);
     expect(features[0].geometry.coordinates).toEqual([5.1214, 52.0907]);
-    expect(features[0].properties.icon).toBe(`l360|m-jesse|driving|photo|JS|${life360AvatarKey(byId('m-jesse').avatarUrl)}`);
-    expect(features[2].properties.icon).toBe(`l360|m-lars|stale|initials|LB|${life360AvatarKey(byId('m-lars').avatarUrl)}`);
+    expect(features[0].properties.icon).toBe(`l360|light|m-jesse|driving|photo|JS|${life360AvatarKey(byId('m-jesse').avatarUrl)}`);
+    expect(features[1].properties.icon).toContain('|m-mila|still|');
+    expect(features[2].properties.icon).toBe(`l360|light|m-lars|stale|initials|LB|${life360AvatarKey(byId('m-lars').avatarUrl)}`);
+  });
+
+  test('the theme is part of the image', () => {
+    const [light] = life360Features(members, false, hasPhoto, 'light', NOW).features;
+    const [dark] = life360Features(members, false, hasPhoto, 'dark', NOW).features;
+    expect(dark.properties.icon).toBe(light.properties.icon.replace('|light|', '|dark|'));
   });
 
   test('a stale link greys every member; a photo only once loaded', () => {
-    const features = life360Features(members, true, () => false, NOW).features;
+    const features = life360Features(members, true, () => false, 'light', NOW).features;
     expect(features.every((feature) => feature.properties.icon.includes('|stale|initials|'))).toBe(true);
   });
 
   test('greys an idle member once the clock passes 15 min, without new data', () => {
     const at = new Date(NOW - 14 * 60_000).toISOString();
     const idle = [{ ...byId('m-mila'), location: { ...byId('m-mila').location!, at } }];
-    expect(life360Features(idle, false, hasPhoto, NOW).features[0].properties.icon).toContain('|live|');
-    expect(life360Features(idle, false, hasPhoto, NOW + 2 * 60_000).features[0].properties.icon).toContain('|stale|');
+    expect(life360Features(idle, false, hasPhoto, 'light', NOW).features[0].properties.icon).toContain('|still|');
+    expect(life360Features(idle, false, hasPhoto, 'light', NOW + 2 * 60_000).features[0].properties.icon).toContain('|stale|');
   });
 
   test('a new avatar is a new image', () => {
     const jesse = byId('m-jesse');
-    const before = life360Features([jesse], false, hasPhoto, NOW).features[0].properties.icon;
-    const after = life360Features([{ ...jesse, avatarUrl: `${jesse.avatarUrl}-new` }], false, hasPhoto, NOW).features[0].properties.icon;
+    const before = life360Features([jesse], false, hasPhoto, 'light', NOW).features[0].properties.icon;
+    const after = life360Features([{ ...jesse, avatarUrl: `${jesse.avatarUrl}-new` }], false, hasPhoto, 'light', NOW).features[0].properties.icon;
     expect(after).not.toBe(before);
   });
 });
@@ -118,7 +176,7 @@ test('life360Age: Dutch relative age, undefined for an unreadable time', () => {
   expect(life360Age('', NOW)).toBeUndefined();
 });
 
-test('life360AccuracyCircles: a polygon per sharing member, in the rim colour', () => {
+test('life360AccuracyCircles: a polygon per sharing member, in the tone colour', () => {
   const circles = life360AccuracyCircles(members, false, NOW).features;
   expect(circles).toHaveLength(5);
   expect(circles[0].geometry.type).toBe('Polygon');

@@ -11,12 +11,13 @@ import { drawLife360Icon } from './life360/life360-icons';
 import Life360Popup from './life360/Life360Popup';
 import Life360Tooltip from './life360/Life360Tooltip';
 import { mapImagePixelRatio } from './map-images';
+import { useMarkerTheme } from './marker-icons';
 import { featureId, useLayerInteractions, usePopupSelection } from './map-interactions';
 
 const MEMBERS_SOURCE = 'life360';
 const ACCURACY_SOURCE = 'life360-accuracy';
 const NO_MEMBERS: Life360Member[] = [];
-// The features carry the full image id (the images don't depend on the theme)
+// The features carry the full image id (theme included)
 const LAYOUT: SymbolLayerSpecification['layout'] = { 'icon-image': ['get', 'icon'], 'icon-allow-overlap': true, 'icon-ignore-placement': true };
 const HOVER_LAYOUT: SymbolLayerSpecification['layout'] = { ...LAYOUT, 'icon-size': 1.1 };
 const ACCURACY_PAINT: FillLayerSpecification['paint'] = { 'fill-color': ['get', 'color'], 'fill-opacity': 0.14, 'fill-outline-color': ['get', 'color'] };
@@ -44,19 +45,23 @@ function addLife360Image(map: MaplibreMap, id: string, avatarOf: (memberId: stri
   return true;
 }
 
-/** Life360 members as their own map layer: avatar cookies, accuracy circles, hover tooltip and click popup. */
+/** Life360 members as their own map layer: avatars with a status badge, accuracy circles, hover tooltip and click popup. */
 export default function Life360() {
   const { data } = useLife360Members(true);
   const map = useMap().current?.getMap();
   const members = data?.linked ? data.members : NO_MEMBERS;
   const linkStale = !!data?.stale;
+  const theme = useMarkerTheme();
 
   const avatarPaths = useMemo(() => members.flatMap((member) => (member.avatarUrl ? [member.avatarUrl] : [])), [members]);
   const loadedAvatars = useLife360Avatars(avatarPaths);
   // Staleness is decided on each poll and on a coarse clock tick, so an idle member greys out on time
   const [now, setNow] = useState(() => Date.now());
   useInterval(() => setNow(Date.now()), data?.linked ? STALE_TICK_MS : null);
-  const features = useMemo(() => life360Features(members, linkStale, (member) => !!member.avatarUrl && loadedAvatars.has(member.avatarUrl), now), [members, linkStale, loadedAvatars, now]);
+  const features = useMemo(
+    () => life360Features(members, linkStale, (member) => !!member.avatarUrl && loadedAvatars.has(member.avatarUrl), theme, now),
+    [members, linkStale, loadedAvatars, theme, now],
+  );
   const circles = useMemo(() => life360AccuracyCircles(members, linkStale, now), [members, linkStale, now]);
 
   // The image drawer looks up avatar paths through a ref, so the styleimagemissing listener stays subscribed
@@ -75,7 +80,7 @@ export default function Life360() {
     };
   }, [map]);
 
-  // New looks (started driving, photo loaded, went stale): add them before the layer asks
+  // New looks (started driving, photo loaded, went stale, theme switch): add them before the layer asks
   useEffect(() => {
     if (!map) return;
     for (const feature of features.features) addLife360Image(map, feature.properties.icon, (id) => avatarOf.current.get(id));
