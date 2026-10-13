@@ -1,10 +1,11 @@
 import { describe, expect, test } from 'bun:test';
 import { swrKeyFor, telegramAdminRefreshInterval, TELEGRAM_VIEW_PATHS } from './telegram';
 
-test('telegramAdminRefreshInterval: 2 s while linking, else off', () => {
+test('telegramAdminRefreshInterval: 2 s while linking, 30 s while linked, else off', () => {
   expect(telegramAdminRefreshInterval({ state: 'qr' })).toBe(2000);
   expect(telegramAdminRefreshInterval({ state: 'password' })).toBe(2000);
-  expect(telegramAdminRefreshInterval({ state: 'linked' })).toBe(0);
+  expect(telegramAdminRefreshInterval({ state: 'linked' })).toBe(30_000);
+  expect(telegramAdminRefreshInterval({ state: 'unavailable' })).toBe(0);
   expect(telegramAdminRefreshInterval({ state: 'unlinked' })).toBe(0);
   expect(telegramAdminRefreshInterval(undefined)).toBe(0);
 });

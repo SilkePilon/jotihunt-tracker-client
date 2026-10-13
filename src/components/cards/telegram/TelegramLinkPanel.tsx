@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useId, useState } from 'react';
 import { Loader2Icon, XIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,9 +32,21 @@ function Header({ title, onCancel }: { title: string; onCancel: () => void }) {
   );
 }
 
-function QrStep({ url, expiresAt, onCancel }: { url: string; expiresAt?: string; onCancel: () => void }) {
+function QrStep({ url, expiresAt, onCancel }: { url?: string; expiresAt?: string; onCancel: () => void }) {
   const [now, setNow] = useState(() => Date.now());
   useInterval(() => setNow(Date.now()), 1000);
+  if (!url) {
+    // The server is still asking Telegram for the first token
+    return (
+      <div className="flex flex-col gap-2" data-telegram-state="qr">
+        <Header title="Scan in Telegram" onCancel={onCancel} />
+        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Loader2Icon className="size-3.5 animate-spin text-[#229ED9]" />
+          QR-code laden…
+        </span>
+      </div>
+    );
+  }
   return (
     <div className="flex flex-col gap-2" data-telegram-state="qr">
       <Header title="Scan in Telegram" onCancel={onCancel} />
@@ -62,6 +74,7 @@ function PasswordStep({ hint, onSubmit, onCancel }: { hint?: string; onSubmit: T
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const errorId = useId();
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -81,9 +94,14 @@ function PasswordStep({ hint, onSubmit, onCancel }: { hint?: string; onSubmit: T
         placeholder={hint}
         value={password}
         aria-invalid={!!error}
+        aria-describedby={error ? errorId : undefined}
         onChange={(event) => setPassword(event.target.value)}
       />
-      {error && <p className="text-xs font-medium text-destructive">{error}</p>}
+      {error && (
+        <p id={errorId} className="text-xs font-medium text-destructive">
+          {error}
+        </p>
+      )}
       <Button type="submit" className={TELEGRAM_BUTTON} disabled={!password || busy}>
         {busy && <Loader2Icon className="animate-spin" />}
         Koppelen
@@ -111,7 +129,7 @@ export default function TelegramLinkPanel({ status, onLink, onCancel, onSubmitPa
     case 'unavailable':
       return <p className="text-xs text-muted-foreground">Telegram is niet ingesteld op de server (TELEGRAM_API_ID/HASH).</p>;
     case 'qr':
-      return status.url ? <QrStep url={status.url} expiresAt={status.expiresAt} onCancel={cancel} /> : null;
+      return <QrStep url={status.url} expiresAt={status.expiresAt} onCancel={cancel} />;
     case 'password':
       return <PasswordStep hint={status.hint} onSubmit={onSubmitPassword} onCancel={cancel} />;
     case 'unlinked':

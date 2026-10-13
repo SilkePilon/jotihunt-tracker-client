@@ -13,9 +13,16 @@ const baseUrl = import.meta.env.API_BASE_URL;
  * @param authHeader The authorization header to use
  * @param method The HTTP method to use
  * @param body The body to send with the request
+ * @param timeoutMs Request timeout; use SLOW_REQUEST_TIMEOUT_MS for calls the server needs long for
  * @returns The data returned by the API
  */
-export const fetcherWithMethod = async (url: string, authHeader: string, method: 'GET' | 'POST' | 'DELETE' | 'PUT' | 'PATCH' = 'GET', body?: unknown) => {
+export const fetcherWithMethod = async (
+  url: string,
+  authHeader: string,
+  method: 'GET' | 'POST' | 'DELETE' | 'PUT' | 'PATCH' = 'GET',
+  body?: unknown,
+  timeoutMs = REQUEST_TIMEOUT_MS,
+) => {
   const response = await axios({
     url: `${baseUrl}${url}`,
     method,
@@ -23,7 +30,7 @@ export const fetcherWithMethod = async (url: string, authHeader: string, method:
       Authorization: authHeader,
     },
     data: body, // Used for POST, PUT, DELETE, etc.
-    timeout: REQUEST_TIMEOUT_MS,
+    timeout: timeoutMs,
   });
 
   if (response.data?.error) throw new Error(response.data.error);

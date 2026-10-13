@@ -5,9 +5,17 @@ export const TELEGRAM_MESSAGES_POLL_MS = 30_000;
 /** While an admin links the account: the QR token rotates (~30 s) and the scan must show up quickly. */
 export const TELEGRAM_LINKING_POLL_MS = 2000;
 
-/** SWR refresh interval of the admin status: every 2 s while linking (QR or 2FA password), else no polling. */
+/** While linked: notice a session revoked on the server ("Luistert via …" must not stay). */
+export const TELEGRAM_LINKED_POLL_MS = 30_000;
+
+/**
+ * SWR refresh interval of the admin status: every 2 s while linking (QR or 2FA password), 30 s while linked, else no
+ * polling. Pass the result as a number, not as SWR's function form: SWR only re-reads that function after a timer
+ * fired, so a 0 (no timer) would never turn into polling.
+ */
 export function telegramAdminRefreshInterval(status: TelegramAdminStatus | undefined): number {
-  return status?.state === 'qr' || status?.state === 'password' ? TELEGRAM_LINKING_POLL_MS : 0;
+  if (status?.state === 'qr' || status?.state === 'password') return TELEGRAM_LINKING_POLL_MS;
+  return status?.state === 'linked' ? TELEGRAM_LINKED_POLL_MS : 0;
 }
 
 /**

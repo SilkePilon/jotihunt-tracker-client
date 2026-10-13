@@ -13,7 +13,7 @@ export default function TelegramSection() {
   const user = useAuthUser<User>();
   const isAdmin = !!user?.admin;
   const { messages, linked } = useTelegramMessages();
-  const { status, link, submitPassword, unlink } = useTelegramAdmin(isAdmin);
+  const { status, link, submitPassword, unlink, refresh } = useTelegramAdmin(isAdmin);
 
   // The QR scan (or password) completes on the server; the admin poll notices it: refresh the "linked" views
   const state = status?.state;
@@ -22,6 +22,13 @@ export default function TelegramSection() {
     if (state === 'linked' && previousState.current && previousState.current !== 'linked') revalidateTelegramViews();
     previousState.current = state;
   }, [state]);
+
+  // The messages say the link is gone (revoked on the server): don't wait 30 s to drop "Luistert via …"
+  const previousLinked = useRef(linked);
+  useEffect(() => {
+    if (linked === false && previousLinked.current === true && isAdmin) refresh();
+    previousLinked.current = linked;
+  }, [linked, isAdmin, refresh]);
 
   const admin: TelegramAdminProps | undefined = isAdmin
     ? {
@@ -45,7 +52,10 @@ export default function TelegramSection() {
             await submitPassword(password);
             return null;
           } catch (error) {
-            return apiErrorMessage(error, 'Koppelen is mislukt, probeer het opnieuw.');
+            const message = apiErrorMessage(error, 'Koppelen is mislukt, probeer het opnieuw.');
+            // Also as a toast: when the login was cancelled (409) or failed (502), the next poll replaces this step
+            toast.error(message);
+            return message;
           }
         },
         onUnlink: async () => {

@@ -23,6 +23,8 @@ self.addEventListener('push', (event) => {
         badge: '/badge-96x96.png',
         tag: `${payload.type || 'melding'}-${payload.id || Date.now()}`,
         requireInteraction: !!payload.urgent,
+        // "Happy hour voorbij" is sent non-urgent and should not make a sound
+        silent: payload.type === 'happy-hour' && payload.urgent === false,
         data: { url: payload.url || '/' },
       });
     })(),
