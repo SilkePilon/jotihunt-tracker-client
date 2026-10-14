@@ -8,7 +8,11 @@ import type { User } from '@/types/User';
 export function useAccount(enabled: boolean) {
   const authHeader = useAuthHeader() || '';
   const { updateUserState } = useAuth();
-  const { data, error, mutate } = useAuthSWR<AccountOverview>(enabled ? '/account' : null, { refreshInterval: 30_000 });
+  const { data, error, mutate } = useAuthSWR<AccountOverview>(enabled ? '/account' : null, {
+    refreshInterval: 30_000,
+    // Closing nulls the key; keep the last data so the dialog doesn't flash skeletons while it animates out
+    keepPreviousData: true,
+  });
   const call = (path: string, method: 'PATCH' | 'DELETE', body?: unknown) => fetcherWithMethod(path, authHeader, method, body);
   const passkeyPath = (id: string) => `/account/passkeys/${encodeURIComponent(id)}`;
 

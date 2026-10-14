@@ -215,6 +215,7 @@ export default function AccountDialog() {
                                   action: async () => {
                                     try {
                                       await logout();
+                                      setConfirmOpen(false);
                                     } catch (failure) {
                                       toast.error(apiErrorMessage(failure, 'Uitloggen is mislukt, probeer het opnieuw.'));
                                     }
@@ -237,6 +238,7 @@ export default function AccountDialog() {
                                 },
                           )
                         }
+                        aria-label={`Uitloggen op ${session.label}`}
                       >
                         Uitloggen
                       </Button>
@@ -264,6 +266,7 @@ export default function AccountDialog() {
                             },
                           })
                         }
+                        aria-label={`${device.name} ontkoppelen`}
                       >
                         Ontkoppelen
                       </Button>

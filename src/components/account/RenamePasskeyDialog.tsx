@@ -4,6 +4,7 @@ import Reveal from '@/components/motion/Reveal';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { apiErrorMessage } from '@/lib/api-error';
 import { classifyPasskeyError, PASSKEY_MESSAGES } from '@/lib/passkey';
 
 interface RenamePasskeyDialogProps {
@@ -42,7 +43,7 @@ export default function RenamePasskeyDialog({ open, name, onOpenChange, onSave }
       await onSave(trimmed);
       onOpenChange(false);
     } catch (failure) {
-      setError(PASSKEY_MESSAGES[classifyPasskeyError(failure)]);
+      setError(apiErrorMessage(failure, PASSKEY_MESSAGES[classifyPasskeyError(failure)]));
     } finally {
       setSaving(false);
     }
