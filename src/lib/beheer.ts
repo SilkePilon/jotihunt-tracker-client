@@ -88,19 +88,41 @@ const STOPPED_TEXT: Record<Exclude<AdminInvite['state'], 'active'>, string> = {
   full: 'vol',
 };
 
+/** "7 van 25 gebruikt", "Eenmalig", "Gebruikt", "3 gebruikt" */
+export function inviteUses(invite: AdminInvite): string {
+  if (invite.maxUses === 1) return invite.uses >= 1 ? 'Gebruikt' : 'Eenmalig';
+  if (invite.maxUses !== null) return `${invite.uses} van ${invite.maxUses} gebruikt`;
+  return `${invite.uses} gebruikt`;
+}
+
+/** "verlopen", "ingetrokken", "vol" */
+export function inviteStateText(state: Exclude<AdminInvite['state'], 'active'>): string {
+  return STOPPED_TEXT[state];
+}
+
 /** "7 van 25 gebruikt · nog 6 uur · Silke", "Eenmalig · nog 52 min · Silke", "3 van 3 gebruikt · vol · Silke" */
 export function inviteMeta(invite: AdminInvite, now: number): string {
-  let uses: string;
-  if (invite.maxUses === 1) uses = invite.uses >= 1 ? 'Gebruikt' : 'Eenmalig';
-  else if (invite.maxUses !== null) uses = `${invite.uses} van ${invite.maxUses} gebruikt`;
-  else uses = `${invite.uses} gebruikt`;
-
   let time: string;
   if (invite.state !== 'active') time = STOPPED_TEXT[invite.state];
   else if (invite.expiresAt === null) time = 'verloopt nooit';
   else time = formatTimeLeft(invite.expiresAt, now);
 
-  return [uses, time, invite.createdBy?.name].filter(Boolean).join(' · ');
+  return [inviteUses(invite), time, invite.createdBy?.name].filter(Boolean).join(' · ');
+}
+
+/** Gestopt row: "3 van 3 gebruikt · Silke" (the state shows as a pill). */
+export function stoppedInviteMeta(invite: AdminInvite): string {
+  return [inviteUses(invite), invite.createdBy?.name].filter(Boolean).join(' · ');
+}
+
+/** wa.me share link: WhatsApp opens with `text` ready to send to a chat of choice. */
+export function whatsAppShareUrl(text: string): string {
+  return `https://wa.me/?text=${encodeURIComponent(text)}`;
+}
+
+/** The WhatsApp message for an invite link. */
+export function inviteShareText(url: string): string {
+  return `Maak met deze link een account voor onze Jotihunt-app: ${url}`;
 }
 
 /** "Silke · 11:42" (HQ when the sender is unknown) */

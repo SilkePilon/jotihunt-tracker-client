@@ -6,12 +6,17 @@ import {
   EXPIRY_OPTIONS,
   formatTimeLeft,
   inviteMeta,
+  inviteShareText,
+  inviteStateText,
+  inviteUses,
   isActiveNow,
   MAX_USES_OPTIONS,
   passkeyText,
   splitUsers,
+  stoppedInviteMeta,
   userActivity,
   usersSummary,
+  whatsAppShareUrl,
   type AdminInvite,
 } from './beheer';
 
@@ -147,5 +152,33 @@ describe('splitUsers', () => {
     const { admins, members } = splitUsers(users);
     expect(admins.map((user) => user.name)).toEqual(['mark', 'Silke']);
     expect(members.map((user) => user.name)).toEqual(['Anna', 'Émile', 'Zoë']);
+  });
+});
+
+describe('invite rows and sharing', () => {
+  test('inviteUses', () => {
+    expect(inviteUses(invite({ maxUses: 1, uses: 0 }))).toBe('Eenmalig');
+    expect(inviteUses(invite({ maxUses: 1, uses: 1 }))).toBe('Gebruikt');
+    expect(inviteUses(invite({ maxUses: 25, uses: 7 }))).toBe('7 van 25 gebruikt');
+    expect(inviteUses(invite({ maxUses: null, uses: 3 }))).toBe('3 gebruikt');
+  });
+
+  test('inviteStateText', () => {
+    expect(inviteStateText('expired')).toBe('verlopen');
+    expect(inviteStateText('revoked')).toBe('ingetrokken');
+    expect(inviteStateText('full')).toBe('vol');
+  });
+
+  test('stoppedInviteMeta leaves the state out (it shows as a pill)', () => {
+    expect(stoppedInviteMeta(invite({ state: 'full', maxUses: 3, uses: 3 }))).toBe('3 van 3 gebruikt · Silke');
+    expect(stoppedInviteMeta(invite({ state: 'revoked', createdBy: null, maxUses: null, uses: 2 }))).toBe('2 gebruikt');
+  });
+
+  test('whatsAppShareUrl encodes the whole message', () => {
+    expect(whatsAppShareUrl('Hoi & welkom: https://x.test/invite/AB?c=1')).toBe('https://wa.me/?text=Hoi%20%26%20welkom%3A%20https%3A%2F%2Fx.test%2Finvite%2FAB%3Fc%3D1');
+  });
+
+  test('inviteShareText ends with the link', () => {
+    expect(inviteShareText('https://example.test/invite/ABCD2345')).toBe('Maak met deze link een account voor onze Jotihunt-app: https://example.test/invite/ABCD2345');
   });
 });
