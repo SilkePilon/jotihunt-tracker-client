@@ -70,7 +70,7 @@ function HuntableAreasCard() {
             aria-disabled={saving || undefined}
             onClick={() => void toggle(chip.area)}
             className={cn(
-              'inline-flex h-[34px] items-center gap-[7px] rounded-full px-3.5 text-[13px] font-semibold outline-none transition-[background-color,color,transform] duration-200 focus-visible:ring-[3px] focus-visible:ring-ring/50 active:scale-[0.97] disabled:opacity-50 motion-reduce:transition-none',
+              'inline-flex h-[34px] items-center gap-[7px] rounded-lg px-3.5 text-[13px] font-semibold outline-none transition-[background-color,color,transform] duration-200 focus-visible:ring-[3px] focus-visible:ring-ring/50 active:scale-[0.97] disabled:opacity-50 motion-reduce:transition-none',
               chip.allowed ? 'bg-foreground/12 text-foreground' : 'bg-beheer-row text-muted-foreground',
             )}
           >

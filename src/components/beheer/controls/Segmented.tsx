@@ -31,7 +31,7 @@ export default function Segmented<T extends string>({ value, options, onChange, 
       onValueChange={(next) => next && onChange(next as T)}
       aria-label={label}
       disabled={disabled}
-      className={cn('inline-flex max-w-full flex-wrap gap-0.5 rounded-[18px] bg-beheer-row p-[3px]', className)}
+      className={cn('inline-flex max-w-full flex-wrap gap-0.5 rounded-lg bg-beheer-row p-[3px]', className)}
     >
       {options.map((option) => {
         const selected = option.value === value;
@@ -40,11 +40,11 @@ export default function Segmented<T extends string>({ value, options, onChange, 
             key={option.value}
             value={option.value}
             className={cn(
-              'relative inline-flex h-[30px] items-center rounded-full px-3 text-[12.5px] font-semibold outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-50 [&_svg]:size-3.5 [&_svg]:shrink-0',
+              'relative inline-flex h-[30px] items-center rounded-[9px] px-3 text-[12.5px] font-semibold outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-50 [&_svg]:size-3.5 [&_svg]:shrink-0',
               selected ? 'text-foreground' : 'text-muted-foreground hover:text-foreground',
             )}
           >
-            {selected && <motion.span layoutId={`${id}-selected`} aria-hidden className="absolute inset-0 rounded-full bg-card shadow-[0_1px_3px_rgb(0_0_0/0.25)]" transition={POP_SPRING} />}
+            {selected && <motion.span layoutId={`${id}-selected`} aria-hidden className="absolute inset-0 rounded-[9px] bg-card shadow-[0_1px_3px_rgb(0_0_0/0.25)]" transition={POP_SPRING} />}
             <span className="relative inline-flex items-center gap-1.5">
               {option.icon}
               {option.label}
