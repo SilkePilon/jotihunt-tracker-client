@@ -21,6 +21,7 @@ import useIntelStore from '@/stores/intel.store';
 import {useFetcher} from '@/hooks/utils/api.hook';
 import {isUnauthorized} from '@/lib/session';
 import {useSessionExpired} from '@/hooks/session.hook';
+import {useSentryUser} from '@/hooks/sentry-user.hook';
 import {resyncPush} from '@/lib/push';
 import type {OutletContextType} from '@/hooks/outlet.hook.ts';
 import TourOverlay from './components/tour/TourOverlay';
@@ -32,6 +33,7 @@ const QrConfirmDrawer = lazy(() => import('./components/auth/QrConfirmDrawer'));
 const FETCH_ERROR_TOAST_ID = 'fetch-error';
 
 export default function Layout() {
+    useSentryUser();
     const endSession = useSessionExpired();
     const mapRef = useRef<MapRef>(null);
 

@@ -15,6 +15,7 @@
     "@hookform/resolvers": "^5.9.1",
     "@mapbox-controls/ruler": "^4.1.0",
     "@material/material-color-utilities": "0.4.0",
+    "@sentry/react": "^11.7.0",
     "@simplewebauthn/browser": "^13",
     "@turf/turf": "^7.4.0",
     "axios": "^1.20.0",
@@ -50,6 +51,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@maplibre/maplibre-gl-style-spec": "^26.4.4",
+    "@sentry/vite-plugin": "^5.4.1",
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^26.6.3",
     "@types/proj4": "^2.19.0",

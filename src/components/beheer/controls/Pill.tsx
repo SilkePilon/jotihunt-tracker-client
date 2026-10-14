@@ -79,6 +79,7 @@ const iconPill = cva(
         soft: 'bg-beheer-row-high text-foreground hover:bg-beheer-row-high/70',
         success: 'bg-green-500/20 text-green-700 dark:text-green-300',
         active: 'bg-primary/20 text-orange-700 dark:text-orange-300',
+        'danger-soft': 'bg-destructive/15 text-destructive hover:bg-destructive/20 dark:text-red-300',
       },
     },
     defaultVariants: { variant: 'ghost' },

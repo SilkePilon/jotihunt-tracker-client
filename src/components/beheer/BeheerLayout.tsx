@@ -141,10 +141,13 @@ const RowsContext = createContext<RowsState | null>(null);
 
 /**
  * A card's rows: separate tonal blocks 2px apart, outer corners 16px and inner 6px (M3 segmented list). Rows fold in
- * and out (children must be keyed rows); at most one BeheerExpandableRow inside is open.
+ * and out (children must be keyed rows); at most one BeheerExpandableRow inside is open. Pass `openId` +
+ * `onOpenIdChange` to control which one (e.g. a window that opens on a given row).
  */
-export function BeheerRows({ children, className }: { children: ReactNode; className?: string }) {
-  const [openId, setOpenId] = useState<string | null>(null);
+export function BeheerRows({ children, className, openId: controlledOpenId, onOpenIdChange }: { children: ReactNode; className?: string; openId?: string | null; onOpenIdChange?: (id: string | null) => void }) {
+  const [ownOpenId, setOwnOpenId] = useState<string | null>(null);
+  const openId = controlledOpenId !== undefined ? controlledOpenId : ownOpenId;
+  const setOpenId = onOpenIdChange ?? setOwnOpenId;
   return (
     <RowsContext.Provider value={{ openId, setOpenId }}>
       <div className={cn('flex flex-col gap-0.5', className)}>
@@ -229,6 +232,8 @@ interface BeheerExpandableRowProps {
   children: ReactNode;
   /** Full left padding of the unfolded part, lining it up with the text column: 12px row padding + leading width + 12px gap, e.g. "pl-8" */
   indentClassName?: string;
+  /** Replaces the unfolded part's classes (default: a wrapping row of pills), e.g. a column of photo, facts and actions */
+  bodyClassName?: string;
   /** The header isn't a button while true (e.g. while it holds the rename input) */
   headerStatic?: boolean;
   /** Replaces the whole row with this (e.g. an InlineConfirm): the row turns red and the content swaps */
@@ -237,7 +242,7 @@ interface BeheerExpandableRowProps {
 }
 
 /** A row that opens on tap (chevron turns); the open part unfolds under the row content and holds action pills. */
-export function BeheerExpandableRow({ id, leading, title, meta, trailing, children, indentClassName, headerStatic, confirm, className }: BeheerExpandableRowProps) {
+export function BeheerExpandableRow({ id, leading, title, meta, trailing, children, indentClassName, bodyClassName, headerStatic, confirm, className }: BeheerExpandableRowProps) {
   const rows = useContext(RowsContext);
   const [ownOpen, setOwnOpen] = useState(false);
   const open = rows ? rows.openId === id : ownOpen;
@@ -273,7 +278,7 @@ export function BeheerExpandableRow({ id, leading, title, meta, trailing, childr
                 </button>
               )}
               {/* pt-1 and the side/bottom padding leave room for the pills' 3px focus ring: Reveal and the row clip */}
-              <Reveal>{open && <div className={cn('flex flex-wrap items-center gap-1.5 px-3 pt-1 pb-3', indentClassName)}>{children}</div>}</Reveal>
+              <Reveal>{open && <div className={bodyClassName ?? cn('flex flex-wrap items-center gap-1.5 px-3 pt-1 pb-3', indentClassName)}>{children}</div>}</Reveal>
             </motion.div>
           )}
         </AnimatePresence>
@@ -310,16 +315,24 @@ export function InlineConfirm({ title, description, confirmLabel, confirmIcon, o
   }
 
   return (
-    <div role="alertdialog" aria-label={typeof title === 'string' ? title : undefined} className={cn('flex flex-wrap items-center gap-3', className)}>
+    // Escape cancels the question; data-inline-edit on its buttons keeps the window open meanwhile (keepOpenWhileEditing)
+    <div
+      role="alertdialog"
+      aria-label={typeof title === 'string' ? title : undefined}
+      className={cn('flex flex-wrap items-center gap-3', className)}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape' && !busy) onCancel();
+      }}
+    >
       <div className="min-w-0 flex-1 basis-48">
         <p className="text-[13.5px] font-bold">{title}</p>
         <p className="text-xs text-muted-foreground">{description}</p>
       </div>
       <div className="flex shrink-0 gap-1.5">
-        <Pill variant="secondary" onClick={onCancel} disabled={busy} autoFocus>
+        <Pill variant="secondary" data-inline-edit onClick={onCancel} disabled={busy} autoFocus>
           Annuleer
         </Pill>
-        <Pill variant="danger" morphKey={busy ? 'busy' : 'idle'} onClick={() => void confirm()} disabled={busy}>
+        <Pill variant="danger" data-inline-edit morphKey={busy ? 'busy' : 'idle'} onClick={() => void confirm()} disabled={busy}>
           {busy ? <Loader2Icon className="animate-spin" /> : confirmIcon}
           {confirmLabel}
         </Pill>

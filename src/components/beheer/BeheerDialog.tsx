@@ -1,4 +1,4 @@
-import { useEffect, useState, type ComponentType, type ReactNode, type RefObject } from 'react';
+import { useEffect, useState, type RefObject } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import {
   ArrowLeftIcon,
@@ -15,8 +15,7 @@ import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import type { MapRef } from '@/components/Map';
 import ResponsiveDialog from '@/components/ResponsiveDialog';
 import { useIsMobile } from '@/hooks/media.hook';
-import { EASE_OUT, SWAP, SWAP_TRANSITION } from '@/lib/motion';
-import { cn } from '@/lib/utils';
+import { PANE_SLIDE, PANE_SLIDE_TRANSITION, SWAP } from '@/lib/motion';
 import useAdminStore, { type AdminDialogId } from '@/stores/admin.store';
 import type { User } from '@/types/User';
 import AlgemeenPane from './AlgemeenPane';
@@ -26,15 +25,14 @@ import HuntersPane from './HuntersPane';
 import InvitesPane from './InvitesPane';
 import KoppelingenPane from './KoppelingenPane';
 import UsersPane from './UsersPane';
+import { NavItem, type NavIcon } from './WindowNav';
 
 interface BeheerDialogProps {
   /** For the Hunters pane's "Toon op kaart" */
   mapRef: RefObject<MapRef | null>;
 }
 
-type Icon = ComponentType<{ className?: string }>;
-
-const SECTIONS: { id: AdminDialogId; title: string; icon: Icon }[] = [
+const SECTIONS: { id: AdminDialogId; title: string; icon: NavIcon }[] = [
   { id: 'algemeen', title: 'Algemeen', icon: SlidersHorizontalIcon },
   { id: 'users', title: 'Gebruikers', icon: UsersIcon },
   { id: 'invites', title: 'Invites', icon: UserPlusIcon },
@@ -44,14 +42,6 @@ const SECTIONS: { id: AdminDialogId; title: string; icon: Icon }[] = [
 ];
 
 const titleOf = (id: AdminDialogId) => SECTIONS.find((section) => section.id === id)?.title ?? '';
-
-/** Phone: the list slides out one way and the pane in from the other (and back) */
-const SLIDE = {
-  enter: (direction: number) => ({ opacity: 0, x: 24 * direction }),
-  center: { opacity: 1, x: 0 },
-  exit: (direction: number) => ({ opacity: 0, x: -24 * direction }),
-};
-const SLIDE_TRANSITION = { duration: 0.22, ease: EASE_OUT };
 
 function openHq() {
   window.open('/hq', '_blank', 'noopener');
@@ -132,11 +122,11 @@ function BeheerWindow({ mapRef }: BeheerDialogProps) {
             key="list"
             className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto"
             custom={direction}
-            variants={SLIDE}
+            variants={PANE_SLIDE}
             initial="enter"
             animate="center"
             exit="exit"
-            transition={SLIDE_TRANSITION}
+            transition={PANE_SLIDE_TRANSITION}
           >
             <div className="px-3 pt-1 pb-3 text-lg font-bold">Beheer</div>
             {SECTIONS.map(({ id, title, icon }) => (
@@ -149,11 +139,11 @@ function BeheerWindow({ mapRef }: BeheerDialogProps) {
             key="pane"
             className="flex min-h-0 flex-1 flex-col"
             custom={direction}
-            variants={SLIDE}
+            variants={PANE_SLIDE}
             initial="enter"
             animate="center"
             exit="exit"
-            transition={SLIDE_TRANSITION}
+            transition={PANE_SLIDE_TRANSITION}
           >
             <div className="flex items-center gap-2 pb-3">
               <IconPill aria-label="Terug" onClick={back}>
@@ -191,40 +181,6 @@ function BeheerWindow({ mapRef }: BeheerDialogProps) {
         </AnimatePresence>
       </div>
     </div>
-  );
-}
-
-interface NavItemProps {
-  icon: Icon;
-  title: string;
-  active?: boolean;
-  trailing?: ReactNode;
-  /** layoutId of the soft fill behind the active item, so it slides to a newly picked item */
-  indicatorId?: string;
-  onClick: () => void;
-  className?: string;
-}
-
-/** N1 item: icon + name, 40px, rounded-xl; active = soft grey fill + semibold (no pill, no orange, no counts). */
-function NavItem({ icon: ItemIcon, title, active, trailing, indicatorId, onClick, className }: NavItemProps) {
-  return (
-    <button
-      type="button"
-      aria-current={active ? 'page' : undefined}
-      onClick={onClick}
-      className={cn(
-        'relative flex h-10 items-center rounded-xl px-3 text-left text-[13.5px] outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50',
-        active ? 'font-semibold text-foreground' : 'text-muted-foreground hover:bg-beheer-row-high/50 hover:text-foreground active:bg-beheer-row-high',
-        className,
-      )}
-    >
-      {active && indicatorId && <motion.span layoutId={indicatorId} aria-hidden className="absolute inset-0 rounded-xl bg-beheer-row-high" transition={SWAP_TRANSITION} />}
-      <span className="relative flex min-w-0 flex-1 items-center gap-3">
-        <ItemIcon className="size-[18px] shrink-0" />
-        <span className="truncate">{title}</span>
-        {trailing}
-      </span>
-    </button>
   );
 }
 
