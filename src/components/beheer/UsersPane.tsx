@@ -38,10 +38,19 @@ export default function UsersPane() {
   const view = users ? 'content' : isError ? 'error' : 'loading';
   const { admins, members } = splitUsers(users ?? []);
 
+  // Users whose admin change is on its way: a second tap meanwhile is ignored
+  const adminSaving = useRef(new Set<string>());
+
   async function toggleAdmin(user: User) {
-    const error = await updateUser(user._id, { admin: !user.admin });
-    if (error) toast.error(apiErrorMessage(error, 'Opslaan is mislukt.'));
-    else toast.success(user.admin ? `${user.name} is geen admin meer` : `${user.name} is nu admin`);
+    if (adminSaving.current.has(user._id)) return;
+    adminSaving.current.add(user._id);
+    try {
+      const error = await updateUser(user._id, { admin: !user.admin });
+      if (error) toast.error(apiErrorMessage(error, 'Opslaan is mislukt.'));
+      else toast.success(user.admin ? `${user.name} is geen admin meer` : `${user.name} is nu admin`);
+    } finally {
+      adminSaving.current.delete(user._id);
+    }
   }
 
   async function confirmDelete(user: User) {
@@ -98,7 +107,17 @@ export default function UsersPane() {
         }
         title={
           <>
-            {renaming ? <NameInput user={user} updateUser={updateUser} onDone={() => setRenamingId(null)} /> : <span className="truncate">{user.name}</span>}
+            <AnimatePresence mode="wait" initial={false}>
+              {renaming ? (
+                <motion.span key="rename" className="inline-flex" {...SWAP}>
+                  <NameInput user={user} updateUser={updateUser} onDone={() => setRenamingId(null)} />
+                </motion.span>
+              ) : (
+                <motion.span key="name" className="truncate" {...SWAP}>
+                  {user.name}
+                </motion.span>
+              )}
+            </AnimatePresence>
             {user.admin && <Tag tone="primary">Admin</Tag>}
             {isMe && <Tag>jij</Tag>}
           </>
@@ -200,25 +219,38 @@ export default function UsersPane() {
 function NameInput({ user, onDone, updateUser }: { user: User; onDone: () => void; updateUser: (id: string, changes: UserChanges) => Promise<unknown> }) {
   const [value, setValue] = useState(user.name);
   const [saving, setSaving] = useState(false);
-  // Escape unmounts the field; a blur that may follow must not save
+  const input = useRef<HTMLInputElement>(null);
+  // Escape or a finished save unmounts the field; a blur that may follow must not save (again)
   const cancelled = useRef(false);
+  const done = useRef(false);
+  // A ref, so the blur right after Enter sees it before the re-render
+  const busy = useRef(false);
+
+  function finish() {
+    done.current = true;
+    onDone();
+  }
 
   async function save() {
-    if (saving || cancelled.current) return;
+    if (busy.current || done.current || cancelled.current) return;
     const trimmed = value.trim();
     if (!trimmed || trimmed === user.name) {
-      onDone();
+      finish();
       return;
     }
+    busy.current = true;
     setSaving(true);
     const failure = await updateUser(user._id, { name: trimmed });
+    busy.current = false;
     setSaving(false);
     if (failure) {
       toast.error(apiErrorMessage(failure, 'De naam kon niet worden opgeslagen.'));
+      // Back in the field, so trying again (Enter) or giving up (Escape) is one key away
+      input.current?.focus();
       return;
     }
     toast.success('Naam opgeslagen');
-    onDone();
+    finish();
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
@@ -235,11 +267,14 @@ function NameInput({ user, onDone, updateUser }: { user: User; onDone: () => voi
   return (
     <span className="inline-flex items-center gap-1.5">
       <input
+        ref={input}
         autoFocus
         data-inline-edit
         maxLength={40}
         value={value}
-        disabled={saving}
+        // Not disabled: that drops the focus (and the row would be stuck after a failed save)
+        readOnly={saving}
+        aria-busy={saving}
         aria-label={`Nieuwe naam voor ${user.name}`}
         autoComplete="off"
         data-1p-ignore
@@ -247,7 +282,7 @@ function NameInput({ user, onDone, updateUser }: { user: User; onDone: () => voi
         onChange={(event) => setValue(event.target.value)}
         onKeyDown={onKeyDown}
         onBlur={() => void save()}
-        className="h-7 w-40 rounded-lg border-[1.5px] border-primary bg-card px-2 text-[13.5px] font-semibold outline-none disabled:opacity-60"
+        className="h-7 w-40 rounded-lg border-[1.5px] border-primary bg-card px-2 text-[13.5px] font-semibold outline-none read-only:opacity-60"
       />
       {saving && <Loader2Icon className="size-3.5 animate-spin text-muted-foreground" />}
     </span>

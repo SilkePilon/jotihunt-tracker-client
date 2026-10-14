@@ -79,41 +79,54 @@ interface BeheerCardProps {
 
 /** Tonal card (bg-card, 24px corners): header row, then the body (rows, chips, a form). */
 export function BeheerCard({ title, count, description, right, onToggle, open = false, className, children }: BeheerCardProps) {
-  const header =
+  const heading =
     title !== undefined ? (
       <>
-        <div className="min-w-0 flex-1">
-          <h3 className="text-[15px] font-bold">
-            {title}
-            {count !== undefined && (
-              <span className="font-semibold text-muted-foreground">
-                {' · '}
-                <CountSwap value={count} />
-              </span>
-            )}
-          </h3>
-          {description && <p className="text-xs text-muted-foreground">{description}</p>}
-        </div>
-        {right}
-        {onToggle && <Chevron open={open} />}
+        {title}
+        {count !== undefined && (
+          <span className="font-semibold text-muted-foreground">
+            {' · '}
+            <CountSwap value={count} />
+          </span>
+        )}
       </>
     ) : null;
 
+  let header: ReactNode = null;
+  if (heading && onToggle) {
+    // The toggle sits inside the heading (a heading inside a button isn't valid HTML); spans only, as a button holds phrasing content
+    header = (
+      <h3 className="text-[15px] font-bold">
+        <button
+          type="button"
+          aria-expanded={open}
+          onClick={onToggle}
+          className="flex w-full items-center gap-2.5 rounded-2xl px-1 text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        >
+          <span className="block min-w-0 flex-1">
+            <span className="block">{heading}</span>
+            {description && <span className="block text-xs font-normal text-muted-foreground">{description}</span>}
+          </span>
+          {right}
+          <Chevron open={open} />
+        </button>
+      </h3>
+    );
+  } else if (heading) {
+    header = (
+      <div className="mx-1 flex items-center gap-2.5">
+        <div className="min-w-0 flex-1">
+          <h3 className="text-[15px] font-bold">{heading}</h3>
+          {description && <p className="text-xs text-muted-foreground">{description}</p>}
+        </div>
+        {right}
+      </div>
+    );
+  }
+
   return (
     <section className={cn('rounded-3xl bg-card p-4', className)}>
-      {header &&
-        (onToggle ? (
-          <button
-            type="button"
-            aria-expanded={open}
-            onClick={onToggle}
-            className="flex w-full items-center gap-2.5 rounded-2xl px-1 text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-          >
-            {header}
-          </button>
-        ) : (
-          <div className="mx-1 flex items-center gap-2.5">{header}</div>
-        ))}
+      {header}
       {onToggle ? (
         <Reveal>{open && <div className="pt-3">{children}</div>}</Reveal>
       ) : (
@@ -259,7 +272,8 @@ export function BeheerExpandableRow({ id, leading, title, meta, trailing, childr
                   {header}
                 </button>
               )}
-              <Reveal>{open && <div className={cn('flex flex-wrap items-center gap-1.5 px-3 pb-3', indentClassName)}>{children}</div>}</Reveal>
+              {/* pt-1 and the side/bottom padding leave room for the pills' 3px focus ring: Reveal and the row clip */}
+              <Reveal>{open && <div className={cn('flex flex-wrap items-center gap-1.5 px-3 pt-1 pb-3', indentClassName)}>{children}</div>}</Reveal>
             </motion.div>
           )}
         </AnimatePresence>

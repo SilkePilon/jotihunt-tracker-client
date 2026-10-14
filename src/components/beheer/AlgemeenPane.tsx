@@ -8,7 +8,7 @@ import { useDemo } from '@/hooks/demo.hook';
 import { useHuntableAreas } from '@/hooks/huntable-areas.hook';
 import { useInvitesPaused } from '@/hooks/invites.hook';
 import { usePredictionSetting } from '@/hooks/predictions.hook';
-import { useHomeTeam } from '@/hooks/teams.hook';
+import { isHomeTeam, useTeams } from '@/hooks/teams.hook';
 import { huntableChips, toggleHuntable } from '@/lib/beheer';
 import { AREAS } from '@/lib/marker-style';
 import { POP } from '@/lib/motion';
@@ -27,15 +27,23 @@ const ROW_ICON = 'size-[18px] shrink-0 text-muted-foreground';
  */
 function HuntableAreasCard() {
   const { allowed, setAllowed } = useHuntableAreas();
-  const ownArea = useHomeTeam()?.area;
+  const { teams } = useTeams();
+  const ownArea = teams?.find(isHomeTeam)?.area;
   const { chips, count } = huntableChips(AREAS, ownArea, allowed);
-  const loading = allowed === undefined;
+  const [saving, setSaving] = useState(false);
+  // Without the teams our own area isn't known yet (it would show as a chip and be missing from the count)
+  const loading = allowed === undefined || teams === undefined;
 
   async function toggle(area: string) {
+    // One PUT at a time: each one sends the whole list
+    if (saving) return;
+    setSaving(true);
     try {
       await setAllowed(toggleHuntable(AREAS, ownArea, allowed, area));
     } catch {
       toast.error('Opslaan is mislukt, probeer het opnieuw.');
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -58,6 +66,8 @@ function HuntableAreasCard() {
             aria-pressed={chip.allowed}
             aria-label={`${capitalizeFirstLetter(chip.area)}: ${chip.allowed ? 'mogen we hunten' : 'niet toegestaan'}`}
             disabled={loading}
+            // Not dimmed while saving (that would flash every chip on each tap); toggle() ignores taps meanwhile
+            aria-disabled={saving || undefined}
             onClick={() => void toggle(chip.area)}
             className={cn(
               'inline-flex h-[34px] items-center gap-[7px] rounded-full px-3.5 text-[13px] font-semibold outline-none transition-[background-color,color,transform] duration-200 focus-visible:ring-[3px] focus-visible:ring-ring/50 active:scale-[0.97] disabled:opacity-50 motion-reduce:transition-none',

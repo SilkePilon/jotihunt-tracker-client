@@ -88,6 +88,10 @@ export default function InvitesPane() {
     return () => clearTimeout(timeout);
   }, [highlightShown]);
 
+  // A stopped invite (here, expired or used up) loses its QR: forget it, so it doesn't count as open
+  // (adjusted while rendering: React re-renders straight away, no effect round trip)
+  if (qrId !== null && invites !== undefined && !active.some((invite) => invite._id === qrId)) setQrId(null);
+
   async function submitCreate() {
     if (busy) return;
     setBusy(true);
@@ -113,6 +117,7 @@ export default function InvitesPane() {
     if (!revoking) return;
     try {
       await revoke(revoking._id);
+      if (qrId === revoking._id) setQrId(null);
       setRevokeOpen(false);
       toast.success('Invite ingetrokken');
     } catch (failure) {
