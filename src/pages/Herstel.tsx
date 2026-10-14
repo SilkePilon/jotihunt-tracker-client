@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { KeyRoundIcon, Link2OffIcon, Loader2Icon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import AuthScreen from '@/components/auth/AuthScreen';
+import AuthSwap from '@/components/auth/AuthSwap';
 import WelcomeCard from '@/components/auth/WelcomeCard';
+import Reveal from '@/components/motion/Reveal';
 import { fetchRecovery, passkeysSupported, recoverWithoutPasskey, recoverWithPasskey } from '@/lib/auth-api';
 import { classifyPasskeyError, PASSKEY_MESSAGES } from '@/lib/passkey';
 import { useStartSession } from '@/hooks/start-session.hook';
@@ -41,33 +43,41 @@ export default function Herstel() {
     }
   }
 
-  if (done) return <AuthScreen><WelcomeCard name={done.name} withPasskey={done.withPasskey} /></AuthScreen>;
-  if (!state) return <AuthScreen><Skeleton className="h-60 w-full max-w-sm rounded-xl" /></AuthScreen>;
-
-  if (!state.valid) {
-    return (
-      <AuthScreen>
-        <div className="flex w-full max-w-sm flex-col items-center gap-3 rounded-xl border bg-card p-7 text-center shadow-lg">
-          <div className="flex size-10 items-center justify-center rounded-lg bg-muted">
-            <Link2OffIcon className="size-5 text-muted-foreground" />
-          </div>
-          <h2 className="text-lg font-medium tracking-tight">Deze herstel-link werkt niet meer</h2>
-          <p className="text-sm/relaxed text-muted-foreground">De link is verlopen of al gebruikt. Vraag de organisatie om een nieuwe.</p>
-          <Button variant="outline" className="mt-1 w-full" onClick={() => navigate('/login')}>
-            Naar inloggen
-          </Button>
-        </div>
-      </AuthScreen>
-    );
-  }
+  let scene: string;
+  let content: ReactNode;
+  if (done) [scene, content] = ['done', <WelcomeCard name={done.name} withPasskey={done.withPasskey} />];
+  else if (!state) [scene, content] = ['loading', <Skeleton className="h-60 w-full max-w-sm rounded-xl" />];
+  else if (!state.valid) [scene, content] = ['invalid', renderInvalid()];
+  else [scene, content] = ['form', renderForm(state.name)];
 
   return (
     <AuthScreen>
+      <AuthSwap scene={scene}>{content}</AuthSwap>
+    </AuthScreen>
+  );
+
+  function renderInvalid() {
+    return (
+      <div className="flex w-full max-w-sm flex-col items-center gap-3 rounded-xl border bg-card p-7 text-center shadow-lg">
+        <div className="flex size-10 items-center justify-center rounded-lg bg-muted">
+          <Link2OffIcon className="size-5 text-muted-foreground" />
+        </div>
+        <h2 className="text-lg font-medium tracking-tight">Deze herstel-link werkt niet meer</h2>
+        <p className="text-sm/relaxed text-muted-foreground">De link is verlopen of al gebruikt. Vraag de organisatie om een nieuwe.</p>
+        <Button variant="outline" className="mt-1 w-full" onClick={() => navigate('/login')}>
+          Naar inloggen
+        </Button>
+      </div>
+    );
+  }
+
+  function renderForm(name: string | undefined) {
+    return (
       <div className="flex w-full max-w-sm flex-col gap-4 rounded-xl border bg-card p-6 text-card-foreground shadow-lg md:p-8">
         <div className="flex items-center gap-3">
           <img src="/logo.svg" alt="" className="size-10" />
           <div>
-            <h1 className="text-xl font-bold leading-tight">Hoi {state.name}!</h1>
+            <h1 className="text-xl font-bold leading-tight">Hoi {name}!</h1>
             <p className="text-sm text-muted-foreground">{supported ? 'Maak een nieuwe passkey' : 'Log in op dit apparaat'}</p>
           </div>
         </div>
@@ -78,12 +88,14 @@ export default function Herstel() {
           {busy ? <Loader2Icon className="animate-spin" /> : supported && <KeyRoundIcon />}
           {supported ? 'Passkey maken' : 'Inloggen'}
         </Button>
-        {error && (
-          <p role="alert" className="text-xs font-medium text-destructive">
-            {error}
-          </p>
-        )}
+        <Reveal gap={16}>
+          {error && (
+            <p role="alert" className="text-xs font-medium text-destructive">
+              {error}
+            </p>
+          )}
+        </Reveal>
       </div>
-    </AuthScreen>
-  );
+    );
+  }
 }

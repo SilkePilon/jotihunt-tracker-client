@@ -1,11 +1,13 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { KeyRoundIcon, Link2OffIcon, Loader2Icon, UsersIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import AuthScreen from '@/components/auth/AuthScreen';
+import AuthSwap from '@/components/auth/AuthSwap';
 import WelcomeCard from '@/components/auth/WelcomeCard';
+import Reveal from '@/components/motion/Reveal';
 import { fetchInvite, passkeysSupported, registerWithInvite, registerWithInviteWithoutPasskey, type InviteInfo } from '@/lib/auth-api';
 import { classifyPasskeyError, INVITE_REASON_TEXT, inviteGoneReason, PASSKEY_MESSAGES, type InviteReason } from '@/lib/passkey';
 import { useStartSession } from '@/hooks/start-session.hook';
@@ -73,16 +75,24 @@ export default function Invite() {
     }
   }
 
-  if (done) return <AuthScreen><WelcomeCard name={done.name} withPasskey={done.withPasskey} /></AuthScreen>;
-  if (loadError) return <AuthScreen><InvalidCard text={loadError} /></AuthScreen>;
-  if (!invite) return <AuthScreen><Skeleton className="h-72 w-full max-w-[760px] rounded-xl" /></AuthScreen>;
-  if (goneReason) return <AuthScreen><InvalidCard text={INVITE_REASON_TEXT[goneReason]} /></AuthScreen>;
-  if (!invite.valid) return <AuthScreen><InvalidCard text={INVITE_REASON_TEXT[invite.reason ?? 'unknown']} /></AuthScreen>;
-
-  const counts = `${invite.memberCount} ${invite.memberCount === 1 ? 'lid' : 'leden'} · ${invite.onlineCount} online`;
+  let scene: string;
+  let content: ReactNode;
+  if (done) [scene, content] = ['done', <WelcomeCard name={done.name} withPasskey={done.withPasskey} />];
+  else if (loadError) [scene, content] = ['invalid', <InvalidCard text={loadError} />];
+  else if (!invite) [scene, content] = ['loading', <Skeleton className="h-72 w-full max-w-[760px] rounded-xl" />];
+  else if (goneReason) [scene, content] = ['invalid', <InvalidCard text={INVITE_REASON_TEXT[goneReason]} />];
+  else if (!invite.valid) [scene, content] = ['invalid', <InvalidCard text={INVITE_REASON_TEXT[invite.reason ?? 'unknown']} />];
+  else [scene, content] = ['form', renderForm(invite)];
 
   return (
     <AuthScreen>
+      <AuthSwap scene={scene}>{content}</AuthSwap>
+    </AuthScreen>
+  );
+
+  function renderForm(invite: InviteInfo) {
+    const counts = `${invite.memberCount} ${invite.memberCount === 1 ? 'lid' : 'leden'} · ${invite.onlineCount} online`;
+    return (
       <div className="w-full max-w-[760px] overflow-hidden rounded-xl border bg-card text-card-foreground shadow-lg md:grid md:grid-cols-[1fr_auto_1fr]">
         {/* Phone: compact header row; desktop: big left half */}
         <div className="flex items-center gap-3 border-b p-5 md:flex-col md:justify-center md:gap-4 md:border-b-0 md:p-8 md:text-center">
@@ -112,16 +122,18 @@ export default function Invite() {
             {busy ? <Loader2Icon className="animate-spin" /> : supported && <KeyRoundIcon />}
             {supported ? 'Account maken met passkey' : 'Account maken'}
           </Button>
-          {error && (
-            <p role="alert" className="text-xs font-medium text-destructive">
-              {error}
-            </p>
-          )}
+          <Reveal gap={16}>
+            {error && (
+              <p role="alert" className="text-xs font-medium text-destructive">
+                {error}
+              </p>
+            )}
+          </Reveal>
           <p className="text-xs text-muted-foreground">
             {supported ? 'Je apparaat vraagt om je vingerafdruk, gezicht of schermvergrendeling.' : 'Deze browser ondersteunt geen passkeys; je kunt er later een toevoegen.'}
           </p>
         </form>
       </div>
-    </AuthScreen>
-  );
+    );
+  }
 }

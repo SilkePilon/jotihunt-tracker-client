@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import { Drawer } from 'vaul';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useIsMobile } from '@/hooks/media.hook';
@@ -16,11 +16,37 @@ interface ResponsiveDialogProps {
   hideHeader?: boolean;
   /** Size to the content instead of a fixed large height, for short forms */
   compact?: boolean;
+  /** After `open` turned false and the slide-out / fade-out has finished, e.g. to unmount the dialog */
+  onClosed?: () => void;
 }
 
+// vaul's slide-out (TRANSITIONS.DURATION) and the Radix dialog's `duration-200` fade/zoom-out
+const DRAWER_CLOSE_MS = 500;
+const DIALOG_CLOSE_MS = 200;
+
 /** Frame shared by the large dialogs: a large dialog on desktop, a bottom drawer on phones. */
-export default function ResponsiveDialog({ open, onClose, title, description, children, className, hideHeader, compact }: ResponsiveDialogProps) {
+export default function ResponsiveDialog({ open, onClose, title, description, children, className, hideHeader, compact, onClosed }: ResponsiveDialogProps) {
   const isMobile = useIsMobile();
+  // Keep the content while the drawer slides out / the dialog fades out, instead of an empty frame leaving
+  const [mounted, setMounted] = useState(open);
+  if (open && !mounted) setMounted(true);
+  const onClosedRef = useRef(onClosed);
+  useEffect(() => {
+    onClosedRef.current = onClosed;
+  });
+
+  // A timer instead of vaul's onAnimationEnd: that one only fires for closes vaul starts itself (swipe, overlay), not when `open` is set to false
+  useEffect(() => {
+    if (open || !mounted) return;
+    const timer = setTimeout(
+      () => {
+        setMounted(false);
+        onClosedRef.current?.();
+      },
+      isMobile ? DRAWER_CLOSE_MS : DIALOG_CLOSE_MS,
+    );
+    return () => clearTimeout(timer);
+  }, [open, mounted, isMobile]);
 
   if (isMobile) {
     return (
@@ -33,7 +59,7 @@ export default function ResponsiveDialog({ open, onClose, title, description, ch
               <Drawer.Title className="text-lg font-semibold">{title}</Drawer.Title>
               <Drawer.Description className="text-sm text-muted-foreground">{description}</Drawer.Description>
             </div>
-            <div className="flex min-h-0 flex-1 flex-col px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">{open && children}</div>
+            <div className="flex min-h-0 flex-1 flex-col px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">{mounted && children}</div>
           </Drawer.Content>
         </Drawer.Portal>
       </Drawer.Root>
@@ -47,7 +73,7 @@ export default function ResponsiveDialog({ open, onClose, title, description, ch
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
-        {open && children}
+        {mounted && children}
       </DialogContent>
     </Dialog>
   );
