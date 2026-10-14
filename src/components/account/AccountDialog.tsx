@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { toast } from 'sonner';
 import { EllipsisIcon, Loader2Icon, PencilIcon, PlusIcon, Trash2Icon } from 'lucide-react';
@@ -46,6 +46,10 @@ export default function AccountDialog() {
   const [renaming, setRenaming] = useState<AccountPasskey | null>(null);
   const [renameOpen, setRenameOpen] = useState(false);
 
+  // The store is global: Layout unmounts on /login (logout, or a 401 after "Alle andere browsers uitloggen" elsewhere),
+  // and a dialog left open would pop up again right after the next login
+  useEffect(() => () => useAccountDialogStore.getState().setOpen(false), []);
+
   const view = account ? 'content' : error ? 'error' : 'loading';
 
   function ask(next: Confirm) {
@@ -81,6 +85,7 @@ export default function AccountDialog() {
           toast.success('Passkey verwijderd');
         } catch (failure) {
           toast.error(apiErrorMessage(failure, 'Verwijderen is mislukt, probeer het opnieuw.'));
+          void refresh();
         }
       },
     });
@@ -96,6 +101,7 @@ export default function AccountDialog() {
   const devices = account?.devices ?? [];
   const hasOtherSessions = sessions.some((session) => !session.current);
   const lastPasskey = passkeys.length <= 1;
+  const noPasskey = passkeys.length === 0;
 
   return (
     <ResponsiveDialog open={open} onClose={() => setOpen(false)} title="Account" description="Je passkeys en de apparaten waarop je bent ingelogd." className="sm:max-w-2xl">
@@ -178,7 +184,9 @@ export default function AccountDialog() {
                         onClick={() =>
                           ask({
                             title: 'Alle andere browsers uitloggen?',
-                            description: 'Overal behalve hier moet je opnieuw inloggen. Gekoppelde Android-telefoons blijven gekoppeld.',
+                            description: `Overal behalve hier moet je opnieuw inloggen. Gekoppelde Android-telefoons blijven gekoppeld.${
+                              noPasskey ? ' Zonder passkey kom je daar alleen weer binnen met een QR-code of een herstel-link.' : ''
+                            }`,
                             confirmLabel: 'Uitloggen',
                             destructive: true,
                             action: async () => {
@@ -188,6 +196,7 @@ export default function AccountDialog() {
                                 toast.success(removed === 1 ? '1 browser uitgelogd' : `${removed} browsers uitgelogd`);
                               } catch (failure) {
                                 toast.error(apiErrorMessage(failure, 'Uitloggen is mislukt, probeer het opnieuw.'));
+                                void refresh();
                               }
                             },
                           })
@@ -210,7 +219,9 @@ export default function AccountDialog() {
                             session.current
                               ? {
                                   title: 'Uitloggen op dit apparaat?',
-                                  description: 'Je moet daarna opnieuw inloggen.',
+                                  description: noPasskey
+                                    ? 'Je hebt nog geen passkey: daarna kom je alleen weer binnen met een QR-code of een herstel-link.'
+                                    : 'Je moet daarna opnieuw inloggen.',
                                   confirmLabel: 'Uitloggen',
                                   action: async () => {
                                     try {
@@ -233,6 +244,7 @@ export default function AccountDialog() {
                                       toast.success(`Uitgelogd op ${session.label}`);
                                     } catch (failure) {
                                       toast.error(apiErrorMessage(failure, 'Uitloggen is mislukt, probeer het opnieuw.'));
+                                      void refresh();
                                     }
                                   },
                                 },
@@ -262,6 +274,7 @@ export default function AccountDialog() {
                                 toast.success(`${device.name} ontkoppeld`);
                               } catch (failure) {
                                 toast.error(apiErrorMessage(failure, 'Ontkoppelen is mislukt, probeer het opnieuw.'));
+                                void refresh();
                               }
                             },
                           })
@@ -293,7 +306,14 @@ export default function AccountDialog() {
         name={renaming?.name ?? ''}
         onOpenChange={setRenameOpen}
         onSave={async (name) => {
-          if (renaming) await renamePasskey(renaming.id, name);
+          if (!renaming) return;
+          try {
+            await renamePasskey(renaming.id, name);
+          } catch (failure) {
+            // A passkey removed in another tab disappears from the list instead of lingering until the next poll
+            void refresh();
+            throw failure;
+          }
         }}
       />
     </ResponsiveDialog>
