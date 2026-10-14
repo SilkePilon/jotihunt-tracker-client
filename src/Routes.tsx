@@ -11,6 +11,7 @@ const Hq = lazy(() => import('./pages/Hq'));
 const Login = lazy(() => import('./pages/Login'));
 const Invite = lazy(() => import('./pages/Invite'));
 const Herstel = lazy(() => import('./pages/Herstel'));
+const QrLink = lazy(() => import('./pages/QrLink'));
 
 export default function Routes() {
   return (
@@ -28,6 +29,7 @@ export default function Routes() {
           <Route path="/login" element={<Login />} />
           <Route path="/invite/:code" element={<Invite />} />
           <Route path="/herstel/:token" element={<Herstel />} />
+          <Route path="/l/:code" element={<QrLink />} />
         </RouterRoutes>
       </Suspense>
     </BrowserRouter>

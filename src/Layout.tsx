@@ -1,6 +1,6 @@
-import {Outlet, useLocation} from 'react-router';
+import {Outlet, useLocation, useNavigate} from 'react-router';
 import {toast} from "sonner"
-import {useEffect, useRef, useState} from 'react';
+import {lazy, Suspense, useEffect, useRef, useState} from 'react';
 import {SWRConfig} from 'swr';
 import Map, {MapRef} from './components/Map';
 import PWAPrompt from 'react-ios-pwa-prompt';
@@ -24,6 +24,8 @@ import type {OutletContextType} from '@/hooks/outlet.hook.ts';
 import TourOverlay from './components/tour/TourOverlay';
 import {useTourAutoStart} from './components/tour/useTour';
 import {createFetchErrorToastState} from '@/lib/fetch-error-toast';
+
+const QrConfirmDrawer = lazy(() => import('./components/auth/QrConfirmDrawer'));
 
 const FETCH_ERROR_TOAST_ID = 'fetch-error';
 
@@ -49,7 +51,11 @@ export default function Layout() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const {pathname} = useLocation();
+    const location = useLocation();
+    const {pathname} = location;
+    const navigate = useNavigate();
+    // Set by /l/:code: a laptop's QR code was scanned with this phone
+    const qrLogin = (location.state as {qrLogin?: unknown} | null)?.qrLogin;
     const tour = useTourAutoStart();
     // Like the tour, the notifications prompt only opens on the map page
     useNotificationsPrompt(tour.pending || pathname !== '/');
@@ -102,6 +108,11 @@ export default function Layout() {
                 <UsersDialog/>
                 <BroadcastDialog/>
                 <NotificationsDialog/>
+                {typeof qrLogin === 'string' && (
+                    <Suspense fallback={null}>
+                        <QrConfirmDrawer code={qrLogin} onClose={() => navigate('/', {replace: true, state: null})}/>
+                    </Suspense>
+                )}
             </ErrorBoundary>
             <ErrorBoundary name="De rondleiding" variant="floating">
                 <TourOverlay mapRef={mapRef}/>
