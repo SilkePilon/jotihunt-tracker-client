@@ -3,7 +3,7 @@ import { AxiosError, AxiosHeaders } from 'axios';
 import type { Article } from '@/types/Article';
 import type { HintCell } from '@/types/HintCell';
 import type { IntelItem } from '@/types/Intel';
-import { answerPreview, areaStates, buildIntelItems, deadlineLabel, filterByTab, groupByDay, hasExistingMarker, isDeadlineUrgent, nextOpenArea, solvedCount, unreadCount } from './intel-window';
+import { answerPreview, areaStates, initialOpenArea, buildIntelItems, deadlineLabel, filterByTab, groupByDay, hasExistingMarker, isDeadlineUrgent, nextOpenArea, solvedCount, unreadCount } from './intel-window';
 
 const article = (id: number, type: string, publishAt: string, extra: Partial<Article> = {}) =>
   ({ id, title: `A${id}`, type, publishAt: new Date(publishAt), content: '<p>x</p>', messageType: '', maxPoints: 0, endTime: new Date(publishAt), ...extra }) as Article;
@@ -104,4 +104,18 @@ describe('answerPreview', () => {
     expect(answerPreview('x', rd(129999, 450000))?.kind).toBe('outside');
     expect(answerPreview('x', rd(150000, 520001))?.kind).toBe('outside');
   });
+});
+
+describe('initialOpenArea', () => {
+  const cells = [cell('alpha', 'solved'), cell('bravo', 'none'), cell('charlie', 'open'), cell('delta', 'open')];
+  test('the requested area when it has a hint (open or solved)', () => {
+    expect(initialOpenArea(cells, 'delta')).toBe('delta');
+    expect(initialOpenArea(cells, 'alpha')).toBe('alpha');
+  });
+  test('a none or missing area falls back to the first open one', () => {
+    expect(initialOpenArea(cells, 'bravo')).toBe('charlie');
+    expect(initialOpenArea(cells, 'oscar')).toBe('charlie');
+    expect(initialOpenArea(cells, null)).toBe('charlie');
+  });
+  test('nothing open and nothing requested: none', () => expect(initialOpenArea([cell('alpha', 'solved')], null)).toBeNull());
 });

@@ -98,6 +98,12 @@ export function nextOpenArea(cells: HintCell[], after?: string | null): string |
   return order.find((area) => states[area] === 'open') ?? null;
 }
 
+/** The area a hint opens on: the requested one if this hint has a hint text there, else the first open area (or none) */
+export function initialOpenArea(cells: HintCell[], area: string | null): string | null {
+  const cell = area ? cells.find((existing) => existing.area === area) : undefined;
+  return cell && cell.status !== 'none' ? cell.area : nextOpenArea(cells);
+}
+
 /** "nog 42 min", "nog 1 u 47" or "verlopen" */
 export function deadlineLabel(endTime: string, now: number): string {
   const left = time(endTime) - now;

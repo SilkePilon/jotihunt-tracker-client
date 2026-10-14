@@ -1,4 +1,4 @@
-import { RefObject, useState } from 'react';
+import { RefObject, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Loader2Icon, MapIcon, PencilIcon } from 'lucide-react';
 import { toast } from 'sonner';
@@ -11,7 +11,7 @@ import Reveal from '@/components/motion/Reveal';
 import CookieBadge from '@/components/tracker/CookieBadge';
 import { useHintBoard, useRdPreviewState } from '@/hooks/hints.hook';
 import { apiErrorMessage } from '@/lib/api-error';
-import { type AnswerPreview, DETAIL_PART, answerPreview, hasExistingMarker, nextOpenArea } from '@/lib/intel-window';
+import { type AnswerPreview, DETAIL_PART, answerPreview, hasExistingMarker, initialOpenArea, nextOpenArea } from '@/lib/intel-window';
 import { SWAP } from '@/lib/motion';
 import { areaOptions, getColorFromArea } from '@/lib/utils';
 import useIntelStore from '@/stores/intel.store';
@@ -25,9 +25,6 @@ const DIALOG_CLOSE_MS = 260;
 /** Save an answer; resolves true when it is stored (false: failed or waiting for the replace-marker confirm) */
 type SaveAnswer = (cell: HintCell, label: string, answer: string) => Promise<boolean>;
 
-/** An area that can be opened: it has a cell with a hint */
-const openable = (cells: Map<string, HintCell>, area: string | null) => !!area && !!cells.get(area) && cells.get(area)!.status !== 'none';
-
 /**
  * Hint (spec H2): one row per deelgebied, one open at a time (first the store's area, else the first open one) with the
  * area's full text and the answer field. Saving folds the row and unfolds the next open area. Two staggered detail parts.
@@ -36,19 +33,30 @@ const openable = (cells: Map<string, HintCell>, area: string | null) => !!area &
 export default function HintPane({ item, area, mapRef }: { item: IntelItem; area: string | null; mapRef: RefObject<MapRef | null> }) {
   const { solve } = useHintBoard({ live: true });
   const cells = new Map(item.cells.map((cell) => [cell.area, cell]));
-  const [openArea, setOpenArea] = useState<string | null>(() => (openable(cells, area) ? area : nextOpenArea(item.cells)));
+  const [openArea, setOpenArea] = useState<string | null>(() => initialOpenArea(item.cells, area));
   // The store's area changing while this hint stays on the right (openIntel on the same article) opens that area
   const [lastArea, setLastArea] = useState(area);
   if (area !== lastArea) {
     setLastArea(area);
-    if (openable(cells, area)) setOpenArea(area);
+    if (area && initialOpenArea(item.cells, area) === area) setOpenArea(area);
   }
+  // For a save that settles later: the cells and open row by then (a poll or a click can come in between)
+  const latest = useRef({ cells: item.cells, openArea });
+  useEffect(() => {
+    latest.current = { cells: item.cells, openArea };
+  });
+  const headers = useRef(new Map<string, HTMLButtonElement>());
   // The 409 confirm lives here, not in the row: the row folds away on success and would cut its close animation short
   const [replace, setReplace] = useState<{ cell: HintCell; label: string; answer: string } | null>(null);
   const [askReplace, setAskReplace] = useState(false);
 
+  /** Fold the saved row and unfold the next open area, unless another row was opened meanwhile */
   function saved(cell: HintCell, after: HintCell) {
-    setOpenArea(nextOpenArea(item.cells.map((existing) => (existing._id === after._id ? after : existing)), cell.area));
+    const next = nextOpenArea(latest.current.cells.map((existing) => (existing._id === after._id ? after : existing)), cell.area);
+    const advance = latest.current.openArea === cell.area;
+    setOpenArea((current) => (current === cell.area ? next : current));
+    // No next area (its field would take focus): keep focus on the folded row instead of letting it fall to the body
+    if (advance && !next) headers.current.get(cell.area)?.focus();
   }
 
   const save: SaveAnswer = async (cell, label, answer) => {
@@ -90,6 +98,10 @@ export default function HintPane({ item, area, mapRef }: { item: IntelItem; area
                 onToggle={() => setOpenArea(openArea === value ? null : value)}
                 onSave={save}
                 mapRef={mapRef}
+                headerRef={(element) => {
+                  if (element) headers.current.set(value, element);
+                  else headers.current.delete(value);
+                }}
               />
             ))}
           </BeheerRows>
@@ -120,9 +132,10 @@ interface AreaRowProps {
   onToggle: () => void;
   onSave: SaveAnswer;
   mapRef: RefObject<MapRef | null>;
+  headerRef: (element: HTMLButtonElement | null) => void;
 }
 
-function AreaRow({ cell, area, label, open, onToggle, onSave, mapRef }: AreaRowProps) {
+function AreaRow({ cell, area, label, open, onToggle, onSave, mapRef, headerRef }: AreaRowProps) {
   const solved = cell?.status === 'solved' && !!cell.answer;
   // Derived (as AreaChip): an area that is open on screen pops its cookie in once solved; one mounted solved just shows it
   const [poppable, setPoppable] = useState(!solved);
@@ -144,6 +157,7 @@ function AreaRow({ cell, area, label, open, onToggle, onSave, mapRef }: AreaRowP
   return (
     <RowFrame tone={open ? 'open' : 'default'}>
       <button
+        ref={headerRef}
         type="button"
         aria-expanded={open}
         onClick={onToggle}
@@ -179,6 +193,8 @@ function AreaBody({ cell, label, onSave, mapRef }: { cell: HintCell; label: stri
   const [editing, setEditing] = useState(!solved);
   const [answer, setAnswer] = useState(cell.answer ?? '');
   const [saving, setSaving] = useState(false);
+  // Escape-cancel: the pencil takes focus back when it mounts again
+  const [refocus, setRefocus] = useState(false);
 
   // The line under the field. While the next parse is pending it keeps the last one, so typing doesn't make it flicker.
   const typed = editing ? answer : '';
@@ -201,6 +217,7 @@ function AreaBody({ cell, label, onSave, mapRef }: { cell: HintCell; label: stri
   function cancelEdit() {
     setAnswer(cell.answer ?? '');
     setEditing(false);
+    setRefocus(true);
   }
 
   function showOnMap() {
@@ -255,7 +272,7 @@ function AreaBody({ cell, label, onSave, mapRef }: { cell: HintCell; label: stri
                 <MapIcon />
               </IconPill>
             )}
-            <IconPill aria-label="Wijzigen" title="Wijzigen" onClick={() => setEditing(true)}>
+            <IconPill aria-label="Wijzigen" title="Wijzigen" autoFocus={refocus} onClick={() => setEditing(true)}>
               <PencilIcon />
             </IconPill>
           </motion.div>

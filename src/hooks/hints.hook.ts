@@ -85,9 +85,3 @@ export const useRdPreviewState = (answer: string): { rd: RdPreview | null; pendi
   if (trimmedAnswer !== debouncedAnswer || isLoading) return { rd: null, pending: true };
   return { rd: data?.rd ?? null, pending: false };
 };
-
-/**
- * Let the server parse a typed answer as an RD coordinate (single source of truth for RD rules).
- * @returns The parsed coordinate, or null when the answer is not a coordinate (or still loading)
- */
-export const useRdPreview = (answer: string): RdPreview | null => useRdPreviewState(answer).rd;
