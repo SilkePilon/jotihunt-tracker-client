@@ -1,4 +1,4 @@
-import { Children, createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useContext, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { ChevronDownIcon, Loader2Icon } from 'lucide-react';
 import AutoHeight from '@/components/motion/AutoHeight';
@@ -325,15 +325,5 @@ export function BeheerSkeleton({ groups = 1 }: { groups?: number }) {
         </div>
       ))}
     </div>
-  );
-}
-
-/** @deprecated Temporary bridge for panes not yet redesigned; removed once every pane uses BeheerCard + BeheerRows. */
-export function BeheerGroup({ title, note, children }: { title: string; note?: ReactNode; children: ReactNode }) {
-  return (
-    <BeheerCard title={title} description={note}>
-      {/* Children.toArray gives unkeyed form children (old Invites/Bericht panes) unique keys inside AnimatePresence */}
-      <BeheerRows>{Children.toArray(children)}</BeheerRows>
-    </BeheerCard>
   );
 }

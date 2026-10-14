@@ -1,19 +1,31 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { Loader2Icon } from 'lucide-react';
+import { CheckIcon, LinkIcon, Loader2Icon, RefreshCwIcon, TriangleAlertIcon, UnlinkIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import Life360LinkPanel, { type Life360LinkView } from '@/components/cards/life360/Life360LinkPanel';
+import Life360Logo from '@/components/cards/life360/Life360Logo';
 import TelegramLinkPanel from '@/components/cards/telegram/TelegramLinkPanel';
-import ConfirmDialog from '@/components/ConfirmDialog';
+import TelegramLogo from '@/components/cards/telegram/TelegramLogo';
 import Reveal from '@/components/motion/Reveal';
-import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLife360Admin } from '@/hooks/life360.hook';
+import { useNow } from '@/hooks/now.hook';
 import { revalidateTelegramViews, useTelegramAdmin } from '@/hooks/telegram.hook';
 import { apiErrorMessage } from '@/lib/api-error';
-import type { Life360AdminStatus } from '@/types/Life360';
-import type { TelegramAdminStatus } from '@/types/Telegram';
-import { BeheerGroup, BeheerPane, BeheerRow } from './BeheerLayout';
+import { life360Integration, telegramIntegration, type IntegrationTone, type IntegrationView } from '@/lib/koppelingen';
+import { LIFE360_PURPLE, refreshAllowed } from '@/lib/life360';
+import { POP } from '@/lib/motion';
+import { cn } from '@/lib/utils';
+import type { Life360LinkedStatus } from '@/types/Life360';
+import { BeheerCard, BeheerPane, FadeSwap, InlineConfirm } from './BeheerLayout';
+import { IconPill, Pill, Tag } from './controls/Pill';
+
+/** Telegram's brand blue (as TELEGRAM_BUTTON in TelegramLinkPanel) */
+const TELEGRAM_BLUE = '#229ED9';
+/** The inline confirm sits in the card as a red box */
+const CONFIRM_BOX = 'rounded-[18px] bg-destructive/12 px-3.5 py-3';
+
+const TAG_TONE: Record<IntegrationTone, 'ok' | 'neutral' | 'warn'> = { ok: 'ok', off: 'neutral', warn: 'warn' };
 
 /** Runs `action`; null when it succeeded, else the server's (Dutch) error text (as in Life360Section). */
 async function errorText(action: () => Promise<unknown>, fallback: string): Promise<string | null> {
@@ -43,86 +55,126 @@ const TELEGRAM_STEPS = ['qr', 'password'];
 // A token links straight from unlinked / loggedOut, without the code and circle steps
 const LIFE360_STEPS = ['code', 'circle', 'unlinked', 'loggedOut'];
 
-/** A row's meta line; fades when it changes (skeleton → status text, one status to the next) */
-function FadeMeta({ children }: { children: ReactNode }) {
+/** Life360's "ververs": asks for fresh fixes (max 1 per minute); spins while it runs. */
+function RefreshButton({ status, onRefresh }: { status: Life360LinkedStatus; onRefresh: () => Promise<void> }) {
+  const now = useNow(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const canRefresh = !refreshing && refreshAllowed(status.refreshAvailableAt, now);
+
+  async function refresh() {
+    setRefreshing(true);
+    try {
+      await onRefresh();
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
   return (
-    <AnimatePresence mode="wait" initial={false}>
-      <motion.div
-        key={typeof children === 'string' ? children : 'skeleton'}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.15 }}
-      >
-        {children}
-      </motion.div>
-    </AnimatePresence>
+    <IconPill className="size-[26px]" aria-label="Life360 verversen" disabled={!canRefresh} onClick={() => void refresh()}>
+      <RefreshCwIcon className={cn('size-3.5', refreshing && 'animate-spin')} />
+    </IconPill>
   );
 }
 
-/** The trailing control of a row; fades when it changes (Koppelen ↔ Ontkoppelen ↔ nothing) */
-function Trailing({ id, children }: { id: string; children: ReactNode }) {
+interface IntegrationCardProps {
+  name: string;
+  /** Fill of the logo circle */
+  brand: string;
+  logo: ReactNode;
+  view: IntegrationView | undefined;
+  isError: boolean;
+  /** Koppelen / Ontkoppelen (null for none) and a key that changes with it */
+  action: ReactNode;
+  actionKey: string;
+  /** After the sync line, e.g. the refresh button */
+  syncAction?: ReactNode;
+  onRelink?: () => void;
+  /** The inline confirm while asking to unlink */
+  confirm?: ReactNode;
+  /** The link steps while linking */
+  panel?: ReactNode;
+}
+
+/** K1: one card per integration — logo, name + status pill, "gekoppeld als …", sync line, amber problem bar, confirm, link steps. */
+function IntegrationCard({ name, brand, logo, view, isError, action, actionKey, syncAction, onRelink, confirm, panel }: IntegrationCardProps) {
   return (
-    <AnimatePresence mode="wait" initial={false}>
-      {children ? (
-        <motion.div key={id} className="shrink-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
-          {children}
-        </motion.div>
-      ) : null}
-    </AnimatePresence>
+    <BeheerCard>
+      <div className="flex items-center gap-3">
+        <span aria-hidden className="grid size-11 shrink-0 place-items-center rounded-full text-white" style={{ background: brand }}>
+          {logo}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-[15px] font-bold">{name}</h3>
+            <AnimatePresence mode="popLayout" initial={false}>
+              {view && (
+                <motion.span key={view.tone} className="inline-flex" {...POP}>
+                  <Tag tone={TAG_TONE[view.tone]}>
+                    {view.tone === 'ok' && <CheckIcon />}
+                    {view.tone === 'warn' && <TriangleAlertIcon />}
+                    {view.pill}
+                  </Tag>
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </div>
+          <FadeSwap className="text-[12.5px] text-muted-foreground">{view ? view.line : isError ? 'Status ophalen is mislukt.' : <Skeleton className="mt-1 h-3 w-40" />}</FadeSwap>
+        </div>
+        <AnimatePresence mode="popLayout" initial={false}>
+          {action && (
+            <motion.div key={actionKey} className="shrink-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+              {action}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      <Reveal>
+        {view?.sync && (
+          // Lined up with the text (44px logo + 12px gap)
+          <div className="flex items-center gap-1 pt-1.5 pl-14 text-xs text-muted-foreground">
+            <span className="tabular-nums">{view.sync}</span>
+            {syncAction}
+          </div>
+        )}
+      </Reveal>
+      <Reveal>
+        {view?.problem && (
+          <div className="pt-3">
+            <div className="flex flex-wrap items-center gap-2.5 rounded-2xl bg-amber-500/15 px-3 py-2.5 text-amber-800 dark:text-amber-200">
+              <TriangleAlertIcon className="size-4 shrink-0" />
+              <span className="min-w-0 flex-1 basis-48 text-[12.5px]">{view.problem}</span>
+              {view.canRelink && onRelink && (
+                <Pill variant="warn" onClick={onRelink}>
+                  Opnieuw koppelen
+                </Pill>
+              )}
+            </div>
+          </div>
+        )}
+      </Reveal>
+      <Reveal>{confirm && <div className="pt-3">{confirm}</div>}</Reveal>
+      <Reveal>
+        {panel && (
+          <div className="pt-3">
+            <div className="rounded-[18px] bg-beheer-row p-4">{panel}</div>
+          </div>
+        )}
+      </Reveal>
+    </BeheerCard>
   );
 }
 
-/** The unfolded link steps under the group box */
-function PanelBox({ children }: { children: ReactNode }) {
-  return <div className="rounded-lg border p-4 sm:max-w-sm">{children}</div>;
-}
-
-const metaSkeleton = <Skeleton className="mt-1 h-3 w-40" />;
-
-function telegramMeta(status: TelegramAdminStatus | undefined, isError: boolean): ReactNode {
-  if (!status) return isError ? 'Status ophalen is mislukt.' : metaSkeleton;
-  const name = status.account?.name ?? 'Telegram';
-  switch (status.state) {
-    case 'unavailable':
-      return 'Niet ingesteld op de server';
-    case 'linked':
-      return status.connected === false ? `Geen verbinding · ${name}` : `Gekoppeld via ${name} · leest @Jotihunt_bot`;
-    case 'qr':
-    case 'password':
-      return 'Bezig met koppelen…';
-    case 'unlinked':
-      return 'Niet gekoppeld';
-  }
-}
-
-function life360Meta(status: Life360AdminStatus | undefined, isError: boolean): ReactNode {
-  if (!status) return isError ? 'Status ophalen is mislukt.' : metaSkeleton;
-  switch (status.state) {
-    case 'unavailable':
-      return 'Niet ingesteld op de server';
-    case 'linked':
-      return `Gekoppeld via ${status.email}`;
-    case 'paused':
-      return 'Even gepauzeerd';
-    case 'loggedOut':
-      return 'Uitgelogd, opnieuw koppelen nodig';
-    case 'code':
-    case 'circle':
-      return 'Bezig met koppelen…';
-    case 'unlinked':
-      return 'Niet gekoppeld';
-  }
-}
-
-/** Beheer → Koppelingen: the group's Telegram and Life360 accounts. "Koppelen" unfolds the same steps as the sidebar cards. */
+/** Beheer → Koppelingen (K1): the group's Telegram and Life360 accounts, one card each. "Koppelen" unfolds the same steps as the sidebar cards. */
 export default function KoppelingenPane() {
   const telegram = useTelegramAdmin(true);
   const life360 = useLife360Admin(true);
+  const now = useNow(true);
+  const [confirming, setConfirming] = useState<'telegram' | 'life360' | null>(null);
 
   // Telegram: "Koppelen" starts the QR login; the panel shows while the server is in a link step
   const [telegramStarting, setTelegramStarting] = useState(false);
-  const [telegramConfirm, setTelegramConfirm] = useState(false);
   const telegramState = telegram.status?.state;
   const telegramPanel = telegramState === 'qr' || telegramState === 'password';
 
@@ -146,7 +198,7 @@ export default function KoppelingenPane() {
   async function unlinkTelegram() {
     try {
       await telegram.unlink();
-      setTelegramConfirm(false);
+      setConfirming(null);
     } catch (error) {
       toast.error(apiErrorMessage(error, 'Ontkoppelen is mislukt, probeer het opnieuw.'));
     }
@@ -155,7 +207,6 @@ export default function KoppelingenPane() {
   // Life360: "Koppelen" opens the e-mail step (local only, as in Life360Card); the server's code / circle steps follow
   const [emailStep, setEmailStep] = useState(false);
   const [emailPrefill, setEmailPrefill] = useState('');
-  const [life360Confirm, setLife360Confirm] = useState(false);
   const life360Status = life360.status;
   const life360State = life360Status?.state;
   // Any server step change closes the e-mail step (a sent code moves on to the code step)
@@ -165,7 +216,7 @@ export default function KoppelingenPane() {
     setEmailStep(false);
   }
   const canLinkLife360 = life360State === 'unlinked' || life360State === 'loggedOut';
-  const life360View: Life360LinkView | null = emailStep && canLinkLife360 ? 'email' : life360State === 'code' || life360State === 'circle' ? life360State : null;
+  const life360Step: Life360LinkView | null = emailStep && canLinkLife360 ? 'email' : life360State === 'code' || life360State === 'circle' ? life360State : null;
 
   useLinkedTransition(life360State, LIFE360_STEPS, () => toast.success('Life360 gekoppeld'));
 
@@ -187,8 +238,8 @@ export default function KoppelingenPane() {
     setEmailStep(true);
   }
 
+  /** "Koppelen", and "Opnieuw koppelen" when logged out (starts from the address that was linked) */
   function openLife360() {
-    // Logged out: start from the address that was linked
     if (life360Status?.state === 'loggedOut') setEmailPrefill(life360Status.email);
     setEmailStep(true);
   }
@@ -196,128 +247,149 @@ export default function KoppelingenPane() {
   async function unlinkLife360() {
     try {
       await life360.unlink();
-      setLife360Confirm(false);
+      setConfirming(null);
     } catch (error) {
       toast.error(apiErrorMessage(error, 'Ontkoppelen is mislukt, probeer het opnieuw.'));
     }
   }
 
-  let telegramTrailing: ReactNode = null;
-  if (telegramState === 'linked') {
-    telegramTrailing = (
-      <Button variant="outline" size="sm" onClick={() => setTelegramConfirm(true)}>
+  async function refreshLife360() {
+    try {
+      await life360.requestFreshLocations();
+      toast.success('Life360 vraagt nieuwe locaties op');
+    } catch (error) {
+      toast.error(apiErrorMessage(error, 'Verversen is mislukt, probeer het later opnieuw.'));
+    }
+  }
+
+  const telegramView = telegram.status && telegramIntegration(telegram.status, now);
+  const life360Card = life360Status && life360Integration(life360Status, now);
+
+  let telegramAction: ReactNode = null;
+  if (telegramView?.canUnlink) {
+    telegramAction = (
+      <Pill variant="danger-outline" disabled={confirming === 'telegram'} onClick={() => setConfirming('telegram')}>
         Ontkoppelen
-      </Button>
+      </Pill>
     );
-  } else if (telegramState === 'unlinked') {
-    telegramTrailing = (
-      <Button size="sm" disabled={telegramStarting} onClick={() => void startTelegram()}>
-        {telegramStarting && <Loader2Icon className="animate-spin" />}
+  } else if (telegramView?.canLink) {
+    telegramAction = (
+      <Pill variant="primary" morphKey={telegramStarting ? 'busy' : 'idle'} disabled={telegramStarting} onClick={() => void startTelegram()}>
+        {telegramStarting ? <Loader2Icon className="animate-spin" /> : <LinkIcon />}
         Koppelen
-      </Button>
+      </Pill>
     );
   }
 
-  let life360Trailing: ReactNode = null;
-  if (life360State === 'linked' || life360State === 'paused') {
-    life360Trailing = (
-      <Button variant="outline" size="sm" onClick={() => setLife360Confirm(true)}>
+  let life360Action: ReactNode = null;
+  if (life360Card?.canUnlink) {
+    life360Action = (
+      <Pill variant="danger-outline" disabled={confirming === 'life360'} onClick={() => setConfirming('life360')}>
         Ontkoppelen
-      </Button>
+      </Pill>
     );
-  } else if (canLinkLife360 && !emailStep) {
-    life360Trailing = (
-      <Button size="sm" onClick={openLife360}>
+  } else if (life360Card?.canLink && !emailStep) {
+    life360Action = (
+      <Pill variant="primary" onClick={openLife360}>
+        <LinkIcon />
         Koppelen
-      </Button>
+      </Pill>
     );
   }
 
   return (
     <BeheerPane title="Koppelingen" description="Accounts van de groep.">
-      <div>
-        <BeheerGroup title="Accounts">
-          <AnimatePresence initial={false}>
-            <BeheerRow key="telegram" title="Telegram" meta={<FadeMeta>{telegramMeta(telegram.status, telegram.isError)}</FadeMeta>}>
-              <Trailing id={telegramState === 'linked' ? 'unlink' : 'link'}>{telegramTrailing}</Trailing>
-            </BeheerRow>
-            <BeheerRow key="life360" title="Life360" meta={<FadeMeta>{life360Meta(life360Status, life360.isError)}</FadeMeta>}>
-              <Trailing id={life360State === 'linked' || life360State === 'paused' ? 'unlink' : 'link'}>{life360Trailing}</Trailing>
-            </BeheerRow>
-          </AnimatePresence>
-        </BeheerGroup>
-
-        <Reveal>
-          {telegramPanel && telegram.status && (
-            <div className="pt-3">
-              <PanelBox>
-                <TelegramLinkPanel
-                  status={telegram.status}
-                  onLink={startTelegram}
-                  onCancel={async () => {
-                    try {
-                      await telegram.unlink();
-                    } catch (error) {
-                      toast.error(apiErrorMessage(error, 'Annuleren is mislukt, probeer het opnieuw.'));
-                    }
-                  }}
-                  onSubmitPassword={async (password) => {
-                    try {
-                      await telegram.submitPassword(password);
-                      return null;
-                    } catch (error) {
-                      const message = apiErrorMessage(error, 'Koppelen is mislukt, probeer het opnieuw.');
-                      // Also as a toast: when the login was cancelled (409) or failed (502), the next poll replaces this step
-                      toast.error(message);
-                      return message;
-                    }
-                  }}
-                />
-              </PanelBox>
-            </div>
-          )}
-        </Reveal>
-
-        <Reveal>
-          {life360View && life360Status && (
-            <div className="pt-3">
-              <PanelBox>
-                <Life360LinkPanel
-                  view={life360View}
-                  status={life360Status}
-                  emailPrefill={emailPrefill}
-                  onOpenEmail={() => setEmailStep(true)}
-                  onCloseEmail={() => setEmailStep(false)}
-                  onOtherAddress={() => void otherAddress()}
-                  onSendCode={(email) => errorText(() => life360.sendCode(email), 'Code versturen is mislukt, probeer het opnieuw.')}
-                  onVerifyCode={(code) => errorText(() => life360.verifyCode(code), 'Koppelen is mislukt, probeer het opnieuw.')}
-                  onChooseCircle={(circleId) => errorText(() => life360.chooseCircle(circleId), 'Cirkel kiezen is mislukt, probeer het opnieuw.')}
-                  onSubmitToken={(token) => errorText(() => life360.submitToken(token), 'Koppelen met token is mislukt, probeer het opnieuw.')}
-                  onCancel={cancelLife360}
-                />
-              </PanelBox>
-            </div>
-          )}
-        </Reveal>
-      </div>
-
-      <ConfirmDialog
-        open={telegramConfirm}
-        onOpenChange={setTelegramConfirm}
-        title="Telegram ontkoppelen?"
-        description="De server logt uit bij Telegram. Tegenhunts worden dan niet meer automatisch gemeld, tot iemand opnieuw koppelt."
-        confirmLabel="Ontkoppelen"
-        destructive
-        onConfirm={unlinkTelegram}
+      <IntegrationCard
+        name="Telegram"
+        brand={TELEGRAM_BLUE}
+        logo={<TelegramLogo className="size-[22px]" />}
+        view={telegramView}
+        isError={telegram.isError}
+        action={telegramAction}
+        actionKey={telegramView?.canUnlink ? 'unlink' : 'link'}
+        confirm={
+          confirming === 'telegram' && telegramView?.canUnlink && (
+            <InlineConfirm
+              className={CONFIRM_BOX}
+              title="Telegram ontkoppelen?"
+              description="De server logt uit bij Telegram. Tegenhunts worden dan niet meer automatisch gemeld, tot iemand opnieuw koppelt."
+              confirmLabel="Ontkoppel"
+              confirmIcon={<UnlinkIcon />}
+              onCancel={() => setConfirming(null)}
+              onConfirm={unlinkTelegram}
+            />
+          )
+        }
+        panel={
+          telegramPanel &&
+          telegram.status && (
+            <TelegramLinkPanel
+              status={telegram.status}
+              onLink={startTelegram}
+              onCancel={async () => {
+                try {
+                  await telegram.unlink();
+                } catch (error) {
+                  toast.error(apiErrorMessage(error, 'Annuleren is mislukt, probeer het opnieuw.'));
+                }
+              }}
+              onSubmitPassword={async (password) => {
+                try {
+                  await telegram.submitPassword(password);
+                  return null;
+                } catch (error) {
+                  const message = apiErrorMessage(error, 'Koppelen is mislukt, probeer het opnieuw.');
+                  // Also as a toast: when the login was cancelled (409) or failed (502), the next poll replaces this step
+                  toast.error(message);
+                  return message;
+                }
+              }}
+            />
+          )
+        }
       />
-      <ConfirmDialog
-        open={life360Confirm}
-        onOpenChange={setLife360Confirm}
-        title="Life360 ontkoppelen?"
-        description="De server vergeet de Life360-sessie. De Life360-laag verdwijnt van de kaart, tot iemand opnieuw koppelt."
-        confirmLabel="Ontkoppelen"
-        destructive
-        onConfirm={unlinkLife360}
+
+      <IntegrationCard
+        name="Life360"
+        brand={LIFE360_PURPLE}
+        logo={<Life360Logo className="size-[22px]" />}
+        view={life360Card}
+        isError={life360.isError}
+        action={life360Action}
+        actionKey={life360Card?.canUnlink ? 'unlink' : 'link'}
+        syncAction={life360Status?.state === 'linked' && <RefreshButton status={life360Status} onRefresh={refreshLife360} />}
+        onRelink={openLife360}
+        confirm={
+          confirming === 'life360' && life360Card?.canUnlink && (
+            <InlineConfirm
+              className={CONFIRM_BOX}
+              title="Life360 ontkoppelen?"
+              description="De server vergeet de Life360-sessie. De Life360-laag verdwijnt van de kaart, tot iemand opnieuw koppelt."
+              confirmLabel="Ontkoppel"
+              confirmIcon={<UnlinkIcon />}
+              onCancel={() => setConfirming(null)}
+              onConfirm={unlinkLife360}
+            />
+          )
+        }
+        panel={
+          life360Step &&
+          life360Status && (
+            <Life360LinkPanel
+              view={life360Step}
+              status={life360Status}
+              emailPrefill={emailPrefill}
+              onOpenEmail={() => setEmailStep(true)}
+              onCloseEmail={() => setEmailStep(false)}
+              onOtherAddress={() => void otherAddress()}
+              onSendCode={(email) => errorText(() => life360.sendCode(email), 'Code versturen is mislukt, probeer het opnieuw.')}
+              onVerifyCode={(code) => errorText(() => life360.verifyCode(code), 'Koppelen is mislukt, probeer het opnieuw.')}
+              onChooseCircle={(circleId) => errorText(() => life360.chooseCircle(circleId), 'Cirkel kiezen is mislukt, probeer het opnieuw.')}
+              onSubmitToken={(token) => errorText(() => life360.submitToken(token), 'Koppelen met token is mislukt, probeer het opnieuw.')}
+              onCancel={cancelLife360}
+            />
+          )
+        }
       />
     </BeheerPane>
   );
