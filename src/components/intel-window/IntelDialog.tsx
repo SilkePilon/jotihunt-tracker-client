@@ -121,7 +121,7 @@ function IntelWindow({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
    */
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <IntelTopBar unread={unreadCount(items) > 0} />
+      <IntelTopBar unread={{ news: unreadCount(items, 'news') > 0, assignment: unreadCount(items, 'assignment') > 0 }} />
       <div className="@container flex min-h-0 flex-1 overflow-hidden">
         <motion.div
           ref={scrollRef}

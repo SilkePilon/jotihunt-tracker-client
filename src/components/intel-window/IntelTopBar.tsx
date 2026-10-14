@@ -13,8 +13,8 @@ const TABS: { value: IntelTab; label: string }[] = [
   { value: 'news', label: 'Nieuws' },
 ];
 
-/** "Intel", the tabs (a dot on Nieuws while something is unread) and the countdown to the next hint. Leaves room right for the dialog's close button. */
-export default function IntelTopBar({ unread }: { unread: boolean }) {
+/** "Intel", the tabs (a dot on Nieuws / Opdrachten while one of those is unread) and the countdown to the next hint. Leaves room right for the dialog's close button. */
+export default function IntelTopBar({ unread }: { unread: Partial<Record<IntelTab, boolean>> }) {
   const tab = useIntelStore((state) => state.tab);
   const setTab = useIntelStore((state) => state.setTab);
   const next = useNextHint();
@@ -35,7 +35,7 @@ export default function IntelTopBar({ unread }: { unread: boolean }) {
             >
               {active && <motion.span layoutId="intel-tab" className="absolute inset-0 rounded-[9px] bg-beheer-row-high" transition={{ type: 'spring', stiffness: 500, damping: 38 }} />}
               <span className="relative">{option.label}</span>
-              <AnimatePresence>{option.value === 'news' && unread && <motion.span key="dot" {...POP} className="relative size-[7px] rounded-full bg-primary" aria-label="ongelezen" />}</AnimatePresence>
+              <AnimatePresence>{unread[option.value] && <motion.span key="dot" {...POP} className="relative size-[7px] rounded-full bg-primary" aria-label="ongelezen" />}</AnimatePresence>
             </button>
           );
         })}
