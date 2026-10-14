@@ -1,10 +1,11 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { toast } from 'sonner';
-import { CheckIcon, CopyIcon, Loader2Icon, PlusIcon, QrCodeIcon, SquareIcon } from 'lucide-react';
+import { CheckIcon, ChevronDownIcon, CopyIcon, Loader2Icon, PlusIcon, QrCodeIcon, SquareIcon } from 'lucide-react';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import Reveal from '@/components/motion/Reveal';
 import TrackerQrCode from '@/components/tracker/TrackerQrCode';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useInvites } from '@/hooks/invites.hook';
 import { useTimedValue } from '@/hooks/timed-value.hook';
 import useInterval from '@/hooks/utils/interval.hook';
@@ -26,7 +27,6 @@ import { POP, SWAP } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { BeheerCard, BeheerPane, BeheerRow, BeheerRows, BeheerSkeleton, RowFrame } from './BeheerLayout';
 import { IconPill, Pill, Tag } from './controls/Pill';
-import Segmented, { type SegmentOption } from './controls/Segmented';
 import WhatsAppLogo from './WhatsAppLogo';
 
 /** The pane's card gap (gap-3.5), so a card folding away doesn't leave a gap behind */
@@ -45,16 +45,41 @@ const valueToUses = (value: string) => (value === UNLIMITED ? null : Number(valu
 const newestFirst = (a: AdminInvite, b: AdminInvite) => Date.parse(b.createdAt) - Date.parse(a.createdAt);
 
 /** The picker shows a short set (mockup I5); the default (1 dag) is always in it. */
-const EXPIRY_SEGMENTS: SegmentOption<InviteExpiry>[] = (['1h', '1d', '7d', 'never'] as const).map((value) => ({ value, label: EXPIRY_OPTIONS.find((option) => option.value === value)!.label }));
-const USES_SEGMENTS: SegmentOption<string>[] = [1, 5, null].map((value) => ({ value: usesToValue(value), label: value === null ? 'Onbeperkt' : `${value}×` }));
+const EXPIRY_SEGMENTS: PickerOption[] = (['1h', '1d', '7d', 'never'] as const).map((value) => ({ value, label: EXPIRY_OPTIONS.find((option) => option.value === value)!.label }));
+const USES_SEGMENTS: PickerOption[] = [1, 5, null].map((value) => ({ value: usesToValue(value), label: value === null ? 'Onbeperkt' : `${value}×` }));
 
-/** A label + control line of the "Nieuwe invite" card (stacked on phones). */
-function Field({ label, children }: { label: string; children: ReactNode }) {
+type PickerOption = { value: string; label: string };
+
+/** A compact "Label  value ⌄" button that opens a short list (mockup N5); the value swaps with a fade. */
+function Picker({ label, value, options, onChange, disabled }: { label: string; value: string; options: PickerOption[]; onChange: (value: string) => void; disabled?: boolean }) {
+  const current = options.find((option) => option.value === value)?.label ?? '';
   return (
-    <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
-      <span className="text-[13px] font-semibold sm:w-24 sm:shrink-0">{label}</span>
-      {children}
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild disabled={disabled}>
+        <button
+          type="button"
+          aria-label={`${label}: ${current}`}
+          className="inline-flex h-[38px] items-center gap-1.5 rounded-lg bg-beheer-row pr-2.5 pl-3.5 text-[13px] font-semibold outline-none transition-colors hover:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-50 data-[state=open]:bg-beheer-row-high"
+        >
+          <span className="font-medium text-muted-foreground">{label}</span>
+          <AnimatePresence mode="popLayout" initial={false}>
+            <motion.span key={current} {...SWAP}>
+              {current}
+            </motion.span>
+          </AnimatePresence>
+          <ChevronDownIcon className="size-3.5 text-muted-foreground" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="min-w-40">
+        <DropdownMenuRadioGroup value={value} onValueChange={onChange}>
+          {options.map((option) => (
+            <DropdownMenuRadioItem key={option.value} value={option.value}>
+              {option.label}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -187,12 +212,15 @@ export default function InvitesPane() {
     <BeheerPane title="Invites" description="Iedereen met een link kan een account maken.">
       <BeheerCard title="Nieuwe invite">
         <div className="flex flex-col gap-2.5 px-1">
-          <Field label="Geldig">
-            <Segmented label="Geldig" value={expiry} options={EXPIRY_SEGMENTS} onChange={setExpiry} disabled={busy} />
-          </Field>
-          <Field label="Aantal keer">
-            <Segmented label="Aantal keer" value={usesToValue(maxUses)} options={USES_SEGMENTS} onChange={(value) => setMaxUses(valueToUses(value))} disabled={busy} />
-          </Field>
+          {/* One toolbar line (mockup N5): two pickers and the button; wraps on narrow phones */}
+          <div className="flex flex-wrap items-center gap-2">
+            <Picker label="Geldig" value={expiry} options={EXPIRY_SEGMENTS} onChange={(value) => setExpiry(value as InviteExpiry)} disabled={busy} />
+            <Picker label="Aantal" value={usesToValue(maxUses)} options={USES_SEGMENTS} onChange={(value) => setMaxUses(valueToUses(value))} disabled={busy} />
+            <Pill className="ml-auto" variant="primary" size="md" morphKey={busy ? 'busy' : 'idle'} disabled={busy} onClick={() => void submitCreate()}>
+              {busy ? <Loader2Icon className="animate-spin" /> : <PlusIcon />}
+              Invite maken
+            </Pill>
+          </div>
           <Reveal gap={10}>
             {createError && (
               <p role="alert" className="text-xs font-medium text-destructive">
@@ -200,12 +228,6 @@ export default function InvitesPane() {
               </p>
             )}
           </Reveal>
-          <div className="flex justify-end">
-            <Pill variant="primary" size="md" morphKey={busy ? 'busy' : 'idle'} disabled={busy} onClick={() => void submitCreate()}>
-              {busy ? <Loader2Icon className="animate-spin" /> : <PlusIcon />}
-              Invite maken
-            </Pill>
-          </div>
         </div>
       </BeheerCard>
 
