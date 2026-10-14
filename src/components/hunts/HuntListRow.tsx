@@ -111,6 +111,8 @@ function WebsiteRow({ hunt }: { hunt: Hunt }) {
       }
     >
       <Points points={hunt.points} />
+      {/* Stands in for the chevron of the report rows (12px gap + 16px), so the points line up */}
+      <span aria-hidden className="ml-1.5 w-4" />
     </BeheerRow>
   );
 }

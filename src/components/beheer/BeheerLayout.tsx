@@ -315,16 +315,24 @@ export function InlineConfirm({ title, description, confirmLabel, confirmIcon, o
   }
 
   return (
-    <div role="alertdialog" aria-label={typeof title === 'string' ? title : undefined} className={cn('flex flex-wrap items-center gap-3', className)}>
+    // Escape cancels the question; data-inline-edit on its buttons keeps the window open meanwhile (keepOpenWhileEditing)
+    <div
+      role="alertdialog"
+      aria-label={typeof title === 'string' ? title : undefined}
+      className={cn('flex flex-wrap items-center gap-3', className)}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape' && !busy) onCancel();
+      }}
+    >
       <div className="min-w-0 flex-1 basis-48">
         <p className="text-[13.5px] font-bold">{title}</p>
         <p className="text-xs text-muted-foreground">{description}</p>
       </div>
       <div className="flex shrink-0 gap-1.5">
-        <Pill variant="secondary" onClick={onCancel} disabled={busy} autoFocus>
+        <Pill variant="secondary" data-inline-edit onClick={onCancel} disabled={busy} autoFocus>
           Annuleer
         </Pill>
-        <Pill variant="danger" morphKey={busy ? 'busy' : 'idle'} onClick={() => void confirm()} disabled={busy}>
+        <Pill variant="danger" data-inline-edit morphKey={busy ? 'busy' : 'idle'} onClick={() => void confirm()} disabled={busy}>
           {busy ? <Loader2Icon className="animate-spin" /> : confirmIcon}
           {confirmLabel}
         </Pill>
