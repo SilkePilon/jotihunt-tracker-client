@@ -1,5 +1,5 @@
 import { isAxiosError } from 'axios';
-import type { Variants } from 'motion/react';
+import type { Transition, Variants } from 'motion/react';
 import { EASE_OUT } from '@/lib/motion';
 import type { Article } from '@/types/Article';
 import type { HintBoard, HintCell, RdPreview } from '@/types/HintCell';
@@ -161,18 +161,27 @@ export function answerPreview(answer: string, rd: RdPreview | null): AnswerPrevi
 }
 
 /**
- * Split view, right side (T1). The keyed detail wrapper uses `DETAIL_SWAP` with `initial="open"` (the split opens: its parts
- * are pushed in from the right while the timeline shrinks) or `initial="swap"` (another item: parts rise in), `animate="shown"`,
- * `exit="gone"` and `custom={swap}`; every top-level part of the detail is a motion element with `variants={DETAIL_PART}`.
+ * The detail view (full width). The keyed detail wrapper uses `DETAIL_SWAP` with `initial="open"` (coming from the timeline:
+ * the header stays in place for the card morph and the parts below rise in after it) or `initial="swap"` (another item while
+ * a detail is open: every part rises in), `animate="shown"`, `exit="gone"` and `custom={swap}`. The header block uses
+ * `DETAIL_HEAD`; every other top-level part is a motion element with `DETAIL_PART`.
  */
 export const DETAIL_SWAP: Variants = {
   open: {},
   swap: {},
-  shown: (swap: boolean) => ({ transition: swap ? { staggerChildren: 0.045 } : { staggerChildren: 0.055, delayChildren: 0.15 } }),
+  shown: (swap: boolean) => ({ transition: swap ? { staggerChildren: 0.045 } : { staggerChildren: 0.05, delayChildren: 0.17 } }),
   gone: { opacity: 0, transition: { duration: 0.11, ease: 'easeIn' } },
 };
 export const DETAIL_PART: Variants = {
-  open: { opacity: 0, x: 28 },
+  open: { opacity: 0, y: 14 },
   swap: { opacity: 0, y: 10 },
-  shown: { opacity: 1, x: 0, y: 0, transition: { duration: 0.38, ease: EASE_OUT } },
+  shown: { opacity: 1, y: 0, transition: { duration: 0.38, ease: EASE_OUT } },
 };
+/** The header block: in place on open (the card morphs into its frame), rises in on a swap */
+export const DETAIL_HEAD: Variants = {
+  open: {},
+  swap: { opacity: 0, y: 10 },
+  shown: { opacity: 1, y: 0, transition: { duration: 0.38, ease: EASE_OUT } },
+};
+/** The card ↔ detail header morph (frame and title share a `layoutId`, see `useMorphIds`) */
+export const INTEL_MORPH: Transition = { type: 'spring', visualDuration: 0.42, bounce: 0.1 };

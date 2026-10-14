@@ -1,8 +1,8 @@
-import { type ReactNode, RefObject, useEffect, useMemo, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
-import { XIcon } from 'lucide-react';
+import { type ReactNode, RefObject, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { AnimatePresence, motion, useIsPresent } from 'motion/react';
+import { ArrowLeftIcon } from 'lucide-react';
 import { useSWRConfig } from 'swr';
-import { IconPill } from '@/components/beheer/controls/Pill';
+import { Pill } from '@/components/beheer/controls/Pill';
 import { MapRef } from '@/components/Map';
 import ResponsiveDialog from '@/components/ResponsiveDialog';
 import { useArticles } from '@/hooks/articles.hook';
@@ -14,8 +14,9 @@ import { useReadState } from '@/hooks/read-state.hook';
 import { keepOpenWhileEditing } from '@/lib/inline-edit';
 import { DETAIL_SWAP, buildIntelItems, filterByTab, unreadCount } from '@/lib/intel-window';
 import { EASE_OUT } from '@/lib/motion';
+import { cn } from '@/lib/utils';
 import useIntelStore from '@/stores/intel.store';
-import type { IntelItem } from '@/types/Intel';
+import type { IntelItem, IntelTab } from '@/types/Intel';
 import IntelDetail from './IntelDetail';
 import IntelTimeline from './IntelTimeline';
 import IntelTopBar from './IntelTopBar';
@@ -45,7 +46,7 @@ export default function IntelDialog({ mapRef }: { mapRef: RefObject<MapRef | nul
         // Escape inside an inline editor (a hint answer being changed) only cancels the edit
         keepOpenWhileEditing(event);
         if (event.defaultPrevented) return;
-        // Escape first closes the item on the right, then the window
+        // Escape first goes back from an item to the timeline, then closes the window
         const { articleId, select } = useIntelStore.getState();
         if (articleId !== null) {
           event.preventDefault();
@@ -72,21 +73,19 @@ function IntelWindow({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
   const articleId = useIntelStore((state) => state.articleId);
   const select = useIntelStore((state) => state.select);
   const selected = shown.find((item) => item.id === articleId) ?? null;
-  const split = selected !== null;
   const mounted = useHasMounted();
-  const scrollRef = useRef<HTMLDivElement>(null);
 
-  // The last selection that showed on the right (derived during render)
+  // The last selection that showed (derived during render); its card morphs back when the detail closes
   const [resolvedId, setResolvedId] = useState<number | null>(null);
   if (selected && resolvedId !== selected.id) setResolvedId(selected.id);
-  // A selection that showed and then left the tab (the tab changed, or the article went) closes the split. One that never
+  // A selection that showed and then left the list (the article went) goes back to the timeline. One that never
   // showed yet stays pending: a toast for a just-published article can be quicker than the next /articles poll.
   useEffect(() => {
     if (articleId !== null && articleId === resolvedId && !selected) select(null);
   }, [articleId, resolvedId, selected, select]);
 
   // A pending article that is not in the data yet: fetch articles and the hint board now instead of at the next poll.
-  // Still not there after that fetch: drop it, so the split can't open out of the blue later.
+  // Still not there after that fetch: drop it, so the detail can't open out of the blue later.
   const { mutate } = useSWRConfig();
   const refreshedFor = useRef<number | null>(null);
   useEffect(() => {
@@ -98,60 +97,34 @@ function IntelWindow({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
     });
   }, [articles, articleId, items, mutate, select]);
 
-  // A pending selection does not survive a tab switch either, unless it came with it (openIntel sets both at once)
-  const last = useRef({ tab, articleId });
-  useEffect(() => {
-    const tabChanged = last.current.tab !== tab;
-    const articleChanged = last.current.articleId !== articleId;
-    last.current = { tab, articleId };
-    if (tabChanged && !articleChanged && articleId !== null && !selected) select(null);
-  }, [tab, articleId, selected, select]);
-
   // Opening news or an opdracht marks it read (hints have no read state)
   useEffect(() => {
     if (selected && selected.kind !== 'hint' && selected.unread) void markRead(selected.id);
   }, [selected, markRead]);
 
+  // Where the timeline was scrolled (and on which tab), so going back puts the card where it was clicked
+  const timelineScroll = useRef<{ tab: IntelTab; top: number } | null>(null);
+
   /*
-   * Split choreography (T1). Open: the wide list fades out (0.13 s), the column shrinks 100% → 33.333% (0.42 s from
-   * 0.1 s; the wide list is laid out at full row width, so it is only clipped, never re-wrapped), the compact rows stagger
-   * in, the separator grows down and the detail (fixed at its final width, in an overflow-hidden row) is pushed in from
-   * the right while its parts stagger in. Close: detail, separator and compact rows fade out, then the column grows back
-   * and the wide list staggers in. Swap: only the right side changes (DETAIL_SWAP).
+   * Detail choreography. Open: the timeline fades out (0.16 s) underneath while the clicked card's frame and title morph
+   * (shared layoutId, INTEL_MORPH) into the detail header on top, then the parts below stagger in. Back: the detail fades
+   * out underneath while the header morphs back into its card on top of the timeline, which is scrolled back to where it
+   * was; the other cards stagger in and the returning card's tags fade in as it lands. Swap: only the detail content
+   * changes (DETAIL_SWAP). The views are stacked (absolute), so the leaving one never moves the entering one.
    */
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <IntelTopBar unread={{ news: unreadCount(items, 'news') > 0, assignment: unreadCount(items, 'assignment') > 0 }} />
-      <div className="@container flex min-h-0 flex-1 overflow-hidden">
-        <motion.div
-          ref={scrollRef}
-          className="min-h-0 shrink-0 overflow-x-hidden overflow-y-auto [scrollbar-gutter:stable]"
-          initial={false}
-          animate={{ width: split ? '33.333%' : '100%' }}
-          transition={{ duration: 0.42, ease: EASE_OUT, delay: split ? 0.1 : 0.16 }}
-        >
-          <IntelTimeline items={shown} compact={split} tab={tab} scrollRef={scrollRef} selectedId={articleId} onSelect={(id) => select(id === articleId ? null : id)} />
-        </motion.div>
+      <div className="relative min-h-0 flex-1">
         <AnimatePresence initial={false}>
-          {split && (
-            <motion.div
-              key="separator"
-              className="mt-1 mb-[18px] w-px shrink-0 origin-top bg-border"
-              initial={{ scaleY: 0 }}
-              animate={{ scaleY: 1, opacity: 1, transition: { duration: 0.5, delay: 0.12, ease: EASE_OUT } }}
-              exit={{ opacity: 0, transition: { duration: 0.16 } }}
-            />
-          )}
-        </AnimatePresence>
-        <AnimatePresence initial={false}>
-          {selected && (
-            <motion.div
-              key="detail"
-              className="min-h-0 shrink-0 basis-[calc(66.667%-1px)] overflow-y-auto px-9 pt-1.5 pb-8"
-              exit={{ opacity: 0, x: 24, transition: { duration: 0.16, ease: 'easeIn' } }}
-            >
-              <DetailColumn item={selected} area={area} mapRef={mapRef} skipEntrance={!mounted} onClose={() => select(null)} />
-            </motion.div>
+          {selected ? (
+            <View key="detail">
+              <DetailView item={selected} area={area} mapRef={mapRef} skipEntrance={!mounted} onBack={() => select(null)} />
+            </View>
+          ) : (
+            <View key="timeline">
+              <TimelineView items={shown} tab={tab} memoryRef={timelineScroll} skipEntrance={!mounted} returnId={resolvedId} onSelect={select} />
+            </View>
           )}
         </AnimatePresence>
       </div>
@@ -159,40 +132,103 @@ function IntelWindow({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
   );
 }
 
-/**
- * The right side of the split: its parts push in when the split opens, and swap (out, then rise in) for another item.
- * `skipEntrance` (read on mount): the window opened straight into the split (toast, mini grid), the dialog itself animates.
- */
-function DetailColumn({ item, area, mapRef, skipEntrance, onClose }: { item: IntelItem; area: string | null; mapRef: RefObject<MapRef | null>; skipEntrance: boolean; onClose: () => void }) {
+/** One of the stacked views. The entering one paints on top; the leaving one fades out underneath and takes no input. */
+function View({ children }: { children: ReactNode }) {
+  const isPresent = useIsPresent();
+  return (
+    <motion.div
+      className={cn('absolute inset-0 flex flex-col', isPresent ? 'z-[1]' : 'pointer-events-none z-0')}
+      inert={!isPresent}
+      initial={false}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0, transition: { duration: 0.16, ease: 'easeIn' } }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+interface TimelineViewProps {
+  items: IntelItem[];
+  tab: IntelTab;
+  memoryRef: RefObject<{ tab: IntelTab; top: number } | null>;
+  skipEntrance: boolean;
+  returnId: number | null;
+  onSelect: (id: number) => void;
+}
+
+/** The scrolling timeline. `layoutScroll`: the card morph accounts for its scroll position. */
+function TimelineView({ items, tab, memoryRef, skipEntrance, returnId, onSelect }: TimelineViewProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  // Before motion measures the returning card (a microtask after this commit): back to where the list was, same tab only
+  useLayoutEffect(() => {
+    const saved = memoryRef.current;
+    if (ref.current && saved?.tab === tab) ref.current.scrollTop = saved.top;
+    // Mount only
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  // A tab switch keeps the scroll container: remember the position for the new tab (scroll events follow from here)
+  useLayoutEffect(() => {
+    if (ref.current) memoryRef.current = { tab, top: ref.current.scrollTop };
+  }, [tab, memoryRef]);
+  return (
+    <motion.div
+      ref={ref}
+      layoutScroll
+      onScroll={(event) => {
+        memoryRef.current = { tab, top: event.currentTarget.scrollTop };
+      }}
+      className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto [scrollbar-gutter:stable]"
+    >
+      <IntelTimeline items={items} tab={tab} skipEntrance={skipEntrance} returnId={returnId} onSelect={onSelect} />
+    </motion.div>
+  );
+}
+
+/** The open item over the full width: "Tijdlijn" back pill, then the item centred, scrolling on its own */
+function DetailView({ item, area, mapRef, skipEntrance, onBack }: { item: IntelItem; area: string | null; mapRef: RefObject<MapRef | null>; skipEntrance: boolean; onBack: () => void }) {
   const [skip] = useState(skipEntrance);
-  // Derived during render: from the first other item on, items rise in instead of pushing in from the right
+  return (
+    <>
+      <motion.div
+        className="flex shrink-0 items-center px-6 pb-2"
+        initial={skip ? false : { opacity: 0, x: -8 }}
+        animate={{ opacity: 1, x: 0, transition: { duration: 0.3, delay: 0.12, ease: EASE_OUT } }}
+      >
+        <Pill onClick={onBack} title="Terug naar de tijdlijn (Esc)">
+          <ArrowLeftIcon />
+          Tijdlijn
+        </Pill>
+      </motion.div>
+      <motion.div layoutScroll className="min-h-0 flex-1 overflow-y-auto px-9 pt-1.5 pb-8 [scrollbar-gutter:stable]">
+        <DetailColumn item={item} area={area} mapRef={mapRef} skipEntrance={skip} />
+      </motion.div>
+    </>
+  );
+}
+
+/**
+ * The detail content: from the timeline its header is in place for the morph and the parts below rise in; another item
+ * (mini grid, toast) swaps it (out, then rise in). `skipEntrance` (read on mount): the window opened straight on an item.
+ */
+function DetailColumn({ item, area, mapRef, skipEntrance }: { item: IntelItem; area: string | null; mapRef: RefObject<MapRef | null>; skipEntrance: boolean }) {
+  // Derived during render: from the first other item on, items rise in
   const [firstId] = useState(item.id);
   const [swapped, setSwapped] = useState(false);
   if (!swapped && item.id !== firstId) setSwapped(true);
 
   return (
-    <div className="relative mx-auto max-w-[720px]">
-      {/* Outside the keyed slide: it stays put while items swap, and leaves with the whole column */}
-      <motion.div
-        className="absolute -top-1 -right-2 z-10"
-        initial={skip ? false : { opacity: 0 }}
-        animate={{ opacity: 1, transition: { duration: 0.3, delay: 0.2, ease: EASE_OUT } }}
-      >
-        <IconPill aria-label="Sluiten (Esc)" title="Sluiten (Esc)" onClick={onClose}>
-          <XIcon />
-        </IconPill>
-      </motion.div>
-      <AnimatePresence mode="wait">
-        <DetailSlide key={item.id} swapped={swapped} skipEntrance={skip && !swapped}>
-          <IntelDetail item={item} area={area} mapRef={mapRef} />
-        </DetailSlide>
-      </AnimatePresence>
-    </div>
+    <AnimatePresence mode="wait">
+      {/* An opdracht is wider (status and notes side by side); the others stay at a comfortable reading width */}
+      <DetailSlide key={item.id} swapped={swapped} skipEntrance={skipEntrance && !swapped} className={item.kind === 'assignment' ? 'max-w-[960px]' : 'max-w-[760px]'}>
+        <IntelDetail item={item} area={area} mapRef={mapRef} />
+      </DetailSlide>
+    </AnimatePresence>
   );
 }
 
-/** One item on the right. Parts that mount later (while it is on screen) inherit `swap`, so they rise in too. */
-function DetailSlide({ swapped, skipEntrance, children }: { swapped: boolean; skipEntrance: boolean; children: ReactNode }) {
+/** One item (its own width, so a leaving item never reflows). Parts that mount later inherit `swap`, so they rise in too. */
+function DetailSlide({ swapped, skipEntrance, className, children }: { swapped: boolean; skipEntrance: boolean; className: string; children: ReactNode }) {
   const [skip] = useState(skipEntrance);
   const mounted = useHasMounted();
   return (
@@ -202,6 +238,7 @@ function DetailSlide({ swapped, skipEntrance, children }: { swapped: boolean; sk
       initial={mounted ? 'swap' : skip ? false : swapped ? 'swap' : 'open'}
       animate="shown"
       exit="gone"
+      className={cn('@container mx-auto', className)}
     >
       {children}
     </motion.div>

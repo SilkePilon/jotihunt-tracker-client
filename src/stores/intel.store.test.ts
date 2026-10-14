@@ -19,4 +19,10 @@ describe('intel store', () => {
     useIntelStore.getState().select(13);
     expect(useIntelStore.getState()).toMatchObject({ articleId: 13, area: null });
   });
+
+  test('setTab leaves an open article', () => {
+    useIntelStore.getState().openIntel(12, 'alpha');
+    useIntelStore.getState().setTab('hint');
+    expect(useIntelStore.getState()).toMatchObject({ articleId: null, area: null, tab: 'hint' });
+  });
 });

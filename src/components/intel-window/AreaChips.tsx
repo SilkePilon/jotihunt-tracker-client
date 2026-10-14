@@ -2,10 +2,8 @@ import { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import CookieBadge from '@/components/tracker/CookieBadge';
 import SuccessBadge from '@/components/auth/SuccessBadge';
-import { areaStates } from '@/lib/intel-window';
 import { EASE_OUT } from '@/lib/motion';
-import { areaOptions, cn, getColorFromArea } from '@/lib/utils';
-import type { HintCell } from '@/types/HintCell';
+import { cn, getColorFromArea } from '@/lib/utils';
 import type { AreaState } from '@/types/Intel';
 
 const TITLE: Record<AreaState, string> = { solved: 'opgelost', open: 'nog open', none: 'geen hint', missing: 'geen hint' };
@@ -43,33 +41,6 @@ export function AreaChip({ area, state, label }: { area: string; state: AreaStat
           </motion.span>
         )}
       </AnimatePresence>
-    </span>
-  );
-}
-
-/** Compact timeline row: one block per area — filled = solved, outlined = open, grey = no hint */
-export function AreaStrip({ cells }: { cells: HintCell[] }) {
-  const states = areaStates(cells);
-  return (
-    <span className="flex gap-[3px]" aria-label="Deelgebieden">
-      {areaOptions.map(({ value, label }) => {
-        const state = states[value];
-        const color = getColorFromArea(value);
-        return (
-          <span
-            key={value}
-            title={`${label}: ${TITLE[state]}`}
-            className="size-2.5 rounded-[3px] transition-[background-color,box-shadow] duration-300"
-            style={
-              state === 'solved'
-                ? { backgroundColor: color }
-                : state === 'open'
-                  ? { boxShadow: `inset 0 0 0 1.5px color-mix(in oklab, ${color} 45%, transparent)` }
-                  : { backgroundColor: 'var(--beheer-row-high)' }
-            }
-          />
-        );
-      })}
     </span>
   );
 }
