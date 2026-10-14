@@ -57,12 +57,12 @@ export default function FoxesCard() {
             <motion.div
               key={group}
               layout="position"
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
+              initial={{ height: 0, opacity: 0, overflow: 'hidden' }}
+              animate={{ height: 'auto', opacity: 1, transitionEnd: { overflow: 'visible' } }}
+              exit={{ height: 0, opacity: 0, overflow: 'hidden' }}
               transition={REVEAL_TRANSITION}
-              className="overflow-hidden"
             >
+              {/* clip only while the group folds in/out; at rest overflow is visible so chips sliding between groups (shared layoutId) aren't cut off */}
               {/* pb on the wrapper instead of a gap, so a folding group takes no space */}
               <div className="pb-1.5">
                 <div className={cn('rounded-2xl px-2 pt-[7px] pb-2 transition-colors duration-300 motion-reduce:transition-none', GROUP_CLASS[group].block, GROUP_CLASS[group].on)}>
