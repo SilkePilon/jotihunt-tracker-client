@@ -48,6 +48,12 @@ describe('hasExpectedShape', () => {
     expect(hasExpectedShape('/life360/members', { linked: true, stale: false })).toBe(false);
   });
 
+  test('account overview', () => {
+    expect(hasExpectedShape('/account', { passkeys: [], sessions: [], devices: [] })).toBe(true);
+    expect(hasExpectedShape('/account', { passkeys: [], sessions: [] })).toBe(false);
+    expect(hasExpectedShape('/account', { message: 'x' })).toBe(false);
+  });
+
   test('happy hour answers', () => {
     expect(hasExpectedShape('/happy-hour', { state: 'none' })).toBe(true);
     expect(hasExpectedShape('/happy-hour', { state: 'active', startsAt: 'a', endsAt: 'b', text: '' })).toBe(true);

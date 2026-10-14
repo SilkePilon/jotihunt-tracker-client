@@ -35,6 +35,7 @@ const OBJECT_CHECKS: Record<string, (data: Record<string, unknown>) => boolean> 
   '/admin/telegram': (data) => typeof data.state === 'string' && typeof data.connected === 'boolean',
   '/admin/life360': (data) => typeof data.state === 'string',
   '/life360/members': (data) => typeof data.linked === 'boolean' && typeof data.stale === 'boolean' && Array.isArray(data.members),
+  '/account': (data) => Array.isArray(data.passkeys) && Array.isArray(data.sessions) && Array.isArray(data.devices),
 };
 
 /** Whether `data` has the shape the client expects for a GET of `url` (path, optionally with a query string). */
