@@ -64,7 +64,7 @@ Non-goals: email sending, password fallback, approval queues, roles beyond `admi
 - `tokenHash`, `user`, `createdBy`, `expiresAt` (1 hour), `usedAt`. Single use (atomic `usedAt: null → now`).
 
 **QrLogin** (new)
-- `codeHash` (code is the URL secret shown in the QR), `pollSecretHash` (only the laptop knows it), `status: 'waiting' | 'scanned' | 'approved' | 'denied'`, `requester: { label, ip }`, `scannedBy: user | null`, `challenge` (for the phone's passkey assertion), `expiresAt` (2 minutes; extended to 2 minutes after scan), `session token` handed over once on approval.
+- `codeHash` (code is the URL secret shown in the QR), `pollSecretHash` (only the laptop knows it), `status: 'waiting' | 'scanned' | 'approved' | 'denied'`, `requester: { label, ip }`, `scannedBy: user | null`, `challenge` (for the phone's passkey assertion), `expiresAt` (2 minutes; extended to 2 minutes after scan), no token: the laptop's session is created when it collects the approval (atomic delete), so an approval nobody collects leaves no session.
 
 **Invite setting**: document `{ key: "invites", paused }` in the `settings` collection.
 
@@ -95,13 +95,13 @@ Public (rate limited per IP; failures additionally per code/token):
 | `GET /herstel/:token` | Validity + user name. |
 | `POST /herstel/:token/register/options` and `/verify` | Add a new passkey to that user, mark link used, create session. `/no-passkey` variant like invites. |
 | `POST /auth/qr` | Laptop: create QR login → `{ id, code, pollSecret, expiresAt }`. |
-| `GET /auth/qr/:id?secret=` | Laptop polls (every 1.5 s): `{ status, scannedBy?: { name } }`; on `approved` returns `{ token, user }` exactly once. |
+| `GET /auth/qr/:id` (header `X-Qr-Secret`) | Laptop polls (every 1.5 s): `{ status, scannedBy?: { name } }`; on `approved` returns `{ token, user }` exactly once. |
 
 Authenticated:
 
 | Method & path | Purpose |
 |---|---|
-| `GET /auth/qr/scan/:code` | Phone: mark `scanned`, return requester label/approx location + passkey assertion options bound to this QR login (`allowCredentials` = this user's passkeys). |
+| `POST /auth/qr/scan/:code` | Phone: mark `scanned`, return requester label/approx location + passkey assertion options bound to this QR login (`allowCredentials` = this user's passkeys). Users without a passkey get 409 `NO_PASSKEY`. Location = Cloudflare `cf-ipcity`, else the country from `cf-ipcountry`. |
 | `POST /auth/qr/scan/:code/approve` | Verify the assertion (must belong to the scanning user) → `approved`, create a session for the laptop (`via: 'qr'`). |
 | `POST /auth/qr/scan/:code/deny` | `denied`. |
 | `GET /auth/me`, `POST /auth/logout` | Current user; revoke current session. |

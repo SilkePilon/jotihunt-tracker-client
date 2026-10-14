@@ -79,3 +79,52 @@ export async function addPasskey(authHeader: string): Promise<User> {
 export async function logoutSession(authHeader: string): Promise<void> {
   await api.post('/auth/logout', undefined, { headers: { Authorization: authHeader } }).catch(() => undefined);
 }
+
+export interface QrStart {
+  id: string;
+  code: string;
+  pollSecret: string;
+  /** What the QR code contains: `${PUBLIC_APP_URL}/l/<code>` */
+  url: string;
+  expiresAt: string;
+}
+
+export type QrPoll =
+  | { status: 'waiting' | 'denied' | 'expired'; expiresAt: string }
+  | { status: 'scanned'; scannedBy: { name: string }; expiresAt: string }
+  | ({ status: 'approved' } & SessionResult);
+
+export interface QrScan {
+  requester: { label: string; location: string | null };
+  createdAt: string;
+  options: LoginOptions['options'];
+}
+
+/** Laptop: a new code for the QR. */
+export async function startQrLogin(): Promise<QrStart> {
+  return (await api.post<QrStart>('/auth/qr')).data;
+}
+
+/** Laptop: 'gone' when the server no longer knows the code; network errors throw (try again on the next tick). */
+export async function pollQrLogin(id: string, secret: string): Promise<QrPoll | 'gone'> {
+  const response = await api.get<QrPoll>(`/auth/qr/${encodeURIComponent(id)}`, {
+    headers: { 'X-Qr-Secret': secret },
+    validateStatus: (status) => status === 200 || status === 404,
+  });
+  return response.status === 404 ? 'gone' : response.data;
+}
+
+/** Phone: claim the scanned code; gives who asks and the passkey options to confirm with. */
+export async function scanQrLogin(code: string, authHeader: string): Promise<QrScan> {
+  return (await api.post<QrScan>(`/auth/qr/scan/${encodeURIComponent(code)}`, undefined, { headers: { Authorization: authHeader } })).data;
+}
+
+/** Phone: confirm with a passkey (opens the fingerprint / face prompt). */
+export async function approveQrLogin(code: string, scan: QrScan, authHeader: string): Promise<void> {
+  const response = await startAuthentication({ optionsJSON: scan.options });
+  await api.post(`/auth/qr/scan/${encodeURIComponent(code)}/approve`, { response }, { headers: { Authorization: authHeader } });
+}
+
+export async function denyQrLogin(code: string, authHeader: string): Promise<void> {
+  await api.post(`/auth/qr/scan/${encodeURIComponent(code)}/deny`, undefined, { headers: { Authorization: authHeader } });
+}
