@@ -296,6 +296,7 @@ function AreaBody({ cell, label, onSave, mapRef }: { cell: HintCell; label: stri
 
 function PreviewLine({ preview }: { preview: NonNullable<AnswerPreview> }) {
   if (preview.kind === 'text') return <span className="text-muted-foreground">Tekst-antwoord, geen marker</span>;
+  if (preview.kind === 'invalid') return <span className="text-amber-600 dark:text-amber-300">⚠ Geen geldige RD-coördinaat: cijfers omgedraaid?</span>;
   const { x, y, lat, lng } = preview.rd;
   if (preview.kind === 'outside') return <span className="text-amber-600 dark:text-amber-300">⚠ RD {x} {y} ligt buiten het speelgebied: cijfers omgedraaid?</span>;
   return (

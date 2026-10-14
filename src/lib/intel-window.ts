@@ -127,12 +127,19 @@ export function hasExistingMarker(error: unknown): boolean {
 const GAME_AREA_RD = { minX: 130_000, maxX: 260_000, minY: 400_000, maxY: 520_000 };
 
 /** The line under a hint's answer field: a coordinate (inside or outside the game area), a text answer, or nothing (empty) */
-export type AnswerPreview = { kind: 'rd'; rd: RdPreview } | { kind: 'outside'; rd: RdPreview } | { kind: 'text' } | null;
+export type AnswerPreview = { kind: 'rd'; rd: RdPreview } | { kind: 'outside'; rd: RdPreview } | { kind: 'invalid' } | { kind: 'text' } | null;
 
-/** Classify a typed answer from its server-parsed RD coordinate (`rd`, null when it is not a coordinate) */
+/** Two groups of 4–6 digits (space, comma, semicolon or slash between): meant as a coordinate */
+const COORDINATE_LIKE = /^\d{4,6}[\s,;/]+\d{4,6}$/;
+
+/**
+ * Classify a typed answer from its server-parsed RD coordinate (`rd`, null when it is not a coordinate). Something that
+ * looks like a coordinate but doesn't parse (the server refuses out-of-range RD, e.g. swapped digits) is `invalid`.
+ */
 export function answerPreview(answer: string, rd: RdPreview | null): AnswerPreview {
-  if (!answer.trim()) return null;
-  if (!rd) return { kind: 'text' };
+  const trimmed = answer.trim();
+  if (!trimmed) return null;
+  if (!rd) return COORDINATE_LIKE.test(trimmed) ? { kind: 'invalid' } : { kind: 'text' };
   const outside = rd.x < GAME_AREA_RD.minX || rd.x > GAME_AREA_RD.maxX || rd.y < GAME_AREA_RD.minY || rd.y > GAME_AREA_RD.maxY;
   return { kind: outside ? 'outside' : 'rd', rd };
 }

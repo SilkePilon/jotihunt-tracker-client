@@ -93,7 +93,17 @@ describe('answerPreview', () => {
     expect(answerPreview('  ', null)).toBeNull();
     expect(answerPreview('', rd(150000, 450000))).toBeNull();
   });
-  test('no coordinate is a text answer', () => expect(answerPreview('de kerk', null)).toEqual({ kind: 'text' }));
+  test('no coordinate is a text answer', () => {
+    expect(answerPreview('de kerk', null)).toEqual({ kind: 'text' });
+    expect(answerPreview('123 4567', null)).toEqual({ kind: 'text' });
+    expect(answerPreview('12345678', null)).toEqual({ kind: 'text' });
+    expect(answerPreview('1234 5678 9', null)).toEqual({ kind: 'text' });
+  });
+  test('two digit groups the server refuses (swapped) are an invalid coordinate', () => {
+    expect(answerPreview('4512 1873', null)).toEqual({ kind: 'invalid' });
+    expect(answerPreview(' 451200, 187300 ', null)).toEqual({ kind: 'invalid' });
+    expect(answerPreview('45120/18730', null)).toEqual({ kind: 'invalid' });
+  });
   test('a coordinate inside the game area', () => expect(answerPreview('1500 4500', rd(150000, 450000))).toEqual({ kind: 'rd', rd: rd(150000, 450000) }));
   test('the box edges are inside', () => {
     expect(answerPreview('x', rd(130000, 400000))?.kind).toBe('rd');
