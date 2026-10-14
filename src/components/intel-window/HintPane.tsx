@@ -195,6 +195,32 @@ function AreaBody({ cell, label, onSave, mapRef }: { cell: HintCell; label: stri
   const [saving, setSaving] = useState(false);
   // Escape-cancel: the pencil takes focus back when it mounts again
   const [refocus, setRefocus] = useState(false);
+  // What the field started from (stored answer or empty): unchanged from it counts as untouched
+  const [base, setBase] = useState(cell.answer ?? '');
+  // A teammate's answer that came in while our field held something else of our own
+  const [teammate, setTeammate] = useState<string | null>(null);
+  // The done view after a teammate's answer took over an untouched field: its cookie pops in
+  const [popIn, setPopIn] = useState(false);
+
+  // Someone else's answer arriving (a poll) while this row is open. Our own save also changes it: ignored while saving.
+  const incoming = solved ? (cell.answer ?? '') : '';
+  const [seen, setSeen] = useState(incoming);
+  if (incoming !== seen) {
+    setSeen(incoming);
+    if (!incoming) setTeammate(null);
+    else if (!editing) {
+      setAnswer(incoming);
+      setBase(incoming);
+    } else if (!saving && incoming !== answer.trim()) {
+      if (!answer.trim() || answer === base) {
+        setEditing(false);
+        setAnswer(incoming);
+        setBase(incoming);
+        setTeammate(null);
+        setPopIn(true);
+      } else setTeammate(incoming);
+    } else setTeammate(null);
+  }
 
   // The line under the field. While the next parse is pending it keeps the last one, so typing doesn't make it flicker.
   const typed = editing ? answer : '';
@@ -211,11 +237,23 @@ function AreaBody({ cell, label, onSave, mapRef }: { cell: HintCell; label: stri
     setSaving(true);
     const ok = await onSave(cell, label, value);
     setSaving(false);
-    if (ok) setEditing(false);
+    if (ok) {
+      setEditing(false);
+      setTeammate(null);
+      setPopIn(false);
+    }
+  }
+
+  function startEdit() {
+    setAnswer(cell.answer ?? '');
+    setBase(cell.answer ?? '');
+    setPopIn(false);
+    setEditing(true);
   }
 
   function cancelEdit() {
     setAnswer(cell.answer ?? '');
+    setTeammate(null);
     setEditing(false);
     setRefocus(true);
   }
@@ -267,18 +305,25 @@ function AreaBody({ cell, label, onSave, mapRef }: { cell: HintCell; label: stri
         ) : (
           <motion.div key="done" {...SWAP} className="flex min-w-0 items-center gap-2">
             <span className="min-w-0 truncate font-mono text-[13px] font-bold text-green-600 dark:text-green-300">{cell.answer}</span>
-            <CookieBadge tone="ok" size={18} />
+            {popIn ? <SuccessBadge size={18} /> : <CookieBadge tone="ok" size={18} />}
             {cell.answerLocation && (
               <IconPill aria-label="Op kaart" title="Op kaart" onClick={showOnMap}>
                 <MapIcon />
               </IconPill>
             )}
-            <IconPill aria-label="Wijzigen" title="Wijzigen" autoFocus={refocus} onClick={() => setEditing(true)}>
+            <IconPill aria-label="Wijzigen" title="Wijzigen" autoFocus={refocus} onClick={startEdit}>
               <PencilIcon />
             </IconPill>
           </motion.div>
         )}
       </AnimatePresence>
+      <Reveal>
+        {editing && teammate && (
+          <p className="pt-2 text-xs text-muted-foreground">
+            Intussen ingevuld door een teamgenoot: <span className="font-mono font-semibold text-foreground">{teammate}</span>
+          </p>
+        )}
+      </Reveal>
       <Reveal>
         {shown && (
           <div className="pt-2 text-xs">
