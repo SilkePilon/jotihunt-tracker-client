@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import CopyButton from '@/components/CopyButton';
 import { apiErrorMessage } from '@/lib/api-error';
+import { SWAP } from '@/lib/motion';
 import type { User } from '@/types/User';
 
 interface RecoveryLinkDialogProps {
@@ -43,17 +45,27 @@ export default function RecoveryLinkDialog({ user, onClose, createLink }: Recove
           <DialogTitle>Herstel-link voor {user?.name}</DialogTitle>
           <DialogDescription>Hiermee maakt {user?.name} een nieuwe passkey en logt meteen in.</DialogDescription>
         </DialogHeader>
-        {error && <p className="text-xs font-medium text-destructive">{error}</p>}
-        {!error && !link && <Skeleton className="h-9 w-full" />}
-        {link && (
-          <div className="flex flex-col gap-2">
-            <div className="flex gap-2">
-              <Input readOnly value={link.url} className="font-mono text-xs" onFocus={(event) => event.target.select()} />
-              <CopyButton value={link.url} label="Link" size="icon" />
-            </div>
-            <p className="text-xs text-muted-foreground">Geldig tot {until}, werkt één keer.</p>
-          </div>
-        )}
+        <AnimatePresence mode="wait" initial={false}>
+          {error && (
+            <motion.p key="error" role="alert" className="text-xs font-medium text-destructive" {...SWAP}>
+              {error}
+            </motion.p>
+          )}
+          {!error && !link && (
+            <motion.div key="loading" {...SWAP}>
+              <Skeleton className="h-9 w-full" />
+            </motion.div>
+          )}
+          {link && (
+            <motion.div key="link" className="flex flex-col gap-2" {...SWAP}>
+              <div className="flex gap-2">
+                <Input readOnly value={link.url} className="font-mono text-xs" onFocus={(event) => event.target.select()} />
+                <CopyButton value={link.url} label="Link" size="icon" />
+              </div>
+              <p className="text-xs text-muted-foreground">Geldig tot {until}, werkt één keer.</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </DialogContent>
     </Dialog>
   );

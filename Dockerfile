@@ -3,6 +3,8 @@ FROM oven/bun:1 AS deps
 WORKDIR /usr/src/app
 
 COPY package.json bun.lock ./
+# bun applies package.json patchedDependencies (patches/) during install
+COPY patches ./patches
 RUN bun install --frozen-lockfile
 
 # ---- Build & serve ----

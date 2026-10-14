@@ -1,10 +1,18 @@
 import { useCallback } from 'react';
+import { mutate as mutateGlobal } from 'swr';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
 import { useAuthSWR } from '@/lib/swr';
 import type { Vehicle } from '@/types/Tracker';
 import { User } from '@/types/User';
 import { useFetcher } from './utils/api.hook';
 import { asList } from '@/lib/response-shape';
+import { swrKeyFor } from '@/lib/telegram';
+
+/** Changes an admin can make to a user; only the given fields are sent, so a stale row can't undo another change */
+export interface UserChanges {
+  name?: string;
+  admin?: boolean;
+}
 
 export const useAdmin = () => {
   const { data, error, mutate } = useAuthSWR<User[]>('/admin/users');
@@ -26,9 +34,9 @@ export const useAdmin = () => {
     }
   }
 
-  /** Resolves to null on success, else to the error */
-  function updateUser(user: User): Promise<unknown> {
-    return failure(() => fetch(`/admin/users/${user._id}`, 'PUT', user), 200);
+  /** Sends only `changes`; resolves to null on success, else to the error */
+  function updateUser(id: string, changes: UserChanges): Promise<unknown> {
+    return failure(() => fetch(`/admin/users/${id}`, 'PUT', changes), 200);
   }
 
   /** Resolves to null on success, else to the error */
@@ -54,6 +62,8 @@ export const useAdmin = () => {
   async function setDeviceVehicle(deviceId: number, vehicle: Vehicle): Promise<void> {
     await fetch(`/admin/devices/${deviceId}/vehicle`, 'PUT', { vehicle });
     void mutate();
+    // The vehicle comes from the device's group: refetch now instead of on the next 3 s poll
+    void mutateGlobal(swrKeyFor(['/tracker/devices']));
   }
 
   return {

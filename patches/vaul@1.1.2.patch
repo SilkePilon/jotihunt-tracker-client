@@ -1,0 +1,69 @@
+diff --git a/node_modules/vaul/.bun-tag-5f5169542415e370 b/.bun-tag-5f5169542415e370
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+diff --git a/dist/index.js b/dist/index.js
+index 7f343be1fafe1cf302ee6afc7268c29490895e34..d96ce26d6c1a38df4a2fee431b0a5116757d6743 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -911,7 +911,8 @@ function Root({ open: openProp, onOpenChange, children, onDrag: onDragProp, onRe
+             setTimeout(()=>{
+                 onAnimationEnd == null ? void 0 : onAnimationEnd(o);
+             }, TRANSITIONS.DURATION * 1000);
+-            if (o && !modal) {
++            // patched: with `modal` forwarded, a non-modal drawer never locks the body; forcing it back to 'auto' would undo the lock of a modal drawer that is open
++            if (false) {
+                 if (typeof window !== 'undefined') {
+                     window.requestAnimationFrame(()=>{
+                         document.body.style.pointerEvents = 'auto';
+@@ -1351,7 +1352,8 @@ function Root({ open: openProp, onOpenChange, children, onDrag: onDragProp, onRe
+         }
+     }
+     React__namespace.default.useEffect(()=>{
+-        if (!modal) {
++        // patched: with `modal` forwarded, a non-modal drawer never locks the body; forcing it back to 'auto' would undo the lock of a modal drawer that is open
++        if (false) {
+             // Need to do this manually unfortunately
+             window.requestAnimationFrame(()=>{
+                 document.body.style.pointerEvents = 'auto';
+@@ -1361,6 +1363,8 @@ function Root({ open: openProp, onOpenChange, children, onDrag: onDragProp, onRe
+         modal
+     ]);
+     return /*#__PURE__*/ React__namespace.default.createElement(DialogPrimitive__namespace.Root, {
++        // patched: forward `modal` so modal={false} drawers are non-modal Radix layers
++        modal: modal,
+         defaultOpen: defaultOpen,
+         onOpenChange: (open)=>{
+             if (!dismissible && !open) return;
+diff --git a/dist/index.mjs b/dist/index.mjs
+index 0dbbce5526681925a81804ced237a045a53c0355..5dac4791a84b3795efe5aed2d76b80bdbda2dad9 100644
+--- a/dist/index.mjs
++++ b/dist/index.mjs
+@@ -889,7 +889,8 @@ function Root({ open: openProp, onOpenChange, children, onDrag: onDragProp, onRe
+             setTimeout(()=>{
+                 onAnimationEnd == null ? void 0 : onAnimationEnd(o);
+             }, TRANSITIONS.DURATION * 1000);
+-            if (o && !modal) {
++            // patched: with `modal` forwarded, a non-modal drawer never locks the body; forcing it back to 'auto' would undo the lock of a modal drawer that is open
++            if (false) {
+                 if (typeof window !== 'undefined') {
+                     window.requestAnimationFrame(()=>{
+                         document.body.style.pointerEvents = 'auto';
+@@ -1329,7 +1330,8 @@ function Root({ open: openProp, onOpenChange, children, onDrag: onDragProp, onRe
+         }
+     }
+     React__default.useEffect(()=>{
+-        if (!modal) {
++        // patched: with `modal` forwarded, a non-modal drawer never locks the body; forcing it back to 'auto' would undo the lock of a modal drawer that is open
++        if (false) {
+             // Need to do this manually unfortunately
+             window.requestAnimationFrame(()=>{
+                 document.body.style.pointerEvents = 'auto';
+@@ -1339,6 +1341,8 @@ function Root({ open: openProp, onOpenChange, children, onDrag: onDragProp, onRe
+         modal
+     ]);
+     return /*#__PURE__*/ React__default.createElement(DialogPrimitive.Root, {
++        // patched: forward `modal` so modal={false} drawers are non-modal Radix layers
++        modal: modal,
+         defaultOpen: defaultOpen,
+         onOpenChange: (open)=>{
+             if (!dismissible && !open) return;
