@@ -28,14 +28,37 @@ async function errorText(action: () => Promise<unknown>, fallback: string): Prom
 /** Calls `onLinked` when `state` turns 'linked' from one of the link steps (not e.g. paused → linked). */
 function useLinkedTransition(state: string | undefined, steps: string[], onLinked: () => void) {
   const previous = useRef(state);
+  // The latest callback, so the effect only runs when the state changes
+  const onLinkedRef = useRef(onLinked);
   useEffect(() => {
-    if (state === 'linked' && previous.current && steps.includes(previous.current)) onLinked();
+    onLinkedRef.current = onLinked;
+  });
+  useEffect(() => {
+    if (state === 'linked' && previous.current && steps.includes(previous.current)) onLinkedRef.current();
     previous.current = state;
-  }, [state, steps, onLinked]);
+  }, [state, steps]);
 }
 
 const TELEGRAM_STEPS = ['qr', 'password'];
-const LIFE360_STEPS = ['code', 'circle'];
+// A token links straight from unlinked / loggedOut, without the code and circle steps
+const LIFE360_STEPS = ['code', 'circle', 'unlinked', 'loggedOut'];
+
+/** A row's meta line; fades when it changes (skeleton → status text, one status to the next) */
+function FadeMeta({ children }: { children: ReactNode }) {
+  return (
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.div
+        key={typeof children === 'string' ? children : 'skeleton'}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.15 }}
+      >
+        {children}
+      </motion.div>
+    </AnimatePresence>
+  );
+}
 
 /** The trailing control of a row; fades when it changes (Koppelen ↔ Ontkoppelen ↔ nothing) */
 function Trailing({ id, children }: { id: string; children: ReactNode }) {
@@ -215,10 +238,10 @@ export default function KoppelingenPane() {
       <div>
         <BeheerGroup title="Accounts">
           <AnimatePresence initial={false}>
-            <BeheerRow key="telegram" title="Telegram" meta={telegramMeta(telegram.status, telegram.isError)}>
+            <BeheerRow key="telegram" title="Telegram" meta={<FadeMeta>{telegramMeta(telegram.status, telegram.isError)}</FadeMeta>}>
               <Trailing id={telegramState === 'linked' ? 'unlink' : 'link'}>{telegramTrailing}</Trailing>
             </BeheerRow>
-            <BeheerRow key="life360" title="Life360" meta={life360Meta(life360Status, life360.isError)}>
+            <BeheerRow key="life360" title="Life360" meta={<FadeMeta>{life360Meta(life360Status, life360.isError)}</FadeMeta>}>
               <Trailing id={life360State === 'linked' || life360State === 'paused' ? 'unlink' : 'link'}>{life360Trailing}</Trailing>
             </BeheerRow>
           </AnimatePresence>

@@ -8,10 +8,10 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useInvites } from '@/hooks/invites.hook';
-import { useNow } from '@/hooks/now.hook';
+import useInterval from '@/hooks/utils/interval.hook';
 import { apiErrorMessage } from '@/lib/api-error';
 import { DEFAULT_EXPIRY, DEFAULT_MAX_USES, EXPIRY_OPTIONS, inviteMeta, MAX_USES_OPTIONS, type AdminInvite, type InviteExpiry } from '@/lib/beheer';
-import { copyToClipboard } from '@/lib/clipboard';
+import { copyToClipboard, writeClipboard } from '@/lib/clipboard';
 import { SWAP } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { BeheerGroup, BeheerPane, BeheerRow, BeheerSkeleton } from './BeheerLayout';
@@ -21,6 +21,8 @@ import InviteQrDialog from './InviteQrDialog';
 const GROUP_GAP = 28;
 /** A new invite's row stays highlighted this long (after it shows up) before the accent fades out over 1.2 s */
 const HIGHLIGHT_MS = 400;
+/** The rows' "verloopt over …" only needs a refresh now and then */
+const CLOCK_TICK_MS = 15_000;
 /** Radix Select can't hold null, so "Onbeperkt" travels as this value */
 const UNLIMITED = 'onbeperkt';
 
@@ -31,7 +33,8 @@ const newestFirst = (a: AdminInvite, b: AdminInvite) => Date.parse(b.createdAt) 
 /** Beheer → Invites: make invite links, copy/QR/revoke the active ones, and the stopped ones of the last 24 h. */
 export default function InvitesPane() {
   const { invites, error: loadError, create, revoke } = useInvites(true);
-  const now = useNow(true);
+  const [now, setNow] = useState(() => Date.now());
+  useInterval(() => setNow(Date.now()), CLOCK_TICK_MS);
 
   const [creating, setCreating] = useState(false);
   const [expiry, setExpiry] = useState<InviteExpiry>(DEFAULT_EXPIRY);
@@ -72,8 +75,9 @@ export default function InvitesPane() {
       const invite = await create(expiry, maxUses);
       setCreating(false);
       setHighlightId(invite._id);
-      // The success toast comes with the copy; when copying fails that toast is an error, so still confirm the invite
-      if (!(await copyToClipboard(invite.url, 'Invite gemaakt', 'De link staat op je klembord.'))) toast.success('Invite gemaakt');
+      // One toast: iOS Safari refuses clipboard writes this long after the tap, so then offer a copy button (a fresh tap)
+      if (await writeClipboard(invite.url)) toast.success('Invite gemaakt', { description: 'De link staat op je klembord.' });
+      else toast.success('Invite gemaakt', { action: { label: 'Kopieer link', onClick: () => void copyToClipboard(invite.url, 'Link gekopieerd') } });
     } catch (failure) {
       setCreateError(apiErrorMessage(failure, 'Invite maken is mislukt.'));
     } finally {

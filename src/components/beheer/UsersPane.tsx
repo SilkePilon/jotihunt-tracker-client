@@ -9,7 +9,7 @@ import Reveal from '@/components/motion/Reveal';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAdmin } from '@/hooks/admin.hook';
-import { useNow } from '@/hooks/now.hook';
+import useInterval from '@/hooks/utils/interval.hook';
 import { apiErrorMessage } from '@/lib/api-error';
 import { splitUsers, userMeta } from '@/lib/beheer';
 import { SWAP } from '@/lib/motion';
@@ -19,12 +19,15 @@ import RenameUserDialog from './RenameUserDialog';
 
 /** The pane's flex gap (gap-7), so a group folding away doesn't leave a gap behind */
 const GROUP_GAP = 28;
+/** The rows' "laatst actief …" only needs a refresh now and then */
+const CLOCK_TICK_MS = 15_000;
 
 /** Beheer → Gebruikers: admins and members, each with a ⋯ menu (herstel-link, rename, admin, delete). */
 export default function UsersPane() {
   const me = useAuthUser<User>();
   const { users, isError, updateUser, deleteUser, createRecoveryLink } = useAdmin();
-  const now = useNow(true);
+  const [now, setNow] = useState(() => Date.now());
+  useInterval(() => setNow(Date.now()), CLOCK_TICK_MS);
   // The dialogs keep their user while they fade out
   const [recoveryUser, setRecoveryUser] = useState<User | null>(null);
   const [renaming, setRenaming] = useState<User | null>(null);
@@ -45,9 +48,13 @@ export default function UsersPane() {
   async function confirmDelete() {
     if (!deleting) return;
     const error = await deleteUser(deleting._id);
+    // On failure the dialog stays open, so trying again is one tap
+    if (error) {
+      toast.error(apiErrorMessage(error, 'De gebruiker kon niet worden verwijderd.'));
+      return;
+    }
     setDeleteOpen(false);
-    if (error) toast.error(apiErrorMessage(error, 'De gebruiker kon niet worden verwijderd.'));
-    else toast.success(`${deleting.name} verwijderd`);
+    toast.success(`${deleting.name} verwijderd`);
   }
 
   function row(user: User) {

@@ -58,7 +58,7 @@ export default function HuntersPane({ mapRef }: { mapRef: RefObject<MapRef | nul
   }
 
   const row = (hunter: HunterRow) => (
-    <BeheerRow key={hunter.device.id} title={hunter.device.name} meta={hunterMeta(hunter, now) || undefined}>
+    <BeheerRow key={hunter.device.id} title={hunter.device.name} meta={<Reveal>{hunterMeta(hunter, now)}</Reveal>}>
       <HunterMenu row={hunter} onShowOnMap={showOnMap} />
     </BeheerRow>
   );
