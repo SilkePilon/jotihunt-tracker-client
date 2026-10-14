@@ -79,6 +79,14 @@ describe('sidebarFoxes', () => {
     expect(foxes[0].lastHunt).toBeUndefined();
   });
 
+  test('cooldown foxes with equal remaining time sort by area name', () => {
+    const areas = [area('Charlie', 'green'), area('Alpha', 'green')];
+    const hunts = [hunt('charlie', 'Goedgekeurd', minutesAgo(20)), hunt('alpha', 'Goedgekeurd', minutesAgo(20))];
+    const foxes = sidebarFoxes({ areas, hunts, now });
+    expect(foxes.map((fox) => fox.group)).toEqual(['cooldown', 'cooldown']);
+    expect(foxes.map((fox) => fox.key)).toEqual(['alpha', 'charlie']);
+  });
+
   test('empty input', () => expect(sidebarFoxes({ areas: [], now })).toEqual([]));
 
   test('group order constant', () => expect(FOX_GROUP_ORDER).toEqual(['green', 'orange', 'cooldown', 'red']));
@@ -86,7 +94,7 @@ describe('sidebarFoxes', () => {
 
 describe('groupCounts', () => {
   test('counts every group, zero included', () => {
-    const now = Date.now();
+    const now = new Date('2026-10-17T14:00:00Z').getTime();
     const foxes = sidebarFoxes({ areas: [area('Alpha', 'green'), area('Bravo', 'red'), area('Charlie', 'green')], now });
     expect(groupCounts(foxes)).toEqual({ green: 2, orange: 0, cooldown: 0, red: 1 });
   });
