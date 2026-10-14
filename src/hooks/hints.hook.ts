@@ -66,19 +66,28 @@ export type HintBoardActions = ReturnType<typeof useHintBoard>['actions'];
 
 /**
  * Let the server parse a typed answer as an RD coordinate (single source of truth for RD rules).
- * @returns The parsed coordinate, or null when the answer is not a coordinate (or still loading)
+ * @returns `rd`: the parsed coordinate, or null when the answer is not a coordinate (or not known yet); `pending`: true
+ * while the debounce or the request for the current answer is still running, so `rd` doesn't belong to it yet
  */
-export const useRdPreview = (answer: string): RdPreview | null => {
+export const useRdPreviewState = (answer: string): { rd: RdPreview | null; pending: boolean } => {
   const trimmedAnswer = answer.trim();
   const debouncedAnswer = useDebouncedValue(trimmedAnswer, RD_PREVIEW_DEBOUNCE_MS);
   const url = debouncedAnswer ? `/hints/parse-answer?answer=${encodeURIComponent(debouncedAnswer)}` : null;
 
-  const { data } = useAuthSWR<{ rd: RdPreview | null }>(url, {
+  const { data, isLoading } = useAuthSWR<{ rd: RdPreview | null }>(url, {
     keepPreviousData: true,
     revalidateOnFocus: false,
   });
   // While the debounce is pending, trimmedAnswer !== debouncedAnswer: the fetched data (or
   // keepPreviousData'd stale data) still belongs to an older answer, so don't show it.
-  if (trimmedAnswer !== debouncedAnswer) return null;
-  return trimmedAnswer ? (data?.rd ?? null) : null;
+  // isLoading looks at the current key's cache only: true while keepPreviousData still hands out an older answer's data.
+  if (!trimmedAnswer) return { rd: null, pending: false };
+  if (trimmedAnswer !== debouncedAnswer || isLoading) return { rd: null, pending: true };
+  return { rd: data?.rd ?? null, pending: false };
 };
+
+/**
+ * Let the server parse a typed answer as an RD coordinate (single source of truth for RD rules).
+ * @returns The parsed coordinate, or null when the answer is not a coordinate (or still loading)
+ */
+export const useRdPreview = (answer: string): RdPreview | null => useRdPreviewState(answer).rd;

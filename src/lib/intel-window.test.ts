@@ -3,7 +3,7 @@ import { AxiosError, AxiosHeaders } from 'axios';
 import type { Article } from '@/types/Article';
 import type { HintCell } from '@/types/HintCell';
 import type { IntelItem } from '@/types/Intel';
-import { areaStates, buildIntelItems, deadlineLabel, filterByTab, groupByDay, hasExistingMarker, isDeadlineUrgent, nextOpenArea, solvedCount, unreadCount } from './intel-window';
+import { answerPreview, areaStates, buildIntelItems, deadlineLabel, filterByTab, groupByDay, hasExistingMarker, isDeadlineUrgent, nextOpenArea, solvedCount, unreadCount } from './intel-window';
 
 const article = (id: number, type: string, publishAt: string, extra: Partial<Article> = {}) =>
   ({ id, title: `A${id}`, type, publishAt: new Date(publishAt), content: '<p>x</p>', messageType: '', maxPoints: 0, endTime: new Date(publishAt), ...extra }) as Article;
@@ -85,4 +85,23 @@ test('hasExistingMarker', () => {
   const error = new AxiosError('x', '409', undefined, undefined, { status: 409, data: { existingMarkerId: 'm' }, statusText: '', headers: {}, config: { headers: new AxiosHeaders() } });
   expect(hasExistingMarker(error)).toBe(true);
   expect(hasExistingMarker(new Error('x'))).toBe(false);
+});
+
+describe('answerPreview', () => {
+  const rd = (x: number, y: number) => ({ x, y, lng: 5.1, lat: 52.1 });
+  test('empty answer shows nothing', () => {
+    expect(answerPreview('  ', null)).toBeNull();
+    expect(answerPreview('', rd(150000, 450000))).toBeNull();
+  });
+  test('no coordinate is a text answer', () => expect(answerPreview('de kerk', null)).toEqual({ kind: 'text' }));
+  test('a coordinate inside the game area', () => expect(answerPreview('1500 4500', rd(150000, 450000))).toEqual({ kind: 'rd', rd: rd(150000, 450000) }));
+  test('the box edges are inside', () => {
+    expect(answerPreview('x', rd(130000, 400000))?.kind).toBe('rd');
+    expect(answerPreview('x', rd(260000, 520000))?.kind).toBe('rd');
+  });
+  test('outside the game area (swapped digits)', () => {
+    expect(answerPreview('4500 1500', rd(450000, 150000))?.kind).toBe('outside');
+    expect(answerPreview('x', rd(129999, 450000))?.kind).toBe('outside');
+    expect(answerPreview('x', rd(150000, 520001))?.kind).toBe('outside');
+  });
 });

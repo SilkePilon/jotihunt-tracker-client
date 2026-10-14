@@ -2,7 +2,7 @@ import { isAxiosError } from 'axios';
 import type { Variants } from 'motion/react';
 import { EASE_OUT } from '@/lib/motion';
 import type { Article } from '@/types/Article';
-import type { HintBoard, HintCell } from '@/types/HintCell';
+import type { HintBoard, HintCell, RdPreview } from '@/types/HintCell';
 import type { AreaState, Assignment, AssignmentStatus, DayGroup, IntelItem, IntelKind, IntelTab, ReadState } from '@/types/Intel';
 import { areaOptions } from '@/lib/utils';
 
@@ -115,6 +115,20 @@ export function isDeadlineUrgent(endTime: string | undefined, now: number, statu
 /** The solve was refused because another hint marker exists for that area and hour */
 export function hasExistingMarker(error: unknown): boolean {
   return isAxiosError(error) && error.response?.status === 409 && !!(error.response.data as { existingMarkerId?: string } | undefined)?.existingMarkerId;
+}
+
+/** The rough RD box of the game area: a parsed answer outside it is most likely a typo (digits swapped, x and y swapped) */
+const GAME_AREA_RD = { minX: 130_000, maxX: 260_000, minY: 400_000, maxY: 520_000 };
+
+/** The line under a hint's answer field: a coordinate (inside or outside the game area), a text answer, or nothing (empty) */
+export type AnswerPreview = { kind: 'rd'; rd: RdPreview } | { kind: 'outside'; rd: RdPreview } | { kind: 'text' } | null;
+
+/** Classify a typed answer from its server-parsed RD coordinate (`rd`, null when it is not a coordinate) */
+export function answerPreview(answer: string, rd: RdPreview | null): AnswerPreview {
+  if (!answer.trim()) return null;
+  if (!rd) return { kind: 'text' };
+  const outside = rd.x < GAME_AREA_RD.minX || rd.x > GAME_AREA_RD.maxX || rd.y < GAME_AREA_RD.minY || rd.y > GAME_AREA_RD.maxY;
+  return { kind: outside ? 'outside' : 'rd', rd };
 }
 
 /**

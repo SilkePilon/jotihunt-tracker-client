@@ -11,6 +11,7 @@ import { useHintBoard } from '@/hooks/hints.hook';
 import { useHasMounted } from '@/hooks/has-mounted.hook';
 import { useIsMobile } from '@/hooks/media.hook';
 import { useReadState } from '@/hooks/read-state.hook';
+import { keepOpenWhileEditing } from '@/lib/inline-edit';
 import { DETAIL_SWAP, buildIntelItems, filterByTab, unreadCount } from '@/lib/intel-window';
 import { EASE_OUT } from '@/lib/motion';
 import useIntelStore from '@/stores/intel.store';
@@ -41,6 +42,9 @@ export default function IntelDialog({ mapRef }: { mapRef: RefObject<MapRef | nul
       description="Hints, opdrachten en nieuws."
       hideHeader
       onEscapeKeyDown={(event) => {
+        // Escape inside an inline editor (a hint answer being changed) only cancels the edit
+        keepOpenWhileEditing(event);
+        if (event.defaultPrevented) return;
         // Escape first closes the item on the right, then the window
         const { articleId, select } = useIntelStore.getState();
         if (articleId !== null) {

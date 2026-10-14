@@ -1,24 +1,23 @@
 import type { RefObject } from 'react';
 import { motion } from 'motion/react';
 import { ClockIcon } from 'lucide-react';
-import { BeheerCard } from '@/components/beheer/BeheerLayout';
 import { Tag } from '@/components/beheer/controls/Pill';
 import { MapRef } from '@/components/Map';
 import { useNow } from '@/hooks/now.hook';
 import { formatClock } from '@/lib/format';
 import { DETAIL_PART, deadlineLabel, solvedCount } from '@/lib/intel-window';
 import type { IntelItem } from '@/types/Intel';
-import ArticleHtml from './ArticleHtml';
 import AssignmentPane from './AssignmentPane';
+import HintPane from './HintPane';
 import { KindTag } from './IntelTimeline';
 import NewsPane from './NewsPane';
 import SummaryCard from './SummaryCard';
 
 interface IntelDetailProps {
   item: IntelItem;
-  /** For a hint: the area to unfold first (Task 6) */
+  /** For a hint: the area to unfold first */
   area: string | null;
-  /** For "Toon op kaart" in the hint pane (Task 6) */
+  /** For "Op kaart" in the hint pane */
   mapRef: RefObject<MapRef | null>;
 }
 
@@ -26,7 +25,7 @@ interface IntelDetailProps {
  * The item on the right: title, meta line, summary and the pane for its kind. Every top-level part is a motion element
  * with `DETAIL_PART`, so the keyed `DetailSlide` around it (IntelDialog) pushes them in on open and lets them rise in on a swap.
  */
-export default function IntelDetail({ item }: IntelDetailProps) {
+export default function IntelDetail({ item, area, mapRef }: IntelDetailProps) {
   const count = item.kind === 'hint' ? solvedCount(item.cells) : null;
   return (
     <div className="flex flex-col gap-3">
@@ -55,12 +54,7 @@ export default function IntelDetail({ item }: IntelDetailProps) {
       ) : item.kind === 'news' ? (
         <NewsPane item={item} />
       ) : (
-        // Task 6 replaces this with the HintPane (area rows + answer field)
-        <motion.div variants={DETAIL_PART}>
-          <BeheerCard title="Volledige tekst">
-            <ArticleHtml html={item.content} />
-          </BeheerCard>
-        </motion.div>
+        <HintPane item={item} area={area} mapRef={mapRef} />
       )}
     </div>
   );
