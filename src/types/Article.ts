@@ -10,6 +10,4 @@ export interface Article {
   endTime: Date;
   /** Short Dutch summary made by the server (news and assignments); missing until made */
   summary?: string;
-  /** What the summary means for our team */
-  summaryPoints?: string[];
 }

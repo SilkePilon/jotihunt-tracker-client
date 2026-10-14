@@ -18,7 +18,6 @@ export interface InviteInfo {
   group: { name: string; logoUrl: string | null };
   invitedBy: string | null;
   memberCount: number;
-  onlineCount: number;
 }
 
 type Options = { challengeId: string; options: Parameters<typeof startRegistration>[0]['optionsJSON'] };
@@ -36,7 +35,7 @@ export async function passkeyLogin(): Promise<SessionResult> {
 
 export async function fetchInvite(code: string): Promise<InviteInfo> {
   const response = await api.get<InviteInfo>(`/invites/${encodeURIComponent(code)}`, { validateStatus: (status) => status === 200 || status === 404 });
-  if (response.status === 404) return { valid: false, reason: 'unknown', group: { name: '', logoUrl: null }, invitedBy: null, memberCount: 0, onlineCount: 0 };
+  if (response.status === 404) return { valid: false, reason: 'unknown', group: { name: '', logoUrl: null }, invitedBy: null, memberCount: 0 };
   return response.data;
 }
 

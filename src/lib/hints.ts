@@ -1,25 +1,16 @@
 import DOMPurify from 'dompurify';
 import type { HintArticle, HintBoard, HintCell } from '@/types/HintCell';
 
-export const HINT_WINDOW_MS = 20 * 60 * 1000;
-
-/** Hint board polling: quickly while the hints page is open (claims by others must show up fast), slowly for the sidebar mini grid. */
+/** Hint board polling: quickly while the intel window is open (answers by others must show up fast), slowly for the sidebar mini grid. */
 export const HINT_BOARD_LIVE_REFRESH_MS = 3000;
 export const HINT_BOARD_IDLE_REFRESH_MS = 10_000;
 
 /**
  * How often to poll the hint board.
- * @param live Whether the hints page is open (fast); false for the sidebar mini grid (slow)
+ * @param live Whether the intel window is open (fast); false for the sidebar mini grid (slow)
  */
 export function hintBoardRefreshMs(live: boolean): number {
   return live ? HINT_BOARD_LIVE_REFRESH_MS : HINT_BOARD_IDLE_REFRESH_MS;
-}
-
-/**
- * Milliseconds left in the 20-minute scoring window of a hint.
- */
-export function remainingMs(publishAt: string, now: number) {
-  return new Date(publishAt).getTime() + HINT_WINDOW_MS - now;
 }
 
 let hintPurifier: typeof DOMPurify | undefined;
@@ -77,29 +68,4 @@ export function lastHintRows(board: HintBoard, count: number): HintRow[] {
 export function hintProgress(board: HintBoard): { solved: number; total: number } {
   const relevant = board.cells.filter((cell) => cell.status !== 'none');
   return { solved: relevant.filter((cell) => cell.status === 'solved').length, total: relevant.length };
-}
-
-export type HintStepNumber = 1 | 2 | 3;
-
-export interface HintStep {
-  /** The step the cell is at: 1 claim, 2 solve, 3 check */
-  current: HintStepNumber;
-  /** Steps that are finished */
-  done: HintStepNumber[];
-  /** Check result, only for solved cells */
-  checkState?: HintCell['check'];
-}
-
-/**
- * Where a hint cell is in the claim → solve → check flow (cells without a hint have no stepper and report step 1).
- */
-export function hintStep(cell: Pick<HintCell, 'status' | 'check'>): HintStep {
-  switch (cell.status) {
-    case 'solving':
-      return { current: 2, done: [1] };
-    case 'solved':
-      return { current: 3, done: cell.check === 'verified' ? [1, 2, 3] : [1, 2], checkState: cell.check };
-    default:
-      return { current: 1, done: [] };
-  }
 }

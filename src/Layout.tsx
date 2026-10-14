@@ -94,14 +94,11 @@ export default function Layout() {
             <ErrorBoundary name="Deze pagina" variant="floating">
                 <Outlet context={{mapRef} satisfies OutletContextType}/>
             </ErrorBoundary>
-            {/* After the outlet: at the same z-index the later element is on top, so the badge also shows above the hints page */}
+            {/* After the outlet: at the same z-index the later element is on top */}
             <StaleDataBadge/>
-            {/* The hints page covers the map: keep keyboard focus and screen readers out of what is hidden underneath */}
-            <div inert={pathname === '/hints'}>
-                <ErrorBoundary name="De kaart" className="mx-auto mt-[40dvh] w-fit">
-                    <Map ref={mapRef}/>
-                </ErrorBoundary>
-            </div>
+            <ErrorBoundary name="De kaart" className="mx-auto mt-[40dvh] w-fit">
+                <Map ref={mapRef}/>
+            </ErrorBoundary>
             <ErrorBoundary name="Dit venster" variant="floating">
                 <BeheerDialog mapRef={mapRef}/>
                 <NotificationsDialog/>

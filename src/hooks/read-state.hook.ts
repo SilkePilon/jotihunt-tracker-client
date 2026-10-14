@@ -5,7 +5,7 @@ import type { ReadState } from '@/types/Intel';
 
 const READ_STATE_REFRESH_MS = 15_000;
 
-/** Which articles the current user opened, and how many users opened each */
+/** Which articles the current user opened, and per article the names of everyone who opened it */
 export const useReadState = () => {
   const authHeader = useAuthHeader() || '';
   const { data, mutate } = useAuthSWR<ReadState>('/articles/read', { refreshInterval: READ_STATE_REFRESH_MS });
@@ -18,14 +18,13 @@ export const useReadState = () => {
     async (articleId: number) => {
       if (data?.read.includes(articleId) || inFlight.current.has(articleId)) return;
       inFlight.current.add(articleId);
-      const key = String(articleId);
       await mutate(
         async (current) => {
           await fetcherWithMethod(`/articles/${articleId}/read`, authHeader, 'POST');
           return current;
         },
         {
-          optimisticData: (current) => ({ read: [...(current?.read ?? []), articleId], readBy: { ...current?.readBy, [key]: (current?.readBy[key] ?? 0) + 1 } }),
+          optimisticData: (current) => ({ read: [...(current?.read ?? []), articleId], readBy: current?.readBy ?? {} }),
           populateCache: false,
           revalidate: true,
           rollbackOnError: true,

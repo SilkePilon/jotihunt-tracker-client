@@ -23,10 +23,10 @@ export const useAssignments = () => {
     assignments: asList(data),
     members: asList(members) ?? [],
     isError: error,
-    /** Fetch the bookkeeping now, e.g. after a write was refused because someone else was first */
+    /** Fetch the bookkeeping now */
     refresh: () => mutate(),
-    setStatus: (articleId: number, status: AssignmentStatus, overwrite = false) => post(articleId, 'status', { status, overwrite }),
-    setOwner: (articleId: number, owner: string | null, overwrite = false) => post(articleId, 'owner', { owner, overwrite }),
+    setStatus: (articleId: number, status: AssignmentStatus) => post(articleId, 'status', { status }),
+    setOwner: (articleId: number, owner: string | null) => post(articleId, 'owner', { owner }),
     addNote: (articleId: number, text: string) => post(articleId, 'notes', { text }),
   };
 };

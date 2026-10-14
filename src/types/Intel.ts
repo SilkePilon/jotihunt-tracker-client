@@ -1,10 +1,19 @@
-import type { HintCell, HintNote, UserRef } from './HintCell';
+import type { HintCell, UserRef } from './HintCell';
 
-/** What an article is on the hints page; every article type other than hint and assignment is news */
-export type IntelType = 'hint' | 'assignment' | 'news';
+/** What an article is in the intel window; every article type other than hint and assignment is news */
+export type IntelKind = 'hint' | 'assignment' | 'news';
+/** The tabs of the intel window */
+export type IntelTab = 'all' | IntelKind;
 
 /** How far we are with an assignment */
 export type AssignmentStatus = 'open' | 'busy' | 'submitted' | 'skipped';
+
+export interface AssignmentNote {
+  _id: string;
+  user: UserRef | null;
+  text: string;
+  createdAt: string;
+}
 
 /** Our own bookkeeping of an assignment article; articles without one are open and unowned */
 export interface Assignment {
@@ -16,70 +25,44 @@ export interface Assignment {
   owner?: UserRef | null;
   ownerBy?: UserRef | null;
   ownerAt?: string;
-  notes: HintNote[];
+  notes: AssignmentNote[];
 }
 
-/** Which articles the current user opened, and how many users opened each */
+/** Which articles the current user opened, and per article the names of everyone who opened it */
 export interface ReadState {
-  /** Ids of the articles the current user opened */
   read: number[];
-  /** Per article id, how many users opened it */
-  readBy: Record<string, number>;
+  readBy: Record<string, string[]>;
 }
 
-/** A user who has an item (and, for a hint, an area) of the hints page open */
-export interface PresenceEntry {
-  userId: string;
-  name: string;
-  itemId: number;
-  area?: string;
-  at: number;
-}
-
-/** What a guarded write would overwrite (the `conflict` of a 409) */
-export interface WriteConflict {
-  kind: 'answer' | 'claim' | 'status' | 'owner';
-  value: string | null;
-  by: UserRef | null;
-  at: string | null;
-}
-
-/** One row of the hints page: an article with what we know about it */
+/** One article in the intel window, joined with its hint cells, assignment bookkeeping and read state */
 export interface IntelItem {
   id: number;
-  type: IntelType;
+  kind: IntelKind;
   title: string;
+  /** ISO */
   publishAt: string;
   content: string;
-  /** Hints: the cells per area (may be empty while the board loads) */
+  summary?: string;
+  /** Hint cells of this article (hints only) */
   cells: HintCell[];
-  /** Assignments */
+  /** ISO deadline (assignments only) */
   endTime?: string;
   maxPoints?: number;
   assignment?: Assignment;
-  /** News and assignments */
-  summary?: string;
-  summaryPoints: string[];
+  /** News and assignments the current user has not opened yet */
   unread: boolean;
-  readBy: number;
+  /** Names of the users who opened it */
+  readBy: string[];
 }
 
-/** The filter above the list of the hints page */
-export interface IntelFilter {
-  type: IntelType | 'all';
-  query: string;
-  /** Only what still needs attention */
-  openOnly: boolean;
-}
+/** How an area of a hint stands: no cell at all = missing */
+export type AreaState = 'solved' | 'open' | 'none' | 'missing';
 
-/** The item (and hint area) selected in the page's address */
-export interface Selection {
-  itemId?: number;
-  area?: string;
-}
-
-/** Flags a guarded write is sent with */
-export interface WriteFlags {
-  overwrite: boolean;
-  replaceMarker: boolean;
+/** Timeline items of one day */
+export interface DayGroup {
+  /** YYYY-MM-DD in Dutch time */
+  key: string;
+  /** "Vandaag · zaterdag 17 okt", "Gisteren · vrijdag 16 okt", "donderdag 15 okt" */
+  label: string;
+  items: IntelItem[];
 }

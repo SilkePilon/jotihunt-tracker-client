@@ -52,7 +52,7 @@ export const TOUR_STEPS: TourStep[] = [
     id: 'hints',
     target: 'sidebar.hints',
     title: 'Hints',
-    body: 'De laatste hints per deelgebied in één oogopslag: groen is opgelost, oranje is bezig en grijs staat nog open. Op een laptop open je met "Open hints" de pagina met alle hints, opdrachten en nieuws.',
+    body: 'De laatste hints per deelgebied in één oogopslag: groen is opgelost, grijs staat nog open. Op een laptop open je met "Open hints" het venster met alle hints, opdrachten en nieuws.',
     actions: [sheetSnap('full'), openSection('hints')],
   },
   {

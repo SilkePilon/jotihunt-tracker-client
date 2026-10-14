@@ -91,7 +91,7 @@ export default function Invite() {
   );
 
   function renderForm(invite: InviteInfo) {
-    const counts = `${invite.memberCount} ${invite.memberCount === 1 ? 'lid' : 'leden'} · ${invite.onlineCount} online`;
+    const counts = `${invite.memberCount} ${invite.memberCount === 1 ? 'lid' : 'leden'}`;
     return (
       <div className="w-full max-w-[760px] overflow-hidden rounded-xl border bg-card text-card-foreground shadow-lg md:grid md:grid-cols-[1fr_auto_1fr]">
         {/* Phone: compact header row; desktop: big left half */}

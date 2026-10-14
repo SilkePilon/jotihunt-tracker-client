@@ -1,16 +1,8 @@
-export type HintCellStatus = 'open' | 'solving' | 'solved' | 'none';
-export type HintCheck = 'unchecked' | 'verified' | 'disputed';
+export type HintCellStatus = 'open' | 'solved' | 'none';
 
 export interface UserRef {
   _id: string;
   name: string;
-}
-
-export interface HintNote {
-  _id: string;
-  user: UserRef | null;
-  text: string;
-  createdAt: string;
 }
 
 export interface HintCell {
@@ -21,15 +13,10 @@ export interface HintCell {
   slotTime: string;
   snippet?: string;
   status: HintCellStatus;
-  claimedBy?: UserRef | null;
-  claimedAt?: string;
   answer?: string;
   answerKind?: 'rd' | 'text';
   answerLocation?: [number, number];
   markerId?: string;
-  check: HintCheck;
-  checkedBy?: UserRef | null;
-  notes: HintNote[];
   articleChanged: boolean;
 }
 
