@@ -13,6 +13,8 @@ import { useMorphIds } from './morph';
 
 const STEP = 0.022;
 const BASE = 0.21;
+/** Start of the cascade while a card morphs home: the other rows come back with it, not after it */
+const RETURN_BASE = 0.06;
 const FOLD = { duration: 0.22, ease: EASE_OUT } as const;
 
 /**
@@ -32,7 +34,7 @@ const list: Variants = {
 const day: Variants = {
   hidden: {},
   insert: {},
-  shown: (offset: number) => ({ transition: { delayChildren: BASE + offset * STEP, staggerChildren: STEP } }),
+  shown: ({ offset, base }: { offset: number; base: number }) => ({ transition: { delayChildren: base + offset * STEP, staggerChildren: STEP } }),
 };
 /** `custom` = returning: the row of the card that morphs back from the detail stays in place (its frame and title morph) */
 const entry: Variants = {
@@ -137,7 +139,7 @@ export default function IntelTimeline({ items, tab, onSelect, skipEntrance, retu
               const flying = lifted && group.items.some((item) => item.id === morphId);
               return (
                 <Fold key={group.key} clip={!flying}>
-                  <motion.section custom={groups.slice(0, index).reduce((sum, before) => sum + 1 + before.items.length, 0)} variants={day}>
+                  <motion.section custom={{ offset: groups.slice(0, index).reduce((sum, before) => sum + 1 + before.items.length, 0), base: morphId !== null ? RETURN_BASE : BASE }} variants={day}>
                     <motion.h3
                       custom={false}
                       variants={entry}
