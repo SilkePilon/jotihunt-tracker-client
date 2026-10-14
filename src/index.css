@@ -139,6 +139,9 @@
   --color-fox-cooldown-group: var(--fox-cooldown-group);
   --color-fox-error-group: var(--fox-error-group);
   --color-fox-chip: var(--fox-chip);
+  --color-beheer-window: var(--beheer-window);
+  --color-beheer-row: var(--beheer-row);
+  --color-beheer-row-high: var(--beheer-row-high);
 
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
@@ -151,6 +154,17 @@
   /* Sidebar sections: height slides in 200 ms with Material's standard decelerate curve */
   --animate-collapsible-down: collapsible-down 0.2s cubic-bezier(0.2, 0, 0, 1);
   --animate-collapsible-up: collapsible-up 0.2s cubic-bezier(0.2, 0, 0, 1);
+  /* Beheer → Invites: a new invite's row pulses an orange ring twice */
+  --animate-beheer-ring: beheer-ring 1s ease-out 2;
+
+  @keyframes beheer-ring {
+    from {
+      box-shadow: 0 0 0 0 color-mix(in oklab, var(--primary) 70%, transparent);
+    }
+    to {
+      box-shadow: 0 0 0 10px color-mix(in oklab, var(--primary) 0%, transparent);
+    }
+  }
 
   @keyframes collapsible-down {
     from {
@@ -243,6 +257,18 @@ body.dark {
   --map-selected-fg: #ffedd5;
   --map-success: #86efac;
   --map-success-bg: rgb(22 163 74 / 0.2);
+}
+
+/* Beheer window: in light mode the window is a step darker than its (white) cards; rows are a tonal step above the
+   card (M3 surface containers). Declared on body because the theme's `.dark` class sits on body. */
+body {
+  --beheer-window: color-mix(in oklab, var(--foreground) 5%, var(--background));
+  --beheer-row: color-mix(in oklab, var(--foreground) 4%, var(--card));
+  --beheer-row-high: color-mix(in oklab, var(--foreground) 9%, var(--card));
+}
+
+body.dark {
+  --beheer-window: var(--background);
 }
 
 /* MapLibre popup styling: compact card like the markers */
