@@ -39,8 +39,8 @@ prediction setting) → `{ allowed, setAllowed, isForbidden(area) }` where `isFo
 
 ## Beheer → Algemeen
 
-One flat card at the top of Algemeen, "Andere vossen die we mogen hunten" · "3 pt · de rest krijgt een slotje", count
-`n/9` on the right (own area counted). Chips for every area except our own: allowed = check icon + area dot, light fill;
+One flat card at the top of Algemeen, "Welke vossen mogen we hunten?" · "Tik een vos aan of uit. Vossen met een slotje
+leveren geen punten op; ons eigen gebied telt altijd mee.", count `n/9` on the right (own area counted). Chips for every area except our own: allowed = check icon + area dot, light fill;
 forbidden = lock icon, dimmed dot, muted text. Tap toggles and saves (optimistic, toast on error, rollback). Not
 configured shows every chip as allowed; the first toggle stores the list. No "Alles toestaan" button (turning every chip
 on is the same).

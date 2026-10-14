@@ -46,7 +46,7 @@ Replace `BeheerLayout.tsx` primitives (keep names where sensible):
 ## Panes
 
 ### Algemeen
-1. Card **"Andere vossen die we mogen hunten"** — see `2026-10-14-huntable-areas-design.md` (chips with check/lock,
+1. Card **"Welke vossen mogen we hunten?"** — see `2026-10-14-huntable-areas-design.md` (chips with check/lock,
    count `n/9`, own area excluded).
 2. Card **Functies** — rows (leading muted icon) AI-voorspelling, Demo mode, Invites pauzeren, each with the M3 switch.
    Behaviour as today (demo opens its confirm dialog).
@@ -65,7 +65,8 @@ Replace `BeheerLayout.tsx` primitives (keep names where sensible):
 ### Invites (I5)
 - Card **Nieuwe invite** (muted line "Iedereen met de link kan een account maken."): segmented **Geldig**
   (existing EXPIRY_OPTIONS, shown as segments) and **Aantal keer** (existing MAX_USES_OPTIONS), primary pill
-  **Invite maken**. A new invite appears at the top of Actief with a short orange ring pulse.
+  **Invite maken**. The pickers show a short set: Geldig 1 uur / 1 dag / 7 dagen / Nooit, Aantal keer 1× / 5× /
+  Onbeperkt. A new invite appears at the top of Actief with a short orange ring pulse.
 - Card **Actief · n**: rows with mono code + meta (`inviteMeta`), trailing: **WhatsApp** pill (opens
   `https://wa.me/?text=<encoded message with link>`), copy icon button (morphs to ✓ for 1.5 s, toast as today), QR icon
   button (QR unfolds under the row; reuse the existing invite QR rendering), stop icon button (keeps today's confirm).
