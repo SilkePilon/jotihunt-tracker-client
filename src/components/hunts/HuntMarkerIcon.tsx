@@ -22,7 +22,7 @@ export default function HuntMarkerIcon({ area, website = false }: { area: string
 
   return (
     <span aria-hidden className="relative grid size-12 shrink-0 place-items-center">
-      <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} className="absolute inset-0 overflow-visible drop-shadow-[0_1px_2px_rgb(0_0_0/0.3)]">
+      <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} className="absolute inset-0 overflow-visible">
         <path d={path} fill={fill} />
       </svg>
       <span className="relative grid place-items-center [&_svg]:size-6" style={{ color: on }}>
