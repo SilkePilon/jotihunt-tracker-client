@@ -92,7 +92,7 @@ export const MARKER_PALETTES: Record<MarkerTheme, MarkerPalette> = {
 
 // --- areas ---
 
-const AREAS = ['alpha', 'bravo', 'charlie', 'delta', 'echo', 'foxtrot', 'golf', 'hotel', 'oscar'] as const;
+export const AREAS = ['alpha', 'bravo', 'charlie', 'delta', 'echo', 'foxtrot', 'golf', 'hotel', 'oscar'] as const;
 export type AreaKey = (typeof AREAS)[number];
 /** An area, or `none` when the data names no known area. */
 export type AreaOrNone = AreaKey | 'none';

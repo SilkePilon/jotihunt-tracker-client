@@ -175,3 +175,27 @@ export function sendButtonLabel(state: SendState, recipients: number | undefined
       return 'Verstuurd';
   }
 }
+
+/**
+ * Beheer → Algemeen "Andere vossen die we mogen hunten": a chip for every area but our own (allowed, or locked), and
+ * the n/9 count with our own area included when known. `allowed` null/undefined (not configured / loading) = all allowed.
+ */
+export function huntableChips(
+  areas: readonly string[],
+  ownArea: string | undefined,
+  allowed: string[] | null | undefined,
+): { chips: { area: string; allowed: boolean }[]; count: number } {
+  const own = ownArea?.toLowerCase();
+  const chips = areas.filter((area) => area !== own).map((area) => ({ area, allowed: allowed == null || allowed.includes(area) }));
+  const ownCounted = own !== undefined && areas.includes(own) ? 1 : 0;
+  return { chips, count: chips.filter((chip) => chip.allowed).length + ownCounted };
+}
+
+/** The list to store after tapping `area`: the allowed chips (own area left out) with `area` flipped, sorted. */
+export function toggleHuntable(areas: readonly string[], ownArea: string | undefined, allowed: string[] | null | undefined, area: string): string[] {
+  const current = huntableChips(areas, ownArea, allowed)
+    .chips.filter((chip) => chip.allowed)
+    .map((chip) => chip.area);
+  const next = current.includes(area) ? current.filter((other) => other !== area) : [...current, area];
+  return next.sort();
+}

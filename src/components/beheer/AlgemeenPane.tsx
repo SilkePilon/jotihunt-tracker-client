@@ -1,19 +1,84 @@
 import { useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { toast } from 'sonner';
-import { MonitorPlayIcon, PauseIcon, RefreshCwIcon, SparklesIcon } from 'lucide-react';
+import { CheckIcon, LockIcon, MonitorPlayIcon, PauseIcon, RefreshCwIcon, SparklesIcon } from 'lucide-react';
 import DemoModeDialog from '@/components/settings/DemoModeDialog';
 import ReloadTeamsDialog from '@/components/settings/ReloadTeamsDialog';
 import { useDemo } from '@/hooks/demo.hook';
+import { useHuntableAreas } from '@/hooks/huntable-areas.hook';
 import { useInvitesPaused } from '@/hooks/invites.hook';
 import { usePredictionSetting } from '@/hooks/predictions.hook';
-import { BeheerCard, BeheerPane, BeheerRow, BeheerRows } from './BeheerLayout';
+import { useHomeTeam } from '@/hooks/teams.hook';
+import { huntableChips, toggleHuntable } from '@/lib/beheer';
+import { AREAS } from '@/lib/marker-style';
+import { POP } from '@/lib/motion';
+import { capitalizeFirstLetter, cn, getColorFromArea } from '@/lib/utils';
+import { BeheerCard, BeheerPane, BeheerRow, BeheerRows, CountSwap } from './BeheerLayout';
 import BeheerSwitch from './controls/BeheerSwitch';
 import { Pill } from './controls/Pill';
 
 /** Leading icon of a settings row (muted, like the mockup) */
 const ROW_ICON = 'size-[18px] shrink-0 text-muted-foreground';
 
-/** Beheer → Algemeen: switches that apply to everyone, and reloading the teams. */
+/**
+ * Rule 5.1: the other fox teams we may hunt (3 pt); the rest is locked (0 pt). Our own team (6 pt) is always allowed and
+ * has no chip. Tapping saves at once: the hook shows the new list straight away and puts the old one back on failure
+ * (we toast).
+ */
+function HuntableAreasCard() {
+  const { allowed, setAllowed } = useHuntableAreas();
+  const ownArea = useHomeTeam()?.area;
+  const { chips, count } = huntableChips(AREAS, ownArea, allowed);
+  const loading = allowed === undefined;
+
+  async function toggle(area: string) {
+    try {
+      await setAllowed(toggleHuntable(AREAS, ownArea, allowed, area));
+    } catch {
+      toast.error('Opslaan is mislukt, probeer het opnieuw.');
+    }
+  }
+
+  return (
+    <BeheerCard
+      title="Andere vossen die we mogen hunten"
+      description="3 pt · de rest krijgt een slotje"
+      right={
+        <span className="shrink-0 text-xs font-bold text-muted-foreground tabular-nums">
+          <CountSwap value={count} />
+          /9
+        </span>
+      }
+    >
+      <div className="flex flex-wrap gap-1.5">
+        {chips.map((chip) => (
+          <button
+            key={chip.area}
+            type="button"
+            aria-pressed={chip.allowed}
+            aria-label={`${capitalizeFirstLetter(chip.area)}: ${chip.allowed ? 'mogen we hunten' : 'niet toegestaan'}`}
+            disabled={loading}
+            onClick={() => void toggle(chip.area)}
+            className={cn(
+              'inline-flex h-[34px] items-center gap-[7px] rounded-full px-3.5 text-[13px] font-semibold outline-none transition-[background-color,color,transform] duration-200 focus-visible:ring-[3px] focus-visible:ring-ring/50 active:scale-[0.97] disabled:opacity-50 motion-reduce:transition-none',
+              chip.allowed ? 'bg-foreground/12 text-foreground' : 'bg-beheer-row text-muted-foreground',
+            )}
+          >
+            <AnimatePresence mode="popLayout" initial={false}>
+              <motion.span key={chip.allowed ? 'check' : 'lock'} className="inline-grid" {...POP}>
+                {chip.allowed ? <CheckIcon className="size-[13px]" strokeWidth={3} /> : <LockIcon className="size-3" strokeWidth={2.6} />}
+              </motion.span>
+            </AnimatePresence>
+            <span aria-hidden className={cn('size-2 rounded-full transition-opacity duration-200', !chip.allowed && 'opacity-40')} style={{ background: getColorFromArea(chip.area) }} />
+            {capitalizeFirstLetter(chip.area)}
+          </button>
+        ))}
+      </div>
+    </BeheerCard>
+  );
+}
+
+/** Beheer → Algemeen: which other foxes we may hunt, switches that apply to everyone, and reloading the teams. */
 export default function AlgemeenPane() {
   const { enabled: predictionEnabled, setEnabled: setPredictionEnabled } = usePredictionSetting();
   const { demo } = useDemo();
@@ -48,6 +113,8 @@ export default function AlgemeenPane() {
 
   return (
     <BeheerPane title="Algemeen" description="Instellingen die voor iedereen gelden.">
+      <HuntableAreasCard />
+
       <BeheerCard title="Functies">
         <BeheerRows>
           <BeheerRow key="prediction" leading={<SparklesIcon className={ROW_ICON} />} title="AI-voorspelling" meta="Laat Gemini bij elke hint voorspellen waar de vos zit.">

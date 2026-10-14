@@ -5,6 +5,7 @@ import {
   DEFAULT_MAX_USES,
   EXPIRY_OPTIONS,
   formatTimeLeft,
+  huntableChips,
   inviteMeta,
   inviteShareText,
   inviteStateText,
@@ -18,6 +19,7 @@ import {
   sendTransition,
   splitUsers,
   stoppedInviteMeta,
+  toggleHuntable,
   userActivity,
   usersSummary,
   whatsAppShareUrl,
@@ -25,6 +27,7 @@ import {
   type SendEvent,
   type SendState,
 } from './beheer';
+import { AREAS } from './marker-style';
 
 const now = Date.parse('2026-10-17T12:00:00Z');
 const ago = (ms: number) => new Date(now - ms).toISOString();
@@ -225,5 +228,33 @@ describe('send button (two taps)', () => {
   test('timings', () => {
     expect(SEND_CONFIRM_MS).toBe(3000);
     expect(SEND_DONE_MS).toBe(1600);
+  });
+});
+
+describe('huntable areas card', () => {
+  test('not configured: every chip but our own allowed, own area counted', () => {
+    const { chips, count } = huntableChips(AREAS, 'Charlie', null);
+    expect(chips.map((chip) => chip.area)).toEqual(['alpha', 'bravo', 'delta', 'echo', 'foxtrot', 'golf', 'hotel', 'oscar']);
+    expect(chips.every((chip) => chip.allowed)).toBe(true);
+    expect(count).toBe(9);
+  });
+
+  test('configured: only the listed ones allowed', () => {
+    const { chips, count } = huntableChips(AREAS, 'charlie', ['delta']);
+    expect(chips.filter((chip) => chip.allowed).map((chip) => chip.area)).toEqual(['delta']);
+    expect(count).toBe(2);
+  });
+
+  test('own area unknown: all nine chips, not counted', () => {
+    const { chips, count } = huntableChips(AREAS, undefined, ['delta']);
+    expect(chips).toHaveLength(9);
+    expect(count).toBe(1);
+  });
+
+  test('toggleHuntable flips one area, keeps the own area out, sorted', () => {
+    expect(toggleHuntable(AREAS, 'charlie', ['delta'], 'alpha')).toEqual(['alpha', 'delta']);
+    expect(toggleHuntable(AREAS, 'charlie', ['alpha', 'delta'], 'delta')).toEqual(['alpha']);
+    // The first toggle of a not-configured setting stores every other area minus the tapped one
+    expect(toggleHuntable(AREAS, 'charlie', null, 'oscar')).toEqual(['alpha', 'bravo', 'delta', 'echo', 'foxtrot', 'golf', 'hotel']);
   });
 });
