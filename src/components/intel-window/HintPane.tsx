@@ -230,7 +230,8 @@ function AreaBody({ cell, label, onSave, mapRef }: { cell: HintCell; label: stri
   return (
     // pr/pb leave room for the pills' focus ring: Reveal and the row clip
     <div className="pt-0.5 pr-3.5 pb-3.5 pl-8">
-      {cell.snippet && <p className="mb-3 font-mono text-[13.5px] leading-[1.7] break-words whitespace-pre-wrap">{cell.snippet}</p>}
+      {/* The snippet is the raw HTML of this area's part of the article (text, <br>, images) */}
+      {cell.snippet && <ArticleHtml html={cell.snippet} className="mb-3 px-0 font-mono text-[13.5px] leading-[1.7]" />}
       <AnimatePresence mode="wait" initial={false}>
         {editing ? (
           <motion.div key="edit" {...SWAP} className="flex items-center gap-2">
