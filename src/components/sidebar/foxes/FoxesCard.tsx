@@ -1,4 +1,5 @@
-import { AnimatePresence, LayoutGroup, motion } from 'motion/react';
+import { useEffect, useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAreas } from '@/hooks/areas.hook';
 import { FOX_GROUP_LABEL, FOX_GROUP_ORDER, groupCounts } from '@/lib/fox-status';
@@ -26,6 +27,12 @@ function Count({ value, className }: { value: number; className?: string }) {
 export default function FoxesCard() {
   const foxes = useSidebarFoxes();
   const { toggleHidden, isHidden } = useAreas();
+  // Chips already there on the first render don't pop in; later ones (moved by a status change) do
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(frame);
+  }, []);
 
   if (!foxes) {
     return (
@@ -51,39 +58,41 @@ export default function FoxesCard() {
           </span>
         ))}
       </div>
-      <LayoutGroup id="sidebar-foxes">
-        <AnimatePresence initial={false}>
-          {FOX_GROUP_ORDER.filter((group) => counts[group] > 0).map((group) => (
-            <motion.div
-              key={group}
-              layout="position"
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0, overflow: 'hidden' }}
-              transition={REVEAL_TRANSITION}
-              className="[&:last-child>div]:pb-0"
-            >
-              {/* clip only on exit (fold out); entering and resting groups stay overflow-visible so chips sliding in from another group (shared layoutId) aren't cut off */}
-              {/* pb on the wrapper instead of a gap, so a folding group takes no space */}
-              <div className="pb-1.5">
-                <div className={cn('rounded-2xl px-2 pt-[7px] pb-2 transition-colors duration-300 motion-reduce:transition-none', GROUP_CLASS[group].block, GROUP_CLASS[group].on)}>
-                  <div className="mx-0.5 mb-1.5 flex justify-between text-xs font-bold">
-                    <span>{FOX_GROUP_LABEL[group]}</span>
-                    <Count value={counts[group]} />
-                  </div>
-                  <div className="flex flex-wrap gap-1">
+
+      <AnimatePresence initial={false}>
+        {FOX_GROUP_ORDER.filter((group) => counts[group] > 0).map((group) => (
+          <motion.div
+            key={group}
+            layout="position"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0, overflow: 'hidden' }}
+            transition={REVEAL_TRANSITION}
+            className="[&:last-child>div]:pb-0"
+          >
+            {/* clip only on exit (fold out); entering and resting groups stay overflow-visible so popping chips aren't cut off */}
+            {/* pb on the wrapper instead of a gap, so a folding group takes no space */}
+            <div className="pb-1.5">
+              <div className={cn('rounded-2xl px-2 pt-[7px] pb-2 transition-colors duration-300 motion-reduce:transition-none', GROUP_CLASS[group].block, GROUP_CLASS[group].on)}>
+                <div className="mx-0.5 mb-1.5 flex justify-between text-xs font-bold">
+                  <span>{FOX_GROUP_LABEL[group]}</span>
+                  <Count value={counts[group]} />
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {/* popLayout: a chip popping out leaves the flow at once, so its neighbours close the gap */}
+                  <AnimatePresence mode="popLayout" initial={false}>
                     {foxes
                       .filter((fox) => fox.group === group)
                       .map((fox) => (
-                        <FoxChip key={fox.key} fox={fox} hidden={isHidden(fox.area.name)} onToggle={() => toggleHidden(fox.area.name)} />
+                        <FoxChip key={fox.key} fox={fox} hidden={isHidden(fox.area.name)} popIn={mounted} onToggle={() => toggleHidden(fox.area.name)} />
                       ))}
-                  </div>
+                  </AnimatePresence>
                 </div>
               </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </LayoutGroup>
+            </div>
+          </motion.div>
+        ))}
+      </AnimatePresence>
     </div>
   );
 }
