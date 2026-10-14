@@ -1,16 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
+import { motion } from 'motion/react';
 import { KeyRoundIcon, Loader2Icon } from 'lucide-react';
 import usePWA from 'react-pwa-install-prompt';
 import { isMobile as isMobileDevice } from 'react-device-detect';
 import { Button } from '@/components/ui/button';
 import AuthScreen from '@/components/auth/AuthScreen';
 import QrLoginPanel from '@/components/auth/QrLoginPanel';
+import Reveal from '@/components/motion/Reveal';
 import { passkeyLogin, passkeysSupported, type SessionResult } from '@/lib/auth-api';
 import { classifyPasskeyError, PASSKEY_MESSAGES } from '@/lib/passkey';
+import { CARD_ENTER, EASE_OUT } from '@/lib/motion';
 import { nextAfterLogin } from '@/lib/qr-login';
 import { useStartSession } from '@/hooks/start-session.hook';
 import { useIsMobile } from '@/hooks/media.hook';
+
+const APPROVED_SHOW_MS = 1200;
+const LEAVE_MS = 200;
 
 export default function Login() {
   const navigate = useNavigate();
@@ -21,8 +27,10 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(passkeysSupported() ? null : PASSKEY_MESSAGES.unsupported);
   const next = nextAfterLogin(searchParams.get('next'));
-  const approvedTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  useEffect(() => () => clearTimeout(approvedTimer.current), []);
+  /** Fading the card out after a QR approval, right before the map takes over */
+  const [leaving, setLeaving] = useState(false);
+  const approvedTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  useEffect(() => () => approvedTimers.current.forEach(clearTimeout), []);
 
   function enter(result: SessionResult) {
     if (!startSession(result)) throw new Error('Sign-in failed');
@@ -43,19 +51,28 @@ export default function Login() {
   }
 
   function handleQrApproved(result: SessionResult) {
-    // Let "Ingelogd" show for a moment before the map takes over
-    approvedTimer.current = setTimeout(() => {
-      try {
-        enter(result);
-      } catch (failure) {
-        setError(PASSKEY_MESSAGES[classifyPasskeyError(failure)]);
-      }
-    }, 800);
+    // Let the check and "Ingelogd" play out, then fade the card before the map takes over
+    approvedTimers.current.push(
+      setTimeout(() => setLeaving(true), APPROVED_SHOW_MS - LEAVE_MS),
+      setTimeout(() => {
+        try {
+          enter(result);
+        } catch (failure) {
+          setLeaving(false);
+          setError(PASSKEY_MESSAGES[classifyPasskeyError(failure)]);
+        }
+      }, APPROVED_SHOW_MS),
+    );
   }
 
   return (
     <AuthScreen>
-      <div className="w-full max-w-sm rounded-xl border bg-card text-card-foreground shadow-lg md:grid md:max-w-3xl md:grid-cols-[1fr_auto_auto]">
+      <motion.div
+        className="w-full max-w-sm rounded-xl border bg-card text-card-foreground shadow-lg md:grid md:max-w-3xl md:grid-cols-[1fr_auto_auto]"
+        initial={CARD_ENTER.initial}
+        animate={leaving ? { opacity: 0, y: 0, scale: 0.98 } : { ...CARD_ENTER.animate, scale: 1 }}
+        transition={leaving ? { duration: LEAVE_MS / 1000, ease: EASE_OUT } : CARD_ENTER.transition}
+      >
         <div className="flex flex-col justify-center gap-5 p-6 md:p-8">
           <div className="flex items-center gap-3">
             <img src="/logo.svg" alt="" className="size-10" />
@@ -69,11 +86,13 @@ export default function Login() {
             {busy ? <Loader2Icon className="animate-spin" /> : <KeyRoundIcon />}
             Inloggen met passkey
           </Button>
-          {error && (
-            <p role="alert" className="text-xs font-medium text-destructive">
-              {error}
-            </p>
-          )}
+          <Reveal gap={20}>
+            {error && (
+              <p role="alert" className="text-xs font-medium text-destructive">
+                {error}
+              </p>
+            )}
+          </Reveal>
           <p className="text-xs text-muted-foreground">Geen account? Vraag de organisatie om een invite-link.</p>
         </div>
         {/* Phones log in with their own passkey; only laptops and the beamer need the code */}
@@ -83,7 +102,7 @@ export default function Login() {
             <QrLoginPanel onApproved={handleQrApproved} />
           </>
         )}
-      </div>
+      </motion.div>
     </AuthScreen>
   );
 }
