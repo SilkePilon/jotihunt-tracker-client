@@ -63,7 +63,7 @@ export default function BroadcastPane() {
 
   return (
     <BeheerPane title="Bericht versturen" description="Iedereen krijgt dit als melding met geluid.">
-      <BeheerCard title="Nieuw bericht" description="Iedereen krijgt dit als melding met geluid.">
+      <BeheerCard title="Nieuw bericht">
         <textarea
           ref={textarea}
           value={message}

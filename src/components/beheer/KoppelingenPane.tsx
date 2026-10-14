@@ -265,6 +265,11 @@ export default function KoppelingenPane() {
   const telegramView = telegram.status && telegramIntegration(telegram.status, now);
   const life360Card = life360Status && life360Integration(life360Status, now);
 
+  // The account was unlinked elsewhere (or got disconnected) while asking: drop the confirm so it doesn't come back
+  // once the integration can be unlinked again
+  const confirmStale = (confirming === 'telegram' && !telegramView?.canUnlink) || (confirming === 'life360' && !life360Card?.canUnlink);
+  if (confirmStale) setConfirming(null);
+
   let telegramAction: ReactNode = null;
   if (telegramView?.canUnlink) {
     telegramAction = (

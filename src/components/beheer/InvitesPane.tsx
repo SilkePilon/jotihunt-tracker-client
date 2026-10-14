@@ -180,7 +180,7 @@ export default function InvitesPane() {
 
   return (
     <BeheerPane title="Invites" description="Iedereen met een link kan een account maken.">
-      <BeheerCard title="Nieuwe invite" description="Iedereen met de link kan een account maken.">
+      <BeheerCard title="Nieuwe invite">
         <div className="flex flex-col gap-2.5 px-1">
           <Field label="Geldig">
             <Segmented label="Geldig" value={expiry} options={EXPIRY_SEGMENTS} onChange={setExpiry} disabled={busy} />
