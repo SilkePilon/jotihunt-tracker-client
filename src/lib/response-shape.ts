@@ -17,6 +17,8 @@ const LIST_PATHS = new Set([
   '/tracker/devices',
   '/articles',
   '/admin/users',
+  '/admin/invites',
+  '/admin/broadcasts',
   '/assignments',
   '/assignments/members',
 ]);
@@ -35,6 +37,7 @@ const OBJECT_CHECKS: Record<string, (data: Record<string, unknown>) => boolean> 
   '/admin/telegram': (data) => typeof data.state === 'string' && typeof data.connected === 'boolean',
   '/admin/life360': (data) => typeof data.state === 'string',
   '/life360/members': (data) => typeof data.linked === 'boolean' && typeof data.stale === 'boolean' && Array.isArray(data.members),
+  '/settings/invites-paused': (data) => typeof data.paused === 'boolean',
   '/account': (data) => Array.isArray(data.passkeys) && Array.isArray(data.sessions) && Array.isArray(data.devices),
 };
 

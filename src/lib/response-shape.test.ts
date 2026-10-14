@@ -54,6 +54,15 @@ describe('hasExpectedShape', () => {
     expect(hasExpectedShape('/account', { message: 'x' })).toBe(false);
   });
 
+  test('Beheer: invites, invites paused and broadcasts', () => {
+    expect(hasExpectedShape('/admin/invites', [])).toBe(true);
+    expect(hasExpectedShape('/admin/invites', { message: 'x' })).toBe(false);
+    expect(hasExpectedShape('/admin/broadcasts', [{ id: 'b1' }])).toBe(true);
+    expect(hasExpectedShape('/admin/broadcasts', '<html>proxy</html>')).toBe(false);
+    expect(hasExpectedShape('/settings/invites-paused', { paused: false })).toBe(true);
+    expect(hasExpectedShape('/settings/invites-paused', { message: 'x' })).toBe(false);
+  });
+
   test('happy hour answers', () => {
     expect(hasExpectedShape('/happy-hour', { state: 'none' })).toBe(true);
     expect(hasExpectedShape('/happy-hour', { state: 'active', startsAt: 'a', endsAt: 'b', text: '' })).toBe(true);

@@ -1,9 +1,10 @@
 import { create } from 'zustand';
 
-export type AdminDialogId = 'hunters' | 'users' | 'broadcast';
+/** The Beheer window's sections. */
+export type AdminDialogId = 'algemeen' | 'users' | 'invites' | 'hunters' | 'broadcast' | 'koppelingen';
 
 interface AdminState {
-  /** Which admin dialog is open (Settings → Admin tools), or null */
+  /** Which Beheer section is open (the Beheer window shows while this is set), or null */
   dialog: AdminDialogId | null;
   openDialog: (dialog: AdminDialogId) => void;
   close: () => void;
