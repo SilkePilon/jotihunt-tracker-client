@@ -239,6 +239,8 @@ with
   - doc comment: "On desktop a cell opens that hint in the intel window".
 - [ ] **Step 8: Tour** — `src/components/tour/steps.ts` hints step body becomes: `'De laatste hints per deelgebied in één oogopslag: groen is opgelost, grijs staat nog open. Op een laptop open je met "Open hints" het venster met alle hints, opdrachten en nieuws.'`
 
+- [ ] **Step 8b: Invite page online count** — the server no longer sends `onlineCount` on `GET /invite/:code` (it counted presence on the old hints page). In `src/lib/auth-api.ts` remove `onlineCount` from the invite type and from the 404 fallback object; in `src/pages/Invite.tsx` the counts line becomes ``const counts = `${invite.memberCount} ${invite.memberCount === 1 ? 'lid' : 'leden'}`;`` (fix any test that expects "online").
+
 - [ ] **Step 9: Verify** — `npm run build && npx --yes bun test && npm run lint`. Expected: clean. `grep -rn "components/intel/\|/hints'\|presence\|guarded-write\|hint-actions\|summaryPoints\|claimedBy\|'solving'" src` → no hits.
 
 - [ ] **Step 10: Commit** `refactor(intel): remove the /hints page; trim hint, assignment and read-state hooks` + co-author line.
