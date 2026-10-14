@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { CheckIcon, Loader2Icon, PencilIcon, RefreshCwIcon, XIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import { IconPill } from '@/components/beheer/controls/Pill';
 import IconAction from '@/components/IconAction';
 import { Input } from '@/components/ui/input';
 import { useHuntReports } from '@/hooks/hunt-reports.hook';
@@ -176,10 +177,11 @@ export function EditTime({ report, editing, onEditingChange }: { report: HuntRep
 }
 
 /** Refresh button: the AI reads the photo again (code and time, also values entered by hand). Admins only. */
-export function RereadButton({ report, size }: { report: HuntReport; size?: 'icon-xs' | 'icon-sm' }) {
+export function RereadButton({ report }: { report: HuntReport }) {
   const { rereadReport } = useHuntReports();
   const [busy, setBusy] = useState(false);
   const reading = isReading(report);
+  const label = reading ? 'Wordt gelezen…' : 'Opnieuw laten lezen door AI';
 
   async function reread() {
     setBusy(true);
@@ -194,8 +196,8 @@ export function RereadButton({ report, size }: { report: HuntReport; size?: 'ico
   }
 
   return (
-    <IconAction label={reading ? 'Wordt gelezen…' : 'Opnieuw laten lezen door AI'} size={size} onClick={() => void reread()} disabled={busy || reading}>
+    <IconPill variant="soft" aria-label={label} title={label} onClick={() => void reread()} disabled={busy || reading}>
       <RefreshCwIcon className={reading || busy ? 'animate-spin' : undefined} />
-    </IconAction>
+    </IconPill>
   );
 }

@@ -187,7 +187,7 @@ export default function HuntDetail({ report, now, onBack, onClose }: { report: H
             Bewerken
           </Button>
         )}
-        {isAdmin && <RereadButton report={report} size="icon-sm" />}
+        {isAdmin && <RereadButton report={report} />}
         {canDelete && (
           <IconAction label="Verwijderen" size="icon-sm" disabled={busy} onClick={() => setConfirmOpen(true)}>
             <Trash2Icon className="text-destructive" />
