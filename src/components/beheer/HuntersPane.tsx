@@ -39,12 +39,14 @@ type ShowOnMap = (lng: number, lat: number) => void;
 /** Beheer → Hunters: every Traccar device, live ones first, each with a ⋯ menu (vehicle, map, Google Maps). */
 export default function HuntersPane({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
   const isMobile = useIsMobile();
-  const { devices, positions, isLoading } = useDevices();
+  const { devices, positions, isLoading, isError } = useDevices();
   const { users } = useAdmin();
   const close = useAdminStore((state) => state.close);
   const [now, setNow] = useState(() => Date.now());
   useInterval(() => setNow(Date.now()), CLOCK_TICK_MS);
 
+  // A failed poll keeps the last list on screen; only show the error when there's nothing to show
+  const view = isLoading ? 'loading' : isError && !devices?.length ? 'error' : 'content';
   const rows = hunterRows(devices, positions, users, GROUPS, now);
   const live = rows.filter((row) => row.active);
   const notLive = rows.filter((row) => !row.active);
@@ -62,13 +64,19 @@ export default function HuntersPane({ mapRef }: { mapRef: RefObject<MapRef | nul
   );
 
   return (
-    <BeheerPane title="Hunters" description={isLoading ? 'Laden…' : `${rows.length} trackers, ${live.length} live.`}>
+    <BeheerPane title="Hunters" description={view === 'content' ? `${rows.length} trackers, ${live.length} live.` : view === 'loading' ? 'Laden…' : undefined}>
       <AnimatePresence mode="wait" initial={false}>
-        {isLoading ? (
+        {view === 'loading' && (
           <motion.div key="loading" {...SWAP}>
             <BeheerSkeleton groups={2} />
           </motion.div>
-        ) : (
+        )}
+        {view === 'error' && (
+          <motion.p key="error" className="text-sm text-muted-foreground" {...SWAP}>
+            Kan de hunters niet laden.
+          </motion.p>
+        )}
+        {view === 'content' && (
           <motion.div key="content" className="flex flex-col gap-7" {...SWAP}>
             <Reveal gap={GROUP_GAP}>
               {rows.length === 0 && (

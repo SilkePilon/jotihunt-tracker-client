@@ -37,7 +37,7 @@ export default function UsersPane() {
   const count = users?.length ?? 0;
 
   async function toggleAdmin(user: User) {
-    const error = await updateUser({ ...user, admin: !user.admin });
+    const error = await updateUser(user._id, { admin: !user.admin });
     if (error) toast.error(apiErrorMessage(error, 'Opslaan is mislukt.'));
     else toast.success(user.admin ? `${user.name} is geen admin meer` : `${user.name} is nu admin`);
   }

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { apiErrorMessage } from '@/lib/api-error';
+import type { UserChanges } from '@/hooks/admin.hook';
 import type { User } from '@/types/User';
 
 interface RenameUserDialogProps {
@@ -14,7 +15,7 @@ interface RenameUserDialogProps {
   user: User | null;
   onOpenChange: (open: boolean) => void;
   /** `useAdmin().updateUser`: resolves to null on success, else to the error */
-  updateUser: (user: User) => Promise<unknown>;
+  updateUser: (id: string, changes: UserChanges) => Promise<unknown>;
 }
 
 /** Beheer → Gebruikers → ⋯ → Naam wijzigen. */
@@ -40,7 +41,7 @@ export default function RenameUserDialog({ open, user, onOpenChange, updateUser 
     if (!user || !trimmed || saving) return;
     setSaving(true);
     setError(null);
-    const failure = await updateUser({ ...user, name: trimmed });
+    const failure = await updateUser(user._id, { name: trimmed });
     setSaving(false);
     if (failure) {
       setError(apiErrorMessage(failure, 'De naam kon niet worden opgeslagen.'));
