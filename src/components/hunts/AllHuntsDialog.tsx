@@ -11,7 +11,7 @@ import { useIsMobile } from '@/hooks/media.hook';
 import { HUNT_FILTER_LABELS, HUNT_FILTERS, huntAreaTotals, huntFilterCounts, huntItemArea, huntItemKey, huntItemPoints, matchesHuntFilter, type HuntFilter } from '@/lib/hunt-list';
 import { huntListItems } from '@/lib/hunt-reports';
 import { PANE_SLIDE, PANE_SLIDE_TRANSITION, SWAP } from '@/lib/motion';
-import { cn, getColorFromArea } from '@/lib/utils';
+import { getColorFromArea } from '@/lib/utils';
 import HuntListRow from './HuntListRow';
 
 /** Rows rendered at first (and added per "Meer laden"), so a long list opens quickly. */
@@ -26,10 +26,10 @@ interface View {
 }
 const ALL: View = { filter: 'all', area: null };
 
-/** Count right of a nav item; "Te versturen" in orange while there is work. */
-function NavCount({ value, hot }: { value: number; hot?: boolean }) {
+/** Count right of a nav item (muted, like the area points). */
+function NavCount({ value }: { value: number }) {
   return (
-    <span className={cn('ml-auto text-xs font-bold', hot && value > 0 ? 'text-orange-700 dark:text-orange-300' : 'text-muted-foreground')}>
+    <span className="ml-auto text-xs font-bold text-muted-foreground">
       <CountSwap value={value} />
     </span>
   );
@@ -110,7 +110,7 @@ function AllHuntsWindow({ open, initialReportId }: { open: boolean; initialRepor
           active={!phone && !view.area && view.filter === filter}
           indicatorId={phone ? undefined : 'hunts-nav-active'}
           onClick={() => select({ filter, area: null })}
-          trailing={<NavCount value={counts[filter]} hot={filter === 'pending'} />}
+          trailing={<NavCount value={counts[filter]} />}
           className={phone ? 'h-12 text-foreground' : undefined}
         />
       ))}
