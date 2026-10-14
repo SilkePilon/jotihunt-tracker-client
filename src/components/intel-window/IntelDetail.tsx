@@ -1,15 +1,13 @@
 import type { RefObject } from 'react';
 import { motion } from 'motion/react';
-import { ClockIcon } from 'lucide-react';
-import { Tag } from '@/components/beheer/controls/Pill';
 import { MapRef } from '@/components/Map';
 import { useNow } from '@/hooks/now.hook';
 import { formatClock } from '@/lib/format';
-import { DETAIL_PART, deadlineLabel, solvedCount } from '@/lib/intel-window';
-import type { IntelItem } from '@/types/Intel';
+import { DETAIL_PART, solvedCount } from '@/lib/intel-window';
+import type { AssignmentStatus, IntelItem } from '@/types/Intel';
 import AssignmentPane from './AssignmentPane';
 import HintPane from './HintPane';
-import { KindTag } from './IntelTimeline';
+import { DeadlineTag, KindTag } from './IntelTimeline';
 import NewsPane from './NewsPane';
 import SummaryCard from './SummaryCard';
 
@@ -40,7 +38,7 @@ export default function IntelDetail({ item, area, mapRef }: IntelDetailProps) {
               · {count.solved}/{count.total} opgelost
             </span>
           )}
-          {item.kind === 'assignment' && item.endTime && <Deadline endTime={item.endTime} />}
+          {item.kind === 'assignment' && item.endTime && <Deadline endTime={item.endTime} status={item.assignment?.status ?? 'open'} />}
           {item.kind === 'assignment' && item.maxPoints ? <span>max {item.maxPoints} pt</span> : null}
         </div>
       </motion.div>
@@ -60,13 +58,8 @@ export default function IntelDetail({ item, area, mapRef }: IntelDetailProps) {
   );
 }
 
-/** "nog 42 min" in amber; ticks on its own so the rest of the header doesn't re-render every second */
-function Deadline({ endTime }: { endTime: string }) {
+/** The deadline pill; ticks on its own so the rest of the header doesn't re-render every second */
+function Deadline({ endTime, status }: { endTime: string; status: AssignmentStatus }) {
   const now = useNow(true);
-  return (
-    <Tag tone="warn">
-      <ClockIcon />
-      {deadlineLabel(endTime, now)}
-    </Tag>
-  );
+  return <DeadlineTag endTime={endTime} now={now} status={status} />;
 }

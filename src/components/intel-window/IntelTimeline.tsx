@@ -3,11 +3,11 @@ import { AnimatePresence, motion, type Variants } from 'motion/react';
 import { ClockIcon } from 'lucide-react';
 import { Tag } from '@/components/beheer/controls/Pill';
 import { formatClock } from '@/lib/format';
-import { ASSIGNMENT_STATUS_LABELS, KIND_COLOR, KIND_LABEL, areaStates, deadlineLabel, groupByDay, solvedCount } from '@/lib/intel-window';
+import { ASSIGNMENT_STATUS_LABELS, type DeadlineTone, KIND_COLOR, KIND_LABEL, areaStates, deadlineLabel, deadlineTone, groupByDay, solvedCount } from '@/lib/intel-window';
 import { EASE_OUT } from '@/lib/motion';
 import { useHasMounted } from '@/hooks/has-mounted.hook';
 import { areaOptions, cn } from '@/lib/utils';
-import type { IntelItem, IntelKind, IntelTab } from '@/types/Intel';
+import type { AssignmentStatus, IntelItem, IntelKind, IntelTab } from '@/types/Intel';
 import { AreaChip, AreaStrip } from './AreaChips';
 
 const STEP = { compact: 0.02, wide: 0.022 };
@@ -234,10 +234,7 @@ function WideCard({ item, now, onSelect }: { item: IntelItem; now: number; onSel
           </span>
         )}
         {item.kind === 'assignment' && item.endTime && (
-          <Tag tone="warn" className="ml-auto shrink-0">
-            <ClockIcon />
-            {deadlineLabel(item.endTime, now)}
-          </Tag>
+          <DeadlineTag endTime={item.endTime} now={now} status={status} className="ml-auto shrink-0" />
         )}
       </span>
       {item.summary && <span className="mt-[3px] line-clamp-2 block text-xs text-muted-foreground">{item.summary}</span>}
@@ -292,7 +289,12 @@ function CompactRow({ item, now, selected, onSelect }: { item: IntelItem; now: n
             <AreaStrip cells={item.cells} />
           ) : item.kind === 'assignment' ? (
             <span className="truncate text-xs text-muted-foreground">
-              {item.endTime ? `${deadlineLabel(item.endTime, now)} · ` : ''}
+              {item.endTime && (
+                <>
+                  <span className={cn('transition-colors duration-300', DEADLINE_TEXT[deadlineTone(item.endTime, now, status)])}>{deadlineLabel(item.endTime, now)}</span>
+                  {' · '}
+                </>
+              )}
               {ASSIGNMENT_STATUS_LABELS[status]}
             </span>
           ) : (
@@ -301,6 +303,25 @@ function CompactRow({ item, now, selected, onSelect }: { item: IntelItem; now: n
         </span>
       </span>
     </button>
+  );
+}
+
+/** Deadline colours, the same in the wide card, the compact row and the detail header */
+const DEADLINE_TAG = { done: 'neutral', expired: 'danger', urgent: 'warn', calm: 'info' } as const satisfies Record<DeadlineTone, string>;
+const DEADLINE_TEXT: Record<DeadlineTone, string> = {
+  done: 'text-muted-foreground',
+  expired: 'text-destructive dark:text-red-300',
+  urgent: 'font-semibold text-amber-700 dark:text-amber-300',
+  calm: 'text-sky-700 dark:text-sky-300',
+};
+
+/** "nog 42 min": muted once submitted or skipped, red when expired, amber under an hour, else blue; the colour eases between them */
+export function DeadlineTag({ endTime, now, status, className }: { endTime: string; now: number; status: AssignmentStatus; className?: string }) {
+  return (
+    <Tag tone={DEADLINE_TAG[deadlineTone(endTime, now, status)]} className={className}>
+      <ClockIcon />
+      {deadlineLabel(endTime, now)}
+    </Tag>
   );
 }
 

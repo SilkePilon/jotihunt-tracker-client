@@ -90,13 +90,15 @@ export function IconPill({ variant, className, type = 'button', ...props }: Comp
   return <button type={type} className={cn(iconPill({ variant }), className)} {...props} />;
 }
 
-const tag = cva('inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[10.5px] leading-4 font-extrabold [&_svg]:size-3', {
+const tag = cva('inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[10.5px] leading-4 font-extrabold transition-colors duration-300 [&_svg]:size-3', {
   variants: {
     tone: {
       primary: 'bg-primary/20 text-orange-700 dark:text-orange-300',
       neutral: 'bg-beheer-row-high text-muted-foreground',
       ok: 'bg-green-500/15 text-green-700 dark:text-green-300',
       warn: 'bg-amber-500/20 text-amber-700 dark:text-amber-300',
+      info: 'bg-sky-500/15 text-sky-700 dark:text-sky-300',
+      danger: 'bg-destructive/15 text-destructive dark:text-red-300',
     },
   },
   defaultVariants: { tone: 'neutral' },
