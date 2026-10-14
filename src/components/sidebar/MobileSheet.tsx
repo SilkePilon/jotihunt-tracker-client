@@ -1,7 +1,6 @@
-import { ReactNode, useEffect, useRef, useState } from 'react';
+import { ReactNode, useRef } from 'react';
 import { Drawer } from 'vaul';
 import useSidebarStore, { SheetSnap } from '@/stores/sidebar.store';
-import useModalDrawersStore from '@/stores/modal-drawers.store';
 import { cn } from '@/lib/utils';
 import { tourTarget } from '@/components/tour/targets';
 
@@ -21,27 +20,6 @@ export default function MobileSheet({ header, children }: { header: ReactNode; c
   const sheetSnap = useSidebarStore((state) => state.sheetSnap);
   const setSheetSnap = useSidebarStore((state) => state.setSheetSnap);
   const contentRef = useRef<HTMLDivElement>(null);
-  // Not while a drawer is open (e.g. Beheer via /users): mounted after it, the sheet would end up on top of it and make
-  // it untappable (see modal-drawers.store). Once shown it stays, so drawers opened later stack above it as usual.
-  const drawerOpen = useModalDrawersStore((state) => state.openCount > 0);
-  const [shown, setShown] = useState(false);
-  useEffect(() => {
-    // A passive effect: runs after the layout effects that count drawers opening in this same commit (the /l/:code QR drawer)
-    if (shown || drawerOpen) return;
-    useModalDrawersStore.getState().setSheetMounting(true);
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: the open drawers are only all counted after the commit
-    setShown(true);
-  }, [shown, drawerOpen]);
-  useEffect(() => {
-    if (!shown) return;
-    const { setSheetMounting } = useModalDrawersStore.getState();
-    // Radix mounts the portal and registers the layer synchronously after this commit, before the next frame
-    const frame = requestAnimationFrame(() => setSheetMounting(false));
-    return () => {
-      cancelAnimationFrame(frame);
-      setSheetMounting(false);
-    };
-  }, [shown]);
 
   function changeSnap(snap: string | number | null) {
     const name = snapName(snap);
@@ -53,7 +31,7 @@ export default function MobileSheet({ header, children }: { header: ReactNode; c
   // select-none: a long press would select text, and vaul won't drag while text is selected. Inputs stay selectable.
   return (
     <Drawer.Root
-      open={shown}
+      open
       modal={false}
       dismissible={false}
       snapPoints={SNAP_POINTS}
