@@ -41,8 +41,8 @@ function HuntableAreasCard() {
 
   return (
     <BeheerCard
-      title="Andere vossen die we mogen hunten"
-      description="3 pt · de rest krijgt een slotje"
+      title="Welke vossen mogen we hunten?"
+      description="Tik een vos aan of uit. Vossen met een slotje leveren geen punten op; ons eigen gebied telt altijd mee."
       right={
         <span className="shrink-0 text-xs font-bold text-muted-foreground tabular-nums">
           <CountSwap value={count} />
