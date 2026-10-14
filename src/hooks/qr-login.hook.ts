@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { pollQrLogin, startQrLogin, type QrPoll, type QrStart, type SessionResult } from '@/lib/auth-api';
-import { panelAfterPoll, QR_POLL_MS, type QrPanelState } from '@/lib/qr-login';
+import { panelAfterPoll, QR_POLL_MS, QR_RENEW_FOR_MS, type QrPanelState } from '@/lib/qr-login';
 
 /** Laptop: show a code, poll it, make a new one when it expires (for 10 minutes), hand over the session on approval. */
 export function useQrLogin(onApproved: (result: SessionResult) => void) {
@@ -41,6 +41,11 @@ export function useQrLogin(onApproved: (result: SessionResult) => void) {
       }
       if (cancelled) return;
       if (answer === null) {
+        // Errors count against the 10 minutes too: a forgotten tab must stop polling
+        if (Date.now() - renewingSince >= QR_RENEW_FOR_MS) {
+          setState({ phase: 'expired' });
+          return;
+        }
         timer = setTimeout(poll, QR_POLL_MS);
         return;
       }

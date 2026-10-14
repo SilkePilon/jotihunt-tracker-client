@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { KeyRoundIcon, Loader2Icon } from 'lucide-react';
 import usePWA from 'react-pwa-install-prompt';
@@ -21,6 +21,8 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(passkeysSupported() ? null : PASSKEY_MESSAGES.unsupported);
   const next = nextAfterLogin(searchParams.get('next'));
+  const approvedTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(approvedTimer.current), []);
 
   function enter(result: SessionResult) {
     if (!startSession(result)) throw new Error('Sign-in failed');
@@ -42,7 +44,7 @@ export default function Login() {
 
   function handleQrApproved(result: SessionResult) {
     // Let "Ingelogd" show for a moment before the map takes over
-    setTimeout(() => {
+    approvedTimer.current = setTimeout(() => {
       try {
         enter(result);
       } catch (failure) {

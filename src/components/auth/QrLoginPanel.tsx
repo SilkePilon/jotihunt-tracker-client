@@ -80,7 +80,7 @@ function Countdown({ until }: { until: number }) {
     return () => clearInterval(interval);
   }, []);
   return (
-    <span className="flex items-center gap-1.5 text-xs tabular-nums text-muted-foreground">
+    <span className="flex items-center gap-1.5 text-xs tabular-nums text-muted-foreground" aria-hidden>
       <TimerIcon className="size-3.5" />
       Nieuwe code over {formatCountdown(until - now)}
     </span>
