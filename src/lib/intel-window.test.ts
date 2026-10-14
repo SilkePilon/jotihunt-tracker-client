@@ -137,12 +137,12 @@ describe('answerPreview', () => {
 
 describe('initialOpenArea', () => {
   const cells = [cell('alpha', 'solved'), cell('bravo', 'none'), cell('charlie', 'open'), cell('delta', 'open')];
-  test('the requested area when it has a hint (open or solved)', () => {
+  test('the requested area when it has a cell (open, solved or none)', () => {
     expect(initialOpenArea(cells, 'delta')).toBe('delta');
     expect(initialOpenArea(cells, 'alpha')).toBe('alpha');
+    expect(initialOpenArea(cells, 'bravo')).toBe('bravo');
   });
-  test('a none or missing area falls back to the first open one', () => {
-    expect(initialOpenArea(cells, 'bravo')).toBe('charlie');
+  test('a missing area falls back to the first open one', () => {
     expect(initialOpenArea(cells, 'oscar')).toBe('charlie');
     expect(initialOpenArea(cells, null)).toBe('charlie');
   });

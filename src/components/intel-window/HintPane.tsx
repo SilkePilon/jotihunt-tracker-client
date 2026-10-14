@@ -142,7 +142,8 @@ function AreaRow({ cell, area, label, open, onToggle, onSave, mapRef, headerRef 
   if (!solved && !poppable) setPoppable(true);
   const dot = <span className="size-[9px] shrink-0 rounded-full" style={{ backgroundColor: getColorFromArea(area) }} aria-hidden />;
 
-  if (!cell || cell.status === 'none') {
+  // No cell at all: nothing to answer against
+  if (!cell) {
     return (
       <RowFrame tone="muted">
         <div className="flex items-center gap-3 px-3 py-2.5 text-[13px]">
@@ -154,6 +155,9 @@ function AreaRow({ cell, area, label, open, onToggle, onSave, mapRef, headerRef 
     );
   }
 
+  // "Geen hint" by the split, which can be wrong: answerable like an open row, its header dimmed until it is solved
+  const none = cell.status === 'none';
+
   return (
     <RowFrame tone={open ? 'open' : 'default'}>
       <button
@@ -161,24 +165,26 @@ function AreaRow({ cell, area, label, open, onToggle, onSave, mapRef, headerRef 
         type="button"
         aria-expanded={open}
         onClick={onToggle}
-        className="flex w-full items-center gap-3 px-3 py-2.5 text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset"
+        className="flex w-full items-center px-3 py-2.5 text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset"
       >
-        {dot}
-        <span className="w-16 text-[13px] font-semibold">{label}</span>
-        <span className="flex-1" />
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.span key={solved ? `ok-${cell.answer}` : 'open'} {...SWAP} className="flex min-w-0 items-center gap-2">
-            {solved ? (
-              <>
-                <span className="max-w-56 truncate font-mono text-[12.5px] font-bold text-green-600 dark:text-green-300">{cell.answer}</span>
-                {poppable ? <SuccessBadge size={18} /> : <CookieBadge tone="ok" size={18} />}
-              </>
-            ) : (
-              <span className="text-xs text-muted-foreground">open</span>
-            )}
-          </motion.span>
-        </AnimatePresence>
-        <Chevron open={open} />
+        <motion.span initial={false} animate={{ opacity: none ? 0.6 : 1 }} transition={SWAP.transition} className="flex min-w-0 flex-1 items-center gap-3">
+          {dot}
+          <span className="w-16 text-[13px] font-semibold">{label}</span>
+          <span className="flex-1" />
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.span key={solved ? `ok-${cell.answer}` : none ? 'none' : 'open'} {...SWAP} className="flex min-w-0 items-center gap-2">
+              {solved ? (
+                <>
+                  <span className="max-w-56 truncate font-mono text-[12.5px] font-bold text-green-600 dark:text-green-300">{cell.answer}</span>
+                  {poppable ? <SuccessBadge size={18} /> : <CookieBadge tone="ok" size={18} />}
+                </>
+              ) : (
+                <span className="text-xs text-muted-foreground">{none ? 'geen hint' : 'open'}</span>
+              )}
+            </motion.span>
+          </AnimatePresence>
+          <Chevron open={open} />
+        </motion.span>
       </button>
       <Reveal>{open && <AreaBody cell={cell} label={label} onSave={onSave} mapRef={mapRef} />}</Reveal>
     </RowFrame>
@@ -268,6 +274,8 @@ function AreaBody({ cell, label, onSave, mapRef }: { cell: HintCell; label: stri
   return (
     // pr/pb leave room for the pills' focus ring: Reveal and the row clip
     <div className="pt-0.5 pr-3.5 pb-3.5 pl-8">
+      {/* Mounts with the body (unfolds with it); folds away once the area is solved */}
+      <Reveal>{cell.status === 'none' && <p className="pb-3 text-xs text-muted-foreground">Volgens de hint geen opdracht voor {label} deze ronde.</p>}</Reveal>
       {/* The snippet is the raw HTML of this area's part of the article (text, <br>, images) */}
       {cell.snippet && <ArticleHtml html={cell.snippet} className="mb-3 px-0 font-mono text-[13.5px] leading-[1.7]" />}
       <AnimatePresence mode="wait" initial={false}>

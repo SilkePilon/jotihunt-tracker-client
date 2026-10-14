@@ -102,10 +102,13 @@ export function nextOpenArea(cells: HintCell[], after?: string | null): string |
   return order.find((area) => states[area] === 'open') ?? null;
 }
 
-/** The area a hint opens on: the requested one if this hint has a hint text there, else the first open area (or none) */
+/**
+ * The area a hint opens on: the requested one if this hint has a cell there (also a "geen hint" one: the split can be
+ * wrong, so it can still be answered), else the first open area (or none)
+ */
 export function initialOpenArea(cells: HintCell[], area: string | null): string | null {
   const cell = area ? cells.find((existing) => existing.area === area) : undefined;
-  return cell && cell.status !== 'none' ? cell.area : nextOpenArea(cells);
+  return cell ? cell.area : nextOpenArea(cells);
 }
 
 /** "nog 42 min", "nog 1 u 05" or "verlopen" */
