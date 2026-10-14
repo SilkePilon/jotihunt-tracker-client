@@ -1,6 +1,8 @@
 import { type ReactNode, RefObject, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
+import { XIcon } from 'lucide-react';
 import { useSWRConfig } from 'swr';
+import { IconPill } from '@/components/beheer/controls/Pill';
 import { MapRef } from '@/components/Map';
 import ResponsiveDialog from '@/components/ResponsiveDialog';
 import { useArticles } from '@/hooks/articles.hook';
@@ -9,10 +11,11 @@ import { useHintBoard } from '@/hooks/hints.hook';
 import { useHasMounted } from '@/hooks/has-mounted.hook';
 import { useIsMobile } from '@/hooks/media.hook';
 import { useReadState } from '@/hooks/read-state.hook';
-import { DETAIL_PART, DETAIL_SWAP, buildIntelItems, filterByTab, unreadCount } from '@/lib/intel-window';
+import { DETAIL_SWAP, buildIntelItems, filterByTab, unreadCount } from '@/lib/intel-window';
 import { EASE_OUT } from '@/lib/motion';
 import useIntelStore from '@/stores/intel.store';
 import type { IntelItem } from '@/types/Intel';
+import IntelDetail from './IntelDetail';
 import IntelTimeline from './IntelTimeline';
 import IntelTopBar from './IntelTopBar';
 
@@ -52,10 +55,10 @@ export default function IntelDialog({ mapRef }: { mapRef: RefObject<MapRef | nul
   );
 }
 
-/** The window's content; only mounted while open (or closing). Polls fast while mounted. `mapRef` is for "Toon op kaart" (Task 5). */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- mapRef is used from Task 5 on
-function IntelWindow(_props: { mapRef: RefObject<MapRef | null> }) {
+/** The window's content; only mounted while open (or closing). Polls fast while mounted. `mapRef` is for "Toon op kaart". */
+function IntelWindow({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
   const tab = useIntelStore((state) => state.tab);
+  const area = useIntelStore((state) => state.area);
   const { articles } = useArticles();
   const { board } = useHintBoard({ live: true });
   const { assignments } = useAssignments();
@@ -143,7 +146,7 @@ function IntelWindow(_props: { mapRef: RefObject<MapRef | null> }) {
               className="min-h-0 shrink-0 basis-[calc(66.667%-1px)] overflow-y-auto px-9 pt-1.5 pb-8"
               exit={{ opacity: 0, x: 24, transition: { duration: 0.16, ease: 'easeIn' } }}
             >
-              <DetailColumn item={selected} skipEntrance={!mounted} />
+              <DetailColumn item={selected} area={area} mapRef={mapRef} skipEntrance={!mounted} onClose={() => select(null)} />
             </motion.div>
           )}
         </AnimatePresence>
@@ -156,7 +159,7 @@ function IntelWindow(_props: { mapRef: RefObject<MapRef | null> }) {
  * The right side of the split: its parts push in when the split opens, and swap (out, then rise in) for another item.
  * `skipEntrance` (read on mount): the window opened straight into the split (toast, mini grid), the dialog itself animates.
  */
-function DetailColumn({ item, skipEntrance }: { item: IntelItem; skipEntrance: boolean }) {
+function DetailColumn({ item, area, mapRef, skipEntrance, onClose }: { item: IntelItem; area: string | null; mapRef: RefObject<MapRef | null>; skipEntrance: boolean; onClose: () => void }) {
   const [skip] = useState(skipEntrance);
   // Derived during render: from the first other item on, items rise in instead of pushing in from the right
   const [firstId] = useState(item.id);
@@ -164,14 +167,23 @@ function DetailColumn({ item, skipEntrance }: { item: IntelItem; skipEntrance: b
   if (!swapped && item.id !== firstId) setSwapped(true);
 
   return (
-    <AnimatePresence mode="wait">
-      <DetailSlide key={item.id} swapped={swapped} skipEntrance={skip && !swapped}>
-        {/* Task 5: <IntelDetail item={item} mapRef={mapRef} />, its top-level parts with variants={DETAIL_PART} */}
-        <motion.h2 variants={DETAIL_PART} className="text-[21px] font-bold">
-          {item.title}
-        </motion.h2>
-      </DetailSlide>
-    </AnimatePresence>
+    <div className="relative mx-auto max-w-[720px]">
+      {/* Outside the keyed slide: it stays put while items swap, and leaves with the whole column */}
+      <motion.div
+        className="absolute -top-1 -right-2 z-10"
+        initial={skip ? false : { opacity: 0 }}
+        animate={{ opacity: 1, transition: { duration: 0.3, delay: 0.2, ease: EASE_OUT } }}
+      >
+        <IconPill aria-label="Sluiten (Esc)" title="Sluiten (Esc)" onClick={onClose}>
+          <XIcon />
+        </IconPill>
+      </motion.div>
+      <AnimatePresence mode="wait">
+        <DetailSlide key={item.id} swapped={swapped} skipEntrance={skip && !swapped}>
+          <IntelDetail item={item} area={area} mapRef={mapRef} />
+        </DetailSlide>
+      </AnimatePresence>
+    </div>
   );
 }
 
@@ -186,7 +198,6 @@ function DetailSlide({ swapped, skipEntrance, children }: { swapped: boolean; sk
       initial={mounted ? 'swap' : skip ? false : swapped ? 'swap' : 'open'}
       animate="shown"
       exit="gone"
-      className="relative mx-auto max-w-[720px]"
     >
       {children}
     </motion.div>
