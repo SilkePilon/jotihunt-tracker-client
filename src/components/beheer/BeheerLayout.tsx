@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { motion } from 'motion/react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useIsMobile } from '@/hooks/media.hook';
 import { REVEAL_TRANSITION } from '@/lib/motion';
 import { cn } from '@/lib/utils';
@@ -55,5 +56,19 @@ export function BeheerRow({ title, meta, children, className }: { title: ReactNo
         {children}
       </div>
     </motion.div>
+  );
+}
+
+/** Stands in for a pane's groups while their data loads. */
+export function BeheerSkeleton({ groups = 1 }: { groups?: number }) {
+  return (
+    <div className="flex flex-col gap-7">
+      {Array.from({ length: groups }, (_, index) => (
+        <div key={index} className="flex flex-col gap-2">
+          <Skeleton className="h-5 w-28" />
+          <Skeleton className="h-32 w-full rounded-lg" />
+        </div>
+      ))}
+    </div>
   );
 }

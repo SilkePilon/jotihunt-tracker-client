@@ -25,6 +25,8 @@ import useAdminStore, { type AdminDialogId } from '@/stores/admin.store';
 import type { User } from '@/types/User';
 import AlgemeenPane from './AlgemeenPane';
 import { BeheerPane } from './BeheerLayout';
+import HuntersPane from './HuntersPane';
+import UsersPane from './UsersPane';
 
 interface BeheerDialogProps {
   /** For the Hunters pane's "Op kaart" */
@@ -49,6 +51,8 @@ const SLIDE = {
   exit: (direction: number) => ({ opacity: 0, x: -24 * direction }),
 };
 const SLIDE_TRANSITION = { duration: 0.22, ease: EASE_OUT };
+/** Keyboard focus ring of the menu buttons (as on the shadcn buttons) */
+const FOCUS_RING = 'outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50';
 
 function openHq() {
   window.open('/hq', '_blank', 'noopener');
@@ -86,11 +90,18 @@ function BeheerWindow({ mapRef }: BeheerDialogProps) {
 
   // Keeps the last section while the window closes (the store is already null then)
   const [section, setSection] = useState<AdminDialogId>(dialog ?? 'algemeen');
-  if (dialog && dialog !== section) setSection(dialog);
   // Phone: the list first, unless the window was opened on a specific section (e.g. the /users route)
   const startView = (opened: AdminDialogId | null) => (opened && opened !== 'algemeen' ? 'pane' : 'list');
   const [phoneView, setPhoneView] = useState<'list' | 'pane'>(startView(dialog));
   const [direction, setDirection] = useState(1);
+  if (dialog && dialog !== section) {
+    setSection(dialog);
+    // Phone: a section opened from elsewhere while the list shows (e.g. the /users route) shows that pane
+    if (dialog !== 'algemeen') {
+      setDirection(1);
+      setPhoneView('pane');
+    }
+  }
   // Reopened before the close finished (the content stays mounted then): start over like a fresh open
   const open = dialog !== null;
   const [wasOpen, setWasOpen] = useState(open);
@@ -130,16 +141,16 @@ function BeheerWindow({ mapRef }: BeheerDialogProps) {
           >
             <div className="px-3 pb-2 pt-1 text-lg font-semibold">Beheer</div>
             {SECTIONS.map(({ id, title, icon: Icon }) => (
-              <button key={id} type="button" className="flex items-center gap-3 rounded-md px-3 py-3 text-left text-sm active:bg-accent" onClick={() => select(id)}>
+              <button key={id} type="button" className={cn('flex items-center gap-3 rounded-md px-3 py-3 text-left text-sm active:bg-accent', FOCUS_RING)} onClick={() => select(id)}>
                 <Icon className="size-4 text-muted-foreground" />
                 {title}
                 <Count value={counts[id]} />
               </button>
             ))}
-            <button type="button" className="mt-auto flex items-center gap-3 rounded-md px-3 py-3 text-left text-sm active:bg-accent" onClick={openHq}>
+            <button type="button" className={cn('mt-auto flex items-center gap-3 rounded-md px-3 py-3 text-left text-sm active:bg-accent', FOCUS_RING)} onClick={openHq}>
               <MonitorIcon className="size-4 text-muted-foreground" />
               HQ-scherm
-              <ExternalLinkIcon className="size-3.5 text-muted-foreground" />
+              <ExternalLinkIcon className="ml-auto size-3.5 text-muted-foreground" />
             </button>
           </motion.div>
         ) : (
@@ -185,6 +196,7 @@ function BeheerWindow({ mapRef }: BeheerDialogProps) {
               aria-current={active ? 'page' : undefined}
               className={cn(
                 'flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground',
+                FOCUS_RING,
                 active && 'bg-accent font-medium text-foreground hover:bg-accent',
               )}
               onClick={() => openDialog(id)}
@@ -197,12 +209,15 @@ function BeheerWindow({ mapRef }: BeheerDialogProps) {
         })}
         <button
           type="button"
-          className="mt-auto flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground"
+          className={cn(
+            'mt-auto flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground',
+            FOCUS_RING,
+          )}
           onClick={openHq}
         >
           <MonitorIcon className="size-4" />
           HQ-scherm
-          <ExternalLinkIcon className="size-3.5" />
+          <ExternalLinkIcon className="ml-auto size-3.5" />
         </button>
       </nav>
       <div className="min-h-0 overflow-hidden">
@@ -245,10 +260,10 @@ function SectionPane({ section, mapRef }: { section: AdminDialogId; mapRef: RefO
   switch (section) {
     case 'algemeen':
       return <AlgemeenPane />;
+    case 'users':
+      return <UsersPane />;
     case 'hunters':
-      // Task 4: <HuntersPane mapRef={mapRef} />
-      void mapRef;
-      return <PlaceholderPane title={titleOf(section)} />;
+      return <HuntersPane mapRef={mapRef} />;
     default:
       return <PlaceholderPane title={titleOf(section)} />;
   }

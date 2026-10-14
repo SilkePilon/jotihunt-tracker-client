@@ -2,7 +2,8 @@ import type { Device } from '@/types/Device';
 import type { Position } from '@/types/Position';
 import type { Vehicle } from '@/types/Tracker';
 import type { User } from '@/types/User';
-import { isActive } from '@/lib/tracker';
+import { joinParts } from '@/lib/format';
+import { formatBattery, formatLastUpdate, formatSpeed, isActive, VEHICLE_OPTIONS } from '@/lib/tracker';
 import { knotsToKmh } from '@/lib/utils';
 
 /** Traccar group id per vehicle (GROUP_*_ID in .env); undefined when not configured. */
@@ -61,4 +62,22 @@ export function googleMapsUrl(lat: number, lng: number): string {
 
 export function formatCoordinates(lat: number, lng: number): string {
   return `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+}
+
+/** A formatter's "–" (unknown) is left out of the meta line */
+const known = (value: string) => (value === '–' ? undefined : value);
+
+/**
+ * Beheer → Hunters meta line, e.g. "Jesse · Lopend · zojuist · 82% · 5 km/u": the linked user (when named differently
+ * from the device), vehicle, last update, battery and, while live, speed. Unknown parts are left out.
+ */
+export function hunterMeta(row: HunterRow, now: number): string {
+  const vehicle = VEHICLE_OPTIONS.find((option) => option.value === row.vehicle)?.label;
+  return joinParts(
+    row.user && row.user.name !== row.device.name ? row.user.name : undefined,
+    vehicle,
+    known(formatLastUpdate(row.lastUpdate, now)),
+    known(formatBattery(row.batteryPercent)),
+    row.active ? known(formatSpeed(row.speedKmh)) : undefined,
+  );
 }
