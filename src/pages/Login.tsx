@@ -1,28 +1,38 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { KeyRoundIcon, Loader2Icon } from 'lucide-react';
 import usePWA from 'react-pwa-install-prompt';
-import { isMobile } from 'react-device-detect';
+import { isMobile as isMobileDevice } from 'react-device-detect';
 import { Button } from '@/components/ui/button';
 import AuthScreen from '@/components/auth/AuthScreen';
-import { passkeyLogin, passkeysSupported } from '@/lib/auth-api';
+import QrLoginPanel from '@/components/auth/QrLoginPanel';
+import { passkeyLogin, passkeysSupported, type SessionResult } from '@/lib/auth-api';
 import { classifyPasskeyError, PASSKEY_MESSAGES } from '@/lib/passkey';
+import { nextAfterLogin } from '@/lib/qr-login';
 import { useStartSession } from '@/hooks/start-session.hook';
+import { useIsMobile } from '@/hooks/media.hook';
 
 export default function Login() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const startSession = useStartSession();
+  const isMobile = useIsMobile();
   const { isStandalone, isInstallPromptSupported, promptInstall } = usePWA();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(passkeysSupported() ? null : PASSKEY_MESSAGES.unsupported);
+  const next = nextAfterLogin(searchParams.get('next'));
+
+  function enter(result: SessionResult) {
+    if (!startSession(result)) throw new Error('Sign-in failed');
+    navigate(next, { replace: true });
+  }
 
   async function handleLogin() {
     setBusy(true);
     setError(null);
     try {
-      if (!startSession(await passkeyLogin())) throw new Error('Sign-in failed');
-      navigate('/');
-      if (isInstallPromptSupported && !isStandalone && isMobile) promptInstall();
+      enter(await passkeyLogin());
+      if (isInstallPromptSupported && !isStandalone && isMobileDevice) promptInstall();
     } catch (failure) {
       setError(PASSKEY_MESSAGES[classifyPasskeyError(failure)]);
     } finally {
@@ -30,10 +40,21 @@ export default function Login() {
     }
   }
 
+  function handleQrApproved(result: SessionResult) {
+    // Let "Ingelogd" show for a moment before the map takes over
+    setTimeout(() => {
+      try {
+        enter(result);
+      } catch (failure) {
+        setError(PASSKEY_MESSAGES[classifyPasskeyError(failure)]);
+      }
+    }, 800);
+  }
+
   return (
     <AuthScreen>
-      <div className="w-full max-w-sm rounded-xl border bg-card p-6 text-card-foreground shadow-lg md:p-8">
-        <div className="flex flex-col gap-5">
+      <div className="w-full max-w-sm rounded-xl border bg-card text-card-foreground shadow-lg md:grid md:max-w-3xl md:grid-cols-[1fr_auto_auto]">
+        <div className="flex flex-col justify-center gap-5 p-6 md:p-8">
           <div className="flex items-center gap-3">
             <img src="/logo.svg" alt="" className="size-10" />
             <div>
@@ -53,6 +74,13 @@ export default function Login() {
           )}
           <p className="text-xs text-muted-foreground">Geen account? Vraag de organisatie om een invite-link.</p>
         </div>
+        {/* Phones log in with their own passkey; only laptops and the beamer need the code */}
+        {!isMobile && (
+          <>
+            <div className="my-8 w-px bg-border" />
+            <QrLoginPanel onApproved={handleQrApproved} />
+          </>
+        )}
       </div>
     </AuthScreen>
   );
