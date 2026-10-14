@@ -22,6 +22,9 @@ import StickerHero from './StickerHero';
 /** The parent column's gap (gap-2.5), so the edit box folding away leaves no gap behind */
 const GAP = 10;
 
+/** Open rows are bg-beheer-row-high, the same as the secondary/soft pills, so these need their own background to stay visible */
+const ON_OPEN_ROW = 'bg-black/5 hover:bg-black/10 dark:bg-white/8 dark:hover:bg-white/12';
+
 /** One fact tile: small uppercase label, one truncated line. */
 function Fact({ label, className, children }: { label: string; className?: string; children: ReactNode }) {
   return (
@@ -146,7 +149,7 @@ export default function HuntRowDetails({ report, onDelete }: { report: HuntRepor
       {report.needsReview && !isReading(report) && <Warning>Controleer de code en tijd met de foto.</Warning>}
 
       <div className="flex flex-wrap items-center gap-1.5">
-        <Pill variant="secondary" disabled={!photo} onClick={download}>
+        <Pill variant="secondary" className={ON_OPEN_ROW} disabled={!photo} onClick={download}>
           <DownloadIcon />
           Foto
         </Pill>
@@ -154,7 +157,7 @@ export default function HuntRowDetails({ report, onDelete }: { report: HuntRepor
           <Pill
             variant="secondary"
             aria-pressed={editOpen}
-            className={cn(editOpen && 'bg-primary/20 text-orange-700 hover:bg-primary/25 dark:text-orange-300')}
+            className={editOpen ? 'bg-primary/20 text-orange-700 hover:bg-primary/25 dark:text-orange-300' : ON_OPEN_ROW}
             onClick={() => {
               setEditOpen(!editOpen);
               setEditing(null);
@@ -164,7 +167,7 @@ export default function HuntRowDetails({ report, onDelete }: { report: HuntRepor
             Bewerken
           </Pill>
         )}
-        {isAdmin && <RereadButton report={report} />}
+        {isAdmin && <RereadButton report={report} className={ON_OPEN_ROW} />}
         {canDelete && (
           <IconPill variant="danger-soft" aria-label="Verwijderen" title="Verwijderen" onClick={onDelete}>
             <Trash2Icon />
@@ -180,7 +183,7 @@ export default function HuntRowDetails({ report, onDelete }: { report: HuntRepor
                     Ingestuurd
                   </Pill>
                 ) : (
-                  <Pill variant="secondary" disabled={busy} morphKey={busy ? 'busy' : 'idle'} onClick={() => void changeSubmitted(false)}>
+                  <Pill variant="secondary" className={ON_OPEN_ROW} disabled={busy} morphKey={busy ? 'busy' : 'idle'} onClick={() => void changeSubmitted(false)}>
                     {busy ? <Loader2Icon className="animate-spin" /> : <Undo2Icon />}
                     Terugzetten
                   </Pill>

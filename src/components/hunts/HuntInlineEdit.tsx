@@ -177,7 +177,7 @@ export function EditTime({ report, editing, onEditingChange }: { report: HuntRep
 }
 
 /** Refresh button: the AI reads the photo again (code and time, also values entered by hand). Admins only. */
-export function RereadButton({ report }: { report: HuntReport }) {
+export function RereadButton({ report, className }: { report: HuntReport; className?: string }) {
   const { rereadReport } = useHuntReports();
   const [busy, setBusy] = useState(false);
   const reading = isReading(report);
@@ -196,7 +196,7 @@ export function RereadButton({ report }: { report: HuntReport }) {
   }
 
   return (
-    <IconPill variant="soft" aria-label={label} title={label} onClick={() => void reread()} disabled={busy || reading}>
+    <IconPill variant="soft" className={className} aria-label={label} title={label} onClick={() => void reread()} disabled={busy || reading}>
       <RefreshCwIcon className={reading || busy ? 'animate-spin' : undefined} />
     </IconPill>
   );

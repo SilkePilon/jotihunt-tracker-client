@@ -85,7 +85,7 @@ function AllHuntsWindow({ open, initialReportId }: { open: boolean; initialRepor
   const limit = Math.max(PAGE_SIZE, initialIndex + 1) + extraPages * PAGE_SIZE;
   const points = shown.reduce((sum, item) => sum + huntItemPoints(item), 0);
   const title = view.area ? (areas.find((area) => area.area === view.area)?.label ?? view.area) : HUNT_FILTER_LABELS[view.filter];
-  const description = `${shown.length} hunts · ${view.area ? '' : 'totaal '}${points} pt`;
+  const description = `${shown.length} ${shown.length === 1 ? 'hunt' : 'hunts'} · ${view.area ? '' : 'totaal '}${points} pt`;
 
   function select(next: View) {
     setView(next);
