@@ -483,9 +483,12 @@ body.dark {
 
 /* Site-wide scrollbar: thin rounded thumb in the muted text colour on a transparent track, no arrow buttons.
    Modern Chrome/Firefox use the standard properties; older WebKit (Safari) gets the ::-webkit fallback. */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: color-mix(in oklab, var(--muted-foreground) 45%, transparent) transparent;
+/* In the base layer so utilities like [scrollbar-width:none] (sidebar, mobile sheet) still win */
+@layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklab, var(--muted-foreground) 45%, transparent) transparent;
+  }
 }
 @supports not (scrollbar-color: auto) {
   ::-webkit-scrollbar {
