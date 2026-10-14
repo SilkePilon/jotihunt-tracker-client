@@ -61,6 +61,10 @@ describe('hasExpectedShape', () => {
     expect(hasExpectedShape('/admin/broadcasts', '<html>proxy</html>')).toBe(false);
     expect(hasExpectedShape('/settings/invites-paused', { paused: false })).toBe(true);
     expect(hasExpectedShape('/settings/invites-paused', { message: 'x' })).toBe(false);
+    expect(hasExpectedShape('/settings/huntable-areas', { areas: null })).toBe(true);
+    expect(hasExpectedShape('/settings/huntable-areas', { areas: ['alpha'] })).toBe(true);
+    expect(hasExpectedShape('/settings/huntable-areas', { areas: 'alpha' })).toBe(false);
+    expect(hasExpectedShape('/settings/huntable-areas', { message: 'x' })).toBe(false);
   });
 
   test('happy hour answers', () => {
