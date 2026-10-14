@@ -91,12 +91,13 @@ function IntelWindow(_props: { mapRef: RefObject<MapRef | null> }) {
     });
   }, [articles, articleId, items, mutate, select]);
 
-  // A pending selection does not survive a tab switch either
-  const lastTab = useRef(tab);
+  // A pending selection does not survive a tab switch either, unless it came with it (openIntel sets both at once)
+  const last = useRef({ tab, articleId });
   useEffect(() => {
-    if (lastTab.current === tab) return;
-    lastTab.current = tab;
-    if (articleId !== null && !selected) select(null);
+    const tabChanged = last.current.tab !== tab;
+    const articleChanged = last.current.articleId !== articleId;
+    last.current = { tab, articleId };
+    if (tabChanged && !articleChanged && articleId !== null && !selected) select(null);
   }, [tab, articleId, selected, select]);
 
   // Opening news or an opdracht marks it read (hints have no read state)

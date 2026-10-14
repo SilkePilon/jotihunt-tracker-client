@@ -52,7 +52,7 @@ const InsertContext = createContext(false);
  * It has no padding and clips vertically (`clip`, not `hidden`: no scroll container, so sticky day headers keep working),
  * so the fold runs to exactly zero. Inside a Fold that is still unfolding, nested Folds don't unfold again.
  */
-function Fold({ children, className }: { children: ReactNode; className?: string }) {
+function Fold({ children }: { children: ReactNode }) {
   const parentInserting = useContext(InsertContext);
   const [inserting] = useState(parentInserting);
   const mounted = useHasMounted();
@@ -62,7 +62,7 @@ function Fold({ children, className }: { children: ReactNode; className?: string
       animate={{ height: 'auto', opacity: 1 }}
       exit={{ height: 0, opacity: 0 }}
       transition={FOLD}
-      className={cn('overflow-y-clip [overflow-clip-margin:3px]', className)}
+      className="overflow-y-clip [overflow-clip-margin:3px]"
     >
       <InsertContext.Provider value={mounted}>{children}</InsertContext.Provider>
     </motion.div>
