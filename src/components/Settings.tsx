@@ -7,6 +7,7 @@ import {
     BellIcon,
     Volume2Icon,
     UserRoundIcon,
+    ShieldIcon,
 } from 'lucide-react';
 import {siDiscord} from "simple-icons"
 import {Button} from './ui/button';
@@ -25,7 +26,6 @@ import {User} from '@/types/User';
 import usePWA from 'react-pwa-install-prompt';
 import {Dialog, DialogTrigger} from './ui/dialog';
 import DebugInfo from './DebugInfo';
-import {useState} from 'react';
 import useNotificationsDialogStore from '@/stores/notifications-dialog.store';
 import useAccountDialogStore from '@/stores/account-dialog.store';
 import useSettingsMenuStore from '@/stores/settings-menu.store';
@@ -34,9 +34,7 @@ import {tourTarget} from '@/components/tour/targets';
 import {useLogout} from '@/hooks/logout.hook';
 import LayersSubmenu from './settings/LayersSubmenu';
 import MapStyleSubmenu from './settings/MapStyleSubmenu';
-import AdminSubmenu from './settings/AdminSubmenu';
-import ReloadTeamsDialog from './settings/ReloadTeamsDialog';
-import DemoModeDialog from './settings/DemoModeDialog';
+import useAdminStore from '@/stores/admin.store';
 
 const DISCORD_URL = import.meta.env.DISCORD_URL;
 
@@ -60,8 +58,7 @@ export default function Settings({onReplayTour}: SettingsProps) {
     const soundMuted = useSettingsStore((state) => state.soundMuted);
     const setSoundMuted = useSettingsStore((state) => state.setSoundMuted);
     const {isStandalone, isInstallPromptSupported, promptInstall} = usePWA();
-    const [reloadTeamsOpen, setReloadTeamsOpen] = useState(false);
-    const [demoDialogOpen, setDemoDialogOpen] = useState(false);
+    const openAdminDialog = useAdminStore((state) => state.openDialog);
 
     const auth = useAuthUser<User>();
     const logout = useLogout();
@@ -111,8 +108,13 @@ export default function Settings({onReplayTour}: SettingsProps) {
                     )}
                     {auth?.admin && (
                         <>
-                            <AdminSubmenu onToggleDemo={() => setDemoDialogOpen(true)}
-                                          onReloadTeams={() => setReloadTeamsOpen(true)}/>
+                            <DropdownMenuItem onClick={() => {
+                                setMenuOpen(false);
+                                openAdminDialog('algemeen');
+                            }}>
+                                <ShieldIcon/>
+                                Beheer
+                            </DropdownMenuItem>
                             <DialogTrigger asChild>
                                 <DropdownMenuItem>
                                     <BugIcon/>
@@ -138,8 +140,6 @@ export default function Settings({onReplayTour}: SettingsProps) {
             </DropdownMenu>
 
             <DebugInfo/>
-            <ReloadTeamsDialog open={reloadTeamsOpen} onOpenChange={setReloadTeamsOpen}/>
-            <DemoModeDialog open={demoDialogOpen} onOpenChange={setDemoDialogOpen}/>
         </Dialog>
     );
 }

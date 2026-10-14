@@ -4,14 +4,12 @@ import {lazy, Suspense, useEffect, useRef, useState} from 'react';
 import {SWRConfig} from 'swr';
 import Map, {MapRef} from './components/Map';
 import PWAPrompt from 'react-ios-pwa-prompt';
-import HuntersDialog from './components/admin/HuntersDialog';
+import BeheerDialog from './components/beheer/BeheerDialog';
 import DemoReloader from './components/DemoReloader';
 import AddPasskeyPrompt from './components/AddPasskeyPrompt';
 import ErrorBoundary from './components/ErrorBoundary';
 import StaleDataBadge from './components/StaleDataBadge';
 import NewHuntToaster from './components/hunts/NewHuntToaster';
-import UsersDialog from './components/admin/UsersDialog';
-import BroadcastDialog from './components/admin/BroadcastDialog';
 import NotificationsDialog from './components/notifications/NotificationsDialog';
 import AccountDialog from './components/account/AccountDialog';
 import {useNotificationsPrompt} from './components/notifications/useNotificationsPrompt';
@@ -105,9 +103,7 @@ export default function Layout() {
                 </ErrorBoundary>
             </div>
             <ErrorBoundary name="Dit venster" variant="floating">
-                <HuntersDialog mapRef={mapRef}/>
-                <UsersDialog/>
-                <BroadcastDialog/>
+                <BeheerDialog mapRef={mapRef}/>
                 <NotificationsDialog/>
                 <AccountDialog/>
                 {typeof qrLogin === 'string' && (
