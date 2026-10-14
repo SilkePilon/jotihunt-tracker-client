@@ -1,4 +1,4 @@
-import { replayIntegration, type BrowserOptions } from '@sentry/react';
+import type { BrowserOptions } from '@sentry/react';
 
 interface AxiosLike {
   isAxiosError: true;
@@ -19,10 +19,23 @@ export function isNoise(error: unknown): boolean {
   return NETWORK_CODES.has(axios.code ?? '');
 }
 
+// Path segments that are secrets: invite and QR login codes, recovery tokens (pages and their API calls)
+const SECRET_SEGMENTS: [RegExp, string][] = [
+  [/\/(invites?|l|qr\/scan)\/[^/]+/g, '/$1/:code'],
+  [/\/herstel\/[^/]+/g, '/herstel/:token'],
+];
+
+/** A page or request URL safe to send: no query string or fragment, no codes or tokens in the path. */
+export function scrubUrl(url: string): string {
+  let scrubbed = url.split(/[?#]/)[0];
+  for (const [pattern, replacement] of SECRET_SEGMENTS) scrubbed = scrubbed.replace(pattern, replacement);
+  return scrubbed;
+}
+
 /**
  * Sentry options from the runtime environment, or null without SENTRY_DSN. Reports go through the API's
- * /sentry-tunnel (ad blockers block sentry.io). Errors only; a replay is kept only for sessions with an error, with
- * all text and inputs masked and the map blocked (it shows everyone's position).
+ * /sentry-tunnel (ad blockers block sentry.io). Errors only, no session replay; URLs in events and breadcrumbs are
+ * scrubbed (invite/recovery links hold secrets).
  */
 export function sentryOptions(env: { SENTRY_DSN?: string; SENTRY_ENVIRONMENT?: string; SENTRY_RELEASE?: string; API_BASE_URL?: string; MODE?: string }): BrowserOptions | null {
   const dsn = env.SENTRY_DSN?.trim();
@@ -33,10 +46,23 @@ export function sentryOptions(env: { SENTRY_DSN?: string; SENTRY_ENVIRONMENT?: s
     release: env.SENTRY_RELEASE || undefined,
     tunnel: env.API_BASE_URL ? `${env.API_BASE_URL.replace(/\/$/, '')}/sentry-tunnel` : undefined,
     dataCollection: { userInfo: false, urlQueryParams: false, cookies: false, httpHeaders: false },
-    integrations: [replayIntegration({ maskAllText: true, maskAllInputs: true, blockAllMedia: true, block: ['.maplibregl-map'] })],
-    replaysSessionSampleRate: 0,
-    replaysOnErrorSampleRate: 1.0,
     ignoreErrors: ['ResizeObserver loop', 'Failed to fetch dynamically imported module', 'Importing a module script failed', 'Load failed'],
-    beforeSend: (event, hint) => (isNoise(hint.originalException) ? null : event),
+    beforeSend: (event, hint) => {
+      if (isNoise(hint.originalException)) return null;
+      if (event.request?.url) event.request.url = scrubUrl(event.request.url);
+      if (event.transaction) event.transaction = scrubUrl(event.transaction);
+      return event;
+    },
+    beforeBreadcrumb: (breadcrumb) => {
+      const data = breadcrumb.data;
+      if (!data) return breadcrumb;
+      if (breadcrumb.category === 'navigation') {
+        if (typeof data.from === 'string') data.from = scrubUrl(data.from);
+        if (typeof data.to === 'string') data.to = scrubUrl(data.to);
+      } else if ((breadcrumb.category === 'fetch' || breadcrumb.category === 'xhr') && typeof data.url === 'string') {
+        data.url = scrubUrl(data.url);
+      }
+      return breadcrumb;
+    },
   };
 }
