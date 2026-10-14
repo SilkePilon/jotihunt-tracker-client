@@ -15,7 +15,6 @@ import SidebarSection from './SidebarSection';
 /** Middle of the 500 m wind sector (see HomeCircle). */
 const SECTOR_CENTRE_M = 250;
 
-const SUMMARY_TONE = { danger: 'font-medium text-red-600 dark:text-red-400', warn: 'font-medium text-amber-600 dark:text-amber-400' } as const;
 
 /**
  * "Tegenhunt": the server's latest tegenhunt. Opened once per tegenhunt (also across reloads) and left open when it
@@ -51,7 +50,7 @@ export default function CounterHuntSection({ mapRef }: { mapRef: RefObject<MapRe
     <SidebarSection
       id="counterHunt"
       title="Tegenhunt"
-      summary={summary && <span className={summary.tone && SUMMARY_TONE[summary.tone]}>{summary.text}</span>}
+      summary={summary?.text}
       open={open}
       onOpenChange={(next) => setSectionOpen('counterHunt', next)}
       className={cn(active && 'bg-linear-160 from-red-500/18 to-red-500/4 outline outline-red-500/30')}

@@ -3,11 +3,9 @@ import { toast } from 'sonner';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import Life360Card from '@/components/cards/life360/Life360Card';
 import type { MapRef } from '@/components/Map';
-import CookieBadge from '@/components/tracker/CookieBadge';
 import { useLife360Admin, useLife360Members } from '@/hooks/life360.hook';
 import { apiErrorMessage } from '@/lib/api-error';
 import { life360HeaderSummary } from '@/lib/life360';
-import { cn } from '@/lib/utils';
 import useSidebarStore from '@/stores/sidebar.store';
 import type { Life360Member } from '@/types/Life360';
 import type { User } from '@/types/User';
@@ -40,16 +38,8 @@ export default function Life360Section({ mapRef }: { mapRef: RefObject<MapRef | 
   }
 
   const header = life360HeaderSummary(status);
-  const summary =
-    header &&
-    (header.tone ? (
-      <span className={cn('inline-flex items-center gap-1.5', header.tone === 'warn' && 'font-medium text-amber-600 dark:text-amber-400')}>
-        {header.text}
-        <CookieBadge tone={header.tone} size={18} />
-      </span>
-    ) : (
-      header.text
-    ));
+  // Collapsed headers are plain muted text everywhere (no colours, no badges)
+  const summary = header?.text;
 
   return (
     <SidebarSection id="life360" title="Life360" summary={summary}>

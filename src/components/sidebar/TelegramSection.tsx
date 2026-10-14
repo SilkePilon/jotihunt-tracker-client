@@ -71,7 +71,8 @@ export default function TelegramSection() {
     : undefined;
 
   const header = telegramHeaderSummary(messages, connection);
-  const summary = header && <span className={header.tone === 'warn' ? 'font-medium text-amber-600 dark:text-amber-400' : undefined}>{header.text}</span>;
+  // Collapsed headers are plain muted text everywhere (no colours, no badges)
+  const summary = header?.text;
 
   return (
     <SidebarSection id="telegram" title="Jotihunt-berichten" summary={summary}>

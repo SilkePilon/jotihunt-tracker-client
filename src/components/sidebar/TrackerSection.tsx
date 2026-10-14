@@ -1,10 +1,9 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
-import CookieBadge from '@/components/tracker/CookieBadge';
 import TrackerCard from '@/components/tracker/TrackerCard';
 import TrackerGuideDialog from '@/components/tracker/TrackerGuideDialog';
 import { useTrackerStatus } from '@/hooks/tracker.hook';
-import { hasSignalLost, sectionTransition, trackerSummary } from '@/lib/tracker';
+import { sectionTransition, trackerSummary } from '@/lib/tracker';
 import useSidebarStore from '@/stores/sidebar.store';
 import type { Vehicle } from '@/types/Tracker';
 import SidebarSection from './SidebarSection';
@@ -47,15 +46,8 @@ export default function TrackerSection() {
   }
 
   const summaryText = trackerSummary(status);
-  const summaryTone = connected ? 'ok' : hasSignalLost(status) ? 'warn' : undefined;
-  const summary = summaryTone ? (
-    <span className="inline-flex items-center gap-1.5">
-      {summaryText}
-      <CookieBadge tone={summaryTone} size={18} />
-    </span>
-  ) : (
-    summaryText
-  );
+  // Collapsed headers are plain muted text everywhere (no colours, no badges)
+  const summary = summaryText;
 
   return (
     <>
