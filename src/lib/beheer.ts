@@ -49,15 +49,28 @@ const DAY = 24 * HOUR;
 /** Active within this long counts as "nu actief". */
 const ACTIVE_NOW_MS = 5 * MIN;
 
-/** "2 passkeys · nu actief", "Geen passkey · 3 dagen geleden" */
-export function userMeta(user: { passkeyCount?: number; lastActiveAt?: string | null }, now: number): string {
-  const count = user.passkeyCount ?? 0;
-  const passkeys = count === 0 ? 'Geen passkey' : count === 1 ? '1 passkey' : `${count} passkeys`;
-  let activity: string;
-  if (!user.lastActiveAt) activity = 'nooit actief';
-  else if (now - Date.parse(user.lastActiveAt) < ACTIVE_NOW_MS) activity = 'nu actief';
-  else activity = formatAgo(user.lastActiveAt, now);
-  return `${passkeys} · ${activity}`;
+/** Active within the last 5 minutes ("nu actief"). */
+export function isActiveNow(user: { lastActiveAt?: string | null }, now: number): boolean {
+  return !!user.lastActiveAt && now - Date.parse(user.lastActiveAt) < ACTIVE_NOW_MS;
+}
+
+/** "nu actief", "3 dagen geleden", "nooit actief" */
+export function userActivity(user: { lastActiveAt?: string | null }, now: number): string {
+  if (!user.lastActiveAt) return 'nooit actief';
+  return isActiveNow(user, now) ? 'nu actief' : formatAgo(user.lastActiveAt, now);
+}
+
+/** "geen passkey" (shown amber), "1 passkey", "2 passkeys" */
+export function passkeyText(count: number | undefined): string {
+  const n = count ?? 0;
+  if (n === 0) return 'geen passkey';
+  return n === 1 ? '1 passkey' : `${n} passkeys`;
+}
+
+/** Gebruikers header line: "5 accounts · 2 nu actief" ("1 account"). */
+export function usersSummary(users: { lastActiveAt?: string | null }[], now: number): string {
+  const accounts = users.length === 1 ? '1 account' : `${users.length} accounts`;
+  return `${accounts} · ${users.filter((user) => isActiveNow(user, now)).length} nu actief`;
 }
 
 /** "nog 52 min", "nog 6 uur" (under two days), "nog 3 dagen"; "verlopen" once past. */

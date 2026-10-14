@@ -6,9 +6,12 @@ import {
   EXPIRY_OPTIONS,
   formatTimeLeft,
   inviteMeta,
+  isActiveNow,
   MAX_USES_OPTIONS,
+  passkeyText,
   splitUsers,
-  userMeta,
+  userActivity,
+  usersSummary,
   type AdminInvite,
 } from './beheer';
 
@@ -62,20 +65,33 @@ describe('options', () => {
   });
 });
 
-describe('userMeta', () => {
-  test('passkey count', () => {
-    expect(userMeta({ passkeyCount: 0, lastActiveAt: ago(MIN) }, now)).toBe('Geen passkey · nu actief');
-    expect(userMeta({ lastActiveAt: ago(MIN) }, now)).toBe('Geen passkey · nu actief');
-    expect(userMeta({ passkeyCount: 1, lastActiveAt: ago(MIN) }, now)).toBe('1 passkey · nu actief');
-    expect(userMeta({ passkeyCount: 2, lastActiveAt: ago(MIN) }, now)).toBe('2 passkeys · nu actief');
+describe('users', () => {
+  test('passkeyText', () => {
+    expect(passkeyText(undefined)).toBe('geen passkey');
+    expect(passkeyText(0)).toBe('geen passkey');
+    expect(passkeyText(1)).toBe('1 passkey');
+    expect(passkeyText(2)).toBe('2 passkeys');
   });
 
-  test('activity: never, now (under 5 min), else time ago', () => {
-    expect(userMeta({ passkeyCount: 1, lastActiveAt: null }, now)).toBe('1 passkey · nooit actief');
-    expect(userMeta({ passkeyCount: 1 }, now)).toBe('1 passkey · nooit actief');
-    expect(userMeta({ passkeyCount: 1, lastActiveAt: ago(5 * MIN - SEC) }, now)).toBe('1 passkey · nu actief');
-    expect(userMeta({ passkeyCount: 1, lastActiveAt: ago(5 * MIN) }, now)).toBe('1 passkey · 5 min geleden');
-    expect(userMeta({ passkeyCount: 0, lastActiveAt: ago(3 * DAY) }, now)).toBe('Geen passkey · 3 dagen geleden');
+  test('isActiveNow: active in the last 5 minutes', () => {
+    expect(isActiveNow({ lastActiveAt: ago(5 * MIN - SEC) }, now)).toBe(true);
+    expect(isActiveNow({ lastActiveAt: ago(5 * MIN) }, now)).toBe(false);
+    expect(isActiveNow({ lastActiveAt: null }, now)).toBe(false);
+    expect(isActiveNow({}, now)).toBe(false);
+  });
+
+  test('userActivity: never, now (under 5 min), else time ago', () => {
+    expect(userActivity({ lastActiveAt: null }, now)).toBe('nooit actief');
+    expect(userActivity({}, now)).toBe('nooit actief');
+    expect(userActivity({ lastActiveAt: ago(MIN) }, now)).toBe('nu actief');
+    expect(userActivity({ lastActiveAt: ago(5 * MIN) }, now)).toBe('5 min geleden');
+    expect(userActivity({ lastActiveAt: ago(3 * DAY) }, now)).toBe('3 dagen geleden');
+  });
+
+  test('usersSummary: accounts and how many are active now', () => {
+    expect(usersSummary([{ lastActiveAt: ago(MIN) }, { lastActiveAt: ago(HOUR) }, {}], now)).toBe('3 accounts · 1 nu actief');
+    expect(usersSummary([{ lastActiveAt: null }], now)).toBe('1 account · 0 nu actief');
+    expect(usersSummary([], now)).toBe('0 accounts · 0 nu actief');
   });
 });
 

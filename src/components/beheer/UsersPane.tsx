@@ -1,43 +1,42 @@
-import { useState } from 'react';
+import { useRef, useState, type KeyboardEvent } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { toast } from 'sonner';
-import { EllipsisIcon, LifeBuoyIcon, PencilIcon, ShieldIcon, ShieldOffIcon, Trash2Icon } from 'lucide-react';
+import { CheckIcon, LinkIcon, Loader2Icon, PencilIcon, ShieldIcon, ShieldOffIcon, Trash2Icon } from 'lucide-react';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
-import ConfirmDialog from '@/components/ConfirmDialog';
-import RecoveryLinkDialog from '@/components/admin/RecoveryLinkDialog';
 import Reveal from '@/components/motion/Reveal';
-import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { useAdmin } from '@/hooks/admin.hook';
+import { useAdmin, type UserChanges } from '@/hooks/admin.hook';
+import { useTimedValue } from '@/hooks/timed-value.hook';
 import useInterval from '@/hooks/utils/interval.hook';
 import { apiErrorMessage } from '@/lib/api-error';
-import { splitUsers, userMeta } from '@/lib/beheer';
+import { isActiveNow, passkeyText, splitUsers, userActivity, usersSummary } from '@/lib/beheer';
+import { copyToClipboard, writeClipboard } from '@/lib/clipboard';
+import { formatClock } from '@/lib/format';
 import { SWAP } from '@/lib/motion';
+import { cn } from '@/lib/utils';
 import type { User } from '@/types/User';
-import { BeheerGroup, BeheerPane, BeheerRow, BeheerSkeleton } from './BeheerLayout';
-import RenameUserDialog from './RenameUserDialog';
+import { BeheerCard, BeheerExpandableRow, BeheerPane, BeheerRows, BeheerSkeleton, InlineConfirm } from './BeheerLayout';
+import { Pill, Tag } from './controls/Pill';
 
-/** The pane's flex gap (gap-7), so a group folding away doesn't leave a gap behind */
-const GROUP_GAP = 28;
-/** The rows' "laatst actief …" only needs a refresh now and then */
+/** The pane's card gap (gap-3.5), so a card folding away doesn't leave a gap behind */
+const CARD_GAP = 14;
+/** The rows' "nu actief" / "… geleden" only needs a refresh now and then */
 const CLOCK_TICK_MS = 15_000;
+/** "Link gekopieerd ✓" stays this long */
+const LINK_DONE_MS = 1800;
 
-/** Beheer → Gebruikers: admins and members, each with a ⋯ menu (herstel-link, rename, admin, delete). */
+/** Beheer → Gebruikers (G3): admins and members; tap a row for herstel-link, rename, admin and delete. */
 export default function UsersPane() {
   const me = useAuthUser<User>();
   const { users, isError, updateUser, deleteUser, createRecoveryLink } = useAdmin();
   const [now, setNow] = useState(() => Date.now());
   useInterval(() => setNow(Date.now()), CLOCK_TICK_MS);
-  // The dialogs keep their user while they fade out
-  const [recoveryUser, setRecoveryUser] = useState<User | null>(null);
-  const [renaming, setRenaming] = useState<User | null>(null);
-  const [renameOpen, setRenameOpen] = useState(false);
-  const [deleting, setDeleting] = useState<User | null>(null);
-  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [linkBusyId, setLinkBusyId] = useState<string | null>(null);
+  const [linkDoneId, setLinkDone] = useTimedValue<string>(LINK_DONE_MS);
 
   const view = users ? 'content' : isError ? 'error' : 'loading';
   const { admins, members } = splitUsers(users ?? []);
-  const count = users?.length ?? 0;
 
   async function toggleAdmin(user: User) {
     const error = await updateUser(user._id, { admin: !user.admin });
@@ -45,80 +44,123 @@ export default function UsersPane() {
     else toast.success(user.admin ? `${user.name} is geen admin meer` : `${user.name} is nu admin`);
   }
 
-  async function confirmDelete() {
-    if (!deleting) return;
-    const error = await deleteUser(deleting._id);
-    // On failure the dialog stays open, so trying again is one tap
+  async function confirmDelete(user: User) {
+    const error = await deleteUser(user._id);
+    // On failure the confirm stays, so trying again is one tap; on success the row folds away with it
     if (error) {
       toast.error(apiErrorMessage(error, 'De gebruiker kon niet worden verwijderd.'));
       return;
     }
-    setDeleteOpen(false);
-    toast.success(`${deleting.name} verwijderd`);
+    toast.success(`${user.name} verwijderd`);
+  }
+
+  /** A fresh one-time herstel-link, straight to the clipboard (the pill confirms). */
+  async function recoveryLink(user: User) {
+    if (linkBusyId) return;
+    setLinkBusyId(user._id);
+    try {
+      const link = await createRecoveryLink(user._id);
+      const description = `Geldig tot ${formatClock(link.expiresAt)}, werkt één keer.`;
+      if (await writeClipboard(link.url)) {
+        setLinkDone(user._id);
+        toast.success(`Herstel-link voor ${user.name} gekopieerd`, { description });
+      } else {
+        // iOS Safari refuses clipboard writes this long after the tap: offer a copy button (a fresh tap)
+        toast.success(`Herstel-link voor ${user.name} gemaakt`, {
+          description,
+          action: { label: 'Kopieer link', onClick: () => void copyToClipboard(link.url, 'Link gekopieerd') },
+        });
+      }
+    } catch (failure) {
+      toast.error(apiErrorMessage(failure, 'Herstel-link maken is mislukt, probeer het opnieuw.'));
+    } finally {
+      setLinkBusyId(null);
+    }
   }
 
   function row(user: User) {
     const isMe = user._id === me?._id;
+    const renaming = renamingId === user._id;
+    const linkBusy = linkBusyId === user._id;
+    const linkDone = linkDoneId === user._id;
     return (
-      <BeheerRow
+      <BeheerExpandableRow
         key={user._id}
+        id={user._id}
+        // 12px padding + 8px dot + 12px gap
+        indentClassName="pl-8"
+        headerStatic={renaming}
+        leading={
+          <span
+            aria-hidden
+            className={cn('size-2 shrink-0 rounded-full transition-colors duration-300', isActiveNow(user, now) ? 'bg-green-500 shadow-[0_0_0_3px_rgb(34_197_94/0.18)]' : 'bg-muted-foreground/50')}
+          />
+        }
         title={
           <>
-            {user.name}
-            {isMe && <span className="font-normal text-muted-foreground"> (jij)</span>}
+            {renaming ? <NameInput user={user} updateUser={updateUser} onDone={() => setRenamingId(null)} /> : <span className="truncate">{user.name}</span>}
+            {user.admin && <Tag tone="primary">Admin</Tag>}
+            {isMe && <Tag>jij</Tag>}
           </>
         }
-        meta={userMeta(user, now)}
+        meta={
+          <>
+            <span className={cn(!user.passkeyCount && 'text-amber-600 dark:text-amber-400')}>{passkeyText(user.passkeyCount)}</span> · {userActivity(user, now)}
+          </>
+        }
+        confirm={
+          deletingId === user._id && (
+            <InlineConfirm
+              title={`${user.name} verwijderen?`}
+              description="Account en alle sessies worden verwijderd."
+              confirmLabel="Verwijder"
+              confirmIcon={<Trash2Icon />}
+              onCancel={() => setDeletingId(null)}
+              onConfirm={() => confirmDelete(user)}
+            />
+          )
+        }
       >
-        <DropdownMenu modal={false}>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon-sm" aria-label={`Opties voor ${user.name}`}>
-              <EllipsisIcon />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onSelect={() => setRecoveryUser(user)}>
-              <LifeBuoyIcon />
-              Herstel-link maken
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onSelect={() => {
-                setRenaming(user);
-                setRenameOpen(true);
-              }}
-            >
-              <PencilIcon />
-              Naam wijzigen
-            </DropdownMenuItem>
-            <DropdownMenuItem disabled={isMe} onSelect={() => void toggleAdmin(user)}>
+        <Pill morphKey={linkDone ? 'done' : linkBusy ? 'busy' : 'idle'} variant={linkDone ? 'success' : 'secondary'} disabled={linkBusy} onClick={() => void recoveryLink(user)}>
+          {linkDone ? (
+            <>
+              <CheckIcon />
+              Link gekopieerd
+            </>
+          ) : linkBusy ? (
+            <>
+              <Loader2Icon className="animate-spin" />
+              Link maken…
+            </>
+          ) : (
+            <>
+              <LinkIcon />
+              Herstel-link
+            </>
+          )}
+        </Pill>
+        <Pill disabled={renaming} onClick={() => setRenamingId(user._id)}>
+          <PencilIcon />
+          Naam wijzigen
+        </Pill>
+        {!isMe && (
+          <>
+            <Pill onClick={() => void toggleAdmin(user)}>
               {user.admin ? <ShieldOffIcon /> : <ShieldIcon />}
-              {user.admin ? 'Admin afnemen' : 'Admin maken'}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              variant="destructive"
-              disabled={isMe}
-              onSelect={() => {
-                setDeleting(user);
-                setDeleteOpen(true);
-              }}
-            >
+              {user.admin ? 'Geen admin meer' : 'Admin maken'}
+            </Pill>
+            <Pill variant="danger-outline" onClick={() => setDeletingId(user._id)}>
               <Trash2Icon />
               Verwijderen
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </BeheerRow>
+            </Pill>
+          </>
+        )}
+      </BeheerExpandableRow>
     );
   }
 
   return (
-    <BeheerPane
-      title="Gebruikers"
-      description={
-        view === 'content' ? `${count === 1 ? '1 account' : `${count} accounts`}. Nieuwe mensen komen binnen via een invite.` : 'Nieuwe mensen komen binnen via een invite.'
-      }
-    >
+    <BeheerPane title="Gebruikers" description={view === 'content' ? usersSummary(users ?? [], now) : view === 'loading' ? 'Laden…' : 'Nieuwe mensen komen binnen via een invite.'}>
       <AnimatePresence mode="wait" initial={false}>
         {view === 'loading' && (
           <motion.div key="loading" {...SWAP}>
@@ -131,36 +173,83 @@ export default function UsersPane() {
           </motion.p>
         )}
         {view === 'content' && (
-          <motion.div key="content" className="flex flex-col gap-7" {...SWAP}>
-            <Reveal gap={GROUP_GAP}>
+          <motion.div key="content" className="flex flex-col gap-3.5" {...SWAP}>
+            {/* A role change folds the row out of one card and into the other */}
+            <Reveal gap={CARD_GAP}>
               {admins.length > 0 && (
-                <BeheerGroup title="Admins">
-                  <AnimatePresence initial={false}>{admins.map(row)}</AnimatePresence>
-                </BeheerGroup>
+                <BeheerCard title="Admins" count={admins.length}>
+                  <BeheerRows>{admins.map(row)}</BeheerRows>
+                </BeheerCard>
               )}
             </Reveal>
-            <Reveal gap={GROUP_GAP}>
+            <Reveal gap={CARD_GAP}>
               {members.length > 0 && (
-                <BeheerGroup title="Leden">
-                  <AnimatePresence initial={false}>{members.map(row)}</AnimatePresence>
-                </BeheerGroup>
+                <BeheerCard title="Leden" count={members.length}>
+                  <BeheerRows>{members.map(row)}</BeheerRows>
+                </BeheerCard>
               )}
             </Reveal>
           </motion.div>
         )}
       </AnimatePresence>
-
-      <RecoveryLinkDialog user={recoveryUser} onClose={() => setRecoveryUser(null)} createLink={createRecoveryLink} />
-      <RenameUserDialog open={renameOpen} user={renaming} onOpenChange={setRenameOpen} updateUser={updateUser} />
-      <ConfirmDialog
-        open={deleteOpen}
-        onOpenChange={setDeleteOpen}
-        title={`${deleting?.name} verwijderen?`}
-        description="Het account en alle sessies worden verwijderd. Dit kan niet ongedaan worden gemaakt."
-        confirmLabel="Verwijderen"
-        destructive
-        onConfirm={confirmDelete}
-      />
     </BeheerPane>
+  );
+}
+
+/** The name in the row while renaming: Enter or leaving the field saves, Escape cancels (the window stays open). */
+function NameInput({ user, onDone, updateUser }: { user: User; onDone: () => void; updateUser: (id: string, changes: UserChanges) => Promise<unknown> }) {
+  const [value, setValue] = useState(user.name);
+  const [saving, setSaving] = useState(false);
+  // Escape unmounts the field; a blur that may follow must not save
+  const cancelled = useRef(false);
+
+  async function save() {
+    if (saving || cancelled.current) return;
+    const trimmed = value.trim();
+    if (!trimmed || trimmed === user.name) {
+      onDone();
+      return;
+    }
+    setSaving(true);
+    const failure = await updateUser(user._id, { name: trimmed });
+    setSaving(false);
+    if (failure) {
+      toast.error(apiErrorMessage(failure, 'De naam kon niet worden opgeslagen.'));
+      return;
+    }
+    toast.success('Naam opgeslagen');
+    onDone();
+  }
+
+  function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      void save();
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      cancelled.current = true;
+      onDone();
+    }
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <input
+        autoFocus
+        data-inline-edit
+        maxLength={40}
+        value={value}
+        disabled={saving}
+        aria-label={`Nieuwe naam voor ${user.name}`}
+        autoComplete="off"
+        data-1p-ignore
+        onFocus={(event) => event.target.select()}
+        onChange={(event) => setValue(event.target.value)}
+        onKeyDown={onKeyDown}
+        onBlur={() => void save()}
+        className="h-7 w-40 rounded-lg border-[1.5px] border-primary bg-card px-2 text-[13.5px] font-semibold outline-none disabled:opacity-60"
+      />
+      {saving && <Loader2Icon className="size-3.5 animate-spin text-muted-foreground" />}
+    </span>
   );
 }
