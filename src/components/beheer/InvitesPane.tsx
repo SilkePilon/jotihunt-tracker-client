@@ -16,7 +16,6 @@ import {
   inviteMeta,
   inviteShareText,
   inviteStateText,
-  MAX_USES_OPTIONS,
   stoppedInviteMeta,
   whatsAppShareUrl,
   type AdminInvite,
@@ -45,8 +44,9 @@ const usesToValue = (value: number | null) => (value === null ? UNLIMITED : Stri
 const valueToUses = (value: string) => (value === UNLIMITED ? null : Number(value));
 const newestFirst = (a: AdminInvite, b: AdminInvite) => Date.parse(b.createdAt) - Date.parse(a.createdAt);
 
-const EXPIRY_SEGMENTS: SegmentOption<InviteExpiry>[] = EXPIRY_OPTIONS.map(({ value, label }) => ({ value, label }));
-const USES_SEGMENTS: SegmentOption<string>[] = MAX_USES_OPTIONS.map(({ value, label }) => ({ value: usesToValue(value), label }));
+/** The picker shows a short set (mockup I5); the default (1 dag) is always in it. */
+const EXPIRY_SEGMENTS: SegmentOption<InviteExpiry>[] = (['1h', '1d', '7d', 'never'] as const).map((value) => ({ value, label: EXPIRY_OPTIONS.find((option) => option.value === value)!.label }));
+const USES_SEGMENTS: SegmentOption<string>[] = [1, 5, null].map((value) => ({ value: usesToValue(value), label: value === null ? 'Onbeperkt' : `${value}×` }));
 
 /** A label + control line of the "Nieuwe invite" card (stacked on phones). */
 function Field({ label, children }: { label: string; children: ReactNode }) {
