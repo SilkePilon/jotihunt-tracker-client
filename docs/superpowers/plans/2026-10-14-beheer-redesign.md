@@ -13,6 +13,8 @@
 
 ## Global Constraints
 
+- **User decisions (2026-10-14, override the task code below):** the nav shows NO counts — drop the `count` prop/`counts` lookup from `NavItem` and its callers in Task 3. Telegram linked-but-disconnected keeps the amber bar WITHOUT "Opnieuw koppelen" (as Task 9 already does).
+
 - **No avatar / profile circles. No icons in card titles.** (Koppelingen's brand logo circle sits in the card body, per K1.)
 - Every UI state change animates: `motion/react` + `src/lib/motion.ts` (`SWAP`, `POP`, `REVEAL_TRANSITION`, `SWAP_TRANSITION`); rows that come and go fold in/out (height + opacity); `prefers-reduced-motion` is respected via the global `<MotionConfig reducedMotion="user">` in `src/main.tsx` and `motion-safe:` / `motion-reduce:` for CSS animations.
 - Dutch copy as today unless the spec states new copy.
