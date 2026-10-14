@@ -1,4 +1,4 @@
-import { useEffect, useState, type ComponentType, type RefObject } from 'react';
+import { useEffect, useState, type ComponentType, type ReactNode, type RefObject } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import {
   ArrowLeftIcon,
@@ -14,28 +14,27 @@ import {
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import type { MapRef } from '@/components/Map';
 import ResponsiveDialog from '@/components/ResponsiveDialog';
-import { Button } from '@/components/ui/button';
-import { useAdmin } from '@/hooks/admin.hook';
-import { useDevices } from '@/hooks/devices.hook';
-import { useInvites } from '@/hooks/invites.hook';
 import { useIsMobile } from '@/hooks/media.hook';
-import { EASE_OUT, SWAP } from '@/lib/motion';
+import { EASE_OUT, SWAP, SWAP_TRANSITION } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import useAdminStore, { type AdminDialogId } from '@/stores/admin.store';
 import type { User } from '@/types/User';
 import AlgemeenPane from './AlgemeenPane';
 import BroadcastPane from './BroadcastPane';
+import { IconPill } from './controls/Pill';
 import HuntersPane from './HuntersPane';
 import InvitesPane from './InvitesPane';
 import KoppelingenPane from './KoppelingenPane';
 import UsersPane from './UsersPane';
 
 interface BeheerDialogProps {
-  /** For the Hunters pane's "Op kaart" */
+  /** For the Hunters pane's "Toon op kaart" */
   mapRef: RefObject<MapRef | null>;
 }
 
-const SECTIONS: { id: AdminDialogId; title: string; icon: ComponentType<{ className?: string }> }[] = [
+type Icon = ComponentType<{ className?: string }>;
+
+const SECTIONS: { id: AdminDialogId; title: string; icon: Icon }[] = [
   { id: 'algemeen', title: 'Algemeen', icon: SlidersHorizontalIcon },
   { id: 'users', title: 'Gebruikers', icon: UsersIcon },
   { id: 'invites', title: 'Invites', icon: UserPlusIcon },
@@ -53,8 +52,6 @@ const SLIDE = {
   exit: (direction: number) => ({ opacity: 0, x: -24 * direction }),
 };
 const SLIDE_TRANSITION = { duration: 0.22, ease: EASE_OUT };
-/** Keyboard focus ring of the menu buttons (as on the shadcn buttons) */
-const FOCUS_RING = 'outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50';
 
 function openHq() {
   window.open('/hq', '_blank', 'noopener');
@@ -77,14 +74,15 @@ export default function BeheerDialog({ mapRef }: BeheerDialogProps) {
       title="Beheer"
       description="Instellingen, gebruikers, invites, hunters en koppelingen."
       hideHeader
-      className="h-[600px] max-h-[85dvh] gap-0 overflow-hidden p-0 sm:max-w-[900px]"
+      className="h-[640px] max-h-[85dvh] gap-0 overflow-hidden bg-beheer-window p-0 sm:max-w-[960px] sm:rounded-[20px]"
+      drawerClassName="bg-beheer-window"
     >
       <BeheerWindow mapRef={mapRef} />
     </ResponsiveDialog>
   );
 }
 
-/** The window's content; only mounted while the window is open (or closing), so the counts are only fetched then. */
+/** The window's content; only mounted while the window is open (or closing). */
 function BeheerWindow({ mapRef }: BeheerDialogProps) {
   const isMobile = useIsMobile();
   const dialog = useAdminStore((state) => state.dialog);
@@ -112,8 +110,6 @@ function BeheerWindow({ mapRef }: BeheerDialogProps) {
     if (open) setPhoneView(startView(dialog));
   }
 
-  const counts = useCounts();
-
   function select(id: AdminDialogId) {
     openDialog(id);
     setDirection(1);
@@ -126,6 +122,7 @@ function BeheerWindow({ mapRef }: BeheerDialogProps) {
   }
 
   const pane = <SectionPane section={section} mapRef={mapRef} />;
+  const hqTrailing = <ExternalLinkIcon className="ml-auto size-3.5 shrink-0" />;
 
   if (isMobile) {
     return (
@@ -141,19 +138,11 @@ function BeheerWindow({ mapRef }: BeheerDialogProps) {
             exit="exit"
             transition={SLIDE_TRANSITION}
           >
-            <div className="px-3 pb-2 pt-1 text-lg font-semibold">Beheer</div>
-            {SECTIONS.map(({ id, title, icon: Icon }) => (
-              <button key={id} type="button" className={cn('flex items-center gap-3 rounded-md px-3 py-3 text-left text-sm active:bg-accent', FOCUS_RING)} onClick={() => select(id)}>
-                <Icon className="size-4 text-muted-foreground" />
-                {title}
-                <Count value={counts[id]} />
-              </button>
+            <div className="px-3 pt-1 pb-3 text-lg font-bold">Beheer</div>
+            {SECTIONS.map(({ id, title, icon }) => (
+              <NavItem key={id} icon={icon} title={title} onClick={() => select(id)} className="h-12 text-foreground" />
             ))}
-            <button type="button" className={cn('mt-auto flex items-center gap-3 rounded-md px-3 py-3 text-left text-sm active:bg-accent', FOCUS_RING)} onClick={openHq}>
-              <MonitorIcon className="size-4 text-muted-foreground" />
-              HQ-scherm
-              <ExternalLinkIcon className="ml-auto size-3.5 text-muted-foreground" />
-            </button>
+            <NavItem icon={MonitorIcon} title="HQ-scherm" trailing={hqTrailing} onClick={openHq} className="mt-auto h-12 text-foreground" />
           </motion.div>
         ) : (
           <motion.div
@@ -167,10 +156,10 @@ function BeheerWindow({ mapRef }: BeheerDialogProps) {
             transition={SLIDE_TRANSITION}
           >
             <div className="flex items-center gap-2 pb-3">
-              <Button variant="ghost" size="icon-sm" aria-label="Terug" onClick={back}>
+              <IconPill aria-label="Terug" onClick={back}>
                 <ArrowLeftIcon />
-              </Button>
-              <span className="text-lg font-semibold">{titleOf(section)}</span>
+              </IconPill>
+              <span className="text-lg font-bold">{titleOf(section)}</span>
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto pb-4">
               <AnimatePresence mode="wait" initial={false}>
@@ -186,45 +175,17 @@ function BeheerWindow({ mapRef }: BeheerDialogProps) {
   }
 
   return (
-    <div className="grid min-h-0 flex-1 grid-cols-[210px_1fr] grid-rows-[minmax(0,1fr)]">
-      <nav className="flex flex-col gap-0.5 border-r bg-muted/30 p-3" aria-label="Beheer">
-        <div className="px-2 pb-2 pt-1 text-sm font-semibold">Beheer</div>
-        {SECTIONS.map(({ id, title, icon: Icon }) => {
-          const active = id === section;
-          return (
-            <button
-              key={id}
-              type="button"
-              aria-current={active ? 'page' : undefined}
-              className={cn(
-                'flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground',
-                FOCUS_RING,
-                active && 'bg-accent font-medium text-foreground hover:bg-accent',
-              )}
-              onClick={() => openDialog(id)}
-            >
-              <Icon className="size-4" />
-              {title}
-              <Count value={counts[id]} />
-            </button>
-          );
-        })}
-        <button
-          type="button"
-          className={cn(
-            'mt-auto flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:bg-accent/60 hover:text-foreground',
-            FOCUS_RING,
-          )}
-          onClick={openHq}
-        >
-          <MonitorIcon className="size-4" />
-          HQ-scherm
-          <ExternalLinkIcon className="ml-auto size-3.5" />
-        </button>
+    <div className="grid min-h-0 flex-1 grid-cols-[220px_1fr] grid-rows-[minmax(0,1fr)]">
+      <nav className="flex flex-col gap-0.5 px-3 py-[18px]" aria-label="Beheer">
+        <div className="px-3 pt-0.5 pb-3.5 text-[17px] font-bold">Beheer</div>
+        {SECTIONS.map(({ id, title, icon }) => (
+          <NavItem key={id} icon={icon} title={title} active={id === section} indicatorId="beheer-nav-active" onClick={() => openDialog(id)} />
+        ))}
+        <NavItem icon={MonitorIcon} title="HQ-scherm" trailing={hqTrailing} onClick={openHq} className="mt-auto" />
       </nav>
       <div className="min-h-0 overflow-hidden">
         <AnimatePresence mode="wait" initial={false}>
-          <motion.div key={section} className="h-full overflow-y-auto p-8" {...SWAP}>
+          <motion.div key={section} className="h-full overflow-y-auto px-7 py-6" {...SWAP}>
             {pane}
           </motion.div>
         </AnimatePresence>
@@ -233,28 +194,37 @@ function BeheerWindow({ mapRef }: BeheerDialogProps) {
   );
 }
 
-/** Menu counts; undefined (shows nothing) until known. */
-function useCounts(): Partial<Record<AdminDialogId, number>> {
-  const { users } = useAdmin();
-  const { invites } = useInvites(true);
-  const { devices } = useDevices();
-  return {
-    users: users?.length,
-    invites: invites?.filter((invite) => invite.state === 'active').length,
-    hunters: devices?.length,
-  };
+interface NavItemProps {
+  icon: Icon;
+  title: string;
+  active?: boolean;
+  trailing?: ReactNode;
+  /** layoutId of the soft fill behind the active item, so it slides to a newly picked item */
+  indicatorId?: string;
+  onClick: () => void;
+  className?: string;
 }
 
-/** Fades in once the number is known */
-function Count({ value }: { value: number | undefined }) {
+/** N1 item: icon + name, 40px, rounded-xl; active = soft grey fill + semibold (no pill, no orange, no counts). */
+function NavItem({ icon: ItemIcon, title, active, trailing, indicatorId, onClick, className }: NavItemProps) {
   return (
-    <AnimatePresence initial={false}>
-      {value !== undefined && (
-        <motion.span key="count" className="ml-auto text-xs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
-          {value}
-        </motion.span>
+    <button
+      type="button"
+      aria-current={active ? 'page' : undefined}
+      onClick={onClick}
+      className={cn(
+        'relative flex h-10 items-center rounded-xl px-3 text-left text-[13.5px] outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50',
+        active ? 'font-semibold text-foreground' : 'text-muted-foreground hover:bg-beheer-row-high/50 hover:text-foreground active:bg-beheer-row-high',
+        className,
       )}
-    </AnimatePresence>
+    >
+      {active && indicatorId && <motion.span layoutId={indicatorId} aria-hidden className="absolute inset-0 rounded-xl bg-beheer-row-high" transition={SWAP_TRANSITION} />}
+      <span className="relative flex min-w-0 flex-1 items-center gap-3">
+        <ItemIcon className="size-[18px] shrink-0" />
+        <span className="truncate">{title}</span>
+        {trailing}
+      </span>
+    </button>
   );
 }
 
