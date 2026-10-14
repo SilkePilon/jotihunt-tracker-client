@@ -94,6 +94,15 @@ describe('markerFeatures', () => {
     expect(fc.features.map((f) => f.properties.icon)).toEqual(['fox|spot|green|alpha', 'fox|spot|orange|bravo', 'fox|spot|red|charlie', 'fox|other|red|none']);
   });
 
+  test('spots and hunts of a forbidden area get the locked icon; hints and unknown areas never', () => {
+    const isForbidden = (area: string) => area.toLowerCase() !== 'alpha';
+    const fc = markerFeatures(
+      [fox('a', MarkerType.Spot, 'alpha'), fox('b', MarkerType.Spot, 'Bravo'), fox('c', MarkerType.Hunt, 'charlie'), fox('h1', MarkerType.Hint, 'bravo'), fox('d', 'other' as MarkerType, 'zulu')],
+      { statusOf, numbering, nowMs: now, isForbidden },
+    );
+    expect(fc.features.map((f) => f.properties.icon)).toEqual(['fox|spot|green|alpha', 'fox|spot|orange|bravo|locked', 'fox|hunt|red|charlie|locked', 'hint|bravo|H3', 'fox|other|red|none']);
+  });
+
   test('hints: "H<n>" label, the clock without a number, a dot when old', () => {
     const fc = markerFeatures([fox('h1', MarkerType.Hint, 'alpha'), fox('h2', MarkerType.Hint, 'bravo', 30), fox('h3', MarkerType.Hint, 'bravo', 7 * 60)], { statusOf, numbering, nowMs: now });
     // 11:30 UTC is 13:30 in Amsterdam (summer time), whatever the test machine's zone
@@ -145,6 +154,18 @@ describe('predictionPinFeatures', () => {
       { type: 'Feature', geometry: { type: 'Point', coordinates: [5, 52] }, properties: { area: 'alpha', icon: 'predict|alpha|live' } },
       { type: 'Feature', geometry: { type: 'Point', coordinates: [6, 51] }, properties: { area: 'Hotel', icon: 'predict|hotel|stale' } },
     ]);
+  });
+
+  test('pins of a forbidden area are locked (stale or not); unknown areas never', () => {
+    const fc = predictionPinFeatures(
+      [
+        { area: 'alpha', lng: 5, lat: 52, color: '#f87171', stale: false, confidence: 'high' },
+        { area: 'Bravo', lng: 6, lat: 51, color: '#6d45fd', stale: true, confidence: null },
+        { area: 'zulu', lng: 6, lat: 51, color: '#6d45fd', stale: false, confidence: null },
+      ],
+      (area) => area.toLowerCase() !== 'alpha',
+    );
+    expect(fc.features.map((f) => f.properties.icon)).toEqual(['predict|alpha|live', 'predict|bravo|stale|locked', 'predict|none|live']);
   });
 });
 

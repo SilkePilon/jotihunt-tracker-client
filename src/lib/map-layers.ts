@@ -139,13 +139,16 @@ export interface MarkerFeatureContext {
   /** Hint numbers from the hint board ("A · H3" labels) */
   numbering: HintNumbering;
   nowMs: number;
+  /** Areas we may not hunt (rule 5.1) get the locked icon; default nothing */
+  isForbidden?: (area: string) => boolean;
 }
 
 /**
  * One point per marker for the fox symbol layer (one canvas layer instead of an HTML element per marker): spots in
  * their area's status colour, hunts, and hints as an "A · H3" label (the clock without a number; a dot when old).
+ * Spots and hunts of an area we may not hunt are locked (grey, lock badge).
  */
-export function markerFeatures(markers: Marker[], { statusOf, numbering, nowMs }: MarkerFeatureContext): FeatureCollection<Point, MarkerFeatureProperties> {
+export function markerFeatures(markers: Marker[], { statusOf, numbering, nowMs, isForbidden = () => false }: MarkerFeatureContext): FeatureCollection<Point, MarkerFeatureProperties> {
   return collection(
     markers.map((marker) => {
       const time = new Date(marker.time).getTime();
@@ -153,7 +156,7 @@ export function markerFeatures(markers: Marker[], { statusOf, numbering, nowMs }
       const hint = marker.type === MarkerType.Hint;
       const key = hint
         ? hintIconKey(area, time, numbering.numberOf(marker._id ?? '', marker.area, time), nowMs, formatHintClock(time))
-        : { kind: 'fox' as const, type: foxKind(marker.type), status: foxStatus(statusOf(marker.area)), area };
+        : { kind: 'fox' as const, type: foxKind(marker.type), status: foxStatus(statusOf(marker.area)), area, locked: area !== 'none' && isForbidden(marker.area) };
       return {
         type: 'Feature',
         geometry: { type: 'Point', coordinates: marker.location.coordinates },
@@ -196,14 +199,17 @@ export function predictionAreaCircles(pins: MapPin[]): FeatureCollection<Polygon
   return collection(pins.map((pin) => circle(pin.lng, pin.lat, PREDICTION_RADIUS_M[pin.confidence ?? 'low'], { area: pin.area })));
 }
 
-/** One point per AI prediction pin (greyed out when stale). */
-export function predictionPinFeatures(pins: MapPin[]): FeatureCollection<Point, PredictionPinProperties> {
+/** One point per AI prediction pin (greyed out when stale; grey with a lock when we may not hunt the area). */
+export function predictionPinFeatures(pins: MapPin[], isForbidden: (area: string) => boolean = () => false): FeatureCollection<Point, PredictionPinProperties> {
   return collection(
-    pins.map((pin) => ({
-      type: 'Feature',
-      geometry: { type: 'Point', coordinates: [pin.lng, pin.lat] },
-      properties: { area: pin.area, icon: markerIconId({ kind: 'prediction', area: areaKey(pin.area) ?? 'none', stale: pin.stale }) },
-    })),
+    pins.map((pin) => {
+      const area = areaKey(pin.area) ?? 'none';
+      return {
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [pin.lng, pin.lat] },
+        properties: { area: pin.area, icon: markerIconId({ kind: 'prediction', area, stale: pin.stale, locked: area !== 'none' && isForbidden(pin.area) }) },
+      };
+    }),
   );
 }
 

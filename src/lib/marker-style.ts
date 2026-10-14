@@ -205,17 +205,23 @@ export function vehicleGlyph(icon: HunterIcon): GlyphName {
 export type FoxKind = 'spot' | 'hunt' | 'other';
 const FOX_KINDS: readonly string[] = ['spot', 'hunt', 'other'] satisfies FoxKind[];
 
-/** Everything needed to draw one marker image (the Android `IconKey`, plus the web's extras). */
+/**
+ * Everything needed to draw one marker image (the Android `IconKey`, plus the web's extras). `locked`: an area we may
+ * not hunt (rule 5.1), drawn grey with a lock badge.
+ */
 export type MarkerIconKey =
   | { kind: 'hunter'; icon: HunterIcon; stale: boolean }
-  | { kind: 'fox'; type: FoxKind; status: FoxStatus; area: AreaOrNone }
+  | { kind: 'fox'; type: FoxKind; status: FoxStatus; area: AreaOrNone; locked: boolean }
   | { kind: 'hint'; area: AreaOrNone; label: string }
   | { kind: 'hintdot' }
   | { kind: 'group'; area: AreaOrNone; visited: boolean }
-  | { kind: 'prediction'; area: AreaOrNone; stale: boolean }
+  | { kind: 'prediction'; area: AreaOrNone; stale: boolean; locked: boolean }
   | { kind: 'arrow' };
 
 const live = (stale: boolean) => (stale ? 'stale' : 'live');
+
+/** Locked markers (an area we may not hunt) get a suffix; unlocked ids stay as they were. */
+const lockSuffix = (locked: boolean) => (locked ? '|locked' : '');
 
 /** Theme-less id of a marker image, e.g. `fox|spot|green|alpha`; features carry this one. */
 export function markerIconId(key: MarkerIconKey): string {
@@ -223,13 +229,13 @@ export function markerIconId(key: MarkerIconKey): string {
     case 'hunter':
       return `hunter|${key.icon}|${live(key.stale)}`;
     case 'fox':
-      return `fox|${key.type}|${key.status}|${key.area}`;
+      return `fox|${key.type}|${key.status}|${key.area}${lockSuffix(key.locked)}`;
     case 'hint':
       return `hint|${key.area}|${key.label}`;
     case 'group':
       return `group|${key.area}|${key.visited ? 'visited' : 'open'}`;
     case 'prediction':
-      return `predict|${key.area}|${live(key.stale)}`;
+      return `predict|${key.area}|${live(key.stale)}${lockSuffix(key.locked)}`;
     default:
       return key.kind;
   }
@@ -251,23 +257,32 @@ function parseStale(value: string): boolean | undefined {
   return value === 'stale' ? true : value === 'live' ? false : undefined;
 }
 
+/** False for `parts` without suffix, true with exactly one `locked` after them, undefined for anything else. */
+function parseLocked(p: string[], parts: number): boolean | undefined {
+  if (p.length === parts) return false;
+  return p.length === parts + 1 && p[parts] === 'locked' ? true : undefined;
+}
+
 function parseKey(p: string[]): MarkerIconKey | undefined {
   switch (p[0]) {
     case 'hunter': {
       const stale = parseStale(p[2]);
       return p.length === 3 && HUNTER_ICONS.includes(p[1]) && stale !== undefined ? { kind: 'hunter', icon: p[1] as HunterIcon, stale } : undefined;
     }
-    case 'fox':
-      return p.length === 4 && FOX_KINDS.includes(p[1]) && STATUSES.includes(p[2]) && isArea(p[3])
-        ? { kind: 'fox', type: p[1] as FoxKind, status: p[2] as FoxStatus, area: p[3] }
+    case 'fox': {
+      const locked = parseLocked(p, 4);
+      return locked !== undefined && FOX_KINDS.includes(p[1]) && STATUSES.includes(p[2]) && isArea(p[3])
+        ? { kind: 'fox', type: p[1] as FoxKind, status: p[2] as FoxStatus, area: p[3], locked }
         : undefined;
+    }
     case 'hint':
       return p.length === 3 && isArea(p[1]) ? { kind: 'hint', area: p[1], label: p[2] } : undefined;
     case 'group':
       return p.length === 3 && isArea(p[1]) && (p[2] === 'visited' || p[2] === 'open') ? { kind: 'group', area: p[1], visited: p[2] === 'visited' } : undefined;
     case 'predict': {
       const stale = parseStale(p[2]);
-      return p.length === 3 && isArea(p[1]) && stale !== undefined ? { kind: 'prediction', area: p[1], stale } : undefined;
+      const locked = parseLocked(p, 3);
+      return locked !== undefined && isArea(p[1]) && stale !== undefined ? { kind: 'prediction', area: p[1], stale, locked } : undefined;
     }
     case 'hintdot':
     case 'arrow':

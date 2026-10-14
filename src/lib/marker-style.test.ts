@@ -110,17 +110,21 @@ describe('marker image ids', () => {
   const keys: MarkerIconKey[] = [
     { kind: 'hunter', icon: 'car', stale: false },
     { kind: 'hunter', icon: 'phone', stale: true },
-    { kind: 'fox', type: 'spot', status: 'green', area: 'alpha' },
-    { kind: 'fox', type: 'hunt', status: 'red', area: 'oscar' },
-    { kind: 'fox', type: 'other', status: 'orange', area: 'none' },
+    { kind: 'fox', type: 'spot', status: 'green', area: 'alpha', locked: false },
+    { kind: 'fox', type: 'hunt', status: 'red', area: 'oscar', locked: false },
+    { kind: 'fox', type: 'other', status: 'orange', area: 'none', locked: false },
+    { kind: 'fox', type: 'spot', status: 'green', area: 'alpha', locked: true },
+    { kind: 'fox', type: 'hunt', status: 'orange', area: 'bravo', locked: true },
     { kind: 'hint', area: 'bravo', label: 'H3' },
     { kind: 'hint', area: 'bravo', label: '14:00' },
     { kind: 'hint', area: 'bravo', label: '' },
     { kind: 'hintdot' },
     { kind: 'group', area: 'delta', visited: false },
     { kind: 'group', area: 'none', visited: true },
-    { kind: 'prediction', area: 'echo', stale: false },
-    { kind: 'prediction', area: 'echo', stale: true },
+    { kind: 'prediction', area: 'echo', stale: false, locked: false },
+    { kind: 'prediction', area: 'echo', stale: true, locked: false },
+    { kind: 'prediction', area: 'golf', stale: false, locked: true },
+    { kind: 'prediction', area: 'golf', stale: true, locked: true },
     { kind: 'arrow' },
   ];
 
@@ -132,13 +136,21 @@ describe('marker image ids', () => {
     }
   });
 
-  test('ids are readable', () => {
-    expect(markerIconId({ kind: 'fox', type: 'spot', status: 'green', area: 'alpha' })).toBe('fox|spot|green|alpha');
+  test('ids are readable; locked adds a suffix and leaves the other ids as they were', () => {
+    expect(markerIconId({ kind: 'fox', type: 'spot', status: 'green', area: 'alpha', locked: false })).toBe('fox|spot|green|alpha');
+    expect(markerIconId({ kind: 'fox', type: 'spot', status: 'green', area: 'alpha', locked: true })).toBe('fox|spot|green|alpha|locked');
+    expect(markerIconId({ kind: 'prediction', area: 'echo', stale: false, locked: false })).toBe('predict|echo|live');
+    expect(markerIconId({ kind: 'prediction', area: 'echo', stale: true, locked: true })).toBe('predict|echo|stale|locked');
     expect(themedImageId('dark', 'hintdot')).toBe('jh|dark|hintdot');
   });
 
+  test('ids from before the locked flag still parse as unlocked', () => {
+    expect(parseMarkerImageId('jh|light|fox|hunt|red|oscar')).toEqual({ theme: 'light', key: { kind: 'fox', type: 'hunt', status: 'red', area: 'oscar', locked: false } });
+    expect(parseMarkerImageId('jh|dark|predict|echo|live')).toEqual({ theme: 'dark', key: { kind: 'prediction', area: 'echo', stale: false, locked: false } });
+  });
+
   test('other or malformed ids are not ours', () => {
-    for (const id of ['fox-hint', 'hunter|car|live', 'jh|sepia|hintdot', 'jh|light|fox|spot|blue|alpha', 'jh|light|hunter|boat|live', 'jh|light|group|delta', 'jh|light|nope']) {
+    for (const id of ['fox-hint', 'hunter|car|live', 'jh|sepia|hintdot', 'jh|light|fox|spot|blue|alpha', 'jh|light|hunter|boat|live', 'jh|light|group|delta', 'jh|light|nope', 'jh|light|fox|spot|green|alpha|nope', 'jh|light|fox|spot|green|alpha|locked|locked', 'jh|light|predict|echo|live|x', 'jh|light|group|delta|open|locked', 'jh|light|hint|alpha|H3|locked']) {
       expect(parseMarkerImageId(id)).toBeUndefined();
     }
   });
