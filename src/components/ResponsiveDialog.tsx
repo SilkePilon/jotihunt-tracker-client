@@ -20,9 +20,9 @@ interface ResponsiveDialogProps {
   onClosed?: () => void;
 }
 
-// vaul's slide-out (TRANSITIONS.DURATION) and the Radix dialog's `duration-200` fade/zoom-out
+// vaul's slide-out (TRANSITIONS.DURATION) and the Radix dialog's `duration-200` fade/zoom-out, plus a margin so the content never unmounts a frame early
 const DRAWER_CLOSE_MS = 500;
-const DIALOG_CLOSE_MS = 200;
+const DIALOG_CLOSE_MS = 250;
 
 /** Frame shared by the large dialogs: a large dialog on desktop, a bottom drawer on phones. */
 export default function ResponsiveDialog({ open, onClose, title, description, children, className, hideHeader, compact, onClosed }: ResponsiveDialogProps) {

@@ -49,10 +49,7 @@ export default function QrConfirmDrawer({ code, onClose }: { code: string; onClo
 
   useEffect(() => {
     if (view.step !== 'done') return;
-    const timer = setTimeout(() => {
-      closing.current = true;
-      setOpen(false);
-    }, AUTO_CLOSE_MS);
+    const timer = setTimeout(close, AUTO_CLOSE_MS);
     return () => clearTimeout(timer);
   }, [view.step]);
 
@@ -102,7 +99,7 @@ export default function QrConfirmDrawer({ code, onClose }: { code: string; onClo
   return (
     <ResponsiveDialog open={open} onClose={close} onClosed={onClose} title="Inloggen op een ander apparaat?" description="Bevestig met je passkey." hideHeader compact className="sm:max-w-md">
       {/* The drawer grows/shrinks with the step; the padding keeps focus rings out of the clip */}
-      <AutoHeight className="-mx-1 -mt-1" innerClassName="px-1 pt-1 pb-2">
+      <AutoHeight scene={view.step} className="-mx-1 -mt-1" innerClassName="px-1 pt-1 pb-2">
         <AnimatePresence mode="wait" initial={false}>
           {view.step === 'loading' && (
             <motion.div key="loading" className="flex flex-col gap-4" {...SWAP}>

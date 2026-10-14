@@ -26,7 +26,7 @@ export default function NotificationsDialog() {
   const [disabled, setDisabled] = useState<OptionalNotificationType[] | null>(null);
   const [saving, setSaving] = useState(false);
 
-  // Local edits start from the server prefs each time the dialog opens
+  // Local edits start from the server prefs each time the dialog opens; reset once it has faded out, so the switches don't snap back mid-close
   const current = disabled ?? prefs?.disabledTypes ?? [];
   const iosInstall = needsIosInstall(navigator.userAgent, isStandalone());
 
@@ -36,7 +36,6 @@ export default function NotificationsDialog() {
 
   async function close() {
     setOpen(false);
-    setDisabled(null);
     // Closing counts as "seen" too, so the dialog doesn't come back on every open
     if ((prefs?.promptedVersion ?? 0) < NOTIFICATIONS_PROMPT_VERSION) {
       await update({ promptedVersion: NOTIFICATIONS_PROMPT_VERSION }).catch(() => {});
@@ -56,7 +55,6 @@ export default function NotificationsDialog() {
         toast.success('Meldingen opgeslagen');
       }
       setOpen(false);
-      setDisabled(null);
     } catch {
       toast.error('Opslaan is mislukt, probeer het opnieuw.');
     } finally {
@@ -65,7 +63,7 @@ export default function NotificationsDialog() {
   }
 
   return (
-    <ResponsiveDialog open={open} onClose={() => void close()} title="Meldingen" description="Kies waarvoor je een melding en geluid krijgt." className="sm:max-w-sm" compact>
+    <ResponsiveDialog open={open} onClose={() => void close()} title="Meldingen" description="Kies waarvoor je een melding en geluid krijgt." className="sm:max-w-sm" compact onClosed={() => setDisabled(null)}>
       <div className="flex flex-col gap-3">
         {NOTIFICATION_OPTIONS.map((option) => (
           <div key={option.type} className="flex items-center justify-between gap-3">

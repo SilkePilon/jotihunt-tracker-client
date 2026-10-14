@@ -30,7 +30,7 @@ export default function QrLoginPanel({ onApproved }: { onApproved: (result: Sess
 
   return (
     <div className="flex w-[290px] flex-col justify-center p-8 text-center" aria-live="polite">
-      <AutoHeight className="-m-2" innerClassName="p-2">
+      <AutoHeight scene={sceneOf(state)} className="-m-2" innerClassName="p-2">
         <AnimatePresence mode="wait" initial={false}>
           {sceneOf(state) === 'qr' && <QrScene key="qr" state={state} restart={restart} />}
           {state.phase === 'done' && (

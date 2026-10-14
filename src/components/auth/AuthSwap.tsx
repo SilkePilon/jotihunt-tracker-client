@@ -10,8 +10,8 @@ import { CARD_ENTER, SWAP } from '@/lib/motion';
 export default function AuthSwap({ scene, children }: { scene: string; children: ReactNode }) {
   return (
     <motion.div className="flex w-full flex-col items-center" {...CARD_ENTER}>
-      {/* The padding plus matching negative margin keeps the card's shadow out of the height clip */}
-      <AutoHeight className="-m-4 self-stretch" innerClassName="flex flex-col items-center p-4">
+      {/* The padding plus matching negative margin keeps the card's shadow out of the clip while scenes swap */}
+      <AutoHeight scene={scene} className="-m-4 self-stretch" innerClassName="flex flex-col items-center p-4">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div key={scene} className="flex w-full flex-col items-center" {...SWAP}>
             {children}
