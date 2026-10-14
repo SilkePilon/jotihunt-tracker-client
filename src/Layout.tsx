@@ -13,6 +13,7 @@ import NewHuntToaster from './components/hunts/NewHuntToaster';
 import UsersDialog from './components/admin/UsersDialog';
 import BroadcastDialog from './components/admin/BroadcastDialog';
 import NotificationsDialog from './components/notifications/NotificationsDialog';
+import AccountDialog from './components/account/AccountDialog';
 import {useNotificationsPrompt} from './components/notifications/useNotificationsPrompt';
 import {useTheme} from "@/hooks/theme.hook.ts";
 import {useNotificationFeed} from '@/hooks/notification-feed.hook';
@@ -108,6 +109,7 @@ export default function Layout() {
                 <UsersDialog/>
                 <BroadcastDialog/>
                 <NotificationsDialog/>
+                <AccountDialog/>
                 {typeof qrLogin === 'string' && (
                     <Suspense fallback={null}>
                         <QrConfirmDrawer key={qrLogin} code={qrLogin} onClose={() => navigate('/', {replace: true, state: null})}/>

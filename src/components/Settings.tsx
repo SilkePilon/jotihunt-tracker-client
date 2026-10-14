@@ -6,6 +6,7 @@ import {
     CompassIcon,
     BellIcon,
     Volume2Icon,
+    UserRoundIcon,
 } from 'lucide-react';
 import {siDiscord} from "simple-icons"
 import {Button} from './ui/button';
@@ -26,6 +27,7 @@ import {Dialog, DialogTrigger} from './ui/dialog';
 import DebugInfo from './DebugInfo';
 import {useState} from 'react';
 import useNotificationsDialogStore from '@/stores/notifications-dialog.store';
+import useAccountDialogStore from '@/stores/account-dialog.store';
 import useSettingsMenuStore from '@/stores/settings-menu.store';
 import useTourStore from '@/components/tour/tour.store';
 import {tourTarget} from '@/components/tour/targets';
@@ -54,6 +56,7 @@ export default function Settings({onReplayTour}: SettingsProps) {
     }
 
     const openNotifications = useNotificationsDialogStore((state) => state.setOpen);
+    const openAccount = useAccountDialogStore((state) => state.setOpen);
     const soundMuted = useSettingsStore((state) => state.soundMuted);
     const setSoundMuted = useSettingsStore((state) => state.setSoundMuted);
     const {isStandalone, isInstallPromptSupported, promptInstall} = usePWA();
@@ -74,6 +77,10 @@ export default function Settings({onReplayTour}: SettingsProps) {
                 <DropdownMenuContent align="start">
                     <DropdownMenuLabel>Hoi, {auth?.name}</DropdownMenuLabel>
                     <DropdownMenuSeparator/>
+                    <DropdownMenuItem onClick={() => openAccount(true)}>
+                        <UserRoundIcon/>
+                        Account
+                    </DropdownMenuItem>
                     {!isStandalone && isInstallPromptSupported && (
                         <DropdownMenuItem onClick={promptInstall}>
                             <DownloadIcon/>
