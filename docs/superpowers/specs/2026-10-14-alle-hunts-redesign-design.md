@@ -64,10 +64,14 @@ shared without bending either window.
 
 ## Row, open
 
+Website-only hunts have no photo or actions, so their row does not expand (plain `BeheerRow`; everything is in the
+closed row).
+
+
 Unfolds under the header (the existing `Reveal`), full row width (`indentClassName` none), column `gap-2.5`:
 
 1. **Photo banner**: `StickerHero` at ~190px (phone ~170px), `rounded-2xl`, zoomed on `stickerBox`, tap = lightbox (as
-   today). Website-only: a muted box with a globe and "Geen foto — alleen op jotihunt.nl".
+   today).
 2. **Edit box** (admin, while "Bewerken" is on): the existing `HuntInlineEdit` code + time editors in a soft orange
    block (`bg-primary/8 rounded-xl`), Enter saves, Escape cancels.
 3. **Fact tiles**: 3 columns (1 column on phone) of small tonal tiles (`bg-black/15` light: `bg-black/5`, on the open row's
