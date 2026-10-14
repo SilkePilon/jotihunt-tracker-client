@@ -156,8 +156,8 @@ export function sendTransition(state: SendState, event: SendEvent): SendState {
       if (event === 'success') return 'sent';
       return event === 'failure' ? 'idle' : state;
     case 'sent':
-      if (event === 'reset') return 'idle';
-      return event === 'tap' ? 'confirm' : state;
+      // "Verstuurd" isn't a button: a tap does nothing until it resets
+      return event === 'reset' ? 'idle' : state;
   }
 }
 
@@ -177,7 +177,7 @@ export function sendButtonLabel(state: SendState, recipients: number | undefined
 }
 
 /**
- * Beheer → Algemeen "Andere vossen die we mogen hunten": a chip for every area but our own (allowed, or locked), and
+ * Beheer → Algemeen "Welke vossen mogen we hunten?": a chip for every area but our own (allowed, or locked), and
  * the n/9 count with our own area included when known. `allowed` null/undefined (not configured / loading) = all allowed.
  */
 export function huntableChips(

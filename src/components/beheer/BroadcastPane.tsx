@@ -6,6 +6,7 @@ import { useAdmin } from '@/hooks/admin.hook';
 import { useBroadcasts } from '@/hooks/broadcasts.hook';
 import { broadcastMeta, SEND_CONFIRM_MS, SEND_DONE_MS, sendButtonLabel, sendTransition, type Broadcast } from '@/lib/beheer';
 import { SWAP } from '@/lib/motion';
+import { cn } from '@/lib/utils';
 import { BeheerCard, BeheerPane, BeheerRow, BeheerRows, BeheerSkeleton } from './BeheerLayout';
 import { Pill } from './controls/Pill';
 
@@ -31,7 +32,7 @@ export default function BroadcastPane() {
   }, [state]);
 
   async function tap() {
-    if (!trimmed || state === 'sending') return;
+    if (!trimmed || state === 'sending' || state === 'sent') return;
     dispatch('tap');
     // The first tap only asks
     if (state !== 'confirm') return;
@@ -69,7 +70,11 @@ export default function BroadcastPane() {
           value={message}
           maxLength={MAX_LENGTH}
           rows={3}
-          onChange={(event) => setMessage(event.target.value)}
+          onChange={(event) => {
+            setMessage(event.target.value);
+            // "Zeker?" was about the old text: editing asks again, so a second tap never sends unconfirmed text
+            if (state === 'confirm') dispatch('expire');
+          }}
           placeholder="Bijv. Iedereen terug naar HQ"
           aria-label="Bericht"
           disabled={state === 'sending'}
@@ -84,6 +89,9 @@ export default function BroadcastPane() {
             morphKey={state}
             variant={state === 'confirm' ? 'warn' : state === 'sent' ? 'success' : 'primary'}
             disabled={state === 'sending' || (state !== 'sent' && !trimmed)}
+            // "Verstuurd" is a status, not a button (disabled would dim the green)
+            aria-disabled={state === 'sent' || undefined}
+            className={cn(state === 'sent' && 'pointer-events-none')}
             onClick={() => void tap()}
           >
             {state === 'sending' && <Loader2Icon className="animate-spin" />}

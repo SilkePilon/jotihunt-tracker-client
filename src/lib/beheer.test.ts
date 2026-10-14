@@ -212,7 +212,13 @@ describe('send button (two taps)', () => {
     expect(run(['tap', 'expire', 'expire'])).toBe('idle');
     expect(sendTransition('sending', 'tap')).toBe('sending');
     expect(sendTransition('sending', 'expire')).toBe('sending');
-    expect(sendTransition('sent', 'tap')).toBe('confirm');
+    expect(sendTransition('sent', 'tap')).toBe('sent');
+    expect(sendTransition('sent', 'expire')).toBe('sent');
+  });
+
+  test('editing the message during "Zeker?" cancels the question (the pane dispatches expire)', () => {
+    expect(run(['tap', 'expire', 'tap'])).toBe('confirm');
+    expect(run(['tap', 'expire', 'tap', 'tap'])).toBe('sending');
   });
 
   test('labels', () => {
