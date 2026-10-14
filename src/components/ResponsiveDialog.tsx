@@ -1,8 +1,9 @@
-import { ReactNode, useEffect, useRef, useState } from 'react';
+import { ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Drawer } from 'vaul';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useIsMobile } from '@/hooks/media.hook';
 import { cn } from '@/lib/utils';
+import useModalDrawersStore from '@/stores/modal-drawers.store';
 
 interface ResponsiveDialogProps {
   open: boolean;
@@ -48,9 +49,19 @@ export default function ResponsiveDialog({ open, onClose, title, description, ch
     return () => clearTimeout(timer);
   }, [open, mounted, isMobile]);
 
+  // Phone: keep the drawer above the sidebar sheet (see modal-drawers.store). A layout effect, so the sheet's (passive)
+  // effect already counts it when both mount in the same commit.
+  const sheetMounting = useModalDrawersStore((state) => state.sheetMounting);
+  useLayoutEffect(() => {
+    if (!isMobile || !open) return;
+    const { opened, closed } = useModalDrawersStore.getState();
+    opened();
+    return closed;
+  }, [isMobile, open]);
+
   if (isMobile) {
     return (
-      <Drawer.Root open={open} onOpenChange={(next) => !next && onClose()}>
+      <Drawer.Root open={open && !sheetMounting} onOpenChange={(next) => !next && onClose()}>
         <Drawer.Portal>
           <Drawer.Overlay className="fixed inset-0 z-50 bg-black/40" />
           <Drawer.Content className={cn('fixed inset-x-0 bottom-0 z-50 flex flex-col', compact ? 'max-h-[92dvh]' : 'h-[92dvh]', 'rounded-t-2xl border-t bg-background outline-none')}>
