@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Layer, Source, type FillLayerSpecification, type LineLayerSpecification, type SymbolLayerSpecification } from 'react-map-gl/maplibre';
 import { useAreas } from '@/hooks/areas.hook';
+import { useHuntableAreas } from '@/hooks/huntable-areas.hook';
 import { usePredictions } from '@/hooks/predictions.hook';
 import { predictionAreaCircles, PREDICTION_PINS_LAYER, predictionPinFeatures } from '@/lib/map-layers';
 import { themedIconExpression, type MarkerPalette } from '@/lib/marker-style';
@@ -27,12 +28,13 @@ const PINS_SOURCE = 'prediction-pins';
 export default function Predictions() {
   const { predictions } = usePredictions();
   const { isVisible } = useAreas();
+  const { isForbidden } = useHuntableAreas();
   const theme = useMarkerTheme();
   const palette = useMarkerPalette();
   const paint = useMemo(() => predictionPaint(palette), [palette]);
 
   const data = useMemo(() => buildPredictionMap((predictions ?? []).filter((prediction) => isVisible(prediction.area)), getColorFromArea), [predictions, isVisible]);
-  const pins = useMemo(() => predictionPinFeatures(data.pins), [data.pins]);
+  const pins = useMemo(() => predictionPinFeatures(data.pins, isForbidden), [data.pins, isForbidden]);
   const areas = useMemo(() => predictionAreaCircles(data.pins), [data.pins]);
   const pinLayout = useMemo<SymbolLayerSpecification['layout']>(() => ({ 'icon-image': themedIconExpression(theme), 'icon-allow-overlap': true, 'icon-ignore-placement': true }), [theme]);
 

@@ -200,6 +200,23 @@ function letterBadge(area: AreaOrNone, color: string) {
   };
 }
 
+/** Lock instead of the area letter: a marker of an area we may not hunt (rule 5.1). */
+function lockBadge(color: string) {
+  return (p: Painter, cx: number, cy: number) => p.glyph('lock', cx, cy, 10, color);
+}
+
+/** Locked markers are drawn at this opacity (applied to the finished image, so rim and fill don't show through each other). */
+const LOCKED_ALPHA = 0.8;
+
+function isLocked(key: MarkerIconKey): boolean {
+  return (key.kind === 'fox' || key.kind === 'prediction') && key.locked;
+}
+
+/** Scale the alpha channel (ImageData is not premultiplied). */
+function fadeImage(image: ImageData, alpha: number) {
+  for (let i = 3; i < image.data.length; i += 4) image.data[i] = Math.round(image.data[i] * alpha);
+}
+
 const FOX_SIZE = 38;
 const HUNTER_SIZE = 38;
 const GROUP_SIZE = 28;
@@ -219,40 +236,45 @@ function drawing(key: MarkerIconKey, palette: MarkerPalette, measure: Ctx): Draw
         : circleIcon(HUNTER_SIZE, palette.secondaryContainer, (p, s) => p.glyph(glyph, s / 2, s / 2, 20, palette.onSecondaryContainer));
     }
     case 'fox': {
+      // Locked (an area we may not hunt): neutral grey with a lock badge, whatever the type or status
+      const neutral = { container: palette.surfaceContainerHighest, on: palette.onSurfaceVariant };
+      const badge = (on: string) => (key.locked ? lockBadge(neutral.on) : letterBadge(key.area, on));
       if (key.type === 'hunt') {
+        const { container, on } = key.locked ? neutral : { container: palette.tertiaryContainer, on: palette.onTertiaryContainer };
         return badged(
           FOX_SIZE,
           (p, s) => {
             p.shadow(3, 1);
             p.cookie(s / 2, s / 2, s / 2, palette.surfaceContainerLowest);
             p.noShadow();
-            p.cookie(s / 2, s / 2, s / 2 - RIM, palette.tertiaryContainer);
-            p.glyph('photo_camera', s / 2, s / 2, 20, palette.onTertiaryContainer);
+            p.cookie(s / 2, s / 2, s / 2 - RIM, container);
+            p.glyph('photo_camera', s / 2, s / 2, 20, on);
           },
-          letterBadge(key.area, palette.onTertiaryContainer),
+          badge(on),
         );
       }
       // A spot in the area's status colours; an unknown type (web only) in neutral grey
-      const { container, on } = key.type === 'spot' ? statusColors(key.status, palette) : { container: palette.surfaceContainerHighest, on: palette.onSurfaceVariant };
+      const { container, on } = key.locked || key.type !== 'spot' ? neutral : statusColors(key.status, palette);
       return badged(
         FOX_SIZE,
         (p, s) => {
           p.roundedSquare(s, container);
           p.fox(s / 2, s / 2, 22, on);
         },
-        letterBadge(key.area, on),
+        badge(on),
       );
     }
     case 'prediction': {
-      const [fill, on] = key.stale ? [palette.surfaceContainerHighest, palette.onSurfaceVariant] : [palette.tertiary, palette.onTertiary];
+      const grey = key.stale || key.locked;
+      const [fill, on] = grey ? [palette.surfaceContainerHighest, palette.onSurfaceVariant] : [palette.tertiary, palette.onTertiary];
       return badged(
         PREDICTION_SIZE,
         (p, s) => {
           p.round(s, fill);
           p.fox(s / 2, s / 2, 18, on);
         },
-        // The badge is light: the letter takes the pin colour (on-colour when greyed out)
-        letterBadge(key.area, key.stale ? on : fill),
+        // The badge is light: the letter takes the pin colour (on-colour when greyed out); a lock when locked
+        key.locked ? lockBadge(on) : letterBadge(key.area, key.stale ? on : fill),
       );
     }
     case 'group': {
@@ -359,6 +381,7 @@ export function drawMarkerIcon(key: MarkerIconKey, palette: MarkerPalette, pixel
   ctx.scale(pixelRatio, pixelRatio);
   draw(new Painter(ctx, palette, pixelRatio));
   const image = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  if (isLocked(key)) fadeImage(image, LOCKED_ALPHA);
   // Release the backing store right away (iOS Safari limits the total canvas memory)
   canvas.width = 0;
   canvas.height = 0;

@@ -182,7 +182,8 @@ export type GlyphName =
   | 'chat'
   | 'e911_emergency'
   | 'schedule'
-  | 'battery_alert';
+  | 'battery_alert'
+  | 'lock';
 
 /** Material Symbol per vehicle (Android `vehicleGlyph`); a device without vehicle is a person. */
 export function vehicleGlyph(icon: HunterIcon): GlyphName {

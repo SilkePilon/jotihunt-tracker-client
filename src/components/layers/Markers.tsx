@@ -4,6 +4,7 @@ import type { ExpressionSpecification } from 'maplibre-gl';
 import { useMarkers } from '@/hooks/markers.hook';
 import { useAreas } from '@/hooks/areas.hook';
 import { useHintBoard } from '@/hooks/hints.hook';
+import { useHuntableAreas } from '@/hooks/huntable-areas.hook';
 import { FOX_MARKERS_LAYER, markerFeatures, trailLines } from '@/lib/map-layers';
 import { filterMarkers, groupMarkersByArea, markerSplitTime } from '@/lib/markers';
 import { areaKey, HINT_LABEL_MS, hintNumbering, themedIconExpression, type MarkerTheme } from '@/lib/marker-style';
@@ -54,6 +55,7 @@ export default function Markers({ part1, part2 }: MarkersProps) {
   const { markers, deleteMarker } = useMarkers();
   const { areas, isVisible } = useAreas();
   const { board } = useHintBoard();
+  const { isForbidden } = useHuntableAreas();
   const map = useMap().current?.getMap();
   const theme = useMarkerTheme();
   const [nowMs, setNowMs] = useState(() => Date.now());
@@ -69,7 +71,7 @@ export default function Markers({ part1, part2 }: MarkersProps) {
   const statusByArea = useMemo(() => new Map((areas ?? []).map((area) => [areaKey(area.name), area.status])), [areas]);
   const statusOf = useCallback((area: string) => statusByArea.get(areaKey(area)), [statusByArea]);
   const numbering = useMemo(() => hintNumbering(board, HUNT), [board]);
-  const features = useMemo(() => markerFeatures(visibleMarkers, { statusOf, numbering, nowMs }), [visibleMarkers, statusOf, numbering, nowMs]);
+  const features = useMemo(() => markerFeatures(visibleMarkers, { statusOf, numbering, nowMs, isForbidden }), [visibleMarkers, statusOf, numbering, nowMs, isForbidden]);
   const layout = useMemo(() => foxLayout(theme), [theme]);
   const hoverLayout = useMemo<SymbolLayerSpecification['layout']>(() => ({ ...layout, 'icon-size': 1.1 }), [layout]);
   const hoverFilter = useMemo<SymbolLayerSpecification['filter']>(() => ['==', ['get', 'id'], hoveredId ?? ''], [hoveredId]);
