@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
 import { hintBoardRefreshMs } from '@/lib/hints';
 import { fetcherWithMethod, useAuthSWR } from '@/lib/swr';
@@ -23,46 +23,29 @@ const useDebouncedValue = <T>(value: T, delayMs: number): T => {
   return debounced;
 };
 
-/**
- * The hint board (articles and their cells per area) with the actions on a cell. `actions` is one memoised object, so
- * a memoised component that takes it does not re-render on every poll; the same functions are also spread at the top
- * level.
- */
+/** The hint board (articles and their cells per area) and solving a cell */
 export const useHintBoard = ({ live = false }: { live?: boolean } = {}) => {
   const authHeader = useAuthHeader() || '';
   // The intel window polls fast (answers by others show up quickly); the sidebar mini grid slowly
   const { data, error, mutate } = useAuthSWR<HintBoard>('/hints/board', { refreshInterval: hintBoardRefreshMs(live) });
-  // Memoised: the functions keep their identity between polls, so a pane that only uses them need not re-render
-  const actions = useMemo(() => {
-    /**
-     * Post an action for a cell and put the returned cell straight into the cache.
-     * Throws the axios error on failure so callers can show the right message.
-     */
-    async function post(articleId: number, area: string, action: string, body?: unknown): Promise<HintCell> {
-      const cell = (await fetcherWithMethod(`/hints/${articleId}/${area}/${action}`, authHeader, 'POST', body)) as HintCell;
-      await mutate((current) => current && { ...current, cells: current.cells.map((existing) => (existing._id === cell._id ? cell : existing)) }, { revalidate: false });
-      return cell;
-    }
 
-    return {
-      /** Fetch the board now instead of waiting for the next poll */
-      refresh: () => mutate(),
-      /** Store an answer; a 409 with `existingMarkerId` means another hint marker is there (resend with replaceMarker) */
-      solve: (articleId: number, area: string, answer: string, replaceMarker = false) => post(articleId, area, 'solve', { answer, replaceMarker }),
-    };
-  }, [authHeader, mutate]);
+  /**
+   * Store an answer and put the returned cell straight into the cache. Throws the axios error on failure; a 409 with
+   * `existingMarkerId` means another hint marker is there (resend with replaceMarker).
+   */
+  async function solve(articleId: number, area: string, answer: string, replaceMarker = false): Promise<HintCell> {
+    const cell = (await fetcherWithMethod(`/hints/${articleId}/${area}/solve`, authHeader, 'POST', { answer, replaceMarker })) as HintCell;
+    await mutate((current) => current && { ...current, cells: current.cells.map((existing) => (existing._id === cell._id ? cell : existing)) }, { revalidate: false });
+    return cell;
+  }
 
   return {
     board: data,
     isLoading: !error && !data,
     isError: error,
-    actions,
-    ...actions,
+    solve,
   };
 };
-
-/** The memoised actions of `useHintBoard`: stable between polls */
-export type HintBoardActions = ReturnType<typeof useHintBoard>['actions'];
 
 /**
  * Let the server parse a typed answer as an RD coordinate (single source of truth for RD rules).
