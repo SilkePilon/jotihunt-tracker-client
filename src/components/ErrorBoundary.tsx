@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import * as Sentry from '@sentry/react';
 import { RotateCwIcon, TriangleAlertIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -32,6 +33,10 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error(`[ErrorBoundary${this.props.name ? `: ${this.props.name}` : ''}]`, error, info.componentStack);
+    Sentry.captureException(error, {
+      tags: { boundary: this.props.name ?? this.props.variant ?? 'section' },
+      contexts: { react: { componentStack: info.componentStack ?? '' } },
+    });
   }
 
   private reset = () => this.setState({ error: null });

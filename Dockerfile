@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 # ---- Dependencies (cached unless package.json / bun.lock change) ----
 FROM oven/bun:1 AS deps
 WORKDIR /usr/src/app
@@ -17,7 +18,13 @@ ENV TZ=Europe/Amsterdam
 
 COPY --from=deps /usr/src/app/node_modules ./node_modules
 COPY . .
-RUN bun run build
+# Sentry release + source map upload (CI build args/secret; all optional, a local build just skips the upload)
+ARG GIT_SHA
+ARG SENTRY_ORG
+ARG SENTRY_PROJECT
+ENV GIT_SHA=${GIT_SHA}
+RUN --mount=type=secret,id=sentry_auth_token,env=SENTRY_AUTH_TOKEN \
+    SENTRY_ORG=${SENTRY_ORG} SENTRY_PROJECT=${SENTRY_PROJECT} bun run build
 
 EXPOSE 80
 # Inject runtime environment variables into dist/, then serve it on port 80

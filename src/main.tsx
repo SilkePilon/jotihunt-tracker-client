@@ -1,4 +1,6 @@
+import './instrument';
 import ReactDOM from 'react-dom/client';
+import * as Sentry from '@sentry/react';
 import './index.css';
 import Routes from './Routes.tsx';
 import createStore from 'react-auth-kit/createStore';
@@ -31,7 +33,12 @@ const authStore = createStore({
     cookieSecure: window.location.protocol === 'https:',
 });
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+// Crashes outside an ErrorBoundary and errors React recovered from go to Sentry; our ErrorBoundary reports the caught
+// ones itself (so no onCaughtError: it would send them twice)
+ReactDOM.createRoot(document.getElementById('root')!, {
+    onUncaughtError: Sentry.reactErrorHandler(),
+    onRecoverableError: Sentry.reactErrorHandler(),
+}).render(
     // Users who ask for less motion get fades only: motion drops transform and layout animations
     <MotionConfig reducedMotion="user">
         <TooltipProvider delayDuration={700}>
