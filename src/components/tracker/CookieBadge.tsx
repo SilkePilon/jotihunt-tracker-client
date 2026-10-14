@@ -11,6 +11,8 @@ interface CookieBadgeProps {
   size: number;
   /** Replaces the tone's check / exclamation mark: text (drawn bold, centred) or an element (centred, e.g. an icon) */
   glyph?: ReactNode;
+  /** Card-coloured ring of this width around the cookie (follows the lobes), for badges laid over other content */
+  outline?: number;
   className?: string;
 }
 
@@ -22,15 +24,20 @@ const FILL: Record<CookieTone, string> = {
 };
 
 /** Flat Material cookie badge, the same shape as the Android app and the visited pins on the map. */
-export default function CookieBadge({ tone, size: s, glyph, className }: CookieBadgeProps) {
+export default function CookieBadge({ tone, size: s, glyph, outline, className }: CookieBadgeProps) {
   const path = useMemo(() => cookiePath(s, BADGE_COOKIE_DEPTH), [s]);
   const glyphClass = tone === 'neutral' ? 'text-zinc-500 dark:text-zinc-400' : 'text-white';
-  const shape = <path d={path} className={FILL[tone]} fill={tone === 'danger' ? TEGENHUNT_RED : undefined} />;
+  const shape = (
+    <>
+      {outline && <path d={path} className="fill-card stroke-card" strokeWidth={outline * 2} strokeLinejoin="round" />}
+      <path d={path} className={FILL[tone]} fill={tone === 'danger' ? TEGENHUNT_RED : undefined} />
+    </>
+  );
 
   if (glyph !== undefined && typeof glyph !== 'string') {
     return (
       <span className={cn('relative inline-grid shrink-0 place-items-center', glyphClass, className)} style={{ width: s, height: s }}>
-        <svg width={s} height={s} viewBox={`0 0 ${s} ${s}`} aria-hidden className="absolute inset-0">
+        <svg width={s} height={s} viewBox={`0 0 ${s} ${s}`} aria-hidden className="absolute inset-0 overflow-visible">
           {shape}
         </svg>
         <span className="relative grid place-items-center">{glyph}</span>
@@ -39,7 +46,7 @@ export default function CookieBadge({ tone, size: s, glyph, className }: CookieB
   }
 
   return (
-    <svg width={s} height={s} viewBox={`0 0 ${s} ${s}`} aria-hidden className={cn('shrink-0', glyphClass, className)}>
+    <svg width={s} height={s} viewBox={`0 0 ${s} ${s}`} aria-hidden className={cn('shrink-0 overflow-visible', glyphClass, className)}>
       {shape}
       {typeof glyph === 'string' ? (
         <text x={s / 2} y={s / 2} dy="0.35em" textAnchor="middle" fontSize={s * 0.42} fontWeight={700} fill="currentColor">
