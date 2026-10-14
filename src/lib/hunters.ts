@@ -3,7 +3,8 @@ import type { Position } from '@/types/Position';
 import type { Vehicle } from '@/types/Tracker';
 import type { User } from '@/types/User';
 import { joinParts } from '@/lib/format';
-import { formatBattery, formatLastUpdate, formatSpeed, isActive, VEHICLE_OPTIONS } from '@/lib/tracker';
+import type { HunterIcon } from '@/lib/marker-style';
+import { formatLastUpdate, formatSpeed, isActive, VEHICLE_OPTIONS } from '@/lib/tracker';
 import { knotsToKmh } from '@/lib/utils';
 
 /** Traccar group id per vehicle (GROUP_*_ID in .env); undefined when not configured. */
@@ -68,8 +69,8 @@ export function formatCoordinates(lat: number, lng: number): string {
 const known = (value: string) => (value === '–' ? undefined : value);
 
 /**
- * Beheer → Hunters meta line, e.g. "Jesse · Lopend · zojuist · 82% · 5 km/u": the linked user (when named differently
- * from the device), vehicle, last update, battery and, while live, speed. Unknown parts are left out.
+ * Beheer → Hunters meta line, e.g. "Jesse · Lopend · zojuist · 5 km/u": the linked user (when named differently from
+ * the device), vehicle, last update and, while live, speed. The battery shows apart on the right. Unknown parts are left out.
  */
 export function hunterMeta(row: HunterRow, now: number): string {
   const vehicle = VEHICLE_OPTIONS.find((option) => option.value === row.vehicle)?.label;
@@ -77,7 +78,22 @@ export function hunterMeta(row: HunterRow, now: number): string {
     row.user && row.user.name !== row.device.name ? row.user.name : undefined,
     vehicle,
     known(formatLastUpdate(row.lastUpdate, now)),
-    known(formatBattery(row.batteryPercent)),
     row.active ? known(formatSpeed(row.speedKmh)) : undefined,
   );
+}
+
+/** Hunters header line: "3 live · 1 niet live" */
+export function huntersSummary(rows: HunterRow[]): string {
+  const live = rows.filter((row) => row.active).length;
+  return `${live} live · ${rows.length - live} niet live`;
+}
+
+/** The map marker's icon for a hunter: its vehicle, or a phone when the device's group isn't a vehicle. */
+export function hunterIcon(row: HunterRow): HunterIcon {
+  return row.vehicle ?? 'phone';
+}
+
+/** Under 20 %: the battery shows red. */
+export function isLowBattery(percent: number | undefined): boolean {
+  return percent !== undefined && percent < 20;
 }

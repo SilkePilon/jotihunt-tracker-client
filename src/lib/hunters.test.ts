@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import type { Device } from '@/types/Device';
 import type { Position } from '@/types/Position';
 import type { User } from '@/types/User';
-import { googleMapsUrl, hunterMeta, hunterRows, vehicleForGroupId, vehicleGroupIdsFromEnv } from './hunters';
+import { googleMapsUrl, hunterIcon, hunterMeta, hunterRows, huntersSummary, isLowBattery, vehicleForGroupId, vehicleGroupIdsFromEnv } from './hunters';
 
 const NOW = new Date('2026-10-17T12:00:00Z').getTime();
 const groups = vehicleGroupIdsFromEnv({ GROUP_WALKING_ID: '1', GROUP_BIKE_ID: '2', GROUP_CAR_ID: '3', GROUP_MOTORCYCLE_ID: '' });
@@ -46,16 +46,34 @@ describe('hunterRows', () => {
     expect(row).toMatchObject({ active: false, lastUpdate: undefined, speedKmh: undefined, user: undefined });
   });
 
-  test('hunterMeta: user (when named differently), vehicle, update, battery, speed only while live; unknowns left out', () => {
+  test('hunterMeta: user (when named differently), vehicle, update, speed only while live; no battery (shown apart); unknowns left out', () => {
     const [live, stale, never] = hunterRows(devices, positions, users, groups, NOW);
-    expect(hunterMeta(live, NOW)).toBe('Merida · Auto · 2 min geleden · 64% · 19 km/u');
+    expect(hunterMeta(live, NOW)).toBe('Merida · Auto · 2 min geleden · 19 km/u');
     expect(hunterMeta(stale, NOW)).toBe('Fiets · 10 min geleden');
     expect(hunterMeta(never, NOW)).toBe('Lopend');
     const named = hunterRows([device(2, '2026-10-17T11:58:00Z', 3)], positions, [{ ...users[0], name: 'Toestel 2' }], groups, NOW);
-    expect(hunterMeta(named[0], NOW)).toBe('Auto · 2 min geleden · 64% · 19 km/u');
+    expect(hunterMeta(named[0], NOW)).toBe('Auto · 2 min geleden · 19 km/u');
+  });
+
+  test('huntersSummary counts live and not live', () => {
+    expect(huntersSummary(hunterRows(devices, positions, users, groups, NOW))).toBe('1 live · 2 niet live');
+    expect(huntersSummary([])).toBe('0 live · 0 niet live');
+  });
+
+  test('hunterIcon: the vehicle, else a phone', () => {
+    const [live] = hunterRows(devices, positions, users, groups, NOW);
+    expect(hunterIcon(live)).toBe('car');
+    const [plain] = hunterRows([device(4, null, 99)], undefined, undefined, groups, NOW);
+    expect(hunterIcon(plain)).toBe('phone');
   });
 });
 
 test('googleMapsUrl', () => {
   expect(googleMapsUrl(52.1234567, 5.9)).toBe('https://www.google.com/maps/search/?api=1&query=52.123457,5.900000');
+});
+
+test('isLowBattery: under 20 %', () => {
+  expect(isLowBattery(19)).toBe(true);
+  expect(isLowBattery(20)).toBe(false);
+  expect(isLowBattery(undefined)).toBe(false);
 });
