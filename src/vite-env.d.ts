@@ -12,6 +12,7 @@ type ImportMetaEnv = {
   PROD: boolean
   BUILD_TIME: number
   VERSION: string
+  SENTRY_RELEASE: string
   API_BASE_URL: string
   HUNT_START_TIME: string
   HUNT_END_TIME: string
@@ -24,6 +25,8 @@ type ImportMetaEnv = {
   LOGO_URL: string
   GROUP_NAME: string
   TEAMS_AREA_EDITING: string
+  SENTRY_DSN: string
+  SENTRY_ENVIRONMENT: string
   // @user-defined-start
   /*
    *  You can use this section to explicitly extend the type definition of `import.meta.env`

@@ -95,6 +95,8 @@ export default defineConfig({
         return {
           BUILD_TIME: Date.now(),
           VERSION: packageJson.version,
+          // Git commit of the build (CI build arg), reported as the Sentry release; the version when built locally
+          SENTRY_RELEASE: process.env.GIT_SHA || packageJson.version,
         };
       },
     }),
