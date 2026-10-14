@@ -1,6 +1,8 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
+import { sentryVitePlugin } from '@sentry/vite-plugin';
+import { readFileSync } from 'fs';
 import path from 'path';
 import { viteEnvs } from 'vite-envs';
 import { VitePWA, VitePWAOptions } from 'vite-plugin-pwa';
@@ -17,6 +19,8 @@ const pwaManifest: Partial<VitePWAOptions> = {
     importScripts: ['push-sw.js'],
     // The API shares the origin under /api (https://jotihunt.silkepilon.dev/api); its URLs (e.g. the APK download) are never app routes
     navigateFallbackDenylist: [/^\/api(\/|$)/],
+    // Would follow build.sourcemap but reference the maps from sw.js; Sentry doesn't run in the service worker
+    sourcemap: false,
   },
   manifest: {
     name: 'Jotihunt Tracker',
@@ -79,6 +83,11 @@ const pwaManifest: Partial<VitePWAOptions> = {
   },
 };
 
+// Source maps go to Sentry in the CI image build (SENTRY_AUTH_TOKEN as a build secret) and are deleted from dist/
+// afterwards; without a token (local builds, `vite preview` at container start) the plugin is left out
+const sentryRelease = process.env.GIT_SHA || JSON.parse(readFileSync(path.resolve(import.meta.dirname, 'package.json'), 'utf-8')).version;
+const uploadSourceMaps = !!process.env.SENTRY_AUTH_TOKEN?.trim();
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
@@ -96,11 +105,23 @@ export default defineConfig({
           BUILD_TIME: Date.now(),
           VERSION: packageJson.version,
           // Git commit of the build (CI build arg), reported as the Sentry release; the version when built locally
-          SENTRY_RELEASE: process.env.GIT_SHA || packageJson.version,
+          SENTRY_RELEASE: sentryRelease,
         };
       },
     }),
     VitePWA(pwaManifest),
+    ...(uploadSourceMaps
+      ? [
+          sentryVitePlugin({
+            org: process.env.SENTRY_ORG,
+            project: process.env.SENTRY_PROJECT,
+            authToken: process.env.SENTRY_AUTH_TOKEN,
+            release: { name: sentryRelease },
+            sourcemaps: { filesToDeleteAfterUpload: ['./dist/**/*.map'] },
+            telemetry: false,
+          }),
+        ]
+      : []),
   ],
   legacy: {
     // react-auth-kit / @auth-kit/react-router ship Babel-compiled CommonJS
@@ -129,6 +150,8 @@ export default defineConfig({
     format: 'es',
   },
   build: {
+    // Generated for the Sentry upload but not referenced from the JS, so browsers never fetch them
+    sourcemap: 'hidden',
     rolldownOptions: {
       output: {
         chunkFileNames: '[name].[hash].js',
