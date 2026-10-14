@@ -78,14 +78,26 @@ function IntelWindow(_props: { mapRef: RefObject<MapRef | null> }) {
     if (articleId !== null && articleId === resolvedId && !selected) select(null);
   }, [articleId, resolvedId, selected, select]);
 
-  // A pending article that is not in the data yet: fetch articles and the hint board now instead of at the next poll
+  // A pending article that is not in the data yet: fetch articles and the hint board now instead of at the next poll.
+  // Still not there after that fetch: drop it, so the split can't open out of the blue later.
   const { mutate } = useSWRConfig();
   const refreshedFor = useRef<number | null>(null);
   useEffect(() => {
     if (!articles || articleId === null || refreshedFor.current === articleId || items.some((item) => item.id === articleId)) return;
     refreshedFor.current = articleId;
-    void mutate((key) => Array.isArray(key) && (key[0] === '/articles' || key[0] === '/hints/board'));
-  }, [articles, articleId, items, mutate]);
+    void mutate((key) => Array.isArray(key) && (key[0] === '/articles' || key[0] === '/hints/board')).then((results) => {
+      const found = results.some((data) => Array.isArray(data) && data.some((article: { id?: number }) => article?.id === articleId));
+      if (!found && useIntelStore.getState().articleId === articleId) select(null);
+    });
+  }, [articles, articleId, items, mutate, select]);
+
+  // A pending selection does not survive a tab switch either
+  const lastTab = useRef(tab);
+  useEffect(() => {
+    if (lastTab.current === tab) return;
+    lastTab.current = tab;
+    if (articleId !== null && !selected) select(null);
+  }, [tab, articleId, selected, select]);
 
   // Opening news or an opdracht marks it read (hints have no read state)
   useEffect(() => {

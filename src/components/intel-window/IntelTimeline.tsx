@@ -1,4 +1,4 @@
-import { type ReactNode, type RefObject, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createContext, type ReactNode, type RefObject, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, type Variants } from 'motion/react';
 import { ClockIcon } from 'lucide-react';
 import { Tag } from '@/components/beheer/controls/Pill';
@@ -19,9 +19,9 @@ const FOLD = { duration: 0.22, ease: EASE_OUT } as const;
  * `custom` is the list's own mode (not passed through AnimatePresence, so an exiting list keeps its own): the wide list
  * leaves with x −12 / 0.13 s, the compact one with x −10 / 0.14 s.
  *
- * Labels: `hidden` = start of a staggered list entrance, `insert` = something that mounts while the list is on screen
- * (a new article or day: it unfolds), `shown` = in place. Children inherit the list's `initial` label, so the list's
- * first paint uses `false` (no entrance), then `insert` once mounted.
+ * Labels: `hidden` = start of a staggered list entrance, `insert` = mounted while the list is on screen (no offset:
+ * its `Fold` unfolds it instead), `shown` = in place. Children inherit the list's `initial` label, so the list's first
+ * paint uses `false` (no entrance), then `insert` once mounted. `shown` never touches height: only a `Fold` measures it.
  */
 const list: Variants = {
   hidden: {},
@@ -40,11 +40,34 @@ const day: Variants = {
 };
 const entry: Variants = {
   hidden: (compact: boolean) => ({ opacity: 0, x: compact ? 16 : 0, y: compact ? 0 : 8 }),
-  insert: { opacity: 0, height: 0 },
-  shown: { opacity: 1, x: 0, y: 0, height: 'auto', transition: { duration: 0.32, ease: EASE_OUT } },
+  insert: {},
+  shown: { opacity: 1, x: 0, y: 0, transition: { duration: 0.32, ease: EASE_OUT } },
 };
-/** Leaving while the list stays: fold away (needs the element's `overflow-y-clip`) */
-const FOLD_OUT = { opacity: 0, height: 0, transition: FOLD };
+
+/** Whether something mounting here now arrives while its list is on screen (and should unfold) */
+const InsertContext = createContext(false);
+
+/**
+ * Unfolds (height + opacity) when it mounts while its list is already on screen, folds away when it leaves on its own.
+ * It has no padding and clips vertically (`clip`, not `hidden`: no scroll container, so sticky day headers keep working),
+ * so the fold runs to exactly zero. Inside a Fold that is still unfolding, nested Folds don't unfold again.
+ */
+function Fold({ children, className }: { children: ReactNode; className?: string }) {
+  const parentInserting = useContext(InsertContext);
+  const [inserting] = useState(parentInserting);
+  const mounted = useHasMounted();
+  return (
+    <motion.div
+      initial={inserting ? { height: 0, opacity: 0 } : false}
+      animate={{ height: 'auto', opacity: 1 }}
+      exit={{ height: 0, opacity: 0 }}
+      transition={FOLD}
+      className={cn('overflow-y-clip [overflow-clip-margin:3px]', className)}
+    >
+      <InsertContext.Provider value={mounted}>{children}</InsertContext.Provider>
+    </motion.div>
+  );
+}
 
 /** Ticks once a minute: deadlines and day labels */
 function useMinute() {
@@ -78,10 +101,12 @@ export default function IntelTimeline({ items, compact, tab, selectedId, onSelec
   const now = useMinute();
   const mounted = useHasMounted();
   const groups = groupByDay(items, now);
-  const wideTop = useRef<number | null>(null);
+  const wideTop = useRef<{ top: number; tab: IntelTab } | null>(null);
   useEffect(() => {
     // Runs right after the split opens, while the wide list is still on screen (fading out)
-    if (compact && scrollRef.current) wideTop.current = scrollRef.current.scrollTop;
+    if (compact && scrollRef.current) wideTop.current = { top: scrollRef.current.scrollTop, tab };
+    // Only the tab at the moment the split opens counts
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [compact, scrollRef]);
 
   return (
@@ -91,53 +116,55 @@ export default function IntelTimeline({ items, compact, tab, selectedId, onSelec
         compact={compact}
         skipEntrance={!mounted}
         onMount={() => {
-          if (!compact && wideTop.current !== null && scrollRef.current) scrollRef.current.scrollTop = wideTop.current;
-          if (!compact) wideTop.current = null;
+          if (compact) return;
+          // Back to where the wide list was, unless the tab changed in between (another list)
+          if (wideTop.current?.tab === tab && scrollRef.current) scrollRef.current.scrollTop = wideTop.current.top;
+          wideTop.current = null;
         }}
       >
         <AnimatePresence>
           {groups.length === 0 && (
-            <motion.p key="empty" custom={compact} variants={entry} exit={FOLD_OUT} className="overflow-y-clip py-10 text-center text-sm text-muted-foreground">
-              Nog niets gepubliceerd
-            </motion.p>
+            <Fold key="empty">
+              <motion.p custom={compact} variants={entry} className="py-10 text-center text-sm text-muted-foreground">
+                Nog niets gepubliceerd
+              </motion.p>
+            </Fold>
           )}
           {groups.map((group, index) => (
-            <motion.section
-              key={group.key}
-              custom={{ compact, offset: groups.slice(0, index).reduce((sum, before) => sum + 1 + before.items.length, 0) }}
-              variants={day}
-              exit={FOLD_OUT}
-              // Clips vertically only: no scroll container, so the sticky day header keeps working, and focus rings show
-              className="overflow-y-clip"
-            >
-              <motion.h3
-                custom={compact}
-                variants={entry}
-                className={cn(
-                  'sticky top-0 z-10 bg-linear-to-b from-beheer-window from-70% to-transparent pt-3.5 pb-2 text-[11.5px] font-extrabold tracking-[0.06em] whitespace-nowrap text-muted-foreground uppercase',
-                  compact ? 'pl-1.5' : 'pl-[66px]',
-                )}
-              >
-                {group.label}
-              </motion.h3>
-              <AnimatePresence>
-                {group.items.map((item) =>
-                  compact ? (
-                    <motion.div key={item.id} custom={compact} variants={entry} exit={FOLD_OUT} className="overflow-y-clip py-[3px]">
-                      <CompactRow item={item} now={now} selected={item.id === selectedId} onSelect={onSelect} />
-                    </motion.div>
-                  ) : (
-                    <motion.div key={item.id} custom={compact} variants={entry} exit={FOLD_OUT} className="grid grid-cols-[52px_14px_1fr] gap-x-2.5 overflow-y-clip">
-                      <div className="pt-[15px] text-right text-xs text-muted-foreground tabular-nums">{formatClock(item.publishAt)}</div>
-                      <div className="relative before:absolute before:inset-y-0 before:left-1.5 before:w-0.5 before:bg-beheer-row-high">
-                        <span className="absolute top-[18px] left-0.5 size-2.5 rounded-full ring-2 ring-beheer-window" style={{ backgroundColor: KIND_COLOR[item.kind] }} />
-                      </div>
-                      <WideCard item={item} now={now} onSelect={onSelect} />
-                    </motion.div>
-                  ),
-                )}
-              </AnimatePresence>
-            </motion.section>
+            <Fold key={group.key}>
+              <motion.section custom={{ compact, offset: groups.slice(0, index).reduce((sum, before) => sum + 1 + before.items.length, 0) }} variants={day}>
+                <motion.h3
+                  custom={compact}
+                  variants={entry}
+                  className={cn(
+                    'sticky top-0 z-10 bg-linear-to-b from-beheer-window from-70% to-transparent pt-3.5 pb-2 text-[11.5px] font-extrabold tracking-[0.06em] whitespace-nowrap text-muted-foreground uppercase',
+                    compact ? 'pl-1.5' : 'pl-[66px]',
+                  )}
+                >
+                  {group.label}
+                </motion.h3>
+                <AnimatePresence>
+                  {group.items.map((item) => (
+                    <Fold key={item.id}>
+                      {compact ? (
+                        // 2px + 2px: a 4px gap between rows, inside the fold
+                        <motion.div custom={compact} variants={entry} className="py-0.5">
+                          <CompactRow item={item} now={now} selected={item.id === selectedId} onSelect={onSelect} />
+                        </motion.div>
+                      ) : (
+                        <motion.div custom={compact} variants={entry} className="grid grid-cols-[52px_14px_1fr] gap-x-2.5">
+                          <div className="pt-[15px] text-right text-xs text-muted-foreground tabular-nums">{formatClock(item.publishAt)}</div>
+                          <div className="relative before:absolute before:inset-y-0 before:left-1.5 before:w-0.5 before:bg-beheer-row-high">
+                            <span className="absolute top-[18px] left-0.5 size-2.5 rounded-full ring-2 ring-beheer-window" style={{ backgroundColor: KIND_COLOR[item.kind] }} />
+                          </div>
+                          <WideCard item={item} now={now} onSelect={onSelect} />
+                        </motion.div>
+                      )}
+                    </Fold>
+                  ))}
+                </AnimatePresence>
+              </motion.section>
+            </Fold>
           ))}
         </AnimatePresence>
       </TimelineList>
@@ -163,7 +190,7 @@ function TimelineList({ compact, skipEntrance, onMount, children }: { compact: b
       exit="gone"
       className={compact ? 'w-full px-4 pb-8' : 'w-[100cqw] pr-[200px] pb-8 pl-[150px]'}
     >
-      {children}
+      <InsertContext.Provider value={mounted}>{children}</InsertContext.Provider>
     </motion.div>
   );
 }
