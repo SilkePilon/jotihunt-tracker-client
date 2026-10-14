@@ -3,7 +3,7 @@ import { AxiosError, AxiosHeaders } from 'axios';
 import type { Article } from '@/types/Article';
 import type { HintCell } from '@/types/HintCell';
 import type { IntelItem } from '@/types/Intel';
-import { answerPreview, areaStates, initialOpenArea, buildIntelItems, deadlineLabel, filterByTab, groupByDay, hasExistingMarker, isDeadlineUrgent, nextOpenArea, solvedCount, unreadCount } from './intel-window';
+import { answerPreview, areaStates, initialOpenArea, buildIntelItems, deadlineLabel, deadlineTone, filterByTab, groupByDay, hasExistingMarker, isDeadlineUrgent, nextOpenArea, solvedCount, unreadCount } from './intel-window';
 
 const article = (id: number, type: string, publishAt: string, extra: Partial<Article> = {}) =>
   ({ id, title: `A${id}`, type, publishAt: new Date(publishAt), content: '<p>x</p>', messageType: '', maxPoints: 0, endTime: new Date(publishAt), ...extra }) as Article;
@@ -24,6 +24,12 @@ describe('buildIntelItems', () => {
     expect(items[2]).toMatchObject({ unread: true, maxPoints: 30, assignment: { status: 'busy' } });
     expect(items[1].unread).toBe(false); // hints are never unread
   });
+  test('an older server sending a read count instead of names gives no names', () => {
+    const readState = { read: [1], readBy: { '1': 3 } } as unknown as Parameters<typeof buildIntelItems>[0]['readState'];
+    const [item] = buildIntelItems({ articles: [article(1, 'news', '2026-10-17T12:00:00Z')], readState });
+    expect(item.readBy).toEqual([]);
+    expect(buildIntelItems({ articles: [article(1, 'news', '2026-10-17T12:00:00Z')], readState: { read: [] } as never })[0].readBy).toEqual([]);
+  });
 });
 
 describe('tabs and unread', () => {
@@ -32,7 +38,11 @@ describe('tabs and unread', () => {
     expect(filterByTab(items, 'all')).toHaveLength(3);
     expect(filterByTab(items, 'news').map((item) => item.kind)).toEqual(['news']);
   });
-  test('unreadCount', () => expect(unreadCount(items)).toBe(2));
+  test('unreadCount', () => {
+    expect(unreadCount(items)).toBe(2);
+    expect(unreadCount(items, 'news')).toBe(1);
+    expect(unreadCount(items, 'hint')).toBe(0);
+  });
 });
 
 describe('groupByDay', () => {
@@ -72,12 +82,21 @@ describe('deadlines', () => {
   test('labels', () => {
     expect(deadlineLabel('2026-10-17T12:42:00Z', now)).toBe('nog 42 min');
     expect(deadlineLabel('2026-10-17T13:47:00Z', now)).toBe('nog 1 u 47');
+    expect(deadlineLabel('2026-10-17T13:05:00Z', now)).toBe('nog 1 u 05');
+    expect(deadlineLabel('2026-10-17T13:00:00Z', now)).toBe('nog 1 u 00');
     expect(deadlineLabel('2026-10-17T11:00:00Z', now)).toBe('verlopen');
   });
   test('urgent under an hour unless done', () => {
     expect(isDeadlineUrgent('2026-10-17T12:30:00Z', now, 'open')).toBe(true);
     expect(isDeadlineUrgent('2026-10-17T12:30:00Z', now, 'submitted')).toBe(false);
     expect(isDeadlineUrgent('2026-10-17T15:00:00Z', now, 'busy')).toBe(false);
+  });
+  test('tone', () => {
+    expect(deadlineTone('2026-10-17T12:30:00Z', now, 'submitted')).toBe('done');
+    expect(deadlineTone('2026-10-17T11:00:00Z', now, 'skipped')).toBe('done');
+    expect(deadlineTone('2026-10-17T11:00:00Z', now, 'open')).toBe('expired');
+    expect(deadlineTone('2026-10-17T12:30:00Z', now, 'busy')).toBe('urgent');
+    expect(deadlineTone('2026-10-17T15:00:00Z', now, 'open')).toBe('calm');
   });
 });
 

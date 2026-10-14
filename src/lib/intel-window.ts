@@ -20,7 +20,7 @@ const kindOf = (type: string): IntelKind => (type === 'hint' || type === 'assign
 
 /** Every article newest first, joined with its hint cells, assignment bookkeeping and read state */
 export function buildIntelItems({ articles, board, assignments, readState }: { articles?: Article[]; board?: HintBoard; assignments?: Assignment[]; readState?: ReadState }): IntelItem[] {
-  const read = new Set(readState?.read ?? []);
+  const read = new Set(Array.isArray(readState?.read) ? readState.read : []);
   const byArticle = new Map((assignments ?? []).map((assignment) => [assignment.articleId, assignment]));
   return [...(articles ?? [])]
     .sort((a, b) => time(b.publishAt) - time(a.publishAt))
@@ -38,17 +38,21 @@ export function buildIntelItems({ articles, board, assignments, readState }: { a
         maxPoints: kind === 'assignment' ? (article.maxPoints ?? undefined) : undefined,
         assignment: kind === 'assignment' ? byArticle.get(article.id) : undefined,
         unread: kind !== 'hint' && !read.has(article.id),
-        readBy: readState?.readBy[String(article.id)] ?? [],
+        // An older server sends a count instead of the names
+        readBy: namesOf(readState?.readBy?.[String(article.id)]),
       };
     });
 }
+
+const namesOf = (value: unknown): string[] => (Array.isArray(value) ? value : []);
 
 export function filterByTab(items: IntelItem[], tab: IntelTab): IntelItem[] {
   return tab === 'all' ? items : items.filter((item) => item.kind === tab);
 }
 
-export function unreadCount(items: IntelItem[]): number {
-  return items.filter((item) => item.unread).length;
+/** Unread items, optionally of one kind only */
+export function unreadCount(items: IntelItem[], kind?: IntelKind): number {
+  return items.filter((item) => item.unread && (!kind || item.kind === kind)).length;
 }
 
 const dayKey = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Amsterdam', year: 'numeric', month: '2-digit', day: '2-digit' });
@@ -104,18 +108,27 @@ export function initialOpenArea(cells: HintCell[], area: string | null): string 
   return cell && cell.status !== 'none' ? cell.area : nextOpenArea(cells);
 }
 
-/** "nog 42 min", "nog 1 u 47" or "verlopen" */
+/** "nog 42 min", "nog 1 u 05" or "verlopen" */
 export function deadlineLabel(endTime: string, now: number): string {
   const left = time(endTime) - now;
   if (left <= 0) return 'verlopen';
   const minutes = Math.ceil(left / 60_000);
-  return minutes < 60 ? `nog ${minutes} min` : `nog ${Math.floor(minutes / 60)} u ${minutes % 60}`;
+  return minutes < 60 ? `nog ${minutes} min` : `nog ${Math.floor(minutes / 60)} u ${String(minutes % 60).padStart(2, '0')}`;
 }
 
 export function isDeadlineUrgent(endTime: string | undefined, now: number, status: AssignmentStatus): boolean {
   if (!endTime || status === 'submitted' || status === 'skipped') return false;
   const left = time(endTime) - now;
   return left > 0 && left < HOUR_MS;
+}
+
+/** How a deadline pill looks: done (submitted or skipped), expired, urgent (under an hour left) or calm */
+export type DeadlineTone = 'done' | 'expired' | 'urgent' | 'calm';
+
+export function deadlineTone(endTime: string, now: number, status: AssignmentStatus): DeadlineTone {
+  if (status === 'submitted' || status === 'skipped') return 'done';
+  if (time(endTime) - now <= 0) return 'expired';
+  return isDeadlineUrgent(endTime, now, status) ? 'urgent' : 'calm';
 }
 
 /** The solve was refused because another hint marker exists for that area and hour */
