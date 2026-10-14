@@ -25,7 +25,9 @@ import useAdminStore, { type AdminDialogId } from '@/stores/admin.store';
 import type { User } from '@/types/User';
 import AlgemeenPane from './AlgemeenPane';
 import { BeheerPane } from './BeheerLayout';
+import BroadcastPane from './BroadcastPane';
 import HuntersPane from './HuntersPane';
+import InvitesPane from './InvitesPane';
 import UsersPane from './UsersPane';
 
 interface BeheerDialogProps {
@@ -262,8 +264,12 @@ function SectionPane({ section, mapRef }: { section: AdminDialogId; mapRef: RefO
       return <AlgemeenPane />;
     case 'users':
       return <UsersPane />;
+    case 'invites':
+      return <InvitesPane />;
     case 'hunters':
       return <HuntersPane mapRef={mapRef} />;
+    case 'broadcast':
+      return <BroadcastPane />;
     default:
       return <PlaceholderPane title={titleOf(section)} />;
   }

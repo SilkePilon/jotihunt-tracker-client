@@ -8,7 +8,7 @@ const REFRESH_MS = 30_000;
 
 /** Beheer → Bericht: messages sent to everyone (newest first). Pass `enabled` false to skip fetching. */
 export const useBroadcasts = (enabled: boolean) => {
-  const { data, mutate } = useAuthSWR<Broadcast[]>(enabled ? '/admin/broadcasts' : null, { refreshInterval: REFRESH_MS });
+  const { data, error, mutate } = useAuthSWR<Broadcast[]>(enabled ? '/admin/broadcasts' : null, { refreshInterval: REFRESH_MS });
   const { fetch } = useFetcher();
 
   /** Push + sound to everyone (1–200 characters). Throws the axios error on failure. */
@@ -17,5 +17,5 @@ export const useBroadcasts = (enabled: boolean) => {
     void mutate();
   }
 
-  return { broadcasts: asList(data), send };
+  return { broadcasts: asList(data), error, send };
 };
