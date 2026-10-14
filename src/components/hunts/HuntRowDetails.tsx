@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { DownloadIcon, Loader2Icon, PencilIcon, SendIcon, Trash2Icon, TriangleAlertIcon, Undo2Icon } from 'lucide-react';
+import { CheckIcon, CopyIcon, DownloadIcon, Loader2Icon, PencilIcon, SendIcon, Trash2Icon, TriangleAlertIcon, Undo2Icon } from 'lucide-react';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import { toast } from 'sonner';
 import { IconPill, Pill } from '@/components/beheer/controls/Pill';
@@ -9,8 +9,9 @@ import Reveal from '@/components/motion/Reveal';
 import { useAuthImage } from '@/hooks/auth-image.hook';
 import { useHuntReports } from '@/hooks/hunt-reports.hook';
 import { apiErrorMessage } from '@/lib/api-error';
+import { copyToClipboard } from '@/lib/clipboard';
 import { formatClock } from '@/lib/format';
-import { huntSourceLabel, isReading, readFailed } from '@/lib/hunt-reports';
+import { huntSourceLabel, huntTimeLabel, isReading, readFailed } from '@/lib/hunt-reports';
 import { SWAP } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import type { HuntReport } from '@/types/HuntReport';
@@ -24,6 +25,36 @@ const GAP = 10;
 
 /** Open rows are bg-beheer-row-high, the same as the secondary/soft pills, so these need their own background to stay visible */
 const ON_OPEN_ROW = 'bg-black/5 hover:bg-black/10 dark:bg-white/8 dark:hover:bg-white/12';
+
+/** How long a copy pill shows its check mark */
+const COPIED_MS = 2000;
+
+/** Pill showing a value HQ types into jotihunt.nl (code, time); tap copies it and the copy icon turns into a check. */
+function CopyPill({ value, label }: { value: string; label: string }) {
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!copied) return;
+    const timeout = setTimeout(() => setCopied(false), COPIED_MS);
+    return () => clearTimeout(timeout);
+  }, [copied]);
+
+  return (
+    <Pill
+      variant="secondary"
+      morphKey={copied ? 'copied' : 'idle'}
+      aria-label={`${label} kopiëren`}
+      title={`${label} kopiëren`}
+      className={cn(ON_OPEN_ROW, 'font-mono', copied && 'text-green-700 dark:text-green-300')}
+      onClick={async () => {
+        if (await copyToClipboard(value, `${label} gekopieerd`)) setCopied(true);
+      }}
+    >
+      {copied ? <CheckIcon /> : <CopyIcon />}
+      {value}
+    </Pill>
+  );
+}
 
 /** One fact tile: small uppercase label, one truncated line. */
 function Fact({ label, className, children }: { label: string; className?: string; children: ReactNode }) {
@@ -149,6 +180,9 @@ export default function HuntRowDetails({ report, onDelete }: { report: HuntRepor
       {report.needsReview && !isReading(report) && <Warning>Controleer de code en tijd met de foto.</Warning>}
 
       <div className="flex flex-wrap items-center gap-1.5">
+        {isAdmin && report.huntCode && <CopyPill value={report.huntCode} label="Code" />}
+        {isAdmin && report.huntTimeKnown && <CopyPill value={huntTimeLabel(report)} label="Tijd" />}
+        {isAdmin && (report.huntCode || report.huntTimeKnown) && <span aria-hidden className="mx-1 h-5 w-px bg-border" />}
         <Pill variant="secondary" className={ON_OPEN_ROW} disabled={!photo} onClick={download}>
           <DownloadIcon />
           Foto
