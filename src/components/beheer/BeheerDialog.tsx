@@ -24,10 +24,10 @@ import { cn } from '@/lib/utils';
 import useAdminStore, { type AdminDialogId } from '@/stores/admin.store';
 import type { User } from '@/types/User';
 import AlgemeenPane from './AlgemeenPane';
-import { BeheerPane } from './BeheerLayout';
 import BroadcastPane from './BroadcastPane';
 import HuntersPane from './HuntersPane';
 import InvitesPane from './InvitesPane';
+import KoppelingenPane from './KoppelingenPane';
 import UsersPane from './UsersPane';
 
 interface BeheerDialogProps {
@@ -270,16 +270,7 @@ function SectionPane({ section, mapRef }: { section: AdminDialogId; mapRef: RefO
       return <HuntersPane mapRef={mapRef} />;
     case 'broadcast':
       return <BroadcastPane />;
-    default:
-      return <PlaceholderPane title={titleOf(section)} />;
+    case 'koppelingen':
+      return <KoppelingenPane />;
   }
-}
-
-/** Sections that are not built yet */
-function PlaceholderPane({ title }: { title: string }) {
-  return (
-    <BeheerPane title={title} description="Komt eraan.">
-      {null}
-    </BeheerPane>
-  );
 }
