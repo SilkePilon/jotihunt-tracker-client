@@ -21,6 +21,8 @@ interface ResponsiveDialogProps {
   compact?: boolean;
   /** After `open` turned false and the slide-out / fade-out has finished, e.g. to unmount the dialog */
   onClosed?: () => void;
+  /** Escape on the desktop dialog, before the inline-edit guard; call event.preventDefault() to keep the dialog open (e.g. to close a sub-view first) */
+  onEscapeKeyDown?: (event: KeyboardEvent) => void;
 }
 
 // vaul's slide-out (TRANSITIONS.DURATION) and the Radix dialog's `duration-200` fade/zoom-out, plus a margin so the content never unmounts a frame early
@@ -28,7 +30,7 @@ const DRAWER_CLOSE_MS = 500;
 const DIALOG_CLOSE_MS = 250;
 
 /** Frame shared by the large dialogs: a large dialog on desktop, a bottom drawer on phones. */
-export default function ResponsiveDialog({ open, onClose, title, description, children, className, drawerClassName, hideHeader, compact, onClosed }: ResponsiveDialogProps) {
+export default function ResponsiveDialog({ open, onClose, title, description, children, className, drawerClassName, hideHeader, compact, onClosed, onEscapeKeyDown }: ResponsiveDialogProps) {
   const isMobile = useIsMobile();
   // Keep the content while the drawer slides out / the dialog fades out, instead of an empty frame leaving
   const [mounted, setMounted] = useState(open);
@@ -75,7 +77,12 @@ export default function ResponsiveDialog({ open, onClose, title, description, ch
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
-      <DialogContent onEscapeKeyDown={keepOpenWhileEditing} className={cn('flex max-h-[80dvh] flex-col gap-4 sm:max-w-4xl', !compact && 'h-[80dvh]', className)}>
+      <DialogContent
+        onEscapeKeyDown={(event) => {
+          onEscapeKeyDown?.(event);
+          if (!event.defaultPrevented) keepOpenWhileEditing(event);
+        }}
+        className={cn('flex max-h-[80dvh] flex-col gap-4 sm:max-w-4xl', !compact && 'h-[80dvh]', className)}>
         <DialogHeader className={cn(hideHeader && 'sr-only')}>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>

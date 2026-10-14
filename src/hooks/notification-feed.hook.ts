@@ -24,21 +24,23 @@ interface FeedOptions {
   onPoll?: (alerted: AppNotification[]) => void;
   /** The poll got a 401: the session expired */
   onUnauthorized?: () => void;
+  /** Desktop: hint/news toasts get an "Openen" button that opens the article */
+  openArticle?: (articleId: number) => void;
 }
 
 /**
  * Poll the server's notification feed and alert (sound + toast) for new ones. Starts at "now": notifications
  * from before the page loaded are never replayed.
  */
-export function useNotificationFeed({ respectPreferences = true, toasts = true, onPoll, onUnauthorized }: FeedOptions = {}) {
+export function useNotificationFeed({ respectPreferences = true, toasts = true, onPoll, onUnauthorized, openArticle }: FeedOptions = {}) {
   const authHeader = useAuthHeader() || '';
   const { disabledTypes } = useNotificationPrefs();
   const soundMuted = useSettingsStore((state) => state.soundMuted);
 
   // Read inside the interval, so changing a setting doesn't restart polling
-  const latest = useRef({ disabledTypes, soundMuted, respectPreferences, toasts, onPoll, onUnauthorized });
+  const latest = useRef({ disabledTypes, soundMuted, respectPreferences, toasts, onPoll, onUnauthorized, openArticle });
   useEffect(() => {
-    latest.current = { disabledTypes, soundMuted, respectPreferences, toasts, onPoll, onUnauthorized };
+    latest.current = { disabledTypes, soundMuted, respectPreferences, toasts, onPoll, onUnauthorized, openArticle };
   });
 
   useEffect(() => {
@@ -78,7 +80,10 @@ export function useNotificationFeed({ respectPreferences = true, toasts = true, 
           for (const notification of alertable) {
             const duration = notification.urgent ? 30_000 : 8000;
             if (showHighlightToast(notification, duration)) continue;
-            toast[toastKind(notification)](notification.title, { description: notification.body || undefined, duration });
+            const articleId = notification.data.articleId;
+            const open = options.openArticle;
+            const action = open && articleId !== undefined && (notification.type === 'hint' || notification.type === 'article') ? { label: 'Openen', onClick: () => open(articleId) } : undefined;
+            toast[toastKind(notification)](notification.title, { description: notification.body || undefined, duration, action });
           }
         }
         options.onPoll?.(alertable);

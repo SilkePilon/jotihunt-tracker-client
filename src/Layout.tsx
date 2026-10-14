@@ -5,6 +5,7 @@ import {SWRConfig} from 'swr';
 import Map, {MapRef} from './components/Map';
 import PWAPrompt from 'react-ios-pwa-prompt';
 import BeheerDialog from './components/beheer/BeheerDialog';
+import IntelDialog from './components/intel-window/IntelDialog';
 import DemoReloader from './components/DemoReloader';
 import AddPasskeyPrompt from './components/AddPasskeyPrompt';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -15,6 +16,8 @@ import AccountDialog from './components/account/AccountDialog';
 import {useNotificationsPrompt} from './components/notifications/useNotificationsPrompt';
 import {useTheme} from "@/hooks/theme.hook.ts";
 import {useNotificationFeed} from '@/hooks/notification-feed.hook';
+import {useIsMobile} from '@/hooks/media.hook';
+import useIntelStore from '@/stores/intel.store';
 import {useFetcher} from '@/hooks/utils/api.hook';
 import {isUnauthorized} from '@/lib/session';
 import {useSessionExpired} from '@/hooks/session.hook';
@@ -42,7 +45,8 @@ export default function Layout() {
     }
 
     useTheme();
-    useNotificationFeed({onUnauthorized: sessionExpired});
+    const isMobile = useIsMobile();
+    useNotificationFeed({onUnauthorized: sessionExpired, openArticle: isMobile ? undefined : (articleId) => useIntelStore.getState().openIntel(articleId)});
     const {fetch} = useFetcher();
     useEffect(() => {
         void resyncPush(fetch);
@@ -101,6 +105,7 @@ export default function Layout() {
             </ErrorBoundary>
             <ErrorBoundary name="Dit venster" variant="floating">
                 <BeheerDialog mapRef={mapRef}/>
+                <IntelDialog mapRef={mapRef}/>
                 <NotificationsDialog/>
                 <AccountDialog/>
                 {typeof qrLogin === 'string' && (
