@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { Children, createContext, useContext, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { ChevronDownIcon, Loader2Icon } from 'lucide-react';
 import AutoHeight from '@/components/motion/AutoHeight';
@@ -332,7 +332,8 @@ export function BeheerSkeleton({ groups = 1 }: { groups?: number }) {
 export function BeheerGroup({ title, note, children }: { title: string; note?: ReactNode; children: ReactNode }) {
   return (
     <BeheerCard title={title} description={note}>
-      <BeheerRows>{children}</BeheerRows>
+      {/* Children.toArray gives unkeyed form children (old Invites/Bericht panes) unique keys inside AnimatePresence */}
+      <BeheerRows>{Children.toArray(children)}</BeheerRows>
     </BeheerCard>
   );
 }
