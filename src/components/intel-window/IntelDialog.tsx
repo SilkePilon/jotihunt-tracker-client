@@ -105,6 +105,16 @@ function IntelWindow({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
   // Where the timeline was scrolled (and on which tab), so going back puts the card where it was clicked
   const timelineScroll = useRef<{ tab: IntelTab; top: number } | null>(null);
 
+  // Derived during render. `gen` keys the views, so a quick back-and-forth mounts a fresh view (with a fresh morph)
+  // instead of reviving one that is still fading out. `from`: the timeline's tab when the detail opened (openIntel can
+  // switch the tab in the same go); only going back to that tab morphs the card home.
+  const split = selected !== null;
+  const [timelineTab, setTimelineTab] = useState(tab);
+  if (!split && timelineTab !== tab) setTimelineTab(tab);
+  const [view, setView] = useState({ split, gen: 0, from: tab });
+  if (view.split !== split) setView({ split, gen: view.gen + 1, from: split ? timelineTab : view.from });
+  const returnId = view.from === tab ? resolvedId : null;
+
   /*
    * Detail choreography. Open: the timeline fades out (0.16 s) underneath while the clicked card's frame and title morph
    * (shared layoutId, INTEL_MORPH) into the detail header on top, then the parts below stagger in. Back: the detail fades
@@ -118,12 +128,12 @@ function IntelWindow({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
       <div className="relative min-h-0 flex-1">
         <AnimatePresence initial={false}>
           {selected ? (
-            <View key="detail">
+            <View key={`detail-${view.gen}`}>
               <DetailView item={selected} area={area} mapRef={mapRef} skipEntrance={!mounted} onBack={() => select(null)} />
             </View>
           ) : (
-            <View key="timeline">
-              <TimelineView items={shown} tab={tab} memoryRef={timelineScroll} skipEntrance={!mounted} returnId={resolvedId} onSelect={select} />
+            <View key={`timeline-${view.gen}`}>
+              <TimelineView items={shown} tab={tab} memoryRef={timelineScroll} skipEntrance={!mounted} returnId={returnId} onSelect={select} />
             </View>
           )}
         </AnimatePresence>
@@ -160,10 +170,20 @@ interface TimelineViewProps {
 /** The scrolling timeline. `layoutScroll`: the card morph accounts for its scroll position. */
 function TimelineView({ items, tab, memoryRef, skipEntrance, returnId, onSelect }: TimelineViewProps) {
   const ref = useRef<HTMLDivElement>(null);
-  // Before motion measures the returning card (a microtask after this commit): back to where the list was, same tab only
+  // Before motion measures the returning card (a microtask after this commit): back to where the list was (same tab
+  // only), then, if the returning card is not in view there (another item was swapped in, or the window opened on the
+  // item), centre it so it never flies home off-screen
   useLayoutEffect(() => {
+    const scroller = ref.current;
+    if (!scroller) return;
     const saved = memoryRef.current;
-    if (ref.current && saved?.tab === tab) ref.current.scrollTop = saved.top;
+    if (saved?.tab === tab) scroller.scrollTop = saved.top;
+    const row = returnId === null ? null : scroller.querySelector(`[data-intel-id="${returnId}"]`);
+    if (!row) return;
+    const box = scroller.getBoundingClientRect();
+    const card = row.getBoundingClientRect();
+    // 44px: the sticky day header covers the top
+    if (card.top < box.top + 44 || card.bottom > box.bottom) scroller.scrollTop += card.top - box.top - Math.max(44, (box.height - card.height) / 2);
     // Mount only
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -190,18 +210,20 @@ function DetailView({ item, area, mapRef, skipEntrance, onBack }: { item: IntelI
   const [skip] = useState(skipEntrance);
   return (
     <>
+      {/* The scroller fills the whole view (a card high up in the timeline morphs in without being clipped by it); the
+          pill floats over its top, content scrolls away under the fade */}
+      <motion.div layoutScroll className="min-h-0 flex-1 overflow-y-auto px-9 pt-12 pb-8 [scrollbar-gutter:stable]">
+        <DetailColumn item={item} area={area} mapRef={mapRef} skipEntrance={skip} />
+      </motion.div>
       <motion.div
-        className="flex shrink-0 items-center px-6 pb-2"
+        className="pointer-events-none absolute inset-x-0 top-0 z-10 flex h-12 items-start bg-linear-to-b from-beheer-window from-70% to-transparent pr-4 pl-6"
         initial={skip ? false : { opacity: 0, x: -8 }}
         animate={{ opacity: 1, x: 0, transition: { duration: 0.3, delay: 0.12, ease: EASE_OUT } }}
       >
-        <Pill onClick={onBack} title="Terug naar de tijdlijn (Esc)">
+        <Pill className="pointer-events-auto" onClick={onBack} title="Terug naar de tijdlijn (Esc)">
           <ArrowLeftIcon />
           Tijdlijn
         </Pill>
-      </motion.div>
-      <motion.div layoutScroll className="min-h-0 flex-1 overflow-y-auto px-9 pt-1.5 pb-8 [scrollbar-gutter:stable]">
-        <DetailColumn item={item} area={area} mapRef={mapRef} skipEntrance={skip} />
       </motion.div>
     </>
   );

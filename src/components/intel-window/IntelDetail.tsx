@@ -34,6 +34,8 @@ export default function IntelDetail({ item, area, mapRef }: IntelDetailProps) {
       <motion.div variants={DETAIL_HEAD} className="relative">
         <motion.div
           layoutId={morph.card}
+          // Fixed and different from the card's (a shared morph needs them to differ): no spring on later size changes
+          layoutDependency="detail"
           layoutCrossfade={false}
           transition={INTEL_MORPH}
           style={{ borderRadius: 20 }}
@@ -42,7 +44,7 @@ export default function IntelDetail({ item, area, mapRef }: IntelDetailProps) {
         />
         <div className="relative px-6 pt-5 pb-[18px]">
           {/* Title and meta move as one (position only, never scaled) from the card's title, crossfading with it */}
-          <motion.div layoutId={morph.title} layout="position" transition={INTEL_MORPH}>
+          <motion.div layoutId={morph.title} layoutDependency="detail" layout="position" transition={INTEL_MORPH}>
             <h2 className="text-[21px] leading-tight font-bold">{item.title}</h2>
             <div className="mt-2 flex flex-wrap items-center gap-2 text-[12.5px] text-muted-foreground">
               <KindTag kind={item.kind} />

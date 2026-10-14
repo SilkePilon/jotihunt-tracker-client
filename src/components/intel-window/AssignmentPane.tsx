@@ -99,8 +99,11 @@ export default function AssignmentPane({ item }: { item: IntelItem }) {
                         event.preventDefault();
                         void submitNote();
                       }
+                      // A draft: Escape clears it (data-inline-edit kept the window and the detail open)
+                      if (event.key === 'Escape' && note) setNote('');
                     }}
                     readOnly={saving}
+                    data-inline-edit={note ? '' : undefined}
                     placeholder="Notitie toevoegen…"
                     maxLength={1000}
                     autoComplete="off"
