@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import AutoHeight from '@/components/motion/AutoHeight';
 import SuccessBadge from '@/components/auth/SuccessBadge';
+import CookieBadge from '@/components/tracker/CookieBadge';
 import TrackerQrCode from '@/components/tracker/TrackerQrCode';
 import { useQrLogin } from '@/hooks/qr-login.hook';
 import type { SessionResult } from '@/lib/auth-api';
@@ -73,7 +74,7 @@ function QrScene({ state, restart }: { state: QrPanelState; restart: () => void 
       className="flex flex-col items-center gap-3"
       initial={SWAP.initial}
       animate={SWAP.animate}
-      // Approved: the code and the avatar shrink away before the check pops in
+      // Approved: the code and the cookie shrink away before the check pops in
       exit={{ opacity: 0, scale: 0.92, filter: 'blur(4px)' }}
       transition={SWAP_TRANSITION}
     >
@@ -88,8 +89,8 @@ function QrScene({ state, restart }: { state: QrPanelState; restart: () => void 
         </motion.div>
         <AnimatePresence initial={false}>
           {state.phase === 'scanned' && (
-            <motion.div key="avatar" className="absolute inset-0 flex items-center justify-center" {...POP}>
-              <span className="flex size-20 items-center justify-center rounded-full bg-sky-500/80 text-2xl font-bold text-white ring-4 ring-card">{state.name.charAt(0).toUpperCase()}</span>
+            <motion.div key="pending" className="absolute inset-0 flex items-center justify-center" {...POP}>
+              <CookieBadge tone="neutral" size={80} glyph="?" outline={4} />
             </motion.div>
           )}
         </AnimatePresence>
