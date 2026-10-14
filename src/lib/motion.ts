@@ -41,3 +41,11 @@ export function fadeUp(delay: number) {
     transition: { duration: 0.22, ease: EASE_OUT, delay },
   } satisfies { initial: TargetAndTransition; animate: TargetAndTransition; transition: Transition };
 }
+
+/** Phone windows (Beheer, Alle hunts): the list slides out one way and the pane in from the other (and back); custom = direction */
+export const PANE_SLIDE = {
+  enter: (direction: number) => ({ opacity: 0, x: 24 * direction }),
+  center: { opacity: 1, x: 0 },
+  exit: (direction: number) => ({ opacity: 0, x: -24 * direction }),
+};
+export const PANE_SLIDE_TRANSITION: Transition = { duration: 0.22, ease: EASE_OUT };

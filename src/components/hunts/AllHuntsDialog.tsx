@@ -1,258 +1,219 @@
-import { memo, useCallback, useMemo, useRef, useState } from 'react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import { useAuthImage } from '@/hooks/auth-image.hook';
+import { useMemo, useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
+import { ArrowLeftIcon, InboxIcon, ListIcon, SendIcon, StarIcon } from 'lucide-react';
+import { BeheerCard, BeheerPane, BeheerRows, CountSwap } from '@/components/beheer/BeheerLayout';
+import { IconPill, Pill } from '@/components/beheer/controls/Pill';
+import { NavItem, type NavIcon } from '@/components/beheer/WindowNav';
+import ResponsiveDialog from '@/components/ResponsiveDialog';
 import { useHuntReports } from '@/hooks/hunt-reports.hook';
-import { useInViewOnce } from '@/hooks/in-view.hook';
-import { useIsMobile } from '@/hooks/media.hook';
 import { useHunts } from '@/hooks/hunts.hook';
-import useInterval from '@/hooks/utils/interval.hook';
-import { keepOpenWhileEditing } from '@/lib/inline-edit';
-import { formatHuntTimeSafe, hasLiveCountdown, huntListItems } from '@/lib/hunt-reports';
-import { areaOptions, capitalizeFirstLetter, cn, getColorFromArea } from '@/lib/utils';
-import type { HuntListItem, HuntReport } from '@/types/HuntReport';
-import HuntCodeText, { DuplicateMark, HuntTimeText } from './HuntCodeText';
-import HuntDetail from './HuntDetail';
-
-import HuntStatusBadge from './HuntStatusBadge';
-
-type Filter = 'all' | 'pending' | 'submitted' | 'judged';
+import { useIsMobile } from '@/hooks/media.hook';
+import { HUNT_FILTER_LABELS, HUNT_FILTERS, huntAreaTotals, huntFilterCounts, huntItemArea, huntItemKey, huntItemPoints, matchesHuntFilter, type HuntFilter } from '@/lib/hunt-list';
+import { huntListItems } from '@/lib/hunt-reports';
+import { PANE_SLIDE, PANE_SLIDE_TRANSITION, SWAP } from '@/lib/motion';
+import { getColorFromArea } from '@/lib/utils';
+import HuntListRow from './HuntListRow';
 
 /** Rows rendered at first (and added per "Meer laden"), so a long list opens quickly. */
 const PAGE_SIZE = 200;
 
-function matchesFilter(item: HuntListItem, filter: Filter): boolean {
-  if (filter === 'all') return true;
-  if (item.source === 'website') return filter === 'judged';
-  const status = item.report.status;
-  if (filter === 'pending') return status === 'to_submit' || status === 'overdue';
-  return status === filter;
+const FILTER_ICONS: Record<HuntFilter, NavIcon> = { all: ListIcon, pending: SendIcon, submitted: InboxIcon, judged: StarIcon };
+
+/** What the list shows: a status filter, or one area (then the status filter is "all"). */
+interface View {
+  filter: HuntFilter;
+  area: string | null;
 }
+const ALL: View = { filter: 'all', area: null };
 
-const itemArea = (item: HuntListItem) => (item.source === 'app' ? item.report.area : item.hunt.area).trim().toLowerCase();
-const itemPoints = (item: HuntListItem) => (item.source === 'app' ? (item.report.site?.points ?? 0) : item.hunt.points);
-
-/** Photo thumbnail (the small server thumbnail), only fetched once the row scrolls into view. */
-function HuntThumb({ report }: { report: HuntReport }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const inView = useInViewOnce(ref);
-  const photo = useAuthImage(inView ? (report.thumbUrl ?? report.photoUrl) : null);
-  return photo ? <img src={photo} alt="" className="size-8 rounded object-cover" /> : <div ref={ref} className="size-8 rounded bg-muted" />;
-}
-
-/** Status badge with its own clock: only rows with a running "Te versturen" countdown re-render every second. */
-function LiveHuntStatusBadge({ report }: { report: HuntReport }) {
-  const [now, setNow] = useState(() => Date.now());
-  useInterval(() => setNow(Date.now()), hasLiveCountdown(report, now) ? 1000 : null);
-  return <HuntStatusBadge report={report} now={now} />;
-}
-
-function Totals({ items }: { items: HuntListItem[] }) {
-  const areas = areaOptions
-    .map((option) => {
-      const inArea = items.filter((item) => itemArea(item) === option.value);
-      return { ...option, count: inArea.length, points: inArea.reduce((sum, item) => sum + itemPoints(item), 0) };
-    })
-    .filter((area) => area.count > 0);
-  const points = items.reduce((sum, item) => sum + itemPoints(item), 0);
-
+/** Count right of a nav item (muted, like the area points). */
+function NavCount({ value }: { value: number }) {
   return (
-    <div className="flex flex-wrap items-center gap-1.5 text-xs">
-      {areas.map((area) => (
-        <span key={area.value} className="inline-flex items-center gap-1.5 rounded-badge border px-2 py-0.5">
-          <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: getColorFromArea(area.value) }} />
-          {area.label} {area.count} · {area.points} pt
-        </span>
-      ))}
-      <span className="ml-auto font-medium">
-        Totaal: {items.length} hunts · {points} pt
-      </span>
-    </div>
-  );
-}
-
-function AreaCell({ area }: { area: string }) {
-  return (
-    <span className="inline-flex items-center gap-1.5">
-      <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: getColorFromArea(area) }} />
-      <span className="max-md:sr-only">{capitalizeFirstLetter(area)}</span>
+    <span className="ml-auto text-xs font-bold text-muted-foreground">
+      <CountSwap value={value} />
     </span>
   );
 }
 
-interface HuntRowProps {
-  item: HuntListItem;
-  /** Phones show no photo column (and fetch no photos) */
-  showThumb: boolean;
-  onSelect: (id: string) => void;
+/** Every hunt (own reports plus website-only hunts) in a Beheer-style window: status filters and areas on the left, rows that open in place. */
+export default function AllHuntsDialog({ open, onOpenChange, initialReportId }: { open: boolean; onOpenChange: (open: boolean) => void; initialReportId?: string }) {
+  return (
+    <ResponsiveDialog
+      open={open}
+      onClose={() => onOpenChange(false)}
+      title="Alle hunts"
+      description="Alle geregistreerde hunts en hunts van jotihunt.nl."
+      hideHeader
+      className="h-[640px] max-h-[85dvh] gap-0 overflow-hidden bg-beheer-window p-0 sm:max-w-[960px] sm:rounded-[20px]"
+      drawerClassName="bg-beheer-window"
+    >
+      <AllHuntsWindow open={open} initialReportId={initialReportId} />
+    </ResponsiveDialog>
+  );
 }
 
-const HuntRow = memo(function HuntRow({ item, showThumb, onSelect }: HuntRowProps) {
-  if (item.source === 'website') {
-    const { hunt } = item;
+/** The window's content; only mounted while the window is open (or closing). */
+function AllHuntsWindow({ open, initialReportId }: { open: boolean; initialReportId?: string }) {
+  const isMobile = useIsMobile();
+  const { reports } = useHuntReports();
+  const { hunts } = useHunts();
+  const items = useMemo(() => huntListItems(reports, hunts), [reports, hunts]);
+  const [view, setView] = useState<View>(ALL);
+  const [openId, setOpenId] = useState<string | null>(initialReportId ?? null);
+  /** Pages added with "Meer laden" */
+  const [extraPages, setExtraPages] = useState(0);
+  // Phone: the nav list first, unless the window was opened on a hunt
+  const [phoneView, setPhoneView] = useState<'list' | 'pane'>(initialReportId ? 'pane' : 'list');
+  const [direction, setDirection] = useState(1);
+  // Reopened before the close finished (the content stays mounted then): start over like a fresh open
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      setView(ALL);
+      setOpenId(initialReportId ?? null);
+      setExtraPages(0);
+      setPhoneView(initialReportId ? 'pane' : 'list');
+    }
+  }
+
+  const counts = useMemo(() => huntFilterCounts(items), [items]);
+  const areas = useMemo(() => huntAreaTotals(items), [items]);
+  const shown = useMemo(() => items.filter((item) => matchesHuntFilter(item, view.filter) && (!view.area || huntItemArea(item) === view.area)), [items, view]);
+  // The hunt the window opened on must be on the first page
+  const initialIndex = initialReportId ? shown.findIndex((item) => huntItemKey(item) === initialReportId) : -1;
+  const limit = Math.max(PAGE_SIZE, initialIndex + 1) + extraPages * PAGE_SIZE;
+  const points = shown.reduce((sum, item) => sum + huntItemPoints(item), 0);
+  const title = view.area ? (areas.find((area) => area.area === view.area)?.label ?? view.area) : HUNT_FILTER_LABELS[view.filter];
+  const description = `${shown.length} ${shown.length === 1 ? 'hunt' : 'hunts'} · ${view.area ? '' : 'totaal '}${points} pt`;
+
+  function select(next: View) {
+    setView(next);
+    setOpenId(null);
+    setExtraPages(0);
+    setDirection(1);
+    setPhoneView('pane');
+  }
+
+  function back() {
+    setDirection(-1);
+    setPhoneView('list');
+  }
+
+  const navItems = (phone: boolean) => (
+    <>
+      {HUNT_FILTERS.map((filter) => (
+        <NavItem
+          key={filter}
+          icon={FILTER_ICONS[filter]}
+          title={HUNT_FILTER_LABELS[filter]}
+          active={!phone && !view.area && view.filter === filter}
+          indicatorId={phone ? undefined : 'hunts-nav-active'}
+          onClick={() => select({ filter, area: null })}
+          trailing={<NavCount value={counts[filter]} />}
+          className={phone ? 'h-12 text-foreground' : undefined}
+        />
+      ))}
+      {areas.length > 0 && <div className="px-3 pt-[18px] pb-1.5 text-[10.5px] font-bold tracking-wider text-muted-foreground uppercase">Deelgebieden</div>}
+      {areas.map((area) => (
+        <NavItem
+          key={area.area}
+          leading={
+            <span className="grid size-[18px] shrink-0 place-items-center">
+              <span className="size-2.5 rounded-full" style={{ backgroundColor: getColorFromArea(area.area) }} />
+            </span>
+          }
+          title={area.label}
+          active={!phone && view.area === area.area}
+          indicatorId={phone ? undefined : 'hunts-nav-active'}
+          // Picking the active area again clears it (desktop; on phones the nav is a fresh list each time)
+          onClick={() => select(!phone && view.area === area.area ? ALL : { filter: 'all', area: area.area })}
+          trailing={<span className="ml-auto text-xs font-bold text-muted-foreground tabular-nums">{area.points} pt</span>}
+          className={phone ? 'h-11 text-foreground' : 'h-8 text-[13px]'}
+        />
+      ))}
+    </>
+  );
+
+  const list = (
+    <BeheerPane title={title} description={description}>
+      <BeheerCard>
+        {shown.length ? (
+          <BeheerRows openId={openId} onOpenIdChange={setOpenId}>
+            {shown.slice(0, limit).map((item) => (
+              <HuntListRow key={huntItemKey(item)} item={item} />
+            ))}
+          </BeheerRows>
+        ) : (
+          <p className="py-8 text-center text-[13px] text-muted-foreground">Geen hunts in deze lijst.</p>
+        )}
+        {shown.length > limit && (
+          <div className="flex justify-center pt-3">
+            <Pill variant="secondary" onClick={() => setExtraPages((pages) => pages + 1)}>
+              Meer laden ({shown.length - limit} over)
+            </Pill>
+          </div>
+        )}
+      </BeheerCard>
+    </BeheerPane>
+  );
+  const viewKey = view.area ?? view.filter;
+
+  if (isMobile) {
     return (
-      <TableRow>
-        <TableCell className="text-muted-foreground max-md:hidden">–</TableCell>
-        <TableCell>
-          <AreaCell area={hunt.area} />
-        </TableCell>
-        <TableCell className="font-mono">{hunt.huntCode}</TableCell>
-        <TableCell>{formatHuntTimeSafe(hunt.huntTime)}</TableCell>
-        <TableCell className="text-muted-foreground max-md:hidden">jotihunt.nl</TableCell>
-        <TableCell>
-          <Badge variant="outline">{hunt.status}</Badge>
-        </TableCell>
-        <TableCell className="text-right">{hunt.points}</TableCell>
-      </TableRow>
+      <AnimatePresence mode="wait" initial={false} custom={direction}>
+        {phoneView === 'list' ? (
+          <motion.nav
+            key="list"
+            aria-label="Hunts"
+            className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto"
+            custom={direction}
+            variants={PANE_SLIDE}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={PANE_SLIDE_TRANSITION}
+          >
+            <div className="px-3 pt-1 pb-3 text-lg font-bold">Hunts</div>
+            {navItems(true)}
+          </motion.nav>
+        ) : (
+          <motion.div
+            key="pane"
+            className="flex min-h-0 flex-1 flex-col"
+            custom={direction}
+            variants={PANE_SLIDE}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={PANE_SLIDE_TRANSITION}
+          >
+            <div className="flex items-center gap-2 pb-3">
+              <IconPill aria-label="Terug" onClick={back}>
+                <ArrowLeftIcon />
+              </IconPill>
+              <span className="text-lg font-bold">{title}</span>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto pb-4">{list}</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     );
   }
 
-  const { report } = item;
-  function handleKeyDown(event: React.KeyboardEvent<HTMLTableRowElement>) {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      onSelect(report._id);
-    }
-  }
-
   return (
-    <TableRow className="cursor-pointer" role="button" tabIndex={0} onClick={() => onSelect(report._id)} onKeyDown={handleKeyDown}>
-      <TableCell className="max-md:hidden">{showThumb && <HuntThumb report={report} />}</TableCell>
-      <TableCell>
-        <AreaCell area={report.area} />
-      </TableCell>
-      <TableCell>
-        <span className="inline-flex items-center gap-1">
-          <HuntCodeText report={report} />
-          <DuplicateMark report={report} />
-        </span>
-      </TableCell>
-      <TableCell>
-        <HuntTimeText report={report} />
-      </TableCell>
-      <TableCell className="max-md:hidden">{report.reportedByName}</TableCell>
-      <TableCell>
-        <LiveHuntStatusBadge report={report} />
-      </TableCell>
-      <TableCell className="text-right">{report.site ? report.site.points : '–'}</TableCell>
-    </TableRow>
-  );
-});
-
-/** Every hunt (own reports plus website-only hunts) with per-area totals, a status filter and a detail view per report. */
-export default function AllHuntsDialog({ open, onOpenChange, initialReportId }: { open: boolean; onOpenChange: (open: boolean) => void; initialReportId?: string }) {
-  const { reports } = useHuntReports();
-  const { hunts } = useHunts();
-  const [filter, setFilter] = useState<Filter>('all');
-  const [detailId, setDetailId] = useState<string | undefined>(open ? initialReportId : undefined);
-  const [prevOpen, setPrevOpen] = useState(open);
-  const [limit, setLimit] = useState(PAGE_SIZE);
-  const isMobile = useIsMobile();
-  const [now, setNow] = useState(() => Date.now());
-  const detail = detailId ? reports?.find((report) => report._id === detailId) : undefined;
-  // Only the detail needs the dialog-wide clock; list rows tick on their own (LiveHuntStatusBadge)
-  useInterval(() => setNow(Date.now()), open && detail ? 1000 : null);
-
-  // Opening the dialog shows the requested report (or the list)
-  if (open !== prevOpen) {
-    setPrevOpen(open);
-    if (open) {
-      setDetailId(initialReportId);
-      // The clock only runs while a detail is shown; don't show it with the time of the last opening
-      setNow(() => Date.now());
-      setLimit(PAGE_SIZE);
-    }
-  }
-
-  const selectReport = useCallback((id: string) => {
-    setNow(Date.now());
-    setDetailId(id);
-  }, []);
-
-  function changeFilter(next: Filter) {
-    setFilter(next);
-    setLimit(PAGE_SIZE);
-  }
-
-  const items = useMemo(() => huntListItems(reports, hunts), [reports, hunts]);
-  const shown = useMemo(() => items.filter((item) => matchesFilter(item, filter)), [items, filter]);
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        onEscapeKeyDown={keepOpenWhileEditing}
-        showCloseButton={!detail}
-        className={cn(
-          'flex max-h-[92dvh] flex-col gap-3 sm:max-w-4xl max-md:h-dvh max-md:max-h-dvh max-md:max-w-none max-md:rounded-none',
-          // The detail's photo runs to the dialog edges and brings its own back/close buttons
-          detail && 'gap-0 overflow-hidden p-0',
-        )}
-      >
-        <DialogHeader className={cn(detail && 'sr-only')}>
-          <DialogTitle>Alle hunts</DialogTitle>
-          <DialogDescription className="sr-only">Alle geregistreerde hunts en hunts van jotihunt.nl.</DialogDescription>
-        </DialogHeader>
-
-        {detail ? (
-          <HuntDetail key={detail._id} report={detail} now={now} onBack={() => setDetailId(undefined)} onClose={() => onOpenChange(false)} />
-        ) : (
-          <>
-            <Totals items={items} />
-            <ToggleGroup type="single" variant="outline" size="sm" aria-label="Filter" className="max-md:w-full" value={filter} onValueChange={(next) => next && changeFilter(next as Filter)}>
-              <ToggleGroupItem value="all" className="max-md:flex-auto max-md:px-2 max-md:text-xs">
-                Alles
-              </ToggleGroupItem>
-              <ToggleGroupItem value="pending" className="max-md:flex-auto max-md:px-2 max-md:text-xs">
-                Te versturen
-              </ToggleGroupItem>
-              <ToggleGroupItem value="submitted" className="max-md:flex-auto max-md:px-2 max-md:text-xs">
-                Ingestuurd
-              </ToggleGroupItem>
-              <ToggleGroupItem value="judged" className="max-md:flex-auto max-md:px-2 max-md:text-xs">
-                Beoordeeld
-              </ToggleGroupItem>
-            </ToggleGroup>
-            <div className="min-h-0 flex-1 overflow-y-auto">
-              {shown.length ? (
-                <>
-                  <Table className="max-md:text-xs">
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="max-md:hidden">Foto</TableHead>
-                        <TableHead>
-                          <span className="max-md:sr-only">Deelgebied</span>
-                        </TableHead>
-                        <TableHead>Code</TableHead>
-                        <TableHead>Tijd</TableHead>
-                        <TableHead className="max-md:hidden">Gemeld door</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Punten</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {shown.slice(0, limit).map((item) => (
-                        <HuntRow key={item.source === 'app' ? item.report._id : `site-${item.hunt._id}`} item={item} showThumb={!isMobile} onSelect={selectReport} />
-                      ))}
-                    </TableBody>
-                  </Table>
-                  {shown.length > limit && (
-                    <div className="flex justify-center py-3">
-                      <Button variant="outline" size="sm" onClick={() => setLimit((current) => current + PAGE_SIZE)}>
-                        Meer laden ({shown.length - limit} over)
-                      </Button>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <p className="py-8 text-center text-sm text-muted-foreground">Geen hunts in deze lijst.</p>
-              )}
-            </div>
-          </>
-        )}
-      </DialogContent>
-    </Dialog>
+    <div className="grid min-h-0 flex-1 grid-cols-[220px_1fr] grid-rows-[minmax(0,1fr)]">
+      <nav className="flex flex-col gap-0.5 overflow-y-auto px-3 py-[18px]" aria-label="Hunts">
+        <div className="px-3 pt-0.5 pb-3.5 text-[17px] font-bold">Hunts</div>
+        {navItems(false)}
+      </nav>
+      <div className="min-h-0 overflow-hidden">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div key={viewKey} className="h-full overflow-y-auto px-7 py-6" {...SWAP}>
+            {list}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    </div>
   );
 }
