@@ -37,6 +37,24 @@
   --chart-3: hsl(197 37% 24%);
   --chart-4: hsl(43 74% 66%);
   --chart-5: hsl(27 87% 67%);
+  /* Vossen card: M3 status roles of the map markers (marker-style.ts) + a cooldown blue */
+  --fox-ok: #2f6b2c;
+  --fox-ok-container: #b7f2ae;
+  --fox-on-ok-container: #0b3a0e;
+  --fox-warn: #8b5000;
+  --fox-warn-container: #ffddb8;
+  --fox-on-warn-container: #4a2800;
+  --fox-cooldown: #0b5d95;
+  --fox-cooldown-container: #cfe5ff;
+  --fox-on-cooldown-container: #001d32;
+  --fox-error: #ba1a1a;
+  --fox-error-container: #ffdad6;
+  --fox-on-error-container: #93000a;
+  --fox-ok-group: color-mix(in oklab, var(--fox-ok-container) 75%, var(--card));
+  --fox-warn-group: color-mix(in oklab, var(--fox-warn-container) 75%, var(--card));
+  --fox-cooldown-group: color-mix(in oklab, var(--fox-cooldown-container) 75%, var(--card));
+  --fox-error-group: color-mix(in oklab, var(--fox-error-container) 75%, var(--card));
+  --fox-chip: rgb(255 255 255 / 0.7);
 }
 
 .dark {
@@ -64,6 +82,23 @@
   --chart-3: hsl(30 80% 55%);
   --chart-4: hsl(280 65% 60%);
   --chart-5: hsl(340 75% 55%);
+  --fox-ok: #9bd893;
+  --fox-ok-container: #1e5120;
+  --fox-on-ok-container: #b7f2ae;
+  --fox-warn: #ffb870;
+  --fox-warn-container: #693c00;
+  --fox-on-warn-container: #ffddb8;
+  --fox-cooldown: #93ccff;
+  --fox-cooldown-container: #0f4a73;
+  --fox-on-cooldown-container: #cfe5ff;
+  --fox-error: #ffb4ab;
+  --fox-error-container: #93000a;
+  --fox-on-error-container: #ffdad6;
+  --fox-ok-group: color-mix(in oklab, var(--fox-ok-container) 55%, var(--card));
+  --fox-warn-group: color-mix(in oklab, var(--fox-warn-container) 55%, var(--card));
+  --fox-cooldown-group: color-mix(in oklab, var(--fox-cooldown-container) 55%, var(--card));
+  --fox-error-group: color-mix(in oklab, var(--fox-error-container) 55%, var(--card));
+  --fox-chip: rgb(0 0 0 / 0.28);
 }
 
 @theme inline {
@@ -91,6 +126,19 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+  --color-fox-ok: var(--fox-ok);
+  --color-fox-warn: var(--fox-warn);
+  --color-fox-cooldown: var(--fox-cooldown);
+  --color-fox-error: var(--fox-error);
+  --color-fox-on-ok: var(--fox-on-ok-container);
+  --color-fox-on-warn: var(--fox-on-warn-container);
+  --color-fox-on-cooldown: var(--fox-on-cooldown-container);
+  --color-fox-on-error: var(--fox-on-error-container);
+  --color-fox-ok-group: var(--fox-ok-group);
+  --color-fox-warn-group: var(--fox-warn-group);
+  --color-fox-cooldown-group: var(--fox-cooldown-group);
+  --color-fox-error-group: var(--fox-error-group);
+  --color-fox-chip: var(--fox-chip);
 
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
