@@ -43,3 +43,9 @@ export function qrProblem(error: unknown): QrProblem {
   }
   return { message: PASSKEY_MESSAGES[classifyPasskeyError(error)], addPasskey: false };
 }
+
+/** After a failed confirm: stay on the confirm view only when the prompt was cancelled or the passkey did not match (the code still waits). */
+export function canRetryConfirm(error: unknown): boolean {
+  if (isAxiosError<{ code?: unknown }>(error)) return error.response?.data?.code === 'PASSKEY_FAILED';
+  return classifyPasskeyError(error) === 'cancelled';
+}

@@ -94,7 +94,7 @@ Public (rate limited per IP; failures additionally per code/token):
 | `POST /invites/:code/register/no-passkey` | Fallback when the browser has no WebAuthn: claim invite, create user without passkey + session. |
 | `GET /herstel/:token` | Validity + user name. |
 | `POST /herstel/:token/register/options` and `/verify` | Add a new passkey to that user, mark link used, create session. `/no-passkey` variant like invites. |
-| `POST /auth/qr` | Laptop: create QR login → `{ id, code, pollSecret, expiresAt }`. |
+| `POST /auth/qr` | Laptop: create QR login → `{ id, code, pollSecret, url, expiresAt }`. |
 | `GET /auth/qr/:id` (header `X-Qr-Secret`) | Laptop polls (every 1.5 s): `{ status, scannedBy?: { name } }`; on `approved` returns `{ token, user }` exactly once. |
 
 Authenticated:
@@ -130,6 +130,7 @@ Removed: `POST /auth/login`, `POST /auth/update-password`, `POST /admin/users` (
 - `userVerification: 'required'` on every ceremony. Counter regression → reject and log.
 - Herstel tokens, QR codes and QR poll secrets are stored only as SHA-256 hashes. Session tokens are signed JWTs pointing at a session document. Invite codes are not secret-grade (they are shared), so they are stored plainly but rate-limited.
 - QR approve requires an assertion from the **scanning** user and binds to that QR login's challenge, so a phished QR cannot be approved without a fresh biometric. The confirm drawer shows device label + approximate location + "Alleen bevestigen als jij net zelf deze code scande."
+- Opening a QR link on a logged-in phone already marks the code scanned and shows that account's name on the laptop before anyone confirms; the confirm drawer's location comes from Cloudflare headers only when `CLIENT_IP_HEADER=cf-connecting-ip`.
 - Deleting a user or removing their last passkey does not leave dangling sessions: delete user → delete sessions; "log out everywhere" in Account deletes all other sessions.
 
 ## Client

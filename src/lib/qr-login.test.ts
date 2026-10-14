@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { AxiosError, AxiosHeaders } from 'axios';
-import { nextAfterLogin, panelAfterPoll, qrProblem, QR_RENEW_FOR_MS } from './qr-login';
+import { canRetryConfirm, nextAfterLogin, panelAfterPoll, qrProblem, QR_RENEW_FOR_MS } from './qr-login';
 
 function httpError(status: number, data: unknown = {}) {
   const error = new AxiosError('fail');
@@ -47,5 +47,18 @@ describe('qrProblem', () => {
     expect(qrProblem(httpError(401, { code: 'PASSKEY_FAILED' })).message).toBe('Er ging iets mis, probeer het opnieuw.');
     expect(qrProblem(Object.assign(new Error('x'), { name: 'NotAllowedError' })).message).toBe('Niet afgerond. Probeer het opnieuw.');
     expect(qrProblem(new AxiosError('offline')).message).toBe('Kan de server niet bereiken, controleer je verbinding.');
+  });
+});
+
+describe('canRetryConfirm', () => {
+  test('a cancelled prompt or a passkey that did not match can be tried again', () => {
+    expect(canRetryConfirm(Object.assign(new Error('x'), { name: 'NotAllowedError' }))).toBe(true);
+    expect(canRetryConfirm(httpError(401, { code: 'PASSKEY_FAILED' }))).toBe(true);
+  });
+
+  test('a gone code, other 401s and network errors go to the problem view', () => {
+    expect(canRetryConfirm(httpError(404, { code: 'QR_GONE' }))).toBe(false);
+    expect(canRetryConfirm(httpError(401))).toBe(false);
+    expect(canRetryConfirm(new AxiosError('offline'))).toBe(false);
   });
 });

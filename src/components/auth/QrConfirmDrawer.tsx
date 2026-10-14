@@ -11,7 +11,7 @@ import { useAuth } from '@/hooks/auth.hook';
 import { useNow } from '@/hooks/now.hook';
 import { addPasskey, approveQrLogin, denyQrLogin, scanQrLogin, type QrScan } from '@/lib/auth-api';
 import { classifyPasskeyError, PASSKEY_MESSAGES } from '@/lib/passkey';
-import { qrProblem, type QrProblem } from '@/lib/qr-login';
+import { canRetryConfirm, qrProblem, type QrProblem } from '@/lib/qr-login';
 import { formatLastUpdate } from '@/lib/tracker';
 import type { User } from '@/types/User';
 
@@ -47,17 +47,17 @@ export default function QrConfirmDrawer({ code, onClose }: { code: string; onClo
       await approveQrLogin(code, scan, authHeader);
       setView({ step: 'done', label: scan.requester.label });
     } catch (failure) {
-      const kind = classifyPasskeyError(failure);
       // Cancelled the prompt or a passkey that did not match: the code still waits, so stay and let them try again
-      if (kind === 'cancelled' || kind === 'failed') setView({ step: 'ready', scan, busy: false, error: PASSKEY_MESSAGES[kind] });
+      if (canRetryConfirm(failure)) setView({ step: 'ready', scan, busy: false, error: PASSKEY_MESSAGES[classifyPasskeyError(failure)] });
       else setView({ step: 'problem', problem: qrProblem(failure) });
     }
   }
 
-  async function refuse() {
-    if (authHeader) await denyQrLogin(code, authHeader).catch(() => undefined);
-    toast('Inloggen geweigerd');
+  // Close right away and deny in the background, so a double tap can not deny twice
+  function refuse() {
     onClose();
+    toast('Inloggen geweigerd');
+    if (authHeader) void denyQrLogin(code, authHeader).catch(() => undefined);
   }
 
   async function handleAddPasskey() {
@@ -123,8 +123,10 @@ export default function QrConfirmDrawer({ code, onClose }: { code: string; onClo
         {view.step === 'done' && (
           <div className="flex flex-col items-center gap-3 py-4 text-center">
             <CookieBadge tone="ok" size={72} />
-            <h2 className="text-lg font-bold">Ingelogd</h2>
-            <p className="text-sm text-muted-foreground">{view.label} is nu ingelogd als {user?.name}.</p>
+            <h2 className="text-lg font-bold">Bevestigd</h2>
+            <p className="text-sm text-muted-foreground">
+              {view.label} kan nu inloggen als {user?.name}.
+            </p>
             <Button className="w-full" onClick={onClose}>
               Naar de kaart
             </Button>

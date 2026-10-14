@@ -110,7 +110,7 @@ export default function Layout() {
                 <NotificationsDialog/>
                 {typeof qrLogin === 'string' && (
                     <Suspense fallback={null}>
-                        <QrConfirmDrawer code={qrLogin} onClose={() => navigate('/', {replace: true, state: null})}/>
+                        <QrConfirmDrawer key={qrLogin} code={qrLogin} onClose={() => navigate('/', {replace: true, state: null})}/>
                     </Suspense>
                 )}
             </ErrorBoundary>
