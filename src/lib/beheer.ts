@@ -135,3 +135,43 @@ export function splitUsers<T extends { admin: boolean; name: string }>(users: T[
   const sorted = [...users].sort((a, b) => a.name.localeCompare(b.name, 'nl'));
   return { admins: sorted.filter((user) => user.admin), members: sorted.filter((user) => !user.admin) };
 }
+
+/** Beheer → Bericht's send button: the first tap asks "Zeker?" (it reaches everyone with sound), the second sends. */
+export type SendState = 'idle' | 'confirm' | 'sending' | 'sent';
+export type SendEvent = 'tap' | 'expire' | 'success' | 'failure' | 'reset';
+
+/** How long "Zeker? Tik nogmaals" waits for the second tap */
+export const SEND_CONFIRM_MS = 3000;
+/** How long "Verstuurd ✓" stays */
+export const SEND_DONE_MS = 1600;
+
+export function sendTransition(state: SendState, event: SendEvent): SendState {
+  switch (state) {
+    case 'idle':
+      return event === 'tap' ? 'confirm' : state;
+    case 'confirm':
+      if (event === 'tap') return 'sending';
+      return event === 'expire' ? 'idle' : state;
+    case 'sending':
+      if (event === 'success') return 'sent';
+      return event === 'failure' ? 'idle' : state;
+    case 'sent':
+      if (event === 'reset') return 'idle';
+      return event === 'tap' ? 'confirm' : state;
+  }
+}
+
+/** "Naar 12 mensen sturen" (or "Naar iedereen sturen" while the count is unknown), "Zeker? Tik nogmaals", "Versturen…", "Verstuurd" */
+export function sendButtonLabel(state: SendState, recipients: number | undefined): string {
+  switch (state) {
+    case 'idle':
+      if (!recipients) return 'Naar iedereen sturen';
+      return recipients === 1 ? 'Naar 1 persoon sturen' : `Naar ${recipients} mensen sturen`;
+    case 'confirm':
+      return 'Zeker? Tik nogmaals';
+    case 'sending':
+      return 'Versturen…';
+    case 'sent':
+      return 'Verstuurd';
+  }
+}

@@ -12,12 +12,18 @@ import {
   isActiveNow,
   MAX_USES_OPTIONS,
   passkeyText,
+  SEND_CONFIRM_MS,
+  SEND_DONE_MS,
+  sendButtonLabel,
+  sendTransition,
   splitUsers,
   stoppedInviteMeta,
   userActivity,
   usersSummary,
   whatsAppShareUrl,
   type AdminInvite,
+  type SendEvent,
+  type SendState,
 } from './beheer';
 
 const now = Date.parse('2026-10-17T12:00:00Z');
@@ -180,5 +186,44 @@ describe('invite rows and sharing', () => {
 
   test('inviteShareText ends with the link', () => {
     expect(inviteShareText('https://example.test/invite/ABCD2345')).toBe('Maak met deze link een account voor onze Jotihunt-app: https://example.test/invite/ABCD2345');
+  });
+});
+
+describe('send button (two taps)', () => {
+  const run = (events: SendEvent[], from: SendState = 'idle') => events.reduce(sendTransition, from);
+
+  test('first tap asks, second tap sends, success shows "Verstuurd" until reset', () => {
+    expect(run(['tap'])).toBe('confirm');
+    expect(run(['tap', 'tap'])).toBe('sending');
+    expect(run(['tap', 'tap', 'success'])).toBe('sent');
+    expect(run(['tap', 'tap', 'success', 'reset'])).toBe('idle');
+  });
+
+  test('the question expires; a failure goes back to idle', () => {
+    expect(run(['tap', 'expire'])).toBe('idle');
+    expect(run(['tap', 'tap', 'failure'])).toBe('idle');
+  });
+
+  test('ignores events that do not apply', () => {
+    expect(run(['expire', 'success', 'failure', 'reset'])).toBe('idle');
+    expect(run(['tap', 'expire', 'expire'])).toBe('idle');
+    expect(sendTransition('sending', 'tap')).toBe('sending');
+    expect(sendTransition('sending', 'expire')).toBe('sending');
+    expect(sendTransition('sent', 'tap')).toBe('confirm');
+  });
+
+  test('labels', () => {
+    expect(sendButtonLabel('idle', 12)).toBe('Naar 12 mensen sturen');
+    expect(sendButtonLabel('idle', 1)).toBe('Naar 1 persoon sturen');
+    expect(sendButtonLabel('idle', undefined)).toBe('Naar iedereen sturen');
+    expect(sendButtonLabel('idle', 0)).toBe('Naar iedereen sturen');
+    expect(sendButtonLabel('confirm', 12)).toBe('Zeker? Tik nogmaals');
+    expect(sendButtonLabel('sending', 12)).toBe('Versturen…');
+    expect(sendButtonLabel('sent', 12)).toBe('Verstuurd');
+  });
+
+  test('timings', () => {
+    expect(SEND_CONFIRM_MS).toBe(3000);
+    expect(SEND_DONE_MS).toBe(1600);
   });
 });
