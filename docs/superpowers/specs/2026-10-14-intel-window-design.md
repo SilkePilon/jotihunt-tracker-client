@@ -24,8 +24,8 @@ checks, no hint notes, no presence, no overwrite guard, no "voor ons" summary po
 
 Client (all removed, nothing copied over — the new window is written fresh):
 - `/hints` route (`Routes.tsx`), `pages/Hints.tsx`, `components/intel/*`, `components/hints/detail/*`.
-- Hooks `read-state.hook.ts`, `presence.hook.ts`, `assignments.hook.ts`, `guarded-write.hook.ts`,
-  `hint-actions.hook.ts`; `lib/intel.ts` (+ test), `types/Intel.ts`.
+- Hooks `presence.hook.ts`, `guarded-write.hook.ts`, `hint-actions.hook.ts`; `lib/intel.ts` (+ test). `types/Intel.ts`
+  is rewritten; `read-state.hook.ts` and `assignments.hook.ts` stay, trimmed (no overwrite flags).
 - `Layout.tsx` `inert={pathname === '/hints'}` wrapper; tour copy "Open hints" (`tour/steps.ts`) reworded.
 - `WriteFlags` import in `hints.hook.ts` and `selectionSearch` use in `HintMiniGrid.tsx` go with them.
 - Still-shared pieces stay: `hints.hook.ts` (`useHintBoard`, `useRdPreview`), `articles.hook.ts`,
@@ -41,6 +41,7 @@ Server:
 - Hint cells: stop exposing/maintaining `claimedBy`, `claimedAt`, `check`, `checkedBy`, `notes`; status `solving` no
   longer occurs. Android reads these as optional fields with defaults (`HintDto.kt`), so the app keeps working.
   `NoteSchema` stays (opdrachten use it).
+- `GET /articles/read` returns `readBy` as names per article (was a count), for the "Gelezen door" chips.
 - Keep: `GET /hints/board`, `GET /hints/parse-answer`, `POST …/solve`, `/assignments*`, `/articles/read`,
   `POST /articles/:id/read`, summaries cron.
 - Mini grid: the amber "bezig" state disappears.
@@ -104,8 +105,8 @@ No "voor ons" list. Hidden when there is no summary yet.
 
 ### Right side: opdracht and nieuws (O)
 
-- Opdracht: title, tag, deadline pill, max points; summary; card with rows Status (segmented Open / Bezig / Klaar /
-  Ingeleverd) and Eigenaar (picker from `/assignments/members`); card Notities (list + add field); card Volledige
+- Opdracht: title, tag, deadline pill, max points; summary; card with rows Status (segmented Open / Bezig / Ingeleverd /
+  Skip — the existing statuses) and Eigenaar (picker from `/assignments/members`); card Notities (list + add field); card Volledige
   tekst.
 - Nieuws: title, tag, time; summary; card Volledige tekst; card "Gelezen door · n" (name chips). Opening marks it read
   (`POST /articles/:id/read`), the unread dot animates away.
