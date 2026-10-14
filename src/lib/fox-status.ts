@@ -1,6 +1,7 @@
 import type { Area } from '@/types/Area';
 import type { Hunt } from '@/types/Hunt';
 import type { HuntReport } from '@/types/HuntReport';
+import { capitalizeFirstLetter } from './utils';
 
 export const HUNT_COOLDOWN_MS = 60 * 60 * 1000;
 
@@ -44,10 +45,48 @@ export function statusPillClass(status: string): string {
   }
 }
 
-/**
- * Dutch summary like "3 groen · 3 oranje · 3 rood".
- */
-export function statusSummary(areas: Area[]): string {
-  const count = (status: string) => areas.filter((area) => area.status === status).length;
-  return `${count('green')} groen · ${count('orange')} oranje · ${count('red')} rood`;
+/** Sidebar / HQ fox groups: the area status, or `cooldown` while the fox can't be hunted yet. */
+export type FoxGroup = 'green' | 'orange' | 'red' | 'cooldown';
+
+/** Display order: huntable now, on the way, free soon, inactive. */
+export const FOX_GROUP_ORDER: readonly FoxGroup[] = ['green', 'orange', 'cooldown', 'red'];
+
+export const FOX_GROUP_LABEL: Record<FoxGroup, string> = { green: 'Actief', orange: 'Onderweg', red: 'Inactief', cooldown: 'Cooldown' };
+
+/** A fox in its hunt cooldown is listed under cooldown; an unknown status counts as inactive. */
+export function foxGroup(status: string, cooldownMs: number): FoxGroup {
+  if (cooldownMs > 0) return 'cooldown';
+  return status === 'green' || status === 'orange' ? status : 'red';
+}
+
+/** One area's fox in the sidebar "Vossen" card. `key` is the lowercase area name. */
+export interface SidebarFox {
+  area: Area;
+  key: string;
+  name: string;
+  group: FoxGroup;
+  cooldownMs: number;
+  lastHunt: Date | string | undefined;
+}
+
+/** Every area as a fox, in {@link FOX_GROUP_ORDER}; cooldowns soonest-free first, the rest by area name. */
+export function sidebarFoxes({ areas, hunts, reports, now }: { areas: Area[]; hunts?: Hunt[]; reports?: HuntReport[]; now: number }): SidebarFox[] {
+  return areas
+    .map((area) => {
+      const lastHunt = lastHuntTimeFor(hunts, area.name, reports);
+      const cooldownMs = huntCooldownMs(lastHunt, now);
+      return { area, key: area.name.toLowerCase(), name: capitalizeFirstLetter(area.name), group: foxGroup(area.status, cooldownMs), cooldownMs, lastHunt };
+    })
+    .sort(
+      (a, b) =>
+        FOX_GROUP_ORDER.indexOf(a.group) - FOX_GROUP_ORDER.indexOf(b.group) ||
+        (a.group === 'cooldown' ? a.cooldownMs - b.cooldownMs : 0) ||
+        a.key.localeCompare(b.key),
+    );
+}
+
+export function groupCounts(foxes: SidebarFox[]): Record<FoxGroup, number> {
+  const counts: Record<FoxGroup, number> = { green: 0, orange: 0, cooldown: 0, red: 0 };
+  for (const fox of foxes) counts[fox.group] += 1;
+  return counts;
 }

@@ -5,7 +5,7 @@ import type { HuntReport } from '@/types/HuntReport';
 import type { Prediction } from '@/types/Prediction';
 import type { Team } from '@/types/Team';
 import { counterHuntDirection, counterHuntTitle } from './counter-hunt';
-import { huntCooldownMs, lastHuntTimeFor } from './fox-status';
+import { FOX_GROUP_LABEL, foxGroup, huntCooldownMs, lastHuntTimeFor, type FoxGroup } from './fox-status';
 import { formatClock, joinParts } from './format';
 import type { AppNotification } from './notifications';
 import { capitalizeFirstLetter } from './utils';
@@ -24,10 +24,10 @@ export const HOME_ZOOM = 12.2;
 const SECTOR_CENTRE_M = 250;
 
 export type LngLat = [number, number];
-export type FoxGroup = 'green' | 'orange' | 'red' | 'cooldown';
+export { foxGroup, type FoxGroup };
 
-export const GROUP_LABEL: Record<FoxGroup, string> = { green: 'Actief', orange: 'Onderweg', red: 'Inactief', cooldown: 'Cooldown' };
-/** Same colours as the sidebar's fox groups (FoxPills). */
+export const GROUP_LABEL = FOX_GROUP_LABEL;
+/** Text colour per fox group on the HQ screen. */
 export const GROUP_TEXT_CLASS: Record<FoxGroup, string> = {
   green: 'text-green-700 dark:text-green-400',
   orange: 'text-orange-700 dark:text-orange-300',
@@ -46,12 +46,6 @@ export interface HqFox {
 }
 
 export type TourStop = { kind: 'overview' } | { kind: 'area'; area: string; name: string; group: 'green' | 'orange'; center: LngLat };
-
-/** Like the sidebar: a fox in its hunt cooldown is listed under cooldown; an unknown status counts as inactive. */
-export function foxGroup(status: string, cooldownMs: number): FoxGroup {
-  if (cooldownMs > 0) return 'cooldown';
-  return status === 'green' || status === 'orange' ? status : 'red';
-}
 
 /** Where the camera looks for an area: the AI pin, else the last hint/hunt/spot, else the middle of the area's groups. */
 export function focusPoint(areaKey: string, predictions: Prediction[] | undefined, teams: Team[] | undefined): LngLat | null {
