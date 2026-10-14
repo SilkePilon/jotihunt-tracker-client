@@ -7,8 +7,7 @@ import { hintProgress } from '@/lib/hints';
 import { predictionSummary } from '@/lib/prediction';
 import HuntsSection from '@/components/hunts/HuntsSection';
 import SidebarSection from './SidebarSection';
-import { FoxesSummary } from './foxes/FoxesCard';
-import FoxPills from './FoxPills';
+import FoxesCard, { FoxesSummary } from './foxes/FoxesCard';
 import HintMiniGrid from './HintMiniGrid';
 import PredictionList from './PredictionList';
 import TrackerSection from './TrackerSection';
@@ -26,7 +25,7 @@ export default function SidebarSections({ mapRef }: { mapRef: RefObject<MapRef |
   return (
     <>
       <SidebarSection id="foxes" title="Vossen" summary={<FoxesSummary />}>
-        <FoxPills />
+        <FoxesCard />
       </SidebarSection>
       <SidebarSection id="hints" title="Hints" summary={progress ? `${progress.solved}/${progress.total} opgelost` : undefined}>
         <HintMiniGrid mapRef={mapRef} />
