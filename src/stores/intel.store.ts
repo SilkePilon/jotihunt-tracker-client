@@ -22,7 +22,8 @@ const useIntelStore = create<IntelState>()((set) => ({
   articleId: null,
   area: null,
   tab: 'all',
-  openIntel: (articleId = null, area = null) => set({ open: true, articleId, area }),
+  // Opening on an article shows every kind: a tab that hides it would close the split right away
+  openIntel: (articleId = null, area = null) => set(articleId === null ? { open: true, articleId, area } : { open: true, articleId, area, tab: 'all' }),
   select: (articleId) => set({ articleId, area: null }),
   setTab: (tab) => set({ tab }),
   close: () => set({ open: false }),

@@ -1,10 +1,15 @@
 import { isAxiosError } from 'axios';
+import type { Variants } from 'motion/react';
+import { EASE_OUT } from '@/lib/motion';
 import type { Article } from '@/types/Article';
 import type { HintBoard, HintCell } from '@/types/HintCell';
 import type { AreaState, Assignment, AssignmentStatus, DayGroup, IntelItem, IntelKind, IntelTab, ReadState } from '@/types/Intel';
 import { areaOptions } from '@/lib/utils';
 
 export const ASSIGNMENT_STATUS_LABELS: Record<AssignmentStatus, string> = { open: 'Open', busy: 'Bezig', submitted: 'Ingeleverd', skipped: 'Skip' };
+
+export const KIND_COLOR: Record<IntelKind, string> = { hint: '#fb923c', assignment: '#60a5fa', news: '#c084fc' };
+export const KIND_LABEL: Record<IntelKind, string> = { hint: 'Hint', assignment: 'Opdracht', news: 'Nieuws' };
 
 const AREAS = areaOptions.map((area) => area.value);
 const HOUR_MS = 60 * 60 * 1000;
@@ -111,3 +116,20 @@ export function isDeadlineUrgent(endTime: string | undefined, now: number, statu
 export function hasExistingMarker(error: unknown): boolean {
   return isAxiosError(error) && error.response?.status === 409 && !!(error.response.data as { existingMarkerId?: string } | undefined)?.existingMarkerId;
 }
+
+/**
+ * Split view, right side (T1). The keyed detail wrapper uses `DETAIL_SWAP` with `initial="open"` (the split opens: its parts
+ * are pushed in from the right while the timeline shrinks) or `initial="swap"` (another item: parts rise in), `animate="shown"`,
+ * `exit="gone"` and `custom={swap}`; every top-level part of the detail is a motion element with `variants={DETAIL_PART}`.
+ */
+export const DETAIL_SWAP: Variants = {
+  open: {},
+  swap: {},
+  shown: (swap: boolean) => ({ transition: swap ? { staggerChildren: 0.045 } : { staggerChildren: 0.055, delayChildren: 0.15 } }),
+  gone: { opacity: 0, transition: { duration: 0.11, ease: 'easeIn' } },
+};
+export const DETAIL_PART: Variants = {
+  open: { opacity: 0, x: 28 },
+  swap: { opacity: 0, y: 10 },
+  shown: { opacity: 1, x: 0, y: 0, transition: { duration: 0.38, ease: EASE_OUT } },
+};

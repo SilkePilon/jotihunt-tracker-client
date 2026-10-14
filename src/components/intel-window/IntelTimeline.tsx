@@ -1,0 +1,226 @@
+import { useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion, type Variants } from 'motion/react';
+import { ClockIcon } from 'lucide-react';
+import { Tag } from '@/components/beheer/controls/Pill';
+import { formatClock } from '@/lib/format';
+import { ASSIGNMENT_STATUS_LABELS, KIND_COLOR, KIND_LABEL, areaStates, deadlineLabel, groupByDay, solvedCount } from '@/lib/intel-window';
+import { EASE_OUT } from '@/lib/motion';
+import { areaOptions, cn } from '@/lib/utils';
+import useIntelStore from '@/stores/intel.store';
+import type { IntelItem, IntelKind } from '@/types/Intel';
+import { AreaChip, AreaStrip } from './AreaChips';
+
+/**
+ * The list swaps (wide ↔ compact) while hidden: the old one fades out, then the new one staggers in. `custom` is the
+ * list's own mode (not passed through AnimatePresence, so an exiting list keeps its own), so the wide list leaves
+ * with x −12 / 0.13 s and the compact one with x −10 / 0.14 s.
+ */
+const list: Variants = {
+  hidden: {},
+  shown: (compact: boolean) => ({ transition: { staggerChildren: compact ? 0.02 : 0.022, delayChildren: compact ? 0.19 : 0.21 } }),
+  gone: (compact: boolean) => ({ opacity: 0, x: compact ? -10 : -12, transition: { duration: compact ? 0.14 : 0.13, ease: 'easeIn' } }),
+};
+const entry: Variants = {
+  hidden: (compact: boolean) => ({ opacity: 0, x: compact ? 16 : 0, y: compact ? 0 : 8 }),
+  shown: { opacity: 1, x: 0, y: 0, transition: { duration: 0.32, ease: EASE_OUT } },
+};
+
+/** Ticks once a minute: deadlines and day labels */
+function useMinute() {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(timer);
+  }, []);
+  return now;
+}
+
+interface TimelineProps {
+  items: IntelItem[];
+  compact: boolean;
+  selectedId: number | null;
+  onSelect: (id: number) => void;
+}
+
+/**
+ * Day-grouped timeline: wide cards with a time rail, or compact rows when an item is open on the right.
+ *
+ * The parent column animates its width; the lists inside never follow it while visible. The wide list is laid out at
+ * the full row width (`100cqw` of the split row) and is only clipped by the column, so its text never re-wraps; the
+ * compact rows are single-line (truncated). No entrance animation on the first paint (AnimatePresence `initial={false}`).
+ */
+export default function IntelTimeline({ items, compact, selectedId, onSelect }: TimelineProps) {
+  const now = useMinute();
+  const tab = useIntelStore((state) => state.tab);
+  const groups = groupByDay(items, now);
+
+  return (
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.div
+        // A tab switch also swaps the whole list (fade out, stagger in) instead of items popping
+        key={`${compact ? 'compact' : 'wide'}-${tab}`}
+        custom={compact}
+        variants={list}
+        initial="hidden"
+        animate="shown"
+        exit="gone"
+        className={compact ? 'w-full px-4 pb-8' : 'w-[100cqw] pr-[200px] pb-8 pl-[150px]'}
+      >
+        {groups.length === 0 && (
+          <motion.p custom={compact} variants={entry} className="py-10 text-center text-sm text-muted-foreground">
+            Nog niets gepubliceerd
+          </motion.p>
+        )}
+        {groups.map((group) => (
+          <section key={group.key}>
+            <motion.h3
+              custom={compact}
+              variants={entry}
+              className={cn(
+                'sticky top-0 z-10 bg-linear-to-b from-beheer-window from-70% to-transparent pt-3.5 pb-2 text-[11.5px] font-extrabold tracking-[0.06em] whitespace-nowrap text-muted-foreground uppercase',
+                compact ? 'pl-1.5' : 'pl-[66px]',
+              )}
+            >
+              {group.label}
+            </motion.h3>
+            {group.items.map((item) =>
+              compact ? (
+                <motion.div key={item.id} custom={compact} variants={entry} className="my-1">
+                  <CompactRow item={item} now={now} selected={item.id === selectedId} onSelect={onSelect} />
+                </motion.div>
+              ) : (
+                <motion.div key={item.id} custom={compact} variants={entry} className="grid grid-cols-[52px_14px_1fr] gap-x-2.5">
+                  <div className="pt-[15px] text-right text-xs text-muted-foreground tabular-nums">{formatClock(item.publishAt)}</div>
+                  <div className="relative before:absolute before:inset-y-0 before:left-1.5 before:w-0.5 before:bg-beheer-row-high">
+                    <span className="absolute top-[18px] left-0.5 size-2.5 rounded-full ring-2 ring-beheer-window" style={{ backgroundColor: KIND_COLOR[item.kind] }} />
+                  </div>
+                  <WideCard item={item} now={now} onSelect={onSelect} />
+                </motion.div>
+              ),
+            )}
+          </section>
+        ))}
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
+/** The "ongelezen" dot; grows from zero width (cancelling the flex gap) so the title slides instead of jumping */
+function UnreadDot({ unread }: { unread: boolean }) {
+  return (
+    <AnimatePresence initial={false}>
+      {unread && (
+        <motion.span
+          key="dot"
+          initial={{ width: 0, marginRight: -8, scale: 0 }}
+          animate={{ width: 7, marginRight: 0, scale: 1 }}
+          exit={{ width: 0, marginRight: -8, scale: 0, opacity: 0 }}
+          transition={{ duration: 0.2, ease: EASE_OUT }}
+          className="h-[7px] shrink-0 rounded-full bg-primary"
+          aria-label="ongelezen"
+        />
+      )}
+    </AnimatePresence>
+  );
+}
+
+function WideCard({ item, now, onSelect }: { item: IntelItem; now: number; onSelect: (id: number) => void }) {
+  const states = item.kind === 'hint' ? areaStates(item.cells) : null;
+  const count = item.kind === 'hint' ? solvedCount(item.cells) : null;
+  const status = item.assignment?.status ?? 'open';
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(item.id)}
+      className="my-[5px] w-full rounded-[20px] bg-card px-[15px] py-[13px] text-left outline-none transition-colors hover:bg-beheer-row focus-visible:ring-[3px] focus-visible:ring-ring/50"
+    >
+      <span className="flex items-center gap-2">
+        <UnreadDot unread={item.unread} />
+        <span className="text-[14.5px] font-bold">{item.title}</span>
+        <KindTag kind={item.kind} />
+        {count && (
+          <span className="ml-auto shrink-0 text-xs text-muted-foreground tabular-nums">
+            {count.solved}/{count.total} opgelost
+          </span>
+        )}
+        {item.kind === 'assignment' && item.endTime && (
+          <Tag tone="warn" className="ml-auto shrink-0">
+            <ClockIcon />
+            {deadlineLabel(item.endTime, now)}
+          </Tag>
+        )}
+      </span>
+      {item.summary && <span className="mt-[3px] line-clamp-2 block text-xs text-muted-foreground">{item.summary}</span>}
+      {states && (
+        <span className="mt-2.5 flex flex-wrap gap-1">
+          {areaOptions.map(({ value, label }) => (
+            <AreaChip key={value} area={value} state={states[value]} label={label} />
+          ))}
+        </span>
+      )}
+      {item.kind === 'assignment' && (
+        <span className="mt-2.5 flex gap-1.5">
+          <Tag>{ASSIGNMENT_STATUS_LABELS[status]}</Tag>
+          <Tag>{item.assignment?.owner?.name ?? 'niemand'}</Tag>
+          {item.maxPoints ? <Tag>max {item.maxPoints} pt</Tag> : null}
+        </span>
+      )}
+    </button>
+  );
+}
+
+function CompactRow({ item, now, selected, onSelect }: { item: IntelItem; now: number; selected: boolean; onSelect: (id: number) => void }) {
+  const ref = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!selected) return;
+    // After the open choreography (the column is done shrinking) the selected row is scrolled into view
+    const timer = setTimeout(() => ref.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 450);
+    return () => clearTimeout(timer);
+  }, [selected]);
+  const status = item.assignment?.status ?? 'open';
+  return (
+    <button
+      ref={ref}
+      type="button"
+      aria-current={selected || undefined}
+      onClick={() => onSelect(item.id)}
+      className={cn(
+        'flex w-full gap-2.5 rounded-[14px] bg-card px-3 py-2.5 text-left outline-none transition-[background-color,box-shadow] duration-200 hover:bg-beheer-row focus-visible:ring-[3px] focus-visible:ring-ring/50',
+        selected ? 'shadow-[0_0_0_2px_var(--primary)]' : 'shadow-[0_0_0_0_var(--primary)]',
+      )}
+    >
+      <span className="w-1 shrink-0 self-stretch rounded" style={{ backgroundColor: KIND_COLOR[item.kind] }} />
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-2">
+          <UnreadDot unread={item.unread} />
+          <span className="truncate text-[13.5px] font-bold">{item.title}</span>
+          <span className="ml-auto shrink-0 text-xs text-muted-foreground tabular-nums">{formatClock(item.publishAt)}</span>
+        </span>
+        {/* Single line, whatever the kind: the column resizes around these rows while they enter */}
+        <span className="mt-1 flex min-w-0">
+          {item.kind === 'hint' ? (
+            <AreaStrip cells={item.cells} />
+          ) : item.kind === 'assignment' ? (
+            <span className="truncate text-xs text-muted-foreground">
+              {item.endTime ? `${deadlineLabel(item.endTime, now)} · ` : ''}
+              {ASSIGNMENT_STATUS_LABELS[status]}
+            </span>
+          ) : (
+            <span className="truncate text-xs text-muted-foreground">{item.summary ?? ''}</span>
+          )}
+        </span>
+      </span>
+    </button>
+  );
+}
+
+export function KindTag({ kind }: { kind: IntelKind }) {
+  return (
+    <span
+      className="shrink-0 rounded-lg px-2 py-0.5 text-[11px] font-bold"
+      style={{ color: KIND_COLOR[kind], backgroundColor: `color-mix(in oklab, ${KIND_COLOR[kind]} 14%, transparent)` }}
+    >
+      {KIND_LABEL[kind]}
+    </span>
+  );
+}
