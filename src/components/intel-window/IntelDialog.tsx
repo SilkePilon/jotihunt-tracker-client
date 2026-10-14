@@ -1,10 +1,12 @@
-import { RefObject, useContext, useEffect, useMemo, useState } from 'react';
-import { AnimatePresence, motion, PresenceContext } from 'motion/react';
+import { type ReactNode, RefObject, useEffect, useMemo, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
+import { useSWRConfig } from 'swr';
 import { MapRef } from '@/components/Map';
 import ResponsiveDialog from '@/components/ResponsiveDialog';
 import { useArticles } from '@/hooks/articles.hook';
 import { useAssignments } from '@/hooks/assignments.hook';
 import { useHintBoard } from '@/hooks/hints.hook';
+import { useHasMounted } from '@/hooks/has-mounted.hook';
 import { useIsMobile } from '@/hooks/media.hook';
 import { useReadState } from '@/hooks/read-state.hook';
 import { DETAIL_PART, DETAIL_SWAP, buildIntelItems, filterByTab, unreadCount } from '@/lib/intel-window';
@@ -62,14 +64,28 @@ function IntelWindow(_props: { mapRef: RefObject<MapRef | null> }) {
   const shown = useMemo(() => filterByTab(items, tab), [items, tab]);
   const articleId = useIntelStore((state) => state.articleId);
   const select = useIntelStore((state) => state.select);
-  // A selected article that is not in the tab (the tab changed, or it disappeared) closes the split
   const selected = shown.find((item) => item.id === articleId) ?? null;
   const split = selected !== null;
+  const mounted = useHasMounted();
+  const scrollRef = useRef<HTMLDivElement>(null);
 
+  // The last selection that showed on the right (derived during render)
+  const [resolvedId, setResolvedId] = useState<number | null>(null);
+  if (selected && resolvedId !== selected.id) setResolvedId(selected.id);
+  // A selection that showed and then left the tab (the tab changed, or the article went) closes the split. One that never
+  // showed yet stays pending: a toast for a just-published article can be quicker than the next /articles poll.
   useEffect(() => {
-    // Wait for the articles: an article opened from a toast or the mini grid is not "gone" while they load
-    if (articles && articleId !== null && !shown.some((item) => item.id === articleId)) select(null);
-  }, [articles, articleId, shown, select]);
+    if (articleId !== null && articleId === resolvedId && !selected) select(null);
+  }, [articleId, resolvedId, selected, select]);
+
+  // A pending article that is not in the data yet: fetch articles and the hint board now instead of at the next poll
+  const { mutate } = useSWRConfig();
+  const refreshedFor = useRef<number | null>(null);
+  useEffect(() => {
+    if (!articles || articleId === null || refreshedFor.current === articleId || items.some((item) => item.id === articleId)) return;
+    refreshedFor.current = articleId;
+    void mutate((key) => Array.isArray(key) && (key[0] === '/articles' || key[0] === '/hints/board'));
+  }, [articles, articleId, items, mutate]);
 
   // Opening news or an opdracht marks it read (hints have no read state)
   useEffect(() => {
@@ -88,12 +104,13 @@ function IntelWindow(_props: { mapRef: RefObject<MapRef | null> }) {
       <IntelTopBar unread={unreadCount(items) > 0} />
       <div className="@container flex min-h-0 flex-1 overflow-hidden">
         <motion.div
+          ref={scrollRef}
           className="min-h-0 shrink-0 overflow-x-hidden overflow-y-auto [scrollbar-gutter:stable]"
           initial={false}
           animate={{ width: split ? '33.333%' : '100%' }}
           transition={{ duration: 0.42, ease: EASE_OUT, delay: split ? 0.1 : 0.16 }}
         >
-          <IntelTimeline items={shown} compact={split} selectedId={articleId} onSelect={(id) => select(id === articleId ? null : id)} />
+          <IntelTimeline items={shown} compact={split} tab={tab} scrollRef={scrollRef} selectedId={articleId} onSelect={(id) => select(id === articleId ? null : id)} />
         </motion.div>
         <AnimatePresence initial={false}>
           {split && (
@@ -113,7 +130,7 @@ function IntelWindow(_props: { mapRef: RefObject<MapRef | null> }) {
               className="min-h-0 shrink-0 basis-[calc(66.667%-1px)] overflow-y-auto px-9 pt-1.5 pb-8"
               exit={{ opacity: 0, x: 24, transition: { duration: 0.16, ease: 'easeIn' } }}
             >
-              <DetailColumn item={selected} />
+              <DetailColumn item={selected} skipEntrance={!mounted} />
             </motion.div>
           )}
         </AnimatePresence>
@@ -122,24 +139,43 @@ function IntelWindow(_props: { mapRef: RefObject<MapRef | null> }) {
   );
 }
 
-/** The right side of the split: its parts push in when the split opens, and swap (out, then rise in) for another item */
-function DetailColumn({ item }: { item: IntelItem }) {
-  // false when the window opened straight into the split (toast, mini grid): no entrance then, the dialog itself animates
-  const presence = useContext(PresenceContext);
-  const [entering] = useState(presence?.initial !== false);
+/**
+ * The right side of the split: its parts push in when the split opens, and swap (out, then rise in) for another item.
+ * `skipEntrance` (read on mount): the window opened straight into the split (toast, mini grid), the dialog itself animates.
+ */
+function DetailColumn({ item, skipEntrance }: { item: IntelItem; skipEntrance: boolean }) {
+  const [skip] = useState(skipEntrance);
   // Derived during render: from the first other item on, items rise in instead of pushing in from the right
   const [firstId] = useState(item.id);
   const [swapped, setSwapped] = useState(false);
   if (!swapped && item.id !== firstId) setSwapped(true);
 
   return (
-    <AnimatePresence mode="wait" initial={entering}>
-      <motion.div key={item.id} custom={swapped} variants={DETAIL_SWAP} initial={swapped ? 'swap' : 'open'} animate="shown" exit="gone" className="relative mx-auto max-w-[720px]">
+    <AnimatePresence mode="wait">
+      <DetailSlide key={item.id} swapped={swapped} skipEntrance={skip && !swapped}>
         {/* Task 5: <IntelDetail item={item} mapRef={mapRef} />, its top-level parts with variants={DETAIL_PART} */}
         <motion.h2 variants={DETAIL_PART} className="text-[21px] font-bold">
           {item.title}
         </motion.h2>
-      </motion.div>
+      </DetailSlide>
     </AnimatePresence>
+  );
+}
+
+/** One item on the right. Parts that mount later (while it is on screen) inherit `swap`, so they rise in too. */
+function DetailSlide({ swapped, skipEntrance, children }: { swapped: boolean; skipEntrance: boolean; children: ReactNode }) {
+  const [skip] = useState(skipEntrance);
+  const mounted = useHasMounted();
+  return (
+    <motion.div
+      custom={swapped}
+      variants={DETAIL_SWAP}
+      initial={mounted ? 'swap' : skip ? false : swapped ? 'swap' : 'open'}
+      animate="shown"
+      exit="gone"
+      className="relative mx-auto max-w-[720px]"
+    >
+      {children}
+    </motion.div>
   );
 }

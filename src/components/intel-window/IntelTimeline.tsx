@@ -1,29 +1,50 @@
-import { useEffect, useRef, useState } from 'react';
+import { type ReactNode, type RefObject, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, type Variants } from 'motion/react';
 import { ClockIcon } from 'lucide-react';
 import { Tag } from '@/components/beheer/controls/Pill';
 import { formatClock } from '@/lib/format';
 import { ASSIGNMENT_STATUS_LABELS, KIND_COLOR, KIND_LABEL, areaStates, deadlineLabel, groupByDay, solvedCount } from '@/lib/intel-window';
 import { EASE_OUT } from '@/lib/motion';
+import { useHasMounted } from '@/hooks/has-mounted.hook';
 import { areaOptions, cn } from '@/lib/utils';
-import useIntelStore from '@/stores/intel.store';
-import type { IntelItem, IntelKind } from '@/types/Intel';
+import type { IntelItem, IntelKind, IntelTab } from '@/types/Intel';
 import { AreaChip, AreaStrip } from './AreaChips';
 
+const STEP = { compact: 0.02, wide: 0.022 };
+const BASE = { compact: 0.19, wide: 0.21 };
+const FOLD = { duration: 0.22, ease: EASE_OUT } as const;
+
 /**
- * The list swaps (wide ↔ compact) while hidden: the old one fades out, then the new one staggers in. `custom` is the
- * list's own mode (not passed through AnimatePresence, so an exiting list keeps its own), so the wide list leaves
- * with x −12 / 0.13 s and the compact one with x −10 / 0.14 s.
+ * The list swaps (wide ↔ compact, or another tab) while hidden: the old one fades out, then the new one staggers in.
+ * `custom` is the list's own mode (not passed through AnimatePresence, so an exiting list keeps its own): the wide list
+ * leaves with x −12 / 0.13 s, the compact one with x −10 / 0.14 s.
+ *
+ * Labels: `hidden` = start of a staggered list entrance, `insert` = something that mounts while the list is on screen
+ * (a new article or day: it unfolds), `shown` = in place. Children inherit the list's `initial` label, so the list's
+ * first paint uses `false` (no entrance), then `insert` once mounted.
  */
 const list: Variants = {
   hidden: {},
-  shown: (compact: boolean) => ({ transition: { staggerChildren: compact ? 0.02 : 0.022, delayChildren: compact ? 0.19 : 0.21 } }),
+  insert: {},
+  shown: {},
   gone: (compact: boolean) => ({ opacity: 0, x: compact ? -10 : -12, transition: { duration: compact ? 0.14 : 0.13, ease: 'easeIn' } }),
+};
+/** A day: staggers its header and items, starting after everything above it, so the cascade runs top to bottom */
+const day: Variants = {
+  hidden: {},
+  insert: {},
+  shown: ({ compact, offset }: { compact: boolean; offset: number }) => {
+    const step = compact ? STEP.compact : STEP.wide;
+    return { transition: { delayChildren: (compact ? BASE.compact : BASE.wide) + offset * step, staggerChildren: step } };
+  },
 };
 const entry: Variants = {
   hidden: (compact: boolean) => ({ opacity: 0, x: compact ? 16 : 0, y: compact ? 0 : 8 }),
-  shown: { opacity: 1, x: 0, y: 0, transition: { duration: 0.32, ease: EASE_OUT } },
+  insert: { opacity: 0, height: 0 },
+  shown: { opacity: 1, x: 0, y: 0, height: 'auto', transition: { duration: 0.32, ease: EASE_OUT } },
 };
+/** Leaving while the list stays: fold away (needs the element's `overflow-y-clip`) */
+const FOLD_OUT = { opacity: 0, height: 0, transition: FOLD };
 
 /** Ticks once a minute: deadlines and day labels */
 function useMinute() {
@@ -38,8 +59,12 @@ function useMinute() {
 interface TimelineProps {
   items: IntelItem[];
   compact: boolean;
+  /** Part of the list's key: a tab switch swaps the whole list */
+  tab: IntelTab;
   selectedId: number | null;
   onSelect: (id: number) => void;
+  /** The scrolling column: the wide list's scroll position is put back when the split closes */
+  scrollRef: RefObject<HTMLDivElement | null>;
 }
 
 /**
@@ -47,61 +72,99 @@ interface TimelineProps {
  *
  * The parent column animates its width; the lists inside never follow it while visible. The wide list is laid out at
  * the full row width (`100cqw` of the split row) and is only clipped by the column, so its text never re-wraps; the
- * compact rows are single-line (truncated). No entrance animation on the first paint (AnimatePresence `initial={false}`).
+ * compact rows are single-line (truncated). No entrance animation on the first paint.
  */
-export default function IntelTimeline({ items, compact, selectedId, onSelect }: TimelineProps) {
+export default function IntelTimeline({ items, compact, tab, selectedId, onSelect, scrollRef }: TimelineProps) {
   const now = useMinute();
-  const tab = useIntelStore((state) => state.tab);
+  const mounted = useHasMounted();
   const groups = groupByDay(items, now);
+  const wideTop = useRef<number | null>(null);
+  useEffect(() => {
+    // Runs right after the split opens, while the wide list is still on screen (fading out)
+    if (compact && scrollRef.current) wideTop.current = scrollRef.current.scrollTop;
+  }, [compact, scrollRef]);
 
   return (
-    <AnimatePresence mode="wait" initial={false}>
-      <motion.div
-        // A tab switch also swaps the whole list (fade out, stagger in) instead of items popping
+    <AnimatePresence mode="wait">
+      <TimelineList
         key={`${compact ? 'compact' : 'wide'}-${tab}`}
-        custom={compact}
-        variants={list}
-        initial="hidden"
-        animate="shown"
-        exit="gone"
-        className={compact ? 'w-full px-4 pb-8' : 'w-[100cqw] pr-[200px] pb-8 pl-[150px]'}
+        compact={compact}
+        skipEntrance={!mounted}
+        onMount={() => {
+          if (!compact && wideTop.current !== null && scrollRef.current) scrollRef.current.scrollTop = wideTop.current;
+          if (!compact) wideTop.current = null;
+        }}
       >
-        {groups.length === 0 && (
-          <motion.p custom={compact} variants={entry} className="py-10 text-center text-sm text-muted-foreground">
-            Nog niets gepubliceerd
-          </motion.p>
-        )}
-        {groups.map((group) => (
-          <section key={group.key}>
-            <motion.h3
-              custom={compact}
-              variants={entry}
-              className={cn(
-                'sticky top-0 z-10 bg-linear-to-b from-beheer-window from-70% to-transparent pt-3.5 pb-2 text-[11.5px] font-extrabold tracking-[0.06em] whitespace-nowrap text-muted-foreground uppercase',
-                compact ? 'pl-1.5' : 'pl-[66px]',
-              )}
+        <AnimatePresence>
+          {groups.length === 0 && (
+            <motion.p key="empty" custom={compact} variants={entry} exit={FOLD_OUT} className="overflow-y-clip py-10 text-center text-sm text-muted-foreground">
+              Nog niets gepubliceerd
+            </motion.p>
+          )}
+          {groups.map((group, index) => (
+            <motion.section
+              key={group.key}
+              custom={{ compact, offset: groups.slice(0, index).reduce((sum, before) => sum + 1 + before.items.length, 0) }}
+              variants={day}
+              exit={FOLD_OUT}
+              // Clips vertically only: no scroll container, so the sticky day header keeps working, and focus rings show
+              className="overflow-y-clip"
             >
-              {group.label}
-            </motion.h3>
-            {group.items.map((item) =>
-              compact ? (
-                <motion.div key={item.id} custom={compact} variants={entry} className="my-1">
-                  <CompactRow item={item} now={now} selected={item.id === selectedId} onSelect={onSelect} />
-                </motion.div>
-              ) : (
-                <motion.div key={item.id} custom={compact} variants={entry} className="grid grid-cols-[52px_14px_1fr] gap-x-2.5">
-                  <div className="pt-[15px] text-right text-xs text-muted-foreground tabular-nums">{formatClock(item.publishAt)}</div>
-                  <div className="relative before:absolute before:inset-y-0 before:left-1.5 before:w-0.5 before:bg-beheer-row-high">
-                    <span className="absolute top-[18px] left-0.5 size-2.5 rounded-full ring-2 ring-beheer-window" style={{ backgroundColor: KIND_COLOR[item.kind] }} />
-                  </div>
-                  <WideCard item={item} now={now} onSelect={onSelect} />
-                </motion.div>
-              ),
-            )}
-          </section>
-        ))}
-      </motion.div>
+              <motion.h3
+                custom={compact}
+                variants={entry}
+                className={cn(
+                  'sticky top-0 z-10 bg-linear-to-b from-beheer-window from-70% to-transparent pt-3.5 pb-2 text-[11.5px] font-extrabold tracking-[0.06em] whitespace-nowrap text-muted-foreground uppercase',
+                  compact ? 'pl-1.5' : 'pl-[66px]',
+                )}
+              >
+                {group.label}
+              </motion.h3>
+              <AnimatePresence>
+                {group.items.map((item) =>
+                  compact ? (
+                    <motion.div key={item.id} custom={compact} variants={entry} exit={FOLD_OUT} className="overflow-y-clip py-[3px]">
+                      <CompactRow item={item} now={now} selected={item.id === selectedId} onSelect={onSelect} />
+                    </motion.div>
+                  ) : (
+                    <motion.div key={item.id} custom={compact} variants={entry} exit={FOLD_OUT} className="grid grid-cols-[52px_14px_1fr] gap-x-2.5 overflow-y-clip">
+                      <div className="pt-[15px] text-right text-xs text-muted-foreground tabular-nums">{formatClock(item.publishAt)}</div>
+                      <div className="relative before:absolute before:inset-y-0 before:left-1.5 before:w-0.5 before:bg-beheer-row-high">
+                        <span className="absolute top-[18px] left-0.5 size-2.5 rounded-full ring-2 ring-beheer-window" style={{ backgroundColor: KIND_COLOR[item.kind] }} />
+                      </div>
+                      <WideCard item={item} now={now} onSelect={onSelect} />
+                    </motion.div>
+                  ),
+                )}
+              </AnimatePresence>
+            </motion.section>
+          ))}
+        </AnimatePresence>
+      </TimelineList>
     </AnimatePresence>
+  );
+}
+
+/** One list (one mode + tab). `skipEntrance` and `onMount` are read once, when it mounts. */
+function TimelineList({ compact, skipEntrance, onMount, children }: { compact: boolean; skipEntrance: boolean; onMount: () => void; children: ReactNode }) {
+  const [skip] = useState(skipEntrance);
+  const mounted = useHasMounted();
+  const mountRef = useRef(onMount);
+  useLayoutEffect(() => {
+    mountRef.current();
+  }, []);
+  return (
+    <motion.div
+      custom={compact}
+      variants={list}
+      // Read by motion only on mount for the list itself; its children inherit it when they mount
+      initial={mounted ? 'insert' : skip ? false : 'hidden'}
+      animate="shown"
+      exit="gone"
+      className={compact ? 'w-full px-4 pb-8' : 'w-[100cqw] pr-[200px] pb-8 pl-[150px]'}
+    >
+      {children}
+    </motion.div>
   );
 }
 
