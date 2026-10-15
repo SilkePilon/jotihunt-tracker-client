@@ -227,6 +227,9 @@
   html,
   body {
     overscroll-behavior: none;
+    /* The page never scrolls (map app); keeps mobile browser toolbars expanded and the bottom sheet's bottom:0 fixed */
+    height: 100%;
+    overflow: hidden;
   }
 
   /* Tailwind v4 defaults buttons to cursor: default; keep the v3 behaviour */
