@@ -4,13 +4,13 @@ import { AnimatePresence, motion } from 'motion/react';
 import { BellIcon, CarIcon, LayoutGridIcon, MapPinIcon } from 'lucide-react';
 import { useMarkerPalette } from '@/components/layers/marker-icons';
 import { useAppRelease, usePairingCode } from '@/hooks/app-pairing.hook';
-import { useTrackerStatus } from '@/hooks/tracker.hook';
+import { useAccount } from '@/hooks/account.hook';
 import { absoluteUrl, buildPairingUrl } from '@/lib/app-pairing';
 import { SWAP } from '@/lib/motion';
 import useAndroidPromoStore from '@/stores/android-promo.store';
 import AndroidPromoHero from './AndroidPromoHero';
 import DownloadSplitButton from './DownloadSplitButton';
-import { DoneStep, DownloadingStep, InstallStep, PairStep, Stepper } from './PromoSteps';
+import { DoneStep, DownloadingStep, InstallStep, PairStep, StepClose, Stepper } from './PromoSteps';
 
 const apiBase: string = import.meta.env.API_BASE_URL;
 
@@ -18,13 +18,15 @@ const apiBase: string = import.meta.env.API_BASE_URL;
 export default function AndroidPromoDialog() {
   const { open, step, setStep, close } = useAndroidPromoStore();
   const { release } = useAppRelease();
-  const { status } = useTrackerStatus();
+  const { account, refresh } = useAccount(open);
   const { create } = usePairingCode();
-  const connected = !!status?.configured && status.connected;
+  const deviceCount = account?.devices.length;
+  // Closing before the end = remind later; after pairing = never again
+  const dismiss = () => close(step === 'done' ? 'paired' : 'later');
 
   // Stable callbacks: the steps use them as effect deps (a new arrow per render would restart their timer/effect)
   const onDownloaded = useCallback(() => setStep('install'), [setStep]);
-  const onConnected = useCallback(() => setStep('done'), [setStep]);
+  const onPaired = useCallback(() => setStep('done'), [setStep]);
 
   const download = useCallback(() => {
     if (!release) return;
@@ -46,7 +48,7 @@ export default function AndroidPromoDialog() {
     <AnimatePresence>
       {open && release && (
         <>
-          <motion.div key="scrim" className="fixed inset-0 z-50 bg-black/50" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => step === 'intro' && close('later')} />
+          <motion.div key="scrim" className="fixed inset-0 z-50 bg-black/50" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={dismiss} />
           <motion.div
             key="dialog"
             role="dialog"
@@ -72,10 +74,13 @@ export default function AndroidPromoDialog() {
                   </>
                 ) : (
                   <div className="p-5">
-                    {step !== 'done' && <Stepper step={step} />}
+                    <div className="mb-3.5 flex items-center gap-3">
+                      {step === 'done' ? <span className="flex-1" /> : <Stepper step={step} />}
+                      <StepClose onClose={dismiss} />
+                    </div>
                     {step === 'download' && <DownloadingStep onDone={onDownloaded} />}
                     {step === 'install' && <InstallStep onPair={() => setStep('pair')} onRedownload={download} />}
-                    {step === 'pair' && <PairStep openApp={openApp} connected={connected} onConnected={onConnected} onBack={() => setStep('install')} />}
+                    {step === 'pair' && <PairStep openApp={openApp} deviceCount={deviceCount} refresh={() => void refresh()} onPaired={onPaired} onBack={() => setStep('install')} />}
                     {step === 'done' && <DoneStep onClose={() => close('paired')} />}
                   </div>
                 )}

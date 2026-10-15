@@ -1,7 +1,7 @@
 // src/components/android-promo/PromoSteps.tsx
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { motion } from 'motion/react';
-import { LinkIcon, TriangleAlertIcon } from 'lucide-react';
+import { LinkIcon, TriangleAlertIcon, XIcon } from 'lucide-react';
 import { cookiePath, BADGE_COOKIE_DEPTH } from '@/lib/cookie-shape';
 import { appDidNotOpen } from '@/lib/android-promo';
 import { POP_SPRING } from '@/lib/motion';
@@ -14,11 +14,20 @@ const STEP_INDEX: Partial<Record<PromoStep, number>> = { download: 0, install: 1
 export function Stepper({ step }: { step: PromoStep }) {
   const index = STEP_INDEX[step] ?? -1;
   return (
-    <div className="mb-3.5 flex gap-1.5">
+    <div className="flex flex-1 gap-1.5">
       {[0, 1, 2].map((i) => (
         <i key={i} className={cn('h-1 flex-1 rounded-sm transition-colors duration-300', i <= index ? 'bg-primary' : 'bg-beheer-row-high')} />
       ))}
     </div>
+  );
+}
+
+/** The way out of every step after the intro: the hero's round X, on the plain step background */
+export function StepClose({ onClose }: { onClose: () => void }) {
+  return (
+    <button type="button" aria-label="Sluiten" onClick={onClose} className="grid size-[34px] shrink-0 place-items-center rounded-full bg-beheer-row-high text-muted-foreground transition-colors hover:text-foreground">
+      <XIcon className="size-5" />
+    </button>
   );
 }
 
@@ -61,12 +70,25 @@ export function InstallStep({ onPair, onRedownload }: { onPair: () => void; onRe
 }
 
 /**
- * Opens the app via the pairing deep link (`openApp` creates the code and navigates), then waits for the tracker
- * to connect. Still visible after 2.5 s = the app didn't open.
+ * Opens the app via the pairing deep link (`openApp` creates the code and navigates), then waits for a new app
+ * device on the account. Still visible after 2.5 s = the app didn't open. Not the tracker's `connected`: another
+ * client (Traccar Client) may already be connected, which would show "Gekoppeld!" straight away.
  */
-export function PairStep({ openApp, connected, onConnected, onBack }: { openApp: () => Promise<boolean>; connected: boolean; onConnected: () => void; onBack: () => void }) {
+export function PairStep({ openApp, deviceCount, refresh, onPaired, onBack }: {
+  openApp: () => Promise<boolean>;
+  /** App devices on the account; undefined while loading */
+  deviceCount: number | undefined;
+  /** Reload the account (device list) */
+  refresh: () => void;
+  onPaired: () => void;
+  onBack: () => void;
+}) {
   const [phase, setPhase] = useState<'opening' | 'waiting' | 'failed'>('opening');
   const startedAt = useRef(0);
+  const launched = useRef(false);
+  const baseline = useRef<number | undefined>(undefined);
+  const paired = useEffectEvent(onPaired);
+  const reload = useEffectEvent(refresh);
   // Phase starts at 'opening', so the first launch needs no setState (which the effect may not do synchronously)
   const launch = () => {
     startedAt.current = Date.now();
@@ -79,13 +101,31 @@ export function PairStep({ openApp, connected, onConnected, onBack }: { openApp:
     launch();
   };
   useEffect(() => {
+    // StrictMode runs mount effects twice; one mount must create one code and open the app once
+    if (launched.current) return;
+    launched.current = true;
     launch();
     // Once on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  // Success = the account gained an app device since this step started
   useEffect(() => {
-    if (connected) onConnected();
-  }, [connected, onConnected]);
+    if (deviceCount === undefined) return;
+    if (baseline.current === undefined) baseline.current = deviceCount;
+    else if (deviceCount > baseline.current) paired();
+  }, [deviceCount]);
+  // Poll the device list while on this step, and right away when the user comes back from the app
+  useEffect(() => {
+    const id = window.setInterval(() => reload(), 3000);
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') reload();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, []);
   useEffect(() => {
     if (phase !== 'opening') return;
     const id = window.setInterval(() => {
