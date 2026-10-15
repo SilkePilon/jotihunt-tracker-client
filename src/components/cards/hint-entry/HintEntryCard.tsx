@@ -1,12 +1,8 @@
-import {Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select.tsx';
-import {Field, FieldGroup, FieldLabel} from '@/components/ui/field.tsx';
 import {z} from 'zod';
 import {Controller, useForm, useWatch} from 'react-hook-form';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {Button} from '../../ui/button.tsx';
-import {InputOTP, InputOTPGroup, InputOTPSlot} from '../../ui/input-otp.tsx';
-import {REGEXP_ONLY_DIGITS} from 'input-otp';
-import {Pin, TrashIcon} from 'lucide-react';
+import {EraserIcon, Pin} from 'lucide-react';
 import {useMarkers} from '@/hooks/markers.hook.ts';
 import {toast} from 'sonner';
 import PropTypes, {InferProps} from 'prop-types';
@@ -14,11 +10,16 @@ import {MapRef} from '@/components/Map.tsx';
 import {MarkerType} from '@/types/MarkerType.ts';
 import {Marker} from '@/types/Marker.ts';
 import {areaOptions} from '@/lib/utils.ts';
-import {useEffect, useId} from "react";
+import {useEffect, useId, useState} from "react";
 import {useHintFormBridge} from "@/hooks/hint-bridge.hook.ts";
 import {isInNetherlands} from '@/lib/netherlands';
 import {fromRD, isPlausibleRD} from '@/lib/rd';
 import {apiErrorMessage} from '@/lib/api-error';
+import AreaPicker from './AreaPicker';
+import TimePicker from './TimePicker';
+import DigitBoxes from './DigitBoxes';
+import CoordinateStatus, {type CoordinateState} from './CoordinateStatus';
+import {buildHintHours, groupByDay, isFreeHour} from './hint-times';
 
 const FormSchema = z.object({
     area: z.enum([...areaOptions.map((option) => option.value)] as [string, ...string[]]),
@@ -27,11 +28,15 @@ const FormSchema = z.object({
     y: z.string().length(6),
 });
 
+const HUNT_START = new Date(import.meta.env.HUNT_START_TIME);
+const HUNT_END = new Date(import.meta.env.HUNT_END_TIME);
+
 export default function HintEntryCard({mapRef}: InferProps<typeof HintEntryCard.propTypes>) {
     const {coords, clear} = useHintFormBridge();
     const fieldId = useId();
     const submitId = `${fieldId}-submit`;
     const {markers, createMarker} = useMarkers();
+    const [timeOpen, setTimeOpen] = useState(false);
 
     const form = useForm<z.infer<typeof FormSchema>>({
         resolver: zodResolver(FormSchema),
@@ -48,6 +53,10 @@ export default function HintEntryCard({mapRef}: InferProps<typeof HintEntryCard.
     // Live check once both coordinates are complete: hints are always in the Netherlands
     const typedLocation = xValue?.length === 6 && yValue?.length === 6 ? fromRD(Number(xValue), Number(yValue)) : undefined;
     const outsideNetherlands = !!typedLocation && !isInNetherlands(typedLocation[0], typedLocation[1]);
+    const coordinateState: CoordinateState = outsideNetherlands ? 'outside' : typedLocation ? 'inside' : 'idle';
+
+    // Hours for the chosen area; hours that already have a hint are kept but marked taken
+    const days = groupByDay(buildHintHours(HUNT_START, HUNT_END, new Date(), markers, selectedArea));
 
     // Handle hint bridge
     useEffect(() => {
@@ -59,38 +68,15 @@ export default function HintEntryCard({mapRef}: InferProps<typeof HintEntryCard.
     }, [coords, clear, form]);
 
     /**
-     * Get all available time options for the current area.
-     * Filters out hints that are already in the database.
-     * @returns The available time options
+     * Choose an area; the chosen time stays only while it's still free for the new area.
      */
-    function getTimeOptions(): { value: string; label: string }[] {
-        const startTime = new Date(import.meta.env.HUNT_START_TIME);
-        const endTime = new Date(import.meta.env.HUNT_END_TIME);
-        const currentTime = new Date();
-        const adjustedEndTime = currentTime > endTime ? endTime : currentTime;
-
-        const timeOptions: { value: string; label: string }[] = [];
-        for (let i = startTime; i < adjustedEndTime; i.setHours(i.getHours() + 1)) {
-            const formatted = i.toLocaleString('nl-NL', {weekday: 'long', hour: 'numeric'}) + ':00';
-            timeOptions.push({value: i.toISOString(), label: formatted});
+    function changeArea(area: string) {
+        form.setValue('area', area, {shouldValidate: true, shouldDirty: true});
+        const time = form.getValues('time');
+        if (time && !isFreeHour(buildHintHours(HUNT_START, HUNT_END, new Date(), markers, area), time)) {
+            form.setValue('time', '', {shouldDirty: true});
         }
-
-        markers
-            ?.filter((marker) => marker.area === selectedArea)
-            .filter((marker) => marker.type === MarkerType.Hint)
-            .forEach((marker) => {
-                const markerTime = new Date(marker.time);
-                const index = timeOptions.findIndex((option) => {
-                    const optionTime = new Date(option.value);
-                    return markerTime.getHours() === optionTime.getHours() && markerTime.getDate() === optionTime.getDate();
-                });
-                if (index !== -1) timeOptions.splice(index, 1);
-            });
-
-        return timeOptions;
     }
-
-    const timeOptions = getTimeOptions();
 
     /**
      * When submitted, create a new marker.
@@ -141,16 +127,14 @@ export default function HintEntryCard({mapRef}: InferProps<typeof HintEntryCard.
         }
     }
 
-    /**
-     * Clear a field in the form.
-     * @param key The key of the field to clear
-     */
-    function clearField(key: keyof z.infer<typeof FormSchema>) {
-        form.setValue(key, '');
+    /** Wissen: empty both coordinates. */
+    function clearCoordinates() {
+        form.setValue('x', '');
+        form.setValue('y', '');
     }
 
     /**
-     * One RD coordinate row: label, 6 digit slots and a clear button.
+     * One RD coordinate row: axis label and 6 digit boxes.
      * Calls onComplete once all 6 digits are entered, so focus can move on.
      */
     const coordinateField = (name: 'x' | 'y', label: string, onComplete: () => void) => (
@@ -158,106 +142,52 @@ export default function HintEntryCard({mapRef}: InferProps<typeof HintEntryCard.
             control={form.control}
             name={name}
             render={({field, fieldState}) => (
-                <Field orientation="horizontal" data-invalid={fieldState.invalid} className="gap-2">
-                    <FieldLabel htmlFor={`${fieldId}-${name}`} className="w-4 flex-none! font-semibold">{label}</FieldLabel>
-                    <InputOTP id={`${fieldId}-${name}`} autoComplete="off" inputMode="numeric" maxLength={6}
-                              pattern={REGEXP_ONLY_DIGITS} onComplete={onComplete} aria-invalid={fieldState.invalid}
-                              {...field}>
-                        <InputOTPGroup>
-                            {[0, 1, 2, 3, 4, 5].map((index) => (
-                                <InputOTPSlot key={index} index={index} className="h-9 w-9"
-                                              aria-invalid={fieldState.invalid}/>
-                            ))}
-                        </InputOTPGroup>
-                    </InputOTP>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        tabIndex={-1}
-                        aria-label={`${label}-coördinaat wissen`}
-                        onClick={(e) => {
-                            e.preventDefault();
-                            clearField(name);
-                        }}
-                    >
-                        <TrashIcon/>
-                    </Button>
-                </Field>
+                <DigitBoxes id={`${fieldId}-${name}`} label={label} onComplete={onComplete}
+                            bad={outsideNetherlands || fieldState.invalid} {...field}/>
             )}
         />
     );
 
     return (
-        <form onSubmit={(e) => form.handleSubmit(onSubmit)(e)}>
-            <FieldGroup className="gap-3">
-                <div className="flex gap-2 w-full">
+        <form onSubmit={(e) => form.handleSubmit(onSubmit)(e)} className="flex flex-col gap-3.5">
+            <div className="flex flex-col gap-1.5 rounded-[20px] bg-beheer-row p-3.5">
+                <div className="mb-1.5 flex gap-1.5">
                     <Controller
                         control={form.control}
                         name="area"
                         render={({field, fieldState}) => (
-                            <Field data-invalid={fieldState.invalid} className="min-w-0 flex-1 gap-2">
-                                <FieldLabel htmlFor={`${fieldId}-area`}>Deelgebied</FieldLabel>
-                                <Select name={field.name} onValueChange={field.onChange} value={field.value}>
-                                    <SelectTrigger id={`${fieldId}-area`} className="w-full" aria-invalid={fieldState.invalid}>
-                                        <SelectValue placeholder="Kies gebied"/>
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectGroup>
-                                            {areaOptions.map((option) => (
-                                                <SelectItem key={option.value} value={option.value}>
-                                                    {option.label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectGroup>
-                                    </SelectContent>
-                                </Select>
-                            </Field>
+                            <div className="min-w-0 flex-1">
+                                <AreaPicker id={`${fieldId}-area`} value={field.value} onChange={changeArea}
+                                            invalid={fieldState.invalid} afterPick={() => setTimeOpen(true)}/>
+                            </div>
                         )}
                     />
                     <Controller
                         control={form.control}
                         name="time"
                         render={({field, fieldState}) => (
-                            <Field data-invalid={fieldState.invalid} className="min-w-0 flex-1 gap-2">
-                                <FieldLabel htmlFor={`${fieldId}-time`}>Tijdstip</FieldLabel>
-                                <Select name={field.name} onValueChange={field.onChange} value={field.value}>
-                                    <SelectTrigger id={`${fieldId}-time`} className="w-full" aria-invalid={fieldState.invalid}
-                                                   disabled={!selectedArea}>
-                                        <SelectValue placeholder="Kies tijd"/>
-                                    </SelectTrigger>
-                                    <SelectContent className="max-h-[280px]">
-                                        <SelectGroup>
-                                            {timeOptions.length > 0 ? (
-                                                timeOptions.map((option) => (
-                                                    <SelectItem key={option.value} value={option.value}>
-                                                        {option.label}
-                                                    </SelectItem>
-                                                ))
-                                            ) : (
-                                                <SelectItem value="disabled" disabled>
-                                                    (Nog) geen tijdstip te kiezen
-                                                </SelectItem>
-                                            )}
-                                        </SelectGroup>
-                                    </SelectContent>
-                                </Select>
-                            </Field>
+                            <div className="min-w-0 flex-1">
+                                <TimePicker id={`${fieldId}-time`} value={field.value} onChange={field.onChange}
+                                            days={days} open={timeOpen} onOpenChange={setTimeOpen}
+                                            disabled={!selectedArea} invalid={fieldState.invalid}
+                                            afterPick={() => document.getElementById(`${fieldId}-x`)?.focus()}/>
+                            </div>
                         )}
                     />
                 </div>
-                <div className="flex flex-col gap-2">
-                    {coordinateField('x', 'X', () => document.getElementById(`${fieldId}-y`)?.focus())}
-                    {coordinateField('y', 'Y', () => setTimeout(() => document.getElementById(submitId)?.focus()))}
-                    {outsideNetherlands && (
-                        <p role="alert" className="text-sm font-medium text-destructive">
-                            Dit coördinaat ligt buiten Nederland. Controleer de X- en Y-waarden.
-                        </p>
-                    )}
+                {coordinateField('x', 'X', () => document.getElementById(`${fieldId}-y`)?.focus())}
+                {coordinateField('y', 'Y', () => setTimeout(() => document.getElementById(submitId)?.focus()))}
+                <div className="mt-1 flex items-center justify-between gap-2">
+                    <CoordinateStatus state={coordinateState}/>
+                    <button type="button" onClick={clearCoordinates}
+                            className="inline-flex items-center gap-1.5 rounded-md px-1 text-xs font-semibold text-primary outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50">
+                        <EraserIcon aria-hidden className="size-3.5"/> Wissen
+                    </button>
                 </div>
-                <Button id={submitId} type="submit" disabled={!form.formState.isValid || outsideNetherlands}>
-                    <Pin data-icon="inline-start"/> Registreren
-                </Button>
-            </FieldGroup>
+            </div>
+            <Button id={submitId} type="submit" className="h-11 text-[15px]" disabled={!form.formState.isValid || outsideNetherlands}>
+                <Pin data-icon="inline-start"/> Registreren
+            </Button>
         </form>
     );
 }
