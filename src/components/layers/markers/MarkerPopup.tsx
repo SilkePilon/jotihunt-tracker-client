@@ -52,7 +52,7 @@ export default function MarkerPopup({ marker, onClose, deleteMarker }: MarkerPop
           </PopupIcon>
         }
         title={`${capitalizeFirstLetter(marker.area)} · ${capitalizeFirstLetter(marker.type)}`}
-        subtitle={joinParts(formatMarkerTime(marker.time), distance)}
+        subtitle={joinParts(formatMarkerTime(marker.time), distance, marker.source === 'jotiboard' ? 'via Jotiboard' : undefined)}
       />
       <CoordRows lat={lat} lng={lng} />
       <PopupActions>
