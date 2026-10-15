@@ -35,3 +35,8 @@ Unchanged: the button itself, maxBounds, Settings submenus on phones only, tour 
 ## Testing
 
 `tsc -b`, tour tests; visual check of light and dark in a harness page with the real `Map` (as for af80dd5).
+
+## Follow-up (2026-10-15)
+
+The Donker style is removed everywhere (the automatic Material map already follows the theme): 4 thumbnails
+(`grid-cols-4`), `MapStyle.Dark` gone, settings store v2 migrates a persisted `'dark'` to automatic.

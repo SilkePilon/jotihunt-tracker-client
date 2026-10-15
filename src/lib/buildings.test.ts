@@ -95,7 +95,6 @@ describe('buildingColor', () => {
   test('other basemaps: fixed greys', () => {
     expect(buildingColor(MapStyle.Streets, true)).toBe('#d6d6d6');
     expect(buildingColor(MapStyle.Outdoors, false)).toBe('#d6d6d6');
-    expect(buildingColor(MapStyle.Dark, false)).toBe('#5a5a5a');
     expect(buildingColor(MapStyle.Satellite, false)).toBe('#5a5a5a');
   });
 });

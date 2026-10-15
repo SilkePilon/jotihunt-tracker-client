@@ -19,7 +19,6 @@ import materialDarkThumb from '@/assets/map-styles/material-dark.webp';
 import streetsThumb from '@/assets/map-styles/streets.webp';
 import outdoorsThumb from '@/assets/map-styles/outdoors.webp';
 import satelliteThumb from '@/assets/map-styles/satellite.webp';
-import darkThumb from '@/assets/map-styles/dark.webp';
 
 /** An empty control-group box in MapLibre's control corner; the button is portalled into it. */
 class PortalControl implements IControl {
@@ -41,7 +40,6 @@ const STYLES: { value: MapStyle | ''; label: string; name: string; thumb: string
   { value: MapStyle.Streets, label: 'Straten', name: 'Straten', thumb: streetsThumb },
   { value: MapStyle.Outdoors, label: 'Outdoor', name: 'Outdoor', thumb: outdoorsThumb },
   { value: MapStyle.Satellite, label: 'Satelliet', name: 'Satelliet', thumb: satelliteThumb },
-  { value: MapStyle.Dark, label: 'Donker', name: 'Donker', thumb: darkThumb },
 ];
 
 /** Map button (desktop) that opens the map styles and layers in a Beheer-style card, one click away. */
@@ -80,7 +78,7 @@ function StylePicker() {
   return (
     <section>
       <h3 className="mx-1 mb-2.5 text-[15px] font-bold">Kaartstijl</h3>
-      <div role="radiogroup" aria-label="Kaartstijl" className="grid grid-cols-5 gap-1.5">
+      <div role="radiogroup" aria-label="Kaartstijl" className="grid grid-cols-4 gap-2">
         {STYLES.map((style) => {
           const selected = mapStyle === style.value;
           return (

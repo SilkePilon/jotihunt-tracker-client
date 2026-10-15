@@ -4,5 +4,4 @@ export enum MapStyle {
   Streets = 'streets',
   Outdoors = 'outdoors',
   Satellite = 'satellite',
-  Dark = 'dark',
 }

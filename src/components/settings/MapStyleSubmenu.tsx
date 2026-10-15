@@ -28,7 +28,6 @@ export default function MapStyleSubmenu() {
             <DropdownMenuRadioItem value={MapStyle.Streets}>Straten</DropdownMenuRadioItem>
             <DropdownMenuRadioItem value={MapStyle.Outdoors}>Outdoor</DropdownMenuRadioItem>
             <DropdownMenuRadioItem value={MapStyle.Satellite}>Satelliet</DropdownMenuRadioItem>
-            <DropdownMenuRadioItem value={MapStyle.Dark}>Donker</DropdownMenuRadioItem>
           </DropdownMenuRadioGroup>
         </DropdownMenuSubContent>
       </DropdownMenuPortal>

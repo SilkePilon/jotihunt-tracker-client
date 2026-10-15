@@ -83,7 +83,7 @@ export function buildingColor(mapStyle: MapStyle | '', dark: boolean): string | 
     const p = mapPalette(MAP_SEED, dark);
     return ['interpolate', ['linear'], ['get', 'h'], 0, p.surfaceContainerHigh, RAMP_TOP_M, p.surfaceContainerHighest];
   }
-  return mapStyle === MapStyle.Dark || mapStyle === MapStyle.Satellite ? GREY_DARK : GREY_LIGHT;
+  return mapStyle === MapStyle.Satellite ? GREY_DARK : GREY_LIGHT;
 }
 
 /** The buildings go below the style's labels; a raster style without labels: undefined (on top of the style). */
