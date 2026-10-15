@@ -22,6 +22,7 @@ export function useOrbitControls(map: MaplibreMap | undefined, enabled: boolean)
   useEffect(() => {
     if (!map || !enabled) return;
     const container = map.getCanvasContainer();
+    const root = map.getContainer();
     map.dragRotate.disable();
 
     let pointerId: number | null = null;
@@ -34,6 +35,8 @@ export function useOrbitControls(map: MaplibreMap | undefined, enabled: boolean)
     let frame = 0;
     let samples: SpeedSample[] = [];
     let lastEvent: PointerEvent | null = null;
+    let button = 0;
+    let swallowTimer = 0;
 
     // Tags our own camera calls so onMoveStart can tell them apart; originalEvent marks them as user moves
     const tag = (originalEvent: Event | null) => ({ originalEvent, orbit: true });
@@ -50,12 +53,35 @@ export function useOrbitControls(map: MaplibreMap | undefined, enabled: boolean)
       frame = 0;
     };
 
-    const onPointerDown = (event: PointerEvent) => {
-      if (event.pointerType !== 'mouse' || !isOrbitStart(event.button, event.ctrlKey)) return;
-      stopCoast();
+    // Eats the click the browser still fires after a Ctrl + left orbit, so it can't open a popup or add a ruler point
+    const swallowClick = (event: MouseEvent) => {
+      event.stopPropagation();
       event.preventDefault();
+      unswallow();
+    };
+    const unswallow = () => {
+      root.removeEventListener('click', swallowClick, true);
+      clearTimeout(swallowTimer);
+      swallowTimer = 0;
+    };
+
+    const onPointerDown = (event: PointerEvent) => {
+      if (event.pointerType !== 'mouse') return;
+      unswallow();
+      // Any press stops our coast and the bearing snap (before MapLibre's mousedown, so its own drag still starts)
+      if (frame || map.isMoving()) {
+        stopCoast();
+        map.stop();
+      }
+      if (!isOrbitStart(event.button, event.ctrlKey)) return;
+      event.preventDefault();
+      try {
+        container.setPointerCapture(event.pointerId);
+      } catch {
+        return;
+      }
       pointerId = event.pointerId;
-      container.setPointerCapture(event.pointerId);
+      button = event.button;
       const rect = container.getBoundingClientRect();
       start = { x: event.clientX, y: event.clientY };
       anchorPoint = { x: event.clientX - rect.left, y: event.clientY - rect.top };
@@ -104,6 +130,11 @@ export function useOrbitControls(map: MaplibreMap | undefined, enabled: boolean)
         stopCoast();
         step();
       }
+      // The click follows pointerup in the same task, so the timer only clears it when no click comes
+      if (button === 0 && axis !== null) {
+        root.addEventListener('click', swallowClick, true);
+        swallowTimer = window.setTimeout(unswallow, 0);
+      }
       if (axis !== 'rotate') {
         anchor = null;
         return;
@@ -136,6 +167,10 @@ export function useOrbitControls(map: MaplibreMap | undefined, enabled: boolean)
       if (frame && pointerId === null && !event.orbit) stopCoast();
     };
     const onContextMenu = (event: MouseEvent) => event.preventDefault();
+    // Middle press starts autoscroll on Windows
+    const onMouseDown = (event: MouseEvent) => {
+      if (event.button === 1) event.preventDefault();
+    };
 
     container.addEventListener('pointerdown', onPointerDown);
     container.addEventListener('pointermove', onPointerMove);
@@ -143,9 +178,11 @@ export function useOrbitControls(map: MaplibreMap | undefined, enabled: boolean)
     container.addEventListener('pointercancel', finish);
     container.addEventListener('lostpointercapture', finish);
     container.addEventListener('contextmenu', onContextMenu);
+    container.addEventListener('mousedown', onMouseDown);
     map.on('movestart', onMoveStart);
     return () => {
       stopCoast();
+      unswallow();
       container.style.cursor = '';
       container.removeEventListener('pointerdown', onPointerDown);
       container.removeEventListener('pointermove', onPointerMove);
@@ -153,6 +190,7 @@ export function useOrbitControls(map: MaplibreMap | undefined, enabled: boolean)
       container.removeEventListener('pointercancel', finish);
       container.removeEventListener('lostpointercapture', finish);
       container.removeEventListener('contextmenu', onContextMenu);
+      container.removeEventListener('mousedown', onMouseDown);
       map.off('movestart', onMoveStart);
       map.dragRotate.enable();
     };
