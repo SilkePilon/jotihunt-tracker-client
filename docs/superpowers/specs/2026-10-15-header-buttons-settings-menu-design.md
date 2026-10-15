@@ -45,7 +45,7 @@ Same Radix `DropdownMenu`, same store (`useSettingsMenuStore`), same tour behavi
     same card style (rounded-3xl card, tonal rows, M3 switches instead of check marks for the layers).
   - Beheer (`ShieldIcon`) and Debug (`BugIcon`) for admins.
   - Join de Discord, only when `DISCORD_URL` is set (it is empty on production today).
-- **Uitloggen**: its own one-row group 8px below, red text/icon on a red tonal fill (`--map-danger` style), calls `logout`.
+- **Uitloggen**: its own one-row group 8px below, red text/icon on a red tonal fill (`--map-danger-fg` on `--map-danger-bg`), calls `logout`.
 
 ### Scope
 
