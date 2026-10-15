@@ -15,6 +15,15 @@ const OPEN_DELAY_MS = 1500;
 type RelatedApp = { id?: string };
 type NavigatorWithRelated = Navigator & { getInstalledRelatedApps?: () => Promise<RelatedApp[]> };
 
+/** localStorage, or null when site data is blocked (merely touching window.localStorage throws a SecurityError then). */
+function safeStorage(): Storage | null {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
 /** Opens the Android-app popup once per session when every condition in the spec holds. */
 export function useAndroidPromoAutoOpen() {
   const isMobile = useIsMobile();
@@ -42,13 +51,17 @@ export function useAndroidPromoAutoOpen() {
 
   useEffect(() => {
     if (opened.current || !ready || busy) return;
+    // Spec: only when storage allows (otherwise "later"/"never" can't be remembered)
+    const storage = safeStorage();
+    if (!storage) return;
+    const state = readPromoState(storage);
     const show = shouldShowAndroidPromo({
       isMobile,
       isAndroid,
       hasRelease: !!release,
       paired: (overview?.devices.length ?? 0) > 0,
       installed: !!installed,
-      state: readPromoState(localStorage),
+      state,
       now: Date.now(),
     });
     if (!show) return;
