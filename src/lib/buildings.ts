@@ -68,7 +68,7 @@ export function formatMegabytes(bytes: number): string {
   return `${(bytes / 1_000_000).toLocaleString('nl-NL', { maximumFractionDigits: 1 })} MB`;
 }
 
-const JOB_NAMES: Record<BuildingsJob['kind'], string> = { refresh: 'Vernieuwen', prefetch: 'Vooraf laden' };
+export const JOB_NAMES: Record<BuildingsJob['kind'], string> = { refresh: 'Vernieuwen', prefetch: 'Vooraf laden' };
 
 export function jobLine(job: BuildingsJob): string {
   if (job.finishedAt !== null) return `${JOB_NAMES[job.kind]} klaar: ${job.done - job.failed} van ${job.total} tegels gelukt`;

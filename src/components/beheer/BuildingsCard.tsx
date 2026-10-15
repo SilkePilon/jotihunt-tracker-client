@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
-import { motion } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
 import { Building2Icon, DownloadIcon, Loader2Icon, RefreshCwIcon, Trash2Icon } from 'lucide-react';
 import { toast } from 'sonner';
 import type { MapRef } from '@/components/Map';
@@ -7,10 +7,10 @@ import Reveal from '@/components/motion/Reveal';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useBuildingsAdmin } from '@/hooks/buildings.hook';
 import { apiErrorMessage } from '@/lib/api-error';
-import { formatMegabytes, jobLine, jobRunning, PREFETCH_RADII } from '@/lib/buildings';
-import { EASE_OUT } from '@/lib/motion';
+import { formatMegabytes, JOB_NAMES, jobRunning, PREFETCH_RADII, type BuildingsJob } from '@/lib/buildings';
+import { EASE_OUT, SWAP_TRANSITION } from '@/lib/motion';
 import { cn } from '@/lib/utils';
-import { BeheerCard, FadeSwap, InlineConfirm } from './BeheerLayout';
+import { BeheerCard, CountSwap, FadeSwap, InlineConfirm } from './BeheerLayout';
 import { Pill } from './controls/Pill';
 
 /** The inline confirm sits in the card as a red box (as in KoppelingenPane) */
@@ -18,6 +18,43 @@ const CONFIRM_BOX = 'rounded-[18px] bg-destructive/12 px-3.5 py-3';
 const dateFormat = new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'short', year: 'numeric' });
 
 type Action = 'refresh' | 'prefetch' | 'clear';
+
+/**
+ * The job line, worded as jobLine() in lib/buildings: the counts roll as the polls come in; the line only fades over
+ * when its kind changes (running ↔ done, refresh ↔ prefetch).
+ */
+function JobProgressLine({ job }: { job: BuildingsJob }) {
+  const done = job.finishedAt !== null;
+  const name = JOB_NAMES[job.kind];
+  return (
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.p
+        key={`${job.kind}-${done ? 'done' : 'running'}`}
+        className="pt-1 text-xs tabular-nums text-muted-foreground"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={SWAP_TRANSITION}
+      >
+        {done ? (
+          <>
+            {name} klaar: <CountSwap value={job.done - job.failed} /> van <CountSwap value={job.total} /> tegels gelukt
+          </>
+        ) : (
+          <>
+            {name}… <CountSwap value={job.done} /> van <CountSwap value={job.total} /> tegels
+            {job.failed > 0 && (
+              <>
+                {' '}
+                (<CountSwap value={job.failed} /> mislukt)
+              </>
+            )}
+          </>
+        )}
+      </motion.p>
+    </AnimatePresence>
+  );
+}
 
 /** Beheer → Koppelingen: the 3DBAG building cache — stats, job progress, refresh / prefetch around the map centre / clear. */
 export default function BuildingsCard({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
@@ -37,12 +74,15 @@ export default function BuildingsCard({ mapRef }: { mapRef: RefObject<MapRef | n
     wasRunning.current = running;
   }, [running, status]);
 
-  async function run(action: Action, call: () => Promise<unknown>, fallback: string) {
+  /** Runs `call`; true when it succeeded, else false after a toast with the server's (Dutch) error text. */
+  async function run(action: Action, call: () => Promise<unknown>, fallback: string): Promise<boolean> {
     setStarting(action);
     try {
       await call();
+      return true;
     } catch (error) {
       toast.error(apiErrorMessage(error, fallback));
+      return false;
     } finally {
       setStarting(null);
     }
@@ -58,8 +98,8 @@ export default function BuildingsCard({ mapRef }: { mapRef: RefObject<MapRef | n
   }
 
   async function clearCache() {
-    await run('clear', clear, 'Cache wissen is mislukt.');
-    setConfirming(false);
+    // On failure the question stays open, so it can be tried again
+    if (await run('clear', clear, 'Cache wissen is mislukt.')) setConfirming(false);
   }
 
   const summary = status
@@ -95,7 +135,7 @@ export default function BuildingsCard({ mapRef }: { mapRef: RefObject<MapRef | n
                 transition={{ duration: 0.4, ease: EASE_OUT }}
               />
             </div>
-            <FadeSwap className="pt-1 text-xs tabular-nums text-muted-foreground">{jobLine(job)}</FadeSwap>
+            <JobProgressLine job={job} />
           </div>
         )}
       </Reveal>
@@ -114,14 +154,13 @@ export default function BuildingsCard({ mapRef }: { mapRef: RefObject<MapRef | n
           {spinning('prefetch') ? <Loader2Icon className="animate-spin" /> : <DownloadIcon />}
           Vooraf laden
         </Pill>
-        <div className="flex gap-1" role="radiogroup" aria-label="Straal">
+        <div className="flex gap-1" role="group" aria-label="Straal">
           {PREFETCH_RADII.map((radius) => (
             // Selectable chips as in HuntableAreasCard
             <button
               key={radius}
               type="button"
-              role="radio"
-              aria-checked={radius === radiusKm}
+              aria-pressed={radius === radiusKm}
               disabled={busy}
               onClick={() => setRadiusKm(radius)}
               className={cn(
