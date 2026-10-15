@@ -4,10 +4,11 @@ import type { FileUIPart, TextUIPart, UIMessage } from 'ai';
 import ImageLightbox from '@/components/ImageLightbox';
 import type { MapRef } from '@/components/Map';
 import Reveal from '@/components/motion/Reveal';
-import { type ChatPart, pointCards, toolCalls, webSources } from '@/lib/intel-chat';
+import { type ChatPart, pointCards, reasoningActive, reasoningText, toolCalls, webSources } from '@/lib/intel-chat';
 import { POP } from '@/lib/motion';
 import ChatMarkdown from './ChatMarkdown';
 import PointCard from './PointCard';
+import Reasoning from './Reasoning';
 import SourceChips from './SourceChips';
 import ToolsUsed from './ToolsUsed';
 
@@ -22,15 +23,26 @@ interface ChatMessageProps {
 const isText = (part: ChatPart): part is TextUIPart => part.type === 'text';
 const isImage = (part: ChatPart): part is FileUIPart => part.type === 'file' && part.mediaType.startsWith('image');
 
-/** User bubble on the right; an assistant message: tools used (after the turn), markdown text, web sources, point cards */
+/**
+ * User bubble on the right; an assistant message: its thinking, tools used (after the turn), markdown text, and once the
+ * turn is done web sources and point cards (their tools run before the answer streams; they follow the text, not lead it)
+ */
 export default function ChatMessage({ message, streaming, mapRef }: ChatMessageProps) {
   const texts = message.parts.filter(isText).filter((part) => part.text.trim() !== '');
   if (message.role === 'user') return <UserMessage message={message} text={texts.map((part) => part.text).join('\n')} />;
   const cards = pointCards(message);
   const calls = toolCalls(message);
   const sources = webSources(message);
+  const reasoning = reasoningText(message);
   return (
     <div className="mx-1 flex flex-col">
+      <Reveal>
+        {reasoning && (
+          <div className="pb-2">
+            <Reasoning text={reasoning} thinking={streaming && reasoningActive(message)} />
+          </div>
+        )}
+      </Reveal>
       {/* While it runs the status line shows the tools; the stack unfolds above the answer once the turn is done
           (outside the gap container, so folding in never jumps by a gap) */}
       <Reveal>
@@ -44,11 +56,9 @@ export default function ChatMessage({ message, streaming, mapRef }: ChatMessageP
         {texts.map((part, index) => (
           <ChatMarkdown key={index} text={part.text} />
         ))}
-        <Reveal gap={8}>
-          {sources.length > 0 && <SourceChips sources={sources} />}
-        </Reveal>
+        <Reveal gap={8}>{!streaming && sources.length > 0 && <SourceChips sources={sources} />}</Reveal>
         <AnimatePresence initial={false}>
-          {cards.map((card) => (
+          {(streaming ? [] : cards).map((card) => (
             <motion.div key={card.id} {...POP} style={{ originY: 0 }}>
               <PointCard point={card.point} proposal={card.proposal} mapRef={mapRef} />
             </motion.div>

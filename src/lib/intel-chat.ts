@@ -1,5 +1,5 @@
 import { isAxiosError } from 'axios';
-import type { ChatStatus, UIMessage } from 'ai';
+import type { ChatStatus, ReasoningUIPart, UIMessage } from 'ai';
 import { areaStates } from '@/lib/intel-window';
 import { areaOptions } from '@/lib/utils';
 import type { IntelItem, IntelKind } from '@/types/Intel';
@@ -164,9 +164,31 @@ export function stackedTools(calls: ChatToolCall[]): string[] {
 
 export const THINKING_LABEL = 'Even denken…';
 
+const isReasoning = (part: ChatPart): part is ReasoningUIPart => part.type === 'reasoning';
+/** Text or reasoning without content, and step starts, say nothing about where the turn is */
+const isMeaningful = (part: ChatPart) => part.type !== 'step-start' && !((part.type === 'text' || part.type === 'reasoning') && !part.text.trim());
+
+/** The model's thinking of a turn as one text: every non-empty reasoning part (all steps), a blank line between them */
+export function reasoningText(message: UIMessage): string {
+  return message.parts
+    .filter(isReasoning)
+    .map((part) => part.text.trim())
+    .filter(Boolean)
+    .join('\n\n');
+}
+
+/**
+ * The model is thinking right now: the newest meaningful part is reasoning that has not finished. Answer text or a tool
+ * call after it ends the thinking even when the part never got `state: 'done'`. Only meaningful for the streaming message.
+ */
+export function reasoningActive(message: UIMessage): boolean {
+  const tail = message.parts.filter(isMeaningful).at(-1);
+  return tail !== undefined && isReasoning(tail) && tail.state !== 'done';
+}
+
 /**
  * The M3 status line while the AI works: the running tool's label, "Even denken…" before the first token or between
- * steps (also while it reasons), null once answer text streams or when idle.
+ * steps, null while a reasoning section streams (it has its own "Nadenken…" header), once answer text streams or when idle.
  */
 export function chatStatusLabel(messages: UIMessage[], status: ChatStatus): string | null {
   if (status !== 'submitted' && status !== 'streaming') return null;
@@ -174,6 +196,7 @@ export function chatStatusLabel(messages: UIMessage[], status: ChatStatus): stri
   if (!last || last.role !== 'assistant') return THINKING_LABEL;
   const running = toolCalls(last).filter((call) => call.state === 'running').at(-1);
   if (running) return toolLabel(running.name);
+  if (reasoningActive(last)) return null;
   const tail = last.parts.filter((part) => part.type !== 'step-start').at(-1);
   if (tail?.type === 'text' && tail.text.trim()) return null;
   return THINKING_LABEL;

@@ -18,6 +18,8 @@ import {
   isPointResult,
   lastUserMessageId,
   pointCards,
+  reasoningActive,
+  reasoningText,
   sameAnswer,
   stackedTools,
   suggestionChips,
@@ -123,7 +125,10 @@ describe('chatStatusLabel', () => {
     expect(chatStatusLabel([user('u1')], 'submitted')).toBe(THINKING_LABEL);
     expect(chatStatusLabel([user('u1'), assistant(tool('getItem', 'output-available', { output: {} }), tool('checkPoint', 'input-available'))], 'streaming')).toBe('Punt checken…');
     expect(chatStatusLabel([user('u1'), assistant(tool('getItem', 'output-available', { output: {} }), { type: 'step-start' })], 'streaming')).toBe(THINKING_LABEL);
-    expect(chatStatusLabel([user('u1'), assistant({ type: 'reasoning', text: 'hmm' })], 'streaming')).toBe(THINKING_LABEL);
+    // A streaming reasoning section shows its own "Nadenken…" header; done or still empty: the line says thinking
+    expect(chatStatusLabel([user('u1'), assistant({ type: 'reasoning', text: 'hmm', state: 'streaming' })], 'streaming')).toBeNull();
+    expect(chatStatusLabel([user('u1'), assistant({ type: 'reasoning', text: 'hmm', state: 'done' })], 'streaming')).toBe(THINKING_LABEL);
+    expect(chatStatusLabel([user('u1'), assistant({ type: 'reasoning', text: '', state: 'streaming' })], 'streaming')).toBe(THINKING_LABEL);
     expect(chatStatusLabel([user('u1'), assistant({ type: 'text', text: 'Bravo wijst' })], 'streaming')).toBeNull();
     expect(chatStatusLabel([user('u1'), assistant({ type: 'text', text: 'x' })], 'error')).toBeNull();
   });
@@ -131,6 +136,32 @@ describe('chatStatusLabel', () => {
   test('lastUserMessageId', () => {
     expect(lastUserMessageId([])).toBeNull();
     expect(lastUserMessageId([user('u1'), assistant(), user('u2'), assistant()])).toBe('u2');
+  });
+});
+
+describe('reasoning', () => {
+  const think = (text: string, state: 'streaming' | 'done' = 'done') => ({ type: 'reasoning', text, state });
+  const text = (value: string) => ({ type: 'text', text: value });
+
+  test('reasoningText: all non-empty reasoning parts of the turn, blank line between steps', () => {
+    expect(reasoningText(assistant(text('Bravo')))).toBe('');
+    expect(reasoningText(assistant(think('  '), text('Bravo')))).toBe('');
+    expect(reasoningText(assistant({ type: 'step-start' }, think('Eerst de hint lezen.\n'), tool('getItem', 'output-available', { output: {} }), { type: 'step-start' }, think(''), think('Nu rekenen.'), text('Bravo')))).toBe(
+      'Eerst de hint lezen.\n\nNu rekenen.',
+    );
+  });
+
+  test('reasoningActive: the newest meaningful part is reasoning that still streams', () => {
+    expect(reasoningActive(assistant())).toBe(false);
+    expect(reasoningActive(assistant(think('hmm', 'streaming')))).toBe(true);
+    expect(reasoningActive(assistant(think('hmm', 'streaming'), { type: 'step-start' }, think('', 'streaming')))).toBe(true);
+    expect(reasoningActive(assistant(think('', 'streaming')))).toBe(false);
+    expect(reasoningActive(assistant(think('hmm', 'done')))).toBe(false);
+    // Answer text or a tool after it: thinking is over, even if the part never got 'done'
+    expect(reasoningActive(assistant(think('hmm', 'streaming'), text('Bravo')))).toBe(false);
+    expect(reasoningActive(assistant(think('hmm', 'streaming'), tool('checkPoint', 'input-available')))).toBe(false);
+    // Thinking again in a later step
+    expect(reasoningActive(assistant(think('a'), tool('getItem', 'output-available', { output: {} }), { type: 'step-start' }, think('b', 'streaming')))).toBe(true);
   });
 });
 
