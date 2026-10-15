@@ -1,8 +1,18 @@
 import type { ReactNode, RefObject } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
+import { Loader2Icon, RotateCcwIcon } from 'lucide-react';
+import { Pill } from '@/components/beheer/controls/Pill';
 import type { MapRef } from '@/components/Map';
-import { CONTEXT_LABEL } from '@/lib/intel-chat';
+import Reveal from '@/components/motion/Reveal';
+import { CONTEXT_LABEL, chatStatusLabel, lastUserMessageId } from '@/lib/intel-chat';
+import { CHAT_MESSAGE } from '@/lib/intel-window';
+import { SWAP } from '@/lib/motion';
 import type { IntelItem, IntelKind } from '@/types/Intel';
+import ChatInput from './ChatInput';
+import ChatMessage from './ChatMessage';
+import ToolStatus from './ToolStatus';
+import { useStickToBottom } from './stick-to-bottom';
+import { type IntelChatState, useIntelChat } from './useIntelChat';
 
 interface IntelChatProps {
   item: IntelItem;
@@ -12,17 +22,47 @@ interface IntelChatProps {
 
 const FADE = { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 }, transition: { duration: 0.15 } };
 
-/** The AI chat card right of the open item (layout B). Its content swaps (fades) when another item opens. */
-export default function IntelChat({ item }: IntelChatProps) {
+/** The AI chat card right of the open item (layout B). Its content swaps (fades) when another item opens; each item has its own conversation. */
+export default function IntelChat({ item, mapRef }: IntelChatProps) {
   return (
     <section aria-label="Vraag de AI" className="flex min-h-0 flex-1 flex-col rounded-[24px] bg-card p-3.5">
       <AnimatePresence mode="wait" initial={false}>
         <motion.div key={item.id} {...FADE} className="flex min-h-0 flex-1 flex-col gap-2.5">
-          <ChatHeader kind={item.kind} />
-          <div className="min-h-0 flex-1" />
+          <ChatPanel item={item} mapRef={mapRef} />
         </motion.div>
       </AnimatePresence>
     </section>
+  );
+}
+
+function ChatPanel({ item, mapRef }: IntelChatProps) {
+  const chat = useIntelChat(item.id);
+  const busy = chat.status === 'submitted' || chat.status === 'streaming';
+  const scene = chat.loading ? 'loading' : chat.loadError ? 'load-error' : 'thread';
+  return (
+    <>
+      <ChatHeader kind={item.kind} />
+      <AnimatePresence mode="wait" initial={false}>
+        {scene === 'loading' ? (
+          <motion.div key="loading" {...FADE} className="grid min-h-0 flex-1 place-items-center">
+            <Loader2Icon className="size-5 animate-spin text-muted-foreground" aria-label="Gesprek laden…" />
+          </motion.div>
+        ) : scene === 'load-error' ? (
+          <motion.div key="load-error" {...FADE} className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 text-[13px] text-muted-foreground">
+            Gesprek laden mislukt
+            <Pill onClick={chat.reload}>
+              <RotateCcwIcon />
+              Opnieuw
+            </Pill>
+          </motion.div>
+        ) : (
+          <motion.div key="thread" {...FADE} className="flex min-h-0 flex-1 flex-col">
+            <ChatThread chat={chat} mapRef={mapRef} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <ChatFooter chat={chat} kind={item.kind} busy={busy} />
+    </>
   );
 }
 
@@ -36,5 +76,56 @@ function ChatHeader({ kind, action }: { kind: IntelKind; action?: ReactNode }) {
       <span className="ml-auto rounded-lg bg-beheer-row-high px-2 py-0.5 text-[11.5px] font-semibold text-muted-foreground">{CONTEXT_LABEL[kind]}</span>
       {action}
     </div>
+  );
+}
+
+/** Messages (rise in), the status line while the AI works, and an error row with "Opnieuw" */
+function ChatThread({ chat, mapRef }: { chat: IntelChatState; mapRef: RefObject<MapRef | null> }) {
+  const { scrollerRef, contentRef, onScroll } = useStickToBottom(lastUserMessageId(chat.messages));
+  const busy = chat.status === 'submitted' || chat.status === 'streaming';
+  const last = chat.messages.at(-1);
+  return (
+    <div ref={scrollerRef} onScroll={onScroll} className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1 [scrollbar-gutter:stable]">
+      <div ref={contentRef} className="flex min-h-full flex-col justify-end gap-3 py-1">
+        <AnimatePresence initial={false}>
+          {chat.messages.map((message) => (
+            <motion.div key={message.id} {...CHAT_MESSAGE}>
+              <ChatMessage message={message} streaming={busy && message === last} mapRef={mapRef} />
+            </motion.div>
+          ))}
+        </AnimatePresence>
+        <ToolStatus label={chatStatusLabel(chat.messages, chat.status)} />
+        <Reveal>{chat.status === 'error' && !chat.unavailable && <ErrorRow onRetry={chat.retry} />}</Reveal>
+      </div>
+    </div>
+  );
+}
+
+function ErrorRow({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className="mx-1 flex items-center gap-2 rounded-xl bg-destructive/12 py-1.5 pr-1.5 pl-3 text-[12.5px] text-destructive dark:text-red-300">
+      <span className="flex-1">Er ging iets mis</span>
+      <Pill variant="danger-soft" onClick={onRetry}>
+        <RotateCcwIcon />
+        Opnieuw
+      </Pill>
+    </div>
+  );
+}
+
+/** The prompt box, or "AI is niet ingesteld" when the server has no Gemini key (503) */
+function ChatFooter({ chat, kind, busy }: { chat: IntelChatState; kind: IntelKind; busy: boolean }) {
+  return (
+    <AnimatePresence mode="wait" initial={false}>
+      {chat.unavailable ? (
+        <motion.div key="off" {...SWAP} className="rounded-[20px] bg-beheer-row-high px-3.5 py-3 text-[13px] text-muted-foreground">
+          AI is niet ingesteld
+        </motion.div>
+      ) : (
+        <motion.div key="input" {...SWAP}>
+          <ChatInput kind={kind} busy={busy} disabled={chat.loading || chat.loadError} onSend={chat.send} onStop={chat.stop} />
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

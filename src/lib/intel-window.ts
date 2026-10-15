@@ -192,3 +192,14 @@ export const CHAT_CARD_ENTER = {
   animate: { opacity: 1, x: 0, scale: 1 },
   transition: { duration: 0.45, delay: 0.28, ease: EASE_OUT },
 } satisfies { initial: TargetAndTransition; animate: TargetAndTransition; transition: Transition };
+
+/** A chat message rising in (streaming text itself is not animated per token) */
+export const CHAT_MESSAGE = {
+  initial: { opacity: 0, y: 8 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, transition: { duration: 0.15 } },
+  transition: { duration: 0.3, ease: EASE_OUT },
+} satisfies { initial: TargetAndTransition; animate: TargetAndTransition; exit: TargetAndTransition; transition: Transition };
+
+/** Prompt box toggles: the icon turns once and grows a little when switched on */
+export const TOGGLE_SPRING: Transition = { type: 'spring', stiffness: 260, damping: 25 };
