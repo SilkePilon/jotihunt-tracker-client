@@ -26,6 +26,7 @@ export default function LayersSubmenu() {
       showGroupCircles: state.showGroupCircles,
       showPredictions: state.showPredictions,
       showLife360: state.showLife360,
+      showBuildings3d: state.showBuildings3d,
       toggleTeams: state.toggleTeams,
       toggleDevices: state.toggleDevices,
       toggleMarkersPart1: state.toggleMarkersPart1,
@@ -34,6 +35,7 @@ export default function LayersSubmenu() {
       toggleGroupCircles: state.toggleGroupCircles,
       togglePredictions: state.togglePredictions,
       toggleLife360: state.toggleLife360,
+      toggleBuildings3d: state.toggleBuildings3d,
     })),
   );
   const { enabled: predictionEnabled } = usePredictionSetting();
@@ -65,6 +67,9 @@ export default function LayersSubmenu() {
           </DropdownMenuCheckboxItem>
           <DropdownMenuCheckboxItem checked={layers.showGroupCircles} onCheckedChange={layers.toggleGroupCircles} onSelect={keepOpen}>
             Groepen cirkels
+          </DropdownMenuCheckboxItem>
+          <DropdownMenuCheckboxItem checked={layers.showBuildings3d} onCheckedChange={layers.toggleBuildings3d} onSelect={keepOpen}>
+            3D-gebouwen
           </DropdownMenuCheckboxItem>
           {predictionEnabled !== false && (
             <DropdownMenuCheckboxItem checked={layers.showPredictions} onCheckedChange={layers.togglePredictions} onSelect={keepOpen}>

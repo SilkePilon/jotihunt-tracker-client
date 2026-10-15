@@ -197,9 +197,9 @@ test('greyOut: luma grey and 60 % alpha, in place', () => {
   expect([...pixels]).toEqual([76, 76, 76, 153, 29, 29, 29, 60]);
 });
 
-test('MAP_LAYER_STACK: Life360 members next to the hunters, their accuracy in the bottom group', () => {
+test('MAP_LAYER_STACK: Life360 members next to the hunters, their accuracy with the other accuracy circles', () => {
   const groupOf = (id: string) => MAP_LAYER_STACK.findIndex((group) => group.includes(id));
   expect(groupOf(LIFE360_LAYER)).toBe(groupOf(HUNTERS_LAYER));
   expect(groupOf(LIFE360_HOVER_LAYER)).toBe(groupOf('hunters-hover'));
-  expect(groupOf(LIFE360_ACCURACY_LAYER)).toBe(0);
+  expect(groupOf(LIFE360_ACCURACY_LAYER)).toBe(groupOf('device-accuracy-fill'));
 });

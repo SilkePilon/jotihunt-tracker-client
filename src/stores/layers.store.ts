@@ -10,6 +10,7 @@ interface LayersState {
   showGroupCircles: boolean;
   showPredictions: boolean;
   showLife360: boolean;
+  showBuildings3d: boolean;
   toggleTeams: () => void;
   toggleDevices: () => void;
   toggleMarkersPart1: () => void;
@@ -18,6 +19,7 @@ interface LayersState {
   toggleGroupCircles: () => void;
   togglePredictions: () => void;
   toggleLife360: () => void;
+  toggleBuildings3d: () => void;
 }
 
 const useLayersStore = create<LayersState>()(
@@ -31,6 +33,7 @@ const useLayersStore = create<LayersState>()(
       showGroupCircles: false,
       showPredictions: true,
       showLife360: true,
+      showBuildings3d: false,
       toggleTeams: () => {
         set((state) => ({ showTeams: !state.showTeams }));
       },
@@ -54,6 +57,9 @@ const useLayersStore = create<LayersState>()(
       },
       toggleLife360: () => {
         set((state) => ({ showLife360: !state.showLife360 }));
+      },
+      toggleBuildings3d: () => {
+        set((state) => ({ showBuildings3d: !state.showBuildings3d }));
       },
     }),
     {

@@ -11,7 +11,10 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import {setWorkerUrl} from 'maplibre-gl';
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 
-import type {LngLat, Map as MaplibreMap, StyleSpecification} from 'maplibre-gl';
+import type {LngLat, Map as MaplibreMap, RequestTransformFunction, StyleSpecification} from 'maplibre-gl';
+import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
+import Buildings3D from './layers/Buildings3D';
+import {isBuildingsTileUrl} from '@/lib/buildings';
 import Teams from './layers/Teams';
 import Devices from './layers/Devices';
 import Life360 from './layers/Life360';
@@ -115,7 +118,7 @@ const Map = forwardRef<MapRef, MapProps>(({className, wall = false, overlay}, re
     }));
 
     // Store for all layers
-    const {showTeams, showDevices, showMarkersPart1, showMarkersPart2, showHomeCircle, showPredictions, showLife360} = useLayersStore(
+    const {showTeams, showDevices, showMarkersPart1, showMarkersPart2, showHomeCircle, showPredictions, showLife360, showBuildings3d} = useLayersStore(
         useShallow((state) => ({
             showTeams: state.showTeams,
             showDevices: state.showDevices,
@@ -124,9 +127,21 @@ const Map = forwardRef<MapRef, MapProps>(({className, wall = false, overlay}, re
             showHomeCircle: state.showHomeCircle,
             showPredictions: state.showPredictions,
             showLife360: state.showLife360,
+            showBuildings3d: state.showBuildings3d,
         })),
     );
     const {enabled: predictionEnabled} = usePredictionSetting();
+    // The building tiles come from our API, which needs the Authorization header; MapLibre takes transformRequest only
+    // once, so it reads the latest header from a ref
+    const authHeader = useAuthHeader() || '';
+    const authHeaderRef = useRef(authHeader);
+    useEffect(() => {
+        authHeaderRef.current = authHeader;
+    }, [authHeader]);
+    const transformRequest = useCallback<RequestTransformFunction>(
+        (url) => (isBuildingsTileUrl(url, import.meta.env.API_BASE_URL) ? {url, headers: {Authorization: authHeaderRef.current}} : {url}),
+        [],
+    );
     const [popupPosition, setPopupPosition] = useState<LngLat>();
     const [rulerActive, setRulerActive] = useState<boolean>(false);
     // Stable, so the ruler doesn't re-subscribe its map events on every render
@@ -186,6 +201,7 @@ const Map = forwardRef<MapRef, MapProps>(({className, wall = false, overlay}, re
                 style={{width: '100%', height: '100%'}}
                 attributionControl={false}
                 mapStyle={resolvedMapStyle}
+                transformRequest={transformRequest}
                 maxBounds={maxBounds}
                 interactive={!wall}
                 onClick={wall ? undefined : openPopup}
@@ -221,6 +237,7 @@ const Map = forwardRef<MapRef, MapProps>(({className, wall = false, overlay}, re
                 <MarkerImages/>
                 {popupPosition && !wall && <PickedLocationPopup lng={popupPosition.lng} lat={popupPosition.lat}
                                                        onClose={() => setPopupPosition(undefined)}/>}
+                <Buildings3D visible={showBuildings3d}/>
                 {showPredictions && predictionEnabled !== false && <Predictions/>}
                 {showTeams && <Teams/>}
                 {showDevices && <Devices/>}
