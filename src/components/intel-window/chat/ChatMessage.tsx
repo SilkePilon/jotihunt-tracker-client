@@ -1,6 +1,7 @@
-import type { RefObject } from 'react';
+import { type RefObject, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import type { TextUIPart, UIMessage } from 'ai';
+import type { FileUIPart, TextUIPart, UIMessage } from 'ai';
+import ImageLightbox from '@/components/ImageLightbox';
 import type { MapRef } from '@/components/Map';
 import { type ChatPart, pointCards } from '@/lib/intel-chat';
 import { POP } from '@/lib/motion';
@@ -16,17 +17,12 @@ interface ChatMessageProps {
 }
 
 const isText = (part: ChatPart): part is TextUIPart => part.type === 'text';
+const isImage = (part: ChatPart): part is FileUIPart => part.type === 'file' && part.mediaType.startsWith('image');
 
 /** User bubble on the right; an assistant message as markdown text, then its point cards (popping in) */
 export default function ChatMessage({ message, mapRef }: ChatMessageProps) {
   const texts = message.parts.filter(isText).filter((part) => part.text.trim() !== '');
-  if (message.role === 'user') {
-    return (
-      <div className="flex justify-end">
-        <div className="max-w-[85%] rounded-[16px_16px_6px_16px] bg-beheer-row-high px-3 py-2 text-[13px] break-words whitespace-pre-wrap">{texts.map((part) => part.text).join('\n')}</div>
-      </div>
-    );
-  }
+  if (message.role === 'user') return <UserMessage message={message} text={texts.map((part) => part.text).join('\n')} />;
   const cards = pointCards(message);
   return (
     <div className="mx-1 flex flex-col gap-2">
@@ -40,6 +36,30 @@ export default function ChatMessage({ message, mapRef }: ChatMessageProps) {
           </motion.div>
         ))}
       </AnimatePresence>
+    </div>
+  );
+}
+
+/** The user's question (right), with its image above it (click: lightbox) */
+function UserMessage({ message, text }: { message: UIMessage; text: string }) {
+  const image = message.parts.find(isImage);
+  const [zoom, setZoom] = useState(false);
+  return (
+    <div className="flex flex-col items-end gap-1.5">
+      {image && (
+        <>
+          <button
+            type="button"
+            aria-label="Afbeelding vergroten"
+            onClick={() => setZoom(true)}
+            className="cursor-zoom-in overflow-hidden rounded-2xl outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          >
+            <img src={image.url} alt="" className="max-h-40 max-w-[220px] object-cover" />
+          </button>
+          <ImageLightbox src={image.url} alt="" open={zoom} onOpenChange={setZoom} />
+        </>
+      )}
+      {text && <div className="max-w-[85%] rounded-[16px_16px_6px_16px] bg-beheer-row-high px-3 py-2 text-[13px] break-words whitespace-pre-wrap">{text}</div>}
     </div>
   );
 }

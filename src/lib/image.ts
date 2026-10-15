@@ -77,3 +77,22 @@ export async function preparePhoto(file: Blob, maxSide = 1600): Promise<{ photo:
     bitmap.close();
   }
 }
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error ?? new Error('Afbeelding lezen mislukt'));
+    reader.readAsDataURL(blob);
+  });
+}
+
+/** An AI chat attachment: upright (EXIF), long side at most `maxSide`, JPEG at `quality`, as a data URL */
+export async function prepareChatImage(file: Blob, maxSide: number, quality: number): Promise<string> {
+  const bitmap = await decodeScaled(file, maxSide);
+  try {
+    return await blobToDataUrl(await encodeJpeg(bitmap, maxSide, quality));
+  } finally {
+    bitmap.close();
+  }
+}
