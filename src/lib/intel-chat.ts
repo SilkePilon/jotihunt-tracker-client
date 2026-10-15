@@ -187,6 +187,24 @@ export function reasoningActive(message: UIMessage): boolean {
 }
 
 /**
+ * The thinking phase of the streaming turn: from the first non-empty thought until the answer starts, i.e. non-empty text
+ * after the last thought or tool call (text between steps is not the answer), or until the stream stops (finished,
+ * aborted, error). Tool calls and later thoughts keep it going, so the "Nadenken" section stays open across steps.
+ */
+export function thinkingPhase(message: UIMessage, streaming: boolean): boolean {
+  if (!streaming) return false;
+  const { parts } = message;
+  const isThought = (part: ChatPart) => isReasoning(part) && part.text.trim() !== '';
+  if (!parts.some(isThought)) return false;
+  for (let index = parts.length - 1; index >= 0; index--) {
+    const part = parts[index];
+    if (isThought(part) || toolCallOf(part) !== null) return true;
+    if (part.type === 'text' && part.text.trim() !== '') return false;
+  }
+  return false;
+}
+
+/**
  * The M3 status line while the AI works: the running tool's label, "Even denken…" before the first token or between
  * steps, null while a reasoning section streams (it has its own "Nadenken…" header), once answer text streams or when idle.
  */

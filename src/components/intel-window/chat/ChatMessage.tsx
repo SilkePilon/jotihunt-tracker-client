@@ -4,7 +4,7 @@ import type { FileUIPart, TextUIPart, UIMessage } from 'ai';
 import ImageLightbox from '@/components/ImageLightbox';
 import type { MapRef } from '@/components/Map';
 import Reveal from '@/components/motion/Reveal';
-import { type ChatPart, pointCards, reasoningActive, reasoningText, toolCalls, webSources } from '@/lib/intel-chat';
+import { type ChatPart, pointCards, reasoningText, thinkingPhase, toolCalls, webSources } from '@/lib/intel-chat';
 import { POP } from '@/lib/motion';
 import ChatMarkdown from './ChatMarkdown';
 import PointCard from './PointCard';
@@ -39,7 +39,7 @@ export default function ChatMessage({ message, streaming, mapRef }: ChatMessageP
       <Reveal>
         {reasoning && (
           <div className="pb-2">
-            <Reasoning text={reasoning} thinking={streaming && reasoningActive(message)} />
+            <Reasoning text={reasoning} thinking={thinkingPhase(message, streaming)} />
           </div>
         )}
       </Reveal>

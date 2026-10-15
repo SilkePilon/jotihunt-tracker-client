@@ -23,6 +23,7 @@ import {
   sameAnswer,
   stackedTools,
   suggestionChips,
+  thinkingPhase,
   toolCalls,
   toolDoneLabel,
   toolLabel,
@@ -162,6 +163,32 @@ describe('reasoning', () => {
     expect(reasoningActive(assistant(think('hmm', 'streaming'), tool('checkPoint', 'input-available')))).toBe(false);
     // Thinking again in a later step
     expect(reasoningActive(assistant(think('a'), tool('getItem', 'output-available', { output: {} }), { type: 'step-start' }, think('b', 'streaming')))).toBe(true);
+  });
+
+  test('thinkingPhase: open from the first thought until the answer text streams, across tool steps', () => {
+    const done = tool('getItem', 'output-available', { output: {} });
+    const steps = [think('a'), tool('getItem', 'input-available'), { type: 'step-start' }, think('b'), tool('checkPoint', 'output-available', { output: {} }, 'c'), { type: 'step-start' }];
+    // reasoning → tool → reasoning → tool: open the whole time, also while a tool runs or between steps
+    for (let end = 1; end <= steps.length; end++) expect(thinkingPhase(assistant(...steps.slice(0, end)), true)).toBe(true);
+    // ... until the answer text after the last thought / tool starts streaming
+    expect(thinkingPhase(assistant(...steps, text('')), true)).toBe(true);
+    expect(thinkingPhase(assistant(...steps, text('Bravo')), true)).toBe(false);
+    // Text between steps (before a later tool or thought) is not the answer
+    expect(thinkingPhase(assistant(think('a'), text('Even kijken'), done), true)).toBe(true);
+    expect(thinkingPhase(assistant(think('a'), text('Even kijken'), done, think('b', 'streaming')), true)).toBe(true);
+  });
+  test('thinkingPhase: reasoning only, then the stream ends (finished, aborted or error)', () => {
+    expect(thinkingPhase(assistant(think('hmm', 'streaming')), true)).toBe(true);
+    expect(thinkingPhase(assistant(think('hmm', 'done')), true)).toBe(true);
+    expect(thinkingPhase(assistant(think('hmm', 'streaming')), false)).toBe(false);
+    expect(thinkingPhase(assistant(think('a'), tool('getItem', 'input-available')), false)).toBe(false);
+  });
+  test('thinkingPhase: no (non-empty) thought yet means no thinking phase', () => {
+    expect(thinkingPhase(assistant(), true)).toBe(false);
+    expect(thinkingPhase(assistant(think('  ', 'streaming')), true)).toBe(false);
+    expect(thinkingPhase(assistant(think(''), tool('getItem', 'input-available')), true)).toBe(false);
+    expect(thinkingPhase(assistant(tool('getItem', 'input-available'), think('', 'streaming')), true)).toBe(false);
+    expect(thinkingPhase(assistant(think('a'), text('Bravo'), think('', 'streaming')), true)).toBe(false);
   });
 });
 

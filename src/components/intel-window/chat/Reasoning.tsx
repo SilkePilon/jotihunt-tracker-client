@@ -9,31 +9,40 @@ import ChatMarkdown from './ChatMarkdown';
 interface ReasoningProps {
   /** All thinking of the turn (steps joined by a blank line) */
   text: string;
-  /** The model is thinking right now: open with a shimmering "Nadenken…"; afterwards it folds to "Nagedacht" */
+  /** The turn's thinking phase (`thinkingPhase`): open with a shimmering "Nadenken…"; afterwards it folds to "Nagedacht" */
   thinking: boolean;
 }
 
 /**
- * The model's thinking above the answer: open while it streams, folded to a "Nagedacht · 8 s ›" toggle once the answer or a
- * tool takes over (history: folded, no duration). The duration is the time this client watched it think, summed over steps.
+ * The model's thinking above the answer: open for the whole thinking phase (across tool steps), folded to a
+ * "Nagedacht · 8 s ›" toggle once the answer starts or the stream stops, and it stays folded for the rest of the turn
+ * (history: folded, no duration). The duration runs from the first thought this client saw until the fold.
  */
 export default function Reasoning({ text, thinking }: ReasoningProps) {
   const [userOpen, setUserOpen] = useState(false);
   const [thoughtMs, setThoughtMs] = useState<number | null>(null);
+  // Once folded by the answer it never opens by itself again in this turn
+  const folded = thoughtMs !== null;
+  const autoOpen = thinking && !folded;
   useEffect(() => {
-    if (!thinking) return;
+    if (!autoOpen) return;
     const start = performance.now();
-    return () => setThoughtMs((total) => (total ?? 0) + performance.now() - start);
-  }, [thinking]);
-  const open = thinking || userOpen;
+    return () => setThoughtMs(performance.now() - start);
+  }, [autoOpen]);
+  const open = autoOpen || userOpen;
+  // The open thoughts sit in a capped box that follows the newest line while they stream
+  const box = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (autoOpen && box.current) box.current.scrollTop = box.current.scrollHeight;
+  }, [autoOpen, text]);
   const seconds = thoughtMs === null ? null : Math.max(1, Math.round(thoughtMs / 1000));
-  const label = thinking ? 'Nadenken…' : seconds ? `Nagedacht · ${seconds} s` : 'Nagedacht';
+  const label = autoOpen ? 'Nadenken…' : seconds ? `Nagedacht · ${seconds} s` : 'Nagedacht';
   return (
     <div className="flex flex-col items-start">
       <button
         type="button"
         aria-expanded={open}
-        disabled={thinking}
+        disabled={autoOpen}
         onClick={() => setUserOpen(!userOpen)}
         className="inline-flex items-center gap-1 rounded-[10px] py-0.5 pr-1 text-[12.5px] font-semibold text-muted-foreground outline-none transition-colors enabled:hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
       >
@@ -41,12 +50,12 @@ export default function Reasoning({ text, thinking }: ReasoningProps) {
           <AnimatePresence mode="popLayout" initial={false}>
             <motion.span
               key={label}
-              className={cn('inline-block', thinking && 'ai-shimmer')}
+              className={cn('inline-block', autoOpen && 'ai-shimmer')}
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
               transition={SWAP_TRANSITION}
-              role={thinking ? 'status' : undefined}
+              role={autoOpen ? 'status' : undefined}
             >
               {label}
             </motion.span>
@@ -61,7 +70,9 @@ export default function Reasoning({ text, thinking }: ReasoningProps) {
           {open && (
             <div className="pt-1">
               <Grow>
-                <ChatMarkdown text={text} className="border-l-2 border-beheer-row-high pl-3 text-[12px] leading-[1.5] text-muted-foreground" />
+                <div ref={box} className="max-h-40 overflow-y-auto border-l-2 border-beheer-row-high pr-1 pl-3 [scrollbar-gutter:stable]">
+                  <ChatMarkdown text={text} className="text-[12px] leading-[1.5] text-muted-foreground" />
+                </div>
               </Grow>
             </div>
           )}
