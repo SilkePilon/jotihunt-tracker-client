@@ -6,21 +6,17 @@ import {
     CompassIcon,
     BellIcon,
     Volume2Icon,
+    VolumeXIcon,
     UserRoundIcon,
     ShieldIcon,
 } from 'lucide-react';
 import {siDiscord} from "simple-icons"
 import {cn} from '@/lib/utils';
 import {HEADER_BUTTON} from './sidebar/header-button';
-import {
-    DropdownMenu,
-    DropdownMenuCheckboxItem,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from './ui/dropdown-menu';
+import {DropdownMenu, DropdownMenuContent, DropdownMenuTrigger} from './ui/dropdown-menu';
+import {AnimatePresence, motion} from 'motion/react';
+import {SWAP} from '@/lib/motion';
+import {MENU_CARD, MenuRow, MenuRows, MenuTile} from './settings/menu-parts';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import useSettingsStore from '@/stores/settings.store';
 import {User} from '@/types/User';
@@ -76,76 +72,91 @@ export default function Settings({onReplayTour}: SettingsProps) {
                         <Settings2Icon className="size-[18px]"/>
                     </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                    <DropdownMenuLabel>Hoi, {auth?.name}</DropdownMenuLabel>
-                    <DropdownMenuSeparator/>
-                    <DropdownMenuItem onClick={() => openAccount(true)}>
-                        <UserRoundIcon/>
-                        Account
-                    </DropdownMenuItem>
-                    {!isStandalone && isInstallPromptSupported && (
-                        <DropdownMenuItem onClick={promptInstall}>
-                            <DownloadIcon/>
-                            Installeer app
-                        </DropdownMenuItem>
-                    )}
-                    {/* Desktop has the layers button on the map; phones have no map controls */}
-                    {isMobile && (
-                        <>
-                            <LayersSubmenu/>
-                            <MapStyleSubmenu/>
-                        </>
-                    )}
-                    <DropdownMenuSeparator/>
-                    <DropdownMenuItem onClick={() => openNotifications(true)}>
-                        <BellIcon/>
-                        Meldingen
-                    </DropdownMenuItem>
-                    <DropdownMenuCheckboxItem checked={!soundMuted}
-                                              onCheckedChange={(checked) => setSoundMuted(!checked)}
-                                              onSelect={(e) => e.preventDefault()}>
-                        <Volume2Icon/>
-                        Geluid
-                    </DropdownMenuCheckboxItem>
-                    {onReplayTour && (
-                        <DropdownMenuItem {...tourTarget('settings.replayItem')} onClick={() => {
-                            setMenuOpen(false);
-                            onReplayTour();
-                        }}>
-                            <CompassIcon/>
-                            Rondleiding opnieuw
-                        </DropdownMenuItem>
-                    )}
-                    {auth?.admin && (
-                        <>
-                            <DropdownMenuItem onClick={() => {
+                <DropdownMenuContent align="start" className={cn(MENU_CARD, 'w-[290px]')}>
+                    {/* Quick tiles for what you change most */}
+                    <div className={cn('mb-2 grid gap-1.5', onReplayTour ? 'grid-cols-3' : 'grid-cols-2')}>
+                        <MenuTile onSelect={(e) => {
+                            e.preventDefault();
+                            setSoundMuted(!soundMuted);
+                        }}
+                                  className={cn(!soundMuted && 'bg-(--map-selected-bg) text-(--map-selected-fg) focus:bg-(--map-selected-bg) focus:text-(--map-selected-fg)')}>
+                            <AnimatePresence mode="wait" initial={false}>
+                                <motion.span key={soundMuted ? 'off' : 'on'} {...SWAP} className="flex flex-col items-center gap-1.5">
+                                    {soundMuted ? <VolumeXIcon className="size-5"/> : <Volume2Icon className="size-5 text-current"/>}
+                                    {soundMuted ? 'Geluid uit' : 'Geluid aan'}
+                                </motion.span>
+                            </AnimatePresence>
+                        </MenuTile>
+                        <MenuTile onClick={() => openNotifications(true)}>
+                            <BellIcon className="size-5"/>
+                            Meldingen
+                        </MenuTile>
+                        {onReplayTour && (
+                            <MenuTile {...tourTarget('settings.replayItem')} onClick={() => {
                                 setMenuOpen(false);
-                                openAdminDialog('algemeen');
+                                onReplayTour();
                             }}>
-                                <ShieldIcon/>
-                                Beheer
-                            </DropdownMenuItem>
-                            <DialogTrigger asChild>
-                                <DropdownMenuItem>
-                                    <BugIcon/>
-                                    Debug
-                                </DropdownMenuItem>
-                            </DialogTrigger>
-                            <DropdownMenuSeparator/>
-                        </>
-                    )}
-                    {DISCORD_URL && (
-                        <DropdownMenuItem asChild>
-                            <a href={DISCORD_URL} target="_blank" rel="noopener noreferrer">
-                                <span className={"fill-foreground"} dangerouslySetInnerHTML={{__html: siDiscord.svg}}></span>
-                                Join de Discord
-                            </a>
-                        </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem className="text-red-500" onClick={logout}>
-                        <LogOutIcon/>
-                        Uitloggen
-                    </DropdownMenuItem>
+                                <CompassIcon className="size-5"/>
+                                Rondleiding
+                            </MenuTile>
+                        )}
+                    </div>
+
+                    <MenuRows>
+                        <MenuRow onClick={() => openAccount(true)}>
+                            <UserRoundIcon/>
+                            Account
+                            <span className="ml-auto truncate text-xs font-medium text-muted-foreground">
+                                {auth?.name}{auth?.admin && ' · Admin'}
+                            </span>
+                        </MenuRow>
+                        {!isStandalone && isInstallPromptSupported && (
+                            <MenuRow onClick={promptInstall}>
+                                <DownloadIcon/>
+                                Installeer app
+                            </MenuRow>
+                        )}
+                        {/* Desktop has the layers button on the map; phones have no map controls */}
+                        {isMobile && (
+                            <>
+                                <LayersSubmenu/>
+                                <MapStyleSubmenu/>
+                            </>
+                        )}
+                        {auth?.admin && (
+                            <>
+                                <MenuRow onClick={() => {
+                                    setMenuOpen(false);
+                                    openAdminDialog('algemeen');
+                                }}>
+                                    <ShieldIcon/>
+                                    Beheer
+                                </MenuRow>
+                                <DialogTrigger asChild>
+                                    <MenuRow>
+                                        <BugIcon/>
+                                        Debug
+                                    </MenuRow>
+                                </DialogTrigger>
+                            </>
+                        )}
+                        {DISCORD_URL && (
+                            <MenuRow asChild>
+                                <a href={DISCORD_URL} target="_blank" rel="noopener noreferrer">
+                                    <span className={"fill-muted-foreground [&>svg]:size-4"} dangerouslySetInnerHTML={{__html: siDiscord.svg}}></span>
+                                    Join de Discord
+                                </a>
+                            </MenuRow>
+                        )}
+                    </MenuRows>
+
+                    <MenuRows className="mt-2">
+                        <MenuRow onClick={logout}
+                                 className="bg-(--map-danger-bg) text-(--map-danger-fg) focus:bg-[color-mix(in_oklab,var(--map-danger-bg)_85%,var(--map-danger-fg))] focus:text-(--map-danger-fg) [&_svg]:text-(--map-danger-fg)!">
+                            <LogOutIcon/>
+                            Uitloggen
+                        </MenuRow>
+                    </MenuRows>
                 </DropdownMenuContent>
             </DropdownMenu>
 
