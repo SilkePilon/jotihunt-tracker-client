@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'bun:test';
+import type { JotiboardStatus } from '@/types/Jotiboard';
 import type { Life360AdminStatus } from '@/types/Life360';
 import type { TelegramAdminStatus } from '@/types/Telegram';
-import { life360Integration, telegramIntegration } from './koppelingen';
+import { jotiboardIntegration, life360Integration, telegramIntegration } from './koppelingen';
 
 const NOW = Date.parse('2026-10-17T12:00:00Z');
 const ago = (ms: number) => new Date(NOW - ms).toISOString();
@@ -111,6 +112,35 @@ describe('life360Integration', () => {
       problem: 'Life360 heeft de sessie beëindigd. Laatste posities blijven grijs op de kaart.',
       canLink: false,
       canUnlink: false,
+      canRelink: true,
+    });
+  });
+});
+
+describe('jotiboardIntegration', () => {
+  const counts = { pins: 5, hints: 2 };
+  const linked = (overrides: Partial<Extract<JotiboardStatus, { state: 'linked' }>> = {}): JotiboardStatus => ({
+    state: 'linked',
+    username: 'user',
+    linkedAt: ago(60 * MIN),
+    syncEnabled: true,
+    lastSyncAt: ago(12_000),
+    lastError: null,
+    counts,
+    ...overrides,
+  });
+
+  test('unavailable / unlinked', () => {
+    expect(jotiboardIntegration({ state: 'unavailable' }, NOW)).toMatchObject({ tone: 'off', line: 'Niet ingesteld op de server (JOTIBOARD_SESSION_KEY).', canLink: false });
+    expect(jotiboardIntegration({ state: 'unlinked', counts }, NOW)).toMatchObject({ tone: 'off', line: 'Pins en opgeloste hints van Jotiboard komen automatisch in de tracker.', canLink: true });
+  });
+  test('syncing, paused, failing, logged out', () => {
+    expect(jotiboardIntegration(linked(), NOW)).toMatchObject({ tone: 'ok', pill: 'Verbonden', line: 'Gekoppeld als user', sync: '12 s geleden · 5 pins · 2 hints', canUnlink: true });
+    expect(jotiboardIntegration(linked({ syncEnabled: false }), NOW)).toMatchObject({ tone: 'off', pill: 'Niet gekoppeld', line: 'Gekoppeld als user · gepauzeerd', canUnlink: true });
+    expect(jotiboardIntegration(linked({ lastError: 'Jotiboard niet bereikbaar, probeert opnieuw' }), NOW)).toMatchObject({ tone: 'warn', problem: 'Jotiboard niet bereikbaar, probeert opnieuw', canUnlink: true });
+    expect(jotiboardIntegration({ state: 'loggedOut', username: 'user', counts }, NOW)).toMatchObject({
+      tone: 'warn',
+      problem: 'Jotiboard heeft de sessie beëindigd. Wat al geïmporteerd is blijft staan.',
       canRelink: true,
     });
   });

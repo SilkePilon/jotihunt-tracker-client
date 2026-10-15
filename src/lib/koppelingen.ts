@@ -1,6 +1,8 @@
 import { formatAgo } from '@/lib/account';
 import { formatClock } from '@/lib/format';
+import { jotiboardSyncLine } from '@/lib/jotiboard';
 import { life360LiveLine } from '@/lib/life360';
+import type { JotiboardStatus } from '@/types/Jotiboard';
 import type { Life360AdminStatus } from '@/types/Life360';
 import type { TelegramAdminStatus } from '@/types/Telegram';
 
@@ -87,5 +89,29 @@ export function life360Integration(status: Life360AdminStatus, now: number): Int
         problem: 'Life360 heeft de sessie beëindigd. Laatste posities blijven grijs op de kaart.',
         canRelink: true,
       };
+  }
+}
+
+export function jotiboardIntegration(status: JotiboardStatus, now: number): IntegrationView {
+  switch (status.state) {
+    case 'unavailable':
+      return { ...NONE, tone: 'off', pill: PILL.off, line: 'Niet ingesteld op de server (JOTIBOARD_SESSION_KEY).' };
+    case 'unlinked':
+      return { ...NONE, tone: 'off', pill: PILL.off, line: 'Pins en opgeloste hints van Jotiboard komen automatisch in de tracker.', canLink: true };
+    case 'loggedOut':
+      return {
+        ...NONE,
+        tone: 'warn',
+        pill: PILL.warn,
+        line: `Gekoppeld als ${status.username}`,
+        problem: 'Jotiboard heeft de sessie beëindigd. Wat al geïmporteerd is blijft staan.',
+        canRelink: true,
+      };
+    case 'linked': {
+      const line = `Gekoppeld als ${status.username}`;
+      if (!status.syncEnabled) return { ...NONE, tone: 'off', pill: PILL.off, line: `${line} · gepauzeerd`, sync: jotiboardSyncLine(status, now), canUnlink: true };
+      if (status.lastError) return { ...NONE, tone: 'warn', pill: PILL.warn, line, problem: status.lastError, canUnlink: true };
+      return { ...NONE, tone: 'ok', pill: PILL.ok, line, sync: jotiboardSyncLine(status, now), canUnlink: true };
+    }
   }
 }

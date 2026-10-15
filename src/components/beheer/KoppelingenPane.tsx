@@ -3,17 +3,21 @@ import { AnimatePresence, motion } from 'motion/react';
 import { CheckIcon, LinkIcon, Loader2Icon, RefreshCwIcon, TriangleAlertIcon, UnlinkIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import type { MapRef } from '@/components/Map';
+import JotiboardLoginForm from '@/components/cards/jotiboard/JotiboardLoginForm';
+import JotiboardLogo from '@/components/cards/jotiboard/JotiboardLogo';
 import Life360LinkPanel, { type Life360LinkView } from '@/components/cards/life360/Life360LinkPanel';
 import Life360Logo from '@/components/cards/life360/Life360Logo';
 import TelegramLinkPanel from '@/components/cards/telegram/TelegramLinkPanel';
 import TelegramLogo from '@/components/cards/telegram/TelegramLogo';
 import Reveal from '@/components/motion/Reveal';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useJotiboardAdmin } from '@/hooks/jotiboard.hook';
 import { useLife360Admin } from '@/hooks/life360.hook';
 import { useNow } from '@/hooks/now.hook';
 import { revalidateTelegramViews, useTelegramAdmin } from '@/hooks/telegram.hook';
 import { apiErrorMessage } from '@/lib/api-error';
-import { life360Integration, telegramIntegration, type IntegrationTone, type IntegrationView } from '@/lib/koppelingen';
+import { JOTIBOARD_SLATE } from '@/lib/jotiboard';
+import { jotiboardIntegration, life360Integration, telegramIntegration, type IntegrationTone, type IntegrationView } from '@/lib/koppelingen';
 import { LIFE360_PURPLE, refreshAllowed } from '@/lib/life360';
 import { POP } from '@/lib/motion';
 import { cn } from '@/lib/utils';
@@ -56,6 +60,8 @@ function useLinkedTransition(state: string | undefined, steps: string[], onLinke
 const TELEGRAM_STEPS = ['qr', 'password'];
 // A token links straight from unlinked / loggedOut, without the code and circle steps
 const LIFE360_STEPS = ['code', 'circle', 'unlinked', 'loggedOut'];
+// Jotiboard logs in straight from unlinked / loggedOut
+const JOTIBOARD_STEPS = ['unlinked', 'loggedOut'];
 
 /** Life360's "ververs": asks for fresh fixes (max 1 per minute); spins while it runs. */
 function RefreshButton({ status, onRefresh }: { status: Life360LinkedStatus; onRefresh: () => Promise<void> }) {
@@ -169,14 +175,15 @@ function IntegrationCard({ name, brand, logo, view, isError, action, actionKey, 
 }
 
 /**
- * Beheer → Koppelingen (K1): the group's Telegram and Life360 accounts, one card each ("Koppelen" unfolds the same steps
+ * Beheer → Koppelingen (K1): the group's Telegram, Life360 and Jotiboard accounts, one card each ("Koppelen" unfolds the same steps
  * as the sidebar cards), and the 3D building cache.
  */
 export default function KoppelingenPane({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
   const telegram = useTelegramAdmin(true);
   const life360 = useLife360Admin(true);
+  const jotiboard = useJotiboardAdmin(true);
   const now = useNow(true);
-  const [confirming, setConfirming] = useState<'telegram' | 'life360' | null>(null);
+  const [confirming, setConfirming] = useState<'telegram' | 'life360' | 'jotiboard' | null>(null);
 
   // Telegram: "Koppelen" starts the QR login; the panel shows while the server is in a link step
   const [telegramStarting, setTelegramStarting] = useState(false);
@@ -267,12 +274,36 @@ export default function KoppelingenPane({ mapRef }: { mapRef: RefObject<MapRef |
     }
   }
 
+  // Jotiboard: "Koppelen" / "Opnieuw koppelen" opens the login form; any server state change closes it
+  const [jotiboardForm, setJotiboardForm] = useState(false);
+  const jotiboardState = jotiboard.status?.state;
+  const [previousJotiboardState, setPreviousJotiboardState] = useState(jotiboardState);
+  if (jotiboardState !== previousJotiboardState) {
+    setPreviousJotiboardState(jotiboardState);
+    setJotiboardForm(false);
+  }
+
+  useLinkedTransition(jotiboardState, JOTIBOARD_STEPS, () => toast.success('Jotiboard gekoppeld'));
+
+  async function unlinkJotiboard() {
+    try {
+      await jotiboard.unlink();
+      setConfirming(null);
+    } catch (error) {
+      toast.error(apiErrorMessage(error, 'Ontkoppelen is mislukt, probeer het opnieuw.'));
+    }
+  }
+
   const telegramView = telegram.status && telegramIntegration(telegram.status, now);
   const life360Card = life360Status && life360Integration(life360Status, now);
+  const jotiboardCard = jotiboard.status && jotiboardIntegration(jotiboard.status, now);
 
   // The account was unlinked elsewhere (or got disconnected) while asking: drop the confirm so it doesn't come back
   // once the integration can be unlinked again
-  const confirmStale = (confirming === 'telegram' && !telegramView?.canUnlink) || (confirming === 'life360' && !life360Card?.canUnlink);
+  const confirmStale =
+    (confirming === 'telegram' && !telegramView?.canUnlink) ||
+    (confirming === 'life360' && !life360Card?.canUnlink) ||
+    (confirming === 'jotiboard' && !jotiboardCard?.canUnlink);
   if (confirmStale) setConfirming(null);
 
   let telegramAction: ReactNode = null;
@@ -301,6 +332,22 @@ export default function KoppelingenPane({ mapRef }: { mapRef: RefObject<MapRef |
   } else if (life360Card?.canLink && !emailStep) {
     life360Action = (
       <Pill variant="primary" onClick={openLife360}>
+        <LinkIcon />
+        Koppelen
+      </Pill>
+    );
+  }
+
+  let jotiboardAction: ReactNode = null;
+  if (jotiboardCard?.canUnlink) {
+    jotiboardAction = (
+      <Pill variant="danger-outline" disabled={confirming === 'jotiboard'} onClick={() => setConfirming('jotiboard')}>
+        Ontkoppelen
+      </Pill>
+    );
+  } else if (jotiboardCard?.canLink && !jotiboardForm) {
+    jotiboardAction = (
+      <Pill variant="primary" onClick={() => setJotiboardForm(true)}>
         <LinkIcon />
         Koppelen
       </Pill>
@@ -397,6 +444,41 @@ export default function KoppelingenPane({ mapRef }: { mapRef: RefObject<MapRef |
               onChooseCircle={(circleId) => errorText(() => life360.chooseCircle(circleId), 'Cirkel kiezen is mislukt, probeer het opnieuw.')}
               onSubmitToken={(token) => errorText(() => life360.submitToken(token), 'Koppelen met token is mislukt, probeer het opnieuw.')}
               onCancel={cancelLife360}
+            />
+          )
+        }
+      />
+
+      <IntegrationCard
+        name="Jotiboard"
+        brand={JOTIBOARD_SLATE}
+        logo={<JotiboardLogo className="size-[22px]" />}
+        view={jotiboardCard}
+        isError={jotiboard.isError}
+        action={jotiboardAction}
+        actionKey={jotiboardCard?.canUnlink ? 'unlink' : 'link'}
+        onRelink={() => setJotiboardForm(true)}
+        confirm={
+          confirming === 'jotiboard' && jotiboardCard?.canUnlink && (
+            <InlineConfirm
+              className={CONFIRM_BOX}
+              title="Jotiboard ontkoppelen?"
+              description="De server vergeet de Jotiboard-sessie. Wat al geïmporteerd is blijft staan."
+              confirmLabel="Ontkoppel"
+              confirmIcon={<UnlinkIcon />}
+              onCancel={() => setConfirming(null)}
+              onConfirm={unlinkJotiboard}
+            />
+          )
+        }
+        panel={
+          jotiboardForm &&
+          jotiboard.status && (
+            <JotiboardLoginForm
+              fixedUsername={jotiboard.status.state === 'loggedOut' ? jotiboard.status.username : undefined}
+              submitLabel={jotiboard.status.state === 'loggedOut' ? 'Opnieuw inloggen' : 'Koppelen'}
+              onCancel={() => setJotiboardForm(false)}
+              onSubmit={(username, password) => errorText(() => jotiboard.link(username, password), 'Koppelen is mislukt, probeer het opnieuw.')}
             />
           )
         }
