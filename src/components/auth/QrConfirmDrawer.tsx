@@ -41,6 +41,7 @@ const BADGE = 48;
 
 /** "{where} · als {name}", dropping whatever is missing */
 function ReadyMeta({ where, name }: { where: string; name: string | undefined }) {
+  if (!where && !name) return null;
   return (
     <p className="text-[13.5px] text-muted-foreground">
       {where}
@@ -166,6 +167,12 @@ export default function QrConfirmDrawer({ code, onClose }: { code: string; onClo
                   onConfirm={() => confirm(view.scan)}
                   busy={view.busy}
                   busyLabel="Wachten op passkey…"
+                  releaseLabel={
+                    <>
+                      <KeyRoundIcon />
+                      Laat los om te bevestigen
+                    </>
+                  }
                   aria-label="Houd vast om te bevestigen"
                 >
                   <KeyRoundIcon />

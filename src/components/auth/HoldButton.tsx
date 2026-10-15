@@ -1,4 +1,4 @@
-import { useEffect, useRef, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
 import { animate, AnimatePresence, motion, useMotionValue, type AnimationPlaybackControls } from 'motion/react';
 import { Loader2Icon } from 'lucide-react';
 import { holdProgressAfter, isHoldComplete } from '@/lib/hold';
@@ -16,7 +16,9 @@ type HoldButtonProps = {
   /** Shows a spinner and `busyLabel` instead of the children, and blocks holding */
   busy?: boolean;
   busyLabel: ReactNode;
-  /** The label; also the accessible name, so keep it plain text or pass `aria-label` */
+  /** Touch and pen: shown once the fill is full, until the finger lifts (which confirms) */
+  releaseLabel?: ReactNode;
+  /** The label; also the accessible name, so keep it plain text or pass `aria-label` (only used while not busy) */
   children: ReactNode;
   className?: string;
   'aria-label'?: string;
@@ -25,12 +27,23 @@ type HoldButtonProps = {
 /**
  * Primary button that only fires after a deliberate hold: a white overlay fills it left to right while held, and
  * drains again when released early. A short tap does nothing.
+ *
+ * Mouse and keyboard confirm as soon as the fill is full. A finger or pen only "arms" the button there and confirms on
+ * lift: `onConfirm` usually opens the passkey prompt, and WebAuthn needs a user activation, which a touch pointerdown
+ * is not (iOS WebKit rejects it) but the pointerup is.
  */
-export default function HoldButton({ durationMs = 1000, onConfirm, disabled, busy, busyLabel, children, className, 'aria-label': ariaLabel }: HoldButtonProps) {
+export default function HoldButton({ durationMs = 1000, onConfirm, disabled, busy, busyLabel, releaseLabel = 'Laat los om te bevestigen', children, className, 'aria-label': ariaLabel }: HoldButtonProps) {
   const fill = useMotionValue(0);
   const frame = useRef<number | null>(null);
   const release = useRef<AnimationPlaybackControls | null>(null);
+  /** The pointer type of the current hold; null for the keyboard */
+  const pointerType = useRef<string | null>(null);
+  // The ref decides (event handlers may run before a re-render); the state only swaps the label
+  const armedRef = useRef(false);
+  const [armed, setArmed] = useState(false);
   const blocked = disabled || busy;
+  // Disabled or busy while armed: drop the "Laat los" label (adjusting state during render, not in an effect)
+  if (blocked && armed) setArmed(false);
 
   function stopFrame() {
     if (frame.current !== null) cancelAnimationFrame(frame.current);
@@ -43,8 +56,14 @@ export default function HoldButton({ durationMs = 1000, onConfirm, disabled, bus
     release.current = animate(fill, 0, { duration: RELEASE_S, ease: 'easeOut' });
   }
 
-  function start() {
-    if (blocked || frame.current !== null) return;
+  function disarm() {
+    armedRef.current = false;
+    setArmed(false);
+  }
+
+  function start(type: string | null) {
+    if (blocked || frame.current !== null || armedRef.current) return;
+    pointerType.current = type;
     release.current?.stop();
     // Picking up a fill that is still draining continues from where it is, not from zero
     const startedAt = performance.now() - fill.get() * durationMs;
@@ -53,6 +72,12 @@ export default function HoldButton({ durationMs = 1000, onConfirm, disabled, bus
       fill.set(holdProgressAfter(elapsed, durationMs));
       if (isHoldComplete(elapsed, durationMs)) {
         frame.current = null;
+        if (pointerType.current === 'touch' || pointerType.current === 'pen') {
+          // Full, but wait for the lift: that is the user activation the passkey prompt needs
+          armedRef.current = true;
+          setArmed(true);
+          return;
+        }
         onConfirm();
         // The busy label takes over; the fill drains underneath it, ready for another try
         drain();
@@ -63,16 +88,34 @@ export default function HoldButton({ durationMs = 1000, onConfirm, disabled, bus
     frame.current = requestAnimationFrame(tick);
   }
 
+  /** Let go early, slid off, cancelled by the browser or lost focus: drain and never confirm */
   function cancel() {
+    if (armedRef.current) {
+      disarm();
+      drain();
+      return;
+    }
     if (frame.current === null) return;
+    drain();
+  }
+
+  function onPointerUp() {
+    if (!armedRef.current) {
+      cancel();
+      return;
+    }
+    disarm();
+    onConfirm();
     drain();
   }
 
   // Disabled or busy mid-hold (or unmounting): never confirm afterwards
   useEffect(() => {
     if (!blocked) return;
-    if (frame.current === null) return;
-    cancelAnimationFrame(frame.current);
+    const wasArmed = armedRef.current;
+    armedRef.current = false;
+    if (frame.current === null && !wasArmed) return;
+    if (frame.current !== null) cancelAnimationFrame(frame.current);
     frame.current = null;
     release.current?.stop();
     release.current = animate(fill, 0, { duration: RELEASE_S, ease: 'easeOut' });
@@ -88,14 +131,14 @@ export default function HoldButton({ durationMs = 1000, onConfirm, disabled, bus
 
   function onPointerDown(event: PointerEvent<HTMLButtonElement>) {
     if (event.button !== 0) return;
-    start();
+    start(event.pointerType);
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
     if (event.key !== ' ' && event.key !== 'Enter') return;
     // No click on Enter, and no page scroll on Space; key repeat keeps the hold going
     event.preventDefault();
-    if (!event.repeat) start();
+    if (!event.repeat) start(null);
   }
 
   function onKeyUp(event: KeyboardEvent<HTMLButtonElement>) {
@@ -107,13 +150,13 @@ export default function HoldButton({ durationMs = 1000, onConfirm, disabled, bus
   return (
     <button
       type="button"
-      aria-label={ariaLabel}
+      aria-label={busy ? undefined : ariaLabel}
       disabled={blocked}
       aria-busy={busy || undefined}
       // vaul would otherwise start dragging the drawer when a held finger wobbles
       data-vaul-no-drag
       onPointerDown={onPointerDown}
-      onPointerUp={cancel}
+      onPointerUp={onPointerUp}
       onPointerLeave={cancel}
       onPointerCancel={cancel}
       onKeyDown={onKeyDown}
@@ -128,12 +171,14 @@ export default function HoldButton({ durationMs = 1000, onConfirm, disabled, bus
     >
       <motion.span aria-hidden className="absolute inset-0 origin-left bg-[rgb(255_255_255/0.22)]" style={{ scaleX: fill }} />
       <AnimatePresence mode="wait" initial={false}>
-        <motion.span key={busy ? 'busy' : 'idle'} className="relative flex items-center gap-2 [&_svg]:size-5 [&_svg]:shrink-0" {...SWAP}>
+        <motion.span key={busy ? 'busy' : armed ? 'armed' : 'idle'} className="relative flex items-center gap-2 [&_svg]:size-5 [&_svg]:shrink-0" {...SWAP}>
           {busy ? (
             <>
               <Loader2Icon className="animate-spin" />
               {busyLabel}
             </>
+          ) : armed ? (
+            releaseLabel
           ) : (
             children
           )}
