@@ -8,7 +8,7 @@ export type CoordinateState = 'idle' | 'inside' | 'outside';
 const STATES = {
   idle: { Icon: KeyboardIcon, text: 'Tik op de vakjes om te typen', className: 'text-muted-foreground' },
   inside: { Icon: CircleCheckIcon, text: 'Ligt in Nederland', className: 'text-fox-ok' },
-  outside: { Icon: TriangleAlertIcon, text: 'Buiten Nederland — controleer X en Y', className: 'text-fox-error' },
+  outside: { Icon: TriangleAlertIcon, text: 'Buiten Nederland', className: 'text-fox-error' },
 } as const;
 
 /** Live check under the digit boxes: typing hint, inside the Netherlands, or outside. */
