@@ -33,8 +33,8 @@ export default function Life360Section({ mapRef }: { mapRef: RefObject<MapRef | 
 
   function flyTo(member: Life360Member) {
     if (!member.location) return;
-    mapRef.current?.flyTo({ center: [member.location.lon, member.location.lat], zoom: 15, essential: true });
     setSheetSnap('peek');
+    mapRef.current?.flyTo({ center: [member.location.lon, member.location.lat], zoom: 15, essential: true });
   }
 
   const header = life360HeaderSummary(status);

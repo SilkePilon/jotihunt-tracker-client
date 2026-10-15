@@ -45,6 +45,7 @@ export default function BottomSheet({ peek, children, onHeights }: { peek: React
   const snap = useSidebarStore((s) => s.sheetSnap);
   const setSnap = useSidebarStore((s) => s.setSheetSnap);
   const setSheetHeight = useSidebarStore((s) => s.setSheetHeight);
+  const setSheetSnapHeights = useSidebarStore((s) => s.setSheetSnapHeights);
   const { visibleH, safeTop, safeBottom, keyboard } = useViewportStore(
     useShallow((s) => ({ visibleH: s.visibleH, safeTop: s.safeTop, safeBottom: s.safeBottom, keyboard: s.keyboard })),
   );
@@ -77,6 +78,8 @@ export default function BottomSheet({ peek, children, onHeights }: { peek: React
 
   const heights = useMemo(() => computeSnapHeights({ visibleH, safeTop, safeBottom, peekContent }), [visibleH, safeTop, safeBottom, peekContent]);
   useEffect(() => onHeights?.(heights), [heights, onHeights]);
+  useEffect(() => setSheetSnapHeights(heights), [heights, setSheetSnapHeights]);
+  useEffect(() => () => setSheetSnapHeights(null), [setSheetSnapHeights]);
   // An open keyboard means an input in the sheet has focus: give it all the room
   useEffect(() => {
     if (keyboard > 0 && snap !== 'full') setSnap('full');

@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 export type SidebarSectionId = 'foxes' | 'hints' | 'hunts' | 'predictions' | 'hintEntry' | 'counterHunt' | 'telegram' | 'tracking' | 'life360';
-import type { SheetSnap } from '@/lib/sheet-snaps';
+import type { SheetSnap, SnapHeights } from '@/lib/sheet-snaps';
 export type { SheetSnap };
 
 const DEFAULT_OPEN_SECTIONS: Record<SidebarSectionId, boolean> = {
@@ -33,6 +33,9 @@ interface SidebarState {
   /** Settled visible height of the phone sheet in px (0 on desktop); drives the map padding */
   sheetHeight: number;
   setSheetHeight: (height: number) => void;
+  /** Phone sheet height per snap (null on desktop), so a camera move can pad for a snap that is still springing */
+  sheetSnapHeights: SnapHeights | null;
+  setSheetSnapHeights: (heights: SnapHeights | null) => void;
 }
 
 const useSidebarStore = create<SidebarState>()(
@@ -53,6 +56,8 @@ const useSidebarStore = create<SidebarState>()(
       setSheetSnap: (sheetSnap) => set({ sheetSnap }),
       sheetHeight: 0,
       setSheetHeight: (sheetHeight) => set({ sheetHeight }),
+      sheetSnapHeights: null,
+      setSheetSnapHeights: (sheetSnapHeights) => set({ sheetSnapHeights }),
     }),
     {
       name: 'sidebar-storage',

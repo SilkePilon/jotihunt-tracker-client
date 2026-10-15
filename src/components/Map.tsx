@@ -99,6 +99,12 @@ const RULER_LABEL_PAINT = {'text-color': '#fff', 'text-halo-color': RULER_COLOR,
 // Clicks on these canvas layers open their own popup instead of the location popup
 const INTERACTIVE_LAYER_IDS = [FOX_MARKERS_LAYER, TEAM_PINS_LAYER, HUNTERS_LAYER, HUNTER_ARROWS_LAYER, LIFE360_LAYER];
 
+/** Bottom map padding for the phone sheet's current snap (undefined on desktop, the HQ wall, or before the sheet measured) */
+function phonePaddingFor(wall: boolean): number | undefined {
+    const {sheetSnapHeights, sheetSnap} = useSidebarStore.getState();
+    return wall || !sheetSnapHeights ? undefined : sheetSnapHeights[sheetSnap];
+}
+
 const Map = forwardRef<MapRef, MapProps>(({className, wall = false, overlay}, ref) => {
 
     const GROUP_NAME: string = import.meta.env.GROUP_NAME;
@@ -108,7 +114,10 @@ const Map = forwardRef<MapRef, MapProps>(({className, wall = false, overlay}, re
     useImperativeHandle(ref, () => ({
         flyTo: (options: FlyToOpts) => {
             if (mapRef.current) {
-                mapRef.current.flyTo(options);
+                // Phones: fly with the padding of the snap the sheet is heading to (a caller lowering the sheet sets the
+                // snap first), so the point lands above the sheet and the padding effect has nothing left to ease
+                const bottom = phonePaddingFor(wall);
+                mapRef.current.flyTo(bottom === undefined || options.padding !== undefined ? options : {...options, padding: {top: 0, left: 0, right: 0, bottom}});
             }
         },
         fitBounds: (bounds, options) => {
@@ -158,7 +167,21 @@ const Map = forwardRef<MapRef, MapProps>(({className, wall = false, overlay}, re
     const sheetHeight = useSidebarStore((state) => state.sheetHeight);
     const bottomPadding = isMobile && !wall ? sheetHeight : 0;
     useEffect(() => {
-        mapRef.current?.easeTo({padding: {top: 0, left: 0, right: 0, bottom: bottomPadding}, duration: 300});
+        const map = mapRef.current?.getMap();
+        if (!map) return;
+        const apply = () => {
+            // Nothing to do (desktop/HQ on mount, or a flyTo that already carried this padding)
+            if (map.getPadding().bottom === bottomPadding) return;
+            map.easeTo({padding: {top: 0, left: 0, right: 0, bottom: bottomPadding}, duration: 300});
+        };
+        // easeTo stops a running camera move: a "show on map" that lowers the sheet would be cancelled. Pad once it lands.
+        if (map.isMoving()) {
+            map.once('moveend', apply);
+            return () => {
+                map.off('moveend', apply);
+            };
+        }
+        apply();
     }, [bottomPadding]);
     // Own position like the Android app's: the vehicle of our own tracker (a person without one)
     const {status: tracker} = useTrackerStatus();
