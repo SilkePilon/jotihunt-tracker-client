@@ -33,33 +33,50 @@ export default function Buildings3D({ visible }: { visible: boolean }) {
   // Opacity target: 0 on the first frame after mounting, so MapLibre transitions it up
   const [shown, setShown] = useState(false);
   const [beforeId, setBeforeId] = useState<string>();
-  const tilted = useRef(false);
-
   if (visible && !mounted) setMounted(true);
+
+  // Whether the toggle (not the user) tilted the map; only then does turning the layer off tilt it back
+  const tilted = useRef(false);
+  // Starts as `visible`: a layer that is already on at mount (persisted setting, reload, HQ wall) doesn't tilt
+  const wasVisible = useRef(visible);
 
   useEffect(() => {
     if (visible) {
       const frame = requestAnimationFrame(() => setShown(true));
       return () => cancelAnimationFrame(frame);
     }
-    // Fade out (opacity follows `visible` too), then unmount and reset, so the next mount fades in from 0 again
+    // Fade out (opacity follows `visible` too), then unmount and reset, so the next mount fades in from 0 again; then
+    // tilt back if the toggle tilted the map
     const timer = setTimeout(() => {
       setMounted(false);
       setShown(false);
+      if (map && tilted.current) map.easeTo({ pitch: 0, duration: CAMERA_MS });
+      tilted.current = false;
     }, BUILDINGS_FADE_MS);
     return () => clearTimeout(timer);
-  }, [visible]);
+  }, [visible, map]);
 
+  // Tilt a flat map on an actual off -> on toggle
   useEffect(() => {
     if (!map) return;
-    if (visible && map.getPitch() < FLAT_PITCH) {
+    if (visible && !wasVisible.current && map.getPitch() < FLAT_PITCH) {
       tilted.current = true;
       map.easeTo({ pitch: BUILDINGS_TILT, duration: CAMERA_MS });
-    } else if (!visible && tilted.current) {
-      tilted.current = false;
-      map.easeTo({ pitch: 0, duration: CAMERA_MS });
     }
+    wasVisible.current = visible;
   }, [visible, map]);
+
+  // The user pitching the map by hand takes over the camera: don't force it back to flat on toggle off
+  useEffect(() => {
+    if (!map) return;
+    const onPitch = (event: { originalEvent?: unknown }) => {
+      if (event.originalEvent) tilted.current = false;
+    };
+    map.on('pitchstart', onPitch);
+    return () => {
+      map.off('pitchstart', onPitch);
+    };
+  }, [map]);
 
   // Below the current style's labels; recomputed on every style switch
   useEffect(() => {
