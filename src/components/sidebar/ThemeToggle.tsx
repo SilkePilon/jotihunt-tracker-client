@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { HEADER_BUTTON } from './header-button';
 
 /** Both icons stay mounted and cross-swap: the leaving one turns away and shrinks, the other turns in. */
-const ICON = 'absolute size-[18px] transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none';
+const ICON = 'absolute size-[18px] transition-[rotate,scale,opacity] duration-[350ms] ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none';
 
 /** Switches between light and dark mode; the first click overrides the system preference. */
 export default function ThemeToggle({ className }: { className?: string }) {
