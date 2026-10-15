@@ -20,8 +20,8 @@ paired phones move into their own group.
 Same treatment as the Meldingen redesign (`2026-10-16-notifications-dialog-redesign-design.md`):
 
 - `ResponsiveDialog` gets `compact`, so the dialog hugs its content (max 80dvh desktop / 92dvh drawer, scrolls inside).
-- Desktop `className`: `sm:max-w-md` (was `sm:max-w-2xl`), `rounded-[28px]`, `bg-card`, no border, layers popover
-  shadow (`0 0 0 1px var(--border), 0 10px 30px rgb(0 0 0/.28)`).
+- Desktop `className`: `sm:max-w-md` (was `sm:max-w-2xl`), `rounded-[28px]`, `bg-card`, no border, Meldingen dialog
+  shadow (`0 0 0 1px var(--border), 0 18px 50px rgb(0 0 0/.35)`).
 - Close button via `[&>[data-slot=dialog-close]]`: 34×32, `rounded-xl`, `bg-beheer-row`, hover `bg-beheer-row-high`,
   muted icon, full opacity, no offset ring (focus-visible ring like the header buttons).
 - Description: "Je passkeys en waar je bent ingelogd."
