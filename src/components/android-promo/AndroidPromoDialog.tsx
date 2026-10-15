@@ -7,6 +7,7 @@ import { useAppRelease, usePairingCode } from '@/hooks/app-pairing.hook';
 import { useAccount } from '@/hooks/account.hook';
 import { absoluteUrl, buildPairingUrl } from '@/lib/app-pairing';
 import { SWAP } from '@/lib/motion';
+import { useBackEntry } from '@/hooks/back-entry.hook';
 import useAndroidPromoStore from '@/stores/android-promo.store';
 import AndroidPromoHero from './AndroidPromoHero';
 import DownloadSplitButton from './DownloadSplitButton';
@@ -18,6 +19,8 @@ const apiBase: string = import.meta.env.API_BASE_URL;
 /** The one-time Android-app popup (design B + split button), see the android-app-promo spec. */
 export default function AndroidPromoDialog() {
   const { open, step, setStep, close } = useAndroidPromoStore();
+  // Phones: Back closes the popup (as "Later", or "paired" once done) instead of leaving the site
+  useBackEntry('android-promo', open, () => close(step === 'done' ? 'paired' : 'later'));
   const { release } = useAppRelease();
   const { account, refresh } = useAccount(open);
   const { create } = usePairingCode();
