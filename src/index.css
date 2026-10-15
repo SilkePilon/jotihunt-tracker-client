@@ -349,6 +349,12 @@ body.dark {
   @apply mr-2! mb-2!;
 }
 
+/* Landscape phones at desktop width with viewport-fit=cover: keep the controls out of the notch / home indicator (0 on desktops) */
+.maplibregl-ctrl-bottom-right {
+  margin-right: env(safe-area-inset-right);
+  margin-bottom: env(safe-area-inset-bottom);
+}
+
 .maplibregl-ctrl-bottom-right .maplibregl-ctrl + .maplibregl-ctrl {
   @apply mb-1.5!;
 }
