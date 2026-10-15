@@ -23,7 +23,7 @@ import {buildHintHours, groupByDay, isFreeHour} from './hint-times';
 
 const FormSchema = z.object({
     area: z.enum([...areaOptions.map((option) => option.value)] as [string, ...string[]]),
-    time: z.string(),
+    time: z.string().min(1),
     x: z.string().length(6),
     y: z.string().length(6),
 });
@@ -74,7 +74,7 @@ export default function HintEntryCard({mapRef}: InferProps<typeof HintEntryCard.
         form.setValue('area', area, {shouldValidate: true, shouldDirty: true});
         const time = form.getValues('time');
         if (time && !isFreeHour(buildHintHours(HUNT_START, HUNT_END, new Date(), markers, area), time)) {
-            form.setValue('time', '', {shouldDirty: true});
+            form.setValue('time', '', {shouldValidate: true, shouldDirty: true});
         }
     }
 
@@ -129,8 +129,8 @@ export default function HintEntryCard({mapRef}: InferProps<typeof HintEntryCard.
 
     /** Wissen: empty both coordinates. */
     function clearCoordinates() {
-        form.setValue('x', '');
-        form.setValue('y', '');
+        form.setValue('x', '', {shouldValidate: true});
+        form.setValue('y', '', {shouldValidate: true});
     }
 
     /**
@@ -180,7 +180,7 @@ export default function HintEntryCard({mapRef}: InferProps<typeof HintEntryCard.
                 <div className="mt-1 flex items-center justify-between gap-2">
                     <CoordinateStatus state={coordinateState}/>
                     <button type="button" onClick={clearCoordinates}
-                            className="inline-flex items-center gap-1.5 rounded-md px-1 text-xs font-semibold text-primary outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50">
+                            className="inline-flex items-center gap-1.5 rounded-lg px-1 text-xs font-semibold text-primary outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50">
                         <EraserIcon aria-hidden className="size-3.5"/> Wissen
                     </button>
                 </div>
