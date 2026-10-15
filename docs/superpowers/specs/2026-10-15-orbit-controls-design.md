@@ -78,6 +78,17 @@ a diagonal drag rotates and tilts at once.
 - `maxPitch={60}`.
 - An inner `<OrbitControls enabled={!isMobile && !wall}/>` component that uses `useMap()` and the hook.
 
+### 3D buildings on by default
+
+- `src/stores/layers.store.ts`:
+  - `showBuildings3d` defaults to `true`.
+  - The persisted `layers-storage` gets `version: 1`, with a `migrate` that sets `showBuildings3d: true` for stored
+    version 0 state. Everyone who loaded the site since the 3D deploy has `false` stored, so the new default alone
+    wouldn't reach them.
+  - After that, the user's own toggle is kept.
+- A layer that is already on at mount doesn't tilt the map (existing behaviour). The buildings appear from zoom 15 on a
+  flat map until the user tilts.
+
 ## Testing
 
 - `bun test` for `orbit.ts`:
@@ -87,6 +98,7 @@ a diagonal drag rotates and tilts at once.
   - coast threshold and distance;
   - snap at ±7° and across ±180°;
   - speed from samples.
+- `bun test` for the layers store migration: v0 `{showBuildings3d:false}` becomes `true`; other stored layers are kept.
 - `tsc`, lint, build.
 - Preview with buildings on:
   - right-drag orbits around a building, and the building stays under the pointer;
