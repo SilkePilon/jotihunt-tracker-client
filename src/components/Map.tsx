@@ -246,7 +246,7 @@ const Map = forwardRef<MapRef, MapProps>(({className, wall = false, overlay}, re
                 <MarkerImages/>
                 {/* Desktop mouse: calm rotate/tilt around the pointer (phones keep MapLibre's touch gestures) */}
                 <OrbitControls enabled={!isMobile && !wall}/>
-                {popupPosition && !wall && <PickedLocationPopup lng={popupPosition.lng} lat={popupPosition.lat}
+                {popupPosition && !wall && <PickedLocationPopup key={`${popupPosition.lng},${popupPosition.lat}`} lng={popupPosition.lng} lat={popupPosition.lat}
                                                        onClose={() => setPopupPosition(undefined)}/>}
                 <Buildings3D visible={showBuildings3d}/>
                 {showPredictions && predictionEnabled !== false && <Predictions/>}

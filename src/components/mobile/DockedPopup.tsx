@@ -33,9 +33,12 @@ export default function DockedPopup({ longitude, latitude, onClose, children }: 
   const { current: map } = useMap();
   const dock = useDock();
   useBackEntry('popup', true, onClose);
+  // Ease once per mount: live popups (hunters, Life360) get new coordinates on every GPS update and must not fight
+  // the user's pan/zoom. Switching to another point remounts the popup (key), which eases again.
+  const [center] = useState<[number, number]>(() => [longitude, latitude]);
   useEffect(() => {
-    map?.easeTo({ center: [longitude, latitude], duration: 500 });
-  }, [map, longitude, latitude]);
+    map?.easeTo({ center, duration: 500 });
+  }, [map, center]);
 
   if (!dock) return null;
   return createPortal(
