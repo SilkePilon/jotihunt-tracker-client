@@ -36,6 +36,7 @@ const OBJECT_CHECKS: Record<string, (data: Record<string, unknown>) => boolean> 
   '/telegram/messages': (data) => typeof data.linked === 'boolean' && typeof data.connected === 'boolean' && Array.isArray(data.messages),
   '/admin/telegram': (data) => typeof data.state === 'string' && typeof data.connected === 'boolean',
   '/admin/life360': (data) => typeof data.state === 'string',
+  '/admin/buildings': (data) => typeof data.tiles === 'number' && typeof data.bytes === 'number',
   '/life360/members': (data) => typeof data.linked === 'boolean' && typeof data.stale === 'boolean' && Array.isArray(data.members),
   '/settings/invites-paused': (data) => typeof data.paused === 'boolean',
   '/settings/huntable-areas': (data) => data.areas === null || (Array.isArray(data.areas) && data.areas.every((area) => typeof area === 'string')),

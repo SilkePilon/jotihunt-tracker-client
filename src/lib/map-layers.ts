@@ -7,6 +7,7 @@ import { createCircle, getColorFromArea } from '@/lib/utils';
 import { areaKey, type AreaOrNone, formatHintClock, foxStatus, hintIconKey, markerIconId, type FoxKind, type HintNumbering, type HunterIcon } from '@/lib/marker-style';
 import type { MapPin } from '@/lib/prediction';
 import type { Confidence } from '@/types/Prediction';
+import { BUILDINGS_LAYER } from '@/lib/buildings';
 
 export type { HunterIcon } from '@/lib/marker-style';
 
@@ -33,6 +34,8 @@ export const LIFE360_ACCURACY_LAYER = 'life360-accuracy-fill';
  * all groups before it. The markers stack like the Android app's: groups, foxes (and hints), prediction pins, hunters.
  */
 export const MAP_LAYER_STACK: string[][] = [
+  // 3D buildings under every app layer (below the style labels through beforeId; on raster styles this keeps them under the markers)
+  [BUILDINGS_LAYER],
   ['device-accuracy-fill', LIFE360_ACCURACY_LAYER, 'prediction-areas-fill', 'prediction-areas-line', 'prediction-pin-lines', 'circle-layer-home', 'team-circles-fill', 'marker-trails-line'],
   [TEAM_PINS_LAYER],
   ['team-pins-hover'],

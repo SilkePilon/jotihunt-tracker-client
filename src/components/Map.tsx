@@ -12,11 +12,14 @@ import {setWorkerUrl} from 'maplibre-gl';
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 
 import type {LngLat, Map as MaplibreMap, StyleSpecification} from 'maplibre-gl';
+import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
+import Buildings3D from './layers/Buildings3D';
+import {setBuildingsAuthHeader} from '@/lib/buildings-protocol';
 import Teams from './layers/Teams';
 import Devices from './layers/Devices';
 import Life360 from './layers/Life360';
 import Markers from './layers/Markers';
-import {forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, type ReactNode} from 'react';
+import {forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type ReactNode} from 'react';
 import {useShallow} from 'zustand/react/shallow';
 import HomeCircle from './layers/HomeCircle';
 import Predictions from './layers/Predictions';
@@ -57,6 +60,9 @@ export interface MapRef {
     fitBounds(bounds: FitBoundsArgs[0], options?: FitBoundsArgs[1]): boolean;
 
     markPoint(lngLat: LngLat): void;
+
+    /** The map's centre; null while the map isn't created yet. */
+    getCenter(): LngLat | null;
 }
 
 interface MapProps {
@@ -111,11 +117,12 @@ const Map = forwardRef<MapRef, MapProps>(({className, wall = false, overlay}, re
             if (mapRef.current) {
                 setPopupPosition(lngLat);
             }
-        }
+        },
+        getCenter: () => mapRef.current?.getCenter() ?? null,
     }));
 
     // Store for all layers
-    const {showTeams, showDevices, showMarkersPart1, showMarkersPart2, showHomeCircle, showPredictions, showLife360} = useLayersStore(
+    const {showTeams, showDevices, showMarkersPart1, showMarkersPart2, showHomeCircle, showPredictions, showLife360, showBuildings3d} = useLayersStore(
         useShallow((state) => ({
             showTeams: state.showTeams,
             showDevices: state.showDevices,
@@ -124,9 +131,16 @@ const Map = forwardRef<MapRef, MapProps>(({className, wall = false, overlay}, re
             showHomeCircle: state.showHomeCircle,
             showPredictions: state.showPredictions,
             showLife360: state.showLife360,
+            showBuildings3d: state.showBuildings3d,
         })),
     );
     const {enabled: predictionEnabled} = usePredictionSetting();
+    // The building tiles come from our API, which needs the Authorization header (fetched by the jhbuildings protocol);
+    // a layout effect, so it's set before the building source starts loading tiles
+    const authHeader = useAuthHeader() || '';
+    useLayoutEffect(() => {
+        setBuildingsAuthHeader(authHeader);
+    }, [authHeader]);
     const [popupPosition, setPopupPosition] = useState<LngLat>();
     const [rulerActive, setRulerActive] = useState<boolean>(false);
     // Stable, so the ruler doesn't re-subscribe its map events on every render
@@ -221,6 +235,7 @@ const Map = forwardRef<MapRef, MapProps>(({className, wall = false, overlay}, re
                 <MarkerImages/>
                 {popupPosition && !wall && <PickedLocationPopup lng={popupPosition.lng} lat={popupPosition.lat}
                                                        onClose={() => setPopupPosition(undefined)}/>}
+                <Buildings3D visible={showBuildings3d}/>
                 {showPredictions && predictionEnabled !== false && <Predictions/>}
                 {showTeams && <Teams/>}
                 {showDevices && <Devices/>}

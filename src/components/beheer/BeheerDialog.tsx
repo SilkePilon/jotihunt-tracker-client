@@ -197,6 +197,6 @@ function SectionPane({ section, mapRef }: { section: AdminDialogId; mapRef: RefO
     case 'broadcast':
       return <BroadcastPane />;
     case 'koppelingen':
-      return <KoppelingenPane />;
+      return <KoppelingenPane mapRef={mapRef} />;
   }
 }
