@@ -13,9 +13,11 @@ All routes: `Authorization: Bearer <token>` (same as every other route), JSON.
   If `message.id` is already in the stored history (client "Opnieuw" / `regenerate()`), the server cuts the history
   at that message and appends it fresh — never a duplicate.
   The stream's `originalMessages` = stored history + new message, so message ids stay stable.
-- `DELETE /intel-chat/:articleId` → `204`.
+- `DELETE /intel-chat/:articleId` → `204`. A turn still running for that chat is stopped and never saved.
 - Errors (JSON, not streamed): `400 { error: 'invalid_message' }`, `404 { error: 'not_found' }`,
-  `429 { error: 'rate_limited' }` (30 POSTs / 10 min / user), `503 { error: 'ai_unavailable' }`.
+  `409 { error: 'busy' }` (a turn of this chat is still running/saving; one turn per user and item at a time),
+  `429 { error: 'rate_limited' }` (30 POSTs / 10 min / user), `500 { error: 'chat_failed' }` (failure before
+  the stream started), `503 { error: 'ai_unavailable' }`.
 
 `IntelChatMessage` = AI SDK `UIMessage` (`{ id, role: 'user' | 'assistant', parts: [...] }`). A user message has one
 `text` part and at most one `file` part (`mediaType: 'image/jpeg' | 'image/png' | 'image/webp'`, `url: data:` URL,
