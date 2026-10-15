@@ -48,11 +48,13 @@ export default function HintEntryCard({mapRef}: InferProps<typeof HintEntryCard.
         },
     });
     const selectedArea = useWatch({control: form.control, name: 'area'});
-    const [xValue, yValue] = useWatch({control: form.control, name: ['x', 'y']});
+    const [timeValue, xValue, yValue] = useWatch({control: form.control, name: ['time', 'x', 'y']});
 
     // Live check once both coordinates are complete: hints are always in the Netherlands
     const typedLocation = xValue?.length === 6 && yValue?.length === 6 ? fromRD(Number(xValue), Number(yValue)) : undefined;
     const outsideNetherlands = !!typedLocation && !isInNetherlands(typedLocation[0], typedLocation[1]);
+    // setValue without validation doesn't update formState.isValid in onSubmit mode, so derive from values
+    const canSubmit = !!selectedArea && !!timeValue && xValue?.length === 6 && yValue?.length === 6 && !outsideNetherlands;
     const coordinateState: CoordinateState = outsideNetherlands ? 'outside' : typedLocation ? 'inside' : 'idle';
 
     // Hours for the chosen area; hours that already have a hint are kept but marked taken
@@ -74,7 +76,7 @@ export default function HintEntryCard({mapRef}: InferProps<typeof HintEntryCard.
         form.setValue('area', area, {shouldValidate: true, shouldDirty: true});
         const time = form.getValues('time');
         if (time && !isFreeHour(buildHintHours(HUNT_START, HUNT_END, new Date(), markers, area), time)) {
-            form.setValue('time', '', {shouldValidate: true, shouldDirty: true});
+            form.setValue('time', '', {shouldDirty: true});
         }
     }
 
@@ -129,8 +131,8 @@ export default function HintEntryCard({mapRef}: InferProps<typeof HintEntryCard.
 
     /** Wissen: empty both coordinates. */
     function clearCoordinates() {
-        form.setValue('x', '', {shouldValidate: true});
-        form.setValue('y', '', {shouldValidate: true});
+        form.setValue('x', '');
+        form.setValue('y', '');
     }
 
     /**
@@ -185,7 +187,7 @@ export default function HintEntryCard({mapRef}: InferProps<typeof HintEntryCard.
                     </button>
                 </div>
             </div>
-            <Button id={submitId} type="submit" className="h-11 text-[15px]" disabled={!form.formState.isValid || outsideNetherlands}>
+            <Button id={submitId} type="submit" className="h-11 text-[15px]" disabled={!canSubmit}>
                 <Pin data-icon="inline-start"/> Registreren
             </Button>
         </form>
