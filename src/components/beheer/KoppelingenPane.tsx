@@ -117,7 +117,7 @@ function IntegrationCard({ name, brand, logo, view, isError, action, actionKey, 
             <h3 className="text-[15px] font-bold">{name}</h3>
             <AnimatePresence mode="popLayout" initial={false}>
               {view && (
-                <motion.span key={view.tone} className="inline-flex" {...POP}>
+                <motion.span key={view.pill} className="inline-flex" {...POP}>
                   <Tag tone={TAG_TONE[view.tone]}>
                     {view.tone === 'ok' && <CheckIcon />}
                     {view.tone === 'warn' && <TriangleAlertIcon />}
@@ -457,7 +457,8 @@ export default function KoppelingenPane({ mapRef }: { mapRef: RefObject<MapRef |
         isError={jotiboard.isError}
         action={jotiboardAction}
         actionKey={jotiboardCard?.canUnlink ? 'unlink' : 'link'}
-        onRelink={() => setJotiboardForm(true)}
+        // The server state doesn't change on relink (as Life360's does): hide "Opnieuw koppelen" while the form is open
+        onRelink={jotiboardForm ? undefined : () => setJotiboardForm(true)}
         confirm={
           confirming === 'jotiboard' && jotiboardCard?.canUnlink && (
             <InlineConfirm

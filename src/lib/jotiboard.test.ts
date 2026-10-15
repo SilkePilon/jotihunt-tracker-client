@@ -57,8 +57,10 @@ describe('texts', () => {
   });
 });
 
-test('refresh interval: fast until the first sync', () => {
+test('refresh interval: fast until the first sync, not while it fails', () => {
   expect(jotiboardRefreshInterval(linked({ lastSyncAt: null }))).toBe(3000);
   expect(jotiboardRefreshInterval(linked())).toBe(20_000);
+  expect(jotiboardRefreshInterval(linked({ lastSyncAt: null, lastError: 'x' }))).toBe(20_000);
+  expect(jotiboardRefreshInterval(linked({ lastSyncAt: null, syncEnabled: false }))).toBe(20_000);
   expect(jotiboardRefreshInterval(undefined)).toBe(20_000);
 });

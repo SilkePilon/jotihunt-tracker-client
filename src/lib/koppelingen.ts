@@ -12,7 +12,7 @@ export type IntegrationTone = 'ok' | 'off' | 'warn';
 export interface IntegrationView {
   tone: IntegrationTone;
   /** The status pill next to the name */
-  pill: 'Verbonden' | 'Niet gekoppeld' | 'Aandacht nodig';
+  pill: 'Verbonden' | 'Niet gekoppeld' | 'Gepauzeerd' | 'Aandacht nodig';
   /** Under the name: "Gekoppeld als …", what it does, or "Bezig met koppelen…" */
   line: string;
   /** Last-sync line (only while it works) */
@@ -109,7 +109,7 @@ export function jotiboardIntegration(status: JotiboardStatus, now: number): Inte
       };
     case 'linked': {
       const line = `Gekoppeld als ${status.username}`;
-      if (!status.syncEnabled) return { ...NONE, tone: 'off', pill: PILL.off, line: `${line} · gepauzeerd`, sync: jotiboardSyncLine(status, now), canUnlink: true };
+      if (!status.syncEnabled) return { ...NONE, tone: 'off', pill: 'Gepauzeerd', line: `${line} · gepauzeerd`, sync: jotiboardSyncLine(status, now), canUnlink: true };
       if (status.lastError) return { ...NONE, tone: 'warn', pill: PILL.warn, line, problem: status.lastError, canUnlink: true };
       return { ...NONE, tone: 'ok', pill: PILL.ok, line, sync: jotiboardSyncLine(status, now), canUnlink: true };
     }

@@ -136,7 +136,7 @@ describe('jotiboardIntegration', () => {
   });
   test('syncing, paused, failing, logged out', () => {
     expect(jotiboardIntegration(linked(), NOW)).toMatchObject({ tone: 'ok', pill: 'Verbonden', line: 'Gekoppeld als user', sync: '12 s geleden · 5 pins · 2 hints', canUnlink: true });
-    expect(jotiboardIntegration(linked({ syncEnabled: false }), NOW)).toMatchObject({ tone: 'off', pill: 'Niet gekoppeld', line: 'Gekoppeld als user · gepauzeerd', canUnlink: true });
+    expect(jotiboardIntegration(linked({ syncEnabled: false }), NOW)).toMatchObject({ tone: 'off', pill: 'Gepauzeerd', line: 'Gekoppeld als user · gepauzeerd', canUnlink: true });
     expect(jotiboardIntegration(linked({ lastError: 'Jotiboard niet bereikbaar, probeert opnieuw' }), NOW)).toMatchObject({ tone: 'warn', problem: 'Jotiboard niet bereikbaar, probeert opnieuw', canUnlink: true });
     expect(jotiboardIntegration({ state: 'loggedOut', username: 'user', counts }, NOW)).toMatchObject({
       tone: 'warn',

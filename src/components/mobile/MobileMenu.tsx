@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { BellIcon, ChevronRightIcon, CrosshairIcon, FlagIcon, Grid3x3Icon, KeyRoundIcon, MapPinIcon, MessageSquareIcon, PawPrintIcon, PenLineIcon, LayoutDashboardIcon, ShieldIcon, SmartphoneIcon, UsersIcon } from 'lucide-react';
+import { BellIcon, ChevronRightIcon, CrosshairIcon, FlagIcon, Grid3x3Icon, KeyRoundIcon, LayoutDashboardIcon, MapPinIcon, MessageSquareIcon, PawPrintIcon, PenLineIcon, ShieldIcon, SmartphoneIcon, UsersIcon } from 'lucide-react';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import type { User } from '@/types/User';
 import SidebarHeader from '@/components/sidebar/SidebarHeader';

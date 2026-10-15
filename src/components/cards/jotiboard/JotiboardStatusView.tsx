@@ -1,17 +1,36 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { PauseIcon } from 'lucide-react';
+import Reveal from '@/components/motion/Reveal';
 import CookieBadge from '@/components/tracker/CookieBadge';
 import { Switch } from '@/components/ui/switch';
 import { useNow } from '@/hooks/now.hook';
-import { jotiboardSyncLine, type JotiboardView } from '@/lib/jotiboard';
+import { jotiboardSyncLine } from '@/lib/jotiboard';
+import { POP } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import type { JotiboardLinkedStatus } from '@/types/Jotiboard';
 import { JOTIBOARD_BLOCK } from './styles';
 
-const TITLE: Record<'syncing' | 'failing' | 'paused', string> = { syncing: 'Synchroniseert', failing: 'Synchroniseert', paused: 'Gepauzeerd' };
+type LinkedView = 'syncing' | 'failing' | 'paused';
 
-/** Linked (mockup linked-state A): big cookie, title, sync line, "Automatisch synchroniseren" switch in a grey pill. */
-export function JotiboardLinked({ status, view, onSetSync }: { status: JotiboardLinkedStatus; view: 'syncing' | 'failing' | 'paused'; onSetSync: (enabled: boolean) => Promise<void> }) {
+const TITLE: Record<LinkedView, string> = { syncing: 'Synchroniseert', failing: 'Synchroniseert', paused: 'Gepauzeerd' };
+
+/** Text that cross-fades when `swapKey` changes (not on every tick of its content). */
+function FadeText({ swapKey, className, children }: { swapKey: string; className?: string; children: ReactNode }) {
+  return (
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.p key={swapKey} className={className} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+        {children}
+      </motion.p>
+    </AnimatePresence>
+  );
+}
+
+/**
+ * Linked (mockup linked-state A): big cookie, title, sync line, "Automatisch synchroniseren" switch in a grey pill.
+ * Stays mounted across syncing / failing / paused: only the badge pops, the texts fade and the switch's thumb slides.
+ */
+export function JotiboardLinked({ status, view, onSetSync }: { status: JotiboardLinkedStatus; view: LinkedView; onSetSync: (enabled: boolean) => Promise<void> }) {
   const now = useNow(true);
   const [busy, setBusy] = useState(false);
 
@@ -26,10 +45,21 @@ export function JotiboardLinked({ status, view, onSetSync }: { status: Jotiboard
 
   return (
     <div className="flex flex-col items-center gap-0.5 pt-1 text-center" data-jotiboard-state={view}>
-      {view === 'paused' ? <CookieBadge tone="neutral" size={72} glyph={<PauseIcon className="size-7 fill-current" />} /> : <CookieBadge tone={view === 'failing' ? 'warn' : 'ok'} size={72} />}
-      <p className="mt-2 text-base font-bold">{TITLE[view]}</p>
-      {view === 'failing' && status.lastError && <p className="text-xs font-medium text-amber-600 dark:text-amber-400">{status.lastError}</p>}
-      <p className="text-xs text-muted-foreground tabular-nums">{jotiboardSyncLine(status, now)}</p>
+      <div className="grid size-[72px] place-items-center">
+        <AnimatePresence mode="popLayout" initial={false}>
+          <motion.div key={view} className="col-start-1 row-start-1" {...POP}>
+            {view === 'paused' ? <CookieBadge tone="neutral" size={72} glyph={<PauseIcon className="size-7 fill-current" />} /> : <CookieBadge tone={view === 'failing' ? 'warn' : 'ok'} size={72} />}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+      <FadeText swapKey={TITLE[view]} className="mt-2 text-base font-bold">
+        {TITLE[view]}
+      </FadeText>
+      <Reveal gap={2}>{view === 'failing' && status.lastError && <p className="text-xs font-medium text-amber-600 dark:text-amber-400">{status.lastError}</p>}</Reveal>
+      {/* Keyed on the view, so the ticking "… geleden" doesn't fade every second */}
+      <FadeText swapKey={view} className="text-xs text-muted-foreground tabular-nums">
+        {jotiboardSyncLine(status, now)}
+      </FadeText>
       <label className={cn('mt-3 flex w-full cursor-pointer items-center justify-between gap-3 px-2.5 py-2', JOTIBOARD_BLOCK)}>
         <span className="text-[13px] font-medium">Automatisch synchroniseren</span>
         <Switch checked={status.syncEnabled} disabled={busy} onCheckedChange={(checked) => void toggle(checked)} className="data-[state=checked]:bg-green-600" />
@@ -48,5 +78,3 @@ export function JotiboardLoggedOutHeader() {
     </div>
   );
 }
-
-export type { JotiboardView };

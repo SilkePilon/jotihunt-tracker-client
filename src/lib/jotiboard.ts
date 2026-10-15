@@ -6,12 +6,12 @@ export const JOTIBOARD_ADMIN_URL = '/admin/jotiboard';
 /** Jotiboard's dark slate (their CSS); Jotiboard has no logo of its own */
 export const JOTIBOARD_SLATE = '#0f172b';
 export const JOTIBOARD_STATUS_POLL_MS = 20_000;
-/** Right after linking / turning sync on, until the server's first sync landed */
+/** Right after linking / turning sync on, until the server's first sync landed (not while it keeps failing) */
 export const JOTIBOARD_FAST_POLL_MS = 3000;
 
 /** A plain number for SWR (a function-form refreshInterval is only re-read when its own timer fires). */
 export function jotiboardRefreshInterval(status: JotiboardStatus | undefined): number {
-  return status?.state === 'linked' && status.syncEnabled && !status.lastSyncAt ? JOTIBOARD_FAST_POLL_MS : JOTIBOARD_STATUS_POLL_MS;
+  return status?.state === 'linked' && status.syncEnabled && !status.lastSyncAt && !status.lastError ? JOTIBOARD_FAST_POLL_MS : JOTIBOARD_STATUS_POLL_MS;
 }
 
 export type JotiboardView = 'loading' | 'error' | 'unavailable' | 'unlinked' | 'syncing' | 'failing' | 'paused' | 'loggedOut';

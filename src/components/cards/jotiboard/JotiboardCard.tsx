@@ -31,17 +31,12 @@ export default function JotiboardCard({ status, isError, onLink, onSetSync, onUn
   const [actionsOpen, setActionsOpen] = useState(false);
   const view = jotiboardView(status, isError);
 
-  // Leaving "unlinked" closes the login form, so a later unlink shows the button again; any state change closes the ⋯ block
+  // Leaving "unlinked" closes the login form, so a later unlink shows the button again
   const [previousView, setPreviousView] = useState(view);
   if (view !== previousView) {
     setPreviousView(view);
     if (view !== 'unlinked') setFormOpen(false);
-    setActionsOpen(false);
   }
-
-  if (view === 'loading') return null;
-  if (view === 'error') return <p className="text-xs text-muted-foreground">Jotiboard-status ophalen is mislukt.</p>;
-  if (view === 'unavailable') return <p className="text-xs text-muted-foreground">Jotiboard is niet ingesteld op de server (JOTIBOARD_SESSION_KEY).</p>;
 
   const counts = status && 'counts' in status ? status.counts : { pins: 0, hints: 0 };
   const linked = status?.state === 'linked' ? status : null;
@@ -49,7 +44,23 @@ export default function JotiboardCard({ status, isError, onLink, onSetSync, onUn
   const canPurge = hasImports(counts);
   const canUnlink = !!username;
   const showMenu = canPurge || canUnlink;
-  const scene = view === 'unlinked' ? (formOpen ? 'form' : 'unlinked') : view;
+
+  // The ⋯ block only closes when it can no longer show or the account changes, not on every syncing ↔ failing flip of a poll
+  // (a successful unlink / purge closes it via onDone)
+  const [previousUsername, setPreviousUsername] = useState(username);
+  if (username !== previousUsername) {
+    setPreviousUsername(username);
+    setActionsOpen(false);
+  }
+  if (actionsOpen && !showMenu) setActionsOpen(false);
+
+  if (view === 'loading') return null;
+  if (view === 'error') return <p className="text-xs text-muted-foreground">Jotiboard-status ophalen is mislukt.</p>;
+  if (view === 'unavailable') return <p className="text-xs text-muted-foreground">Jotiboard is niet ingesteld op de server (JOTIBOARD_SESSION_KEY).</p>;
+
+  const linkedView = view === 'syncing' || view === 'failing' || view === 'paused' ? view : null;
+  // One scene for every linked state: JotiboardLinked stays mounted, so its badge pops and its switch's thumb slides
+  const scene = view === 'unlinked' ? (formOpen ? 'form' : 'unlinked') : linkedView ? 'linked' : view;
 
   return (
     <div className="flex flex-col gap-3" data-jotiboard-card>
@@ -66,7 +77,7 @@ export default function JotiboardCard({ status, isError, onLink, onSetSync, onUn
               </div>
             )}
             {scene === 'form' && <JotiboardLoginForm submitLabel="Koppelen" onSubmit={onLink} onCancel={() => setFormOpen(false)} />}
-            {linked && (view === 'syncing' || view === 'failing' || view === 'paused') && <JotiboardLinked status={linked} view={view} onSetSync={onSetSync} />}
+            {scene === 'linked' && linked && linkedView && <JotiboardLinked status={linked} view={linkedView} onSetSync={onSetSync} />}
             {view === 'loggedOut' && username && (
               <div className="flex flex-col items-center gap-2">
                 <JotiboardLoggedOutHeader />
@@ -80,38 +91,43 @@ export default function JotiboardCard({ status, isError, onLink, onSetSync, onUn
         </AnimatePresence>
       </AutoHeight>
 
-      {showMenu && (
-        <>
-          <div className="h-px bg-border" />
-          <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-            <span className="min-w-0 truncate">
-              {username && (
-                <>
-                  Leest via <b className="font-semibold text-foreground">{username}</b>
-                </>
-              )}
-            </span>
-            <Button
-              type="button"
-              variant="secondary"
-              size="icon"
-              className={cn('size-[26px] rounded-full', actionsOpen && 'bg-zinc-200 dark:bg-zinc-700')}
-              aria-label={actionsOpen ? 'Acties sluiten' : 'Acties'}
-              aria-expanded={actionsOpen}
-              onClick={() => setActionsOpen((open) => !open)}
-            >
+      {/* The whole footer folds in/out, so the ⋯ block's own exit isn't cut off when the menu goes */}
+      <Reveal gap={12}>
+        {showMenu && (
+          <div className="flex flex-col gap-3">
+            <div className="h-px bg-border" />
+            <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
               <AnimatePresence mode="wait" initial={false}>
-                <motion.span key={actionsOpen ? 'close' : 'open'} className="grid place-items-center" {...SWAP}>
-                  {actionsOpen ? <XIcon className="size-4" /> : <EllipsisIcon className="size-4" />}
+                <motion.span key={username ?? ''} className="min-w-0 truncate" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+                  {username && (
+                    <>
+                      Leest via <b className="font-semibold text-foreground">{username}</b>
+                    </>
+                  )}
                 </motion.span>
               </AnimatePresence>
-            </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="icon"
+                className={cn('size-[26px] rounded-full', actionsOpen && 'bg-zinc-200 dark:bg-zinc-700')}
+                aria-label={actionsOpen ? 'Acties sluiten' : 'Acties'}
+                aria-expanded={actionsOpen}
+                onClick={() => setActionsOpen((open) => !open)}
+              >
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.span key={actionsOpen ? 'close' : 'open'} className="grid place-items-center" {...SWAP}>
+                    {actionsOpen ? <XIcon className="size-4" /> : <EllipsisIcon className="size-4" />}
+                  </motion.span>
+                </AnimatePresence>
+              </Button>
+            </div>
+            <Reveal gap={12}>
+              {actionsOpen && <JotiboardActions counts={counts} canUnlink={canUnlink} canPurge={canPurge} onUnlink={onUnlink} onPurge={onPurge} onDone={() => setActionsOpen(false)} />}
+            </Reveal>
           </div>
-          <Reveal gap={12}>
-            {actionsOpen && <JotiboardActions counts={counts} canUnlink={canUnlink} canPurge={canPurge} onUnlink={onUnlink} onPurge={onPurge} onDone={() => setActionsOpen(false)} />}
-          </Reveal>
-        </>
-      )}
+        )}
+      </Reveal>
     </div>
   );
 }
