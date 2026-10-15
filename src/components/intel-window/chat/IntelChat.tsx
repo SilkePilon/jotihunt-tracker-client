@@ -22,7 +22,7 @@ interface IntelChatProps {
   item: IntelItem;
   /** For "Toon op kaart" on point cards */
   mapRef: RefObject<MapRef | null>;
-  /** Opened from the timeline: the ✦ spins in and the empty state staggers in after the card's slide (first item only) */
+  /** Opened from the timeline: the ✦ spins in and the empty state staggers in after the card's slide (first mount of the first item only) */
   entrance: boolean;
 }
 
@@ -30,12 +30,14 @@ const FADE = { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity
 
 /** The AI chat card right of the open item (layout B). Its content swaps (fades) when another item opens; each item has its own conversation. */
 export default function IntelChat({ item, mapRef, entrance }: IntelChatProps) {
-  const [firstId] = useState(item.id);
+  // The entrance is consumed once: after the first item swap, coming back to it no longer replays the spin/delay
+  const [entranceId, setEntranceId] = useState(entrance ? item.id : null);
+  if (entranceId !== null && item.id !== entranceId) setEntranceId(null);
   return (
     <section aria-label="Vraag de AI" className="flex min-h-0 flex-1 flex-col rounded-[24px] bg-card p-3.5">
       <AnimatePresence mode="wait" initial={false}>
         <motion.div key={item.id} {...FADE} className="flex min-h-0 flex-1 flex-col gap-2.5">
-          <ChatPanel item={item} mapRef={mapRef} entrance={entrance && item.id === firstId} />
+          <ChatPanel item={item} mapRef={mapRef} entrance={item.id === entranceId} />
         </motion.div>
       </AnimatePresence>
     </section>
@@ -47,6 +49,15 @@ function ChatPanel({ item, mapRef, entrance }: IntelChatProps) {
   const [confirmReset, setConfirmReset] = useState(false);
   const busy = chat.status === 'submitted' || chat.status === 'streaming';
   const scene = chat.loading ? 'loading' : chat.loadError ? 'load-error' : chat.messages.length === 0 ? 'empty' : 'thread';
+  // The spark spin is fixed at mount; the delayed empty stagger only applies until the first settled scene is left
+  // (e.g. "Nieuw gesprek" afterwards shows the empty state without the 0.7 s wait)
+  const [spin] = useState(entrance);
+  const [emptyDelay, setEmptyDelay] = useState(entrance);
+  const [prevScene, setPrevScene] = useState(scene);
+  if (scene !== prevScene) {
+    setPrevScene(scene);
+    if (prevScene !== 'loading') setEmptyDelay(false);
+  }
 
   async function reset() {
     try {
@@ -61,7 +72,7 @@ function ChatPanel({ item, mapRef, entrance }: IntelChatProps) {
     <>
       <ChatHeader
         kind={item.kind}
-        entrance={entrance}
+        entrance={spin}
         action={
           <AnimatePresence initial={false}>
             {chat.messages.length > 0 && (
@@ -90,7 +101,7 @@ function ChatPanel({ item, mapRef, entrance }: IntelChatProps) {
           </motion.div>
         ) : scene === 'empty' ? (
           <motion.div key="empty" className="flex min-h-0 flex-1 flex-col" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
-            <ChatEmpty item={item} disabled={busy || chat.unavailable} onPick={chat.send} delay={entrance ? CHAT_EMPTY_ENTRANCE_DELAY : 0} />
+            <ChatEmpty item={item} disabled={busy || chat.unavailable} onPick={chat.send} delay={emptyDelay ? CHAT_EMPTY_ENTRANCE_DELAY : 0} />
           </motion.div>
         ) : (
           <motion.div key="thread" {...FADE} className="flex min-h-0 flex-1 flex-col">
