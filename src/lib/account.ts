@@ -66,7 +66,19 @@ const VIA_TEXT: Record<SessionVia, string> = {
 };
 
 export function sessionMeta(session: AccountSession, now: number): string {
-  return `${session.current ? 'Dit apparaat' : formatAgo(session.lastUsedAt, now)} · ${VIA_TEXT[session.via] ?? VIA_TEXT.passkey}`;
+  const via = VIA_TEXT[session.via] ?? VIA_TEXT.passkey;
+  // The dialog marks this browser with a "Dit apparaat" chip instead
+  return session.current ? via : `${formatAgo(session.lastUsedAt, now)} · ${via}`;
+}
+
+export type SessionDevice = 'phone' | 'tablet' | 'computer';
+
+/** Which icon a session gets, from its "Browser op OS" label. */
+export function sessionDevice(label: string): SessionDevice {
+  const lower = label.toLowerCase();
+  if (lower.includes('ipad')) return 'tablet';
+  if (lower.includes('android') || lower.includes('iphone')) return 'phone';
+  return 'computer';
 }
 
 export function deviceMeta(device: AccountDevice, now: number): string {

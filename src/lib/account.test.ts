@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { deviceMeta, formatAgo, formatDay, orderSessions, passkeyMeta, sessionMeta, type AccountSession } from './account';
+import { deviceMeta, formatAgo, formatDay, orderSessions, passkeyMeta, sessionDevice, sessionMeta, type AccountSession } from './account';
 
 const now = Date.parse('2026-10-17T12:00:00Z');
 const ago = (ms: number) => new Date(now - ms).toISOString();
@@ -31,9 +31,9 @@ describe('meta lines', () => {
     expect(passkeyMeta({ id: 'a', name: 'x', createdAt: '2026-10-03T10:00:00Z', lastUsedAt: null }, now)).toBe('Gemaakt 3 okt · nog niet gebruikt');
   });
 
-  test('session: this device first, else last used; how it logged in', () => {
+  test('session: only how it logged in for this device, else last used too', () => {
     const base = { id: 's', label: 'Firefox op Linux', createdAt: ago(DAY), lastUsedAt: ago(5 * MIN) };
-    expect(sessionMeta({ ...base, via: 'passkey', current: true }, now)).toBe('Dit apparaat · met passkey');
+    expect(sessionMeta({ ...base, via: 'passkey', current: true }, now)).toBe('met passkey');
     expect(sessionMeta({ ...base, via: 'qr', current: false }, now)).toBe('5 min geleden · met QR-code');
     expect(sessionMeta({ ...base, via: 'invite', current: false }, now)).toBe('5 min geleden · via invite');
     expect(sessionMeta({ ...base, via: 'herstel', current: false }, now)).toBe('5 min geleden · via herstel-link');
@@ -50,5 +50,17 @@ describe('orderSessions', () => {
   test('current first, then most recently used', () => {
     const make = (id: string, minutesAgo: number, current = false): AccountSession => ({ id, label: id, via: 'passkey', createdAt: ago(DAY), lastUsedAt: ago(minutesAgo * MIN), current });
     expect(orderSessions([make('old', 50), make('me', 90, true), make('new', 1)]).map((s) => s.id)).toEqual(['me', 'new', 'old']);
+  });
+});
+
+describe('sessionDevice', () => {
+  test('phones, tablets, everything else a computer', () => {
+    expect(sessionDevice('Chrome op Android')).toBe('phone');
+    expect(sessionDevice('Safari op iPhone')).toBe('phone');
+    expect(sessionDevice('Chrome op iPad')).toBe('tablet');
+    expect(sessionDevice('Firefox op Linux')).toBe('computer');
+    expect(sessionDevice('Safari op macOS')).toBe('computer');
+    expect(sessionDevice('Edge op Windows')).toBe('computer');
+    expect(sessionDevice('chrome op ANDROID')).toBe('phone');
   });
 });
