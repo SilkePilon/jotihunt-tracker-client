@@ -10,6 +10,8 @@ All routes: `Authorization: Bearer <token>` (same as every other route), JSON.
 - `POST /intel-chat/:articleId` body `{ message: IntelChatMessage, web: boolean, deep: boolean }` → `200` AI SDK
   UI message stream (SSE, `x-vercel-ai-ui-message-stream: v1`), produced by `pipeUIMessageStreamToResponse`.
   The server prepends the stored history; the client sends only the newest user message.
+  If `message.id` is already in the stored history (client "Opnieuw" / `regenerate()`), the server cuts the history
+  at that message and appends it fresh — never a duplicate.
   The stream's `originalMessages` = stored history + new message, so message ids stay stable.
 - `DELETE /intel-chat/:articleId` → `204`.
 - Errors (JSON, not streamed): `400 { error: 'invalid_message' }`, `404 { error: 'not_found' }`,
@@ -86,6 +88,12 @@ type CheckPointResult = {
   otherHintPoints: { articleTitle: string; slotTime: string | null; distanceM: number }[]; // same area
   nearestTracker: { name: string; distanceM: number; ageMin: number } | null;
 };
+
+// nearbyGroups output
+type NearbyGroupsResult = { groups: NearGroup[] };
+
+// searchIntel output
+type SearchIntelResult = { results: { articleId: number; title: string; kind: 'hint' | 'assignment' | 'news'; publishAt: string; snippet: string }[] };
 
 // webSearch output
 type WebSearchResult = { answer: string; sources: { title: string; url: string }[] };
