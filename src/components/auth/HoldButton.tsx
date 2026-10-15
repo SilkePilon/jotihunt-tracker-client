@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
-import { animate, AnimatePresence, motion, useMotionValue, type AnimationPlaybackControls } from 'motion/react';
+import { animate, AnimatePresence, motion, useMotionValue, useTransform, type AnimationPlaybackControls } from 'motion/react';
 import { Loader2Icon } from 'lucide-react';
 import { holdProgressAfter, isHoldComplete } from '@/lib/hold';
 import { SWAP } from '@/lib/motion';
@@ -21,8 +21,17 @@ type HoldButtonProps = {
   /** The label; also the accessible name, so keep it plain text or pass `aria-label` (only used while not busy) */
   children: ReactNode;
   className?: string;
+  /** The fill that grows while held (default: a translucent white overlay) */
+  fillClassName?: string;
+  /**
+   * Label colour where the fill has passed: a second copy of the label, clipped to the filled part, so a solid fill on
+   * a light track keeps the label readable on both sides of the edge. Unset: one label over everything.
+   */
+  filledLabelClassName?: string;
   'aria-label'?: string;
 };
+
+const LABEL_CLASS = 'pointer-events-none relative flex items-center gap-2 [&_*]:pointer-events-none [&_svg]:size-5 [&_svg]:shrink-0';
 
 /**
  * Primary button that only fires after a deliberate hold: a white overlay fills it left to right while held, and
@@ -32,8 +41,9 @@ type HoldButtonProps = {
  * lift: `onConfirm` usually opens the passkey prompt, and WebAuthn needs a user activation, which a touch pointerdown
  * is not (iOS WebKit rejects it) but the pointerup is.
  */
-export default function HoldButton({ durationMs = 1000, onConfirm, disabled, busy, busyLabel, releaseLabel = 'Laat los om te bevestigen', children, className, 'aria-label': ariaLabel }: HoldButtonProps) {
+export default function HoldButton({ durationMs = 1000, onConfirm, disabled, busy, busyLabel, releaseLabel = 'Laat los om te bevestigen', children, className, fillClassName, filledLabelClassName, 'aria-label': ariaLabel }: HoldButtonProps) {
   const fill = useMotionValue(0);
+  const filledClip = useTransform(fill, (value) => `inset(0 ${(1 - value) * 100}% 0 0)`);
   const frame = useRef<number | null>(null);
   const release = useRef<AnimationPlaybackControls | null>(null);
   /** The pointer type of the current hold; null for the keyboard */
@@ -129,6 +139,18 @@ export default function HoldButton({ durationMs = 1000, onConfirm, disabled, bus
     [],
   );
 
+  const labelKey = busy ? 'busy' : armed ? 'armed' : 'idle';
+  const label = busy ? (
+    <>
+      <Loader2Icon className="animate-spin" />
+      {busyLabel}
+    </>
+  ) : armed ? (
+    releaseLabel
+  ) : (
+    children
+  );
+
   function onPointerDown(event: PointerEvent<HTMLButtonElement>) {
     if (event.button !== 0) return;
     start(event.pointerType);
@@ -169,21 +191,21 @@ export default function HoldButton({ durationMs = 1000, onConfirm, disabled, bus
         className,
       )}
     >
-      <motion.span aria-hidden className="pointer-events-none absolute inset-0 origin-left bg-[rgb(255_255_255/0.22)]" style={{ scaleX: fill }} />
+      <motion.span aria-hidden className={cn('pointer-events-none absolute inset-0 origin-left bg-[rgb(255_255_255/0.22)]', fillClassName)} style={{ scaleX: fill }} />
       <AnimatePresence mode="wait" initial={false}>
-        <motion.span key={busy ? 'busy' : armed ? 'armed' : 'idle'} className="pointer-events-none relative flex items-center gap-2 [&_*]:pointer-events-none [&_svg]:size-5 [&_svg]:shrink-0" {...SWAP}>
-          {busy ? (
-            <>
-              <Loader2Icon className="animate-spin" />
-              {busyLabel}
-            </>
-          ) : armed ? (
-            releaseLabel
-          ) : (
-            children
-          )}
+        <motion.span key={labelKey} className={LABEL_CLASS} {...SWAP}>
+          {label}
         </motion.span>
       </AnimatePresence>
+      {filledLabelClassName && (
+        <motion.span aria-hidden className={cn('pointer-events-none absolute inset-0 flex items-center justify-center', filledLabelClassName)} style={{ clipPath: filledClip }}>
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.span key={labelKey} className={LABEL_CLASS} {...SWAP}>
+              {label}
+            </motion.span>
+          </AnimatePresence>
+        </motion.span>
+      )}
     </button>
   );
 }

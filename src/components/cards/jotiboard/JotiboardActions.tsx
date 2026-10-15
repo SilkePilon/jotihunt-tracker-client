@@ -44,8 +44,12 @@ export default function JotiboardActions({ counts, canUnlink, canPurge, onUnlink
 
   async function confirm(action: () => Promise<boolean>) {
     setBusy(true);
-    const done = await action();
-    setBusy(false);
+    let done: boolean;
+    try {
+      done = await action();
+    } finally {
+      setBusy(false);
+    }
     if (done) {
       setStep('list');
       onDone();
@@ -74,7 +78,10 @@ export default function JotiboardActions({ counts, canUnlink, canPurge, onUnlink
                 durationMs={1500}
                 busy={busy}
                 busyLabel={step === 'purge' ? 'Verwijderen…' : 'Ontkoppelen…'}
-                className={cn('mt-2.5 h-10 rounded-lg text-[13px]', step === 'purge' ? 'bg-destructive text-white' : 'bg-foreground text-background')}
+                // Purge (mockup delete-icon): a light red track with a solid red fill; the label turns white where the fill has passed
+                className={cn('mt-2.5 h-10 rounded-lg text-[13px]', step === 'purge' ? 'bg-red-100 text-red-900 dark:bg-red-950 dark:text-red-100' : 'bg-zinc-800 text-white')}
+                fillClassName={step === 'purge' ? 'bg-destructive' : undefined}
+                filledLabelClassName={step === 'purge' ? 'text-white' : undefined}
                 onConfirm={() => void confirm(step === 'purge' ? onPurge : onUnlink)}
               >
                 {step === 'purge' ? <Trash2Icon /> : <UnlinkIcon />}

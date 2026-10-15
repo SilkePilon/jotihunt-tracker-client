@@ -13,10 +13,12 @@ interface JotiboardLoginFormProps {
   onSubmit: (username: string, password: string) => Promise<string | null>;
   /** Shows the "Inloggen bij Jotiboard" header with ✕ */
   onCancel?: () => void;
+  /** Leave out the "password is not stored" note (logged out: mockup link-flow) */
+  hideNote?: boolean;
 }
 
 /** Username + password (link-flow A). The password only travels to our server, which keeps the refresh token only. */
-export default function JotiboardLoginForm({ fixedUsername, submitLabel, onSubmit, onCancel }: JotiboardLoginFormProps) {
+export default function JotiboardLoginForm({ fixedUsername, submitLabel, onSubmit, onCancel, hideNote }: JotiboardLoginFormProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
@@ -29,8 +31,14 @@ export default function JotiboardLoginForm({ fixedUsername, submitLabel, onSubmi
     if (!user.trim() || !password || busy) return;
     setBusy(true);
     setError(null);
-    const message = await onSubmit(user.trim(), password);
-    setBusy(false);
+    let message: string | null;
+    try {
+      message = await onSubmit(user.trim(), password);
+    } catch {
+      message = 'Koppelen is mislukt, probeer het opnieuw.';
+    } finally {
+      setBusy(false);
+    }
     setError(message);
     if (!message) setPassword('');
   }
@@ -70,7 +78,7 @@ export default function JotiboardLoginForm({ fixedUsername, submitLabel, onSubmi
         {busy && <Loader2Icon className="animate-spin" />}
         {submitLabel}
       </Button>
-      <p className="text-[11px] leading-snug text-muted-foreground">Het wachtwoord wordt niet bewaard, alleen een versleutelde sessie.</p>
+      {!hideNote && <p className="text-[11px] leading-snug text-muted-foreground">Het wachtwoord wordt niet bewaard, alleen een versleutelde sessie.</p>}
     </form>
   );
 }

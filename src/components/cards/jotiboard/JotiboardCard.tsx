@@ -31,11 +31,12 @@ export default function JotiboardCard({ status, isError, onLink, onSetSync, onUn
   const [actionsOpen, setActionsOpen] = useState(false);
   const view = jotiboardView(status, isError);
 
-  // Leaving "unlinked" closes the login form, so a later unlink shows the button again
+  // Leaving "unlinked" closes the login form, so a later unlink shows the button again; any state change closes the ⋯ block
   const [previousView, setPreviousView] = useState(view);
   if (view !== previousView) {
     setPreviousView(view);
     if (view !== 'unlinked') setFormOpen(false);
+    setActionsOpen(false);
   }
 
   if (view === 'loading') return null;
@@ -69,7 +70,7 @@ export default function JotiboardCard({ status, isError, onLink, onSetSync, onUn
             {view === 'loggedOut' && username && (
               <div className="flex flex-col items-center gap-2">
                 <JotiboardLoggedOutHeader />
-                <JotiboardLoginForm fixedUsername={username} submitLabel="Opnieuw inloggen" onSubmit={onLink} />
+                <JotiboardLoginForm fixedUsername={username} submitLabel="Opnieuw inloggen" onSubmit={onLink} hideNote />
                 <p className="-mt-1 text-[11px] text-muted-foreground">
                   als <b className="font-semibold text-foreground">{username}</b>
                 </p>
