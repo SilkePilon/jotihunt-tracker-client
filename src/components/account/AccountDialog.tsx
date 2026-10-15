@@ -1,24 +1,24 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState, type ComponentProps, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { toast } from 'sonner';
-import { EllipsisIcon, Loader2Icon, PencilIcon, PlusIcon, Trash2Icon } from 'lucide-react';
+import { EllipsisIcon, KeyRoundIcon, LaptopIcon, Loader2Icon, LogOutIcon, PencilIcon, PlusIcon, SmartphoneIcon, TabletIcon, Trash2Icon, type LucideIcon } from 'lucide-react';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
 import ResponsiveDialog from '@/components/ResponsiveDialog';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import RenamePasskeyDialog from '@/components/account/RenamePasskeyDialog';
 import Reveal from '@/components/motion/Reveal';
-import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAccount } from '@/hooks/account.hook';
 import { useAuth } from '@/hooks/auth.hook';
 import { useLogout } from '@/hooks/logout.hook';
 import { useNow } from '@/hooks/now.hook';
-import { deviceMeta, orderSessions, passkeyMeta, sessionMeta, type AccountPasskey } from '@/lib/account';
+import { deviceMeta, orderSessions, passkeyMeta, sessionDevice, sessionMeta, type AccountPasskey, type SessionDevice } from '@/lib/account';
 import { apiErrorMessage } from '@/lib/api-error';
 import { addPasskey, passkeysSupported } from '@/lib/auth-api';
 import { REVEAL_TRANSITION, SWAP } from '@/lib/motion';
 import { classifyPasskeyError, PASSKEY_MESSAGES } from '@/lib/passkey';
+import { cn } from '@/lib/utils';
 import useAccountDialogStore from '@/stores/account-dialog.store';
 
 interface Confirm {
@@ -29,6 +29,12 @@ interface Confirm {
   /** Toasts its own errors; closes the confirm itself on success */
   action: () => Promise<void>;
 }
+
+// Same shell as the Meldingen dialog: 28px card, no border, 34×32 tonal close button with 12px corners
+const DIALOG_CLASS =
+  'sm:max-w-md rounded-[28px] border-0 bg-card p-5 shadow-[0_0_0_1px_var(--border),0_18px_50px_rgb(0_0_0/0.35)] [&>[data-slot=dialog-close]]:top-4 [&>[data-slot=dialog-close]]:right-4 [&>[data-slot=dialog-close]]:grid [&>[data-slot=dialog-close]]:h-8 [&>[data-slot=dialog-close]]:w-[34px] [&>[data-slot=dialog-close]]:place-items-center [&>[data-slot=dialog-close]]:rounded-xl [&>[data-slot=dialog-close]]:bg-beheer-row [&>[data-slot=dialog-close]]:text-muted-foreground [&>[data-slot=dialog-close]]:opacity-100 [&>[data-slot=dialog-close]]:ring-0 [&>[data-slot=dialog-close]]:ring-offset-0 [&>[data-slot=dialog-close]]:transition-colors [&>[data-slot=dialog-close]:hover]:bg-beheer-row-high [&>[data-slot=dialog-close]:focus-visible]:ring-[3px] [&>[data-slot=dialog-close]:focus-visible]:ring-ring/50';
+
+const DEVICE_ICONS: Record<SessionDevice, LucideIcon> = { phone: SmartphoneIcon, tablet: TabletIcon, computer: LaptopIcon };
 
 /** Your passkeys and everywhere you are logged in (browsers and paired Android phones), opened from the gear menu. */
 export default function AccountDialog() {
@@ -104,15 +110,23 @@ export default function AccountDialog() {
   const noPasskey = passkeys.length === 0;
 
   return (
-    <ResponsiveDialog open={open} onClose={() => setOpen(false)} title="Account" description="Je passkeys en de apparaten waarop je bent ingelogd." className="sm:max-w-2xl">
+    <ResponsiveDialog
+      open={open}
+      onClose={() => setOpen(false)}
+      title="Account"
+      description="Je passkeys en waar je bent ingelogd."
+      className={DIALOG_CLASS}
+      drawerClassName="bg-card"
+      compact
+    >
       <div className="min-h-0 flex-1 overflow-y-auto">
         <AnimatePresence mode="wait" initial={false}>
           {view === 'loading' && (
-            <motion.div key="loading" className="flex flex-col gap-7" {...SWAP}>
+            <motion.div key="loading" className="flex flex-col gap-4" {...SWAP}>
               {[0, 1].map((index) => (
-                <div key={index} className="flex flex-col gap-2">
-                  <Skeleton className="h-5 w-28" />
-                  <Skeleton className="h-32 w-full rounded-lg" />
+                <div key={index} className="flex flex-col gap-1.5">
+                  <Skeleton className="mx-1.5 h-3.5 w-24" />
+                  <Skeleton className="h-28 w-full rounded-[18px]" />
                 </div>
               ))}
             </motion.div>
@@ -121,38 +135,26 @@ export default function AccountDialog() {
           {view === 'error' && (
             <motion.div key="error" className="flex flex-col items-start gap-3" {...SWAP}>
               <p className="text-sm text-muted-foreground">Kan je account niet laden.</p>
-              <Button variant="outline" size="sm" onClick={() => void refresh()}>
-                Opnieuw
-              </Button>
+              <SmallButton onClick={() => void refresh()}>Opnieuw</SmallButton>
             </motion.div>
           )}
 
           {view === 'content' && (
-            <motion.div key="content" className="flex flex-col gap-7" {...SWAP}>
-              <Group
-                title="Passkeys"
-                action={
-                  passkeysSupported() && (
-                    <Button size="sm" variant="outline" onClick={() => void handleAddPasskey()} disabled={adding}>
-                      {adding ? <Loader2Icon className="animate-spin" /> : <PlusIcon />}
-                      Passkey toevoegen
-                    </Button>
-                  )
-                }
-              >
+            <motion.div key="content" className="flex flex-col gap-4" {...SWAP}>
+              <Group title="Passkeys">
                 <AnimatePresence initial={false}>
                   {passkeys.length === 0 && (
                     <Row key="empty">
-                      <p className="text-sm text-muted-foreground">Nog geen passkey. Voeg er een toe om sneller in te loggen.</p>
+                      <p className="px-3 py-3 text-sm text-muted-foreground">Nog geen passkey. Voeg er een toe om sneller in te loggen.</p>
                     </Row>
                   )}
                   {passkeys.map((passkey) => (
-                    <Row key={passkey.id} title={passkey.name} meta={passkeyMeta(passkey, now)}>
+                    <Row key={passkey.id} icon={KeyRoundIcon} highlight title={passkey.name} meta={passkeyMeta(passkey, now)}>
                       <DropdownMenu modal={false}>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" aria-label={`Opties voor ${passkey.name}`}>
+                          <SmallButton icon aria-label={`Opties voor ${passkey.name}`}>
                             <EllipsisIcon />
-                          </Button>
+                          </SmallButton>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onSelect={() => startRename(passkey)}>
@@ -170,50 +172,34 @@ export default function AccountDialog() {
                       </DropdownMenu>
                     </Row>
                   ))}
+                  {passkeysSupported() && (
+                    <Row key="add">
+                      <ActionRow
+                        onClick={() => void handleAddPasskey()}
+                        disabled={adding}
+                        className="text-primary"
+                        iconClassName="bg-transparent text-primary shadow-[inset_0_0_0_1.5px_var(--border)]"
+                        icon={adding ? <Loader2Icon className="animate-spin" /> : <PlusIcon />}
+                      >
+                        Passkey toevoegen
+                      </ActionRow>
+                    </Row>
+                  )}
                 </AnimatePresence>
               </Group>
 
-              <Group
-                title="Ingelogd op"
-                footer={
-                  <Reveal gap={8}>
-                    {hasOtherSessions && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          ask({
-                            title: 'Alle andere browsers uitloggen?',
-                            description: `Overal behalve hier moet je opnieuw inloggen. Gekoppelde Android-telefoons blijven gekoppeld.${
-                              noPasskey ? ' Zonder passkey kom je daar alleen weer binnen met een QR-code of een herstel-link.' : ''
-                            }`,
-                            confirmLabel: 'Uitloggen',
-                            destructive: true,
-                            action: async () => {
-                              try {
-                                const removed = await removeOtherSessions();
-                                setConfirmOpen(false);
-                                toast.success(removed === 1 ? '1 browser uitgelogd' : `${removed} browsers uitgelogd`);
-                              } catch (failure) {
-                                toast.error(apiErrorMessage(failure, 'Uitloggen is mislukt, probeer het opnieuw.'));
-                                void refresh();
-                              }
-                            },
-                          })
-                        }
-                      >
-                        Alle andere browsers uitloggen
-                      </Button>
-                    )}
-                  </Reveal>
-                }
-              >
+              <Group title="Ingelogd op">
                 <AnimatePresence initial={false}>
                   {sessions.map((session) => (
-                    <Row key={`session-${session.id}`} title={session.label} meta={sessionMeta(session, now)}>
-                      <Button
-                        size="sm"
-                        variant="ghost"
+                    <Row
+                      key={`session-${session.id}`}
+                      icon={DEVICE_ICONS[sessionDevice(session.label)]}
+                      highlight={session.current}
+                      title={session.label}
+                      chip={session.current ? 'Dit apparaat' : undefined}
+                      meta={sessionMeta(session, now)}
+                    >
+                      <SmallButton
                         onClick={() =>
                           ask(
                             session.current
@@ -253,40 +239,78 @@ export default function AccountDialog() {
                         aria-label={`Uitloggen op ${session.label}`}
                       >
                         Uitloggen
-                      </Button>
+                      </SmallButton>
                     </Row>
                   ))}
-                  {devices.map((device) => (
-                    <Row key={`device-${device.id}`} title={device.name} meta={deviceMeta(device, now)}>
-                      <Button
-                        size="sm"
-                        variant="ghost"
+                  {hasOtherSessions && (
+                    <Row key="logout-others">
+                      <ActionRow
+                        className="text-destructive"
+                        iconClassName="text-destructive"
+                        icon={<LogOutIcon />}
                         onClick={() =>
                           ask({
-                            title: `${device.name} ontkoppelen?`,
-                            description: 'De app op die telefoon stopt met het delen van de locatie tot je hem opnieuw koppelt.',
-                            confirmLabel: 'Ontkoppelen',
+                            title: 'Alle andere browsers uitloggen?',
+                            description: `Overal behalve hier moet je opnieuw inloggen. Gekoppelde Android-telefoons blijven gekoppeld.${
+                              noPasskey ? ' Zonder passkey kom je daar alleen weer binnen met een QR-code of een herstel-link.' : ''
+                            }`,
+                            confirmLabel: 'Uitloggen',
                             destructive: true,
                             action: async () => {
                               try {
-                                await removeDevice(device.id);
+                                const removed = await removeOtherSessions();
                                 setConfirmOpen(false);
-                                toast.success(`${device.name} ontkoppeld`);
+                                toast.success(removed === 1 ? '1 browser uitgelogd' : `${removed} browsers uitgelogd`);
                               } catch (failure) {
-                                toast.error(apiErrorMessage(failure, 'Ontkoppelen is mislukt, probeer het opnieuw.'));
+                                toast.error(apiErrorMessage(failure, 'Uitloggen is mislukt, probeer het opnieuw.'));
                                 void refresh();
                               }
                             },
                           })
                         }
-                        aria-label={`${device.name} ontkoppelen`}
                       >
-                        Ontkoppelen
-                      </Button>
+                        Alle andere browsers uitloggen
+                      </ActionRow>
                     </Row>
-                  ))}
+                  )}
                 </AnimatePresence>
               </Group>
+
+              <Reveal gap={16}>
+                {devices.length > 0 && (
+                  <Group title="Gekoppelde telefoons">
+                    <AnimatePresence initial={false}>
+                      {devices.map((device) => (
+                        <Row key={`device-${device.id}`} icon={SmartphoneIcon} title={device.name} meta={deviceMeta(device, now)}>
+                          <SmallButton
+                            onClick={() =>
+                              ask({
+                                title: `${device.name} ontkoppelen?`,
+                                description: 'De app op die telefoon stopt met het delen van de locatie tot je hem opnieuw koppelt.',
+                                confirmLabel: 'Ontkoppelen',
+                                destructive: true,
+                                action: async () => {
+                                  try {
+                                    await removeDevice(device.id);
+                                    setConfirmOpen(false);
+                                    toast.success(`${device.name} ontkoppeld`);
+                                  } catch (failure) {
+                                    toast.error(apiErrorMessage(failure, 'Ontkoppelen is mislukt, probeer het opnieuw.'));
+                                    void refresh();
+                                  }
+                                },
+                              })
+                            }
+                            aria-label={`${device.name} ontkoppelen`}
+                          >
+                            Ontkoppelen
+                          </SmallButton>
+                        </Row>
+                      ))}
+                    </AnimatePresence>
+                  </Group>
+                )}
+              </Reveal>
             </motion.div>
           )}
         </AnimatePresence>
@@ -320,22 +344,34 @@ export default function AccountDialog() {
   );
 }
 
-/** A heading, a bordered box of rows and optionally something below it (Beheer v3 style). */
-function Group({ title, action, footer, children }: { title: string; action?: ReactNode; footer?: ReactNode; children: ReactNode }) {
+/** A muted label above a list of tonal rows (settings-menu style): 2px apart, 18px outer corners. */
+function Group({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="flex flex-col gap-2">
-      <div className="flex min-h-8 items-center justify-between gap-3">
-        <h3 className="text-sm font-semibold">{title}</h3>
-        {action}
-      </div>
-      <div className="divide-y rounded-lg border">{children}</div>
-      {footer}
+    <section>
+      <h3 className="mx-1.5 mb-1.5 text-xs font-semibold text-muted-foreground">{title}</h3>
+      {/* The corners sit on each row's inner surface, so they stay right while a neighbour folds away */}
+      <div className="flex flex-col gap-0.5 [&>*:first-child>*]:rounded-t-[18px] [&>*:last-child>*]:rounded-b-[18px]">{children}</div>
     </section>
   );
 }
 
-/** One row of a group box; unfolds in and folds away. The padding sits inside, so the height can animate to zero. */
-function Row({ title, meta, children }: { title?: string; meta?: string; children: ReactNode }) {
+/** One tonal row; unfolds in and folds away. With a `title` it shows an icon tile, title (+ chip), meta and the action on the right. */
+function Row({
+  icon: Icon,
+  highlight,
+  title,
+  chip,
+  meta,
+  children,
+}: {
+  icon?: LucideIcon;
+  /** Orange icon tile: your passkeys and this browser */
+  highlight?: boolean;
+  title?: string;
+  chip?: string;
+  meta?: string;
+  children: ReactNode;
+}) {
   return (
     <motion.div
       className="overflow-hidden"
@@ -344,19 +380,74 @@ function Row({ title, meta, children }: { title?: string; meta?: string; childre
       exit={{ opacity: 0, height: 0 }}
       transition={REVEAL_TRANSITION}
     >
-      <div className="flex items-center gap-4 px-4 py-3">
+      <div className="overflow-hidden rounded-md bg-beheer-row">
         {title === undefined ? (
-          <div className="min-w-0 flex-1">{children}</div>
+          children
         ) : (
-          <>
+          <div className="flex items-center gap-3 px-3 py-2.5">
+            {Icon && <IconTile className={cn(highlight && 'bg-(--map-selected-bg) text-(--map-selected-fg)')}><Icon /></IconTile>}
             <div className="min-w-0 flex-1">
-              <div className="truncate text-sm font-medium">{title}</div>
-              <div className="text-xs text-muted-foreground">{meta}</div>
+              <div className="flex min-w-0 items-center gap-1.5">
+                <span className="truncate text-[13.5px] font-semibold">{title}</span>
+                {chip && (
+                  <span className="inline-flex h-[18px] flex-none items-center rounded-full bg-(--map-selected-bg) px-[7px] text-[10.5px] font-bold text-(--map-selected-fg)">
+                    {chip}
+                  </span>
+                )}
+              </div>
+              <div className="text-[11.5px] leading-snug text-muted-foreground">{meta}</div>
             </div>
             {children}
-          </>
+          </div>
         )}
       </div>
     </motion.div>
+  );
+}
+
+function IconTile({ className, children }: { className?: string; children: ReactNode }) {
+  return (
+    <span
+      className={cn(
+        'grid size-[34px] flex-none place-items-center rounded-xl bg-beheer-row-high text-muted-foreground transition-colors [&_svg]:size-[18px]',
+        className,
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
+/** Tonal 32px button with 12px corners; `icon` makes it a 34×32 square. */
+function SmallButton({ icon, className, ...props }: ComponentProps<'button'> & { icon?: boolean }) {
+  return (
+    <button
+      type="button"
+      className={cn(
+        'inline-flex h-8 flex-none items-center justify-center gap-1.5 rounded-xl bg-beheer-row-high text-[12.5px] font-semibold transition-colors outline-none',
+        'hover:bg-[color-mix(in_oklab,var(--foreground)_14%,var(--card))] focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4',
+        icon ? 'w-[34px]' : 'px-3',
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
+/** A whole row as one button (add passkey, log out the others), like the Uitloggen row in the settings menu. */
+function ActionRow({ icon, iconClassName, className, children, ...props }: ComponentProps<'button'> & { icon: ReactNode; iconClassName?: string }) {
+  return (
+    <button
+      type="button"
+      className={cn(
+        'flex w-full items-center gap-3 px-3 py-2.5 text-left text-[13.5px] font-semibold transition-colors outline-none',
+        'hover:bg-beheer-row-high focus-visible:bg-beheer-row-high disabled:pointer-events-none disabled:opacity-60',
+        className,
+      )}
+      {...props}
+    >
+      <IconTile className={iconClassName}>{icon}</IconTile>
+      <span className="min-w-0 flex-1 truncate">{children}</span>
+    </button>
   );
 }
