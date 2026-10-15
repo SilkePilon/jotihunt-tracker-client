@@ -1,11 +1,14 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { toast } from 'sonner';
-import { KeyRoundIcon, Loader2Icon, MapPinIcon, MonitorIcon, TriangleAlertIcon } from 'lucide-react';
+import { KeyRoundIcon, XIcon } from 'lucide-react';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import ResponsiveDialog from '@/components/ResponsiveDialog';
+import HoldButton from '@/components/auth/HoldButton';
+import QrLinkIllustration from '@/components/auth/QrLinkIllustration';
 import SuccessBadge from '@/components/auth/SuccessBadge';
+import { useMarkerPalette } from '@/components/layers/marker-icons';
 import AutoHeight from '@/components/motion/AutoHeight';
 import Reveal from '@/components/motion/Reveal';
 import { Button } from '@/components/ui/button';
@@ -13,9 +16,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/auth.hook';
 import { useNow } from '@/hooks/now.hook';
 import { addPasskey, approveQrLogin, denyQrLogin, scanQrLogin, type QrScan } from '@/lib/auth-api';
+import { BADGE_COOKIE_DEPTH, cookiePath } from '@/lib/cookie-shape';
+import { joinParts } from '@/lib/format';
 import { classifyPasskeyError, PASSKEY_MESSAGES } from '@/lib/passkey';
 import { canRetryConfirm, qrProblem, type QrProblem } from '@/lib/qr-login';
-import { fadeUp, SWAP } from '@/lib/motion';
+import { fadeUp, POP, SWAP } from '@/lib/motion';
 import { formatLastUpdate } from '@/lib/tracker';
 import type { User } from '@/types/User';
 
@@ -27,6 +32,41 @@ type View =
 
 /** Long enough for the check to pop and draw and the text to be read; "Naar de kaart" closes sooner */
 const AUTO_CLOSE_MS = 1800;
+
+/** 48 px, rounded-xl like Beheer */
+const PRIMARY = 'h-12 w-full rounded-xl text-[14.5px] font-semibold';
+const SECONDARY = 'h-12 w-full rounded-xl bg-beheer-row-high text-[14.5px] font-semibold text-foreground hover:bg-beheer-row-high/70';
+
+const BADGE = 48;
+
+/** "{where} · als {name}", dropping whatever is missing */
+function ReadyMeta({ where, name }: { where: string; name: string | undefined }) {
+  return (
+    <p className="text-[13.5px] text-muted-foreground">
+      {where}
+      {where && name ? ' · ' : null}
+      {name ? (
+        <>
+          als <b className="text-foreground">{name}</b>
+        </>
+      ) : null}
+    </p>
+  );
+}
+
+/** errorContainer cookie with an X, like the hunt-rejected markers */
+function ProblemBadge() {
+  const palette = useMarkerPalette();
+  const path = useMemo(() => cookiePath(BADGE, BADGE_COOKIE_DEPTH), []);
+  return (
+    <motion.span aria-hidden className="relative grid shrink-0 place-items-center" style={{ width: BADGE, height: BADGE }} {...POP}>
+      <svg width={BADGE} height={BADGE} viewBox={`0 0 ${BADGE} ${BADGE}`} className="absolute inset-0">
+        <path d={path} fill={palette.errorContainer} />
+      </svg>
+      <XIcon className="relative size-6" strokeWidth={2.5} color={palette.onErrorContainer} />
+    </motion.span>
+  );
+}
 
 /**
  * Phone: someone shows this account's QR code on a laptop; confirm with a passkey (a grabbed, unlocked phone can not).
@@ -102,47 +142,36 @@ export default function QrConfirmDrawer({ code, onClose }: { code: string; onClo
       <AutoHeight scene={view.step} className="-mx-1 -mt-1" innerClassName="px-1 pt-1 pb-2">
         <AnimatePresence mode="wait" initial={false}>
           {view.step === 'loading' && (
-            <motion.div key="loading" className="flex flex-col gap-4" {...SWAP}>
+            <motion.div key="loading" className="flex flex-col" {...SWAP}>
+              <QrLinkIllustration animated={false} />
               <Skeleton className="h-6 w-3/4" />
-              <Skeleton className="h-20 w-full" />
+              <Skeleton className="mt-2 h-4 w-1/2" />
             </motion.div>
           )}
 
           {view.step === 'ready' && (
-            <motion.div key="ready" className="flex flex-col gap-4" {...SWAP}>
-              <div>
-                <h2 className="text-lg font-semibold">Inloggen op een ander apparaat?</h2>
-                <p className="text-sm text-muted-foreground">
-                  Iemand wil inloggen als <b className="text-foreground">{user?.name}</b>.
-                </p>
-              </div>
-              <div className="flex flex-col gap-2 rounded-lg border p-3 text-sm">
-                <div className="flex items-center gap-2">
-                  <MonitorIcon className="size-4 text-muted-foreground" />
-                  {view.scan.requester.label}
-                </div>
-                <div className="flex items-center gap-2">
-                  <MapPinIcon className="size-4 text-muted-foreground" />
-                  {[view.scan.requester.location, formatLastUpdate(view.scan.createdAt, now)].filter(Boolean).join(' · ')}
-                </div>
-              </div>
-              <p className="flex gap-2 text-xs text-muted-foreground">
-                <TriangleAlertIcon className="size-4 shrink-0 text-amber-500" />
-                Alleen bevestigen als jij net zelf deze code scande.
-              </p>
-              <Reveal gap={16}>
+            <motion.div key="ready" className="flex flex-col" {...SWAP}>
+              <QrLinkIllustration />
+              <h2 className="text-[19px] leading-[1.25] font-bold">Inloggen op {view.scan.requester.label}?</h2>
+              <ReadyMeta where={joinParts(view.scan.requester.location, formatLastUpdate(view.scan.createdAt, now))} name={user?.name} />
+              <Reveal>
                 {view.error && (
-                  <p role="alert" className="text-xs font-medium text-destructive">
+                  <p role="alert" className="pt-3 text-xs font-medium text-destructive">
                     {view.error}
                   </p>
                 )}
               </Reveal>
-              <div className="flex flex-col gap-2">
-                <Button size="lg" className="w-full" onClick={() => confirm(view.scan)} disabled={view.busy}>
-                  {view.busy ? <Loader2Icon className="animate-spin" /> : <KeyRoundIcon />}
-                  Bevestigen met passkey
-                </Button>
-                <Button size="lg" variant="outline" className="w-full" onClick={refuse} disabled={view.busy}>
+              <div className="mt-[18px] flex flex-col gap-2">
+                <HoldButton
+                  onConfirm={() => confirm(view.scan)}
+                  busy={view.busy}
+                  busyLabel="Wachten op passkey…"
+                  aria-label="Houd vast om te bevestigen"
+                >
+                  <KeyRoundIcon />
+                  Houd vast om te bevestigen
+                </HoldButton>
+                <Button variant="secondary" className={SECONDARY} onClick={refuse} disabled={view.busy}>
                   Nee, dat ben ik niet
                 </Button>
               </div>
@@ -159,7 +188,7 @@ export default function QrConfirmDrawer({ code, onClose }: { code: string; onClo
                 {view.label} kan nu inloggen als {user?.name}.
               </motion.p>
               <motion.div className="w-full" {...fadeUp(0.4)}>
-                <Button className="w-full" onClick={close}>
+                <Button className={PRIMARY} onClick={close}>
                   Naar de kaart
                 </Button>
               </motion.div>
@@ -167,20 +196,25 @@ export default function QrConfirmDrawer({ code, onClose }: { code: string; onClo
           )}
 
           {view.step === 'problem' && (
-            <motion.div key="problem" className="flex flex-col gap-4" {...SWAP}>
-              <div>
-                <h2 className="text-lg font-semibold">Dat lukte niet</h2>
-                <p className="text-sm text-muted-foreground">{view.problem.message}</p>
+            <motion.div key="problem" className="flex flex-col gap-3" {...SWAP}>
+              <div className="flex items-center gap-3">
+                <ProblemBadge />
+                <div className="min-w-0">
+                  <h2 className="text-[17px] font-bold">Dat lukte niet</h2>
+                  <p className="text-[13px] text-muted-foreground">{view.problem.message}</p>
+                </div>
               </div>
-              {view.problem.addPasskey ? (
-                <Button className="w-full" onClick={handleAddPasskey}>
-                  <KeyRoundIcon />
-                  Passkey toevoegen
+              <div className="mt-1 flex flex-col gap-2">
+                {view.problem.addPasskey ? (
+                  <Button className={PRIMARY} onClick={handleAddPasskey}>
+                    <KeyRoundIcon className="size-5" />
+                    Passkey toevoegen
+                  </Button>
+                ) : null}
+                <Button variant="secondary" className={SECONDARY} onClick={close}>
+                  Sluiten
                 </Button>
-              ) : null}
-              <Button variant="outline" className="w-full" onClick={close}>
-                Sluiten
-              </Button>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
