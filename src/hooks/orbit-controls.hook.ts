@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import type { LngLat, Map as MaplibreMap } from 'maplibre-gl';
+import type { LngLat, MapLibreEvent, Map as MaplibreMap } from 'maplibre-gl';
 import {
   coastDistance,
   isOrbitStart,
@@ -35,9 +35,12 @@ export function useOrbitControls(map: MaplibreMap | undefined, enabled: boolean)
     let samples: SpeedSample[] = [];
     let lastEvent: PointerEvent | null = null;
 
+    // Tags our own camera calls so onMoveStart can tell them apart; originalEvent marks them as user moves
+    const tag = (originalEvent: Event | null) => ({ originalEvent, orbit: true });
+
     // Applies a camera, then moves the map so the anchor is back under the pointer's start point
     const apply = (camera: { bearing: number; pitch: number }, originalEvent: Event | null) => {
-      const data = { originalEvent };
+      const data = tag(originalEvent);
       map.jumpTo(camera, data);
       if (anchor) map.jumpTo(map.calculateAnchoredCameraOptions({ anchorLocation: anchor, anchorScreenPoint: [anchorPoint.x, anchorPoint.y] }), data);
     };
@@ -64,28 +67,43 @@ export function useOrbitControls(map: MaplibreMap | undefined, enabled: boolean)
       container.style.cursor = 'grabbing';
     };
 
+    // Applies the latest drag delta
+    const step = () => {
+      if (!axis) return;
+      const camera = orbitStep(axis, delta.dx, delta.dy, startCamera.bearing, startCamera.pitch);
+      apply(camera, lastEvent);
+      samples.push({ t: performance.now(), bearing: camera.bearing });
+      if (samples.length > 20) samples.shift();
+    };
+
     const onPointerMove = (event: PointerEvent) => {
       if (event.pointerId !== pointerId) return;
+      // No buttons held: the release got lost (alt-tab, dialog)
+      if (event.buttons === 0) {
+        finish(event);
+        return;
+      }
       delta = { dx: event.clientX - start.x, dy: event.clientY - start.y };
       axis ??= lockAxis(delta.dx, delta.dy);
       lastEvent = event;
       if (!axis || frame) return;
       frame = requestAnimationFrame(() => {
         frame = 0;
-        if (!axis) return;
-        const camera = orbitStep(axis, delta.dx, delta.dy, startCamera.bearing, startCamera.pitch);
-        apply(camera, lastEvent);
-        samples.push({ t: performance.now(), bearing: camera.bearing });
-        if (samples.length > 20) samples.shift();
+        step();
       });
     };
 
+    // Ends the drag; a second call for the same drag does nothing
     const finish = (event: PointerEvent) => {
       if (event.pointerId !== pointerId) return;
       pointerId = null;
       if (container.hasPointerCapture(event.pointerId)) container.releasePointerCapture(event.pointerId);
       container.style.cursor = '';
-      stopCoast();
+      // Don't drop the last movement still waiting for a frame
+      if (frame) {
+        stopCoast();
+        step();
+      }
       if (axis !== 'rotate') {
         anchor = null;
         return;
@@ -103,17 +121,19 @@ export function useOrbitControls(map: MaplibreMap | undefined, enabled: boolean)
           return;
         }
         frame = 0;
+        const pivot = anchor;
         anchor = null;
         const snapped = snapBearing(map.getBearing());
-        if (snapped !== map.getBearing()) map.easeTo({ bearing: snapped, duration: SNAP_MS }, { originalEvent: event });
+        // around keeps the building under the pointer in place while snapping
+        if (snapped !== map.getBearing()) map.easeTo({ bearing: snapped, duration: SNAP_MS, around: pivot ?? undefined }, tag(event));
       };
       if (extra) frame = requestAnimationFrame(coast);
       else coast(begin + ORBIT_COAST_MS);
     };
 
-    // Anything else moving the map (fly-to, scroll zoom, pan) ends a coast
-    const onMoveStart = (event: { originalEvent?: Event }) => {
-      if (frame && pointerId === null && !event.originalEvent) stopCoast();
+    // Any move not started by us (fly-to, scroll zoom, drag pan, keyboard) ends a coast
+    const onMoveStart = (event: MapLibreEvent & { orbit?: boolean }) => {
+      if (frame && pointerId === null && !event.orbit) stopCoast();
     };
     const onContextMenu = (event: MouseEvent) => event.preventDefault();
 
@@ -121,6 +141,7 @@ export function useOrbitControls(map: MaplibreMap | undefined, enabled: boolean)
     container.addEventListener('pointermove', onPointerMove);
     container.addEventListener('pointerup', finish);
     container.addEventListener('pointercancel', finish);
+    container.addEventListener('lostpointercapture', finish);
     container.addEventListener('contextmenu', onContextMenu);
     map.on('movestart', onMoveStart);
     return () => {
@@ -130,6 +151,7 @@ export function useOrbitControls(map: MaplibreMap | undefined, enabled: boolean)
       container.removeEventListener('pointermove', onPointerMove);
       container.removeEventListener('pointerup', finish);
       container.removeEventListener('pointercancel', finish);
+      container.removeEventListener('lostpointercapture', finish);
       container.removeEventListener('contextmenu', onContextMenu);
       map.off('movestart', onMoveStart);
       map.dragRotate.enable();

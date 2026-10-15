@@ -65,6 +65,10 @@ describe('coastDistance', () => {
     expect(coastDistance(0.2)).toBeCloseTo((0.2 * ORBIT_COAST_MS) / 2);
     expect(coastDistance(-0.2)).toBeCloseTo((-0.2 * ORBIT_COAST_MS) / 2);
   });
+  test('capped at 30 degrees, keeping the sign', () => {
+    expect(coastDistance(1)).toBe(30);
+    expect(coastDistance(-1)).toBe(-30);
+  });
 });
 
 describe('snapBearing', () => {

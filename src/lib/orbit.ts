@@ -6,6 +6,8 @@ export const ORBIT_LOCK_PX = 6;
 export const ORBIT_MAX_PITCH = 60;
 /** Rotation keeps going this long after a fast release */
 export const ORBIT_COAST_MS = 300;
+/** A flick never coasts further than this */
+export const ORBIT_COAST_MAX_DEG = 30;
 /** Degrees per ms; slower releases stop at once */
 export const ORBIT_COAST_MIN_SPEED = 0.05;
 /** A bearing this close to north snaps back to north on release */
@@ -36,7 +38,8 @@ export function orbitStep(axis: OrbitAxis, dx: number, dy: number, bearing: numb
 /** Extra degrees an ease-out coast adds after release at `speed` degrees per ms. */
 export function coastDistance(speed: number): number {
   if (Math.abs(speed) <= ORBIT_COAST_MIN_SPEED) return 0;
-  return (speed * ORBIT_COAST_MS) / 2;
+  const distance = (speed * ORBIT_COAST_MS) / 2;
+  return Math.max(-ORBIT_COAST_MAX_DEG, Math.min(ORBIT_COAST_MAX_DEG, distance));
 }
 
 /** The bearing in -180..180, or 0 when within the snap distance of north. */
