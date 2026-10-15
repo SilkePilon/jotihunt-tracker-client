@@ -35,3 +35,43 @@ export function buildingColor(mapStyle: MapStyle | '', dark: boolean): string | 
 export function firstSymbolLayerId(layers: { id: string; type: string }[]): string | undefined {
   return layers.find((layer) => layer.type === 'symbol')?.id;
 }
+
+export const BUILDINGS_ADMIN_URL = '/admin/buildings';
+export const PREFETCH_RADII = [5, 10, 20] as const;
+const RUNNING_POLL_MS = 1000;
+const IDLE_POLL_MS = 30_000;
+
+export interface BuildingsJob {
+  kind: 'refresh' | 'prefetch';
+  done: number;
+  total: number;
+  failed: number;
+  startedAt: string;
+  finishedAt: string | null;
+}
+
+export interface BuildingsStatus {
+  tiles: number;
+  buildings: number;
+  bytes: number;
+  oldest: string | null;
+  newest: string | null;
+  job: BuildingsJob | null;
+}
+
+export const jobRunning = (status?: BuildingsStatus) => !!status?.job && status.job.finishedAt === null;
+
+export const buildingsRefreshInterval = (status?: BuildingsStatus) => (jobRunning(status) ? RUNNING_POLL_MS : IDLE_POLL_MS);
+
+export function formatMegabytes(bytes: number): string {
+  if (!bytes) return '0 MB';
+  return `${(bytes / 1_000_000).toLocaleString('nl-NL', { maximumFractionDigits: 1 })} MB`;
+}
+
+const JOB_NAMES: Record<BuildingsJob['kind'], string> = { refresh: 'Vernieuwen', prefetch: 'Vooraf laden' };
+
+export function jobLine(job: BuildingsJob): string {
+  if (job.finishedAt !== null) return `${JOB_NAMES[job.kind]} klaar: ${job.done - job.failed} van ${job.total} tegels gelukt`;
+  const failed = job.failed ? ` (${job.failed} mislukt)` : '';
+  return `${JOB_NAMES[job.kind]}… ${job.done} van ${job.total} tegels${failed}`;
+}

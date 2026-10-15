@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import { MapStyle } from '@/types/MapStyle';
 import { mapPalette, MAP_SEED } from '@/lib/map-style/material-style';
-import { buildingColor, buildingsTileUrl, firstSymbolLayerId, isBuildingsTileUrl } from './buildings';
+import { buildingColor, buildingsRefreshInterval, buildingsTileUrl, firstSymbolLayerId, formatMegabytes, isBuildingsTileUrl, jobLine, jobRunning, type BuildingsJob, type BuildingsStatus } from './buildings';
 
 const API = 'https://jotihunt.silkepilon.dev/api';
 
@@ -34,5 +34,31 @@ describe('firstSymbolLayerId', () => {
   test('first symbol layer, or undefined', () => {
     expect(firstSymbolLayerId([{ id: 'bg', type: 'background' }, { id: 'road', type: 'line' }, { id: 'label', type: 'symbol' }, { id: 'l2', type: 'symbol' }])).toBe('label');
     expect(firstSymbolLayerId([{ id: 'sat', type: 'raster' }])).toBeUndefined();
+  });
+});
+
+const job = (patch: Partial<BuildingsJob> = {}): BuildingsJob => ({ kind: 'prefetch', done: 3, total: 10, failed: 0, startedAt: '2026-10-15T12:00:00Z', finishedAt: null, ...patch });
+const status = (j: BuildingsJob | null): BuildingsStatus => ({ tiles: 1, buildings: 2, bytes: 3, oldest: null, newest: null, job: j });
+
+describe('admin helpers', () => {
+  test('jobRunning and poll interval', () => {
+    expect(jobRunning(undefined)).toBe(false);
+    expect(jobRunning(status(null))).toBe(false);
+    expect(jobRunning(status(job()))).toBe(true);
+    expect(jobRunning(status(job({ finishedAt: '2026-10-15T12:05:00Z' })))).toBe(false);
+    expect(buildingsRefreshInterval(status(job()))).toBe(1000);
+    expect(buildingsRefreshInterval(status(null))).toBe(30000);
+  });
+
+  test('formatMegabytes', () => {
+    expect(formatMegabytes(0)).toBe('0 MB');
+    expect(formatMegabytes(12_345_678)).toBe('12,3 MB');
+  });
+
+  test('jobLine', () => {
+    expect(jobLine(job())).toBe('Vooraf laden… 3 van 10 tegels');
+    expect(jobLine(job({ kind: 'refresh', done: 10, finishedAt: 'x', failed: 2 }))).toBe('Vernieuwen klaar: 8 van 10 tegels gelukt');
+    expect(jobLine(job({ done: 10, finishedAt: 'x' }))).toBe('Vooraf laden klaar: 10 van 10 tegels gelukt');
+    expect(jobLine(job({ failed: 1 }))).toBe('Vooraf laden… 3 van 10 tegels (1 mislukt)');
   });
 });

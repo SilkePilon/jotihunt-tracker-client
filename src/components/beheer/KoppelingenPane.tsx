@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { CheckIcon, LinkIcon, Loader2Icon, RefreshCwIcon, TriangleAlertIcon, UnlinkIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import type { MapRef } from '@/components/Map';
 import Life360LinkPanel, { type Life360LinkView } from '@/components/cards/life360/Life360LinkPanel';
 import Life360Logo from '@/components/cards/life360/Life360Logo';
 import TelegramLinkPanel from '@/components/cards/telegram/TelegramLinkPanel';
@@ -18,6 +19,7 @@ import { POP } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import type { Life360LinkedStatus } from '@/types/Life360';
 import { BeheerCard, BeheerPane, FadeSwap, InlineConfirm } from './BeheerLayout';
+import BuildingsCard from './BuildingsCard';
 import { IconPill, Pill, Tag } from './controls/Pill';
 
 /** Telegram's brand blue (as TELEGRAM_BUTTON in TelegramLinkPanel) */
@@ -166,8 +168,11 @@ function IntegrationCard({ name, brand, logo, view, isError, action, actionKey, 
   );
 }
 
-/** Beheer → Koppelingen (K1): the group's Telegram and Life360 accounts, one card each. "Koppelen" unfolds the same steps as the sidebar cards. */
-export default function KoppelingenPane() {
+/**
+ * Beheer → Koppelingen (K1): the group's Telegram and Life360 accounts, one card each ("Koppelen" unfolds the same steps
+ * as the sidebar cards), and the 3D building cache.
+ */
+export default function KoppelingenPane({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
   const telegram = useTelegramAdmin(true);
   const life360 = useLife360Admin(true);
   const now = useNow(true);
@@ -303,7 +308,7 @@ export default function KoppelingenPane() {
   }
 
   return (
-    <BeheerPane title="Koppelingen" description="Accounts van de groep.">
+    <BeheerPane title="Koppelingen" description="Accounts en databronnen van de groep.">
       <IntegrationCard
         name="Telegram"
         brand={TELEGRAM_BLUE}
@@ -396,6 +401,8 @@ export default function KoppelingenPane() {
           )
         }
       />
+
+      <BuildingsCard mapRef={mapRef} />
     </BeheerPane>
   );
 }

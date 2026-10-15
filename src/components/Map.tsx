@@ -60,6 +60,9 @@ export interface MapRef {
     fitBounds(bounds: FitBoundsArgs[0], options?: FitBoundsArgs[1]): boolean;
 
     markPoint(lngLat: LngLat): void;
+
+    /** The map's centre; null while the map isn't created yet. */
+    getCenter(): LngLat | null;
 }
 
 interface MapProps {
@@ -114,7 +117,8 @@ const Map = forwardRef<MapRef, MapProps>(({className, wall = false, overlay}, re
             if (mapRef.current) {
                 setPopupPosition(lngLat);
             }
-        }
+        },
+        getCenter: () => mapRef.current?.getCenter() ?? null,
     }));
 
     // Store for all layers
