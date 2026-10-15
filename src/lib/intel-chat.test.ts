@@ -42,6 +42,7 @@ import {
   journeyAnchor,
   journeyWindow,
   OV_KIND_LABEL,
+  ovClock,
   delayLabel,
   toolTone,
   webSources,
@@ -176,6 +177,29 @@ describe('OV guards and helpers', () => {
     expect(isOvPredictionResult({ candidates: [{ ...candidate, point: null }], assumptions: [] })).toBe(false);
     expect(isOvPredictionResult({ candidates: [], assumptions: 'x' })).toBe(false);
     expect(isOvPredictionResult({ error: 'x' })).toBe(false);
+  });
+
+  test('stricter guards', () => {
+    expect(isOvJourneyResult({ ...journey, current: { ...journey.current, between: ['B'] } })).toBe(false);
+    expect(isOvJourneyResult({ ...journey, current: { ...journey.current, between: ['B', 3] } })).toBe(false);
+    expect(isOvDeparturesResult({ stop, departures: [{ ...departure, platform: 3 }] })).toBe(false);
+    expect(isOvDeparturesResult({ stop: { ...stop, town: 3 }, departures: [] })).toBe(false);
+    expect(isOvStopsResult({ stops: [stop], note: 3 })).toBe(false);
+    expect(isOvJourneyResult({ ...journey, current: { ...journey.current, note: 3 } })).toBe(false);
+    expect(isOvPredictionResult({ candidates: [{ ...candidate, why: 3 }], assumptions: [] })).toBe(false);
+    expect(isOvPredictionResult({ candidates: [{ ...candidate, score: Number.NaN }], assumptions: [] })).toBe(false);
+    expect(isOvPredictionResult({ candidates: [{ ...candidate, score: Infinity }], assumptions: [] })).toBe(false);
+    expect(isPointResult({ ...point, area: { area: 5, method: 'hull' } })).toBe(false);
+    expect(isPointResult({ ...point, area: { area: null, method: 'hull' } })).toBe(true);
+  });
+
+  test('ovClock', () => {
+    expect(ovClock('2026-10-15T15:08:00')).toBe('15:08');
+    expect(ovClock('2026-10-15T15:08')).toBe('15:08');
+    expect(ovClock('2026-10-15T13:08:00Z')).toBe('15:08');
+    expect(ovClock('2026-10-15T15:08:00+02:00')).toBe('15:08');
+    expect(ovClock('nonsense')).toBe('--:--');
+    expect(ovClock('')).toBe('--:--');
   });
 
   test('kind labels and delay', () => {

@@ -1,5 +1,6 @@
 import { isAxiosError } from 'axios';
 import type { ChatStatus, ReasoningUIPart, UIMessage } from 'ai';
+import { formatClock } from '@/lib/format';
 import { ASSIGNMENT_STATUS_LABELS, areaStates } from '@/lib/intel-window';
 import { areaOptions } from '@/lib/utils';
 import type { IntelItem, IntelKind } from '@/types/Intel';
@@ -111,7 +112,7 @@ export function toolCalls(message: UIMessage): ChatToolCall[] {
 export function isPointResult(value: unknown): value is PointResult {
   if (!isObj(value)) return false;
   const { latLng, area } = value;
-  return typeof value.rdText === 'string' && isObj(latLng) && typeof latLng.lat === 'number' && typeof latLng.lng === 'number' && isObj(area);
+  return typeof value.rdText === 'string' && isObj(latLng) && typeof latLng.lat === 'number' && typeof latLng.lng === 'number' && isObj(area) && (typeof area.area === 'string' || area.area === null);
 }
 
 export function isHintAnswerProposal(value: unknown): value is HintAnswerProposal {
@@ -178,20 +179,33 @@ export function isAssignmentProposal(value: unknown): value is AssignmentProposa
 
 const isStr = (value: unknown): value is string => typeof value === 'string';
 
+const isOptStr = (value: unknown) => value === undefined || value === null || isStr(value);
+
+/** HH:mm of an OV time: offset-less ISO is already Amsterdam wall-clock; strings with Z/offset go through the formatter; never throws */
+export function ovClock(iso: string): string {
+  if (typeof iso !== 'string') return '--:--';
+  const local = /^\d{4}-\d{2}-\d{2}T(\d{2}:\d{2})(?::\d{2}(?:\.\d+)?)?$/.exec(iso.trim());
+  if (local) return local[1];
+  if (!/(?:Z|[+-]\d{2}(?::?\d{2})?)$/i.test(iso.trim())) return '--:--';
+  const date = new Date(iso);
+  return Number.isNaN(date.getTime()) ? '--:--' : formatClock(date);
+}
+
 const isOvStop = (value: unknown) =>
-  isObj(value) && isStr(value.id) && isStr(value.name) && isLatLng(value.latLng) && typeof value.distanceM === 'number' && Array.isArray(value.modes);
+  isObj(value) && isOptStr(value.town) && isStr(value.id) && isStr(value.name) && isLatLng(value.latLng) && typeof value.distanceM === 'number' && Array.isArray(value.modes);
 
 export function isOvStopsResult(value: unknown): value is OvStopsResult {
-  return isObj(value) && Array.isArray(value.stops) && value.stops.every(isOvStop);
+  return isObj(value) && isOptStr(value.note) && Array.isArray(value.stops) && value.stops.every(isOvStop);
 }
 
 export function isOvDeparturesResult(value: unknown): value is OvDeparturesResult {
   return (
     isObj(value) &&
     isOvStop(value.stop) &&
+    isOptStr(value.note) &&
     Array.isArray(value.departures) &&
     value.departures.every(
-      (row) => isObj(row) && isStr(row.mode) && isStr(row.line) && isStr(row.destination) && isStr(row.expected) && typeof row.delayMin === 'number',
+      (row) => isObj(row) && isStr(row.mode) && isStr(row.line) && isStr(row.destination) && isStr(row.expected) && typeof row.delayMin === 'number' && isOptStr(row.platform),
     )
   );
 }
@@ -200,17 +214,18 @@ export function isOvJourneyResult(value: unknown): value is OvJourneyResult {
   if (!isObj(value) || !isStr(value.mode) || !isStr(value.line) || !isStr(value.destination) || !Array.isArray(value.stops)) return false;
   if (!value.stops.every((stop) => isObj(stop) && isStr(stop.name) && isStr(stop.status))) return false;
   const { current } = value;
-  return current === null || (isObj(current) && isLatLng(current.latLng) && Array.isArray(current.between));
+  return current === null || (isObj(current) && isLatLng(current.latLng) && Array.isArray(current.between) && current.between.length === 2 && current.between.every(isStr) && isOptStr(current.note));
 }
 
 export function isOvPredictionResult(value: unknown): value is OvPredictionResult {
   return (
     isObj(value) &&
+    isOptStr(value.note) &&
     Array.isArray(value.assumptions) &&
     value.assumptions.every(isStr) &&
     Array.isArray(value.candidates) &&
     value.candidates.every(
-      (row) => isObj(row) && isPointResult(row.point) && isStr(row.via) && isStr(row.kind) && isStr(row.atTime) && typeof row.score === 'number',
+      (row) => isObj(row) && isPointResult(row.point) && isStr(row.via) && isStr(row.kind) && isStr(row.atTime) && Number.isFinite(row.score) && isOptStr(row.why),
     )
   );
 }

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import Reveal from '@/components/motion/Reveal';
-import { formatClock } from '@/lib/format';
-import { delayLabel } from '@/lib/intel-chat';
+import { delayLabel, ovClock } from '@/lib/intel-chat';
 import type { OvDeparture, OvDeparturesResult } from '@/types/IntelChat';
 import { LineChip, ModeIcon, MoreToggle } from './OvShared';
 
@@ -56,7 +55,7 @@ function DepartureRow({ departure }: { departure: OvDeparture }) {
         </span>
       )}
       <span className="flex shrink-0 items-baseline gap-1 font-semibold tabular-nums">
-        {formatClock(departure.expected)}
+        {ovClock(departure.expected)}
         {delay && <span className="text-[11.5px] font-bold text-destructive dark:text-red-300">{delay}</span>}
       </span>
     </li>

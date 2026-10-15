@@ -2,8 +2,7 @@ import { type ReactNode, type RefObject, useState } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 import type { MapRef } from '@/components/Map';
 import Reveal from '@/components/motion/Reveal';
-import { formatClock } from '@/lib/format';
-import { journeyAnchor, journeyWindow } from '@/lib/intel-chat';
+import { journeyAnchor, journeyWindow, ovClock } from '@/lib/intel-chat';
 import { cn } from '@/lib/utils';
 import type { OvJourneyResult, OvJourneyStop } from '@/types/IntelChat';
 import { LineChip, ModeIcon, MoreToggle } from './OvShared';
@@ -61,7 +60,7 @@ function StopRow({ stop, children }: { stop: OvJourneyStop; children?: ReactNode
           {stop.name}
           {stop.town && <span className="text-muted-foreground"> · {stop.town}</span>}
         </span>
-        {time && <span className="shrink-0 tabular-nums">{formatClock(time)}</span>}
+        {time && <span className="shrink-0 tabular-nums">{ovClock(time)}</span>}
       </li>
       {children}
     </>

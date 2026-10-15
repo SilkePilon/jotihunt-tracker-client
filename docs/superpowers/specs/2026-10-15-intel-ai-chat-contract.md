@@ -158,6 +158,8 @@ Sources: OVapi (`http://v0.ovapi.nl`, no key: `/stopareacode`, `/stopareacode/{c
 | `ovJourney` | Rit volgen… | map |
 | `predictOvMovement` | OV-route voorspellen… | think (purple) |
 
+All OV times are ISO 8601 with offset (e.g. 2026-10-15T15:08:00+02:00); the client also accepts offset-less local Amsterdam times.
+
 ```ts
 type OvMode = 'BUS' | 'TRAM' | 'METRO' | 'BOAT' | 'TRAIN';
 

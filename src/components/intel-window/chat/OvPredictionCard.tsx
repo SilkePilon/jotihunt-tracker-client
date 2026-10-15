@@ -3,8 +3,7 @@ import { motion } from 'motion/react';
 import { Tag } from '@/components/beheer/controls/Pill';
 import type { MapRef } from '@/components/Map';
 import Reveal from '@/components/motion/Reveal';
-import { formatClock } from '@/lib/format';
-import { OV_KIND_LABEL, areaLabel } from '@/lib/intel-chat';
+import { OV_KIND_LABEL, areaLabel, ovClock } from '@/lib/intel-chat';
 import { EASE_OUT } from '@/lib/motion';
 import type { OvCandidate, OvPredictionResult } from '@/types/IntelChat';
 import { MoreToggle } from './OvShared';
@@ -54,13 +53,14 @@ function CandidateRow({ rank, candidate, mapRef }: { rank: number; candidate: Ov
       <div className="flex min-w-0 items-start gap-2">
         <span className="grid size-5 shrink-0 place-items-center rounded-full bg-ai-think-container text-[11px] font-extrabold text-ai-on-think tabular-nums">{rank}</span>
         <span className="min-w-0 flex-1 font-semibold break-words">{candidate.via}</span>
-        <span className="shrink-0 font-semibold tabular-nums">{formatClock(candidate.atTime)}</span>
+        <span className="shrink-0 font-semibold tabular-nums">{ovClock(candidate.atTime)}</span>
       </div>
       <div className="flex flex-wrap items-center gap-1.5 pl-7">
         <Tag tone="info">{OV_KIND_LABEL[candidate.kind] ?? candidate.kind}</Tag>
         <Tag tone="neutral">{area.area ? areaLabel(area.area) : 'onbekend gebied'}</Tag>
         {area.area && area.method !== 'hull' && <Tag tone="warn">schatting</Tag>}
       </div>
+      {candidate.why && <p className="pl-7 text-[11.5px] text-muted-foreground line-clamp-2">{candidate.why}</p>}
       <div className="flex items-center gap-2 pl-7">
         <div className="h-1 flex-1 overflow-hidden rounded-full bg-beheer-row" role="meter" aria-label="Score" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(score * 100)}>
           <motion.div className="h-full origin-left rounded-full bg-ai-on-think/70" initial={{ scaleX: 0 }} animate={{ scaleX: score }} transition={{ duration: 0.5, ease: EASE_OUT }} />
