@@ -46,6 +46,7 @@ export function buildHintHours(start: Date, end: Date, now: Date, markers: Marke
       .map((marker) => hourKey(new Date(marker.time))),
   );
   const hours: HintHour[] = [];
+  // Fixed 1-hour steps assume no DST change during the hunt (October hunt ends before the last Sunday of October).
   for (let time = new Date(start); time < last; time = new Date(time.getTime() + HOUR_MS)) {
     hours.push({ value: time.toISOString(), label: `${pad(time.getHours())}:00`, day: dayKey(time), taken: taken.has(hourKey(time)) });
   }

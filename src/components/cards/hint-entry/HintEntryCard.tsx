@@ -53,12 +53,15 @@ export default function HintEntryCard({mapRef}: InferProps<typeof HintEntryCard.
     // Live check once both coordinates are complete: hints are always in the Netherlands
     const typedLocation = xValue?.length === 6 && yValue?.length === 6 ? fromRD(Number(xValue), Number(yValue)) : undefined;
     const outsideNetherlands = !!typedLocation && !isInNetherlands(typedLocation[0], typedLocation[1]);
-    // setValue without validation doesn't update formState.isValid in onSubmit mode, so derive from values
-    const canSubmit = !!selectedArea && !!timeValue && xValue?.length === 6 && yValue?.length === 6 && !outsideNetherlands;
-    const coordinateState: CoordinateState = outsideNetherlands ? 'outside' : typedLocation ? 'inside' : 'idle';
-
     // Hours for the chosen area; hours that already have a hint are kept but marked taken
-    const days = groupByDay(buildHintHours(HUNT_START, HUNT_END, new Date(), markers, selectedArea));
+    const hours = buildHintHours(HUNT_START, HUNT_END, new Date(), markers, selectedArea);
+    const days = groupByDay(hours);
+
+    // setValue without validation doesn't update formState.isValid in onSubmit mode, so derive from values.
+    // The chosen hour is rechecked: a teammate can register it while this form is open.
+    const canSubmit = !!selectedArea && !!timeValue && xValue?.length === 6 && yValue?.length === 6 && !outsideNetherlands
+        && isFreeHour(hours, timeValue);
+    const coordinateState: CoordinateState = outsideNetherlands ? 'outside' : typedLocation ? 'inside' : 'idle';
 
     // Handle hint bridge
     useEffect(() => {
@@ -133,6 +136,8 @@ export default function HintEntryCard({mapRef}: InferProps<typeof HintEntryCard.
     function clearCoordinates() {
         form.setValue('x', '');
         form.setValue('y', '');
+        form.clearErrors(['x', 'y']);
+        document.getElementById(`${fieldId}-x`)?.focus();
     }
 
     /**
@@ -171,7 +176,8 @@ export default function HintEntryCard({mapRef}: InferProps<typeof HintEntryCard.
                             <div className="min-w-0 flex-1">
                                 <TimePicker id={`${fieldId}-time`} value={field.value} onChange={field.onChange}
                                             days={days} open={timeOpen} onOpenChange={setTimeOpen}
-                                            disabled={!selectedArea} invalid={fieldState.invalid}
+                                            disabled={!selectedArea}
+                                            invalid={fieldState.invalid || (!!field.value && !isFreeHour(hours, field.value))}
                                             afterPick={() => document.getElementById(`${fieldId}-x`)?.focus()}/>
                             </div>
                         )}
@@ -187,7 +193,7 @@ export default function HintEntryCard({mapRef}: InferProps<typeof HintEntryCard.
                     </button>
                 </div>
             </div>
-            <Button id={submitId} type="submit" className="h-11 text-[15px]" disabled={!canSubmit}>
+            <Button id={submitId} type="submit" className="h-11 text-[15px]" disabled={!canSubmit || form.formState.isSubmitting}>
                 <Pin data-icon="inline-start"/> Registreren
             </Button>
         </form>

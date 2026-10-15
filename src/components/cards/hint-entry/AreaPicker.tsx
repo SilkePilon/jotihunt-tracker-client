@@ -27,7 +27,7 @@ export default function AreaPicker({ id, value, onChange, invalid, afterPick }: 
           invalid={invalid}
           placeholder="Gebied"
           label={current?.label}
-          aria-label={current ? `Deelgebied: ${current.label}` : 'Deelgebied kiezen'}
+          aria-label={current ? `Gebied: ${current.label}` : 'Gebied kiezen'}
           lead={<span aria-hidden className="size-2.5 shrink-0 rounded-full transition-colors duration-200" style={{ background: current ? getColorFromArea(current.value) : 'var(--border)' }} />}
         />
       </PopoverTrigger>
