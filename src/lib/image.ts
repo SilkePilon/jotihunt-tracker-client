@@ -57,6 +57,9 @@ function encodeJpeg(source: CanvasImageSource & { width: number; height: number 
   const context = canvas.getContext('2d')!;
   // A 5x reduction for the thumbnail would alias with the default (low) smoothing
   context.imageSmoothingQuality = 'high';
+  // JPEG has no alpha: transparent pixels (PNG/WebP) would otherwise come out black
+  context.fillStyle = '#fff';
+  context.fillRect(0, 0, canvas.width, canvas.height);
   context.drawImage(source, 0, 0, canvas.width, canvas.height);
   return new Promise((resolve, reject) => canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('Foto verkleinen mislukt'))), 'image/jpeg', quality));
 }

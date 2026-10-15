@@ -15,7 +15,7 @@ import ChatEmpty from './ChatEmpty';
 import ChatInput from './ChatInput';
 import ChatMessage from './ChatMessage';
 import ToolStatus from './ToolStatus';
-import { useStickToBottom } from './stick-to-bottom';
+import { ChatScrollerContext, useStickToBottom } from './stick-to-bottom';
 import { type IntelChatState, useIntelChat } from './useIntelChat';
 
 interface IntelChatProps {
@@ -144,13 +144,15 @@ function ChatThread({ chat, mapRef }: { chat: IntelChatState; mapRef: RefObject<
   return (
     <div ref={scrollerRef} onScroll={onScroll} className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1 [scrollbar-gutter:stable]">
       <div ref={contentRef} className="flex min-h-full flex-col justify-end gap-3 py-1">
-        <AnimatePresence initial={false}>
-          {chat.messages.map((message) => (
-            <motion.div key={message.id} {...CHAT_MESSAGE}>
-              <ChatMessage message={message} streaming={busy && message === last} mapRef={mapRef} />
-            </motion.div>
-          ))}
-        </AnimatePresence>
+        <ChatScrollerContext.Provider value={scrollerRef}>
+          <AnimatePresence initial={false}>
+            {chat.messages.map((message) => (
+              <motion.div key={message.id} {...CHAT_MESSAGE}>
+                <ChatMessage message={message} streaming={busy && message === last} mapRef={mapRef} />
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </ChatScrollerContext.Provider>
         <ToolStatus label={chatStatusLabel(chat.messages, chat.status)} />
         <Reveal>{chat.status === 'error' && !chat.unavailable && <ErrorRow onRetry={chat.retry} />}</Reveal>
       </div>

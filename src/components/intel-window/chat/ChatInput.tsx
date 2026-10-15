@@ -81,7 +81,7 @@ export default function ChatInput({ kind, busy, disabled, onSend, onStop }: Chat
       onDragOver={(event) => {
         if (!event.dataTransfer.types.includes('Files')) return;
         event.preventDefault();
-        setDragging(true);
+        if (!disabled) setDragging(true);
       }}
       onDragLeave={() => setDragging(false)}
       onDrop={(event) => {
@@ -89,7 +89,7 @@ export default function ChatInput({ kind, busy, disabled, onSend, onStop }: Chat
         setDragging(false);
         if (!file) return;
         event.preventDefault();
-        void attach(file);
+        if (!disabled) void attach(file);
       }}
     >
       <AnimatePresence initial={false}>
@@ -130,13 +130,13 @@ export default function ChatInput({ kind, busy, disabled, onSend, onStop }: Chat
         placeholder={PLACEHOLDER[kind]}
         aria-label="Vraag aan de AI"
         maxLength={4000}
-        // A draft: Escape clears it instead of leaving the item (keepOpenWhileEditing)
-        data-inline-edit={value ? '' : undefined}
+        // A draft (text or an attached image): Escape clears it, text first, instead of leaving the item (keepOpenWhileEditing)
+        data-inline-edit={value || image ? '' : undefined}
         onKeyDown={(event) => {
-          if (event.key === 'Escape' && value) {
-            event.stopPropagation();
-            setValue('');
-          }
+          if (event.key !== 'Escape' || !(value || image)) return;
+          event.stopPropagation();
+          if (value) setValue('');
+          else clearImage();
         }}
         // Only while the textarea has focus (no document-wide listener)
         onPaste={(event) => {

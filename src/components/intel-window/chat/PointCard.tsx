@@ -1,5 +1,6 @@
 import { type ReactNode, type RefObject, useState } from 'react';
 import { CheckIcon, Loader2Icon, MapPinIcon } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 import type { LngLat } from 'maplibre-gl';
 import { toast } from 'sonner';
 import { Pill, Tag } from '@/components/beheer/controls/Pill';
@@ -9,6 +10,7 @@ import { useHintBoard } from '@/hooks/hints.hook';
 import { apiErrorMessage } from '@/lib/api-error';
 import { areaLabel, formatDistance, sameAnswer } from '@/lib/intel-chat';
 import { INTEL_CLOSE_MS, hasExistingMarker } from '@/lib/intel-window';
+import { SWAP } from '@/lib/motion';
 import useIntelStore from '@/stores/intel.store';
 import type { HintAnswerProposal, PointResult } from '@/types/IntelChat';
 import MiniMap from './MiniMap';
@@ -94,6 +96,8 @@ function SaveAnswerButton({ proposal }: { proposal: HintAnswerProposal }) {
   const [justSaved, setJustSaved] = useState(false);
   const [ask, setAsk] = useState<'overwrite' | 'marker'>('overwrite');
   const [confirmOpen, setConfirmOpen] = useState(false);
+  // The answer being replaced, fixed at the click: the board already holds the new one during the dialog's exit fade
+  const [replacing, setReplacing] = useState<string | null>(null);
   const saved = (stored !== null && sameAnswer(stored, proposal.answer)) || (justSaved && stored === null);
   const label = areaLabel(proposal.area);
 
@@ -116,6 +120,7 @@ function SaveAnswerButton({ proposal }: { proposal: HintAnswerProposal }) {
   function click() {
     if (saved || saving) return;
     if (stored) {
+      setReplacing(stored);
       setAsk('overwrite');
       setConfirmOpen(true);
     } else void save(false);
@@ -141,11 +146,22 @@ function SaveAnswerButton({ proposal }: { proposal: HintAnswerProposal }) {
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
-        title={ask === 'overwrite' ? 'Antwoord vervangen?' : 'Bestaande marker vervangen?'}
+        // Overwrite → 409 swaps to the marker question while the dialog stays open
+        title={
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.span key={ask} {...SWAP} className="block">
+              {ask === 'overwrite' ? 'Antwoord vervangen?' : 'Bestaande marker vervangen?'}
+            </motion.span>
+          </AnimatePresence>
+        }
         description={
-          ask === 'overwrite'
-            ? `${label} heeft al ${stored ?? ''} als antwoord. Vervangen door ${proposal.answer}?`
-            : `Er staat al een hint-marker voor ${label} op dit uur. Die wordt verplaatst naar dit antwoord.`
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.span key={ask} {...SWAP} className="block">
+              {ask === 'overwrite'
+                ? `${label} heeft al ${replacing ?? ''} als antwoord. Vervangen door ${proposal.answer}?`
+                : `Er staat al een hint-marker voor ${label} op dit uur. Die wordt verplaatst naar dit antwoord.`}
+            </motion.span>
+          </AnimatePresence>
         }
         confirmLabel="Vervangen"
         onConfirm={() => save(ask === 'marker')}

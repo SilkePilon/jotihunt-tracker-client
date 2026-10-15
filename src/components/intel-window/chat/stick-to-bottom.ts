@@ -1,4 +1,7 @@
-import { useEffect, useLayoutEffect, useRef } from 'react';
+import { type RefObject, createContext, useEffect, useLayoutEffect, useRef } from 'react';
+
+/** The chat thread's scroller, so cards inside (MiniMap) measure "near the visible part" against it, not the viewport */
+export const ChatScrollerContext = createContext<RefObject<HTMLDivElement | null> | undefined>(undefined);
 
 /** Within this many px of the bottom counts as "at the bottom" */
 const STICK_SLACK_PX = 40;

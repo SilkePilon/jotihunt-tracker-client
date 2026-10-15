@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useContext, useRef } from 'react';
 import Maplibre, { AttributionControl, Marker } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { AnimatePresence, motion, useInView } from 'motion/react';
@@ -7,15 +7,18 @@ import { materialMapStyle } from '@/lib/map-style';
 import { resolveStaticMapStyle } from '@/lib/map-styles';
 import useSettingsStore from '@/stores/settings.store';
 import type { LatLng } from '@/types/IntelChat';
+import { ChatScrollerContext } from './stick-to-bottom';
 
 /**
  * Non-interactive map in the user's map style at zoom 14 with an orange pin. The WebGL map only exists while the card is
- * near the visible part of the chat (it fades in/out), so a long chat never runs out of WebGL contexts. The worker URL
+ * within 200px of the visible part of the chat scroller (it fades in/out), so a long chat never runs out of WebGL contexts. The worker URL
  * is set by Map.tsx, which IntelDialog already imports.
  */
 export default function MiniMap({ point, label }: { point: LatLng; label: string }) {
   const ref = useRef<HTMLDivElement>(null);
-  const near = useInView(ref, { margin: '200px 0px' });
+  // Measured against the chat scroller: against the viewport the 200px margin would be clipped at the scroller's edge
+  const root = useContext(ChatScrollerContext);
+  const near = useInView(ref, { root, margin: '200px 0px' });
   const mapStyle = useSettingsStore((state) => state.mapStyle);
   const dark = useDarkMode();
   const style = mapStyle ? resolveStaticMapStyle(mapStyle) : materialMapStyle(dark);

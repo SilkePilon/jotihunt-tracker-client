@@ -49,8 +49,11 @@ export function useIntelChat(articleId: number) {
       if (kind === 'rate_limited') toast.error(RATE_LIMIT_MESSAGE);
       if (kind === 'ai_unavailable') setPostUnavailable(true);
     },
-    // Keep the cached history in step, so coming back to this item shows the whole conversation at once
-    onFinish: ({ messages }) => void mutate({ messages }, { revalidate: false }),
+    // Keep the cached history in step, so coming back to this item shows the whole conversation at once. An errored
+    // turn (429/503) wasn't saved by the server, so it stays out of the cache; an aborted one was (partly) saved.
+    onFinish: ({ messages, isError }) => {
+      if (!isError) void mutate({ messages }, { revalidate: false });
+    },
   });
   const { setMessages, sendMessage, regenerate, stop, clearError } = chat;
 
