@@ -58,6 +58,9 @@
   /* Intel AI chat: "Denk diep" (M3 purple tonal pair) */
   --ai-think-container: #f2daff;
   --ai-on-think-container: #2c0051;
+  /* Orange tonal pair (M3 primary container): picked tiles, filled digit boxes */
+  --primary-container: #ffdcc6;
+  --on-primary-container: #5a1f00;
 }
 
 .dark {
@@ -104,6 +107,8 @@
   --fox-chip: rgb(0 0 0 / 0.28);
   --ai-think-container: #4f2a75;
   --ai-on-think-container: #f0dbff;
+  --primary-container: #6b2b05;
+  --on-primary-container: #ffdcc6;
 }
 
 @theme inline {
@@ -151,6 +156,8 @@
   --color-fox-error-container: var(--fox-error-container);
   --color-ai-think-container: var(--ai-think-container);
   --color-ai-on-think: var(--ai-on-think-container);
+  --color-primary-container: var(--primary-container);
+  --color-on-primary-container: var(--on-primary-container);
   --color-beheer-window: var(--beheer-window);
   --color-beheer-row: var(--beheer-row);
   --color-beheer-row-high: var(--beheer-row-high);
