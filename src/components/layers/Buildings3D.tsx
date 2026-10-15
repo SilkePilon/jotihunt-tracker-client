@@ -7,17 +7,20 @@ import {
   BUILDINGS_LAYER,
   BUILDINGS_OPACITY,
   BUILDINGS_SOURCE,
+  BUILDINGS_TILES,
   BUILDINGS_TILE_LAYER,
   BUILDINGS_TILT,
   BUILDINGS_ZOOM,
   buildingColor,
-  buildingsTileUrl,
   firstSymbolLayerId,
   FLAT_PITCH,
 } from '@/lib/buildings';
 import useSettingsStore from '@/stores/settings.store';
+import { registerBuildingsProtocol } from '@/lib/buildings-protocol';
 
-const TILES = [buildingsTileUrl(import.meta.env.API_BASE_URL)];
+registerBuildingsProtocol();
+
+const TILES = [BUILDINGS_TILES];
 const CAMERA_MS = 600;
 
 /**

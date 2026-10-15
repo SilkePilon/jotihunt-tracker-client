@@ -18,9 +18,64 @@ const RAMP_TOP_M = 30;
 const GREY_LIGHT = '#d6d6d6';
 const GREY_DARK = '#5a5a5a';
 
-export const buildingsTileUrl = (apiBase: string) => `${apiBase}/buildings/{z}/{x}/{y}.pbf`;
+/**
+ * The building source loads its tiles through this MapLibre protocol instead of plain URLs: past z15 MapLibre requests
+ * the same z15 tile once per overzoomed child tile, so the protocol handler shares one download per tile.
+ */
+export const BUILDINGS_PROTOCOL = 'jhbuildings';
+export const BUILDINGS_TILES = `${BUILDINGS_PROTOCOL}://{z}/{x}/{y}`;
+/** Resolved tiles kept for overzoomed children and panning back (in-flight ones count too) */
+export const BUILDINGS_CACHE_SIZE = 32;
 
-export const isBuildingsTileUrl = (url: string, apiBase: string) => url.startsWith(`${apiBase}/buildings/`);
+export interface TileCoord {
+  z: number;
+  x: number;
+  y: number;
+}
+
+/** `jhbuildings://15/1/2` → tile coordinates; anything else: undefined */
+export function parseBuildingsUrl(url: string): TileCoord | undefined {
+  const match = new RegExp(`^${BUILDINGS_PROTOCOL}://(\\d+)/(\\d+)/(\\d+)$`).exec(url);
+  return match ? { z: Number(match[1]), x: Number(match[2]), y: Number(match[3]) } : undefined;
+}
+
+export const buildingsApiUrl = (apiBase: string, { z, x, y }: TileCoord) => `${apiBase}/buildings/${z}/${x}/${y}.pbf`;
+
+type FetchFn = (url: string, init?: RequestInit) => Promise<Response>;
+
+/** One tile from our API: 204 is an empty tile, any other non-OK status rejects (MapLibre marks the tile errored). */
+export async function fetchBuildingTile(url: string, authHeader: string, fetchFn: FetchFn = fetch): Promise<ArrayBuffer> {
+  const response = await fetchFn(url, { headers: { Authorization: authHeader } });
+  if (response.status === 204) return new ArrayBuffer(0);
+  if (!response.ok) throw new Error(`Building tile ${url}: HTTP ${response.status}`);
+  return response.arrayBuffer();
+}
+
+/**
+ * Promise cache per tile key, least recently used out beyond `capacity`. Callers asking for a tile that's in flight
+ * get the same promise; a rejected promise is dropped, so the next call retries.
+ */
+export function createTileCache(load: (key: string) => Promise<ArrayBuffer>, capacity = BUILDINGS_CACHE_SIZE) {
+  // Map keeps insertion order: the first key is the least recently used
+  const entries = new Map<string, Promise<ArrayBuffer>>();
+  return {
+    get(key: string): Promise<ArrayBuffer> {
+      const hit = entries.get(key);
+      if (hit) {
+        entries.delete(key);
+        entries.set(key, hit);
+        return hit;
+      }
+      const promise = load(key);
+      entries.set(key, promise);
+      promise.catch(() => {
+        if (entries.get(key) === promise) entries.delete(key);
+      });
+      while (entries.size > capacity) entries.delete(entries.keys().next().value!);
+      return promise;
+    },
+  };
+}
 
 /** '' is the Material map: palette tones by height (follows the theme); the other basemaps get a fixed grey. */
 export function buildingColor(mapStyle: MapStyle | '', dark: boolean): string | ExpressionSpecification {

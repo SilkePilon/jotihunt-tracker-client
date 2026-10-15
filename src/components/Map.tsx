@@ -11,15 +11,15 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import {setWorkerUrl} from 'maplibre-gl';
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 
-import type {LngLat, Map as MaplibreMap, RequestTransformFunction, StyleSpecification} from 'maplibre-gl';
+import type {LngLat, Map as MaplibreMap, StyleSpecification} from 'maplibre-gl';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
 import Buildings3D from './layers/Buildings3D';
-import {isBuildingsTileUrl} from '@/lib/buildings';
+import {setBuildingsAuthHeader} from '@/lib/buildings-protocol';
 import Teams from './layers/Teams';
 import Devices from './layers/Devices';
 import Life360 from './layers/Life360';
 import Markers from './layers/Markers';
-import {forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, type ReactNode} from 'react';
+import {forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type ReactNode} from 'react';
 import {useShallow} from 'zustand/react/shallow';
 import HomeCircle from './layers/HomeCircle';
 import Predictions from './layers/Predictions';
@@ -135,22 +135,12 @@ const Map = forwardRef<MapRef, MapProps>(({className, wall = false, overlay}, re
         })),
     );
     const {enabled: predictionEnabled} = usePredictionSetting();
-    // The building tiles come from our API, which needs the Authorization header; MapLibre takes transformRequest only
-    // once, so it reads the latest header from a ref
+    // The building tiles come from our API, which needs the Authorization header (fetched by the jhbuildings protocol);
+    // a layout effect, so it's set before the building source starts loading tiles
     const authHeader = useAuthHeader() || '';
-    const authHeaderRef = useRef(authHeader);
-    useEffect(() => {
-        authHeaderRef.current = authHeader;
+    useLayoutEffect(() => {
+        setBuildingsAuthHeader(authHeader);
     }, [authHeader]);
-    const transformRequest = useCallback<RequestTransformFunction>(
-        (url) => (isBuildingsTileUrl(url, import.meta.env.API_BASE_URL) ? {url, headers: {Authorization: authHeaderRef.current}} : {url}),
-        [],
-    );
-    // react-map-gl only passes transformRequest when it creates the map; with reuseMaps a later <Map> (the HQ page, a
-    // re-login) gets the first mount's MapLibre instance, so make this component's callback the active one
-    useEffect(() => {
-        mapRef.current?.getMap().setTransformRequest(transformRequest);
-    }, [transformRequest]);
     const [popupPosition, setPopupPosition] = useState<LngLat>();
     const [rulerActive, setRulerActive] = useState<boolean>(false);
     // Stable, so the ruler doesn't re-subscribe its map events on every render
@@ -210,7 +200,6 @@ const Map = forwardRef<MapRef, MapProps>(({className, wall = false, overlay}, re
                 style={{width: '100%', height: '100%'}}
                 attributionControl={false}
                 mapStyle={resolvedMapStyle}
-                transformRequest={transformRequest}
                 maxBounds={maxBounds}
                 interactive={!wall}
                 onClick={wall ? undefined : openPopup}
@@ -220,7 +209,6 @@ const Map = forwardRef<MapRef, MapProps>(({className, wall = false, overlay}, re
                 fadeDuration={0}
                 // Phones and the HQ wall: start with the credits collapsed to the (i) button; MapLibre opens them on load
                 onLoad={(event) => {
-                    event.target.setTransformRequest(transformRequest);
                     if (isMobile || wall) event.target.getContainer().querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show');
                 }}
             >
