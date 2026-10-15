@@ -11,6 +11,8 @@ const GRAB = 24;
 const SPRING = { type: 'spring', bounce: 0, visualDuration: 0.35 } as const;
 
 interface Drag {
+  pointerId: number;
+  startX: number;
   startY: number;
   startH: number;
   lastY: number;
@@ -18,6 +20,20 @@ interface Drag {
   velocity: number;
   moved: boolean;
   fromGrab: boolean;
+  /** Nearest scroller around the pointerdown target inside the body (null when started on the grab/peek) */
+  scroller: HTMLElement | null;
+}
+
+/** Nearest vertically scrollable element from `target` up to and including `body`; `body` when none scrolls. */
+function scrollerFor(target: Node, body: HTMLElement): HTMLElement {
+  for (let el: HTMLElement | null = target instanceof HTMLElement ? target : target.parentElement; el; el = el.parentElement) {
+    if (el.scrollHeight > el.clientHeight) {
+      const overflow = getComputedStyle(el).overflowY;
+      if (overflow === 'auto' || overflow === 'scroll') return el;
+    }
+    if (el === body) break;
+  }
+  return body;
 }
 
 /**
@@ -82,15 +98,23 @@ export default function BottomSheet({ peek, children, onHeights }: { peek: React
   useEffect(() => {
     const body = bodyRef.current;
     if (!body) return;
+    let startX = 0;
     let startY = 0;
     const onTouchStart = (event: TouchEvent) => {
+      startX = event.touches[0]?.clientX ?? 0;
       startY = event.touches[0]?.clientY ?? 0;
     };
     const onTouchMove = (event: TouchEvent) => {
       const d = drag.current;
       if (!d || d.fromGrab || !event.cancelable) return;
-      const touchY = event.touches[0]?.clientY ?? startY;
-      if (d.moved || (body.scrollTop <= 0 && touchY > startY)) event.preventDefault();
+      if (d.moved) {
+        event.preventDefault();
+        return;
+      }
+      // Only a mostly-vertical downward pull with its scroller at the top; sideways (chip rows, sliders, selection) stays native
+      const dx = (event.touches[0]?.clientX ?? startX) - startX;
+      const dy = (event.touches[0]?.clientY ?? startY) - startY;
+      if (dy > 0 && Math.abs(dy) > Math.abs(dx) && (d.scroller?.scrollTop ?? 0) <= 0) event.preventDefault();
     };
     body.addEventListener('touchstart', onTouchStart, { passive: true });
     body.addEventListener('touchmove', onTouchMove, { passive: false });
@@ -101,15 +125,31 @@ export default function BottomSheet({ peek, children, onHeights }: { peek: React
   }, []);
 
   function onPointerDown(event: React.PointerEvent) {
+    // React bubbles events through portals: ignore dialogs rendered from the sheet's children
+    if (!(event.currentTarget as Node).contains(event.target as Node)) return;
+    // A second finger while dragging does not restart the drag
+    if (drag.current) return;
     const body = bodyRef.current;
     const inBody = !!body && body.contains(event.target as Node);
-    if (inBody && body.scrollTop > 0) return;
-    drag.current = { startY: event.clientY, startH: sheetVisibleHeight.get(), lastY: event.clientY, lastT: performance.now(), velocity: 0, moved: false, fromGrab: !inBody };
+    const scroller = inBody ? scrollerFor(event.target as Node, body) : null;
+    if (scroller && scroller.scrollTop > 0) return;
+    drag.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      startH: sheetVisibleHeight.get(),
+      lastY: event.clientY,
+      lastT: performance.now(),
+      velocity: 0,
+      moved: false,
+      fromGrab: !inBody,
+      scroller,
+    };
   }
 
   function onPointerMove(event: React.PointerEvent) {
     const d = drag.current;
-    if (!d) return;
+    if (!d || event.pointerId !== d.pointerId) return;
     const now = performance.now();
     // Positive velocity = sheet growing = finger moving up
     d.velocity = (d.lastY - event.clientY) / Math.max(1, now - d.lastT);
@@ -117,9 +157,15 @@ export default function BottomSheet({ peek, children, onHeights }: { peek: React
     d.lastT = now;
     let dy = event.clientY - d.startY;
     if (!d.moved) {
-      if (Math.abs(dy) < 6) return;
-      // From the body only a downward pull at scrollTop 0 moves the sheet; anything else is a scroll
-      if (!d.fromGrab && (dy < 0 || (bodyRef.current?.scrollTop ?? 0) > 0)) {
+      const dx = event.clientX - d.startX;
+      if (Math.max(Math.abs(dx), Math.abs(dy)) < 6) return;
+      // Sideways wins: chip rows, range inputs, text selection keep the gesture
+      if (Math.abs(dx) >= Math.abs(dy)) {
+        drag.current = null;
+        return;
+      }
+      // From the body only a downward pull with its scroller at the top moves the sheet; anything else is a scroll
+      if (!d.fromGrab && (dy < 0 || (d.scroller?.scrollTop ?? 0) > 0)) {
         drag.current = null;
         return;
       }
@@ -137,10 +183,10 @@ export default function BottomSheet({ peek, children, onHeights }: { peek: React
   }
 
   // pointerup and pointercancel both end here, so a cancelled drag still settles on a snap
-  function onPointerEnd() {
+  function onPointerEnd(event: React.PointerEvent) {
     const d = drag.current;
+    if (!d || event.pointerId !== d.pointerId) return;
     drag.current = null;
-    if (!d) return;
     // Taps: the grab <button> cycles snaps itself; taps in the peek/body are normal clicks
     if (!d.moved) return;
     const target = settleSnap(sheetVisibleHeight.get(), d.velocity, heights);
