@@ -19,7 +19,8 @@ All routes: `Authorization: Bearer <token>` (same as every other route), JSON.
 
 `IntelChatMessage` = AI SDK `UIMessage` (`{ id, role: 'user' | 'assistant', parts: [...] }`). A user message has one
 `text` part and at most one `file` part (`mediaType: 'image/jpeg' | 'image/png' | 'image/webp'`, `url: data:` URL,
-decoded ≤ 2 MB).
+decoded ≤ 2 MB). Stored history keeps only the newest 2 user images; older file parts become an extra text
+part (placeholder), so a stored user message can have two text parts. `GET` also answers `503 ai_unavailable`.
 
 ## Tools
 
