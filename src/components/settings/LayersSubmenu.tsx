@@ -3,7 +3,7 @@ import { DropdownMenuCheckboxItem, DropdownMenuPortal, DropdownMenuSub, Dropdown
 import BeheerSwitch from '@/components/beheer/controls/BeheerSwitch';
 import { cn } from '@/lib/utils';
 import { useLayerToggles } from './layer-toggles';
-import { MENU_CARD, MENU_ROW, MenuRows, MenuSubRow } from './menu-parts';
+import { MENU_CARD, MENU_ROW, MenuRows, MenuSubRow, SUBMENU_SIDE_OFFSET } from './menu-parts';
 
 /** Keep the menu open while toggling layers */
 const keepOpen = (e: Event) => e.preventDefault();
@@ -20,7 +20,7 @@ export default function LayersSubmenu() {
         Zichtbare lagen
       </MenuSubRow>
       <DropdownMenuPortal>
-        <DropdownMenuSubContent className={cn(MENU_CARD, 'w-[270px]')}>
+        <DropdownMenuSubContent sideOffset={SUBMENU_SIDE_OFFSET} className={cn(MENU_CARD, 'w-[270px]')}>
           <MenuRows>
             {toggles.map((layer) => (
               // The row is the menuitemcheckbox; the switch is only its picture (the built-in check indicator is hidden)

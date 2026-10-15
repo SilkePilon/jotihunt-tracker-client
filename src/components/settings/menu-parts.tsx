@@ -5,6 +5,12 @@ import { cn } from '@/lib/utils';
 /** The settings menu and its phone submenus: a rounded-3xl card like the map layers popover. */
 export const MENU_CARD = 'rounded-3xl border-0 bg-card p-3 text-card-foreground shadow-[0_0_0_1px_var(--border),0_10px_30px_rgb(0_0_0/0.28)]';
 
+/**
+ * Submenus are phone-only and a 290px card leaves no room beside it, so they open over the card instead: shifted back
+ * by the row width (290px card minus 2×12px padding) they start at the row's left edge and stay on screen.
+ */
+export const SUBMENU_SIDE_OFFSET = -266;
+
 /** A Beheer row: tonal block, 6px corners, 16px on the outer ends of its group (see MenuRows). */
 export const MENU_ROW =
   'gap-2.5 rounded-md bg-beheer-row px-3 py-2.5 text-[13.5px] font-semibold transition-colors duration-150 first:rounded-t-2xl last:rounded-b-2xl focus:bg-beheer-row-high';

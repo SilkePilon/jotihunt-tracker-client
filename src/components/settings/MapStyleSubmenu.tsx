@@ -3,7 +3,7 @@ import { DropdownMenuPortal, DropdownMenuRadioGroup, DropdownMenuRadioItem, Drop
 import useSettingsStore from '@/stores/settings.store';
 import { MapStyle } from '@/types/MapStyle';
 import { cn } from '@/lib/utils';
-import { MENU_CARD, MENU_ROW, MenuSubRow } from './menu-parts';
+import { MENU_CARD, MENU_ROW, MenuSubRow, SUBMENU_SIDE_OFFSET } from './menu-parts';
 
 const STYLES: { value: MapStyle | ''; label: string }[] = [
   { value: '', label: 'Automatisch (Material)' },
@@ -24,7 +24,7 @@ export default function MapStyleSubmenu() {
         Kaartstijl
       </MenuSubRow>
       <DropdownMenuPortal>
-        <DropdownMenuSubContent className={cn(MENU_CARD, 'w-[240px]')}>
+        <DropdownMenuSubContent sideOffset={SUBMENU_SIDE_OFFSET} className={cn(MENU_CARD, 'w-[240px]')}>
           {/* The chosen style is the light-orange row (built-in radio dot hidden) */}
           <DropdownMenuRadioGroup value={mapStyle} onValueChange={(style) => setMapStyle(style as MapStyle)} className="flex flex-col gap-0.5">
             {STYLES.map((style) => (
