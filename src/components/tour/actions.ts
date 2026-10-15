@@ -1,5 +1,6 @@
 import useSidebarStore, { SheetSnap, SidebarSectionId } from '@/stores/sidebar.store';
 import useSettingsMenuStore from '@/stores/settings-menu.store';
+import useMobileNavStore from '@/stores/mobile-nav.store';
 import { DEFAULT_VIEW } from '@/lib/map-view';
 import { tourSelector } from './targets';
 import type { TourAction } from './types';
@@ -19,6 +20,31 @@ export function openSection(id: SidebarSectionId): TourAction {
       const wasOpen = store.openSections[id];
       store.setSectionOpen(id, true);
       return () => useSidebarStore.getState().setSectionOpen(id, wasOpen);
+    },
+  };
+}
+
+/**
+ * Show a sidebar section: on desktop expand it, on the phone push its page (sheet goes full). The undo collapses
+ * it again / pops the page.
+ */
+export function showSection(id: SidebarSectionId): TourAction {
+  return {
+    name: `showSection(${id})`,
+    run: (ctx) => {
+      if (!ctx.isMobile) return openSection(id).run(ctx);
+      useMobileNavStore.getState().push({ id });
+      return () => useMobileNavStore.getState().pop();
+    },
+  };
+}
+
+/** Phones: back to the menu (no-op on desktop). */
+export function resetToMenu(): TourAction {
+  return {
+    name: 'resetToMenu',
+    run: (ctx) => {
+      if (ctx.isMobile) useMobileNavStore.getState().reset();
     },
   };
 }
