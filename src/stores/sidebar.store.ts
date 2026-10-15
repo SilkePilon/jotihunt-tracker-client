@@ -2,7 +2,8 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 export type SidebarSectionId = 'foxes' | 'hints' | 'hunts' | 'predictions' | 'hintEntry' | 'counterHunt' | 'telegram' | 'tracking' | 'life360';
-export type SheetSnap = 'peek' | 'half' | 'full';
+import type { SheetSnap, SnapHeights } from '@/lib/sheet-snaps';
+export type { SheetSnap };
 
 const DEFAULT_OPEN_SECTIONS: Record<SidebarSectionId, boolean> = {
   foxes: true,
@@ -29,6 +30,12 @@ interface SidebarState {
   openOnceFor: (id: SidebarSectionId, event: string) => void;
   sheetSnap: SheetSnap;
   setSheetSnap: (snap: SheetSnap) => void;
+  /** Settled visible height of the phone sheet in px (0 on desktop); drives the map padding */
+  sheetHeight: number;
+  setSheetHeight: (height: number) => void;
+  /** Phone sheet height per snap (null on desktop), so a camera move can pad for a snap that is still springing */
+  sheetSnapHeights: SnapHeights | null;
+  setSheetSnapHeights: (heights: SnapHeights | null) => void;
 }
 
 const useSidebarStore = create<SidebarState>()(
@@ -47,6 +54,10 @@ const useSidebarStore = create<SidebarState>()(
         ),
       sheetSnap: 'peek',
       setSheetSnap: (sheetSnap) => set({ sheetSnap }),
+      sheetHeight: 0,
+      setSheetHeight: (sheetHeight) => set({ sheetHeight }),
+      sheetSnapHeights: null,
+      setSheetSnapHeights: (sheetSnapHeights) => set({ sheetSnapHeights }),
     }),
     {
       name: 'sidebar-storage',

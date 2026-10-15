@@ -1,3 +1,4 @@
+import { joinParts } from '@/lib/format';
 import type { TrackerMe, TrackerNotConfiguredReason, Vehicle } from '@/types/Tracker';
 
 export const TRACKER_POLL_NOT_CONNECTED_MS = 10_000;
@@ -114,4 +115,28 @@ export function formatLastUpdate(iso: string | undefined, now: number): string {
   if (minutes < 1) return 'zojuist';
   if (minutes < 60) return `${minutes} min geleden`;
   return `${Math.floor(minutes / 60)} uur geleden`;
+}
+
+function ageText(iso: string | undefined, now: number): string | undefined {
+  if (!iso) return undefined;
+  const time = Date.parse(iso);
+  // A malformed timestamp would read "NaN u"; leave the age out instead
+  if (Number.isNaN(time)) return undefined;
+  const seconds = Math.max(0, Math.round((now - time) / 1000));
+  if (seconds < 60) return `${seconds} s`;
+  const minutes = Math.round(seconds / 60);
+  return minutes < 60 ? `${minutes} min` : `${Math.round(minutes / 60)} u`;
+}
+
+/** First line of the phone sheet's peek strip. */
+export function trackerPeekLine(status: TrackerMe | undefined, now = Date.now()): { tone: 'ok' | 'warn' | 'muted'; text: string } {
+  if (!status) return { tone: 'muted', text: 'Tracker laden…' };
+  if (!status.configured) return { tone: 'muted', text: status.reason === 'unreachable' ? 'Tracker niet bereikbaar' : 'Tracker niet ingesteld' };
+  const age = ageText(status.stats.lastUpdate, now);
+  if (status.connected) {
+    const vehicle = VEHICLE_OPTIONS.find((option) => option.value === status.vehicle)?.phrase.toLowerCase();
+    return { tone: 'ok', text: joinParts('Verbonden', vehicle, age) };
+  }
+  if (hasSignalLost(status)) return { tone: 'warn', text: joinParts('Geen signaal', age) };
+  return { tone: 'warn', text: 'Koppel je telefoon' };
 }

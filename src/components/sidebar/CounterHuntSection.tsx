@@ -40,8 +40,8 @@ export default function CounterHuntSection({ mapRef }: { mapRef: RefObject<MapRe
   function showOnMap() {
     if (!homeTeam || direction === null) return;
     const [longitude, latitude] = destination(homeTeam.location.coordinates, SECTOR_CENTRE_M, direction, { units: 'meters' }).geometry.coordinates;
-    mapRef.current?.flyTo({ center: [longitude, latitude], duration: 2000, zoom: 16 });
     setSheetSnap('peek');
+    mapRef.current?.flyTo({ center: [longitude, latitude], duration: 2000, zoom: 16 });
   }
 
   const summary = counterHuntSummary(state, link, now);

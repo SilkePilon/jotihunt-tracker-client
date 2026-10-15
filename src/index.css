@@ -227,6 +227,9 @@
   html,
   body {
     overscroll-behavior: none;
+    /* The page never scrolls (map app); keeps mobile browser toolbars expanded and the bottom sheet's bottom:0 fixed */
+    height: 100%;
+    overflow: hidden;
   }
 
   /* Tailwind v4 defaults buttons to cursor: default; keep the v3 behaviour */
@@ -344,6 +347,12 @@ body.dark {
 
 .maplibregl-ctrl-bottom-right .maplibregl-ctrl {
   @apply mr-2! mb-2!;
+}
+
+/* Landscape phones at desktop width with viewport-fit=cover: keep the controls out of the notch / home indicator (0 on desktops) */
+.maplibregl-ctrl-bottom-right {
+  margin-right: env(safe-area-inset-right);
+  margin-bottom: env(safe-area-inset-bottom);
 }
 
 .maplibregl-ctrl-bottom-right .maplibregl-ctrl + .maplibregl-ctrl {

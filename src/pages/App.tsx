@@ -2,16 +2,13 @@ import { useOutlet } from '@/hooks/outlet.hook.ts';
 import SearchCard from '@/components/cards/search/SearchCard.tsx';
 import CoordinatesCard from '@/components/cards/coordinates/CoordinatesCard.tsx';
 import Sidebar from '@/components/sidebar/Sidebar';
-import HuntCaptureButton from '@/components/hunts/HuntCaptureButton';
 import HuntRegistrationDialog from '@/components/hunts/HuntRegistrationDialog';
-import { useIsMobile } from '@/hooks/media.hook';
 import { tourTarget } from '@/components/tour/targets';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import HappyHourPill from '@/components/happy-hour/HappyHourPill';
 
 function App() {
   const { mapRef } = useOutlet();
-  const isMobile = useIsMobile();
 
   return (
     <>
@@ -41,7 +38,6 @@ function App() {
         <Sidebar mapRef={mapRef} />
       </ErrorBoundary>
       <ErrorBoundary name="Hunt registreren" variant="floating">
-        {isMobile && <HuntCaptureButton />}
         <HuntRegistrationDialog />
       </ErrorBoundary>
     </>

@@ -2,6 +2,8 @@ import { RefObject, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { MapRef } from '@/components/Map';
 import { useIsMobile } from '@/hooks/media.hook';
+import type { MobilePage } from '@/lib/mobile-nav';
+import useMobileNavStore from '@/stores/mobile-nav.store';
 import useSidebarStore from '@/stores/sidebar.store';
 import { stepDuration } from './duration';
 import { placeCard, type Size } from './placement';
@@ -41,11 +43,13 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
 
   // Runs before every passive effect below, so the snapshot is taken before any step action touches the sidebar
   const snapshot = useRef<Pick<ReturnType<typeof useSidebarStore.getState>, 'openSections' | 'sheetSnap'> | null>(null);
+  const navSnapshot = useRef<MobilePage[] | null>(null);
   const startPlatform = useRef(platform);
   useLayoutEffect(() => {
     if (!active) return;
     const { openSections, sheetSnap } = useSidebarStore.getState();
     snapshot.current = { openSections, sheetSnap };
+    navSnapshot.current = useMobileNavStore.getState().stack;
     startPlatform.current = platform;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active]);
@@ -82,6 +86,8 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
     return () => {
       if (snapshot.current) useSidebarStore.setState(snapshot.current);
       snapshot.current = null;
+      if (navSnapshot.current) useMobileNavStore.setState({ stack: navSnapshot.current, direction: -1 });
+      navSnapshot.current = null;
     };
   }, [active]);
 

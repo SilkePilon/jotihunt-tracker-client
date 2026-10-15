@@ -1,5 +1,6 @@
 import useSidebarStore, { SheetSnap, SidebarSectionId } from '@/stores/sidebar.store';
 import useSettingsMenuStore from '@/stores/settings-menu.store';
+import useMobileNavStore from '@/stores/mobile-nav.store';
 import { DEFAULT_VIEW } from '@/lib/map-view';
 import { tourSelector } from './targets';
 import type { TourAction } from './types';
@@ -24,6 +25,31 @@ export function openSection(id: SidebarSectionId): TourAction {
 }
 
 /**
+ * Show a sidebar section: on desktop expand it, on the phone push its page (sheet goes full). The undo collapses
+ * it again / pops the page.
+ */
+export function showSection(id: SidebarSectionId): TourAction {
+  return {
+    name: `showSection(${id})`,
+    run: (ctx) => {
+      if (!ctx.isMobile) return openSection(id).run(ctx);
+      useMobileNavStore.getState().push({ id });
+      return () => useMobileNavStore.getState().pop();
+    },
+  };
+}
+
+/** Phones: back to the menu (no-op on desktop). */
+export function resetToMenu(): TourAction {
+  return {
+    name: 'resetToMenu',
+    run: (ctx) => {
+      if (ctx.isMobile) useMobileNavStore.getState().reset();
+    },
+  };
+}
+
+/**
  * Move the phone bottom sheet (no-op on desktop). No undo, so consecutive steps don't make it bounce;
  * the overlay restores the sheet when the tour ends.
  */
@@ -37,14 +63,16 @@ export function sheetSnap(snap: SheetSnap): TourAction {
 }
 
 /**
- * Scroll the desktop sidebar back to the top, so the header (with the settings button) is on screen again after
- * earlier steps scrolled down to the lower sections. No-op on the phone, where the header sits outside the scroller.
+ * Scroll the sidebar back to the top, so the header (with the settings button) is on screen again after earlier
+ * steps scrolled down to the lower sections. On the phone that is the sheet body (the menu starts with the header).
  */
 export function scrollSidebarToTop(): TourAction {
   return {
     name: 'scrollSidebarToTop',
     run: () => {
-      document.querySelector(tourSelector('sidebar.root'))?.parentElement?.scrollTo({ top: 0 });
+      const sheetBody = document.querySelector('[data-sheet-body]');
+      if (sheetBody) sheetBody.scrollTo({ top: 0 });
+      else document.querySelector(tourSelector('sidebar.root'))?.parentElement?.scrollTo({ top: 0 });
     },
   };
 }

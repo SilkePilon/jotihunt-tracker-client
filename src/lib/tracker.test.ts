@@ -11,6 +11,7 @@ import {
   isVehicle,
   notConfiguredText,
   sectionTransition,
+  trackerPeekLine,
   trackerRefreshInterval,
   trackerSummary,
   trackerView,
@@ -151,4 +152,18 @@ describe('isActive', () => {
     expect(isActive(undefined, now)).toBe(false);
     expect(isActive('not a date', now)).toBe(false);
   });
+});
+
+describe('trackerPeekLine', () => {
+  const now = Date.parse('2026-10-17T14:41:00Z');
+  const base = { configured: true as const, qrUrl: '', deepLink: '', osmandUrl: '', uniqueId: 'x', vehicle: 'car' as const };
+  test('loading', () => expect(trackerPeekLine(undefined, now)).toEqual({ tone: 'muted', text: 'Tracker laden…' }));
+  test('not configured', () => expect(trackerPeekLine({ configured: false, reason: 'api_missing', connected: false }, now)).toEqual({ tone: 'muted', text: 'Tracker niet ingesteld' }));
+  test('connected', () =>
+    expect(trackerPeekLine({ ...base, connected: true, stats: { lastUpdate: '2026-10-17T14:40:56Z' } }, now)).toEqual({ tone: 'ok', text: 'Verbonden · in de auto · 4 s' }));
+  test('signal lost', () =>
+    expect(trackerPeekLine({ ...base, connected: false, stats: { lastUpdate: '2026-10-17T14:20:00Z' } }, now)).toEqual({ tone: 'warn', text: 'Geen signaal · 21 min' }));
+  test('never paired', () => expect(trackerPeekLine({ ...base, connected: false, stats: {} }, now)).toEqual({ tone: 'warn', text: 'Koppel je telefoon' }));
+  test('invalid lastUpdate omits the age', () =>
+    expect(trackerPeekLine({ ...base, connected: true, stats: { lastUpdate: 'not-a-date' } }, now)).toEqual({ tone: 'ok', text: 'Verbonden · in de auto' }));
 });

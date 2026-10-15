@@ -55,9 +55,9 @@ export default function PredictionList({ mapRef }: { mapRef: RefObject<MapRef | 
   function flyTo(prediction: Prediction) {
     const point = prediction.pin ?? prediction.lastObservation;
     if (!point) return;
-    mapRef.current?.flyTo({ center: [point.lng, point.lat], zoom: FLY_TO_ZOOM, duration: 1500 });
-    // On phones, lower the bottom sheet so the pin is visible
+    // On phones, lower the bottom sheet so the pin is visible (before the fly, which pads for the new snap)
     setSheetSnap('peek');
+    mapRef.current?.flyTo({ center: [point.lng, point.lat], zoom: FLY_TO_ZOOM, duration: 1500 });
   }
 
   return (

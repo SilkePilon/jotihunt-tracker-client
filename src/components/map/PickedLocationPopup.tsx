@@ -3,6 +3,8 @@ import { Marker } from 'react-map-gl/maplibre';
 import { useDistanceFromMe } from '@/hooks/distance-from-me.hook';
 import { useHintFormBridge } from '@/hooks/hint-bridge.hook';
 import useSidebarStore from '@/stores/sidebar.store';
+import useMobileNavStore from '@/stores/mobile-nav.store';
+import { useIsMobile } from '@/hooks/media.hook';
 import MapPopup from './MapPopup';
 import MarkerRegistration from './MarkerRegistration';
 import CoordRows from './popup/CoordRows';
@@ -16,14 +18,16 @@ const POPUP_OFFSET = { bottom: [0, -15] as [number, number] };
 export default function PickedLocationPopup({ lat, lng, onClose }: { lat: number; lng: number; onClose: () => void }) {
   const setCoords = useHintFormBridge((s) => s.setCoords);
   const openSection = useSidebarStore((s) => s.openSection);
-  const setSheetSnap = useSidebarStore((s) => s.setSheetSnap);
+  const pushPage = useMobileNavStore((s) => s.push);
+  const isMobile = useIsMobile();
   const distance = useDistanceFromMe(lat, lng);
 
   function setHintCoords(rd: { x: string; y: string }) {
     setCoords(rd.x, rd.y);
-    // The hint entry section is collapsed by default: make sure it is visible (and scrolled into view on mobile)
-    openSection('hintEntry');
-    setSheetSnap('full');
+    // Phones: the sheet shows one page at a time, so open the hint form page (opens the section, raises the sheet)
+    if (isMobile) pushPage({ id: 'hintEntry' });
+    // Desktop: the hint entry section is collapsed by default, make sure it is visible
+    else openSection('hintEntry');
   }
 
   return (

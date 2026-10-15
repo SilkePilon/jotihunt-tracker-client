@@ -97,7 +97,7 @@ export default function QrConfirmDrawer({ code, onClose }: { code: string; onClo
   }
 
   return (
-    <ResponsiveDialog open={open} onClose={close} onClosed={onClose} title="Inloggen op een ander apparaat?" description="Bevestig met je passkey." hideHeader compact className="sm:max-w-md">
+    <ResponsiveDialog backEntry={false} open={open} onClose={close} onClosed={onClose} title="Inloggen op een ander apparaat?" description="Bevestig met je passkey." hideHeader compact className="sm:max-w-md">
       {/* The drawer grows/shrinks with the step; the padding keeps focus rings out of the clip */}
       <AutoHeight scene={view.step} className="-mx-1 -mt-1" innerClassName="px-1 pt-1 pb-2">
         <AnimatePresence mode="wait" initial={false}>

@@ -1,5 +1,5 @@
 import NotificationSoundsPanel from './panels/NotificationSoundsPanel';
-import { flyToOverview, openSection, openSettings, scrollSidebarToTop, sheetSnap } from './actions';
+import { flyToOverview, openSettings, resetToMenu, scrollSidebarToTop, sheetSnap, showSection } from './actions';
 import type { TourStep } from './types';
 
 /**
@@ -39,35 +39,35 @@ export const TOUR_STEPS: TourStep[] = [
     target: 'sidebar.foxes',
     title: 'Vossen',
     body: 'De status van elk deelgebied: rood, oranje of groen. Tik op een letter om dat gebied op de kaart te verbergen of weer te tonen.',
-    actions: [sheetSnap('full'), openSection('foxes')],
+    actions: [sheetSnap('full'), showSection('foxes')],
   },
   {
     id: 'hunts',
     target: 'sidebar.hunts',
     title: 'Hunts',
     body: 'Maak een foto van een hunt om hem te registreren. Hier zie je de laatste hunts en hun status.',
-    actions: [sheetSnap('full'), openSection('hunts')],
+    actions: [sheetSnap('full'), showSection('hunts')],
   },
   {
     id: 'hints',
     target: 'sidebar.hints',
     title: 'Hints',
     body: 'De laatste hints per deelgebied in één oogopslag: groen is opgelost, grijs staat nog open. Op een laptop open je met "Open hints" het venster met alle hints, opdrachten en nieuws.',
-    actions: [sheetSnap('full'), openSection('hints')],
+    actions: [sheetSnap('full'), showSection('hints')],
   },
   {
     id: 'hint-entry',
     target: 'sidebar.hintEntry',
     title: 'Hint registreren',
     body: 'Kies het deelgebied en de tijd en vul de RD-coördinaten van een opgeloste hint in; de hint komt dan op de kaart.',
-    actions: [sheetSnap('full'), openSection('hintEntry')],
+    actions: [sheetSnap('full'), showSection('hintEntry')],
   },
   {
     id: 'predictions',
     target: 'sidebar.predictions',
     title: 'Voorspelling',
     body: 'Een AI-voorspelling van waar de vossen waarschijnlijk zijn. Tik op een voorspelling om ernaartoe te gaan op de kaart.',
-    actions: [sheetSnap('full'), openSection('predictions')],
+    actions: [sheetSnap('full'), showSection('predictions')],
     optional: true,
   },
   {
@@ -75,7 +75,7 @@ export const TOUR_STEPS: TourStep[] = [
     target: 'sidebar.counterHunt',
     title: 'Tegenhunt',
     body: 'Wordt ons clubhuis gehunt? Dan zie je hier automatisch uit welke richting, en op de kaart.',
-    actions: [sheetSnap('full'), openSection('counterHunt')],
+    actions: [sheetSnap('full'), showSection('counterHunt')],
     optional: true,
   },
   {
@@ -83,7 +83,7 @@ export const TOUR_STEPS: TourStep[] = [
     target: 'sidebar.tracking',
     title: 'Mijn tracker',
     body: 'Koppel je telefoon als GPS-tracker, zodat iedereen ziet waar je bent. Kies hier ook of je loopt, fietst of rijdt.',
-    actions: [sheetSnap('full'), openSection('tracking')],
+    actions: [sheetSnap('full'), showSection('tracking')],
   },
   {
     id: 'hunt-capture',
@@ -105,7 +105,7 @@ export const TOUR_STEPS: TourStep[] = [
     target: 'settings.replayItem',
     title: 'Instellingen',
     body: 'Kaartstijl, zichtbare lagen en meer. Hier kun je deze rondleiding ook altijd opnieuw bekijken.',
-    actions: [sheetSnap('peek'), scrollSidebarToTop(), openSettings()],
+    actions: [resetToMenu(), sheetSnap('half'), scrollSidebarToTop(), openSettings()],
   },
   {
     id: 'notification-sounds',

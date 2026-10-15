@@ -3,7 +3,6 @@ import { Layer, Source, useMap, type FillLayerSpecification, type SymbolLayerSpe
 import { isHomeTeam, useTeams } from '@/hooks/teams.hook';
 import { useAreas } from '@/hooks/areas.hook';
 import { useVisits } from '@/hooks/predictions.hook';
-import { useIsMobile } from '@/hooks/media.hook';
 import useLayersStore from '@/stores/layers.store';
 import { TEAM_PINS_LAYER, teamCircles, teamPinFeatures } from '@/lib/map-layers';
 import { featureId, useLayerInteractions, usePopupSelection } from './map-interactions';
@@ -11,9 +10,6 @@ import { themedIconExpression, type MarkerTheme } from '@/lib/marker-style';
 import { useMarkerTheme } from './marker-icons';
 import TeamPopup from './teams/TeamPopup';
 import TeamTooltip from './teams/TeamTooltip';
-
-/** On phones the bottom sheet covers the lower ~130px; aim a bit higher so the team isn't hidden behind it. */
-const MOBILE_CENTER_OFFSET: [number, number] = [0, -65];
 
 const TEAM_CIRCLES_SOURCE = 'team-circles';
 const TEAM_CIRCLES_PAINT: FillLayerSpecification['paint'] = { 'fill-color': ['get', 'color'], 'fill-opacity': 0.2 };
@@ -34,7 +30,6 @@ export default function Teams() {
   const layout = useMemo(() => teamPinsLayout(theme), [theme]);
   // Hovered: 10% larger
   const hoverLayout = useMemo<SymbolLayerSpecification['layout']>(() => ({ ...layout, 'icon-size': 1.1 }), [layout]);
-  const isMobile = useIsMobile();
   const { teams, setTeamArea } = useTeams();
   const { isVisible } = useAreas();
   const { visits } = useVisits();
@@ -67,7 +62,6 @@ export default function Teams() {
       openPopup(team._id);
       map?.easeTo({
         center: [team.location.coordinates[0], team.location.coordinates[1]],
-        offset: isMobile ? MOBILE_CENTER_OFFSET : [0, 0],
         duration: 600,
       });
     },
