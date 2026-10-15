@@ -26,6 +26,9 @@ const pwaManifest: Partial<VitePWAOptions> = {
     name: 'Jotihunt Tracker',
     short_name: 'Jotihunt Tracker',
     description: 'Volg de Jotihunt in real-time met de Jotihunt Tracker!',
+    // Lets Chrome's getInstalledRelatedApps() see the Android app (the APK also needs an asset statement for this site)
+    related_applications: [{ platform: 'play', url: 'https://play.google.com/store/apps/details?id=nl.jotihunt.tracker', id: 'nl.jotihunt.tracker' }],
+    prefer_related_applications: false,
     icons: [
       {
         src: 'pwa-64x64.png',
