@@ -51,9 +51,14 @@ function useViewScroll(containerRef: RefObject<HTMLDivElement | null>, depth: nu
     const to = depth < prevDepth ? (scrolls.current[depth] ?? 0) : 0;
     scrolls.current.length = depth + 1;
     body.scrollTop = to;
-    const leaving = container.querySelector<HTMLElement>(`[data-view="${CSS.escape(prevKey)}"]`);
+    const views = (key: string) => container.querySelectorAll<HTMLElement>(`[data-view="${CSS.escape(key)}"]`);
+    // A view that comes back while still exiting is revived as the same node: drop the offset it left with
+    views(viewKey).forEach((node) => node.style.removeProperty('translate'));
     // Read the clamped value back: a short view may not reach the saved offset
-    if (leaving) leaving.style.translate = `0 ${body.scrollTop - from}px`;
+    const shift = `0 ${body.scrollTop - from}px`;
+    views(prevKey).forEach((node) => {
+      node.style.translate = shift;
+    });
   }, [containerRef, depth, viewKey]);
 }
 
