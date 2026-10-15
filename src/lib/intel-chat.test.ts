@@ -1,0 +1,221 @@
+import { describe, expect, test } from 'bun:test';
+import { AxiosError, AxiosHeaders } from 'axios';
+import type { UIMessage } from 'ai';
+import type { HintCell } from '@/types/HintCell';
+import { scaledSize } from './image';
+import {
+  CHAT_IMAGE_MAX_SIDE,
+  CONTEXT_LABEL,
+  THINKING_LABEL,
+  TOOL_META,
+  chatErrorKind,
+  chatImageProblem,
+  chatRequestBody,
+  chatStatusLabel,
+  dataUrlBytes,
+  formatDistance,
+  isHintAnswerProposal,
+  isPointResult,
+  lastUserMessageId,
+  pointCards,
+  sameAnswer,
+  stackedTools,
+  suggestionChips,
+  toolCalls,
+  toolDoneLabel,
+  toolLabel,
+  toolSummary,
+  toolTone,
+  webSources,
+} from './intel-chat';
+
+const point = {
+  label: 'Bravo',
+  latLng: { lat: 51.83, lng: 5.86 },
+  rd: { x: 153020, y: 430880 },
+  rdText: '153020 430880',
+  area: { area: 'bravo', method: 'hull' },
+  nearestGroup: { name: 'Scouting Pancratius', area: 'bravo', distanceM: 420 },
+};
+const tool = (name: string, state: string, extra: Record<string, unknown> = {}, id = name) => ({ type: `tool-${name}`, toolCallId: id, state, input: {}, ...extra });
+const assistant = (...parts: unknown[]) => ({ id: 'a1', role: 'assistant', parts }) as UIMessage;
+const user = (id: string, text = 'Los Bravo op') => ({ id, role: 'user', parts: [{ type: 'text', text }] }) as UIMessage;
+const cell = (area: string, status: HintCell['status']): HintCell => ({ _id: area, articleId: 1, area, publishAt: '', slotTime: '', status, articleChanged: false }) as HintCell;
+
+describe('tool meta', () => {
+  test('every contract tool has a running label and a tone', () => {
+    expect(Object.keys(TOOL_META)).toHaveLength(18);
+    expect(toolLabel('webSearch')).toBe('Zoeken op internet…');
+    expect(toolLabel('getItem')).toBe('Item lezen…');
+    expect(toolLabel('somethingNew')).toBe('Bezig…');
+    expect(toolDoneLabel('checkPoint')).toBe('Punt checken');
+    expect(toolDoneLabel('somethingNew')).toBe('somethingNew');
+    expect(toolTone('runCode')).toBe('think');
+    expect(toolTone('readWebPage')).toBe('web');
+    expect(toolTone('showPoint')).toBe('map');
+    expect(toolTone('somethingNew')).toBe('app');
+  });
+});
+
+describe('toolCalls', () => {
+  test('flattens tool parts in order and skips the rest', () => {
+    const message = assistant(
+      { type: 'step-start' },
+      tool('getItem', 'output-available', { output: { title: 'x' } }),
+      { type: 'text', text: 'Even kijken' },
+      tool('webSearch', 'input-streaming'),
+      tool('checkPoint', 'output-error', { errorText: 'kapot' }),
+      tool('nearbyGroups', 'output-available', { output: { error: 'Geen groepen' } }),
+      { type: 'dynamic-tool', toolName: 'distance', toolCallId: 'd', state: 'input-available', input: {} },
+    );
+    expect(toolCalls(message)).toEqual([
+      { id: 'getItem', name: 'getItem', state: 'done', output: { title: 'x' } },
+      { id: 'webSearch', name: 'webSearch', state: 'running' },
+      { id: 'checkPoint', name: 'checkPoint', state: 'error', errorText: 'kapot' },
+      { id: 'nearbyGroups', name: 'nearbyGroups', state: 'error', output: { error: 'Geen groepen' }, errorText: 'Geen groepen' },
+      { id: 'd', name: 'distance', state: 'running' },
+    ]);
+  });
+});
+
+describe('output guards', () => {
+  test('point results and proposals', () => {
+    expect(isPointResult(point)).toBe(true);
+    expect(isPointResult({ ...point, latLng: null })).toBe(false);
+    expect(isPointResult({ error: 'x' })).toBe(false);
+    expect(isHintAnswerProposal({ articleId: 1, area: 'bravo', answer: '153020 430880', kind: 'rd', point })).toBe(true);
+    expect(isHintAnswerProposal({ articleId: 1, area: 'bravo', answer: 'Kerk', kind: 'text', point: null })).toBe(true);
+    expect(isHintAnswerProposal({ articleId: '1', area: 'bravo', answer: 'x', kind: 'text', point: null })).toBe(false);
+  });
+});
+
+describe('formatDistance', () => {
+  test('metres below a km, one decimal below 10 km, whole km above', () => {
+    expect(formatDistance(420)).toBe('420 m');
+    expect(formatDistance(1234)).toBe('1,2 km');
+    expect(formatDistance(15400)).toBe('15 km');
+  });
+});
+
+describe('toolSummary', () => {
+  test('per the contract', () => {
+    const done = (name: string, output: unknown) => ({ id: name, name, state: 'done' as const, output });
+    expect(toolSummary(done('checkPoint', { point, nearestGroups: [{ name: 'Scouting Pancratius', area: 'bravo', distanceM: 420 }] }))).toBe('Bravo · Scouting Pancratius 420 m');
+    expect(toolSummary(done('checkPoint', { point: { ...point, area: { area: null, method: 'none' } }, nearestGroups: [] }))).toBe('onbekend gebied');
+    expect(toolSummary(done('nearbyGroups', [{}, {}, {}]))).toBe('3 groepen');
+    expect(toolSummary(done('nearbyGroups', { groups: [{}] }))).toBe('1 groep');
+    expect(toolSummary(done('webSearch', { answer: 'x', sources: [{ title: 'a', url: 'https://a.nl' }, { title: 'b', url: 'https://b.nl' }] }))).toBe('2 bronnen');
+    expect(toolSummary(done('searchIntel', { results: [{}, {}, {}, {}] }))).toBe('4 items');
+    expect(toolSummary(done('getItem', { title: 'x' }))).toBeNull();
+    expect(toolSummary({ id: 'x', name: 'checkPoint', state: 'error', errorText: 'Punt ligt buiten NL' })).toBe('Punt ligt buiten NL');
+    expect(toolSummary({ id: 'x', name: 'checkPoint', state: 'running' })).toBeNull();
+  });
+
+  test('stackedTools: first tool of each tone, at most 3', () => {
+    const call = (name: string) => ({ id: name, name, state: 'done' as const });
+    expect(stackedTools([call('getItem'), call('getAreas'), call('webSearch'), call('checkPoint'), call('runCode')])).toEqual(['getItem', 'webSearch', 'checkPoint']);
+  });
+});
+
+describe('chatStatusLabel', () => {
+  test('null when idle or while text streams; the running tool; else thinking', () => {
+    expect(chatStatusLabel([user('u1')], 'ready')).toBeNull();
+    expect(chatStatusLabel([user('u1')], 'submitted')).toBe(THINKING_LABEL);
+    expect(chatStatusLabel([user('u1'), assistant(tool('getItem', 'output-available', { output: {} }), tool('checkPoint', 'input-available'))], 'streaming')).toBe('Punt checken…');
+    expect(chatStatusLabel([user('u1'), assistant(tool('getItem', 'output-available', { output: {} }), { type: 'step-start' })], 'streaming')).toBe(THINKING_LABEL);
+    expect(chatStatusLabel([user('u1'), assistant({ type: 'reasoning', text: 'hmm' })], 'streaming')).toBe(THINKING_LABEL);
+    expect(chatStatusLabel([user('u1'), assistant({ type: 'text', text: 'Bravo wijst' })], 'streaming')).toBeNull();
+    expect(chatStatusLabel([user('u1'), assistant({ type: 'text', text: 'x' })], 'error')).toBeNull();
+  });
+
+  test('lastUserMessageId', () => {
+    expect(lastUserMessageId([])).toBeNull();
+    expect(lastUserMessageId([user('u1'), assistant(), user('u2'), assistant()])).toBe('u2');
+  });
+});
+
+describe('suggestionChips and copy', () => {
+  test('hint: open areas in area order (max 3) + check', () => {
+    const cells = [cell('alpha', 'solved'), cell('bravo', 'open'), cell('charlie', 'open'), cell('delta', 'none'), cell('echo', 'open'), cell('golf', 'open')];
+    expect(suggestionChips({ kind: 'hint', cells })).toEqual(['Los Bravo op', 'Los Charlie op', 'Los Echo op', 'Check antwoorden']);
+    expect(suggestionChips({ kind: 'hint', cells: [cell('alpha', 'solved')] })).toEqual(['Check antwoorden']);
+  });
+  test('opdracht and nieuws', () => {
+    expect(suggestionChips({ kind: 'assignment', cells: [] })).toEqual(['Wat moeten we inleveren?', 'Ideeën?']);
+    expect(suggestionChips({ kind: 'news', cells: [] })).toEqual(['Wat betekent dit voor ons?']);
+  });
+  test('context chip', () => {
+    expect(CONTEXT_LABEL).toEqual({ hint: 'ziet deze hint', assignment: 'ziet deze opdracht', news: 'ziet dit bericht' });
+  });
+});
+
+describe('chatErrorKind', () => {
+  const axiosError = (status: number) => new AxiosError('x', String(status), undefined, undefined, { status, data: {}, statusText: '', headers: {}, config: { headers: new AxiosHeaders() } });
+  test('axios (history GET) and APICallError-like (stream POST) status codes', () => {
+    expect(chatErrorKind(axiosError(503))).toBe('ai_unavailable');
+    expect(chatErrorKind(axiosError(404))).toBe('not_found');
+    expect(chatErrorKind(Object.assign(new Error('{"error":"rate_limited"}'), { statusCode: 429 }))).toBe('rate_limited');
+    expect(chatErrorKind(Object.assign(new Error('x'), { statusCode: 503 }))).toBe('ai_unavailable');
+  });
+  test('a 200 with { error } (fetcherWithMethod throws Error(error)) and anything else', () => {
+    expect(chatErrorKind(new Error('ai_unavailable'))).toBe('ai_unavailable');
+    expect(chatErrorKind(new Error('Failed to fetch'))).toBe('other');
+    expect(chatErrorKind(undefined)).toBe('other');
+  });
+});
+
+describe('chatRequestBody', () => {
+  test('only the newest message plus the modes', () => {
+    expect(chatRequestBody([user('u1'), assistant(), user('u2', 'En Charlie?')], { web: true, deep: false })).toEqual({ message: user('u2', 'En Charlie?'), web: true, deep: false });
+    expect(() => chatRequestBody([], { web: false, deep: false })).toThrow();
+  });
+});
+
+describe('chat images', () => {
+  test('only images up to 10 MB', () => {
+    expect(chatImageProblem({ type: 'image/png', size: 5 * 1024 * 1024 })).toBeNull();
+    expect(chatImageProblem({ type: 'application/pdf', size: 1000 })).toBe('Alleen afbeeldingen kunnen mee');
+    expect(chatImageProblem({ type: 'image/jpeg', size: 11 * 1024 * 1024 })).toBe('Afbeelding is groter dan 10 MB');
+  });
+  test('decoded size of a base64 data URL', () => {
+    expect(dataUrlBytes('data:image/jpeg;base64,YWJjZA==')).toBe(4);
+    expect(dataUrlBytes('data:image/jpeg;base64,YWJj')).toBe(3);
+    expect(dataUrlBytes('data:image/jpeg;base64,YWI=')).toBe(2);
+  });
+  test('resize target: long side 1600, never upscaled', () => {
+    expect(scaledSize(4000, 3000, CHAT_IMAGE_MAX_SIDE)).toEqual({ width: 1600, height: 1200 });
+    expect(scaledSize(3000, 4000, CHAT_IMAGE_MAX_SIDE)).toEqual({ width: 1200, height: 1600 });
+    expect(scaledSize(1200, 900, CHAT_IMAGE_MAX_SIDE)).toEqual({ width: 1200, height: 900 });
+  });
+});
+
+describe('cards and sources of a message', () => {
+  test('pointCards: finished showPoint and proposeHintAnswer outputs only', () => {
+    const proposal = { articleId: 7, area: 'bravo', answer: '153020 430880', kind: 'rd', point };
+    const message = assistant(
+      tool('showPoint', 'output-available', { output: point }, 's1'),
+      tool('showPoint', 'input-available', {}, 's2'),
+      tool('proposeHintAnswer', 'output-available', { output: proposal }, 'p1'),
+      tool('proposeHintAnswer', 'output-available', { output: { error: 'Onbekend gebied' } }, 'p2'),
+    );
+    expect(pointCards(message)).toEqual([
+      { id: 's1', point },
+      { id: 'p1', point, proposal },
+    ]);
+  });
+  test('webSources: deduped by url, http(s) only, hostname when no title', () => {
+    const message = assistant(
+      tool('webSearch', 'output-available', { output: { answer: 'x', sources: [{ title: 'MacLeod tartan · Wikipedia', url: 'https://en.wikipedia.org/wiki/MacLeod' }, { title: '', url: 'https://www.clan-macleod.org/x' }] } }, 'w1'),
+      tool('webSearch', 'output-available', { output: { answer: 'y', sources: [{ title: 'dubbel', url: 'https://en.wikipedia.org/wiki/MacLeod' }, { title: 'kwaad', url: 'javascript:alert(1)' }] } }, 'w2'),
+    );
+    expect(webSources(message)).toEqual([
+      { title: 'MacLeod tartan · Wikipedia', url: 'https://en.wikipedia.org/wiki/MacLeod' },
+      { title: 'clan-macleod.org', url: 'https://www.clan-macleod.org/x' },
+    ]);
+  });
+  test('sameAnswer ignores case and spacing', () => {
+    expect(sameAnswer(' 153020  430880 ', '153020 430880')).toBe(true);
+    expect(sameAnswer('Kerk', 'kerk')).toBe(true);
+    expect(sameAnswer('153020 430880', '153020 430881')).toBe(false);
+  });
+});
