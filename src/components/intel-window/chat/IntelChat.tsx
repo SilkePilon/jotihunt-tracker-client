@@ -1,13 +1,17 @@
-import type { ReactNode, RefObject } from 'react';
+import { type ReactNode, type RefObject, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { Loader2Icon, RotateCcwIcon } from 'lucide-react';
-import { Pill } from '@/components/beheer/controls/Pill';
+import { Loader2Icon, RotateCcwIcon, SquarePenIcon } from 'lucide-react';
+import { toast } from 'sonner';
+import { IconPill, Pill } from '@/components/beheer/controls/Pill';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import type { MapRef } from '@/components/Map';
 import Reveal from '@/components/motion/Reveal';
+import { apiErrorMessage } from '@/lib/api-error';
 import { CONTEXT_LABEL, chatStatusLabel, lastUserMessageId } from '@/lib/intel-chat';
 import { CHAT_MESSAGE } from '@/lib/intel-window';
-import { SWAP } from '@/lib/motion';
+import { POP, SWAP } from '@/lib/motion';
 import type { IntelItem, IntelKind } from '@/types/Intel';
+import ChatEmpty from './ChatEmpty';
 import ChatInput from './ChatInput';
 import ChatMessage from './ChatMessage';
 import ToolStatus from './ToolStatus';
@@ -37,11 +41,36 @@ export default function IntelChat({ item, mapRef }: IntelChatProps) {
 
 function ChatPanel({ item, mapRef }: IntelChatProps) {
   const chat = useIntelChat(item.id);
+  const [confirmReset, setConfirmReset] = useState(false);
   const busy = chat.status === 'submitted' || chat.status === 'streaming';
-  const scene = chat.loading ? 'loading' : chat.loadError ? 'load-error' : 'thread';
+  const scene = chat.loading ? 'loading' : chat.loadError ? 'load-error' : chat.messages.length === 0 ? 'empty' : 'thread';
+
+  async function reset() {
+    try {
+      await chat.reset();
+      setConfirmReset(false);
+    } catch (error) {
+      toast.error(apiErrorMessage(error, 'Gesprek wissen mislukt'));
+    }
+  }
+
   return (
     <>
-      <ChatHeader kind={item.kind} />
+      <ChatHeader
+        kind={item.kind}
+        action={
+          <AnimatePresence initial={false}>
+            {chat.messages.length > 0 && (
+              <motion.span key="new" {...POP} className="-my-1.5 inline-grid">
+                <IconPill aria-label="Nieuw gesprek" title="Nieuw gesprek" onClick={() => setConfirmReset(true)}>
+                  <SquarePenIcon />
+                </IconPill>
+              </motion.span>
+            )}
+          </AnimatePresence>
+        }
+      />
+      {/* Nieuw gesprek: the thread fades out, the empty state rises in */}
       <AnimatePresence mode="wait" initial={false}>
         {scene === 'loading' ? (
           <motion.div key="loading" {...FADE} className="grid min-h-0 flex-1 place-items-center">
@@ -55,6 +84,10 @@ function ChatPanel({ item, mapRef }: IntelChatProps) {
               Opnieuw
             </Pill>
           </motion.div>
+        ) : scene === 'empty' ? (
+          <motion.div key="empty" className="flex min-h-0 flex-1 flex-col" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
+            <ChatEmpty item={item} disabled={busy || chat.unavailable} onPick={chat.send} />
+          </motion.div>
         ) : (
           <motion.div key="thread" {...FADE} className="flex min-h-0 flex-1 flex-col">
             <ChatThread chat={chat} mapRef={mapRef} />
@@ -62,6 +95,15 @@ function ChatPanel({ item, mapRef }: IntelChatProps) {
         )}
       </AnimatePresence>
       <ChatFooter chat={chat} kind={item.kind} busy={busy} />
+      <ConfirmDialog
+        open={confirmReset}
+        onOpenChange={setConfirmReset}
+        title="Nieuw gesprek beginnen?"
+        description="Dit gesprek wordt gewist, ook op je andere apparaten."
+        confirmLabel="Wissen"
+        destructive
+        onConfirm={reset}
+      />
     </>
   );
 }

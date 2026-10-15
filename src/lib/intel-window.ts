@@ -203,3 +203,13 @@ export const CHAT_MESSAGE = {
 
 /** Prompt box toggles: the icon turns once and grows a little when switched on */
 export const TOGGLE_SPRING: Transition = { type: 'spring', stiffness: 260, damping: 25 };
+
+/** The chat's empty state: its parts stagger in 70 ms apart; custom = delay in seconds before the first */
+export const CHAT_EMPTY: Variants = {
+  hidden: {},
+  shown: (delay: number = 0) => ({ transition: { staggerChildren: 0.07, delayChildren: delay } }),
+};
+export const CHAT_EMPTY_PART: Variants = {
+  hidden: { opacity: 0, y: 8 },
+  shown: { opacity: 1, y: 0, transition: { duration: 0.35, ease: EASE_OUT } },
+};
