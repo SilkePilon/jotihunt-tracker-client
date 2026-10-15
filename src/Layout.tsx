@@ -13,6 +13,7 @@ import StaleDataBadge from './components/StaleDataBadge';
 import NewHuntToaster from './components/hunts/NewHuntToaster';
 import NotificationsDialog from './components/notifications/NotificationsDialog';
 import AccountDialog from './components/account/AccountDialog';
+import AndroidPromoDialog from './components/android-promo/AndroidPromoDialog';
 import {useNotificationsPrompt} from './components/notifications/useNotificationsPrompt';
 import {useTheme} from "@/hooks/theme.hook.ts";
 import {useNotificationFeed} from '@/hooks/notification-feed.hook';
@@ -27,6 +28,7 @@ import type {OutletContextType} from '@/hooks/outlet.hook.ts';
 import TourOverlay from './components/tour/TourOverlay';
 import {useTourAutoStart} from './components/tour/useTour';
 import {createFetchErrorToastState} from '@/lib/fetch-error-toast';
+import {useAndroidPromoAutoOpen} from '@/hooks/android-promo.hook';
 
 const QrConfirmDrawer = lazy(() => import('./components/auth/QrConfirmDrawer'));
 
@@ -64,6 +66,7 @@ export default function Layout() {
     const tour = useTourAutoStart();
     // Like the tour, the notifications prompt only opens on the map page
     useNotificationsPrompt(tour.pending || pathname !== '/');
+    useAndroidPromoAutoOpen();
 
     // Which SWR keys are failing, and whether the error toast is up. Mutable, not state: every poll passes through here.
     const [errorToast] = useState(createFetchErrorToastState);
@@ -110,6 +113,7 @@ export default function Layout() {
                 <IntelDialog mapRef={mapRef}/>
                 <NotificationsDialog/>
                 <AccountDialog/>
+                <AndroidPromoDialog/>
                 {typeof qrLogin === 'string' && (
                     <Suspense fallback={null}>
                         <QrConfirmDrawer key={qrLogin} code={qrLogin} onClose={() => navigate('/', {replace: true, state: null})}/>
