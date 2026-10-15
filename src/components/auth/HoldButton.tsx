@@ -169,9 +169,9 @@ export default function HoldButton({ durationMs = 1000, onConfirm, disabled, bus
         className,
       )}
     >
-      <motion.span aria-hidden className="absolute inset-0 origin-left bg-[rgb(255_255_255/0.22)]" style={{ scaleX: fill }} />
+      <motion.span aria-hidden className="pointer-events-none absolute inset-0 origin-left bg-[rgb(255_255_255/0.22)]" style={{ scaleX: fill }} />
       <AnimatePresence mode="wait" initial={false}>
-        <motion.span key={busy ? 'busy' : armed ? 'armed' : 'idle'} className="relative flex items-center gap-2 [&_svg]:size-5 [&_svg]:shrink-0" {...SWAP}>
+        <motion.span key={busy ? 'busy' : armed ? 'armed' : 'idle'} className="pointer-events-none relative flex items-center gap-2 [&_*]:pointer-events-none [&_svg]:size-5 [&_svg]:shrink-0" {...SWAP}>
           {busy ? (
             <>
               <Loader2Icon className="animate-spin" />

@@ -31,6 +31,8 @@ From top to bottom:
      - A complete hold calls the existing `confirm(scan)`, which shows the passkey prompt.
      - While busy: spinner plus "Wachten op passkey…", disabled.
      - Keyboard: holding Space or Enter fills it the same way, and `keyup` cancels.
+     - Touch/pen: a full fill arms the button with the label "Laat los om te bevestigen" and confirms on finger lift
+       (WebAuthn needs the pointerup user gesture); mouse and keyboard confirm at full.
      - `aria-label="Houd vast om te bevestigen"`.
      - A short tap does nothing, but the label stays visible, so it is still obvious what to do.
    - **Secondary** `bg-beheer-row-high` "Nee, dat ben ik niet" runs the existing `refuse()`.
