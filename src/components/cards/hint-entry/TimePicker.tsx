@@ -1,5 +1,7 @@
 import { useRef, useState } from 'react';
 import { ClockIcon } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
+import { SWAP } from '@/lib/motion';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { MENU_CARD } from '@/components/settings/menu-parts';
 import Segmented from '@/components/beheer/controls/Segmented';
@@ -35,7 +37,13 @@ export default function TimePicker({ id, value, onChange, days, open, onOpenChan
   const shown = days.find((d) => d.key === day) ?? days.find((d) => d.key === defaultDay(days));
 
   return (
-    <Popover open={open} onOpenChange={onOpenChange}>
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        if (next) picked.current = false;
+        onOpenChange(next);
+      }}
+    >
       <PopoverTrigger asChild>
         <PickerTrigger
           id={id}
@@ -71,25 +79,28 @@ export default function TimePicker({ id, value, onChange, days, open, onOpenChan
                 className="flex w-full flex-nowrap [&>*]:flex-1 [&>*]:justify-center"
               />
             )}
-            <div className="grid grid-cols-4 gap-1">
-              {shown.hours.map((hour) => (
-                <button
-                  key={hour.value}
-                  type="button"
-                  disabled={hour.taken}
-                  aria-pressed={hour.value === value}
-                  title={hour.taken ? 'Al geregistreerd' : undefined}
-                  className={cn(pickerTileClass(hour.value === value, hour.taken), 'h-[38px] tabular-nums')}
-                  onClick={() => {
-                    picked.current = true;
-                    onChange(hour.value);
-                    onOpenChange(false);
-                  }}
-                >
-                  {hour.label}
-                </button>
-              ))}
-            </div>
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div key={shown.key} {...SWAP} className="grid grid-cols-4 gap-1">
+                {shown.hours.map((hour) => (
+                  <button
+                    key={hour.value}
+                    type="button"
+                    disabled={hour.taken}
+                    aria-pressed={hour.value === value}
+                    title={hour.taken ? 'Al geregistreerd' : undefined}
+                    aria-label={hour.taken ? `${hour.label}, al geregistreerd` : undefined}
+                    className={cn(pickerTileClass(hour.value === value, hour.taken), 'h-[38px] tabular-nums')}
+                    onClick={() => {
+                      picked.current = true;
+                      onChange(hour.value);
+                      onOpenChange(false);
+                    }}
+                  >
+                    {hour.label}
+                  </button>
+                ))}
+              </motion.div>
+            </AnimatePresence>
           </div>
         ) : (
           <p className="px-2 py-3 text-center text-sm text-muted-foreground">(Nog) geen tijdstip te kiezen</p>
