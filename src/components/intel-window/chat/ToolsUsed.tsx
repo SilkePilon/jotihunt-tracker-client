@@ -44,7 +44,7 @@ export default function ToolsUsed({ calls }: { calls: ChatToolCall[] }) {
           ))}
         </span>
         {calls.length} {calls.length === 1 ? 'tool' : 'tools'} gebruikt
-        {failed && <span className="size-1.5 rounded-full bg-destructive" aria-label="met fouten" />}
+        {failed && <span role="img" className="size-1.5 rounded-full bg-destructive" aria-label="met fouten" />}
         <motion.span className="grid" animate={{ rotate: open ? 90 : 0 }} transition={SWAP_TRANSITION}>
           <ChevronRightIcon className="size-3.5" />
         </motion.span>

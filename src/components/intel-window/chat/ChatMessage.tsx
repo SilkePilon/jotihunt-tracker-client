@@ -44,7 +44,9 @@ export default function ChatMessage({ message, streaming, mapRef }: ChatMessageP
         {texts.map((part, index) => (
           <ChatMarkdown key={index} text={part.text} />
         ))}
-        {sources.length > 0 && <SourceChips sources={sources} />}
+        <Reveal gap={8}>
+          {sources.length > 0 && <SourceChips sources={sources} />}
+        </Reveal>
         <AnimatePresence initial={false}>
           {cards.map((card) => (
             <motion.div key={card.id} {...POP} style={{ originY: 0 }}>
