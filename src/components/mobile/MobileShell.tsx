@@ -90,7 +90,7 @@ export default function MobileShell({ mapRef }: { mapRef: RefObject<MapRef | nul
         <div ref={viewsRef} className="relative">
           <AnimatePresence initial={false} custom={direction} mode="popLayout">
             <motion.div key={viewKey} data-view={viewKey} custom={direction} variants={PANE_SLIDE} initial="enter" animate="center" exit="exit" transition={PANE_SLIDE_TRANSITION}>
-              {top ? <MobilePage page={top} mapRef={mapRef} /> : <MobileMenu />}
+              {top ? <MobilePage page={top} depth={stack.length} mapRef={mapRef} /> : <MobileMenu />}
             </motion.div>
           </AnimatePresence>
         </div>

@@ -6,15 +6,15 @@ import useMobileNavStore from '@/stores/mobile-nav.store';
 import SidebarSections from '@/components/sidebar/SidebarSections';
 
 /**
- * A pushed page: "‹ Menu" plus the page content. Plan 1 shows the existing sidebar card for the section
+ * A pushed page: "‹ Menu" (or "‹ Terug" on a page above another page) plus the page content. Plan 1 shows the existing sidebar card for the section
  * (SidebarSections filtered to one id); plan 2 swaps in the extracted D1 content with a title and description.
  */
-export default function MobilePage({ page, mapRef }: { page: Page; mapRef: RefObject<MapRef | null> }) {
+export default function MobilePage({ page, depth, mapRef }: { page: Page; depth: number; mapRef: RefObject<MapRef | null> }) {
   const pop = useMobileNavStore((s) => s.pop);
   return (
     <div className="flex flex-col gap-3 px-3 pb-8">
       <button type="button" onClick={pop} className="flex h-10 w-fit items-center gap-1 rounded-xl pl-1 pr-2.5 text-[13.5px] font-semibold text-muted-foreground">
-        <ChevronLeftIcon className="size-5" /> Menu
+        <ChevronLeftIcon className="size-5" /> {depth > 1 ? 'Terug' : 'Menu'}
       </button>
       <PageBody>
         <SidebarSections mapRef={mapRef} only={page.id} />
