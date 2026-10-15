@@ -3,19 +3,13 @@ import { MapRef } from '@/components/Map';
 import { useIsMobile } from '@/hooks/media.hook';
 import SidebarHeader from './SidebarHeader';
 import SidebarSections from './SidebarSections';
-import MobileSheet from './MobileSheet';
 import { tourTarget } from '@/components/tour/targets';
+import MobileShell from '@/components/mobile/MobileShell';
 
 export default function Sidebar({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
   const isMobile = useIsMobile();
 
-  if (isMobile) {
-    return (
-      <MobileSheet header={<SidebarHeader />}>
-        <SidebarSections mapRef={mapRef} />
-      </MobileSheet>
-    );
-  }
+  if (isMobile) return <MobileShell mapRef={mapRef} />;
 
   return (
     <aside className="pointer-events-none absolute bottom-2 left-2 top-2 z-40 w-[320px]">

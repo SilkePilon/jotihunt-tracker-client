@@ -8,12 +8,15 @@ import {
 import { Toaster as Sonner, type ToasterProps } from "sonner"
 
 import { useDarkMode } from "@/hooks/utils/darkmode.hook.ts"
+import { useIsMobile } from "@/hooks/media.hook"
 
 const Toaster = ({ ...props }: ToasterProps) => {
   // Follow the app's own dark mode (body.dark), which can differ from the OS
   // preference. The upstream component uses next-themes, which this app does
   // not use.
   const isDarkMode = useDarkMode()
+  // Phones: the bottom sheet owns the bottom edge
+  const isMobile = useIsMobile()
 
   return (
     <Sonner
@@ -42,6 +45,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
           cancelButton: "bg-muted! text-muted-foreground!",
         },
       }}
+      position={isMobile ? "top-center" : "bottom-right"}
       {...props}
     />
   )

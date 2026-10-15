@@ -119,7 +119,10 @@ export function formatLastUpdate(iso: string | undefined, now: number): string {
 
 function ageText(iso: string | undefined, now: number): string | undefined {
   if (!iso) return undefined;
-  const seconds = Math.max(0, Math.round((now - Date.parse(iso)) / 1000));
+  const time = Date.parse(iso);
+  // A malformed timestamp would read "NaN u"; leave the age out instead
+  if (Number.isNaN(time)) return undefined;
+  const seconds = Math.max(0, Math.round((now - time) / 1000));
   if (seconds < 60) return `${seconds} s`;
   const minutes = Math.round(seconds / 60);
   return minutes < 60 ? `${minutes} min` : `${Math.round(minutes / 60)} u`;

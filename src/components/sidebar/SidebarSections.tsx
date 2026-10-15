@@ -15,8 +15,11 @@ import CounterHuntSection from './CounterHuntSection';
 import TelegramSection from './TelegramSection';
 import Life360Section from './Life360Section';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import type { SidebarSectionId } from '@/stores/sidebar.store';
 
-export default function SidebarSections({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
+/** All sidebar sections; `only` renders just one of them (a phone page). */
+export default function SidebarSections({ mapRef, only }: { mapRef: RefObject<MapRef | null>; only?: SidebarSectionId }) {
+  const show = (id: SidebarSectionId) => !only || only === id;
   const { board } = useHintBoard();
   const { predictions } = usePredictions();
   const { enabled: predictionEnabled } = usePredictionSetting();
@@ -24,37 +27,51 @@ export default function SidebarSections({ mapRef }: { mapRef: RefObject<MapRef |
 
   return (
     <>
-      <SidebarSection id="foxes" title="Vossen" summary={<FoxesSummary />}>
-        <FoxesCard />
-      </SidebarSection>
-      <SidebarSection id="hints" title="Hints" summary={progress ? `${progress.solved}/${progress.total} opgelost` : undefined}>
-        <HintMiniGrid mapRef={mapRef} />
-      </SidebarSection>
-      <ErrorBoundary name="Hunts">
-        <HuntsSection />
-      </ErrorBoundary>
-      {predictionEnabled !== false && (
+      {show('foxes') && (
+        <SidebarSection id="foxes" title="Vossen" summary={<FoxesSummary />}>
+          <FoxesCard />
+        </SidebarSection>
+      )}
+      {show('hints') && (
+        <SidebarSection id="hints" title="Hints" summary={progress ? `${progress.solved}/${progress.total} opgelost` : undefined}>
+          <HintMiniGrid mapRef={mapRef} />
+        </SidebarSection>
+      )}
+      {show('hunts') && (
+        <ErrorBoundary name="Hunts">
+          <HuntsSection />
+        </ErrorBoundary>
+      )}
+      {show('predictions') && predictionEnabled !== false && (
         <SidebarSection id="predictions" title="Voorspelling" summary={predictionSummary(predictions)}>
           <PredictionList mapRef={mapRef} />
         </SidebarSection>
       )}
-      <SidebarSection id="hintEntry" title="Hint registreren">
-        <HintEntryCard mapRef={mapRef} />
-      </SidebarSection>
-      {import.meta.env.HOME_TEAM_API_ID && (
+      {show('hintEntry') && (
+        <SidebarSection id="hintEntry" title="Hint registreren">
+          <HintEntryCard mapRef={mapRef} />
+        </SidebarSection>
+      )}
+      {show('counterHunt') && import.meta.env.HOME_TEAM_API_ID && (
         <ErrorBoundary name="Tegenhunt">
           <CounterHuntSection mapRef={mapRef} />
         </ErrorBoundary>
       )}
-      <ErrorBoundary name="Jotihunt-berichten">
-        <TelegramSection />
-      </ErrorBoundary>
-      <ErrorBoundary name="Tracker">
-        <TrackerSection />
-      </ErrorBoundary>
-      <ErrorBoundary name="Life360">
-        <Life360Section mapRef={mapRef} />
-      </ErrorBoundary>
+      {show('telegram') && (
+        <ErrorBoundary name="Jotihunt-berichten">
+          <TelegramSection />
+        </ErrorBoundary>
+      )}
+      {show('tracking') && (
+        <ErrorBoundary name="Tracker">
+          <TrackerSection />
+        </ErrorBoundary>
+      )}
+      {show('life360') && (
+        <ErrorBoundary name="Life360">
+          <Life360Section mapRef={mapRef} />
+        </ErrorBoundary>
+      )}
     </>
   );
 }
