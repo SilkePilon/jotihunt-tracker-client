@@ -146,3 +146,44 @@ type AssignmentProposal = { articleId: number; title: string; status?: 'open' | 
 
 "Opslaan" on an AssignmentProposal calls the existing `POST /assignments/:articleId/status { status }` and/or `POST /assignments/:articleId/notes { text: note }` (text ≤ 1000).
 LookAtPoint: client shows `imageUrl` as a small thumbnail in the tools list or as a card (click = lightbox).
+
+## OV tools (added 2026-10-15) — fox teams travelling by bus/tram/train (e.g. team Oscar)
+
+Sources: OVapi (`http://v0.ovapi.nl`, no key: `/stopareacode`, `/stopareacode/{code}`, `/tpc/{code}`, `/journey/{id}`) for bus/tram/metro/boat; NS Reisinformatie API (`https://gateway.apiportal.ns.nl/reisinformatie-api/api/v2/...`, header `Ocp-Apim-Subscription-Key: $NS_API_KEY`) for trains — only when `NS_API_KEY` is set, otherwise train parts are skipped and the output says so in `note`.
+
+| Name | Running label | Icon tone |
+| --- | --- | --- |
+| `ovStopsNear` | Haltes zoeken… | map (ok) |
+| `ovDepartures` | Vertrektijden ophalen… | map |
+| `ovJourney` | Rit volgen… | map |
+| `predictOvMovement` | OV-route voorspellen… | think (purple) |
+
+```ts
+type OvMode = 'BUS' | 'TRAM' | 'METRO' | 'BOAT' | 'TRAIN';
+
+// ovStopsNear({ near: point | placeName, radiusM? = 1000 (max 5000) }) — bus/tram stop areas + train stations (NS)
+type OvStop = { id: string; name: string; town: string | null; latLng: LatLng; rdText: string; distanceM: number; modes: OvMode[] };
+// id: OVapi StopAreaCode, or 'NS:<stationCode>' for a train station
+type OvStopsResult = { stops: OvStop[]; note?: string }; // ≤ 20, nearest first
+
+// ovDepartures({ stop: id | near, windowMin? = 60 (max 180), fromTime?: ISO (default now) })
+type OvDeparture = { mode: OvMode; line: string; destination: string; planned: string; expected: string; delayMin: number;
+                     status: string; journeyId: string | null; platform?: string };
+// journeyId: OVapi journey key, or 'NS:<trainNumber>:<YYYY-MM-DD>'
+type OvDeparturesResult = { stop: OvStop; departures: OvDeparture[]; note?: string }; // ≤ 30, by expected time
+
+// ovJourney({ journeyId })
+type OvJourneyStop = { name: string; town: string | null; latLng: LatLng | null; planned: string | null; expected: string | null;
+                       status: 'PASSED' | 'ARRIVED' | 'DEPARTED' | 'DRIVING' | 'PLANNED' | 'CANCEL' | 'UNKNOWN' };
+type OvJourneyResult = { mode: OvMode; line: string; destination: string; stops: OvJourneyStop[];
+                         current: { latLng: LatLng; rdText: string; between: [string, string]; note: string } | null };
+
+// predictOvMovement({ from: point, seenAt: ISO, maxWalkM? = 800, area?: string, modes?: OvMode[] })
+type OvCandidate = { point: PointResult; via: string;          // e.g. "bus 83 → Warnsveld (vertrek 15:08 Station Zutphen)"
+                     kind: 'onboard' | 'alighted' | 'terminus' | 'waiting'; atTime: string; score: number; // 0..1
+                     why: string; journeyId: string | null };
+type OvPredictionResult = { candidates: OvCandidate[]; assumptions: string[]; note?: string }; // ≤ 10, best first
+```
+
+Client cards (after the turn finished streaming, like PointCards): `ovDepartures` → DeparturesCard (rows: mode icon, line chip, destination, expected time + delay in red when > 0, "Volg rit" opens nothing — informational; max 8 rows with animated "meer"); `ovJourney` → JourneyCard (vertical stop timeline, passed stops muted, current position highlighted, "Toon op kaart" on current); `predictOvMovement` → OvPredictionCard (candidate rows: rank, via, kind chip, time, score bar, "Toon op kaart" per row; assumptions as small muted list).
+ToolsUsed summaries: ovStopsNear "{n} haltes"; ovDepartures "{n} vertrekken · {stop.name}"; ovJourney "{line} → {destination}"; predictOvMovement "{n} kandidaten".
