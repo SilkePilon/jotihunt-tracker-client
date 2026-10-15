@@ -35,6 +35,7 @@ import {useLogout} from '@/hooks/logout.hook';
 import LayersSubmenu from './settings/LayersSubmenu';
 import MapStyleSubmenu from './settings/MapStyleSubmenu';
 import useAdminStore from '@/stores/admin.store';
+import {useIsMobile} from '@/hooks/media.hook';
 
 const DISCORD_URL = import.meta.env.DISCORD_URL;
 
@@ -59,6 +60,7 @@ export default function Settings({onReplayTour}: SettingsProps) {
     const setSoundMuted = useSettingsStore((state) => state.setSoundMuted);
     const {isStandalone, isInstallPromptSupported, promptInstall} = usePWA();
     const openAdminDialog = useAdminStore((state) => state.openDialog);
+    const isMobile = useIsMobile();
 
     const auth = useAuthUser<User>();
     const logout = useLogout();
@@ -84,8 +86,13 @@ export default function Settings({onReplayTour}: SettingsProps) {
                             Installeer app
                         </DropdownMenuItem>
                     )}
-                    <LayersSubmenu/>
-                    <MapStyleSubmenu/>
+                    {/* Desktop has the layers button on the map; phones have no map controls */}
+                    {isMobile && (
+                        <>
+                            <LayersSubmenu/>
+                            <MapStyleSubmenu/>
+                        </>
+                    )}
                     <DropdownMenuSeparator/>
                     <DropdownMenuItem onClick={() => openNotifications(true)}>
                         <BellIcon/>

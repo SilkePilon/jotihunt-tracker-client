@@ -34,6 +34,7 @@ import {useDarkMode} from '@/hooks/utils/darkmode.hook';
 import {useIsMobile} from '@/hooks/media.hook';
 import PickedLocationPopup from './map/PickedLocationPopup';
 import OrbitControls from './map/OrbitControls';
+import MapLayersControl from './map/MapLayersControl';
 import {ORBIT_MAX_PITCH} from '@/lib/orbit';
 import {FullscreenControl} from "react-map-gl/maplibre";
 import '@mapbox-controls/ruler/src/index.css';
@@ -77,9 +78,11 @@ interface MapProps {
 }
 
 // react-map-gl/maplibre's maxBounds prop expects a flat [west, south, east, north] tuple.
+// MapLibre keeps the whole viewport inside these bounds, including the part behind the sidebar, so they reach well past
+// the Dutch border: the east edge of the country must still fit beside the sidebar when zoomed out.
 const maxBounds: [number, number, number, number] = [
-    3.314971144228537, 50.80372101501058,
-    7.092053256784122, 53.51040334737814,
+    2.3, 50.3,
+    8.4, 54.0,
 ];
 
 // Ruler in the app's blue; the distances are white on a thick blue halo so they read on light, dark and satellite maps
@@ -255,7 +258,7 @@ const Map = forwardRef<MapRef, MapProps>(({className, wall = false, overlay}, re
                     <>
                         <ScaleControl/>
                         {/* Bottom corners stack upwards (the last added control ends up on top), so add bottom-to-top:
-                            credits (above), ruler, fullscreen, my location, zoom */}
+                            credits (above), ruler, fullscreen, my location, zoom, map style and layers */}
                         <Ruler linePaint={RULER_LINE_PAINT} markerPaint={RULER_MARKER_PAINT}
                                labelLayout={RULER_LABEL_LAYOUT} labelPaint={RULER_LABEL_PAINT}
                                position="bottom-right" onActivate={activateRuler}
@@ -263,6 +266,7 @@ const Map = forwardRef<MapRef, MapProps>(({className, wall = false, overlay}, re
                         <FullscreenControl position="bottom-right"/>
                         <GeolocateControl position="bottom-right"/>
                         <NavigationControl position="bottom-right" showCompass={false}/>
+                        <MapLayersControl position="bottom-right"/>
                     </>
                 )}
                 {/* Before the layers, so it listens for their images from the start */}

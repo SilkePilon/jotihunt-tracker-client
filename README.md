@@ -27,7 +27,7 @@ Met deze client-app heb je een overzichtelijke en gebruiksvriendelijke interface
 - Countdown en geluidsmelding voor nieuwe hints.
 - Zoeken op en navigeren naar coördinaten in zowel RD-grid als WGS84 formaat.
 - Dark mode!
-- Verschillende kaart stijlen (straten, outdoor, satelliet, donker).
+- Verschillende kaartstijlen (automatisch licht/donker, straten, outdoor, satelliet).
 - Liniaal voor het meten van afstanden.
 - Aanmaken en wijzigen van andere gebruikers.
 
@@ -154,7 +154,7 @@ Genereer een willekeurige, veilige string van minimaal 32 tekens. Deze wordt geb
 #### Kaartweergave (MapLibre)
 De kaart gebruikt [MapLibre GL JS](https://maplibre.org/) met gratis, token-loze kaartbronnen. Er is dus geen account of API-token nodig om de kaart te laten werken:
 - **Automatisch (Material)**, de standaard: dezelfde kaart als de Android-app, OpenFreeMap Liberty ingekleurd met een Material 3-kleurschema (seed `MAP_SEED` in `src/lib/map-style/material-style.ts`), licht of donker met het thema van de site.
-- **Straten** en **Donker**: vectortegels van [OpenFreeMap](https://openfreemap.org/) (gratis, geen limiet, gebaseerd op OpenStreetMap-data).
+- **Straten**: vectortegels van [OpenFreeMap](https://openfreemap.org/) (gratis, geen limiet, gebaseerd op OpenStreetMap-data).
 - **Outdoor**: de BRT achtergrondkaart van [PDOK](https://www.pdok.nl/) (Kadaster).
 - **Satelliet**: luchtfoto's van PDOK (Beeldmateriaal Nederland), met plaatsnamen/straten van OpenFreeMap eroverheen.
 

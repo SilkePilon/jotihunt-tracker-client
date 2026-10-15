@@ -12,6 +12,7 @@ export const TOUR_TARGET_IDS = [
   ...SIDEBAR_SECTIONS.map((id) => `sidebar.${id}` as const),
   'huntCapture.button',
   'cards.topRight',
+  'map.layersButton',
   'settings.replayItem',
   'tour.panel',
 ] as const;

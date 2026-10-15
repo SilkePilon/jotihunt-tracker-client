@@ -4,7 +4,6 @@ import { MapStyle } from '@/types/MapStyle';
 // Free, token-less map sources. See docs in the migration report for why
 // each was picked.
 const OPENFREEMAP_LIBERTY_URL = 'https://tiles.openfreemap.org/styles/liberty';
-const OPENFREEMAP_DARK_URL = 'https://tiles.openfreemap.org/styles/dark';
 
 const PDOK_BRT_TILES_URL =
   'https://service.pdok.nl/brt/achtergrondkaart/wmts/v2_0/standaard/EPSG:3857/{z}/{x}/{y}.png';
@@ -124,8 +123,6 @@ export function resolveStaticMapStyle(id: MapStyle): string | StyleSpecification
       return OUTDOORS_STYLE;
     case MapStyle.Satellite:
       return SATELLITE_RASTER_ONLY_STYLE;
-    case MapStyle.Dark:
-      return OPENFREEMAP_DARK_URL;
   }
 }
 

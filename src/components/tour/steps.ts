@@ -101,10 +101,17 @@ export const TOUR_STEPS: TourStep[] = [
     only: 'desktop',
   },
   {
+    id: 'map-layers',
+    target: 'map.layersButton',
+    title: 'Kaartstijl en lagen',
+    body: 'Wissel hier tussen kaartstijlen zoals satelliet, en zet lagen als groepen, markers en 3D-gebouwen aan of uit.',
+    only: 'desktop',
+  },
+  {
     id: 'settings',
     target: 'settings.replayItem',
     title: 'Instellingen',
-    body: 'Kaartstijl, zichtbare lagen en meer. Hier kun je deze rondleiding ook altijd opnieuw bekijken.',
+    body: 'Je account, meldingen en meer. Hier kun je deze rondleiding ook altijd opnieuw bekijken.',
     actions: [resetToMenu(), sheetSnap('half'), scrollSidebarToTop(), openSettings()],
   },
   {

@@ -21,7 +21,9 @@ interface SettingsState {
 // `mapbox://styles/...` URLs to stable ids (streets/outdoors/satellite/dark)
 // as part of the MapLibre migration. Old persisted URLs are discarded so the
 // map falls back to the automatic (light/dark) default instead of breaking.
-const SETTINGS_STORE_VERSION = 1;
+// v1 -> v2: the 'dark' style was removed (the automatic Material map already has a dark
+// mode); a persisted 'dark' falls back to automatic the same way.
+const SETTINGS_STORE_VERSION = 2;
 
 const useSettingsStore = create<SettingsState>()(
   persist(
