@@ -13,14 +13,16 @@ export const usePairingCode = () => {
   const [creating, setCreating] = useState(false);
   const [failed, setFailed] = useState(false);
 
-  async function create() {
+  async function create(): Promise<PairingCode | null> {
     setCreating(true);
     setFailed(false);
     try {
       const response = await fetch<PairingCode>('/tracker/pair', 'POST');
       setPairing(response.data);
+      return response.data;
     } catch {
       setFailed(true);
+      return null;
     } finally {
       setCreating(false);
     }
