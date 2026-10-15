@@ -32,6 +32,8 @@ import {materialMapStyle} from '@/lib/map-style';
 import {useDarkMode} from '@/hooks/utils/darkmode.hook';
 import {useIsMobile} from '@/hooks/media.hook';
 import PickedLocationPopup from './map/PickedLocationPopup';
+import OrbitControls from './map/OrbitControls';
+import {ORBIT_MAX_PITCH} from '@/lib/orbit';
 import {FullscreenControl} from "react-map-gl/maplibre";
 import '@mapbox-controls/ruler/src/index.css';
 import Ruler from "@/components/map/RulerControl.tsx";
@@ -201,6 +203,7 @@ const Map = forwardRef<MapRef, MapProps>(({className, wall = false, overlay}, re
                 attributionControl={false}
                 mapStyle={resolvedMapStyle}
                 maxBounds={maxBounds}
+                maxPitch={ORBIT_MAX_PITCH}
                 interactive={!wall}
                 onClick={wall ? undefined : openPopup}
                 interactiveLayerIds={INTERACTIVE_LAYER_IDS}
@@ -233,6 +236,8 @@ const Map = forwardRef<MapRef, MapProps>(({className, wall = false, overlay}, re
                 )}
                 {/* Before the layers, so it listens for their images from the start */}
                 <MarkerImages/>
+                {/* Desktop mouse: calm rotate/tilt around the pointer (phones keep MapLibre's touch gestures) */}
+                <OrbitControls enabled={!isMobile && !wall}/>
                 {popupPosition && !wall && <PickedLocationPopup lng={popupPosition.lng} lat={popupPosition.lat}
                                                        onClose={() => setPopupPosition(undefined)}/>}
                 <Buildings3D visible={showBuildings3d}/>
