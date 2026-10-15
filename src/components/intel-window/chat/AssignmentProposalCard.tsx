@@ -23,8 +23,8 @@ export default function AssignmentProposalCard({ proposal }: { proposal: Assignm
   const noteDone = !note || (assignment?.notes ?? []).some((existing) => sameAnswer(existing.text, note));
   const [saving, setSaving] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
-  // Before the list loaded nothing is known yet: offer "Opslaan"
-  const saved = justSaved || (assignments !== undefined && statusDone && noteDone);
+  // Before the list loaded nothing is known yet: offer "Opslaan". justSaved only bridges until the cache reflects the save
+  const saved = assignments === undefined ? justSaved : statusDone && noteDone;
 
   async function save() {
     if (saved || saving) return;

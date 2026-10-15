@@ -117,6 +117,10 @@ describe('output guards', () => {
     expect(isIntersectResult({ points: [{ label: 'x' }] })).toBe(false);
     expect(isLookAtPointResult({ description: 'Een kerk', imageUrl: 'https://service.pdok.nl/x', point })).toBe(true);
     expect(isLookAtPointResult({ description: 'Een kerk', imageUrl: 'https://service.pdok.nl/x', point: null })).toBe(false);
+    for (const imageUrl of ['http://service.pdok.nl/x', 'https://evil.example/x', 'https://notpdok.nl/x', 'javascript:alert(1)', 'not a url']) {
+      expect(isLookAtPointResult({ description: 'Een kerk', imageUrl, point })).toBe(false);
+    }
+    expect(isLookAtPointResult({ description: 'Een kerk', imageUrl: 'https://pdok.nl/x', point })).toBe(true);
     const info = { articleId: 9, title: 'Opdracht 3', status: 'busy', owner: null, notes: [], endTime: null, maxPoints: 100 };
     expect(isAssignmentInfo(info)).toBe(true);
     expect(isAssignmentInfo({ ...info, status: 'klaar' })).toBe(false);
@@ -159,10 +163,10 @@ describe('toolSummary', () => {
     expect(toolSummary(done('findPlaces', { places: [place] }))).toBe('1 plek');
     expect(toolSummary(done('intersect', { points: [point, point] }))).toBe('2 snijpunten');
     expect(toolSummary(done('intersect', { points: [point] }))).toBe('1 snijpunt');
-    expect(toolSummary(done('lookAtPoint', { description: 'Een kerk met een groot plein ervoor en een molen aan de rand van het dorp.', imageUrl: 'https://x', point }))).toBe(
+    expect(toolSummary(done('lookAtPoint', { description: 'Een kerk met een groot plein ervoor en een molen aan de rand van het dorp.', imageUrl: 'https://service.pdok.nl/x', point }))).toBe(
       'Een kerk met een groot plein ervoor en een molen aan de ran…',
     );
-    expect(toolSummary(done('lookAtPoint', { description: 'Weiland', imageUrl: 'https://x', point }))).toBe('Weiland');
+    expect(toolSummary(done('lookAtPoint', { description: 'Weiland', imageUrl: 'https://service.pdok.nl/x', point }))).toBe('Weiland');
     expect(toolSummary(done('getAssignment', { articleId: 9, title: 'x', status: 'submitted', owner: null, notes: [], endTime: null, maxPoints: null }))).toBe('Ingeleverd');
     expect(toolSummary(done('proposeAssignmentUpdate', { articleId: 9, title: 'x', status: 'busy' }))).toBeNull();
   });

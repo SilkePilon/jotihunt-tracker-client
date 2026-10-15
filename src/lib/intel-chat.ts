@@ -140,8 +140,18 @@ export function isIntersectResult(value: unknown): value is IntersectResult {
   return isObj(value) && Array.isArray(value.points) && value.points.every(isPointResult);
 }
 
+/** Only https PDOK imagery is ever rendered */
+function isPdokUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' && (url.hostname === 'pdok.nl' || url.hostname.endsWith('.pdok.nl'));
+  } catch {
+    return false;
+  }
+}
+
 export function isLookAtPointResult(value: unknown): value is LookAtPointResult {
-  return isObj(value) && typeof value.description === 'string' && typeof value.imageUrl === 'string' && isPointResult(value.point);
+  return isObj(value) && typeof value.description === 'string' && typeof value.imageUrl === 'string' && isPdokUrl(value.imageUrl) && isPointResult(value.point);
 }
 
 export function isAssignmentInfo(value: unknown): value is AssignmentInfo {

@@ -13,6 +13,7 @@ const CLAMP_PX = 80;
 export default function LookCard({ look, mapRef }: { look: LookAtPointResult; mapRef: RefObject<MapRef | null> }) {
   const [zoom, setZoom] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
   const { point } = look;
   return (
     <div className="overflow-hidden rounded-[18px] bg-beheer-row">
@@ -23,15 +24,29 @@ export default function LookCard({ look, mapRef }: { look: LookAtPointResult; ma
           onClick={() => setZoom(true)}
           className="size-24 shrink-0 cursor-zoom-in overflow-hidden rounded-xl bg-beheer-row-high outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
         >
-          <motion.img
-            src={look.imageUrl}
-            alt={`Luchtfoto bij ${point.label}`}
-            className="size-full object-cover"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: loaded ? 1 : 0 }}
-            transition={SWAP_TRANSITION}
-            onLoad={() => setLoaded(true)}
-          />
+          <AnimatePresence mode="wait" initial={false}>
+            {failed ? (
+              <motion.div
+                key="failed"
+                className="flex size-full items-center justify-center p-2 text-center text-[11.5px] text-muted-foreground"
+                {...SWAP}
+              >
+                Luchtfoto niet beschikbaar
+              </motion.div>
+            ) : (
+              <motion.img
+                key="image"
+                src={look.imageUrl}
+                alt={`Luchtfoto bij ${point.label}`}
+                className="size-full object-cover"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: loaded ? 1 : 0 }}
+                transition={SWAP_TRANSITION}
+                onLoad={() => setLoaded(true)}
+                onError={() => setFailed(true)}
+              />
+            )}
+          </AnimatePresence>
         </button>
         <Description text={look.description} />
       </div>
