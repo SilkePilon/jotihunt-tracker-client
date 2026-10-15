@@ -26,7 +26,7 @@ export function readPromoState(storage: Pick<Storage, 'getItem'>): PromoState {
     const value: unknown = JSON.parse(storage.getItem(PROMO_STORAGE_KEY) ?? '{}');
     if (!value || typeof value !== 'object') return {};
     const { hiddenUntil, never } = value as Record<string, unknown>;
-    return { ...(typeof hiddenUntil === 'number' ? { hiddenUntil } : {}), ...(never === true ? { never: true as const } : {}) };
+    return { ...(typeof hiddenUntil === 'number' && Number.isFinite(hiddenUntil) ? { hiddenUntil } : {}), ...(never === true ? { never: true as const } : {}) };
   } catch {
     return {};
   }

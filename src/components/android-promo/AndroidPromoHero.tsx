@@ -9,7 +9,7 @@ export default function AndroidPromoHero({ onClose }: { onClose: () => void }) {
   const fill = { ok: p.okContainer, warn: p.warnContainer, error: p.errorContainer };
   return (
     <div className="relative h-[170px] overflow-hidden" style={{ background: `radial-gradient(circle at 30% 20%, color-mix(in oklab, var(--primary) 35%, transparent), transparent 60%), ${p.tertiaryContainer}` }}>
-      <button type="button" aria-label="Later" onClick={onClose} className="absolute right-2.5 top-2.5 z-10 grid size-[34px] place-items-center rounded-full bg-black/25 text-white">
+      <button type="button" aria-label="Later herinneren" onClick={onClose} className="absolute right-2.5 top-2.5 z-10 grid size-[34px] place-items-center rounded-full bg-black/25 text-white">
         <XIcon className="size-5" />
       </button>
       <div className="absolute bottom-[-40px] left-1/2 h-[200px] w-[130px] -translate-x-1/2 -rotate-6 overflow-hidden rounded-[22px] bg-muted shadow-[0_0_0_5px_#111,0_14px_30px_rgb(0_0_0/.4)]" aria-hidden>

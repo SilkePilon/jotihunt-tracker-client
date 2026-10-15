@@ -20,6 +20,7 @@ describe('shouldShowAndroidPromo', () => {
     ['app detected as installed', { installed: true }],
     ['never again', { state: { never: true as const } }],
   ])('hidden when %s', (_, patch) => expect(shouldShowAndroidPromo({ ...base, ...patch })).toBe(false));
+  test('never wins over everything', () => expect(shouldShowAndroidPromo({ ...base, state: { never: true, hiddenUntil: base.now - 1 } })).toBe(false));
   test('"Later" hides for 3 days', () => {
     const state = laterState(base.now);
     expect(shouldShowAndroidPromo({ ...base, state, now: base.now + LATER_MS - 1 })).toBe(false);
@@ -38,6 +39,11 @@ describe('storage', () => {
     expect(readPromoState({ getItem: () => null })).toEqual({});
     expect(readPromoState({ getItem: () => '{oops' })).toEqual({});
     expect(readPromoState({ getItem: () => '"text"' })).toEqual({});
+  });
+  test('non-finite hiddenUntil is dropped', () => {
+    // JSON can't hold Infinity/NaN, but 1e999 parses to Infinity
+    expect(readPromoState({ getItem: () => '{"hiddenUntil":1e999}' })).toEqual({});
+    expect(readPromoState({ getItem: () => '{"hiddenUntil":-1e999,"never":true}' })).toEqual({ never: true });
   });
 });
 

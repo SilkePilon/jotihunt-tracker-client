@@ -10,7 +10,8 @@ import { SWAP } from '@/lib/motion';
 import useAndroidPromoStore from '@/stores/android-promo.store';
 import AndroidPromoHero from './AndroidPromoHero';
 import DownloadSplitButton from './DownloadSplitButton';
-import { DoneStep, DownloadingStep, InstallStep, PairStep, StepClose, Stepper } from './PromoSteps';
+import { usePairLaunch } from './pair-launch';
+import { AutoHeight, DoneStep, DownloadingStep, InstallStep, PairStep, StepClose, Stepper } from './PromoSteps';
 
 const apiBase: string = import.meta.env.API_BASE_URL;
 
@@ -37,12 +38,20 @@ export default function AndroidPromoDialog() {
     setStep('download');
   }, [release, setStep]);
 
-  const openApp = useCallback(async () => {
-    const pairing = await create();
-    if (!pairing) return false;
-    window.location.href = buildPairingUrl(apiBase, pairing.code, window.location.origin);
-    return true;
-  }, [create]);
+  const pair = usePairLaunch(
+    async () => {
+      const pairing = await create();
+      return pairing ? buildPairingUrl(apiBase, pairing.code, window.location.origin) : null;
+    },
+    () => {
+      const { open: stillOpen, step: current } = useAndroidPromoStore.getState();
+      return stillOpen && current === 'pair';
+    },
+  );
+  const startPair = () => {
+    pair.start();
+    setStep('pair');
+  };
 
   return (
     <AnimatePresence>
@@ -60,32 +69,34 @@ export default function AndroidPromoDialog() {
             exit={{ opacity: 0, scale: 0.95, x: '-50%', y: '-48%' }}
             transition={{ type: 'spring', stiffness: 380, damping: 30 }}
           >
-            <AnimatePresence mode="wait" initial={false}>
-              <motion.div key={step} {...SWAP}>
-                {step === 'intro' ? (
-                  <>
-                    <AndroidPromoHero onClose={() => close('later')} />
-                    <div className="px-5 pb-4 pt-[18px]">
-                      <b className="block text-xl leading-tight">De Jotihunt-app voor Android</b>
-                      <p className="mb-3 mt-1.5 text-[13.5px] text-muted-foreground">Je telefoon als tracker, ook als het scherm uit is.</p>
-                      <FeatureChips />
-                      <DownloadSplitButton version={release.versionName} onDownload={download} onLater={() => close('later')} onNever={() => close('never')} />
+            <AutoHeight>
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div key={step} {...SWAP}>
+                  {step === 'intro' ? (
+                    <>
+                      <AndroidPromoHero onClose={() => close('later')} />
+                      <div className="px-5 pb-4 pt-[18px]">
+                        <b className="block text-xl leading-tight">De Jotihunt-app voor Android</b>
+                        <p className="mb-3 mt-1.5 text-[13.5px] text-muted-foreground">Je telefoon als tracker, ook als het scherm uit is.</p>
+                        <FeatureChips />
+                        <DownloadSplitButton version={release.versionName} onDownload={download} onLater={() => close('later')} onNever={() => close('never')} />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="p-5">
+                      <div className="mb-3.5 flex items-center gap-3">
+                        {step === 'done' ? <span className="flex-1" /> : <Stepper step={step} />}
+                        <StepClose onClose={dismiss} />
+                      </div>
+                      {step === 'download' && <DownloadingStep onDone={onDownloaded} />}
+                      {step === 'install' && <InstallStep onPair={startPair} onRedownload={download} />}
+                      {step === 'pair' && <PairStep phase={pair.phase} startedAt={pair.startedAt} onPhase={pair.setPhase} onRetry={pair.start} deviceCount={deviceCount} refresh={() => void refresh()} onPaired={onPaired} onBack={() => setStep('install')} />}
+                      {step === 'done' && <DoneStep onClose={() => close('paired')} />}
                     </div>
-                  </>
-                ) : (
-                  <div className="p-5">
-                    <div className="mb-3.5 flex items-center gap-3">
-                      {step === 'done' ? <span className="flex-1" /> : <Stepper step={step} />}
-                      <StepClose onClose={dismiss} />
-                    </div>
-                    {step === 'download' && <DownloadingStep onDone={onDownloaded} />}
-                    {step === 'install' && <InstallStep onPair={() => setStep('pair')} onRedownload={download} />}
-                    {step === 'pair' && <PairStep openApp={openApp} deviceCount={deviceCount} refresh={() => void refresh()} onPaired={onPaired} onBack={() => setStep('install')} />}
-                    {step === 'done' && <DoneStep onClose={() => close('paired')} />}
-                  </div>
-                )}
-              </motion.div>
-            </AnimatePresence>
+                  )}
+                </motion.div>
+              </AnimatePresence>
+            </AutoHeight>
           </motion.div>
         </>
       )}

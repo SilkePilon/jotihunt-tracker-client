@@ -1,11 +1,12 @@
 // src/components/android-promo/PromoSteps.tsx
-import { useEffect, useEffectEvent, useRef, useState } from 'react';
-import { motion } from 'motion/react';
+import { useEffect, useEffectEvent, useRef, useState, type ReactNode } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { LinkIcon, TriangleAlertIcon, XIcon } from 'lucide-react';
 import { cookiePath, BADGE_COOKIE_DEPTH } from '@/lib/cookie-shape';
 import { appDidNotOpen } from '@/lib/android-promo';
-import { POP_SPRING } from '@/lib/motion';
+import { POP_SPRING, SWAP, SWAP_TRANSITION } from '@/lib/motion';
 import type { PromoStep } from '@/stores/android-promo.store';
+import type { PairPhase } from './pair-launch';
 import { cn } from '@/lib/utils';
 
 const CHECK = cookiePath(72, BADGE_COOKIE_DEPTH);
@@ -70,12 +71,17 @@ export function InstallStep({ onPair, onRedownload }: { onPair: () => void; onRe
 }
 
 /**
- * Opens the app via the pairing deep link (`openApp` creates the code and navigates), then waits for a new app
- * device on the account. Still visible after 2.5 s = the app didn't open. Not the tracker's `connected`: another
- * client (Traccar Client) may already be connected, which would show "Gekoppeld!" straight away.
+ * Shows a pairing attempt (see usePairLaunch in ./pair-launch) and waits for a new app device on the account. Still visible 2.5 s
+ * after navigating = the app didn't open. Not the tracker's `connected`: another client (Traccar Client) may
+ * already be connected, which would show "Gekoppeld!" straight away.
  */
-export function PairStep({ openApp, deviceCount, refresh, onPaired, onBack }: {
-  openApp: () => Promise<boolean>;
+export function PairStep({ phase, startedAt, onPhase, onRetry, deviceCount, refresh, onPaired, onBack }: {
+  phase: PairPhase;
+  /** When the deep link was opened; null while the code is being made */
+  startedAt: number | null;
+  onPhase: (phase: PairPhase) => void;
+  /** A new attempt, from the retry tap */
+  onRetry: () => void;
   /** App devices on the account; undefined while loading */
   deviceCount: number | undefined;
   /** Reload the account (device list) */
@@ -83,31 +89,10 @@ export function PairStep({ openApp, deviceCount, refresh, onPaired, onBack }: {
   onPaired: () => void;
   onBack: () => void;
 }) {
-  const [phase, setPhase] = useState<'opening' | 'waiting' | 'failed'>('opening');
-  const startedAt = useRef(0);
-  const launched = useRef(false);
   const baseline = useRef<number | undefined>(undefined);
   const paired = useEffectEvent(onPaired);
   const reload = useEffectEvent(refresh);
-  // Phase starts at 'opening', so the first launch needs no setState (which the effect may not do synchronously)
-  const launch = () => {
-    startedAt.current = Date.now();
-    void openApp().then((opened) => {
-      if (!opened) setPhase('failed');
-    });
-  };
-  const attempt = () => {
-    setPhase('opening');
-    launch();
-  };
-  useEffect(() => {
-    // StrictMode runs mount effects twice; one mount must create one code and open the app once
-    if (launched.current) return;
-    launched.current = true;
-    launch();
-    // Once on mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const setPhase = useEffectEvent(onPhase);
   // Success = the account gained an app device since this step started
   useEffect(() => {
     if (deviceCount === undefined) return;
@@ -126,42 +111,68 @@ export function PairStep({ openApp, deviceCount, refresh, onPaired, onBack }: {
       document.removeEventListener('visibilitychange', onVisible);
     };
   }, []);
+  // Only once the deep link was opened: no app within 2.5 s = failed; back from the app = waiting for it
   useEffect(() => {
-    if (phase !== 'opening') return;
+    if (phase !== 'opening' || startedAt === null) return;
     const id = window.setInterval(() => {
-      if (appDidNotOpen(startedAt.current, Date.now(), document.visibilityState === 'visible')) setPhase('failed');
+      if (appDidNotOpen(startedAt, Date.now(), document.visibilityState === 'visible')) setPhase('failed');
     }, 250);
-    const onVisible = () => document.visibilityState === 'visible' && setPhase('waiting');
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') setPhase('waiting');
+    };
     document.addEventListener('visibilitychange', onVisible);
     return () => {
       clearInterval(id);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [phase]);
+  }, [phase, startedAt]);
 
-  if (phase === 'failed') {
-    return (
-      <div className="flex flex-col gap-2 py-2 text-center">
-        <b>App ging niet open?</b>
-        <span className="text-[13px] text-muted-foreground">Installeer hem eerst.</span>
-        <div className="mt-2 flex gap-2">
-          <button type="button" onClick={onBack} className="h-11 flex-1 rounded-xl bg-beheer-row-high font-semibold">Terug</button>
-          <button type="button" onClick={attempt} className="h-11 flex-1 rounded-xl bg-primary font-semibold text-primary-foreground">Opnieuw proberen</button>
-        </div>
-      </div>
-    );
-  }
   return (
-    <div className="flex flex-col items-center gap-3 py-4">
-      <span className="size-[22px] animate-spin rounded-full border-[3px] border-beheer-row-high border-t-primary" />
-      <b>{phase === 'opening' ? 'App openen…' : 'Wachten op de app…'}</b>
-      <span className="text-[12.5px] text-muted-foreground">De app opent vanzelf</span>
-      {phase === 'waiting' && (
-        <button type="button" onClick={attempt} className="h-10 rounded-xl px-4 text-[13.5px] font-semibold text-muted-foreground">
-          Opnieuw proberen
-        </button>
-      )}
-    </div>
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.div key={phase} {...SWAP}>
+        {phase === 'failed' || phase === 'error' ? (
+          <div className="flex flex-col gap-2 py-2 text-center">
+            <b>{phase === 'failed' ? 'App ging niet open?' : 'Kon geen koppelcode maken'}</b>
+            <span className="text-[13px] text-muted-foreground">{phase === 'failed' ? 'Installeer hem eerst.' : 'Controleer je verbinding.'}</span>
+            <div className="mt-2 flex gap-2">
+              {phase === 'failed' && (
+                <button type="button" onClick={onBack} className="h-11 flex-1 rounded-xl bg-beheer-row-high font-semibold">Terug</button>
+              )}
+              <button type="button" onClick={onRetry} className="h-11 flex-1 rounded-xl bg-primary font-semibold text-primary-foreground">Opnieuw proberen</button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-3 py-4">
+            <span className="size-[22px] animate-spin rounded-full border-[3px] border-beheer-row-high border-t-primary" />
+            <b>{phase === 'opening' ? 'App openen…' : 'Wachten op de app…'}</b>
+            <span className="text-[12.5px] text-muted-foreground">De app opent vanzelf</span>
+            {phase === 'waiting' && (
+              <button type="button" onClick={onRetry} className="h-10 rounded-xl px-4 text-[13.5px] font-semibold text-muted-foreground">
+                Opnieuw proberen
+              </button>
+            )}
+          </div>
+        )}
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
+/** Animates its height to follow the content (measured), so the dialog grows and shrinks smoothly between steps */
+export function AutoHeight({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState<number | 'auto'>('auto');
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new ResizeObserver(() => setHeight(el.offsetHeight));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  return (
+    <motion.div className="overflow-hidden" initial={false} animate={{ height }} transition={SWAP_TRANSITION}>
+      <div ref={ref}>{children}</div>
+    </motion.div>
   );
 }
 

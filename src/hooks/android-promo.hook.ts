@@ -1,5 +1,5 @@
 // src/hooks/android-promo.hook.ts
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useIsMobile } from '@/hooks/media.hook';
 import { useAppRelease } from '@/hooks/app-pairing.hook';
 import { useAccount } from '@/hooks/account.hook';
@@ -30,12 +30,13 @@ export function useAndroidPromoAutoOpen() {
   const isAndroid = isAndroidUserAgent(navigator.userAgent);
   const relevant = isMobile && isAndroid;
   const { release } = useAppRelease();
-  const { account: overview } = useAccount(relevant);
+  // Shown this session: done, so stop polling /account
+  const [shown, setShown] = useState(false);
+  const { account: overview } = useAccount(relevant && !shown);
   const [installed, setInstalled] = useState<boolean | undefined>(undefined);
   const tourActive = useTourStore((s) => s.active);
   const meldingenOpen = useNotificationsDialogStore((s) => s.open);
   const accountOpen = useAccountDialogStore((s) => s.open);
-  const opened = useRef(false);
 
   useEffect(() => {
     if (!relevant) return;
@@ -50,7 +51,7 @@ export function useAndroidPromoAutoOpen() {
   const busy = tourActive || meldingenOpen || accountOpen;
 
   useEffect(() => {
-    if (opened.current || !ready || busy) return;
+    if (shown || !ready || busy) return;
     // Spec: only when storage allows (otherwise "later"/"never" can't be remembered)
     const storage = safeStorage();
     if (!storage) return;
@@ -66,9 +67,9 @@ export function useAndroidPromoAutoOpen() {
     });
     if (!show) return;
     const id = window.setTimeout(() => {
-      opened.current = true;
+      setShown(true);
       useAndroidPromoStore.getState().show();
     }, OPEN_DELAY_MS);
     return () => clearTimeout(id);
-  }, [ready, busy, isMobile, isAndroid, release, overview, installed]);
+  }, [shown, ready, busy, isMobile, isAndroid, release, overview, installed]);
 }
