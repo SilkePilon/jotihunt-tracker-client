@@ -1,6 +1,6 @@
 import {
     BugIcon,
-    CogIcon,
+    Settings2Icon,
     DownloadIcon,
     LogOutIcon,
     CompassIcon,
@@ -10,7 +10,8 @@ import {
     ShieldIcon,
 } from 'lucide-react';
 import {siDiscord} from "simple-icons"
-import {Button} from './ui/button';
+import {cn} from '@/lib/utils';
+import {HEADER_BUTTON} from './sidebar/header-button';
 import {
     DropdownMenu,
     DropdownMenuCheckboxItem,
@@ -69,9 +70,11 @@ export default function Settings({onReplayTour}: SettingsProps) {
         <Dialog>
             <DropdownMenu modal={false} open={menuOpen} onOpenChange={handleMenuOpenChange}>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" aria-label="Instellingen">
-                        <CogIcon/>
-                    </Button>
+                    {/* Right half of the header group; while open it turns light orange with all corners round */}
+                    <button type="button" aria-label="Instellingen" title="Instellingen"
+                            className={cn(HEADER_BUTTON, 'rounded-l-[6px] rounded-r-lg data-[state=open]:rounded-lg data-[state=open]:bg-(--map-selected-bg) data-[state=open]:text-(--map-selected-fg)')}>
+                        <Settings2Icon className="size-[18px]"/>
+                    </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start">
                     <DropdownMenuLabel>Hoi, {auth?.name}</DropdownMenuLabel>

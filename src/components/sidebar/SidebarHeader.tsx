@@ -16,8 +16,11 @@ export default function SidebarHeader() {
         {groupName && <p className="truncate text-xs text-muted-foreground">{groupName}</p>}
       </div>
       <DemoBadge />
-      <ThemeToggle />
-      <Settings onReplayTour={() => startTour('replay')} />
+      {/* Joined tonal group: 2px seam, 12px outer and 6px inner corners */}
+      <div className="flex shrink-0 gap-0.5">
+        <ThemeToggle className="rounded-l-lg rounded-r-[6px]" />
+        <Settings onReplayTour={() => startTour('replay')} />
+      </div>
     </div>
   );
 }
