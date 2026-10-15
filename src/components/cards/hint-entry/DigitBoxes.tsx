@@ -45,7 +45,7 @@ function DigitSlot({ index, bad }: { index: number; bad: boolean }) {
   return (
     <div
       className={cn(
-        'relative flex h-[46px] items-center justify-center rounded-[10px] font-mono text-[22px] font-semibold tabular-nums transition-[background-color,color,box-shadow] duration-150',
+        'relative flex h-[46px] items-center justify-center rounded-[10px] text-[22px] font-semibold tabular-nums transition-[background-color,color,box-shadow] duration-150',
         !char ? 'bg-card' : bad ? 'bg-fox-error-container text-fox-on-error' : 'bg-primary-container text-on-primary-container',
         isActive && 'shadow-[inset_0_0_0_2px_var(--primary)]',
       )}
