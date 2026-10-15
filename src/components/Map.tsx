@@ -26,6 +26,7 @@ import Predictions from './layers/Predictions';
 import {usePredictionSetting} from '@/hooks/predictions.hook';
 import useLayersStore from '../stores/layers.store';
 import useSettingsStore from '../stores/settings.store';
+import useSidebarStore from '@/stores/sidebar.store';
 import {MapStyle} from '@/types/MapStyle';
 import {getHybridSatelliteStyle, resolveStaticMapStyle} from '@/lib/map-styles';
 import {materialMapStyle} from '@/lib/map-style';
@@ -153,6 +154,12 @@ const Map = forwardRef<MapRef, MapProps>(({className, wall = false, overlay}, re
     const mapStyle = useSettingsStore((state) => state.mapStyle);
     const isDarkMode = useDarkMode();
     const isMobile = useIsMobile();
+    // Phones: the bottom sheet covers the lower part of the map; padding keeps every flyTo/easeTo centre above it
+    const sheetHeight = useSidebarStore((state) => state.sheetHeight);
+    const bottomPadding = isMobile && !wall ? sheetHeight : 0;
+    useEffect(() => {
+        mapRef.current?.easeTo({padding: {top: 0, left: 0, right: 0, bottom: bottomPadding}, duration: 300});
+    }, [bottomPadding]);
     // Own position like the Android app's: the vehicle of our own tracker (a person without one)
     const {status: tracker} = useTrackerStatus();
     const markerPalette = useMarkerPalette();
@@ -213,6 +220,7 @@ const Map = forwardRef<MapRef, MapProps>(({className, wall = false, overlay}, re
                 // Phones and the HQ wall: start with the credits collapsed to the (i) button; MapLibre opens them on load
                 onLoad={(event) => {
                     if (isMobile || wall) event.target.getContainer().querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show');
+                    event.target.setPadding({top: 0, left: 0, right: 0, bottom: bottomPadding});
                 }}
             >
                 <div className="bg-background">
