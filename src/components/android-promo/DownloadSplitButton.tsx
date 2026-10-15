@@ -10,8 +10,13 @@ export default function DownloadSplitButton({ version, onDownload, onLater, onNe
   useEffect(() => {
     if (!menuOpen) return;
     const close = (event: PointerEvent) => !ref.current?.contains(event.target as Node) && setMenuOpen(false);
+    const onKey = (event: KeyboardEvent) => event.key === 'Escape' && setMenuOpen(false);
     document.addEventListener('pointerdown', close);
-    return () => document.removeEventListener('pointerdown', close);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('pointerdown', close);
+      document.removeEventListener('keydown', onKey);
+    };
   }, [menuOpen]);
 
   return (
@@ -23,8 +28,9 @@ export default function DownloadSplitButton({ version, onDownload, onLater, onNe
         type="button"
         aria-label="Meer opties"
         aria-expanded={menuOpen}
+        aria-haspopup="menu"
         onClick={() => setMenuOpen((o) => !o)}
-        animate={{ borderRadius: menuOpen ? 24 : '4px 12px 12px 4px' }}
+        animate={{ borderRadius: menuOpen ? '24px 24px 24px 24px' : '4px 12px 12px 4px' }}
         transition={{ duration: 0.3, ease: EASE_OUT }}
         className="grid h-12 w-12 place-items-center bg-primary text-primary-foreground"
       >
