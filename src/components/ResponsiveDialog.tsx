@@ -1,9 +1,10 @@
-import { ReactNode, useEffect, useRef, useState } from 'react';
+import { ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { Drawer } from 'vaul';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useIsMobile } from '@/hooks/media.hook';
 import { cn } from '@/lib/utils';
 import { keepOpenWhileEditing } from '@/lib/inline-edit';
+import { useBackEntry } from '@/hooks/back-entry.hook';
 
 interface ResponsiveDialogProps {
   open: boolean;
@@ -23,6 +24,8 @@ interface ResponsiveDialogProps {
   onClosed?: () => void;
   /** Escape on the desktop dialog, before the inline-edit guard; call event.preventDefault() to keep the dialog open (e.g. to close a sub-view first) */
   onEscapeKeyDown?: (event: KeyboardEvent) => void;
+  /** Phones: the Back button closes the drawer (default). Off for drawers that manage their own history entry. */
+  backEntry?: boolean;
 }
 
 // vaul's slide-out (TRANSITIONS.DURATION) and the Radix dialog's `duration-200` fade/zoom-out, plus a margin so the content never unmounts a frame early
@@ -30,8 +33,10 @@ const DRAWER_CLOSE_MS = 500;
 const DIALOG_CLOSE_MS = 250;
 
 /** Frame shared by the large dialogs: a large dialog on desktop, a bottom drawer on phones. */
-export default function ResponsiveDialog({ open, onClose, title, description, children, className, drawerClassName, hideHeader, compact, onClosed, onEscapeKeyDown }: ResponsiveDialogProps) {
+export default function ResponsiveDialog({ open, onClose, title, description, children, className, drawerClassName, hideHeader, compact, onClosed, onEscapeKeyDown, backEntry = true }: ResponsiveDialogProps) {
   const isMobile = useIsMobile();
+  // Phones: Back closes the drawer instead of lowering the sheet behind it
+  useBackEntry(`dialog:${useId()}`, open && isMobile && backEntry, onClose);
   // Keep the content while the drawer slides out / the dialog fades out, instead of an empty frame leaving
   const [mounted, setMounted] = useState(open);
   if (open && !mounted) setMounted(true);
