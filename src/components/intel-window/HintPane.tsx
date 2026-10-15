@@ -11,16 +11,13 @@ import Reveal from '@/components/motion/Reveal';
 import CookieBadge from '@/components/tracker/CookieBadge';
 import { useHintBoard, useRdPreviewState } from '@/hooks/hints.hook';
 import { apiErrorMessage } from '@/lib/api-error';
-import { type AnswerPreview, DETAIL_PART, answerPreview, hasExistingMarker, initialOpenArea, nextOpenArea } from '@/lib/intel-window';
+import { type AnswerPreview, DETAIL_PART, INTEL_CLOSE_MS, answerPreview, hasExistingMarker, initialOpenArea, nextOpenArea } from '@/lib/intel-window';
 import { SWAP } from '@/lib/motion';
 import { areaOptions, getColorFromArea } from '@/lib/utils';
 import useIntelStore from '@/stores/intel.store';
 import type { HintCell } from '@/types/HintCell';
 import type { IntelItem } from '@/types/Intel';
 import ArticleHtml from './ArticleHtml';
-
-/** The window's close animation: fly only once the map is in view again */
-const DIALOG_CLOSE_MS = 260;
 
 /** Save an answer; resolves true when it is stored (false: failed or waiting for the replace-marker confirm) */
 type SaveAnswer = (cell: HintCell, label: string, answer: string) => Promise<boolean>;
@@ -268,7 +265,7 @@ function AreaBody({ cell, label, onSave, mapRef }: { cell: HintCell; label: stri
     const location = cell.answerLocation;
     if (!location) return;
     close();
-    setTimeout(() => mapRef.current?.flyTo({ center: location, duration: 2000, zoom: 15 }), DIALOG_CLOSE_MS);
+    setTimeout(() => mapRef.current?.flyTo({ center: location, duration: 2000, zoom: 15 }), INTEL_CLOSE_MS);
   }
 
   return (

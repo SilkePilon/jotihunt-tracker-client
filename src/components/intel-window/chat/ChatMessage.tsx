@@ -1,8 +1,11 @@
 import type { RefObject } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import type { TextUIPart, UIMessage } from 'ai';
 import type { MapRef } from '@/components/Map';
-import type { ChatPart } from '@/lib/intel-chat';
+import { type ChatPart, pointCards } from '@/lib/intel-chat';
+import { POP } from '@/lib/motion';
 import ChatMarkdown from './ChatMarkdown';
+import PointCard from './PointCard';
 
 interface ChatMessageProps {
   message: UIMessage;
@@ -14,8 +17,8 @@ interface ChatMessageProps {
 
 const isText = (part: ChatPart): part is TextUIPart => part.type === 'text';
 
-/** User bubble on the right; an assistant message as markdown text */
-export default function ChatMessage({ message }: ChatMessageProps) {
+/** User bubble on the right; an assistant message as markdown text, then its point cards (popping in) */
+export default function ChatMessage({ message, mapRef }: ChatMessageProps) {
   const texts = message.parts.filter(isText).filter((part) => part.text.trim() !== '');
   if (message.role === 'user') {
     return (
@@ -24,11 +27,19 @@ export default function ChatMessage({ message }: ChatMessageProps) {
       </div>
     );
   }
+  const cards = pointCards(message);
   return (
     <div className="mx-1 flex flex-col gap-2">
       {texts.map((part, index) => (
         <ChatMarkdown key={index} text={part.text} />
       ))}
+      <AnimatePresence initial={false}>
+        {cards.map((card) => (
+          <motion.div key={card.id} {...POP} style={{ originY: 0 }}>
+            <PointCard point={card.point} proposal={card.proposal} mapRef={mapRef} />
+          </motion.div>
+        ))}
+      </AnimatePresence>
     </div>
   );
 }

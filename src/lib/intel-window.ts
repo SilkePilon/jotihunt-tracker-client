@@ -213,3 +213,6 @@ export const CHAT_EMPTY_PART: Variants = {
   hidden: { opacity: 0, y: 8 },
   shown: { opacity: 1, y: 0, transition: { duration: 0.35, ease: EASE_OUT } },
 };
+
+/** The intel window's close animation: "Toon op kaart" flies only once the map is in view again */
+export const INTEL_CLOSE_MS = 260;
