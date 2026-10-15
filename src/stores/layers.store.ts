@@ -22,6 +22,15 @@ interface LayersState {
   toggleBuildings3d: () => void;
 }
 
+/**
+ * Persisted layer settings, version 0 to 1: the 3D buildings went from off to on by default, and everyone who loaded
+ * the site before has `false` stored, so turn them on once. Later toggles are kept.
+ */
+export function migrateLayers(persisted: unknown, version: number): unknown {
+  if (version >= 1) return persisted;
+  return { ...(persisted as object | undefined), showBuildings3d: true };
+}
+
 const useLayersStore = create<LayersState>()(
   persist(
     (set) => ({
@@ -33,7 +42,7 @@ const useLayersStore = create<LayersState>()(
       showGroupCircles: false,
       showPredictions: true,
       showLife360: true,
-      showBuildings3d: false,
+      showBuildings3d: true,
       toggleTeams: () => {
         set((state) => ({ showTeams: !state.showTeams }));
       },
@@ -65,6 +74,8 @@ const useLayersStore = create<LayersState>()(
     {
       name: 'layers-storage',
       storage: createJSONStorage(() => localStorage),
+      version: 1,
+      migrate: (persisted, version) => migrateLayers(persisted, version) as LayersState,
     },
   ),
 );
