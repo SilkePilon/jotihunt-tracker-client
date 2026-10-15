@@ -21,14 +21,26 @@ export interface NotificationPrefs {
 /** Bump to show the "Meldingen" dialog again to everyone (e.g. after adding a type). */
 export const NOTIFICATIONS_PROMPT_VERSION = 3;
 
-export const NOTIFICATION_OPTIONS: { type: OptionalNotificationType; label: string; description: string }[] = [
-  { type: 'fox-status', label: 'Vossen status', description: 'Als een deelgebied rood, oranje of groen wordt (groen = jagen mag).' },
-  { type: 'hint', label: 'Nieuwe hint', description: 'Zodra de organisatie een hint publiceert.' },
-  { type: 'article', label: 'Opdrachten en nieuws', description: 'Nieuwe opdrachten en nieuwsberichten.' },
-  { type: 'hunt-deadline', label: 'Hunt deadline', description: '10 minuten voordat een hunt ingestuurd moet zijn.' },
-  { type: 'counter-hunt', label: 'Tegenhunt', description: 'Als de Jotihunt-bot een tegenhunt meldt, en uit welke richting.' },
-  { type: 'happy-hour', label: 'Happy hour', description: 'Als er een happy hour begint: hunts tellen dan dubbel.' },
+/** `short` is the one-liner on the tile; `description` stays as its tooltip and screen-reader text. */
+export const NOTIFICATION_OPTIONS: { type: OptionalNotificationType; label: string; short: string; description: string }[] = [
+  { type: 'fox-status', label: 'Vossen status', short: 'Rood, oranje of groen', description: 'Als een deelgebied rood, oranje of groen wordt (groen = jagen mag).' },
+  { type: 'hint', label: 'Nieuwe hint', short: 'Zodra hij er is', description: 'Zodra de organisatie een hint publiceert.' },
+  { type: 'article', label: 'Opdrachten en nieuws', short: 'Nieuwe berichten', description: 'Nieuwe opdrachten en nieuwsberichten.' },
+  { type: 'hunt-deadline', label: 'Hunt deadline', short: '10 min van tevoren', description: '10 minuten voordat een hunt ingestuurd moet zijn.' },
+  { type: 'counter-hunt', label: 'Tegenhunt', short: 'Met richting', description: 'Als de Jotihunt-bot een tegenhunt meldt, en uit welke richting.' },
+  { type: 'happy-hour', label: 'Happy hour', short: 'Hunts tellen dubbel', description: 'Als er een happy hour begint: hunts tellen dan dubbel.' },
 ];
+
+/** The disabled list after switching one type on or off. */
+export function toggleType(disabled: readonly OptionalNotificationType[], type: OptionalNotificationType, on: boolean): OptionalNotificationType[] {
+  const rest = disabled.filter((item) => item !== type);
+  return on ? rest : [...rest, type];
+}
+
+/** The disabled list for the "Alles" switch: nothing disabled, or every optional type. */
+export function setAllTypes(on: boolean): OptionalNotificationType[] {
+  return on ? [] : NOTIFICATION_OPTIONS.map((option) => option.type);
+}
 
 export function shouldAlert(type: NotificationType, disabledTypes: readonly string[]): boolean {
   return type === 'broadcast' || !disabledTypes.includes(type);

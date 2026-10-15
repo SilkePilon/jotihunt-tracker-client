@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { isSilent, isRecent, mergeFeed, pickPrimary, pickSound, shouldAlert, soundKey, toastKind, type AppNotification } from './notifications';
+import { NOTIFICATION_OPTIONS, setAllTypes, toggleType, isSilent, isRecent, mergeFeed, pickPrimary, pickSound, shouldAlert, soundKey, toastKind, type AppNotification } from './notifications';
 
 const n = (overrides: Partial<AppNotification>): AppNotification => ({ id: '1', type: 'hint', title: 't', body: '', urgent: false, data: {}, createdAt: '2026-10-17T20:00:00Z', ...overrides });
 
@@ -94,5 +94,22 @@ describe('happy hour', () => {
     expect(isSilent(n({ type: 'hint', urgent: false }))).toBe(false);
     expect(pickSound([ended])).toBeNull();
     expect(pickSound([ended, n({ id: 'i', type: 'hint' })])).toBe('hint');
+  });
+});
+
+describe('notification option toggles', () => {
+  test('every option has a short text', () => {
+    for (const option of NOTIFICATION_OPTIONS) expect(option.short.length).toBeGreaterThan(0);
+  });
+
+  test('toggleType adds and removes one type without duplicates', () => {
+    expect(toggleType([], 'hint', false)).toEqual(['hint']);
+    expect(toggleType(['hint'], 'hint', false)).toEqual(['hint']);
+    expect(toggleType(['hint', 'article'], 'hint', true)).toEqual(['article']);
+  });
+
+  test('setAllTypes turns everything on or off', () => {
+    expect(setAllTypes(true)).toEqual([]);
+    expect(setAllTypes(false)).toEqual(NOTIFICATION_OPTIONS.map((option) => option.type));
   });
 });
