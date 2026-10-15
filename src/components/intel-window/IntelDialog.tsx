@@ -12,7 +12,7 @@ import { useHasMounted } from '@/hooks/has-mounted.hook';
 import { useIsMobile } from '@/hooks/media.hook';
 import { useReadState } from '@/hooks/read-state.hook';
 import { keepOpenWhileEditing } from '@/lib/inline-edit';
-import { DETAIL_SWAP, buildIntelItems, filterByTab, unreadCount } from '@/lib/intel-window';
+import { CHAT_CARD_ENTER, DETAIL_SWAP, buildIntelItems, filterByTab, unreadCount } from '@/lib/intel-window';
 import { EASE_OUT } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import useIntelStore from '@/stores/intel.store';
@@ -20,6 +20,7 @@ import type { IntelItem, IntelTab } from '@/types/Intel';
 import IntelDetail from './IntelDetail';
 import IntelTimeline from './IntelTimeline';
 import IntelTopBar from './IntelTopBar';
+import IntelChat from './chat/IntelChat';
 
 /** Desktop window with hints, opdrachten and nieuws (phones keep the sidebar mini grid). */
 export default function IntelDialog({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
@@ -205,27 +206,36 @@ function TimelineView({ items, tab, memoryRef, skipEntrance, returnId, onSelect 
   );
 }
 
-/** The open item over the full width: "Tijdlijn" back pill, then the item centred, scrolling on its own */
+/**
+ * The open item (layout B): left the item column ("Tijdlijn" pill floating over its top, scrolling on its own), right
+ * the AI chat card over the full height. Opening from the timeline, the chat card slides in after the item's parts; going
+ * back, it fades out with the rest of the view.
+ */
 function DetailView({ item, area, mapRef, skipEntrance, onBack }: { item: IntelItem; area: string | null; mapRef: RefObject<MapRef | null>; skipEntrance: boolean; onBack: () => void }) {
   const [skip] = useState(skipEntrance);
   return (
-    <>
-      {/* The scroller fills the whole view (a card high up in the timeline morphs in without being clipped by it); the
-          pill floats over its top, content scrolls away under the fade */}
-      <motion.div layoutScroll className="min-h-0 flex-1 overflow-y-auto px-9 pt-12 pb-8 [scrollbar-gutter:stable]">
-        <DetailColumn item={item} area={area} mapRef={mapRef} skipEntrance={skip} />
+    <div className="flex min-h-0 flex-1 gap-4 pr-[18px] pb-[18px]">
+      <div className="relative flex min-w-0 flex-[1.25] flex-col">
+        {/* The scroller fills the column (a card high up in the timeline morphs in without being clipped at the top);
+            the pill floats over its top, content scrolls away under the fade */}
+        <motion.div layoutScroll className="min-h-0 flex-1 overflow-y-auto pt-12 pr-2 pb-8 pl-[26px] [scrollbar-gutter:stable]">
+          <DetailColumn item={item} area={area} mapRef={mapRef} skipEntrance={skip} />
+        </motion.div>
+        <motion.div
+          className="pointer-events-none absolute inset-x-0 top-0 z-10 flex h-12 items-start bg-linear-to-b from-beheer-window from-70% to-transparent pl-6"
+          initial={skip ? false : { opacity: 0, x: -8 }}
+          animate={{ opacity: 1, x: 0, transition: { duration: 0.3, delay: 0.12, ease: EASE_OUT } }}
+        >
+          <Pill className="pointer-events-auto" onClick={onBack} title="Terug naar de tijdlijn (Esc)">
+            <ArrowLeftIcon />
+            Tijdlijn
+          </Pill>
+        </motion.div>
+      </div>
+      <motion.div className="flex min-w-0 flex-1 flex-col" initial={skip ? false : CHAT_CARD_ENTER.initial} animate={CHAT_CARD_ENTER.animate} transition={CHAT_CARD_ENTER.transition}>
+        <IntelChat item={item} mapRef={mapRef} />
       </motion.div>
-      <motion.div
-        className="pointer-events-none absolute inset-x-0 top-0 z-10 flex h-12 items-start bg-linear-to-b from-beheer-window from-70% to-transparent pr-4 pl-6"
-        initial={skip ? false : { opacity: 0, x: -8 }}
-        animate={{ opacity: 1, x: 0, transition: { duration: 0.3, delay: 0.12, ease: EASE_OUT } }}
-      >
-        <Pill className="pointer-events-auto" onClick={onBack} title="Terug naar de tijdlijn (Esc)">
-          <ArrowLeftIcon />
-          Tijdlijn
-        </Pill>
-      </motion.div>
-    </>
+    </div>
   );
 }
 
@@ -241,8 +251,8 @@ function DetailColumn({ item, area, mapRef, skipEntrance }: { item: IntelItem; a
 
   return (
     <AnimatePresence mode="wait">
-      {/* An opdracht is wider (status and notes side by side); the others stay at a comfortable reading width */}
-      <DetailSlide key={item.id} swapped={swapped} skipEntrance={skipEntrance && !swapped} className={item.kind === 'assignment' ? 'max-w-[960px]' : 'max-w-[760px]'}>
+      {/* Full column width; an opdracht stacks status and notes when the column is narrow (@container in AssignmentPane) */}
+      <DetailSlide key={item.id} swapped={swapped} skipEntrance={skipEntrance && !swapped} className="w-full">
         <IntelDetail item={item} area={area} mapRef={mapRef} />
       </DetailSlide>
     </AnimatePresence>

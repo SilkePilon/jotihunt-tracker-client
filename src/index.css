@@ -55,6 +55,9 @@
   --fox-cooldown-group: color-mix(in oklab, var(--fox-cooldown-container) 75%, var(--card));
   --fox-error-group: color-mix(in oklab, var(--fox-error-container) 75%, var(--card));
   --fox-chip: rgb(255 255 255 / 0.7);
+  /* Intel AI chat: "Denk diep" (M3 purple tonal pair) */
+  --ai-think-container: #f2daff;
+  --ai-on-think-container: #2c0051;
 }
 
 .dark {
@@ -99,6 +102,8 @@
   --fox-cooldown-group: color-mix(in oklab, var(--fox-cooldown-container) 55%, var(--card));
   --fox-error-group: color-mix(in oklab, var(--fox-error-container) 55%, var(--card));
   --fox-chip: rgb(0 0 0 / 0.28);
+  --ai-think-container: #4f2a75;
+  --ai-on-think-container: #f0dbff;
 }
 
 @theme inline {
@@ -139,6 +144,13 @@
   --color-fox-cooldown-group: var(--fox-cooldown-group);
   --color-fox-error-group: var(--fox-error-group);
   --color-fox-chip: var(--fox-chip);
+  /* Tonal containers (the -on- text colours above pair with them) */
+  --color-fox-ok-container: var(--fox-ok-container);
+  --color-fox-warn-container: var(--fox-warn-container);
+  --color-fox-cooldown-container: var(--fox-cooldown-container);
+  --color-fox-error-container: var(--fox-error-container);
+  --color-ai-think-container: var(--ai-think-container);
+  --color-ai-on-think: var(--ai-on-think-container);
   --color-beheer-window: var(--beheer-window);
   --color-beheer-row: var(--beheer-row);
   --color-beheer-row-high: var(--beheer-row-high);

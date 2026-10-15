@@ -1,5 +1,5 @@
 import { isAxiosError } from 'axios';
-import type { Transition, Variants } from 'motion/react';
+import type { TargetAndTransition, Transition, Variants } from 'motion/react';
 import { EASE_OUT } from '@/lib/motion';
 import type { Article } from '@/types/Article';
 import type { HintBoard, HintCell, RdPreview } from '@/types/HintCell';
@@ -185,3 +185,10 @@ export const DETAIL_HEAD: Variants = {
 };
 /** The card ↔ detail header morph (frame and title share a `layoutId`, see `useMorphIds`) */
 export const INTEL_MORPH: Transition = { type: 'spring', visualDuration: 0.42, bounce: 0.1 };
+
+/** The AI chat card right of the item (layout B): slides in after the detail's parts when an item opens from the timeline */
+export const CHAT_CARD_ENTER = {
+  initial: { opacity: 0, x: 26, scale: 0.98 },
+  animate: { opacity: 1, x: 0, scale: 1 },
+  transition: { duration: 0.45, delay: 0.28, ease: EASE_OUT },
+} satisfies { initial: TargetAndTransition; animate: TargetAndTransition; transition: Transition };
