@@ -67,7 +67,7 @@ type PointResult = {
   label: string;
   latLng: LatLng;
   rd: Rd;
-  rdText: string;                    // formatRdAnswer, e.g. "152341 431112"
+  rdText: string;                    // formatRdAnswer (the app's hint-answer format), e.g. "1523 4311"
   area: AreaEstimate;
   nearestGroup: NearGroup | null;
 };
