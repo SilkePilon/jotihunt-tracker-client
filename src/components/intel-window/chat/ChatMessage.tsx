@@ -3,10 +3,13 @@ import { AnimatePresence, motion } from 'motion/react';
 import type { FileUIPart, TextUIPart, UIMessage } from 'ai';
 import ImageLightbox from '@/components/ImageLightbox';
 import type { MapRef } from '@/components/Map';
-import { type ChatPart, pointCards } from '@/lib/intel-chat';
+import Reveal from '@/components/motion/Reveal';
+import { type ChatPart, pointCards, toolCalls, webSources } from '@/lib/intel-chat';
 import { POP } from '@/lib/motion';
 import ChatMarkdown from './ChatMarkdown';
 import PointCard from './PointCard';
+import SourceChips from './SourceChips';
+import ToolsUsed from './ToolsUsed';
 
 interface ChatMessageProps {
   message: UIMessage;
@@ -19,23 +22,37 @@ interface ChatMessageProps {
 const isText = (part: ChatPart): part is TextUIPart => part.type === 'text';
 const isImage = (part: ChatPart): part is FileUIPart => part.type === 'file' && part.mediaType.startsWith('image');
 
-/** User bubble on the right; an assistant message as markdown text, then its point cards (popping in) */
-export default function ChatMessage({ message, mapRef }: ChatMessageProps) {
+/** User bubble on the right; an assistant message: tools used (after the turn), markdown text, web sources, point cards */
+export default function ChatMessage({ message, streaming, mapRef }: ChatMessageProps) {
   const texts = message.parts.filter(isText).filter((part) => part.text.trim() !== '');
   if (message.role === 'user') return <UserMessage message={message} text={texts.map((part) => part.text).join('\n')} />;
   const cards = pointCards(message);
+  const calls = toolCalls(message);
+  const sources = webSources(message);
   return (
-    <div className="mx-1 flex flex-col gap-2">
-      {texts.map((part, index) => (
-        <ChatMarkdown key={index} text={part.text} />
-      ))}
-      <AnimatePresence initial={false}>
-        {cards.map((card) => (
-          <motion.div key={card.id} {...POP} style={{ originY: 0 }}>
-            <PointCard point={card.point} proposal={card.proposal} mapRef={mapRef} />
-          </motion.div>
+    <div className="mx-1 flex flex-col">
+      {/* While it runs the status line shows the tools; the stack unfolds above the answer once the turn is done
+          (outside the gap container, so folding in never jumps by a gap) */}
+      <Reveal>
+        {!streaming && calls.length > 0 && (
+          <div className="pb-2">
+            <ToolsUsed calls={calls} />
+          </div>
+        )}
+      </Reveal>
+      <div className="flex flex-col gap-2">
+        {texts.map((part, index) => (
+          <ChatMarkdown key={index} text={part.text} />
         ))}
-      </AnimatePresence>
+        {sources.length > 0 && <SourceChips sources={sources} />}
+        <AnimatePresence initial={false}>
+          {cards.map((card) => (
+            <motion.div key={card.id} {...POP} style={{ originY: 0 }}>
+              <PointCard point={card.point} proposal={card.proposal} mapRef={mapRef} />
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }
