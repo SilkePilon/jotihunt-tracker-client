@@ -179,7 +179,20 @@ export default function AccountDialog() {
                         disabled={adding}
                         className="text-primary"
                         iconClassName="bg-transparent text-primary shadow-[inset_0_0_0_1.5px_var(--border)]"
-                        icon={adding ? <Loader2Icon className="animate-spin" /> : <PlusIcon />}
+                        icon={
+                          <AnimatePresence mode="popLayout" initial={false}>
+                            <motion.span
+                              key={adding ? 'busy' : 'idle'}
+                              className="grid place-items-center"
+                              initial={{ opacity: 0, scale: 0.6 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0.6 }}
+                              transition={{ duration: 0.15 }}
+                            >
+                              {adding ? <Loader2Icon className="animate-spin" /> : <PlusIcon />}
+                            </motion.span>
+                          </AnimatePresence>
+                        }
                       >
                         Passkey toevoegen
                       </ActionRow>
@@ -409,7 +422,7 @@ function IconTile({ className, children }: { className?: string; children: React
   return (
     <span
       className={cn(
-        'grid size-[34px] flex-none place-items-center rounded-xl bg-beheer-row-high text-muted-foreground transition-colors [&_svg]:size-[18px]',
+        'relative grid size-[34px] flex-none place-items-center rounded-xl bg-beheer-row-high text-muted-foreground transition-colors [&_svg]:size-[18px]',
         className,
       )}
     >
@@ -441,7 +454,7 @@ function ActionRow({ icon, iconClassName, className, children, ...props }: Compo
       type="button"
       className={cn(
         'flex w-full items-center gap-3 px-3 py-2.5 text-left text-[13.5px] font-semibold transition-colors outline-none',
-        'hover:bg-beheer-row-high focus-visible:bg-beheer-row-high disabled:pointer-events-none disabled:opacity-60',
+        'hover:bg-beheer-row-high focus-visible:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset disabled:pointer-events-none disabled:opacity-60',
         className,
       )}
       {...props}
