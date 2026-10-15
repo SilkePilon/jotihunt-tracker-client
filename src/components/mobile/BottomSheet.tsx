@@ -51,6 +51,7 @@ export default function BottomSheet({ peek, children, onHeights }: { peek: React
   );
   const peekRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
   const [peekContent, setPeekContent] = useState(136);
   const drag = useRef<Drag | null>(null);
   // Height the content column keeps while the sheet is dragged or springing down; it shrinks to the settled height
@@ -80,9 +81,9 @@ export default function BottomSheet({ peek, children, onHeights }: { peek: React
   useEffect(() => onHeights?.(heights), [heights, onHeights]);
   useEffect(() => setSheetSnapHeights(heights), [heights, setSheetSnapHeights]);
   useEffect(() => () => setSheetSnapHeights(null), [setSheetSnapHeights]);
-  // An open keyboard means an input in the sheet has focus: give it all the room
+  // A keyboard opened for an input in the sheet: give it all the room (not for inputs elsewhere, e.g. a drawer)
   useEffect(() => {
-    if (keyboard > 0 && snap !== 'full') setSnap('full');
+    if (keyboard > 0 && snap !== 'full' && sheetRef.current?.contains(document.activeElement)) setSnap('full');
   }, [keyboard, snap, setSnap]);
 
   const settled = heights[snap];
@@ -199,6 +200,7 @@ export default function BottomSheet({ peek, children, onHeights }: { peek: React
 
   return (
     <motion.div
+      ref={sheetRef}
       {...tourTarget('sidebar.root')}
       role="region"
       aria-label="Zijbalk"
