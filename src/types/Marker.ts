@@ -9,4 +9,6 @@ export interface Marker {
     coordinates: number[];
   };
   type: MarkerType;
+  /** "jotiboard": imported by the Jotiboard sync (absent: ours) */
+  source?: 'jotiboard';
 }
