@@ -107,3 +107,40 @@ type WebSearchResult = { answer: string; sources: { title: string; url: string }
 `checkPoint` → "{point.area.area ?? 'onbekend gebied'} · {nearestGroups[0].name} {km}"; `nearbyGroups` → "{n} groepen";
 `webSearch` → "{sources.length} bronnen"; `searchIntel` → "{results.length} items"; others → no summary line;
 `{ error }` → the error text with a red dot.
+
+## Extra tools (added 2026-10-15, user picks)
+
+| Name | Running label | Icon tone |
+| --- | --- | --- |
+| `decodeCipher` | Code kraken… | think (purple) |
+| `findPlaces` | Plekken zoeken… | map (ok) |
+| `intersect` | Snijpunt uitrekenen… | map |
+| `lookAtPoint` | Luchtfoto bekijken… | map |
+| `getAssignment` | Opdracht lezen… | app (warn) |
+| `proposeAssignmentUpdate` | Wijziging klaarzetten… | app |
+
+All always active (not web tools). Every output is its success shape or `{ error: string }`.
+
+```ts
+// decodeCipher({ text, method?, key? }) — deterministic, no AI. method omitted = try all and rank.
+// methods: 'caesar' (all 25 shifts) | 'atbash' | 'a1z26' | 'morse' | 'roman' | 'dutch-numbers' | 'reverse' | 'mirror-digits' | 'vigenere' (needs key) | 'nato' | 'keypad' (T9 multi-tap)
+type DecodeResult = { results: { method: string; detail?: string; output: string }[] }; // ≤ 30 rows, best first
+
+// findPlaces({ near: point | placeName, radiusM?, kinds: string[] }) — OSM Overpass. kinds: 'church' | 'windmill' | 'water_tower' | 'station' | 'bus_stop' | 'bus_route' | 'bridge' | 'monument' | 'school' | 'castle' | 'tower' | 'any:<osm tag=value>'
+type FindPlacesResult = { places: { name: string | null; kind: string; latLng: LatLng; rdText: string; distanceM: number; detail?: string }[] }; // ≤ 25, nearest first; detail e.g. bus route ref/terminus
+
+// intersect({ bearings?: { from: point, bearingDeg }[], circles?: { center: point, radiusM }[] }) — or centroid when only points given ({ points })
+type IntersectResult = { points: PointResult[]; note?: string }; // 0-2 candidate points, each enriched like showPoint
+
+// lookAtPoint({ point, zoomM? }) — PDOK aerial photo (Actueel_orthoHR) around the point, described by Gemini vision
+type LookAtPointResult = { description: string; imageUrl: string; point: PointResult }; // imageUrl = public PDOK WMS GetMap URL (client may show it)
+
+// getAssignment({ articleId? }) — default current item
+type AssignmentInfo = { articleId: number; title: string; status: 'open' | 'busy' | 'submitted' | 'skipped'; owner: string | null; notes: { by: string; text: string; at: string }[]; endTime: string | null; maxPoints: number | null };
+
+// proposeAssignmentUpdate({ articleId?, status?, note? }) — proposal only, client renders a card with "Opslaan"
+type AssignmentProposal = { articleId: number; title: string; status?: 'open' | 'busy' | 'submitted' | 'skipped'; note?: string };
+```
+
+"Opslaan" on an AssignmentProposal calls the existing `POST /assignments/:articleId/status { status }` and/or `POST /assignments/:articleId/notes { text: note }` (text ≤ 1000).
+LookAtPoint: client shows `imageUrl` as a small thumbnail in the tools list or as a card (click = lightbox).
