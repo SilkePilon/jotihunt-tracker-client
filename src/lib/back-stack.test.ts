@@ -52,4 +52,30 @@ describe('back stack', () => {
     const { history } = fakeHistory();
     expect(() => createBackStack(history).onPopState()).not.toThrow();
   });
+
+  test('a layer that remounts before the deferred close keeps its one entry and the newest close', () => {
+    const { history, calls } = fakeHistory();
+    const pending: (() => void)[] = [];
+    const stack = createBackStack(history, (fn) => pending.push(fn));
+    const closed: string[] = [];
+    stack.open('popup', () => closed.push('a'));
+    stack.closedByUi('popup'); // popup A unmounts...
+    stack.open('popup', () => closed.push('b')); // ...popup B mounts in the same commit
+    pending.forEach((fn) => fn());
+    expect(calls).toEqual(['push']);
+    stack.onPopState();
+    expect(closed).toEqual(['b']);
+  });
+
+  test('a deferred close without a remount still consumes the entry', () => {
+    const { history, calls } = fakeHistory();
+    const pending: (() => void)[] = [];
+    const stack = createBackStack(history, (fn) => pending.push(fn));
+    stack.open('popup', () => {});
+    stack.closedByUi('popup');
+    expect(calls).toEqual(['push']);
+    pending.forEach((fn) => fn());
+    expect(calls).toEqual(['push', 'back']);
+    expect(stack.keys()).toEqual([]);
+  });
 });

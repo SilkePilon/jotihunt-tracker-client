@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import { createBackStack } from '@/lib/back-stack';
 
-const backStack = typeof window === 'undefined' ? null : createBackStack(window.history);
+const backStack = typeof window === 'undefined' ? null : createBackStack(window.history, queueMicrotask);
 if (backStack) window.addEventListener('popstate', () => backStack.onPopState());
 
 /**
