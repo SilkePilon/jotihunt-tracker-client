@@ -13,6 +13,7 @@ import PredictionList from './PredictionList';
 import TrackerSection from './TrackerSection';
 import CounterHuntSection from './CounterHuntSection';
 import TelegramSection from './TelegramSection';
+import JotiboardSection from './JotiboardSection';
 import Life360Section from './Life360Section';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import type { SidebarSectionId } from '@/stores/sidebar.store';
@@ -70,6 +71,11 @@ export default function SidebarSections({ mapRef, only }: { mapRef: RefObject<Ma
       {show('life360') && (
         <ErrorBoundary name="Life360">
           <Life360Section mapRef={mapRef} />
+        </ErrorBoundary>
+      )}
+      {show('jotiboard') && (
+        <ErrorBoundary name="Jotiboard">
+          <JotiboardSection />
         </ErrorBoundary>
       )}
     </>

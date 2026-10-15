@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { BellIcon, ChevronRightIcon, CrosshairIcon, FlagIcon, Grid3x3Icon, KeyRoundIcon, MapPinIcon, MessageSquareIcon, PawPrintIcon, PenLineIcon, ShieldIcon, SmartphoneIcon, UsersIcon } from 'lucide-react';
+import { BellIcon, ChevronRightIcon, CrosshairIcon, FlagIcon, Grid3x3Icon, KeyRoundIcon, MapPinIcon, MessageSquareIcon, PawPrintIcon, PenLineIcon, LayoutDashboardIcon, ShieldIcon, SmartphoneIcon, UsersIcon } from 'lucide-react';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import type { User } from '@/types/User';
 import SidebarHeader from '@/components/sidebar/SidebarHeader';
@@ -83,6 +83,7 @@ export default function MobileMenu() {
   const jij: Row[] = [
     { key: 'tracking', icon: <SmartphoneIcon className={icon} />, title: 'Mijn tracker', meta: trackerSummary(status), onSelect: page('tracking') },
     { key: 'life360', icon: <UsersIcon className={icon} />, title: 'Life360', onSelect: page('life360') },
+    ...(user?.admin ? [{ key: 'jotiboard', icon: <LayoutDashboardIcon className={icon} />, title: 'Jotiboard', onSelect: page('jotiboard') }] : []),
     { key: 'meldingen', icon: <BellIcon className={icon} />, title: 'Meldingen', onSelect: () => useNotificationsDialogStore.getState().setOpen(true) },
     { key: 'account', icon: <KeyRoundIcon className={icon} />, title: 'Account', onSelect: () => useAccountDialogStore.getState().setOpen(true) },
   ];
