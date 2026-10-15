@@ -46,7 +46,7 @@ export default function NotificationsDialog() {
   const current = disabled ?? prefs?.disabledTypes ?? [];
   const iosInstall = needsIosInstall(navigator.userAgent, isStandalone());
   const total = NOTIFICATION_OPTIONS.length;
-  const onCount = total - current.length;
+  const onCount = NOTIFICATION_OPTIONS.filter((option) => !current.includes(option.type)).length;
   const blocked = !iosInstall && pushPermission() === 'denied';
 
   function toggle(type: OptionalNotificationType, on: boolean) {

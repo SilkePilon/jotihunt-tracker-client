@@ -23,7 +23,7 @@ export default function NotificationTile({ icon: Icon, label, short, description
       title={description}
       onClick={onToggle}
       className={cn(
-        'relative flex min-h-[104px] cursor-pointer flex-col items-start gap-2 rounded-2xl p-3 text-left outline-none transition-colors duration-200 focus-visible:ring-[3px] focus-visible:ring-ring/50 motion-reduce:transition-none',
+        'relative flex min-h-[104px] cursor-pointer flex-col items-start gap-2 rounded-2xl p-3 text-left outline-none transition-[background-color,color,filter] duration-200 focus-visible:ring-[3px] focus-visible:ring-ring/50 motion-reduce:transition-none',
         on ? 'bg-(--map-selected-bg) text-(--map-selected-fg) hover:brightness-[.97]' : 'bg-beheer-row text-muted-foreground hover:bg-beheer-row-high',
       )}
     >
@@ -35,7 +35,7 @@ export default function NotificationTile({ icon: Icon, label, short, description
           </motion.span>
         )}
       </AnimatePresence>
-      <span className={cn('text-[13px] font-semibold', !on && 'text-foreground')}>{label}</span>
+      <span className={cn('text-[13px] font-semibold transition-colors duration-200 motion-reduce:transition-none', !on && 'text-foreground')}>{label}</span>
       <span className="-mt-1 text-[11px] leading-snug opacity-80">{short}</span>
       <span className="sr-only">{description}</span>
     </button>
