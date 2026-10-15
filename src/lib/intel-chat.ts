@@ -1,9 +1,23 @@
 import { isAxiosError } from 'axios';
 import type { ChatStatus, ReasoningUIPart, UIMessage } from 'ai';
-import { areaStates } from '@/lib/intel-window';
+import { ASSIGNMENT_STATUS_LABELS, areaStates } from '@/lib/intel-window';
 import { areaOptions } from '@/lib/utils';
 import type { IntelItem, IntelKind } from '@/types/Intel';
-import type { ChatModes, HintAnswerProposal, IntelChatRequest, IntelToolName, PointResult, ToolTone, WebSearchResult } from '@/types/IntelChat';
+import type {
+  AssignmentInfo,
+  AssignmentProposal,
+  ChatModes,
+  DecodeResult,
+  FindPlacesResult,
+  HintAnswerProposal,
+  IntelChatRequest,
+  IntersectResult,
+  IntelToolName,
+  LookAtPointResult,
+  PointResult,
+  ToolTone,
+  WebSearchResult,
+} from '@/types/IntelChat';
 
 /** Dutch running label and icon tone per tool (contract table) */
 export const TOOL_META: Record<IntelToolName, { label: string; tone: ToolTone }> = {
@@ -25,6 +39,12 @@ export const TOOL_META: Record<IntelToolName, { label: string; tone: ToolTone }>
   runCode: { label: 'Rekenen…', tone: 'think' },
   showPoint: { label: 'Punt klaarzetten…', tone: 'map' },
   proposeHintAnswer: { label: 'Antwoord klaarzetten…', tone: 'map' },
+  decodeCipher: { label: 'Code kraken…', tone: 'think' },
+  findPlaces: { label: 'Plekken zoeken…', tone: 'map' },
+  intersect: { label: 'Snijpunt uitrekenen…', tone: 'map' },
+  lookAtPoint: { label: 'Luchtfoto bekijken…', tone: 'map' },
+  getAssignment: { label: 'Opdracht lezen…', tone: 'app' },
+  proposeAssignmentUpdate: { label: 'Wijziging klaarzetten…', tone: 'app' },
 };
 
 const isKnownTool = (name: string): name is IntelToolName => Object.hasOwn(TOOL_META, name);
@@ -101,6 +121,42 @@ export function isWebSearchResult(value: unknown): value is WebSearchResult {
   return isObj(value) && typeof value.answer === 'string' && Array.isArray(value.sources);
 }
 
+const isLatLng = (value: unknown) => isObj(value) && typeof value.lat === 'number' && typeof value.lng === 'number';
+const isAssignmentStatus = (value: unknown): value is AssignmentInfo['status'] => typeof value === 'string' && Object.hasOwn(ASSIGNMENT_STATUS_LABELS, value);
+
+export function isDecodeResult(value: unknown): value is DecodeResult {
+  return isObj(value) && Array.isArray(value.results) && value.results.every((row) => isObj(row) && typeof row.method === 'string' && typeof row.output === 'string');
+}
+
+export function isFindPlacesResult(value: unknown): value is FindPlacesResult {
+  return (
+    isObj(value) &&
+    Array.isArray(value.places) &&
+    value.places.every((place) => isObj(place) && typeof place.kind === 'string' && isLatLng(place.latLng) && typeof place.distanceM === 'number')
+  );
+}
+
+export function isIntersectResult(value: unknown): value is IntersectResult {
+  return isObj(value) && Array.isArray(value.points) && value.points.every(isPointResult);
+}
+
+export function isLookAtPointResult(value: unknown): value is LookAtPointResult {
+  return isObj(value) && typeof value.description === 'string' && typeof value.imageUrl === 'string' && isPointResult(value.point);
+}
+
+export function isAssignmentInfo(value: unknown): value is AssignmentInfo {
+  return isObj(value) && typeof value.articleId === 'number' && typeof value.title === 'string' && isAssignmentStatus(value.status) && Array.isArray(value.notes);
+}
+
+/** A proposal changes something: a valid status, a note, or both */
+export function isAssignmentProposal(value: unknown): value is AssignmentProposal {
+  if (!isObj(value) || typeof value.articleId !== 'number' || typeof value.title !== 'string') return false;
+  const { status, note } = value;
+  if (status !== undefined && !isAssignmentStatus(status)) return false;
+  if (note !== undefined && typeof note !== 'string') return false;
+  return status !== undefined || (typeof note === 'string' && note.trim() !== '');
+}
+
 /** "420 m", "1,2 km", "15 km" */
 export function formatDistance(metres: number): string {
   if (metres < 1000) return `${Math.round(metres)} m`;
@@ -114,6 +170,13 @@ export function areaLabel(area: string): string {
 }
 
 const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+const SUMMARY_MAX = 60;
+/** At most 60 characters, an ellipsis when cut */
+const clip = (text: string) => {
+  const flat = text.replace(/\s+/g, ' ').trim();
+  return flat.length <= SUMMARY_MAX ? flat : `${flat.slice(0, SUMMARY_MAX - 1).trimEnd()}…`;
+};
 
 /** A list output, or the list under `key` of an object output */
 function listOf(output: unknown, key: string): unknown[] | null {
@@ -145,6 +208,14 @@ export function toolSummary(call: ChatToolCall): string | null {
     return list ? count(list.length, 'item', 'items') : null;
   }
   if (call.name === 'webSearch') return isWebSearchResult(output) ? count(output.sources.length, 'bron', 'bronnen') : null;
+  if (call.name === 'decodeCipher') {
+    const best = isDecodeResult(output) ? output.results[0] : undefined;
+    return best ? clip(`${best.method}: ${best.output}`) : null;
+  }
+  if (call.name === 'findPlaces') return isFindPlacesResult(output) ? count(output.places.length, 'plek', 'plekken') : null;
+  if (call.name === 'intersect') return isIntersectResult(output) ? count(output.points.length, 'snijpunt', 'snijpunten') : null;
+  if (call.name === 'lookAtPoint') return isLookAtPointResult(output) && output.description.trim() ? clip(output.description) : null;
+  if (call.name === 'getAssignment') return isAssignmentInfo(output) ? ASSIGNMENT_STATUS_LABELS[output.status] : null;
   return null;
 }
 
@@ -290,20 +361,25 @@ export function dataUrlBytes(url: string): number {
   return Math.floor((base64.length * 3) / 4) - padding;
 }
 
-/** A PointCard of an assistant message: from showPoint (point) or proposeHintAnswer (proposal, point when RD) */
-export interface ChatPointCard {
-  id: string;
-  point: PointResult | null;
-  proposal?: HintAnswerProposal;
-}
+/** A card under an assistant message, in call order */
+export type ChatCard =
+  /** showPoint, each intersect point (show only), or proposeHintAnswer (proposal, point when RD) */
+  | { type: 'point'; id: string; point: PointResult | null; proposal?: HintAnswerProposal }
+  /** lookAtPoint: aerial photo + description */
+  | { type: 'look'; id: string; look: LookAtPointResult }
+  /** proposeAssignmentUpdate: "Opslaan" */
+  | { type: 'assignment'; id: string; proposal: AssignmentProposal };
 
-export function pointCards(message: UIMessage): ChatPointCard[] {
-  const cards: ChatPointCard[] = [];
+export function chatCards(message: UIMessage): ChatCard[] {
+  const cards: ChatCard[] = [];
   for (const call of toolCalls(message)) {
     if (call.state !== 'done') continue;
     const output = call.output;
-    if (call.name === 'showPoint' && isPointResult(output)) cards.push({ id: call.id, point: output });
-    if (call.name === 'proposeHintAnswer' && isHintAnswerProposal(output)) cards.push({ id: call.id, point: output.point ?? null, proposal: output });
+    if (call.name === 'showPoint' && isPointResult(output)) cards.push({ type: 'point', id: call.id, point: output });
+    if (call.name === 'intersect' && isIntersectResult(output)) output.points.forEach((point, index) => cards.push({ type: 'point', id: `${call.id}-${index}`, point }));
+    if (call.name === 'proposeHintAnswer' && isHintAnswerProposal(output)) cards.push({ type: 'point', id: call.id, point: output.point ?? null, proposal: output });
+    if (call.name === 'lookAtPoint' && isLookAtPointResult(output)) cards.push({ type: 'look', id: call.id, look: output });
+    if (call.name === 'proposeAssignmentUpdate' && isAssignmentProposal(output)) cards.push({ type: 'assignment', id: call.id, proposal: output });
   }
   return cards;
 }

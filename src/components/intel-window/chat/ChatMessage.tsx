@@ -4,9 +4,11 @@ import type { FileUIPart, TextUIPart, UIMessage } from 'ai';
 import ImageLightbox from '@/components/ImageLightbox';
 import type { MapRef } from '@/components/Map';
 import Reveal from '@/components/motion/Reveal';
-import { type ChatPart, pointCards, reasoningText, thinkingPhase, toolCalls, webSources } from '@/lib/intel-chat';
+import { type ChatCard, type ChatPart, chatCards, reasoningText, thinkingPhase, toolCalls, webSources } from '@/lib/intel-chat';
 import { POP } from '@/lib/motion';
+import AssignmentProposalCard from './AssignmentProposalCard';
 import ChatMarkdown from './ChatMarkdown';
+import LookCard from './LookCard';
 import PointCard from './PointCard';
 import Reasoning from './Reasoning';
 import SourceChips from './SourceChips';
@@ -25,12 +27,12 @@ const isImage = (part: ChatPart): part is FileUIPart => part.type === 'file' && 
 
 /**
  * User bubble on the right; an assistant message: its thinking, tools used (after the turn), markdown text, and once the
- * turn is done web sources and point cards (their tools run before the answer streams; they follow the text, not lead it)
+ * turn is done web sources and cards (points, aerial looks, assignment proposals) (their tools run before the answer streams; they follow the text, not lead it)
  */
 export default function ChatMessage({ message, streaming, mapRef }: ChatMessageProps) {
   const texts = message.parts.filter(isText).filter((part) => part.text.trim() !== '');
   if (message.role === 'user') return <UserMessage message={message} text={texts.map((part) => part.text).join('\n')} />;
-  const cards = pointCards(message);
+  const cards = chatCards(message);
   const calls = toolCalls(message);
   const sources = webSources(message);
   const reasoning = reasoningText(message);
@@ -60,13 +62,19 @@ export default function ChatMessage({ message, streaming, mapRef }: ChatMessageP
         <AnimatePresence initial={false}>
           {(streaming ? [] : cards).map((card) => (
             <motion.div key={card.id} {...POP} style={{ originY: 0 }}>
-              <PointCard point={card.point} proposal={card.proposal} mapRef={mapRef} />
+              <Card card={card} mapRef={mapRef} />
             </motion.div>
           ))}
         </AnimatePresence>
       </div>
     </div>
   );
+}
+
+function Card({ card, mapRef }: { card: ChatCard; mapRef: RefObject<MapRef | null> }) {
+  if (card.type === 'look') return <LookCard look={card.look} mapRef={mapRef} />;
+  if (card.type === 'assignment') return <AssignmentProposalCard proposal={card.proposal} />;
+  return <PointCard point={card.point} proposal={card.proposal} mapRef={mapRef} />;
 }
 
 /** The user's question (right), with its image above it (click: lightbox) */

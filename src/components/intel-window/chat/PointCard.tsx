@@ -25,18 +25,6 @@ interface PointCardProps {
 
 /** M3 result card: mini map, RD / Deelgebied / Dichtstbij, "Toon op kaart" and (proposals) "Zet als antwoord" */
 export default function PointCard({ point, proposal, mapRef }: PointCardProps) {
-  const close = useIntelStore((state) => state.close);
-
-  function showOnMap() {
-    if (!point) return;
-    const { lng, lat } = point.latLng;
-    close();
-    setTimeout(() => {
-      mapRef.current?.flyTo({ center: [lng, lat], zoom: 15, duration: 2000 });
-      mapRef.current?.markPoint({ lng, lat } as LngLat);
-    }, INTEL_CLOSE_MS);
-  }
-
   return (
     <div className="overflow-hidden rounded-[18px] bg-beheer-row">
       {point && <MiniMap point={point.latLng} label={point.label} />}
@@ -61,12 +49,7 @@ export default function PointCard({ point, proposal, mapRef }: PointCardProps) {
           proposal && <Row name="Deelgebied">{areaLabel(proposal.area)}</Row>
         )}
         <div className="mt-1 flex flex-wrap gap-1.5">
-          {point && (
-            <Pill onClick={showOnMap}>
-              <MapPinIcon />
-              Toon op kaart
-            </Pill>
-          )}
+          {point && <ShowOnMapPill point={point} mapRef={mapRef} />}
           {proposal && <SaveAnswerButton proposal={proposal} />}
         </div>
       </div>
@@ -74,7 +57,28 @@ export default function PointCard({ point, proposal, mapRef }: PointCardProps) {
   );
 }
 
-function Row({ name, children }: { name: string; children: ReactNode }) {
+/** "Toon op kaart": closes the intel window, then flies to the point and marks it */
+export function ShowOnMapPill({ point, mapRef }: { point: PointResult; mapRef: RefObject<MapRef | null> }) {
+  const close = useIntelStore((state) => state.close);
+
+  function showOnMap() {
+    const { lng, lat } = point.latLng;
+    close();
+    setTimeout(() => {
+      mapRef.current?.flyTo({ center: [lng, lat], zoom: 15, duration: 2000 });
+      mapRef.current?.markPoint({ lng, lat } as LngLat);
+    }, INTEL_CLOSE_MS);
+  }
+
+  return (
+    <Pill onClick={showOnMap}>
+      <MapPinIcon />
+      Toon op kaart
+    </Pill>
+  );
+}
+
+export function Row({ name, children }: { name: string; children: ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-3 text-muted-foreground">
       <span className="shrink-0">{name}</span>

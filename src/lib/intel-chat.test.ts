@@ -17,7 +17,6 @@ import {
   isHintAnswerProposal,
   isPointResult,
   lastUserMessageId,
-  pointCards,
   reasoningActive,
   reasoningText,
   sameAnswer,
@@ -28,6 +27,13 @@ import {
   toolDoneLabel,
   toolLabel,
   toolSummary,
+  chatCards,
+  isAssignmentInfo,
+  isAssignmentProposal,
+  isDecodeResult,
+  isFindPlacesResult,
+  isIntersectResult,
+  isLookAtPointResult,
   toolTone,
   webSources,
 } from './intel-chat';
@@ -47,7 +53,16 @@ const cell = (area: string, status: HintCell['status']): HintCell => ({ _id: are
 
 describe('tool meta', () => {
   test('every contract tool has a running label and a tone', () => {
-    expect(Object.keys(TOOL_META)).toHaveLength(18);
+    expect(Object.keys(TOOL_META)).toHaveLength(24);
+    expect(toolLabel('decodeCipher')).toBe('Code kraken…');
+    expect(toolTone('decodeCipher')).toBe('think');
+    expect(toolLabel('findPlaces')).toBe('Plekken zoeken…');
+    expect(toolLabel('intersect')).toBe('Snijpunt uitrekenen…');
+    expect(toolLabel('lookAtPoint')).toBe('Luchtfoto bekijken…');
+    expect(toolTone('lookAtPoint')).toBe('map');
+    expect(toolLabel('getAssignment')).toBe('Opdracht lezen…');
+    expect(toolLabel('proposeAssignmentUpdate')).toBe('Wijziging klaarzetten…');
+    expect(toolTone('proposeAssignmentUpdate')).toBe('app');
     expect(toolLabel('webSearch')).toBe('Zoeken op internet…');
     expect(toolLabel('getItem')).toBe('Item lezen…');
     expect(toolLabel('somethingNew')).toBe('Bezig…');
@@ -90,6 +105,26 @@ describe('output guards', () => {
     expect(isHintAnswerProposal({ articleId: 1, area: 'bravo', answer: 'Kerk', kind: 'text', point: null })).toBe(true);
     expect(isHintAnswerProposal({ articleId: '1', area: 'bravo', answer: 'x', kind: 'text', point: null })).toBe(false);
   });
+
+  test('extra tools', () => {
+    expect(isDecodeResult({ results: [{ method: 'caesar', detail: 'shift 3', output: 'HALLO' }] })).toBe(true);
+    expect(isDecodeResult({ results: [{ method: 'caesar' }] })).toBe(false);
+    expect(isDecodeResult({ error: 'x' })).toBe(false);
+    expect(isFindPlacesResult({ places: [{ name: null, kind: 'church', latLng: { lat: 52, lng: 5 }, rdText: '1 2', distanceM: 300 }] })).toBe(true);
+    expect(isFindPlacesResult({ places: 'nee' })).toBe(false);
+    expect(isIntersectResult({ points: [point], note: 'twee cirkels' })).toBe(true);
+    expect(isIntersectResult({ points: [] })).toBe(true);
+    expect(isIntersectResult({ points: [{ label: 'x' }] })).toBe(false);
+    expect(isLookAtPointResult({ description: 'Een kerk', imageUrl: 'https://service.pdok.nl/x', point })).toBe(true);
+    expect(isLookAtPointResult({ description: 'Een kerk', imageUrl: 'https://service.pdok.nl/x', point: null })).toBe(false);
+    const info = { articleId: 9, title: 'Opdracht 3', status: 'busy', owner: null, notes: [], endTime: null, maxPoints: 100 };
+    expect(isAssignmentInfo(info)).toBe(true);
+    expect(isAssignmentInfo({ ...info, status: 'klaar' })).toBe(false);
+    expect(isAssignmentProposal({ articleId: 9, title: 'Opdracht 3', status: 'submitted' })).toBe(true);
+    expect(isAssignmentProposal({ articleId: 9, title: 'Opdracht 3', note: 'Filmpje staat in de drive' })).toBe(true);
+    expect(isAssignmentProposal({ articleId: 9, title: 'Opdracht 3' })).toBe(false);
+    expect(isAssignmentProposal({ articleId: 9, title: 'Opdracht 3', status: 'klaar' })).toBe(false);
+  });
 });
 
 describe('formatDistance', () => {
@@ -112,6 +147,24 @@ describe('toolSummary', () => {
     expect(toolSummary(done('getItem', { title: 'x' }))).toBeNull();
     expect(toolSummary({ id: 'x', name: 'checkPoint', state: 'error', errorText: 'Punt ligt buiten NL' })).toBe('Punt ligt buiten NL');
     expect(toolSummary({ id: 'x', name: 'checkPoint', state: 'running' })).toBeNull();
+  });
+
+  test('extra tools', () => {
+    const done = (name: string, output: unknown) => ({ id: name, name, state: 'done' as const, output });
+    expect(toolSummary(done('decodeCipher', { results: [{ method: 'caesar', detail: 'shift 3', output: 'KERK BIJ DE MOLEN' }, { method: 'atbash', output: 'x' }] }))).toBe('caesar: KERK BIJ DE MOLEN');
+    expect(toolSummary(done('decodeCipher', { results: [{ method: 'morse', output: 'A'.repeat(80) }] }))).toBe(`morse: ${'A'.repeat(52)}…`);
+    expect(toolSummary(done('decodeCipher', { results: [] }))).toBeNull();
+    const place = { name: 'Sint-Jan', kind: 'church', latLng: { lat: 52, lng: 5 }, rdText: '1 2', distanceM: 300 };
+    expect(toolSummary(done('findPlaces', { places: [place, place, place] }))).toBe('3 plekken');
+    expect(toolSummary(done('findPlaces', { places: [place] }))).toBe('1 plek');
+    expect(toolSummary(done('intersect', { points: [point, point] }))).toBe('2 snijpunten');
+    expect(toolSummary(done('intersect', { points: [point] }))).toBe('1 snijpunt');
+    expect(toolSummary(done('lookAtPoint', { description: 'Een kerk met een groot plein ervoor en een molen aan de rand van het dorp.', imageUrl: 'https://x', point }))).toBe(
+      'Een kerk met een groot plein ervoor en een molen aan de ran…',
+    );
+    expect(toolSummary(done('lookAtPoint', { description: 'Weiland', imageUrl: 'https://x', point }))).toBe('Weiland');
+    expect(toolSummary(done('getAssignment', { articleId: 9, title: 'x', status: 'submitted', owner: null, notes: [], endTime: null, maxPoints: null }))).toBe('Ingeleverd');
+    expect(toolSummary(done('proposeAssignmentUpdate', { articleId: 9, title: 'x', status: 'busy' }))).toBeNull();
   });
 
   test('stackedTools: first tool of each tone, at most 3', () => {
@@ -248,17 +301,27 @@ describe('chat images', () => {
 });
 
 describe('cards and sources of a message', () => {
-  test('pointCards: finished showPoint and proposeHintAnswer outputs only', () => {
+  test('chatCards: points, intersections, aerial looks and assignment proposals in call order', () => {
     const proposal = { articleId: 7, area: 'bravo', answer: '153020 430880', kind: 'rd', point };
+    const look = { description: 'Een kerk', imageUrl: 'https://service.pdok.nl/x', point };
+    const update = { articleId: 9, title: 'Opdracht 3', status: 'submitted' };
+    const other = { ...point, label: 'Tweede' };
     const message = assistant(
+      tool('intersect', 'output-available', { output: { points: [point, other] } }, 'i1'),
       tool('showPoint', 'output-available', { output: point }, 's1'),
-      tool('showPoint', 'input-available', {}, 's2'),
+      tool('lookAtPoint', 'output-available', { output: look }, 'l1'),
+      tool('lookAtPoint', 'output-available', { output: { error: 'Geen luchtfoto' } }, 'l2'),
+      tool('proposeAssignmentUpdate', 'output-available', { output: update }, 'a1'),
+      tool('proposeAssignmentUpdate', 'input-available', {}, 'a2'),
       tool('proposeHintAnswer', 'output-available', { output: proposal }, 'p1'),
-      tool('proposeHintAnswer', 'output-available', { output: { error: 'Onbekend gebied' } }, 'p2'),
     );
-    expect(pointCards(message)).toEqual([
-      { id: 's1', point },
-      { id: 'p1', point, proposal },
+    expect(chatCards(message)).toEqual([
+      { type: 'point', id: 'i1-0', point },
+      { type: 'point', id: 'i1-1', point: other },
+      { type: 'point', id: 's1', point },
+      { type: 'look', id: 'l1', look },
+      { type: 'assignment', id: 'a1', proposal: update },
+      { type: 'point', id: 'p1', point, proposal },
     ]);
   });
   test('webSources: deduped by url, http(s) only, hostname when no title', () => {
