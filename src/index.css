@@ -525,3 +525,30 @@ body.dark {
     background: transparent;
   }
 }
+
+/* Intel AI chat: the running tool's label glints (M3 status line); plain muted text with reduced motion */
+.ai-shimmer {
+  background: linear-gradient(90deg, var(--muted-foreground) 30%, var(--foreground) 50%, var(--muted-foreground) 70%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: ai-shimmer 1.4s linear infinite;
+}
+
+@keyframes ai-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-shimmer {
+    animation: none;
+    background: none;
+    color: var(--muted-foreground);
+  }
+}

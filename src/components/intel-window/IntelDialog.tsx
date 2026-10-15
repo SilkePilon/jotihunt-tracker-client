@@ -233,7 +233,7 @@ function DetailView({ item, area, mapRef, skipEntrance, onBack }: { item: IntelI
         </motion.div>
       </div>
       <motion.div className="flex min-w-0 flex-1 flex-col" initial={skip ? false : CHAT_CARD_ENTER.initial} animate={CHAT_CARD_ENTER.animate} transition={CHAT_CARD_ENTER.transition}>
-        <IntelChat item={item} mapRef={mapRef} />
+        <IntelChat item={item} mapRef={mapRef} entrance={!skip} />
       </motion.div>
     </div>
   );

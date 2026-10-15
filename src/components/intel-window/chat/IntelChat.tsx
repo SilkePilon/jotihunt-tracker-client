@@ -8,7 +8,7 @@ import type { MapRef } from '@/components/Map';
 import Reveal from '@/components/motion/Reveal';
 import { apiErrorMessage } from '@/lib/api-error';
 import { CONTEXT_LABEL, chatStatusLabel, lastUserMessageId } from '@/lib/intel-chat';
-import { CHAT_MESSAGE } from '@/lib/intel-window';
+import { CHAT_EMPTY_ENTRANCE_DELAY, CHAT_MESSAGE, CHAT_SPARK } from '@/lib/intel-window';
 import { POP, SWAP } from '@/lib/motion';
 import type { IntelItem, IntelKind } from '@/types/Intel';
 import ChatEmpty from './ChatEmpty';
@@ -22,24 +22,27 @@ interface IntelChatProps {
   item: IntelItem;
   /** For "Toon op kaart" on point cards */
   mapRef: RefObject<MapRef | null>;
+  /** Opened from the timeline: the ✦ spins in and the empty state staggers in after the card's slide (first item only) */
+  entrance: boolean;
 }
 
 const FADE = { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 }, transition: { duration: 0.15 } };
 
 /** The AI chat card right of the open item (layout B). Its content swaps (fades) when another item opens; each item has its own conversation. */
-export default function IntelChat({ item, mapRef }: IntelChatProps) {
+export default function IntelChat({ item, mapRef, entrance }: IntelChatProps) {
+  const [firstId] = useState(item.id);
   return (
     <section aria-label="Vraag de AI" className="flex min-h-0 flex-1 flex-col rounded-[24px] bg-card p-3.5">
       <AnimatePresence mode="wait" initial={false}>
         <motion.div key={item.id} {...FADE} className="flex min-h-0 flex-1 flex-col gap-2.5">
-          <ChatPanel item={item} mapRef={mapRef} />
+          <ChatPanel item={item} mapRef={mapRef} entrance={entrance && item.id === firstId} />
         </motion.div>
       </AnimatePresence>
     </section>
   );
 }
 
-function ChatPanel({ item, mapRef }: IntelChatProps) {
+function ChatPanel({ item, mapRef, entrance }: IntelChatProps) {
   const chat = useIntelChat(item.id);
   const [confirmReset, setConfirmReset] = useState(false);
   const busy = chat.status === 'submitted' || chat.status === 'streaming';
@@ -58,6 +61,7 @@ function ChatPanel({ item, mapRef }: IntelChatProps) {
     <>
       <ChatHeader
         kind={item.kind}
+        entrance={entrance}
         action={
           <AnimatePresence initial={false}>
             {chat.messages.length > 0 && (
@@ -70,7 +74,7 @@ function ChatPanel({ item, mapRef }: IntelChatProps) {
           </AnimatePresence>
         }
       />
-      {/* Nieuw gesprek: the thread fades out, the empty state rises in */}
+      {/* Nieuw gesprek: the thread fades out, the empty state rises in (its parts stagger; the wrapper only fades) */}
       <AnimatePresence mode="wait" initial={false}>
         {scene === 'loading' ? (
           <motion.div key="loading" {...FADE} className="grid min-h-0 flex-1 place-items-center">
@@ -85,8 +89,8 @@ function ChatPanel({ item, mapRef }: IntelChatProps) {
             </Pill>
           </motion.div>
         ) : scene === 'empty' ? (
-          <motion.div key="empty" className="flex min-h-0 flex-1 flex-col" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
-            <ChatEmpty item={item} disabled={busy || chat.unavailable} onPick={chat.send} />
+          <motion.div key="empty" className="flex min-h-0 flex-1 flex-col" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
+            <ChatEmpty item={item} disabled={busy || chat.unavailable} onPick={chat.send} delay={entrance ? CHAT_EMPTY_ENTRANCE_DELAY : 0} />
           </motion.div>
         ) : (
           <motion.div key="thread" {...FADE} className="flex min-h-0 flex-1 flex-col">
@@ -108,12 +112,12 @@ function ChatPanel({ item, mapRef }: IntelChatProps) {
   );
 }
 
-function ChatHeader({ kind, action }: { kind: IntelKind; action?: ReactNode }) {
+function ChatHeader({ kind, entrance, action }: { kind: IntelKind; entrance: boolean; action?: ReactNode }) {
   return (
     <div className="mx-1 flex items-center gap-2">
-      <span aria-hidden className="text-base leading-none text-fox-warn">
+      <motion.span aria-hidden className="inline-block text-base leading-none text-fox-warn" {...(entrance ? CHAT_SPARK : {})}>
         ✦
-      </span>
+      </motion.span>
       <h3 className="text-[15px] font-bold">Vraag de AI</h3>
       <span className="ml-auto rounded-lg bg-beheer-row-high px-2 py-0.5 text-[11.5px] font-semibold text-muted-foreground">{CONTEXT_LABEL[kind]}</span>
       {action}

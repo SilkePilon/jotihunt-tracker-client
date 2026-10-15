@@ -12,7 +12,7 @@ export default function ToolStatus({ label }: { label: string | null }) {
           <Loader2Icon className="size-3.5 shrink-0 animate-spin text-fox-warn" aria-hidden />
           <span className="relative min-w-0">
             <AnimatePresence mode="popLayout" initial={false}>
-              <motion.span key={label} className="inline-block text-muted-foreground" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={SWAP_TRANSITION}>
+              <motion.span key={label} className="ai-shimmer inline-block" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={SWAP_TRANSITION}>
                 {label}
               </motion.span>
             </AnimatePresence>
