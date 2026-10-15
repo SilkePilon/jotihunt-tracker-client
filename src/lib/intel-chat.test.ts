@@ -9,6 +9,7 @@ import {
   THINKING_LABEL,
   TOOL_META,
   chatErrorKind,
+  fetchRetryingBusy,
   chatImageProblem,
   chatRequestBody,
   chatStatusLabel,
@@ -271,6 +272,7 @@ describe('chatErrorKind', () => {
     expect(chatErrorKind(axiosError(404))).toBe('not_found');
     expect(chatErrorKind(Object.assign(new Error('{"error":"rate_limited"}'), { statusCode: 429 }))).toBe('rate_limited');
     expect(chatErrorKind(Object.assign(new Error('x'), { statusCode: 503 }))).toBe('ai_unavailable');
+    expect(chatErrorKind(Object.assign(new Error('x'), { statusCode: 409 }))).toBe('busy');
   });
   test('a 200 with { error } (fetcherWithMethod throws Error(error)) and anything else', () => {
     expect(chatErrorKind(new Error('ai_unavailable'))).toBe('ai_unavailable');
@@ -342,5 +344,44 @@ describe('cards and sources of a message', () => {
     expect(sameAnswer(' 153020  430880 ', '153020 430880')).toBe(true);
     expect(sameAnswer('Kerk', 'kerk')).toBe(true);
     expect(sameAnswer('153020 430880', '153020 430881')).toBe(false);
+  });
+});
+
+describe('fetchRetryingBusy', () => {
+  const make = (statuses: number[]) => {
+    let n = 0;
+    const doFetch = (async () => new Response(null, { status: statuses[Math.min(n++, statuses.length - 1)] })) as typeof fetch;
+    return { count: () => n, doFetch };
+  };
+  test('retries a 409 with 400/800/1600 ms backoff until it succeeds', async () => {
+    const { count, doFetch } = make([409, 409, 200]);
+    const delays: number[] = [];
+    const response = await fetchRetryingBusy(doFetch, '/x', {}, async (ms) => void delays.push(ms));
+    expect(response.status).toBe(200);
+    expect(count()).toBe(3);
+    expect(delays).toEqual([400, 800]);
+  });
+  test('gives the 409 back after 3 retries', async () => {
+    const { count, doFetch } = make([409]);
+    const delays: number[] = [];
+    const response = await fetchRetryingBusy(doFetch, '/x', {}, async (ms) => void delays.push(ms));
+    expect(response.status).toBe(409);
+    expect(count()).toBe(4);
+    expect(delays).toEqual([400, 800, 1600]);
+  });
+  test('other statuses are not retried', async () => {
+    const { count, doFetch } = make([500]);
+    expect((await fetchRetryingBusy(doFetch, '/x', {}, async () => {})).status).toBe(500);
+    expect(count()).toBe(1);
+  });
+  test('an abort while waiting stops the retrying', async () => {
+    const { count, doFetch } = make([409]);
+    const controller = new AbortController();
+    const sleep = async () => {
+      controller.abort();
+      throw new DOMException('Aborted', 'AbortError');
+    };
+    await expect(fetchRetryingBusy(doFetch, '/x', { signal: controller.signal }, sleep)).rejects.toThrow();
+    expect(count()).toBe(1);
   });
 });

@@ -325,7 +325,9 @@ export const PLACEHOLDER: Record<IntelKind, string> = {
   news: 'Vraag iets over dit bericht…',
 };
 
-export type ChatErrorKind = 'rate_limited' | 'ai_unavailable' | 'not_found' | 'other';
+export type ChatErrorKind = 'rate_limited' | 'ai_unavailable' | 'not_found' | 'busy' | 'other';
+
+export const BUSY_MESSAGE = 'Vorige vraag wordt nog afgerond, probeer het zo opnieuw';
 
 export const RATE_LIMIT_MESSAGE = 'Even rustig aan: te veel vragen, probeer het zo weer';
 
@@ -338,9 +340,49 @@ export function chatErrorKind(error: unknown): ChatErrorKind {
   if (status === 429) return 'rate_limited';
   if (status === 503) return 'ai_unavailable';
   if (status === 404) return 'not_found';
+  if (status === 409) return 'busy';
   if (error instanceof Error && error.message === 'ai_unavailable') return 'ai_unavailable';
   if (error instanceof Error && error.message === 'rate_limited') return 'rate_limited';
   return 'other';
+}
+
+export const BUSY_RETRY_DELAYS_MS = [400, 800, 1600];
+
+const abortError = () => new DOMException('Aborted', 'AbortError');
+
+/** Resolves after ms; rejects with an AbortError as soon as the signal aborts */
+export function abortableSleep(ms: number, signal?: AbortSignal | null): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) return reject(abortError());
+    const onAbort = () => {
+      clearTimeout(timer);
+      reject(abortError());
+    };
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort);
+      resolve();
+    }, ms);
+    signal?.addEventListener('abort', onAbort, { once: true });
+  });
+}
+
+/**
+ * The server answers 409 while the previous turn of this chat is still being saved (e.g. stop, then ask again at once):
+ * transparently retry that after 400, 800 and 1600 ms. Other statuses pass through; an abort stops the waiting.
+ */
+export async function fetchRetryingBusy(
+  doFetch: typeof fetch,
+  input: RequestInfo | URL,
+  init?: RequestInit,
+  sleep: (ms: number, signal?: AbortSignal | null) => Promise<void> = abortableSleep,
+): Promise<Response> {
+  let response = await doFetch(input, init);
+  for (const delay of BUSY_RETRY_DELAYS_MS) {
+    if (response.status !== 409) break;
+    await sleep(delay, init?.signal);
+    response = await doFetch(input, init);
+  }
+  return response;
 }
 
 /** POST body (contract): only the newest message (the server prepends the stored history) plus the modes */

@@ -7,7 +7,7 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import type { MapRef } from '@/components/Map';
 import Reveal from '@/components/motion/Reveal';
 import { apiErrorMessage } from '@/lib/api-error';
-import { CONTEXT_LABEL, chatStatusLabel, lastUserMessageId } from '@/lib/intel-chat';
+import { BUSY_MESSAGE, CONTEXT_LABEL, chatStatusLabel, lastUserMessageId } from '@/lib/intel-chat';
 import { CHAT_EMPTY_ENTRANCE_DELAY, CHAT_MESSAGE, CHAT_SPARK } from '@/lib/intel-window';
 import { POP, SWAP } from '@/lib/motion';
 import type { IntelItem, IntelKind } from '@/types/Intel';
@@ -154,16 +154,16 @@ function ChatThread({ chat, mapRef }: { chat: IntelChatState; mapRef: RefObject<
           </AnimatePresence>
         </ChatScrollerContext.Provider>
         <ToolStatus label={chatStatusLabel(chat.messages, chat.status)} />
-        <Reveal>{chat.status === 'error' && !chat.unavailable && <ErrorRow onRetry={chat.retry} />}</Reveal>
+        <Reveal>{chat.status === 'error' && !chat.unavailable && <ErrorRow busy={chat.errorKind === 'busy'} onRetry={chat.retry} />}</Reveal>
       </div>
     </div>
   );
 }
 
-function ErrorRow({ onRetry }: { onRetry: () => void }) {
+function ErrorRow({ busy, onRetry }: { busy: boolean; onRetry: () => void }) {
   return (
     <div className="mx-1 flex items-center gap-2 rounded-xl bg-destructive/12 py-1.5 pr-1.5 pl-3 text-[12.5px] text-destructive dark:text-red-300">
-      <span className="flex-1">Er ging iets mis</span>
+      <span className="flex-1">{busy ? BUSY_MESSAGE : 'Er ging iets mis'}</span>
       <Pill variant="danger-soft" onClick={onRetry}>
         <RotateCcwIcon />
         Opnieuw

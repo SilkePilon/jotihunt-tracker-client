@@ -4,7 +4,7 @@ import { DefaultChatTransport, type FileUIPart, type UIMessage } from 'ai';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import { toast } from 'sonner';
-import { RATE_LIMIT_MESSAGE, chatErrorKind, chatRequestBody } from '@/lib/intel-chat';
+import { RATE_LIMIT_MESSAGE, chatErrorKind, chatRequestBody, fetchRetryingBusy } from '@/lib/intel-chat';
 import { fetcherWithMethod, useAuthSWR } from '@/lib/swr';
 import useIntelChatStore, { DEFAULT_CHAT_MODES } from '@/stores/intel-chat.store';
 import type { ChatModes } from '@/types/IntelChat';
@@ -36,6 +36,7 @@ export function useIntelChat(articleId: number) {
     () =>
       new DefaultChatTransport<UIMessage>({
         api: `${import.meta.env.API_BASE_URL}${path}`,
+        fetch: (input, init) => fetchRetryingBusy(fetch, input, init),
         prepareSendMessagesRequest: ({ messages }) => ({ body: chatRequestBody(messages, modes), headers: { Authorization: authHeader } }),
       }),
     [path, authHeader, modes],
@@ -68,6 +69,7 @@ export function useIntelChat(articleId: number) {
   return {
     messages: chat.messages,
     status: chat.status,
+    errorKind: chat.error ? chatErrorKind(chat.error) : null,
     loading: !history.data && !history.error,
     loadError: loadKind !== null && loadKind !== 'ai_unavailable',
     unavailable: postUnavailable || loadKind === 'ai_unavailable',
