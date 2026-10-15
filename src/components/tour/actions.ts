@@ -37,14 +37,16 @@ export function sheetSnap(snap: SheetSnap): TourAction {
 }
 
 /**
- * Scroll the desktop sidebar back to the top, so the header (with the settings button) is on screen again after
- * earlier steps scrolled down to the lower sections. No-op on the phone, where the header sits outside the scroller.
+ * Scroll the sidebar back to the top, so the header (with the settings button) is on screen again after earlier
+ * steps scrolled down to the lower sections. On the phone that is the sheet body (the menu starts with the header).
  */
 export function scrollSidebarToTop(): TourAction {
   return {
     name: 'scrollSidebarToTop',
     run: () => {
-      document.querySelector(tourSelector('sidebar.root'))?.parentElement?.scrollTo({ top: 0 });
+      const sheetBody = document.querySelector('[data-sheet-body]');
+      if (sheetBody) sheetBody.scrollTo({ top: 0 });
+      else document.querySelector(tourSelector('sidebar.root'))?.parentElement?.scrollTo({ top: 0 });
     },
   };
 }

@@ -13,8 +13,8 @@ const COOKIE_16 = cookiePath(16, BADGE_COOKIE_DEPTH);
 const TONE_FILL = { ok: '#22c55e', warn: '#f59e0b', muted: 'var(--muted-foreground)' } as const;
 const GROUP_ORDER = ['green', 'orange', 'cooldown', 'red'] as const;
 
-/** Always-visible top of the phone sheet: own tracker line + Vossen status bar with legend. */
-export default function PeekStrip() {
+/** Own tracker line; ticks every second for the age, on its own so the fox bar does not re-render with it. */
+function TrackerLine({ onOpen }: { onOpen: () => void }) {
   const { status } = useTrackerStatus();
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -22,6 +22,18 @@ export default function PeekStrip() {
     return () => clearInterval(id);
   }, []);
   const line = trackerPeekLine(status, now);
+  return (
+    <button type="button" onClick={onOpen} className="flex min-h-9 items-center gap-2 text-left text-[13.5px]">
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden className="shrink-0">
+        <path d={COOKIE_16} fill={TONE_FILL[line.tone]} />
+      </svg>
+      <span className={cn('truncate font-semibold', line.tone === 'warn' && 'text-amber-700 dark:text-amber-300')}>{line.text}</span>
+    </button>
+  );
+}
+
+/** Always-visible top of the phone sheet: own tracker line + Vossen status bar with legend. */
+export default function PeekStrip() {
   const foxes = useSidebarFoxes();
   const { isForbidden } = useHuntableAreas();
   const push = useMobileNavStore((s) => s.push);
@@ -29,12 +41,7 @@ export default function PeekStrip() {
 
   return (
     <div className="flex flex-col gap-2 px-4 pb-3">
-      <button type="button" onClick={() => push({ id: 'tracking' })} className="flex min-h-9 items-center gap-2 text-left text-[13.5px]">
-        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden className="shrink-0">
-          <path d={COOKIE_16} fill={TONE_FILL[line.tone]} />
-        </svg>
-        <span className={cn('truncate font-semibold', line.tone === 'warn' && 'text-amber-700 dark:text-amber-300')}>{line.text}</span>
-      </button>
+      <TrackerLine onOpen={() => push({ id: 'tracking' })} />
       {foxes && foxes.length > 0 && counts && (
         <button type="button" onClick={() => push({ id: 'foxes' })} className="flex flex-col gap-1.5 text-left" aria-label="Vossen openen">
           <FoxStatusBar foxes={foxes} size="full" isForbidden={isForbidden} />

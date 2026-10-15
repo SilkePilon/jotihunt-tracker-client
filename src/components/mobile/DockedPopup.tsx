@@ -53,7 +53,8 @@ function useExitGhost(dock: HTMLElement | null) {
           easing: `cubic-bezier(${EASE_OUT.join(',')})`,
           fill: 'forwards',
         });
-        animation.finished.finally(() => ghost.remove());
+        const remove = () => ghost.remove();
+        animation.finished.then(remove, remove);
       });
     };
   }, [dock]);
