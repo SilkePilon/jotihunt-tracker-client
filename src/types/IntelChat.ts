@@ -76,6 +76,65 @@ export type AssignmentInfo = {
 /** proposeAssignmentUpdate output: only a proposal, "Opslaan" posts it */
 export type AssignmentProposal = { articleId: number; title: string; status?: AssignmentStatus; note?: string };
 
+export type OvMode = 'BUS' | 'TRAM' | 'METRO' | 'BOAT' | 'TRAIN';
+
+/** id: OVapi StopAreaCode, or 'NS:<stationCode>' for a train station */
+export type OvStop = { id: string; name: string; town: string | null; latLng: LatLng; rdText: string; distanceM: number; modes: OvMode[] };
+
+/** ovStopsNear output: ≤ 20, nearest first */
+export type OvStopsResult = { stops: OvStop[]; note?: string };
+
+/** journeyId: OVapi journey key, or 'NS:<trainNumber>:<YYYY-MM-DD>' */
+export type OvDeparture = {
+  mode: OvMode;
+  line: string;
+  destination: string;
+  planned: string;
+  expected: string;
+  delayMin: number;
+  status: string;
+  journeyId: string | null;
+  platform?: string;
+};
+
+/** ovDepartures output: ≤ 30, by expected time */
+export type OvDeparturesResult = { stop: OvStop; departures: OvDeparture[]; note?: string };
+
+export type OvJourneyStop = {
+  name: string;
+  town: string | null;
+  latLng: LatLng | null;
+  planned: string | null;
+  expected: string | null;
+  status: 'PASSED' | 'ARRIVED' | 'DEPARTED' | 'DRIVING' | 'PLANNED' | 'CANCEL' | 'UNKNOWN';
+};
+
+/** ovJourney output */
+export type OvJourneyResult = {
+  mode: OvMode;
+  line: string;
+  destination: string;
+  stops: OvJourneyStop[];
+  current: { latLng: LatLng; rdText: string; between: [string, string]; note: string } | null;
+};
+
+export type OvCandidateKind = 'onboard' | 'alighted' | 'terminus' | 'waiting';
+
+export type OvCandidate = {
+  point: PointResult;
+  /** e.g. "bus 83 → Warnsveld (vertrek 15:08 Station Zutphen)" */
+  via: string;
+  kind: OvCandidateKind;
+  atTime: string;
+  /** 0..1 */
+  score: number;
+  why: string;
+  journeyId: string | null;
+};
+
+/** predictOvMovement output: ≤ 10, best first */
+export type OvPredictionResult = { candidates: OvCandidate[]; assumptions: string[]; note?: string };
+
 export type IntelToolName =
   | 'getItem'
   | 'searchIntel'
@@ -100,7 +159,11 @@ export type IntelToolName =
   | 'intersect'
   | 'lookAtPoint'
   | 'getAssignment'
-  | 'proposeAssignmentUpdate';
+  | 'proposeAssignmentUpdate'
+  | 'ovStopsNear'
+  | 'ovDepartures'
+  | 'ovJourney'
+  | 'predictOvMovement';
 
 /** Icon colour of a tool: app data (warn), map (ok), web (cooldown), think (purple) */
 export type ToolTone = 'app' | 'map' | 'web' | 'think';

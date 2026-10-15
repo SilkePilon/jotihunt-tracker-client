@@ -58,7 +58,7 @@ export default function PointCard({ point, proposal, mapRef }: PointCardProps) {
 }
 
 /** "Toon op kaart": closes the intel window, then flies to the point and marks it */
-export function ShowOnMapPill({ point, mapRef }: { point: PointResult; mapRef: RefObject<MapRef | null> }) {
+export function ShowOnMapPill({ point, mapRef }: { point: Pick<PointResult, 'latLng'>; mapRef: RefObject<MapRef | null> }) {
   const close = useIntelStore((state) => state.close);
 
   function showOnMap() {

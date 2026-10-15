@@ -14,6 +14,11 @@ import type {
   IntersectResult,
   IntelToolName,
   LookAtPointResult,
+  OvCandidateKind,
+  OvDeparturesResult,
+  OvJourneyResult,
+  OvPredictionResult,
+  OvStopsResult,
   PointResult,
   ToolTone,
   WebSearchResult,
@@ -45,6 +50,10 @@ export const TOOL_META: Record<IntelToolName, { label: string; tone: ToolTone }>
   lookAtPoint: { label: 'Luchtfoto bekijken…', tone: 'map' },
   getAssignment: { label: 'Opdracht lezen…', tone: 'app' },
   proposeAssignmentUpdate: { label: 'Wijziging klaarzetten…', tone: 'app' },
+  ovStopsNear: { label: 'Haltes zoeken…', tone: 'map' },
+  ovDepartures: { label: 'Vertrektijden ophalen…', tone: 'map' },
+  ovJourney: { label: 'Rit volgen…', tone: 'map' },
+  predictOvMovement: { label: 'OV-route voorspellen…', tone: 'think' },
 };
 
 const isKnownTool = (name: string): name is IntelToolName => Object.hasOwn(TOOL_META, name);
@@ -167,6 +176,87 @@ export function isAssignmentProposal(value: unknown): value is AssignmentProposa
   return status !== undefined || (typeof note === 'string' && note.trim() !== '');
 }
 
+const isStr = (value: unknown): value is string => typeof value === 'string';
+
+const isOvStop = (value: unknown) =>
+  isObj(value) && isStr(value.id) && isStr(value.name) && isLatLng(value.latLng) && typeof value.distanceM === 'number' && Array.isArray(value.modes);
+
+export function isOvStopsResult(value: unknown): value is OvStopsResult {
+  return isObj(value) && Array.isArray(value.stops) && value.stops.every(isOvStop);
+}
+
+export function isOvDeparturesResult(value: unknown): value is OvDeparturesResult {
+  return (
+    isObj(value) &&
+    isOvStop(value.stop) &&
+    Array.isArray(value.departures) &&
+    value.departures.every(
+      (row) => isObj(row) && isStr(row.mode) && isStr(row.line) && isStr(row.destination) && isStr(row.expected) && typeof row.delayMin === 'number',
+    )
+  );
+}
+
+export function isOvJourneyResult(value: unknown): value is OvJourneyResult {
+  if (!isObj(value) || !isStr(value.mode) || !isStr(value.line) || !isStr(value.destination) || !Array.isArray(value.stops)) return false;
+  if (!value.stops.every((stop) => isObj(stop) && isStr(stop.name) && isStr(stop.status))) return false;
+  const { current } = value;
+  return current === null || (isObj(current) && isLatLng(current.latLng) && Array.isArray(current.between));
+}
+
+export function isOvPredictionResult(value: unknown): value is OvPredictionResult {
+  return (
+    isObj(value) &&
+    Array.isArray(value.assumptions) &&
+    value.assumptions.every(isStr) &&
+    Array.isArray(value.candidates) &&
+    value.candidates.every(
+      (row) => isObj(row) && isPointResult(row.point) && isStr(row.via) && isStr(row.kind) && isStr(row.atTime) && typeof row.score === 'number',
+    )
+  );
+}
+
+/** Kind chip of a predicted OV candidate */
+export const OV_KIND_LABEL: Record<OvCandidateKind, string> = {
+  onboard: 'in de bus/trein',
+  alighted: 'uitgestapt',
+  terminus: 'eindhalte',
+  waiting: 'wacht op halte',
+};
+
+/** "+3" for a departure running late (whole minutes), null when on time or early */
+export function delayLabel(delayMin: number): string | null {
+  const minutes = Math.round(delayMin);
+  return minutes > 0 ? `+${minutes}` : null;
+}
+
+const REACHED = new Set(['PASSED', 'DEPARTED', 'ARRIVED']);
+
+/**
+ * Index of the stop the vehicle left last: the current position row sits right after it (-1: before the first stop).
+ * Prefers the `between[0]` stop followed by `between[1]` (loop lines visit a stop twice), then any `between[0]`, then the
+ * last passed/departed/arrived stop. Null without a current position.
+ */
+export function journeyAnchor(journey: OvJourneyResult): number | null {
+  if (!journey.current) return null;
+  const { stops } = journey;
+  const [from, to] = journey.current.between;
+  let named = -1;
+  for (let index = stops.length - 1; index >= 0; index--) {
+    if (stops[index].name !== from) continue;
+    if (stops[index + 1]?.name === to) return index;
+    if (named === -1) named = index;
+  }
+  if (named !== -1) return named;
+  for (let index = stops.length - 1; index >= 0; index--) if (REACHED.has(stops[index].status)) return index;
+  return -1;
+}
+
+/** Stops shown of a folded timeline [start, end): 3 up to the current position and 5 after it, or the first 8 without one */
+export function journeyWindow(count: number, anchor: number | null): { start: number; end: number } {
+  if (anchor === null) return { start: 0, end: Math.min(count, 8) };
+  return { start: Math.max(0, anchor - 2), end: Math.min(count, anchor + 6) };
+}
+
 /** "420 m", "1,2 km", "15 km" */
 export function formatDistance(metres: number): string {
   if (metres < 1000) return `${Math.round(metres)} m`;
@@ -226,6 +316,10 @@ export function toolSummary(call: ChatToolCall): string | null {
   if (call.name === 'intersect') return isIntersectResult(output) ? count(output.points.length, 'snijpunt', 'snijpunten') : null;
   if (call.name === 'lookAtPoint') return isLookAtPointResult(output) && output.description.trim() ? clip(output.description) : null;
   if (call.name === 'getAssignment') return isAssignmentInfo(output) ? ASSIGNMENT_STATUS_LABELS[output.status] : null;
+  if (call.name === 'ovStopsNear') return isOvStopsResult(output) ? count(output.stops.length, 'halte', 'haltes') : null;
+  if (call.name === 'ovDepartures') return isOvDeparturesResult(output) ? clip(`${count(output.departures.length, 'vertrek', 'vertrekken')} · ${output.stop.name}`) : null;
+  if (call.name === 'ovJourney') return isOvJourneyResult(output) ? clip(`${output.line} → ${output.destination}`) : null;
+  if (call.name === 'predictOvMovement') return isOvPredictionResult(output) ? count(output.candidates.length, 'kandidaat', 'kandidaten') : null;
   return null;
 }
 
@@ -420,7 +514,13 @@ export type ChatCard =
   /** lookAtPoint: aerial photo + description */
   | { type: 'look'; id: string; look: LookAtPointResult }
   /** proposeAssignmentUpdate: "Opslaan" */
-  | { type: 'assignment'; id: string; proposal: AssignmentProposal };
+  | { type: 'assignment'; id: string; proposal: AssignmentProposal }
+  /** ovDepartures: departure board of a stop */
+  | { type: 'departures'; id: string; departures: OvDeparturesResult }
+  /** ovJourney: stop timeline with the current position */
+  | { type: 'journey'; id: string; journey: OvJourneyResult }
+  /** predictOvMovement: ranked candidates */
+  | { type: 'ovPrediction'; id: string; prediction: OvPredictionResult };
 
 export function chatCards(message: UIMessage): ChatCard[] {
   const cards: ChatCard[] = [];
@@ -432,6 +532,9 @@ export function chatCards(message: UIMessage): ChatCard[] {
     if (call.name === 'proposeHintAnswer' && isHintAnswerProposal(output)) cards.push({ type: 'point', id: call.id, point: output.point ?? null, proposal: output });
     if (call.name === 'lookAtPoint' && isLookAtPointResult(output)) cards.push({ type: 'look', id: call.id, look: output });
     if (call.name === 'proposeAssignmentUpdate' && isAssignmentProposal(output)) cards.push({ type: 'assignment', id: call.id, proposal: output });
+    if (call.name === 'ovDepartures' && isOvDeparturesResult(output)) cards.push({ type: 'departures', id: call.id, departures: output });
+    if (call.name === 'ovJourney' && isOvJourneyResult(output)) cards.push({ type: 'journey', id: call.id, journey: output });
+    if (call.name === 'predictOvMovement' && isOvPredictionResult(output)) cards.push({ type: 'ovPrediction', id: call.id, prediction: output });
   }
   return cards;
 }

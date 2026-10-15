@@ -8,7 +8,10 @@ import { type ChatCard, type ChatPart, chatCards, reasoningText, thinkingPhase, 
 import { POP } from '@/lib/motion';
 import AssignmentProposalCard from './AssignmentProposalCard';
 import ChatMarkdown from './ChatMarkdown';
+import DeparturesCard from './DeparturesCard';
+import JourneyCard from './JourneyCard';
 import LookCard from './LookCard';
+import OvPredictionCard from './OvPredictionCard';
 import PointCard from './PointCard';
 import Reasoning from './Reasoning';
 import SourceChips from './SourceChips';
@@ -27,7 +30,7 @@ const isImage = (part: ChatPart): part is FileUIPart => part.type === 'file' && 
 
 /**
  * User bubble on the right; an assistant message: its thinking, tools used (after the turn), markdown text, and once the
- * turn is done web sources and cards (points, aerial looks, assignment proposals) (their tools run before the answer streams; they follow the text, not lead it)
+ * turn is done web sources and cards (points, aerial looks, assignment proposals, OV departures/rides/predictions) (their tools run before the answer streams; they follow the text, not lead it)
  */
 export default function ChatMessage({ message, streaming, mapRef }: ChatMessageProps) {
   const texts = message.parts.filter(isText).filter((part) => part.text.trim() !== '');
@@ -74,6 +77,9 @@ export default function ChatMessage({ message, streaming, mapRef }: ChatMessageP
 function Card({ card, mapRef }: { card: ChatCard; mapRef: RefObject<MapRef | null> }) {
   if (card.type === 'look') return <LookCard look={card.look} mapRef={mapRef} />;
   if (card.type === 'assignment') return <AssignmentProposalCard proposal={card.proposal} />;
+  if (card.type === 'departures') return <DeparturesCard departures={card.departures} />;
+  if (card.type === 'journey') return <JourneyCard journey={card.journey} mapRef={mapRef} />;
+  if (card.type === 'ovPrediction') return <OvPredictionCard prediction={card.prediction} mapRef={mapRef} />;
   return <PointCard point={card.point} proposal={card.proposal} mapRef={mapRef} />;
 }
 

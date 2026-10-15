@@ -35,6 +35,14 @@ import {
   isFindPlacesResult,
   isIntersectResult,
   isLookAtPointResult,
+  isOvDeparturesResult,
+  isOvJourneyResult,
+  isOvPredictionResult,
+  isOvStopsResult,
+  journeyAnchor,
+  journeyWindow,
+  OV_KIND_LABEL,
+  delayLabel,
   toolTone,
   webSources,
 } from './intel-chat';
@@ -52,9 +60,30 @@ const assistant = (...parts: unknown[]) => ({ id: 'a1', role: 'assistant', parts
 const user = (id: string, text = 'Los Bravo op') => ({ id, role: 'user', parts: [{ type: 'text', text }] }) as UIMessage;
 const cell = (area: string, status: HintCell['status']): HintCell => ({ _id: area, articleId: 1, area, publishAt: '', slotTime: '', status, articleChanged: false }) as HintCell;
 
+const stop = { id: '30009999', name: 'Station Zutphen', town: 'Zutphen', latLng: { lat: 52.14, lng: 6.2 }, rdText: '208000 459000', distanceM: 120, modes: ['BUS'] };
+const departure = { mode: 'BUS', line: '83', destination: 'Warnsveld', planned: '2026-10-15T13:08:00Z', expected: '2026-10-15T13:10:00Z', delayMin: 2, status: 'DRIVING', journeyId: 'x' };
+const journeyStop = (name: string, status = 'PLANNED') => ({ name, town: null, latLng: null, planned: null, expected: null, status });
+const journey = {
+  mode: 'BUS',
+  line: '83',
+  destination: 'Warnsveld',
+  stops: [journeyStop('A', 'PASSED'), journeyStop('B', 'DEPARTED'), journeyStop('C')],
+  current: { latLng: { lat: 52.1, lng: 6.2 }, rdText: '1 2', between: ['B', 'C'], note: 'rijdt' },
+};
+const candidate = { point, via: 'bus 83 → Warnsveld', kind: 'onboard', atTime: '2026-10-15T13:20:00Z', score: 0.8, why: 'x', journeyId: null };
+const prediction = { candidates: [candidate], assumptions: ['Lopen 5 km/u'] };
+
 describe('tool meta', () => {
   test('every contract tool has a running label and a tone', () => {
-    expect(Object.keys(TOOL_META)).toHaveLength(24);
+    expect(Object.keys(TOOL_META)).toHaveLength(28);
+    expect(toolLabel('ovStopsNear')).toBe('Haltes zoeken…');
+    expect(toolTone('ovStopsNear')).toBe('map');
+    expect(toolLabel('ovDepartures')).toBe('Vertrektijden ophalen…');
+    expect(toolTone('ovDepartures')).toBe('map');
+    expect(toolLabel('ovJourney')).toBe('Rit volgen…');
+    expect(toolTone('ovJourney')).toBe('map');
+    expect(toolLabel('predictOvMovement')).toBe('OV-route voorspellen…');
+    expect(toolTone('predictOvMovement')).toBe('think');
     expect(toolLabel('decodeCipher')).toBe('Code kraken…');
     expect(toolTone('decodeCipher')).toBe('think');
     expect(toolLabel('findPlaces')).toBe('Plekken zoeken…');
@@ -132,6 +161,53 @@ describe('output guards', () => {
   });
 });
 
+describe('OV guards and helpers', () => {
+  test('guards', () => {
+    expect(isOvStopsResult({ stops: [stop], note: 'geen treinen' })).toBe(true);
+    expect(isOvStopsResult({ stops: [{ ...stop, latLng: null }] })).toBe(false);
+    expect(isOvDeparturesResult({ stop, departures: [departure, { ...departure, platform: '3' }] })).toBe(true);
+    expect(isOvDeparturesResult({ stop, departures: [{ ...departure, delayMin: '2' }] })).toBe(false);
+    expect(isOvDeparturesResult({ stop: null, departures: [] })).toBe(false);
+    expect(isOvJourneyResult(journey)).toBe(true);
+    expect(isOvJourneyResult({ ...journey, current: null })).toBe(true);
+    expect(isOvJourneyResult({ ...journey, current: { latLng: null, between: ['B', 'C'] } })).toBe(false);
+    expect(isOvJourneyResult({ ...journey, stops: [{ name: 'A' }] })).toBe(false);
+    expect(isOvPredictionResult(prediction)).toBe(true);
+    expect(isOvPredictionResult({ candidates: [{ ...candidate, point: null }], assumptions: [] })).toBe(false);
+    expect(isOvPredictionResult({ candidates: [], assumptions: 'x' })).toBe(false);
+    expect(isOvPredictionResult({ error: 'x' })).toBe(false);
+  });
+
+  test('kind labels and delay', () => {
+    expect(OV_KIND_LABEL).toEqual({ onboard: 'in de bus/trein', alighted: 'uitgestapt', terminus: 'eindhalte', waiting: 'wacht op halte' });
+    expect(delayLabel(3)).toBe('+3');
+    expect(delayLabel(1.6)).toBe('+2');
+    expect(delayLabel(0)).toBeNull();
+    expect(delayLabel(-1)).toBeNull();
+  });
+
+  test('journeyAnchor: the stop the vehicle left last', () => {
+    expect(journeyAnchor(journey as never)).toBe(1);
+    expect(journeyAnchor({ ...journey, current: null } as never)).toBeNull();
+    // between names not on the list: last passed/departed/arrived stop
+    expect(journeyAnchor({ ...journey, current: { ...journey.current, between: ['X', 'Y'] } } as never)).toBe(1);
+    // a loop line: the B that is followed by C
+    const loop = { ...journey, stops: [journeyStop('B', 'PASSED'), journeyStop('Q', 'PASSED'), journeyStop('B', 'DEPARTED'), journeyStop('C')] };
+    expect(journeyAnchor(loop as never)).toBe(2);
+    // nothing passed yet: before the first stop
+    expect(journeyAnchor({ ...journey, stops: [journeyStop('C')], current: { ...journey.current, between: ['X', 'Y'] } } as never)).toBe(-1);
+  });
+
+  test('journeyWindow: 3 stops up to the current position and 5 after it', () => {
+    expect(journeyWindow(20, 10)).toEqual({ start: 8, end: 16 });
+    expect(journeyWindow(20, 0)).toEqual({ start: 0, end: 6 });
+    expect(journeyWindow(20, -1)).toEqual({ start: 0, end: 5 });
+    expect(journeyWindow(12, 10)).toEqual({ start: 8, end: 12 });
+    expect(journeyWindow(20, null)).toEqual({ start: 0, end: 8 });
+    expect(journeyWindow(4, null)).toEqual({ start: 0, end: 4 });
+  });
+});
+
 describe('formatDistance', () => {
   test('metres below a km, one decimal below 10 km, whole km above', () => {
     expect(formatDistance(420)).toBe('420 m');
@@ -169,6 +245,14 @@ describe('toolSummary', () => {
     );
     expect(toolSummary(done('lookAtPoint', { description: 'Weiland', imageUrl: 'https://service.pdok.nl/x', point }))).toBe('Weiland');
     expect(toolSummary(done('getAssignment', { articleId: 9, title: 'x', status: 'submitted', owner: null, notes: [], endTime: null, maxPoints: null }))).toBe('Ingeleverd');
+    expect(toolSummary(done('ovStopsNear', { stops: [stop, stop] }))).toBe('2 haltes');
+    expect(toolSummary(done('ovStopsNear', { stops: [stop] }))).toBe('1 halte');
+    expect(toolSummary(done('ovDepartures', { stop, departures: [departure, departure, departure] }))).toBe('3 vertrekken · Station Zutphen');
+    expect(toolSummary(done('ovDepartures', { stop, departures: [departure] }))).toBe('1 vertrek · Station Zutphen');
+    expect(toolSummary(done('ovJourney', journey))).toBe('83 → Warnsveld');
+    expect(toolSummary(done('predictOvMovement', { ...prediction, candidates: [candidate, candidate] }))).toBe('2 kandidaten');
+    expect(toolSummary(done('predictOvMovement', prediction))).toBe('1 kandidaat');
+    expect(toolSummary(done('ovJourney', { line: '83' }))).toBeNull();
     expect(toolSummary(done('proposeAssignmentUpdate', { articleId: 9, title: 'x', status: 'busy' }))).toBeNull();
   });
 
@@ -320,6 +404,11 @@ describe('cards and sources of a message', () => {
       tool('proposeAssignmentUpdate', 'output-available', { output: update }, 'a1'),
       tool('proposeAssignmentUpdate', 'input-available', {}, 'a2'),
       tool('proposeHintAnswer', 'output-available', { output: proposal }, 'p1'),
+      tool('ovStopsNear', 'output-available', { output: { stops: [stop] } }, 'o0'),
+      tool('ovDepartures', 'output-available', { output: { stop, departures: [departure] } }, 'o1'),
+      tool('ovJourney', 'output-available', { output: journey }, 'o2'),
+      tool('predictOvMovement', 'output-available', { output: prediction }, 'o3'),
+      tool('predictOvMovement', 'output-available', { output: { error: 'Geen haltes' } }, 'o4'),
     );
     expect(chatCards(message)).toEqual([
       { type: 'point', id: 'i1-0', point },
@@ -328,6 +417,9 @@ describe('cards and sources of a message', () => {
       { type: 'look', id: 'l1', look },
       { type: 'assignment', id: 'a1', proposal: update },
       { type: 'point', id: 'p1', point, proposal },
+      { type: 'departures', id: 'o1', departures: { stop, departures: [departure] } },
+      { type: 'journey', id: 'o2', journey },
+      { type: 'ovPrediction', id: 'o3', prediction },
     ]);
   });
   test('webSources: deduped by url, http(s) only, hostname when no title', () => {
