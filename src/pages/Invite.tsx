@@ -12,11 +12,12 @@ import { fetchInvite, passkeysSupported, registerWithInvite, registerWithInviteW
 import { classifyPasskeyError, INVITE_REASON_TEXT, inviteGoneReason, PASSKEY_MESSAGES, type InviteReason } from '@/lib/passkey';
 import { useStartSession } from '@/hooks/start-session.hook';
 import InlineError from '@/components/InlineError';
-
-const FALLBACK_LOGO = import.meta.env.LOGO_URL || '/logo.svg';
+import { useAppConfig } from '@/hooks/app-config.hook';
+import { apiAssetUrl } from '@/lib/app-config';
 
 function GroupLogo({ url, className }: { url: string | null; className: string }) {
-  return <img src={url ?? FALLBACK_LOGO} alt="" className={`${className} rounded-2xl object-cover ring-1 ring-border`} onError={(event) => (event.currentTarget.src = FALLBACK_LOGO)} />;
+  const fallback = apiAssetUrl(useAppConfig().logoUrl);
+  return <img src={url ? apiAssetUrl(url) : fallback} alt="" className={`${className} rounded-2xl object-cover ring-1 ring-border`} onError={(event) => (event.currentTarget.src = fallback)} />;
 }
 
 function InvalidCard({ text }: { text: string }) {

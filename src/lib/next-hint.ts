@@ -24,3 +24,26 @@ export function getNextHintTime(lastHintTime: Date | undefined, huntStart: Date)
   next.setUTCHours(next.getUTCHours() + 1, 0, 0, 0);
   return next;
 }
+
+export interface NextHintState {
+  articlesLoading: boolean;
+  articlesError: boolean;
+  isNewHint: boolean;
+  huntOver: boolean;
+  /** Whether a hunt start is configured */
+  hasHuntStart: boolean;
+  /** Whether /config has answered (a missing start may still be on its way) */
+  configLoaded: boolean;
+  /** Formatted time left until the next hint */
+  countdown: string;
+}
+
+/** The "Volgende hint" label; `isCountdown` is true only when the label is the time left. */
+export function nextHintLabel(state: NextHintState): { label: string; isCountdown: boolean } {
+  if (state.articlesLoading) return { label: '…', isCountdown: false };
+  if (state.articlesError) return { label: 'Fout', isCountdown: false };
+  if (state.isNewHint) return { label: 'Nieuwe hint!', isCountdown: false };
+  if (!state.hasHuntStart) return { label: state.configLoaded ? 'Geen hunttijd' : '…', isCountdown: false };
+  if (state.huntOver) return { label: 'Geen hints meer', isCountdown: false };
+  return { label: state.countdown, isCountdown: true };
+}

@@ -11,7 +11,9 @@ import { useDevices } from '@/hooks/devices.hook';
 import { useIsMobile } from '@/hooks/media.hook';
 import { SLOW_CLOCK_TICK_MS, useNow } from '@/hooks/now.hook';
 import { apiErrorMessage } from '@/lib/api-error';
-import { googleMapsUrl, hunterIcon, hunterMeta, hunterRows, huntersSummary, isLowBattery, vehicleGroupIdsFromEnv, type HunterRow } from '@/lib/hunters';
+import { googleMapsUrl, hunterIcon, hunterMeta, hunterRows, huntersSummary, isLowBattery, type HunterRow } from '@/lib/hunters';
+import { vehicleGroupIds } from '@/lib/app-config';
+import { useAppConfig } from '@/hooks/app-config.hook';
 import { vehicleGlyph } from '@/lib/marker-style';
 import { SWAP } from '@/lib/motion';
 import { formatBattery, VEHICLE_OPTIONS } from '@/lib/tracker';
@@ -23,7 +25,6 @@ import { BeheerCard, BeheerExpandableRow, BeheerPane, BeheerRows, BeheerSkeleton
 import { Pill } from './controls/Pill';
 import Segmented, { type SegmentOption } from './controls/Segmented';
 
-const GROUPS = vehicleGroupIdsFromEnv(import.meta.env);
 /** The pane's card gap (gap-3.5), so a card folding away doesn't leave a gap behind */
 const CARD_GAP = 14;
 
@@ -72,10 +73,11 @@ export default function HuntersPane({ mapRef }: { mapRef: RefObject<MapRef | nul
   const { users } = useAdmin();
   const close = useAdminStore((state) => state.close);
   const now = useNow(true, SLOW_CLOCK_TICK_MS);
+  const groups = vehicleGroupIds(useAppConfig());
 
   // A failed poll keeps the last list on screen; only show the error when there's nothing to show
   const view = isLoading ? 'loading' : isError && !devices?.length ? 'error' : 'content';
-  const rows = hunterRows(devices, positions, users, GROUPS, now);
+  const rows = hunterRows(devices, positions, users, groups, now);
   const live = rows.filter((row) => row.active);
   const notLive = rows.filter((row) => !row.active);
 

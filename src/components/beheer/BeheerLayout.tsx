@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { ChevronDownIcon, Loader2Icon } from 'lucide-react';
+import { ChevronDownIcon, Loader2Icon, TriangleAlertIcon } from 'lucide-react';
 import AutoHeight from '@/components/motion/AutoHeight';
 import Reveal from '@/components/motion/Reveal';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -205,17 +205,20 @@ interface BeheerRowProps {
   meta?: ReactNode;
   /** Trailing controls (pills, a switch, a tag) */
   children?: ReactNode;
+  /** Controls on their own full-width line under the text (e.g. on phones, where they don't fit beside it) */
+  below?: ReactNode;
   tone?: RowTone;
   className?: string;
 }
 
 /** One row: optional leading element, title, muted meta, trailing controls. Put it in BeheerRows with a key. */
-export function BeheerRow({ leading, title, meta, children, tone, className }: BeheerRowProps) {
+export function BeheerRow({ leading, title, meta, children, below, tone, className }: BeheerRowProps) {
   return (
     <RowFrame tone={tone} className={className}>
       <div className="flex items-center gap-3 px-3 py-2.5">
         <RowContent leading={leading} title={title} meta={meta} trailing={children} />
       </div>
+      {below && <div className="-mt-1 flex items-center gap-1.5 px-3 pb-2.5">{below}</div>}
     </RowFrame>
   );
 }
@@ -352,5 +355,17 @@ export function BeheerSkeleton({ groups = 1 }: { groups?: number }) {
         </div>
       ))}
     </div>
+  );
+}
+
+/** Amber problem bar, as in the Koppelingen cards; folds in and out. */
+export function WarnBar({ children }: { children: ReactNode }) {
+  return (
+    <motion.div className="overflow-hidden" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={REVEAL_TRANSITION}>
+      <div className="mt-2.5 flex items-center gap-2.5 rounded-2xl bg-amber-500/15 px-3 py-2.5 text-[12.5px] text-amber-800 dark:text-amber-200">
+        <TriangleAlertIcon className="size-4 shrink-0" />
+        <span className="flex-1">{children}</span>
+      </div>
+    </motion.div>
   );
 }

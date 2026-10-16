@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
 import { Layer, Source, useMap, type FillLayerSpecification, type SymbolLayerSpecification } from 'react-map-gl/maplibre';
 import { useDevices } from '@/hooks/devices.hook';
-import { vehicleForGroupId, vehicleGroupIdsFromEnv } from '@/lib/hunters';
+import { useAppConfig } from '@/hooks/app-config.hook';
+import { vehicleGroupIds } from '@/lib/app-config';
+import { vehicleForGroupId, type VehicleGroupIds } from '@/lib/hunters';
 import { accuracyCircles, HUNTER_ARROWS_LAYER, hunterFeatures, HUNTERS_LAYER, type HunterIcon } from '@/lib/map-layers';
 import { isActive } from '@/lib/tracker';
 import { markerIconId, themedIconExpression, themedImageId, type MarkerPalette, type MarkerTheme } from '@/lib/marker-style';
@@ -10,11 +12,9 @@ import { useMarkerPalette, useMarkerTheme } from './marker-icons';
 import DevicePopup from './devices/DevicePopup';
 import DeviceTooltip from './devices/DeviceTooltip';
 
-const GROUPS = vehicleGroupIdsFromEnv(import.meta.env);
-
 /** Icon for a Traccar group: the vehicle's icon, or a phone when the group isn't a configured vehicle */
-function iconForGroup(groupId: number): HunterIcon {
-  return vehicleForGroupId(groupId, GROUPS) ?? 'phone';
+function iconForGroup(groupId: number, groups: VehicleGroupIds): HunterIcon {
+  return vehicleForGroupId(groupId, groups) ?? 'phone';
 }
 
 const ACCURACY_SOURCE = 'device-accuracy';
@@ -49,6 +49,9 @@ export default function Devices() {
   const map = useMap().current?.getMap();
   const theme = useMarkerTheme();
   const palette = useMarkerPalette();
+  // vehicleGroups keeps its identity until the config changes
+  const { vehicleGroups } = useAppConfig();
+  const groups = useMemo(() => vehicleGroupIds({ vehicleGroups }), [vehicleGroups]);
   const layout = useMemo(() => huntersLayout(theme), [theme]);
   // Hovered: 10% larger
   const hoverLayout = useMemo<SymbolLayerSpecification['layout']>(() => ({ ...layout, 'icon-size': 1.1 }), [layout]);
@@ -64,7 +67,7 @@ export default function Devices() {
   const hoveredDevice = hoveredId !== undefined && !activeDevice ? positions?.find((position) => position.deviceId === hoveredId) : undefined;
 
   /** Device id -> icon for its vehicle group (phone when the group isn't a vehicle) */
-  const iconByDevice = useMemo(() => new Map((devices ?? []).map((device) => [device.id, iconForGroup(device.groupId)])), [devices]);
+  const iconByDevice = useMemo(() => new Map((devices ?? []).map((device) => [device.id, iconForGroup(device.groupId, groups)])), [devices, groups]);
   const circles = useMemo(() => accuracyCircles(positions ?? []), [positions]);
   // Stale (greyed out) is decided on each poll, like before
   const features = useMemo(() => hunterFeatures(positions ?? [], (deviceId) => iconByDevice.get(deviceId) ?? 'phone', (fixTime) => !isActive(fixTime)), [positions, iconByDevice]);

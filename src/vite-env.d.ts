@@ -14,16 +14,6 @@ type ImportMetaEnv = {
   VERSION: string
   SENTRY_RELEASE: string
   API_BASE_URL: string
-  HUNT_START_TIME: string
-  HUNT_END_TIME: string
-  HOME_TEAM_API_ID: string
-  GROUP_WALKING_ID: string
-  GROUP_CAR_ID: string
-  GROUP_MOTORCYCLE_ID: string
-  GROUP_BIKE_ID: string
-  DISCORD_URL: string
-  LOGO_URL: string
-  GROUP_NAME: string
   TEAMS_AREA_EDITING: string
   SENTRY_DSN: string
   SENTRY_ENVIRONMENT: string

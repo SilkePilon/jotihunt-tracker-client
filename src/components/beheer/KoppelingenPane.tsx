@@ -11,6 +11,7 @@ import TelegramLinkPanel from '@/components/cards/telegram/TelegramLinkPanel';
 import TelegramLogo from '@/components/cards/telegram/TelegramLogo';
 import Reveal from '@/components/motion/Reveal';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAdminConfig } from '@/hooks/app-config.hook';
 import { useJotiboardAdmin } from '@/hooks/jotiboard.hook';
 import { useLife360Admin } from '@/hooks/life360.hook';
 import { useNow } from '@/hooks/now.hook';
@@ -22,9 +23,11 @@ import { LIFE360_PURPLE, refreshAllowed } from '@/lib/life360';
 import { POP } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import type { Life360LinkedStatus } from '@/types/Life360';
-import { BeheerCard, BeheerPane, FadeSwap, InlineConfirm } from './BeheerLayout';
+import type { TelegramAdminStatus } from '@/types/Telegram';
+import { BeheerCard, BeheerPane, FadeSwap, InlineConfirm, WarnBar } from './BeheerLayout';
 import BuildingsCard from './BuildingsCard';
 import { IconPill, Pill, Tag } from './controls/Pill';
+import TelegramAppForm from './TelegramAppForm';
 
 /** Telegram's brand blue (as TELEGRAM_BUTTON in TelegramLinkPanel) */
 const TELEGRAM_BLUE = '#229ED9';
@@ -58,6 +61,9 @@ function useLinkedTransition(state: string | undefined, steps: string[], onLinke
 }
 
 const TELEGRAM_STEPS = ['qr', 'password'];
+/** After saving the app details the server reconnects by itself: poll this often, this far apart */
+const APP_RECONNECT_POLLS = 10;
+const APP_RECONNECT_POLL_MS = 500;
 // A token links straight from unlinked / loggedOut, without the code and circle steps
 const LIFE360_STEPS = ['code', 'circle', 'unlinked', 'loggedOut'];
 // Jotiboard logs in straight from unlinked / loggedOut
@@ -97,6 +103,10 @@ interface IntegrationCardProps {
   actionKey: string;
   /** After the sync line, e.g. the refresh button */
   syncAction?: ReactNode;
+  /** A muted line under the sync line (e.g. Telegram's app details) */
+  footer?: ReactNode;
+  /** An amber bar that isn't the server's problem (e.g. a missing SETTINGS_KEY) */
+  warning?: ReactNode;
   onRelink?: () => void;
   /** The inline confirm while asking to unlink */
   confirm?: ReactNode;
@@ -105,7 +115,7 @@ interface IntegrationCardProps {
 }
 
 /** K1: one card per integration — logo, name + status pill, "gekoppeld als …", sync line, amber problem bar, confirm, link steps. */
-function IntegrationCard({ name, brand, logo, view, isError, action, actionKey, syncAction, onRelink, confirm, panel }: IntegrationCardProps) {
+function IntegrationCard({ name, brand, logo, view, isError, action, actionKey, syncAction, footer, warning, onRelink, confirm, panel }: IntegrationCardProps) {
   return (
     <BeheerCard>
       <div className="flex items-center gap-3">
@@ -147,6 +157,8 @@ function IntegrationCard({ name, brand, logo, view, isError, action, actionKey, 
           </div>
         )}
       </Reveal>
+      <Reveal>{footer && <div className="pt-1.5 pl-14 text-xs text-muted-foreground">{footer}</div>}</Reveal>
+      <AnimatePresence initial={false}>{warning && <WarnBar key="warning">{warning}</WarnBar>}</AnimatePresence>
       <Reveal>
         {view?.problem && (
           <div className="pt-3">
@@ -189,6 +201,56 @@ export default function KoppelingenPane({ mapRef }: { mapRef: RefObject<MapRef |
   const [telegramStarting, setTelegramStarting] = useState(false);
   const telegramState = telegram.status?.state;
   const telegramPanel = telegramState === 'qr' || telegramState === 'password';
+  // T1: the app details form, as step 1 of "Koppelen" (while the server lacks them) or via "wijzigen"
+  const [telegramAppForm, setTelegramAppForm] = useState<'step' | 'edit' | null>(null);
+  const adminConfig = useAdminConfig();
+  const needsAppCredentials = !!telegram.status?.needsAppCredentials;
+  const settingsKeyMissing = !!adminConfig.config && !adminConfig.config.settingsKeyOk;
+  const telegramApiId = adminConfig.config?.plain.telegramApiId;
+  const telegramBot = adminConfig.config?.plain.telegramBotUsername.value ?? 'Jotihunt_bot';
+
+  // The latest status for waitForTelegramStart, and whether the pane is still mounted
+  const telegramStatusRef = useRef(telegram.status);
+  useEffect(() => {
+    telegramStatusRef.current = telegram.status;
+  });
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  /** Polls until the server's Telegram client is up with the new app details; the state it ends in, or null when the pane closed. */
+  async function waitForTelegramStart(): Promise<TelegramAdminStatus['state'] | null> {
+    for (let i = 0; i < APP_RECONNECT_POLLS; i++) {
+      telegram.refresh();
+      await new Promise((resolve) => setTimeout(resolve, APP_RECONNECT_POLL_MS));
+      if (!mountedRef.current) return null;
+      const state = telegramStatusRef.current?.state;
+      if (state && state !== 'unavailable') return state;
+    }
+    return 'unavailable';
+  }
+
+  async function onTelegramAppSaved() {
+    const wasStep = telegramAppForm === 'step';
+    setTelegramAppForm(null);
+    telegram.refresh();
+    if (!wasStep) {
+      toast.success('App-gegevens opgeslagen');
+      return;
+    }
+    // Step 1 done: wait for the server, then on to the QR steps (the Koppelen button spins meanwhile)
+    setTelegramStarting(true);
+    const state = await waitForTelegramStart();
+    if (state === null) return;
+    setTelegramStarting(false);
+    if (state === 'unlinked') void startTelegram();
+    else if (state === 'unavailable') toast.error('Telegram start niet met deze app-gegevens.');
+    // 'linked' (a stored session came back): nothing left to link
+  }
 
   useLinkedTransition(telegramState, TELEGRAM_STEPS, () => {
     // The QR scan completes on the server: refresh the "linked" views too
@@ -197,6 +259,11 @@ export default function KoppelingenPane({ mapRef }: { mapRef: RefObject<MapRef |
   });
 
   async function startTelegram() {
+    // Read through the ref: after step 1 this runs from an older render's closure
+    if (telegramStatusRef.current?.needsAppCredentials) {
+      setTelegramAppForm('step');
+      return;
+    }
     setTelegramStarting(true);
     try {
       await telegram.link();
@@ -313,9 +380,15 @@ export default function KoppelingenPane({ mapRef }: { mapRef: RefObject<MapRef |
         Ontkoppelen
       </Pill>
     );
-  } else if (telegramView?.canLink) {
+  } else if (telegramView?.canLink && telegramAppForm !== 'step') {
     telegramAction = (
-      <Pill variant="primary" morphKey={telegramStarting ? 'busy' : 'idle'} disabled={telegramStarting} onClick={() => void startTelegram()}>
+      <Pill
+        variant="primary"
+        morphKey={telegramStarting ? 'busy' : 'idle'}
+        // Without SETTINGS_KEY the app details (step 1) can't be saved
+        disabled={telegramStarting || (needsAppCredentials && settingsKeyMissing)}
+        onClick={() => void startTelegram()}
+      >
         {telegramStarting ? <Loader2Icon className="animate-spin" /> : <LinkIcon />}
         Koppelen
       </Pill>
@@ -364,6 +437,20 @@ export default function KoppelingenPane({ mapRef }: { mapRef: RefObject<MapRef |
         isError={telegram.isError}
         action={telegramAction}
         actionKey={telegramView?.canUnlink ? 'unlink' : 'link'}
+        footer={
+          !needsAppCredentials &&
+          !telegramPanel &&
+          !telegramAppForm &&
+          telegramApiId?.value && (
+            <>
+              App-gegevens: <span className="tabular-nums">{telegramApiId.value}</span> · @{telegramBot} {telegramApiId.source === 'env' && <Tag tone="info">uit .env</Tag>} ·{' '}
+              <button type="button" className="underline hover:text-foreground" onClick={() => setTelegramAppForm('edit')}>
+                wijzigen
+              </button>
+            </>
+          )
+        }
+        warning={settingsKeyMissing && needsAppCredentials && 'SETTINGS_KEY ontbreekt op de server: app-gegevens kunnen niet worden opgeslagen.'}
         confirm={
           confirming === 'telegram' && telegramView?.canUnlink && (
             <InlineConfirm
@@ -378,30 +465,34 @@ export default function KoppelingenPane({ mapRef }: { mapRef: RefObject<MapRef |
           )
         }
         panel={
-          telegramPanel &&
-          telegram.status && (
-            <TelegramLinkPanel
-              status={telegram.status}
-              onLink={startTelegram}
-              onCancel={async () => {
-                try {
-                  await telegram.unlink();
-                } catch (error) {
-                  toast.error(apiErrorMessage(error, 'Annuleren is mislukt, probeer het opnieuw.'));
-                }
-              }}
-              onSubmitPassword={async (password) => {
-                try {
-                  await telegram.submitPassword(password);
-                  return null;
-                } catch (error) {
-                  const message = apiErrorMessage(error, 'Koppelen is mislukt, probeer het opnieuw.');
-                  // Also as a toast: when the login was cancelled (409) or failed (502), the next poll replaces this step
-                  toast.error(message);
-                  return message;
-                }
-              }}
-            />
+          telegramAppForm ? (
+            <TelegramAppForm step={telegramAppForm === 'step'} onCancel={() => setTelegramAppForm(null)} onSaved={() => void onTelegramAppSaved()} />
+          ) : (
+            telegramPanel &&
+            telegram.status && (
+              <TelegramLinkPanel
+                status={telegram.status}
+                onLink={startTelegram}
+                onCancel={async () => {
+                  try {
+                    await telegram.unlink();
+                  } catch (error) {
+                    toast.error(apiErrorMessage(error, 'Annuleren is mislukt, probeer het opnieuw.'));
+                  }
+                }}
+                onSubmitPassword={async (password) => {
+                  try {
+                    await telegram.submitPassword(password);
+                    return null;
+                  } catch (error) {
+                    const message = apiErrorMessage(error, 'Koppelen is mislukt, probeer het opnieuw.');
+                    // Also as a toast: when the login was cancelled (409) or failed (502), the next poll replaces this step
+                    toast.error(message);
+                    return message;
+                  }
+                }}
+              />
+            )
           )
         }
       />

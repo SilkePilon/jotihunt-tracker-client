@@ -2,18 +2,17 @@ import { describe, expect, test } from 'bun:test';
 import type { Device } from '@/types/Device';
 import type { Position } from '@/types/Position';
 import type { User } from '@/types/User';
-import { googleMapsUrl, hunterIcon, hunterMeta, hunterRows, huntersSummary, isLowBattery, vehicleForGroupId, vehicleGroupIdsFromEnv } from './hunters';
+import { googleMapsUrl, hunterIcon, hunterMeta, hunterRows, huntersSummary, isLowBattery, vehicleForGroupId, type VehicleGroupIds } from './hunters';
 
 const NOW = new Date('2026-10-17T12:00:00Z').getTime();
-const groups = vehicleGroupIdsFromEnv({ GROUP_WALKING_ID: '1', GROUP_BIKE_ID: '2', GROUP_CAR_ID: '3', GROUP_MOTORCYCLE_ID: '' });
+const groups: VehicleGroupIds = { walking: 1, bike: 2, car: 3 };
 
 function device(id: number, lastUpdate: string | null, groupId = 1): Device {
   return { id, groupId, calendarId: 0, name: `Toestel ${id}`, uniqueId: `u${id}`, status: 'online', lastUpdate: lastUpdate as unknown as Date, positionId: id, disabled: false };
 }
 
 describe('vehicle groups', () => {
-  test('env ids map to vehicles; empty ids are unset', () => {
-    expect(groups).toEqual({ walking: 1, bike: 2, car: 3, motorcycle: undefined });
+  test('group ids map to vehicles; unknown ids are no vehicle', () => {
     expect(vehicleForGroupId(3, groups)).toBe('car');
     expect(vehicleForGroupId(0, groups)).toBeUndefined();
     expect(vehicleForGroupId(9, groups)).toBeUndefined();

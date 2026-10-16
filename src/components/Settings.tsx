@@ -33,8 +33,7 @@ import LayersSubmenu from './settings/LayersSubmenu';
 import MapStyleSubmenu from './settings/MapStyleSubmenu';
 import useAdminStore from '@/stores/admin.store';
 import {useIsMobile} from '@/hooks/media.hook';
-
-const DISCORD_URL = import.meta.env.DISCORD_URL;
+import {useAppConfig} from '@/hooks/app-config.hook';
 
 interface SettingsProps {
     /** Shows a "Rondleiding opnieuw" item when given */
@@ -43,6 +42,7 @@ interface SettingsProps {
 
 export default function Settings({onReplayTour}: SettingsProps) {
     const menuOpen = useSettingsMenuStore((state) => state.open);
+    const {discordUrl} = useAppConfig();
     const setMenuOpen = useSettingsMenuStore((state) => state.setOpen);
 
     // While the tour shows this menu, clicks on the tour card count as "outside"; the tour closes it itself
@@ -140,9 +140,9 @@ export default function Settings({onReplayTour}: SettingsProps) {
                                 </DialogTrigger>
                             </>
                         )}
-                        {DISCORD_URL && (
+                        {discordUrl && (
                             <MenuRow asChild>
-                                <a href={DISCORD_URL} target="_blank" rel="noopener noreferrer">
+                                <a href={discordUrl} target="_blank" rel="noopener noreferrer">
                                     <span className={"fill-muted-foreground [&>svg]:size-4"} dangerouslySetInnerHTML={{__html: siDiscord.svg}}></span>
                                     Join de Discord
                                 </a>

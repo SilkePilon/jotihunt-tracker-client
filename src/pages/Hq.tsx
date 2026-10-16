@@ -23,6 +23,7 @@ import { useNow } from '@/hooks/now.hook';
 import { usePredictions } from '@/hooks/predictions.hook';
 import { useSessionExpired } from '@/hooks/session.hook';
 import { isHomeTeam, useTeams } from '@/hooks/teams.hook';
+import { useAppConfig } from '@/hooks/app-config.hook';
 import { useTheme } from '@/hooks/theme.hook';
 import { buildFoxes, eventFromNotification, type HqEvent } from '@/lib/hq-director';
 import { isUnauthorized } from '@/lib/session';
@@ -75,6 +76,7 @@ function HqScreen({ onUnauthorized }: { onUnauthorized: () => void }) {
   const { reports } = useHuntReports();
   const { predictions } = usePredictions();
   const { teams } = useTeams();
+  useAppConfig(); // re-render when the home team is configured
   const homeTeam = teams?.find(isHomeTeam);
   const foxes = useMemo(() => buildFoxes({ areas, hunts, reports, predictions, teams, now }), [areas, hunts, reports, predictions, teams, now]);
   useHqEventSources(foxes, reports);

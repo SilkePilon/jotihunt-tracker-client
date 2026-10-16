@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { CheckIcon, LockIcon, MonitorPlayIcon, PauseIcon, RefreshCwIcon, SparklesIcon } from 'lucide-react';
 import DemoModeDialog from '@/components/settings/DemoModeDialog';
 import ReloadTeamsDialog from '@/components/settings/ReloadTeamsDialog';
+import { useAppConfig } from '@/hooks/app-config.hook';
 import { useDemo } from '@/hooks/demo.hook';
 import { useHuntableAreas } from '@/hooks/huntable-areas.hook';
 import { useInvitesPaused } from '@/hooks/invites.hook';
@@ -15,6 +16,7 @@ import { POP } from '@/lib/motion';
 import { capitalizeFirstLetter, cn, getColorFromArea } from '@/lib/utils';
 import { BeheerCard, BeheerPane, BeheerRow, BeheerRows, CountSwap } from './BeheerLayout';
 import BeheerSwitch from './controls/BeheerSwitch';
+import GeneralSettings from './GeneralSettings';
 import { Pill } from './controls/Pill';
 
 /** Leading icon of a settings row (muted, like the mockup) */
@@ -28,11 +30,12 @@ const ROW_ICON = 'size-[18px] shrink-0 text-muted-foreground';
 function HuntableAreasCard() {
   const { allowed, setAllowed } = useHuntableAreas();
   const { teams } = useTeams();
+  const { loaded } = useAppConfig(); // re-render when the home team is configured
   const ownArea = teams?.find(isHomeTeam)?.area;
   const { chips, count } = huntableChips(AREAS, ownArea, allowed);
   const [saving, setSaving] = useState(false);
-  // Without the teams our own area isn't known yet (it would show as a chip and be missing from the count)
-  const loading = allowed === undefined || teams === undefined;
+  // Without the teams and /config our own area isn't known yet (it would show as a chip and be missing from the count)
+  const loading = allowed === undefined || teams === undefined || !loaded;
 
   async function toggle(area: string) {
     // One PUT at a time: each one sends the whole list
@@ -124,6 +127,7 @@ export default function AlgemeenPane() {
   return (
     <BeheerPane title="Algemeen" description="Instellingen die voor iedereen gelden.">
       <HuntableAreasCard />
+      <GeneralSettings />
 
       <BeheerCard title="Functies">
         <BeheerRows>

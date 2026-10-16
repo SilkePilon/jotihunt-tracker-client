@@ -1,3 +1,4 @@
+import { useAppConfig } from '@/hooks/app-config.hook';
 import { Button } from './ui/button';
 import { DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
 
@@ -6,13 +7,8 @@ export default function DebugInfo() {
   const VERSION = import.meta.env.VERSION;
 
   const API_BASE_URL = import.meta.env.API_BASE_URL;
-  const HUNT_START_TIME = import.meta.env.HUNT_START_TIME;
-  const HUNT_END_TIME = import.meta.env.HUNT_END_TIME;
-  const GROUP_WALKING_ID = import.meta.env.GROUP_WALKING_ID;
-  const GROUP_CAR_ID = import.meta.env.GROUP_CAR_ID;
-  const GROUP_MOTORCYCLE_ID = import.meta.env.GROUP_MOTORCYCLE_ID;
-  const GROUP_BIKE_ID = import.meta.env.GROUP_BIKE_ID;
-  const HOME_TEAM_API_ID = import.meta.env.HOME_TEAM_API_ID;
+  const { huntStart, huntEnd, homeTeamApiId, vehicleGroups } = useAppConfig();
+  const formatTime = (iso: string | null) => (iso ? new Date(iso).toLocaleString('nl-NL') : '–');
 
   return (
     <DialogContent>
@@ -28,15 +24,12 @@ export default function DebugInfo() {
       </div>
 
       <div>
-        <h1 className="font-semibold">Omgevingsvariabelen</h1>
+        <h1 className="font-semibold">Configuratie</h1>
         <p>API base URL: {API_BASE_URL}</p>
-        <p>Hunt start: {new Date(HUNT_START_TIME).toLocaleString('nl-NL')}</p>
-        <p>Hunt einde: {new Date(HUNT_END_TIME).toLocaleString('nl-NL')}</p>
-        <p>Thuisbasis API ID: {HOME_TEAM_API_ID}</p>
-        <p>Groep ID lopend: {GROUP_WALKING_ID}</p>
-        <p>Groep ID auto: {GROUP_CAR_ID}</p>
-        <p>Groep ID motor: {GROUP_MOTORCYCLE_ID}</p>
-        <p>Groep ID fiets: {GROUP_BIKE_ID}</p>
+        <p>Hunt start: {formatTime(huntStart)}</p>
+        <p>Hunt einde: {formatTime(huntEnd)}</p>
+        <p>Thuisbasis API ID: {homeTeamApiId ?? '–'}</p>
+        <p>Traccar-groepen: {JSON.stringify(vehicleGroups)}</p>
       </div>
 
       <DialogFooter>

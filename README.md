@@ -104,20 +104,10 @@ JOTIHUNT_API_URL=https://jotihunt.nl/api/2.0
 JOTIHUNT_WEB_URL=https://jotihunt.nl
 JOTIHUNT_WEB_USERNAME=naam@jouwscoutinggroep.nl
 JOTIHUNT_WEB_PASSWORD=password123
-HUNT_START_TIME=2025-10-18T10:00+02:00 # Pas dit aan naar de starttijd van de hunt van dat jaar.
-HUNT_END_TIME=2025-10-19T12:00+02:00 # Pas dit aan naar de eindtijd van de hunt van dat jaar.
 
 # Client
 JWT_SECRET=verander-dit-naar-een-veilige-random-string-van-minimaal-32-tekens
 API_BASE_URL=https://api.jotihunt.jouwscoutinggroep.nl
-HOME_TEAM_API_ID=17
-GROUP_WALKING_ID=3
-GROUP_CAR_ID=2
-GROUP_MOTORCYCLE_ID=4
-GROUP_BIKE_ID=5
-DISCORD_URL=https://discord.gg/jouw-discord-server # Optioneel
-GROUP_NAME=Jouw Scoutinggroep # Optioneel
-LOGO_URL=https://jouwscoutinggroep.nl/logo.png # Optioneel
 TEAMS_AREA_EDITING=false # Sta toe dat gebruikers de teams-gebieden kunnen aanpassen in de client
 ```
 3. Start de applicatie met:
@@ -136,6 +126,9 @@ Volg de configuratiestappen om de volledige applicatie werkend te krijgen.
 
 ### Omgevingsvariabelen
 De applicatie kan worden geconfigureerd via omgevingsvariabelen. Hieronder volgt een overzicht van waar je de verschillende variabelen vandaan kunt halen.
+
+> **Let op:** de start- en eindtijd van de hunt, jullie eigen team, de Traccar-groepen per voertuig (lopend, fiets, auto, motor), de groepsnaam, het logo en de Discord-link zijn géén omgevingsvariabelen van de client meer (`HUNT_START_TIME`, `HUNT_END_TIME`, `HOME_TEAM_API_ID`, `GROUP_*_ID`, `GROUP_NAME`, `LOGO_URL`, `DISCORD_URL`). Je stelt ze als beheerder in via **Beheer → Algemeen**; de server levert ze aan de client via `/config`. Maak voor de voertuiggroepen eerst in Traccar (`Instellingen` > `Groepen`) de groepen `Auto`, `Fiets`, `Motor` en `Lopend` aan; daarna kies je ze in Beheer uit de lijst.
+
 #### `TRACCAR_API_TOKEN`
 1. Ga naar jouw Traccar server (standaard te bereiken via `http://localhost:8082`) en log in als administrator.
 2. Navigeer onderin naar `Instellingen` > `Voorkeuren` > `Token`.
@@ -144,9 +137,6 @@ De applicatie kan worden geconfigureerd via omgevingsvariabelen. Hieronder volgt
 
 #### `JOTIHUNT_WEB_USERNAME` en `JOTIHUNT_WEB_PASSWORD`
 Dit zijn de inloggegevens die je normaal gebruikt om in te loggen op [jotihunt.nl](https://jotihunt.nl). De server zal deze gebruiken om automatisch de hunts op te halen (scrapen).
-
-#### `HUNT_START_TIME` en `HUNT_END_TIME`
-Stel hier de start- en eindtijd van de hunt in. Let goed op de juiste tijdzone (bijv. `+02:00` voor Nederland tijdens zomertijd).
 
 #### `JWT_SECRET`
 Genereer een willekeurige, veilige string van minimaal 32 tekens. Deze wordt gebruikt om JWT tokens te ondertekenen voor de authenticatie.
@@ -161,22 +151,6 @@ De kaart gebruikt [MapLibre GL JS](https://maplibre.org/) met gratis, token-loze
 #### `API_BASE_URL`
 Stel dit in op de URL waar jouw Jotihunt Tracker Server bereikbaar is. Bijvoorbeeld `https://api.jotihunt.jouwscoutinggroep.nl` of `http://localhost:3000` als je lokaal werkt.
 Belangrijk: deze URL moet **publiek toegankelijk** zijn.
-
-#### `HOME_TEAM_API_ID`
-Dit is de API ID van jouw eigen team op de Jotihunt website. Deze kun je pas invullen nadat je bent aangemeld.
-1. Ga naar `https://jotihunt.nl/api/2.0/subscriptions` en zoek jouw team op in de lijst.
-2. Noteer de `id` waarde van jouw team en vul deze in bij `HOME_TEAM_API_ID` in de `.env` file.
-
-#### `GROUP_WALKING_ID`, `GROUP_CAR_ID`, `GROUP_MOTORCYCLE_ID`, `GROUP_BIKE_ID`
-Deze waarden komen overeen met de groeps-ID's die door Traccar worden gebruikt om verschillende soorten voertuigen te onderscheiden.
-1. Ga naar jouw Traccar server (standaard te bereiken via `http://localhost:8082`) en log in als administrator.
-2. Navigeer onderin naar `Instellingen` > `Groepen`.
-3. Maak hier de verschillende groepen aan: `Auto`, `Fiets`, `Motor`, `Lopend`.
-4. Voor elke groep zie je in het bewerkscherm in de URL het juiste ID staan. (bijv. bij https://traccar.jotihunt.jouwscoutinggroep.nl/settings/group/2 is het id `2`).
-5. Vul deze ID's in bij de respectievelijke omgevingsvariabelen in de `.env` file.
-
-#### `DISCORD_URL`
-Optioneel: vul hier de URL in van jouw Discord-server. Er zal dan een knop verschijnen in de client waarmee gebruikers direct kunnen joinen.
 
 #### `TEAMS_AREA_EDITING`
 In 2024 waren de deelgebieden niet voorafgaand aan de hunt bekend. 

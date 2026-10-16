@@ -4,6 +4,7 @@ import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import type { User } from '@/types/User';
 import SidebarHeader from '@/components/sidebar/SidebarHeader';
 import { FoxesSummary } from '@/components/sidebar/foxes/FoxesCard';
+import { useAppConfig } from '@/hooks/app-config.hook';
 import { useHintBoard } from '@/hooks/hints.hook';
 import { hintProgress } from '@/lib/hints';
 import { usePredictions, usePredictionSetting } from '@/hooks/predictions.hook';
@@ -52,6 +53,7 @@ function MenuCard({ title, rows }: { title: string; rows: Row[] }) {
 
 const BEHEER: [AdminDialogId, string][] = [
   ['algemeen', 'Algemeen'],
+  ['ai', 'AI'],
   ['users', 'Gebruikers'],
   ['invites', 'Invites'],
   ['hunters', 'Hunters'],
@@ -62,6 +64,7 @@ const BEHEER: [AdminDialogId, string][] = [
 /** Home of the phone sheet: header card + menu cards with live summaries. */
 export default function MobileMenu() {
   const push = useMobileNavStore((s) => s.push);
+  const { homeTeamApiId } = useAppConfig();
   const user = useAuthUser<User>();
   const { board } = useHintBoard();
   const progress = board ? hintProgress(board) : undefined;
@@ -78,7 +81,7 @@ export default function MobileMenu() {
     ...(predictionEnabled !== false ? [{ key: 'predictions', icon: <MapPinIcon className={icon} />, title: 'Voorspelling', meta: predictionSummary(predictions), onSelect: page('predictions') }] : []),
     { key: 'hints', icon: <Grid3x3Icon className={icon} />, title: 'Hints', meta: progress ? `${progress.solved}/${progress.total} opgelost` : undefined, onSelect: page('hints') },
     { key: 'hintEntry', icon: <PenLineIcon className={icon} />, title: 'Hint registreren', onSelect: page('hintEntry') },
-    ...(import.meta.env.HOME_TEAM_API_ID ? [{ key: 'counterHunt', icon: <FlagIcon className={icon} />, title: 'Tegenhunt', onSelect: page('counterHunt') }] : []),
+    ...(homeTeamApiId !== null ? [{ key: 'counterHunt', icon: <FlagIcon className={icon} />, title: 'Tegenhunt', onSelect: page('counterHunt') }] : []),
   ];
   const jij: Row[] = [
     { key: 'tracking', icon: <SmartphoneIcon className={icon} />, title: 'Mijn tracker', meta: trackerSummary(status), onSelect: page('tracking') },

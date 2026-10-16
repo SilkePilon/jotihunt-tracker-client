@@ -34,6 +34,11 @@ describe('filterMarkers', () => {
     expect(filterMarkers(onSplit, { part1: false, part2: true, split, isVisible: all })).toHaveLength(1);
   });
 
+  test('without a split every marker is in part 1', () => {
+    expect(filterMarkers(markers, { part1: true, part2: false, isVisible: all })).toHaveLength(3);
+    expect(filterMarkers(markers, { part1: false, part2: true, isVisible: all })).toEqual([]);
+  });
+
   test('hidden areas are dropped', () => {
     const isVisible = (area: string) => area.toLowerCase() !== 'alpha';
     expect(filterMarkers(markers, { part1: true, part2: true, split, isVisible }).map((m) => m._id)).toEqual(['b']);

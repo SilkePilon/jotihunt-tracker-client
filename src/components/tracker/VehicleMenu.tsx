@@ -1,15 +1,8 @@
-import { BikeIcon, CarIcon, ChevronDownIcon, FootprintsIcon, Loader2Icon, MotorbikeIcon, type LucideIcon } from 'lucide-react';
+import { ChevronDownIcon, Loader2Icon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { isVehicle, VEHICLE_OPTIONS } from '@/lib/tracker';
+import { isVehicle, VEHICLE_ICONS, VEHICLE_OPTIONS } from '@/lib/tracker';
 import type { Vehicle } from '@/types/Tracker';
-
-const VEHICLE_ICONS: Record<Vehicle, LucideIcon> = {
-  walking: FootprintsIcon,
-  bike: BikeIcon,
-  car: CarIcon,
-  motorcycle: MotorbikeIcon,
-};
 
 interface VehicleMenuProps {
   value: Vehicle;
