@@ -10,6 +10,7 @@ import { areaOptions, cn, getColorFromArea } from '@/lib/utils';
 import useIntelStore from '@/stores/intel.store';
 import useSidebarStore from '@/stores/sidebar.store';
 import { HintCell } from '@/types/HintCell';
+import { TONAL_BUTTON } from '@/lib/tonal-button';
 
 const MINI_GRID_ROWS = 4;
 
@@ -112,7 +113,7 @@ export default function HintMiniGrid({ mapRef }: { mapRef: RefObject<MapRef | nu
           <p className="text-center text-xs text-muted-foreground">Oplossen kan alleen op een laptop</p>
         </>
       ) : (
-        <Button variant="outline" size="sm" onClick={() => openIntel()}>Open hints <ArrowRightIcon /></Button>
+        <Button variant="ghost" size="sm" className={TONAL_BUTTON} onClick={() => openIntel()}>Open hints <ArrowRightIcon /></Button>
       )}
     </div>
   );

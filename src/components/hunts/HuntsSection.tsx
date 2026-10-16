@@ -11,6 +11,7 @@ import SidebarSection from '@/components/sidebar/SidebarSection';
 import AllHuntsDialog from './AllHuntsDialog';
 import HuntPhotoInput from './HuntPhotoInput';
 import HuntTimelineItem from './HuntTimelineItem';
+import { SOFT_PRIMARY_BUTTON, TONAL_BUTTON } from '@/lib/tonal-button';
 
 /** Sidebar section for registered hunts: quick capture, the last few reports, and a link to the full list. */
 export default function HuntsSection() {
@@ -51,13 +52,13 @@ export default function HuntsSection() {
           <div className="flex gap-2">
             <HuntPhotoInput capture={isMobile}>
               {(open) => (
-                <Button size="sm" className="flex-1" onClick={open}>
+                <Button size="sm" className={`flex-1 ${SOFT_PRIMARY_BUTTON}`} onClick={open}>
                   <CameraIcon data-icon="inline-start" />
                   Hunt registreren
                 </Button>
               )}
             </HuntPhotoInput>
-            <Button variant="outline" size="sm" onClick={() => openAll()} aria-label="Alle hunts bekijken">
+            <Button variant="ghost" size="sm" className={TONAL_BUTTON} onClick={() => openAll()} aria-label="Alle hunts bekijken">
               <ListIcon data-icon="inline-start" />
               Alle
             </Button>
