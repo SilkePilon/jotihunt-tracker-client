@@ -1,7 +1,6 @@
 import * as React from "react"
 import {ChevronsUpDownIcon, NavigationIcon} from "lucide-react"
 
-import { Button } from "@/components/ui/button"
 import {
     Command,
     CommandEmpty,
@@ -18,6 +17,8 @@ import {
 import {MapRef} from "@/components/Map.tsx";
 import {useTeams} from "@/hooks/teams.hook.ts";
 import {Team} from "@/types/Team.ts";
+import {cn} from "@/lib/utils.ts";
+import {MAP_CHIP, MAP_TILE} from "@/lib/map-chrome.ts";
 
 export default function SearchCard({ mapRef }: { mapRef: React.RefObject<MapRef | null> }) {
     const [open, setOpen] = React.useState(false)
@@ -35,21 +36,22 @@ export default function SearchCard({ mapRef }: { mapRef: React.RefObject<MapRef 
     return (
         <div className={"w-full flex flex-col gap-2"}>
         <Popover open={open} onOpenChange={setOpen}>
-            {/* Solid backing like the coordinate search; the outline button is translucent in dark mode */}
-            <div className={"bg-background rounded-md"}>
             <PopoverTrigger asChild>
-                <Button
-                    variant="outline"
+                <button
+                    type="button"
                     role="combobox"
                     aria-expanded={open}
-                    className="w-full justify-between"
+                    className={cn(
+                        MAP_TILE,
+                        "flex h-11 w-[300px] items-center gap-2.5 rounded-[14px] pr-3 pl-1.5 text-left transition-colors hover:bg-beheer-row focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none",
+                    )}
                 >
-                    <span className={"flex gap-2 items-center"}><NavigationIcon/> Snel navigeren naar groep...</span>
-                    <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
+                    <span className={MAP_CHIP}><NavigationIcon/></span>
+                    <span className="min-w-0 flex-1 truncate text-sm font-medium">Snel navigeren naar groep...</span>
+                    <ChevronsUpDownIcon className="size-4 shrink-0 opacity-50" />
+                </button>
             </PopoverTrigger>
-            </div>
-            <PopoverContent className="p-0 w-full md:w-64">
+            <PopoverContent className="w-(--radix-popover-trigger-width) overflow-hidden rounded-2xl p-0">
                 <Command>
                     <CommandInput placeholder="Zoeken..." />
                     <CommandList>
