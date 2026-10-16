@@ -46,6 +46,7 @@ import {
   delayLabel,
   toolTone,
   webSources,
+  groupSources,
 } from './intel-chat';
 
 const point = {
@@ -500,4 +501,26 @@ describe('fetchRetryingBusy', () => {
     await expect(fetchRetryingBusy(doFetch, '/x', { signal: controller.signal }, sleep)).rejects.toThrow();
     expect(count()).toBe(1);
   });
+});
+
+describe('groupSources', () => {
+  const source = (title: string, url = `https://vertexaisearch.cloud.google.com/redirect/${Math.random()}`) => ({ title, url });
+  test('groups by site (a domain title, else the url host), most sources first, then first seen', () => {
+    const groups = groupSources([
+      source('instagram.com'),
+      source('jotihunt.nl'),
+      source('jotihunt.nl'),
+      source('Alexander Groep homepage', 'https://www.alexandergroep.nl/'),
+      source('JOTIHUNT.nl'),
+      source('instagram.com'),
+      source('youtube.com'),
+    ]);
+    expect(groups.map((group) => [group.site, group.sources.length])).toEqual([
+      ['jotihunt.nl', 3],
+      ['instagram.com', 2],
+      ['alexandergroep.nl', 1],
+      ['youtube.com', 1],
+    ]);
+  });
+  test('no sources: no groups', () => expect(groupSources([])).toEqual([]));
 });

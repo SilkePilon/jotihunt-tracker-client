@@ -581,6 +581,27 @@ export function webSources(message: UIMessage): ChatSource[] {
   return [...byUrl.values()];
 }
 
+/** The web sources of one site */
+export interface SourceGroup {
+  /** "jotihunt.nl" */
+  site: string;
+  sources: ChatSource[];
+}
+
+/** A title that is itself a domain (web search titles usually are; the url is a redirect) */
+const DOMAIN_TITLE = /^[a-z0-9-]+(\.[a-z0-9-]+)+$/i;
+
+/** Sources per site: a domain title names the site, else the url's host. Most sources first, then first seen. */
+export function groupSources(sources: ChatSource[]): SourceGroup[] {
+  const bySite = new Map<string, ChatSource[]>();
+  for (const source of sources) {
+    const site = (DOMAIN_TITLE.test(source.title) ? source.title : hostOf(source.url)).toLowerCase().replace(/^www\./, '');
+    bySite.set(site, [...(bySite.get(site) ?? []), source]);
+  }
+  // Array.prototype.sort is stable: equal counts keep their first-seen order
+  return [...bySite].map(([site, list]) => ({ site, sources: list })).sort((a, b) => b.sources.length - a.sources.length);
+}
+
 /** Two answers are the same, ignoring case and spacing */
 export function sameAnswer(a: string, b: string): boolean {
   const normal = (value: string) => value.trim().replace(/\s+/g, ' ').toLowerCase();

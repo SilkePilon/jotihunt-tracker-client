@@ -14,7 +14,7 @@ import LookCard from './LookCard';
 import OvPredictionCard from './OvPredictionCard';
 import PointCard from './PointCard';
 import Reasoning from './Reasoning';
-import SourceChips from './SourceChips';
+import Sources from './Sources';
 import ToolsUsed from './ToolsUsed';
 
 interface ChatMessageProps {
@@ -61,7 +61,7 @@ export default function ChatMessage({ message, streaming, mapRef }: ChatMessageP
         {texts.map((part, index) => (
           <ChatMarkdown key={index} text={part.text} />
         ))}
-        <Reveal gap={8}>{!streaming && sources.length > 0 && <SourceChips sources={sources} />}</Reveal>
+        <Reveal gap={8}>{!streaming && sources.length > 0 && <Sources sources={sources} />}</Reveal>
         <AnimatePresence initial={false}>
           {(streaming ? [] : cards).map((card) => (
             <motion.div key={card.id} {...POP} style={{ originY: 0 }}>
