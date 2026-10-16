@@ -8,8 +8,10 @@ import { NOTIFICATION_OPTIONS, NOTIFICATIONS_PROMPT_VERSION, setAllTypes, toggle
 import ResponsiveDialog from '@/components/ResponsiveDialog';
 import { useFetcher } from '@/hooks/utils/api.hook';
 import { useNotificationPrefs } from '@/hooks/notification-prefs.hook';
+import { DIALOG_SHELL } from '@/lib/dialog-shell';
 import { isPushSupported, isStandalone, needsIosInstall, pushPermission, subscribePush, type PushResult } from '@/lib/push';
 import useNotificationsDialogStore from '@/stores/notifications-dialog.store';
+import { cn } from '@/lib/utils';
 
 const RESULT_MESSAGE: Record<Exclude<PushResult, 'subscribed'>, string> = {
   denied: 'Meldingen zijn geblokkeerd. Zet ze aan in de instellingen van je browser; geluiden in de app werken wel.',
@@ -26,10 +28,6 @@ const ICONS: Record<OptionalNotificationType, LucideIcon> = {
   'counter-hunt': SwordsIcon,
   'happy-hour': PartyPopperIcon,
 };
-
-// Desktop shell: 28px card with the layers-popover shadow; the built-in close X becomes a 34×32 tonal button like the sidebar header buttons
-const SHELL =
-  'sm:max-w-sm rounded-[28px] border-0 bg-card p-5 shadow-[0_0_0_1px_var(--border),0_18px_50px_rgb(0_0_0/0.35)] [&>[data-slot=dialog-close]]:top-4 [&>[data-slot=dialog-close]]:right-4 [&>[data-slot=dialog-close]]:grid [&>[data-slot=dialog-close]]:h-8 [&>[data-slot=dialog-close]]:w-[34px] [&>[data-slot=dialog-close]]:place-items-center [&>[data-slot=dialog-close]]:rounded-xl [&>[data-slot=dialog-close]]:bg-beheer-row [&>[data-slot=dialog-close]]:text-muted-foreground [&>[data-slot=dialog-close]]:opacity-100 [&>[data-slot=dialog-close]]:ring-0 [&>[data-slot=dialog-close]]:ring-offset-0 [&>[data-slot=dialog-close]]:transition-colors [&>[data-slot=dialog-close]:hover]:bg-beheer-row-high [&>[data-slot=dialog-close]:focus-visible]:ring-[3px] [&>[data-slot=dialog-close]:focus-visible]:ring-ring/50';
 
 const NOTICE = 'mt-2.5 rounded-2xl bg-beheer-row p-3 text-xs';
 
@@ -82,7 +80,7 @@ export default function NotificationsDialog() {
   }
 
   return (
-    <ResponsiveDialog open={open} onClose={() => void close()} title="Meldingen" description="Tik aan waarvoor je een melding en geluid wilt." className={SHELL} compact onClosed={() => setDisabled(null)}>
+    <ResponsiveDialog open={open} onClose={() => void close()} title="Meldingen" description="Tik aan waarvoor je een melding en geluid wilt." className={cn(DIALOG_SHELL, 'bg-card p-5 sm:max-w-sm')} compact onClosed={() => setDisabled(null)}>
       <div className="flex flex-col">
         <label className="flex cursor-pointer items-center gap-3 rounded-2xl bg-beheer-row px-3.5 py-3">
           <span className="flex-1 text-sm font-semibold">Alles</span>

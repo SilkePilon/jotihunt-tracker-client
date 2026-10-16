@@ -16,6 +16,7 @@ import { useNow } from '@/hooks/now.hook';
 import { deviceMeta, orderSessions, passkeyMeta, sessionDevice, sessionMeta, type AccountPasskey, type SessionDevice } from '@/lib/account';
 import { apiErrorMessage } from '@/lib/api-error';
 import { addPasskey, passkeysSupported } from '@/lib/auth-api';
+import { DIALOG_SHELL } from '@/lib/dialog-shell';
 import { REVEAL_TRANSITION, SWAP } from '@/lib/motion';
 import { classifyPasskeyError, PASSKEY_MESSAGES } from '@/lib/passkey';
 import { cn } from '@/lib/utils';
@@ -29,10 +30,6 @@ interface Confirm {
   /** Toasts its own errors; closes the confirm itself on success */
   action: () => Promise<void>;
 }
-
-// Same shell as the Meldingen dialog: 28px card, no border, 34×32 tonal close button with 12px corners
-const DIALOG_CLASS =
-  'sm:max-w-md rounded-[28px] border-0 bg-card p-5 shadow-[0_0_0_1px_var(--border),0_18px_50px_rgb(0_0_0/0.35)] [&>[data-slot=dialog-close]]:top-4 [&>[data-slot=dialog-close]]:right-4 [&>[data-slot=dialog-close]]:grid [&>[data-slot=dialog-close]]:h-8 [&>[data-slot=dialog-close]]:w-[34px] [&>[data-slot=dialog-close]]:place-items-center [&>[data-slot=dialog-close]]:rounded-xl [&>[data-slot=dialog-close]]:bg-beheer-row [&>[data-slot=dialog-close]]:text-muted-foreground [&>[data-slot=dialog-close]]:opacity-100 [&>[data-slot=dialog-close]]:ring-0 [&>[data-slot=dialog-close]]:ring-offset-0 [&>[data-slot=dialog-close]]:transition-colors [&>[data-slot=dialog-close]:hover]:bg-beheer-row-high [&>[data-slot=dialog-close]:focus-visible]:ring-[3px] [&>[data-slot=dialog-close]:focus-visible]:ring-ring/50';
 
 const DEVICE_ICONS: Record<SessionDevice, LucideIcon> = { phone: SmartphoneIcon, tablet: TabletIcon, computer: LaptopIcon };
 
@@ -115,7 +112,7 @@ export default function AccountDialog() {
       onClose={() => setOpen(false)}
       title="Account"
       description="Je passkeys en waar je bent ingelogd."
-      className={DIALOG_CLASS}
+      className={cn(DIALOG_SHELL, 'bg-card p-5 sm:max-w-md')}
       drawerClassName="bg-card"
       compact
     >

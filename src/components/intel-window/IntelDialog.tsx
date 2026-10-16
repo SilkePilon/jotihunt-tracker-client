@@ -11,6 +11,7 @@ import { useHintBoard } from '@/hooks/hints.hook';
 import { useHasMounted } from '@/hooks/has-mounted.hook';
 import { useIsMobile } from '@/hooks/media.hook';
 import { useReadState } from '@/hooks/read-state.hook';
+import { DIALOG_SHELL } from '@/lib/dialog-shell';
 import { keepOpenWhileEditing } from '@/lib/inline-edit';
 import { CHAT_CARD_ENTER, DETAIL_SWAP, buildIntelItems, filterByTab, unreadCount } from '@/lib/intel-window';
 import { EASE_OUT } from '@/lib/motion';
@@ -60,7 +61,11 @@ export default function IntelDialog({ mapRef }: { mapRef: RefObject<MapRef | nul
           select(null);
         }
       }}
-      className="h-[720px] max-h-[85dvh] gap-0 overflow-hidden bg-beheer-window p-0 sm:max-w-[1160px] sm:rounded-[20px]"
+      // Shell shared with Account/Meldingen; the window rises 18px instead of the default zoom
+      className={cn(
+        DIALOG_SHELL,
+        'h-[720px] max-h-[85dvh] gap-0 overflow-hidden bg-beheer-window p-0 sm:max-w-[1160px] data-[state=open]:zoom-in-100 data-[state=open]:slide-in-from-bottom-[18px] data-[state=open]:duration-[380ms]',
+      )}
     >
       <IntelWindow mapRef={mapRef} />
     </ResponsiveDialog>
