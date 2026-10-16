@@ -1,7 +1,7 @@
 import {Outlet, useLocation, useNavigate} from 'react-router';
 import {toast} from "sonner"
-import {lazy, Suspense, useEffect, useRef, useState} from 'react';
-import {SWRConfig} from 'swr';
+import {lazy, Suspense, useEffect, useMemo, useRef, useState} from 'react';
+import {SWRConfig, type SWRConfiguration} from 'swr';
 import Map, {MapRef} from './components/Map';
 import PWAPrompt from 'react-ios-pwa-prompt';
 import BeheerDialog from './components/beheer/BeheerDialog';
@@ -28,7 +28,7 @@ import type {OutletContextType} from '@/hooks/outlet.hook.ts';
 import TourOverlay from './components/tour/TourOverlay';
 import {useTourAutoStart} from './components/tour/useTour';
 import {createFetchErrorToastState} from '@/lib/fetch-error-toast';
-import {useAndroidPromoAutoOpen} from '@/hooks/android-promo.hook';
+import AndroidPromoAutoOpen from './components/android-promo/AndroidPromoAutoOpen';
 
 const QrConfirmDrawer = lazy(() => import('./components/auth/QrConfirmDrawer'));
 
@@ -66,7 +66,6 @@ export default function Layout() {
     const tour = useTourAutoStart();
     // Like the tour, the notifications prompt only opens on the map page
     useNotificationsPrompt(tour.pending || pathname !== '/');
-    useAndroidPromoAutoOpen();
 
     // Which SWR keys are failing, and whether the error toast is up. Mutable, not state: every poll passes through here.
     const [errorToast] = useState(createFetchErrorToastState);
@@ -91,8 +90,19 @@ export default function Layout() {
         if (errorToast.success(key)) toast.dismiss(FETCH_ERROR_TOAST_ID);
     }
 
+    // One SWRConfig value for the app's lifetime: a new object every render would re-render every SWR consumer.
+    // The handlers close over this render's values, so they're reached through a ref.
+    const swrHandlersRef = useRef({onError: onSWRError, onSuccess: onSWRSuccess});
+    useEffect(() => {
+        swrHandlersRef.current = {onError: onSWRError, onSuccess: onSWRSuccess};
+    });
+    const swrConfig = useMemo<SWRConfiguration>(() => ({
+        onError: (error: unknown, key: string) => swrHandlersRef.current.onError(error, key),
+        onSuccess: (data: unknown, key: string) => swrHandlersRef.current.onSuccess(data, key),
+    }), []);
+
     return (
-        <SWRConfig value={{onError: onSWRError, onSuccess: onSWRSuccess}}>
+        <SWRConfig value={swrConfig}>
             {/* Separate boundaries: one crashing part (a dialog, the map, a sidebar section) must not take the rest down */}
             <ErrorBoundary variant="floating">
                 <DemoReloader/>
@@ -114,6 +124,7 @@ export default function Layout() {
                 <NotificationsDialog/>
                 <AccountDialog/>
                 <AndroidPromoDialog/>
+                <AndroidPromoAutoOpen/>
                 {typeof qrLogin === 'string' && (
                     <Suspense fallback={null}>
                         <QrConfirmDrawer key={qrLogin} code={qrLogin} onClose={() => navigate('/', {replace: true, state: null})}/>
