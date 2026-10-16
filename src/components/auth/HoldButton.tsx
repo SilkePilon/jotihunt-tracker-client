@@ -187,11 +187,11 @@ export default function HoldButton({ durationMs = 1000, onConfirm, disabled, bus
       // A long press must not open the context menu or select the label
       onContextMenu={(event) => event.preventDefault()}
       className={cn(
-        'relative flex h-12 w-full items-center justify-center overflow-hidden rounded-xl bg-primary px-4 text-[14.5px] font-semibold text-primary-foreground outline-none select-none [-webkit-touch-callout:none] transition-[transform,opacity] focus-visible:ring-[3px] focus-visible:ring-ring/50 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-70',
+        'relative flex h-12 w-full items-center justify-center overflow-hidden rounded-xl bg-primary-container px-4 text-[14.5px] font-semibold text-on-primary-container outline-none select-none [-webkit-touch-callout:none] transition-[transform,opacity] focus-visible:ring-[3px] focus-visible:ring-ring/50 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-70',
         className,
       )}
     >
-      <motion.span aria-hidden className={cn('pointer-events-none absolute inset-0 origin-left bg-[rgb(255_255_255/0.22)]', fillClassName)} style={{ scaleX: fill }} />
+      <motion.span aria-hidden className={cn('pointer-events-none absolute inset-0 origin-left bg-[color-mix(in_oklab,var(--on-primary-container)_16%,transparent)]', fillClassName)} style={{ scaleX: fill }} />
       <AnimatePresence mode="wait" initial={false}>
         <motion.span key={labelKey} className={LABEL_CLASS} {...SWAP}>
           {label}

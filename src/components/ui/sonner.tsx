@@ -41,7 +41,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
         closeButton: true,
         classNames: {
           description: "text-muted-foreground!",
-          actionButton: "bg-primary! text-primary-foreground!",
+          actionButton: "bg-primary-container! text-on-primary-container!",
           cancelButton: "bg-muted! text-muted-foreground!",
         },
       }}

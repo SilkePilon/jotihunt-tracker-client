@@ -119,7 +119,7 @@ export default function NotificationsDialog() {
             type="button"
             onClick={() => void save()}
             disabled={saving || !prefs}
-            className="h-11 flex-1 cursor-pointer rounded-xl bg-primary text-sm font-semibold text-primary-foreground outline-none transition-[filter,opacity] hover:brightness-105 focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="h-11 flex-1 cursor-pointer rounded-xl bg-primary-container text-sm font-semibold text-on-primary-container outline-none transition-[filter,opacity] hover:brightness-105 focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Opslaan
           </button>

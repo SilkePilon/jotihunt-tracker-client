@@ -59,7 +59,7 @@ export function InstallStep({ onPair, onRedownload }: { onPair: () => void; onRe
         </div>
       </div>
       <div className="mt-3.5 flex flex-col gap-2">
-        <button type="button" onClick={onPair} className="flex h-12 items-center justify-center gap-2 rounded-xl bg-primary font-semibold text-primary-foreground">
+        <button type="button" onClick={onPair} className="flex h-12 items-center justify-center gap-2 rounded-xl bg-primary-container font-semibold text-on-primary-container">
           <LinkIcon className="size-5" /> Geïnstalleerd, koppel nu
         </button>
         <button type="button" onClick={onRedownload} className="h-10 rounded-xl text-[13.5px] font-semibold text-muted-foreground">
@@ -138,7 +138,7 @@ export function PairStep({ phase, startedAt, onPhase, onRetry, deviceCount, refr
               {phase === 'failed' && (
                 <button type="button" onClick={onBack} className="h-11 flex-1 rounded-xl bg-beheer-row-high font-semibold">Terug</button>
               )}
-              <button type="button" onClick={onRetry} className="h-11 flex-1 rounded-xl bg-primary font-semibold text-primary-foreground">Opnieuw proberen</button>
+              <button type="button" onClick={onRetry} className="h-11 flex-1 rounded-xl bg-primary-container font-semibold text-on-primary-container">Opnieuw proberen</button>
             </div>
           </div>
         ) : (
@@ -187,7 +187,7 @@ export function DoneStep({ onClose }: { onClose: () => void }) {
         <b className="mt-2 text-lg">Gekoppeld!</b>
         <span className="text-[13px] text-muted-foreground">Je tracker staat nu in de app · live</span>
       </div>
-      <button type="button" onClick={onClose} className="mt-3.5 h-12 w-full rounded-xl bg-primary font-semibold text-primary-foreground">
+      <button type="button" onClick={onClose} className="mt-3.5 h-12 w-full rounded-xl bg-primary-container font-semibold text-on-primary-container">
         Klaar
       </button>
     </>

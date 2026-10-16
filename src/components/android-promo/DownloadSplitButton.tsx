@@ -21,7 +21,7 @@ export default function DownloadSplitButton({ version, onDownload, onLater, onNe
 
   return (
     <div ref={ref} className="relative flex gap-0.5">
-      <button type="button" onClick={onDownload} className="flex h-12 flex-1 items-center justify-center gap-2 rounded-l-xl rounded-r-[4px] bg-primary text-[14.5px] font-semibold text-primary-foreground active:scale-[.98]">
+      <button type="button" onClick={onDownload} className="flex h-12 flex-1 items-center justify-center gap-2 rounded-l-xl rounded-r-[4px] bg-primary-container text-[14.5px] font-semibold text-on-primary-container active:scale-[.98]">
         <DownloadIcon className="size-5" /> Download · {version}
       </button>
       <motion.button
@@ -32,7 +32,7 @@ export default function DownloadSplitButton({ version, onDownload, onLater, onNe
         onClick={() => setMenuOpen((o) => !o)}
         animate={{ borderRadius: menuOpen ? '24px 24px 24px 24px' : '4px 12px 12px 4px' }}
         transition={{ duration: 0.3, ease: EASE_OUT }}
-        className="grid h-12 w-12 place-items-center bg-primary text-primary-foreground"
+        className="grid h-12 w-12 place-items-center bg-primary-container text-on-primary-container"
       >
         <motion.span animate={{ rotate: menuOpen ? 0 : 180 }} transition={{ duration: 0.3, ease: EASE_OUT }}>
           <ChevronUpIcon className="size-5" />

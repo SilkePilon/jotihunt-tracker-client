@@ -8,7 +8,7 @@ const BASE =
 
 const VARIANTS = {
   neutral: 'bg-(--map-surface-high) text-(--map-on-surface-variant)',
-  primary: 'bg-primary text-primary-foreground',
+  primary: 'bg-primary-container text-on-primary-container',
   danger: 'bg-(--map-danger-bg) text-(--map-danger-fg)',
 } as const;
 

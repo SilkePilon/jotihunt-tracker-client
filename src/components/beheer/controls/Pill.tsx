@@ -9,7 +9,7 @@ const pill = cva(
   {
     variants: {
       variant: {
-        primary: 'bg-primary text-primary-foreground hover:bg-primary/90',
+        primary: 'bg-primary-container text-on-primary-container hover:bg-[color-mix(in_oklab,var(--on-primary-container)_10%,var(--primary-container))]',
         secondary: 'bg-beheer-row-high text-foreground hover:bg-beheer-row-high/70',
         ghost: 'text-muted-foreground hover:bg-beheer-row-high hover:text-foreground',
         'danger-soft': 'bg-destructive/15 text-destructive hover:bg-destructive/20 dark:text-red-300',

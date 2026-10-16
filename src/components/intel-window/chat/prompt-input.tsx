@@ -154,7 +154,7 @@ export function SendButton({ state, onSend, onStop }: { state: 'idle' | 'ready' 
         transition={POP_SPRING}
         className={cn(
           'ml-auto grid size-[34px] place-items-center rounded-xl outline-none transition-colors duration-200 focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none',
-          state === 'idle' ? 'text-muted-foreground' : 'bg-primary text-primary-foreground hover:bg-primary/90',
+          state === 'idle' ? 'text-muted-foreground' : 'bg-primary-container text-on-primary-container hover:bg-[color-mix(in_oklab,var(--on-primary-container)_10%,var(--primary-container))]',
         )}
       >
         <AnimatePresence mode="popLayout" initial={false}>
