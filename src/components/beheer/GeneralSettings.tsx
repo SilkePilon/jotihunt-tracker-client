@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { toast } from 'sonner';
 import { CheckIcon, Loader2Icon } from 'lucide-react';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
+import Reveal from '@/components/motion/Reveal';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { testJotihuntLogin, useAdminConfig, useTraccarGroups } from '@/hooks/app-config.hook';
@@ -20,6 +21,7 @@ import { Pill, Tag } from './controls/Pill';
 /** Text inputs and select triggers: 36px, 12px corners, tonal fill */
 const FIELD = 'h-9 rounded-lg border-0 bg-beheer-row-high text-[13px] shadow-none md:text-[13px] dark:bg-beheer-row-high';
 const NO_GROUP = 'none';
+const NEEDS_PASSWORD_HINT = 'Vul ook het wachtwoord in om de nieuwe gebruikersnaam te testen.';
 const TIMELINE_TICK_MS = 60_000;
 const LOGO_TYPES = 'image/png,image/jpeg,image/webp,image/svg+xml';
 
@@ -238,6 +240,8 @@ export default function GeneralSettings() {
   const password = config.secrets.jotihuntWebPassword;
   const siteConfigured = !!config.plain.jotihuntWebUsername.value && password.set;
   const typedLogin = draft.jotihuntWebUsername.trim() && draft.jotihuntWebPassword ? { username: draft.jotihuntWebUsername.trim(), password: draft.jotihuntWebPassword } : undefined;
+  // The server can't pair a typed username with the stored password: a test would silently use the saved login
+  const needsPassword = draft.jotihuntWebUsername !== saved.jotihuntWebUsername && !draft.jotihuntWebPassword && password.set;
   const loginTag = login !== 'idle' ? login : siteConfigured ? null : 'none';
 
   const sortedTeams = teams?.slice().sort((a, b) => a.name.localeCompare(b.name, 'nl'));
@@ -300,11 +304,14 @@ export default function GeneralSettings() {
       <BeheerCard title="Ons team" right={<EnvTag show={fromEnv('homeTeamApiId', 'groupName', 'logoUrl', 'discordUrl')} />}>
         <div className="mx-1 grid gap-x-3 gap-y-2.5 sm:grid-cols-2">
           <Field label="Team in Jotihunt-lijst" htmlFor={`${id}-team`}>
-            <Select value={draft.homeTeamApiId !== null ? String(draft.homeTeamApiId) : ''} onValueChange={(value) => set('homeTeamApiId', Number(value))} disabled={!sortedTeams}>
+            <Select value={draft.homeTeamApiId !== null ? String(draft.homeTeamApiId) : sortedTeams ? NO_GROUP : ''} onValueChange={(value) => set('homeTeamApiId', value === NO_GROUP ? null : Number(value))} disabled={!sortedTeams}>
               <SelectTrigger id={`${id}-team`} className={cn(FIELD, 'w-full font-medium')}>
                 <SelectValue placeholder={sortedTeams ? 'Kies ons team' : 'Teams laden…'} />
               </SelectTrigger>
               <SelectContent className="max-h-72 rounded-2xl">
+                <SelectItem value={NO_GROUP} className="rounded-lg text-muted-foreground">
+                  Geen team
+                </SelectItem>
                 {sortedTeams?.map((team) => (
                   <SelectItem key={team._id} value={String(team.apiId)} className="rounded-lg">
                     <span aria-hidden className="size-2 shrink-0 rounded-full" style={{ background: team.area ? getColorFromArea(team.area) : 'var(--border)' }} />
@@ -429,10 +436,16 @@ export default function GeneralSettings() {
           </Field>
         </div>
         <div className="mx-1 mt-2.5">
-          <Pill variant="secondary" disabled={login === 'busy' || (!typedLogin && !siteConfigured)} onClick={() => void testLogin()}>
+          <Pill
+            variant="secondary"
+            disabled={login === 'busy' || needsPassword || (!typedLogin && !siteConfigured)}
+            title={needsPassword ? NEEDS_PASSWORD_HINT : undefined}
+            onClick={() => void testLogin()}
+          >
             Inloggen testen
           </Pill>
         </div>
+        <Reveal>{needsPassword && <p className="mx-1 pt-1.5 text-xs text-muted-foreground">{NEEDS_PASSWORD_HINT}</p>}</Reveal>
         <AnimatePresence initial={false}>
           {password.undecryptable && <WarnBar key="undecryptable">Opgeslagen wachtwoord kan niet worden ontsleuteld; vul het opnieuw in.</WarnBar>}
         </AnimatePresence>

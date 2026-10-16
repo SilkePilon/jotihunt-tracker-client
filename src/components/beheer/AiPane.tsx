@@ -6,6 +6,7 @@ import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
 import Reveal from '@/components/motion/Reveal';
 import { Input } from '@/components/ui/input';
 import { testAiSlot, useAdminConfig, useAiModels } from '@/hooks/app-config.hook';
+import { useIsMobile } from '@/hooks/media.hook';
 import { AI_SLOTS, type AiSlot } from '@/lib/app-config';
 import { apiErrorMessage } from '@/lib/api-error';
 import { POP, SWAP } from '@/lib/motion';
@@ -36,8 +37,8 @@ const SLOT_INFO: Record<AiSlot, { icon: ComponentType<{ className?: string }>; t
 };
 const TEST_OK_MS = 3000;
 
-/** Ghost "▶ Test" → spinner → "✓ 0,8 s" for 3 s; a failure shows the server's message as a toast. */
-function TestButton({ slot }: { slot: AiSlot }) {
+/** Ghost "▶ Test" → spinner → "✓ 0,8 s" for 3 s; a failure shows the server's message as a toast. `compact`: no "Test" text (phones). */
+function TestButton({ slot, compact }: { slot: AiSlot; compact?: boolean }) {
   const authHeader = useAuthHeader() || '';
   const [state, setState] = useState<'idle' | 'busy' | { ms: number }>('idle');
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -67,7 +68,7 @@ function TestButton({ slot }: { slot: AiSlot }) {
       aria-label={`Test ${SLOT_INFO[slot].title}`}
     >
       {key === 'busy' ? <Loader2Icon className="animate-spin" /> : key === 'ok' ? <CheckIcon /> : <PlayIcon />}
-      {typeof state === 'object' ? `${(state.ms / 1000).toLocaleString('nl-NL', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} s` : key === 'busy' ? null : 'Test'}
+      {typeof state === 'object' ? `${(state.ms / 1000).toLocaleString('nl-NL', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} s` : key === 'busy' || compact ? null : 'Test'}
     </Pill>
   );
 }
@@ -81,6 +82,7 @@ export default function AiPane() {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
   const [saving, setSaving] = useState(false);
+  const isMobile = useIsMobile();
 
   function closeEditor() {
     setEditing(false);
@@ -195,7 +197,7 @@ export default function AiPane() {
         <Reveal>
           {editing && (
             <form
-              className="flex gap-2 pt-2.5"
+              className="flex flex-wrap gap-2 pt-2.5"
               onSubmit={(event) => {
                 event.preventDefault();
                 if (draft.trim() && !saving) void saveKey();
@@ -213,7 +215,7 @@ export default function AiPane() {
                 }}
                 placeholder="AIza…"
                 aria-label="Nieuwe Gemini-sleutel"
-                className="h-9 flex-1 rounded-xl border-0 bg-beheer-row font-mono text-[13px]"
+                className="h-9 min-w-48 flex-1 basis-48 rounded-xl border-0 bg-beheer-row font-mono text-[13px]"
                 autoComplete="off"
                 spellCheck={false}
               />
@@ -259,19 +261,37 @@ export default function AiPane() {
                 {AI_SLOTS.map((slot) => {
                   const info = SLOT_INFO[slot];
                   const Icon = info.icon;
-                  return (
+                  const picker = (
+                    <ModelPicker
+                      label={info.title}
+                      value={config.ai[slot].value}
+                      defaultId={DEFAULTS[slot]}
+                      models={list.models}
+                      fetchedAt={list.fetchedAt}
+                      listError={list.error}
+                      onRefresh={list.refresh}
+                      onChange={(id) => void pick(slot, id)}
+                      className={isMobile ? 'w-auto min-w-0 flex-1' : undefined}
+                    />
+                  );
+                  // Phones: the controls get their own full-width line under the text
+                  return isMobile ? (
+                    <BeheerRow
+                      key={slot}
+                      leading={<Icon className={ROW_ICON} />}
+                      title={info.title}
+                      meta={info.meta}
+                      below={
+                        <>
+                          <TestButton slot={slot} compact />
+                          {picker}
+                        </>
+                      }
+                    />
+                  ) : (
                     <BeheerRow key={slot} leading={<Icon className={ROW_ICON} />} title={info.title} meta={info.meta}>
                       <TestButton slot={slot} />
-                      <ModelPicker
-                        label={info.title}
-                        value={config.ai[slot].value}
-                        defaultId={DEFAULTS[slot]}
-                        models={list.models}
-                        fetchedAt={list.fetchedAt}
-                        listError={list.error}
-                        onRefresh={list.refresh}
-                        onChange={(id) => void pick(slot, id)}
-                      />
+                      {picker}
                     </BeheerRow>
                   );
                 })}

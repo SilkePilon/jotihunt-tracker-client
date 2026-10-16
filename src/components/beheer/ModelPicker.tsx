@@ -24,10 +24,12 @@ interface ModelPickerProps {
   disabled?: boolean;
   /** The feature's name, for the trigger's aria-label */
   label: string;
+  /** Extra trigger classes, e.g. `w-auto flex-1` to fill a line on phones */
+  className?: string;
 }
 
 /** A1 dropdown: the current model's name; the menu has search, groups and a "standaard" tag. */
-export default function ModelPicker({ value, defaultId, models, fetchedAt, listError, onRefresh, onChange, disabled, label }: ModelPickerProps) {
+export default function ModelPicker({ value, defaultId, models, fetchedAt, listError, onRefresh, onChange, disabled, label, className }: ModelPickerProps) {
   const [open, setOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   // Ticks only while the menu is open, for the "Lijst van Google · 2 min geleden" footer
@@ -52,7 +54,10 @@ export default function ModelPicker({ value, defaultId, models, fetchedAt, listE
         <button
           type="button"
           aria-label={`Model voor ${label}`}
-          className="inline-flex h-[34px] w-[190px] shrink-0 items-center justify-between gap-2 rounded-xl bg-beheer-row-high pr-2.5 pl-3 text-[12.5px] font-semibold outline-none transition-colors hover:bg-beheer-row-high/70 focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
+          className={cn(
+            'inline-flex h-[34px] w-[190px] shrink-0 items-center justify-between gap-2 rounded-xl bg-beheer-row-high pr-2.5 pl-3 text-[12.5px] font-semibold outline-none transition-colors hover:bg-beheer-row-high/70 focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50',
+            className,
+          )}
         >
           <span className="truncate">{name}</span>
           <Chevron open={open} />
