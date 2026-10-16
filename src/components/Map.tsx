@@ -19,7 +19,7 @@ import Teams from './layers/Teams';
 import Devices from './layers/Devices';
 import Life360 from './layers/Life360';
 import Markers from './layers/Markers';
-import {forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type ReactNode} from 'react';
+import {forwardRef, memo, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type ReactNode} from 'react';
 import {useShallow} from 'zustand/react/shallow';
 import HomeCircle from './layers/HomeCircle';
 import Predictions from './layers/Predictions';
@@ -108,7 +108,8 @@ function phonePaddingFor(wall: boolean): number | undefined {
     return wall || !sheetSnapHeights ? undefined : sheetSnapHeights[sheetSnap];
 }
 
-const Map = forwardRef<MapRef, MapProps>(({className, wall = false, overlay}, ref) => {
+// Memoized: Layout re-renders often and the map's props (ref, the HQ wall's memoized overlay) rarely change
+const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay}, ref) => {
 
     const GROUP_NAME: string = import.meta.env.GROUP_NAME;
 
@@ -287,6 +288,6 @@ const Map = forwardRef<MapRef, MapProps>(({className, wall = false, overlay}, re
             </Maplibre>
         </div>
     );
-});
+}));
 
 export default Map;

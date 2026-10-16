@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { ArrowLeftIcon, InboxIcon, ListIcon, SendIcon, StarIcon } from 'lucide-react';
 import { BeheerCard, BeheerPane, BeheerRows, CountSwap } from '@/components/beheer/BeheerLayout';
@@ -36,7 +36,8 @@ function NavCount({ value }: { value: number }) {
 }
 
 /** Every hunt (own reports plus website-only hunts) in a Beheer-style window: status filters and areas on the left, rows that open in place. */
-export default function AllHuntsDialog({ open, onOpenChange, initialReportId }: { open: boolean; onOpenChange: (open: boolean) => void; initialReportId?: string }) {
+// Memoized: the sidebar's Hunts section re-renders every second for its clock
+export default memo(function AllHuntsDialog({ open, onOpenChange, initialReportId }: { open: boolean; onOpenChange: (open: boolean) => void; initialReportId?: string }) {
   return (
     <ResponsiveDialog
       open={open}
@@ -50,7 +51,7 @@ export default function AllHuntsDialog({ open, onOpenChange, initialReportId }: 
       <AllHuntsWindow open={open} initialReportId={initialReportId} />
     </ResponsiveDialog>
   );
-}
+});
 
 /** The window's content; only mounted while the window is open (or closing). */
 function AllHuntsWindow({ open, initialReportId }: { open: boolean; initialReportId?: string }) {

@@ -80,6 +80,13 @@ function HqScreen({ onUnauthorized }: { onUnauthorized: () => void }) {
   useHqEventSources(foxes, reports);
   const director = useHqDirector({ mapRef, foxes, teams, homeTeam });
   const focusFox = foxes.find((fox) => fox.key === director.focusArea);
+  // Keyed on the values, not the fox (rebuilt every second): an unchanged overlay lets the memoized map skip re-rendering
+  const focusKey = focusFox?.center ? focusFox.key : undefined;
+  const [focusLng, focusLat] = focusFox?.center ?? [];
+  const mapOverlay = useMemo(
+    () => (focusKey !== undefined && focusLng !== undefined && focusLat !== undefined ? <FocusPulse center={[focusLng, focusLat]} color={getColorFromArea(focusKey)} /> : null),
+    [focusKey, focusLng, focusLat],
+  );
 
   if (!user?.admin) return <Navigate to="/" replace />;
 
@@ -87,7 +94,7 @@ function HqScreen({ onUnauthorized }: { onUnauthorized: () => void }) {
     <div className="grid h-dvh w-dvw grid-cols-[58fr_42fr] overflow-hidden bg-background text-foreground">
       <div className="relative min-h-0 overflow-hidden rounded-r-2xl">
         <ErrorBoundary name="De kaart" className="m-auto w-fit">
-          <Map ref={mapRef} wall className="absolute inset-0" overlay={focusFox?.center && <FocusPulse center={focusFox.center} color={getColorFromArea(focusFox.key)} />} />
+          <Map ref={mapRef} wall className="absolute inset-0" overlay={mapOverlay} />
         </ErrorBoundary>
         <ErrorBoundary name="De tourchip" className="absolute left-4 top-4 z-10">
           <TourChip stop={director.stop} index={director.stopIndex} count={director.stopCount} step={director.step} hidden={!!director.current} />
