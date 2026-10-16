@@ -1,9 +1,10 @@
 import type { ComponentProps, ReactNode } from 'react';
 import { DropdownMenuItem, DropdownMenuSubTrigger } from '@/components/ui/dropdown-menu';
+import { MENU_GROUP, MENU_SURFACE } from '@/lib/menu-styles';
 import { cn } from '@/lib/utils';
 
-/** The settings menu and its phone submenus: a rounded-3xl card like the map layers popover. */
-export const MENU_CARD = 'rounded-3xl border-0 bg-card p-3 text-card-foreground shadow-[0_0_0_1px_var(--border),0_10px_30px_rgb(0_0_0/0.28)]';
+/** The menu card (now the default of every dropdown); kept for popovers that show a menu-like card. */
+export const MENU_CARD = `${MENU_SURFACE} p-3`;
 
 /**
  * Submenus are phone-only and a 290px card leaves no room beside it, so they open over the card instead: shifted back
@@ -11,29 +12,25 @@ export const MENU_CARD = 'rounded-3xl border-0 bg-card p-3 text-card-foreground 
  */
 export const SUBMENU_SIDE_OFFSET = -266;
 
-/** A Beheer row: tonal block, 6px corners, 16px on the outer ends of its group (see MenuRows). */
-export const MENU_ROW =
-  'gap-2.5 rounded-md bg-beheer-row px-3 py-2.5 text-[13.5px] font-semibold transition-colors duration-150 first:rounded-t-2xl last:rounded-b-2xl focus:bg-beheer-row-high';
-
 /** Groups rows with 2px seams. Conditional rows render nothing, so first/last corners stay right. */
 export function MenuRows({ className, children }: { className?: string; children: ReactNode }) {
-  return <div className={cn('flex flex-col gap-0.5', className)}>{children}</div>;
+  return <div className={cn(MENU_GROUP, className)}>{children}</div>;
 }
 
-export function MenuRow({ className, ...props }: ComponentProps<typeof DropdownMenuItem>) {
-  return <DropdownMenuItem className={cn(MENU_ROW, className)} {...props} />;
+export function MenuRow(props: ComponentProps<typeof DropdownMenuItem>) {
+  return <DropdownMenuItem {...props} />;
 }
 
 /** Row that opens a submenu (phones: Zichtbare lagen, Kaartstijl); stays highlighted while its submenu is open. */
-export function MenuSubRow({ className, ...props }: ComponentProps<typeof DropdownMenuSubTrigger>) {
-  return <DropdownMenuSubTrigger className={cn(MENU_ROW, 'data-[state=open]:bg-beheer-row-high', className)} {...props} />;
+export function MenuSubRow(props: ComponentProps<typeof DropdownMenuSubTrigger>) {
+  return <DropdownMenuSubTrigger {...props} />;
 }
 
 /** Quick tile: icon above a short label. Give the icon `size-5` itself. */
 export function MenuTile({ className, ...props }: ComponentProps<typeof DropdownMenuItem>) {
   return (
     <DropdownMenuItem
-      className={cn('flex-col justify-center gap-1.5 rounded-2xl bg-beheer-row px-1 pt-3 pb-2.5 text-[11.5px] font-semibold transition-colors duration-200 focus:bg-beheer-row-high', className)}
+      className={cn('flex-col justify-center gap-1.5 rounded-2xl px-1 pt-3 pb-2.5 text-[11.5px] first:rounded-2xl last:rounded-2xl duration-200', className)}
       {...props}
     />
   );

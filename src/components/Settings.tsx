@@ -16,7 +16,7 @@ import {HEADER_BUTTON} from './sidebar/header-button';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuTrigger} from './ui/dropdown-menu';
 import {AnimatePresence, motion} from 'motion/react';
 import {SWAP} from '@/lib/motion';
-import {MENU_CARD, MenuRow, MenuRows, MenuTile} from './settings/menu-parts';
+import {MenuRow, MenuRows, MenuTile} from './settings/menu-parts';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import useSettingsStore from '@/stores/settings.store';
 import {User} from '@/types/User';
@@ -72,9 +72,9 @@ export default function Settings({onReplayTour}: SettingsProps) {
                         <Settings2Icon className="size-[18px]"/>
                     </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className={cn(MENU_CARD, 'w-[290px]')}>
+                <DropdownMenuContent align="start" className="w-[290px]">
                     {/* Quick tiles for what you change most */}
-                    <div className={cn('mb-2 grid gap-1.5', onReplayTour ? 'grid-cols-3' : 'grid-cols-2')}>
+                    <div className={cn('mb-1.5 grid gap-1.5', onReplayTour ? 'grid-cols-3' : 'grid-cols-2')}>
                         <MenuTile onSelect={(e) => {
                             e.preventDefault();
                             setSoundMuted(!soundMuted);
@@ -150,9 +150,8 @@ export default function Settings({onReplayTour}: SettingsProps) {
                         )}
                     </MenuRows>
 
-                    <MenuRows className="mt-2">
-                        <MenuRow onClick={logout}
-                                 className="bg-(--map-danger-bg) text-(--map-danger-fg) focus:bg-[color-mix(in_oklab,var(--map-danger-bg)_85%,var(--map-danger-fg))] focus:text-(--map-danger-fg) [&_svg]:text-(--map-danger-fg)!">
+                    <MenuRows className="mt-1.5">
+                        <MenuRow variant="destructive" onClick={logout}>
                             <LogOutIcon/>
                             Uitloggen
                         </MenuRow>
