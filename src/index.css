@@ -168,8 +168,6 @@
   /* Fixed (not size-relative) so every badge/pill/chip has identical corners at any size. */
   --radius-badge: 8px;
 
-  --animate-accordion-down: accordion-down 0.2s ease-out;
-  --animate-accordion-up: accordion-up 0.2s ease-out;
   /* Sidebar sections: height slides in 200 ms with Material's standard decelerate curve */
   --animate-collapsible-down: collapsible-down 0.2s cubic-bezier(0.2, 0, 0, 1);
   --animate-collapsible-up: collapsible-up 0.2s cubic-bezier(0.2, 0, 0, 1);
@@ -196,23 +194,6 @@
   @keyframes collapsible-up {
     from {
       height: var(--radix-collapsible-content-height);
-    }
-    to {
-      height: 0;
-    }
-  }
-
-  @keyframes accordion-down {
-    from {
-      height: 0;
-    }
-    to {
-      height: var(--radix-accordion-content-height);
-    }
-  }
-  @keyframes accordion-up {
-    from {
-      height: var(--radix-accordion-content-height);
     }
     to {
       height: 0;
@@ -333,10 +314,6 @@ body.dark {
 
 .card {
   box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
-}
-
-.login-background {
-  background-image: url('assets/images/background.webp');
 }
 
 /* Map buttons in the shadcn style: 36px (h-9) like the cards top right, card background, rounded, thin dividers */
