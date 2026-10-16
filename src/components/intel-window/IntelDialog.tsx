@@ -1,4 +1,4 @@
-import { type ReactNode, RefObject, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { lazy, type ReactNode, RefObject, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion, useIsPresent } from 'motion/react';
 import { ArrowLeftIcon } from 'lucide-react';
 import { useSWRConfig } from 'swr';
@@ -20,7 +20,10 @@ import type { IntelItem, IntelTab } from '@/types/Intel';
 import IntelDetail from './IntelDetail';
 import IntelTimeline from './IntelTimeline';
 import IntelTopBar from './IntelTopBar';
-import IntelChat from './chat/IntelChat';
+
+// The AI chat (with the AI SDK) is its own chunk, fetched when the window opens
+const loadIntelChat = () => import('./chat/IntelChat');
+const IntelChat = lazy(loadIntelChat);
 
 /** Desktop window with hints, opdrachten and nieuws (phones keep the sidebar mini grid). */
 export default function IntelDialog({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
@@ -34,6 +37,9 @@ export default function IntelDialog({ mapRef }: { mapRef: RefObject<MapRef | nul
   useEffect(() => {
     if (isMobile && useIntelStore.getState().open) close();
   }, [isMobile, close]);
+  useEffect(() => {
+    if (open && !isMobile) void loadIntelChat();
+  }, [open, isMobile]);
 
   if (isMobile) return null;
   return (
@@ -233,7 +239,10 @@ function DetailView({ item, area, mapRef, skipEntrance, onBack }: { item: IntelI
         </motion.div>
       </div>
       <motion.div className="flex min-w-0 flex-1 flex-col" initial={skip ? false : CHAT_CARD_ENTER.initial} animate={CHAT_CARD_ENTER.animate} transition={CHAT_CARD_ENTER.transition}>
-        <IntelChat item={item} mapRef={mapRef} entrance={!skip} />
+        {/* While the chunk loads: the chat card's empty shell (IntelChat's root classes) */}
+        <Suspense fallback={<div className="flex min-h-0 flex-1 flex-col rounded-[24px] bg-card p-3.5" />}>
+          <IntelChat item={item} mapRef={mapRef} entrance={!skip} />
+        </Suspense>
       </motion.div>
     </div>
   );
