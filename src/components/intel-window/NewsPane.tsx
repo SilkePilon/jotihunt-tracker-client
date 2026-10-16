@@ -4,7 +4,7 @@ import { POP } from '@/lib/motion';
 import type { IntelItem } from '@/types/Intel';
 import ArticleHtml from './ArticleHtml';
 
-/** Nieuws (spec O): the full text, then who opened it. Each card is one staggered part of the detail. */
+/** Nieuws (spec O): the full text, then who opened it. The cards arrive with the detail view (no stagger of their own). */
 export default function NewsPane({ item }: { item: IntelItem }) {
   return (
     <>

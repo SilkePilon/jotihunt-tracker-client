@@ -12,13 +12,15 @@ interface ChatEmptyProps {
   onPick: (text: string) => void;
   /** Seconds before the parts stagger in (after the card's entrance) */
   delay?: number;
+  /** Stagger the parts in on mount (false: shown at once, e.g. the window opened straight on this item) */
+  stagger?: boolean;
 }
 
 /** E2: centred tonal ✦ block, "Samen puzzelen", one line, chips per kind (a solved area's chip pops out) */
-export default function ChatEmpty({ item, disabled, onPick, delay = 0 }: ChatEmptyProps) {
+export default function ChatEmpty({ item, disabled, onPick, delay = 0, stagger = true }: ChatEmptyProps) {
   const chips = suggestionChips(item);
   return (
-    <motion.div variants={CHAT_EMPTY} custom={delay} initial="hidden" animate="shown" className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2.5 px-4 text-center">
+    <motion.div variants={CHAT_EMPTY} custom={delay} initial={stagger ? 'hidden' : false} animate="shown" className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2.5 px-4 text-center">
       <motion.div variants={CHAT_EMPTY_PART} aria-hidden className="grid size-[54px] place-items-center rounded-[18px] bg-fox-warn-container text-[26px] text-fox-on-warn">
         ✦
       </motion.div>

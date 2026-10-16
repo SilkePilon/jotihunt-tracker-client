@@ -281,8 +281,8 @@ export const INTEL_CLOSE_MS = 260;
 export const CHAT_SPARK = {
   initial: { rotate: -120, scale: 0.4, opacity: 0 },
   animate: { rotate: 0, scale: 1, opacity: 1 },
-  transition: { type: 'spring', stiffness: 260, damping: 14, delay: 0.5 },
+  transition: { type: 'spring', stiffness: 260, damping: 14, delay: 0.3 },
 } satisfies { initial: TargetAndTransition; animate: TargetAndTransition; transition: Transition };
 
 /** The empty state's parts start after the card's slide and the ✦ (open from the timeline) */
-export const CHAT_EMPTY_ENTRANCE_DELAY = 0.7;
+export const CHAT_EMPTY_ENTRANCE_DELAY = 0.45;

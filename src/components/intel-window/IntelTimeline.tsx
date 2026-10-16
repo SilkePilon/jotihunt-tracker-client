@@ -1,6 +1,6 @@
 import { createContext, type ReactNode, useContext, useState } from 'react';
 import { useNow } from '@/hooks/now.hook';
-import { AnimatePresence, motion, type Variants } from 'motion/react';
+import { AnimatePresence, motion, useReducedMotion, type Variants } from 'motion/react';
 import { ClockIcon } from 'lucide-react';
 import { Tag } from '@/components/beheer/controls/Pill';
 import { formatClock } from '@/lib/format';
@@ -86,10 +86,12 @@ export default function IntelTimeline({ items, tab, onSelect, entrance }: Timeli
   const [last, setLast] = useState({ tab, direction: 1, switched: false });
   if (last.tab !== tab) setLast({ tab, direction: INTEL_TAB_ORDER.indexOf(tab) > INTEL_TAB_ORDER.indexOf(last.tab) ? 1 : -1, switched: true });
   const [stagger] = useState(entrance);
+  // Reduced motion: the lists cross-fade in place
+  const direction = useReducedMotion() ? 0 : last.direction;
 
   return (
-    <AnimatePresence mode="wait" custom={last.direction}>
-      <TimelineList key={tab} start={last.switched ? 'push' : stagger ? 'hidden' : false} direction={last.direction}>
+    <AnimatePresence mode="wait" custom={direction}>
+      <TimelineList key={tab} start={last.switched ? 'push' : stagger ? 'hidden' : false} direction={direction}>
         {/* Outside the padded list: centred in the whole window */}
         <AnimatePresence>
           {groups.length === 0 && (

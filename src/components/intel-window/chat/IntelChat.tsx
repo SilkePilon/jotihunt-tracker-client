@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { IconPill, Pill } from '@/components/beheer/controls/Pill';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import type { MapRef } from '@/components/Map';
+import { useHasMounted } from '@/hooks/has-mounted.hook';
 import Reveal from '@/components/motion/Reveal';
 import { apiErrorMessage } from '@/lib/api-error';
 import { BUSY_MESSAGE, CONTEXT_LABEL, chatStatusLabel, lastUserMessageId } from '@/lib/intel-chat';
@@ -33,10 +34,13 @@ export default function IntelChat({ item, mapRef, entrance }: IntelChatProps) {
   // The entrance is consumed once: after the first item swap, coming back to it no longer replays the spin/delay
   const [entranceId, setEntranceId] = useState(entrance ? item.id : null);
   if (entranceId !== null && item.id !== entranceId) setEntranceId(null);
+  // Not initial={false} on the AnimatePresence: motion would then block every initial animation inside (the ✦ spin, the
+  // empty state's stagger). Only the first panel skips its own fade.
+  const mounted = useHasMounted();
   return (
     <section aria-label="Vraag de AI" className="flex min-h-0 flex-1 flex-col rounded-[24px] bg-card p-3.5">
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.div key={item.id} {...FADE} className="flex min-h-0 flex-1 flex-col gap-2.5">
+      <AnimatePresence mode="wait">
+        <motion.div key={item.id} {...FADE} initial={mounted ? FADE.initial : false} className="flex min-h-0 flex-1 flex-col gap-2.5">
           <ChatPanel item={item} mapRef={mapRef} entrance={item.id === entranceId} />
         </motion.div>
       </AnimatePresence>
@@ -50,10 +54,11 @@ function ChatPanel({ item, mapRef, entrance }: IntelChatProps) {
   const busy = chat.status === 'submitted' || chat.status === 'streaming';
   const scene = chat.loading ? 'loading' : chat.loadError ? 'load-error' : chat.messages.length === 0 ? 'empty' : 'thread';
   // The spark spin is fixed at mount; the delayed empty stagger only applies until the first settled scene is left
-  // (e.g. "Nieuw gesprek" afterwards shows the empty state without the 0.7 s wait)
+  // (e.g. "Nieuw gesprek" afterwards shows the empty state without the entrance wait)
   const [spin] = useState(entrance);
   const [emptyDelay, setEmptyDelay] = useState(entrance);
   const [prevScene, setPrevScene] = useState(scene);
+  const mounted = useHasMounted();
   if (scene !== prevScene) {
     setPrevScene(scene);
     if (prevScene !== 'loading') setEmptyDelay(false);
@@ -85,14 +90,15 @@ function ChatPanel({ item, mapRef, entrance }: IntelChatProps) {
           </AnimatePresence>
         }
       />
-      {/* Nieuw gesprek: the thread fades out, the empty state rises in (its parts stagger; the wrapper only fades) */}
-      <AnimatePresence mode="wait" initial={false}>
+      {/* Nieuw gesprek: the thread fades out, the empty state rises in (its parts stagger; the wrapper only fades). The
+          first scene doesn't fade in (no initial={false} here, that would also block the empty state's stagger). */}
+      <AnimatePresence mode="wait">
         {scene === 'loading' ? (
-          <motion.div key="loading" {...FADE} className="grid min-h-0 flex-1 place-items-center">
+          <motion.div key="loading" {...FADE} initial={mounted ? FADE.initial : false} className="grid min-h-0 flex-1 place-items-center">
             <Loader2Icon className="size-5 animate-spin text-muted-foreground" aria-label="Gesprek laden…" />
           </motion.div>
         ) : scene === 'load-error' ? (
-          <motion.div key="load-error" {...FADE} className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 text-[13px] text-muted-foreground">
+          <motion.div key="load-error" {...FADE} initial={mounted ? FADE.initial : false} className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 text-[13px] text-muted-foreground">
             Gesprek laden mislukt
             <Pill onClick={chat.reload}>
               <RotateCcwIcon />
@@ -100,11 +106,11 @@ function ChatPanel({ item, mapRef, entrance }: IntelChatProps) {
             </Pill>
           </motion.div>
         ) : scene === 'empty' ? (
-          <motion.div key="empty" className="flex min-h-0 flex-1 flex-col" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
-            <ChatEmpty item={item} disabled={busy || chat.unavailable} onPick={chat.send} delay={emptyDelay ? CHAT_EMPTY_ENTRANCE_DELAY : 0} />
+          <motion.div key="empty" className="flex min-h-0 flex-1 flex-col" initial={mounted ? { opacity: 0 } : false} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
+            <ChatEmpty item={item} disabled={busy || chat.unavailable} onPick={chat.send} delay={emptyDelay ? CHAT_EMPTY_ENTRANCE_DELAY : 0} stagger={mounted || emptyDelay} />
           </motion.div>
         ) : (
-          <motion.div key="thread" {...FADE} className="flex min-h-0 flex-1 flex-col">
+          <motion.div key="thread" {...FADE} initial={mounted ? FADE.initial : false} className="flex min-h-0 flex-1 flex-col">
             <ChatThread chat={chat} mapRef={mapRef} />
           </motion.div>
         )}

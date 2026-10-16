@@ -1,5 +1,5 @@
 import { lazy, type ReactNode, RefObject, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { AnimatePresence, motion, useIsPresent } from 'motion/react';
+import { AnimatePresence, motion, useIsPresent, useReducedMotion } from 'motion/react';
 import { useSWRConfig } from 'swr';
 import { MapRef } from '@/components/Map';
 import ResponsiveDialog from '@/components/ResponsiveDialog';
@@ -126,13 +126,17 @@ function IntelWindow({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
     setView({ key: viewKey, gen: view.gen + 1, direction, publishAt: selected?.publishAt ?? null });
   }
 
-  // Views push sideways (PUSH); tabs push the list inside the timeline view (IntelTimeline)
+  // Views push sideways (PUSH); tabs push the list inside the timeline view (IntelTimeline). Reduced motion: direction 0,
+  // so both views stay in place and cross-fade (motion would otherwise jump the leaving one sideways).
+  const direction = useReducedMotion() ? 0 : view.direction;
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <IntelTopBar detail={selected !== null} onBack={() => select(null)} unread={{ news: unreadCount(items, 'news') > 0, assignment: unreadCount(items, 'assignment') > 0 }} />
       <div className="relative min-h-0 flex-1 overflow-hidden">
-        <AnimatePresence initial={false} custom={view.direction}>
-          <PushView key={`${view.key}-${view.gen}`} direction={view.direction}>
+        {/* No initial={false} here: motion would block the initial animation of everything inside the first view too
+            (status card, bars, ring, ✦). PushView skips only its own push on the first view instead. */}
+        <AnimatePresence custom={direction}>
+          <PushView key={`${view.key}-${view.gen}`} direction={direction} first={!mounted}>
             {selected ? (
               <DetailView item={selected} area={area} mapRef={mapRef} entrance={!mounted} />
             ) : (
@@ -145,14 +149,18 @@ function IntelWindow({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
   );
 }
 
-/** One view, pushed in and out sideways (PUSH, custom = direction). The leaving one sits underneath and takes no input. */
-function PushView({ direction, children }: { direction: number; children: ReactNode }) {
+/**
+ * One view, pushed in and out sideways (PUSH, custom = direction). The leaving one sits underneath and takes no input.
+ * `first` (read on mount): the window's first view, which arrives with the dialog instead of pushing in.
+ */
+function PushView({ direction, first, children }: { direction: number; first: boolean; children: ReactNode }) {
   const isPresent = useIsPresent();
+  const [initial] = useState(first ? false : 'enter');
   return (
     <motion.div
       custom={direction}
       variants={PUSH}
-      initial="enter"
+      initial={initial}
       animate="center"
       exit="exit"
       inert={!isPresent}

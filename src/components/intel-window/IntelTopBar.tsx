@@ -22,8 +22,8 @@ export default function IntelTopBar({ unread, detail, onBack }: { unread: Partia
         onClick={onBack}
         title="Terug naar de tijdlijn (Esc)"
         aria-label="Terug naar de tijdlijn"
-        tabIndex={detail ? 0 : -1}
-        aria-hidden={!detail}
+        // Collapsed on the timeline: out of the tab order and the accessibility tree, and focus can't stay on it
+        inert={!detail}
         initial={false}
         animate={detail ? { width: 34, marginRight: 0, opacity: 1 } : { width: 0, marginRight: -12, opacity: 0 }}
         transition={SWAP_TRANSITION}

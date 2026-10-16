@@ -17,8 +17,8 @@ const STATUS_OPTIONS = (Object.keys(ASSIGNMENT_STATUS_LABELS) as AssignmentStatu
 const NO_OWNER = 'none';
 
 /**
- * Opdracht (spec O): status and owner next to the notes (stacked when the detail is narrow), the full text below. Each
- * card is one staggered part of the detail.
+ * Opdracht (spec O): status and owner next to the notes (stacked when the detail is narrow), the full text below. The
+ * cards arrive with the detail view (no stagger of their own).
  */
 export default function AssignmentPane({ item }: { item: IntelItem }) {
   const { members, setStatus, setOwner, addNote } = useAssignments();

@@ -24,8 +24,8 @@ type SaveAnswer = (cell: HintCell, label: string, answer: string) => Promise<boo
 
 /**
  * Hint (spec H2): one row per deelgebied, one open at a time (first the store's area, else the first open one) with the
- * area's full text and the answer field. Saving folds the row and unfolds the next open area. Two staggered detail parts.
- * Keyed by item (DetailSlide), so the open area never leaks into another hint.
+ * area's full text and the answer field. Saving folds the row and unfolds the next open area. Arrives with the detail
+ * view, which is keyed per item (IntelDialog's PushView), so the open area never leaks into another hint.
  */
 export default function HintPane({ item, area, mapRef }: { item: IntelItem; area: string | null; mapRef: RefObject<MapRef | null> }) {
   const { solve } = useHintBoard({ live: true });
