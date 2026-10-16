@@ -10,9 +10,12 @@ import { HEADER_BUTTON } from './header-button';
 import Flashbang from './Flashbang';
 
 /** Both icons stay mounted and cross-swap: the leaving one turns away and shrinks, the other turns in. */
+/** Phones and tablets: the flashbang is a desktop-only joke */
+const isTouchDevice = () => window.matchMedia('(pointer: coarse)').matches;
+
 const ICON = 'absolute size-[18px] transition-[rotate,scale,opacity] duration-[350ms] ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none';
 
-/** Switches between light and dark mode; the first click overrides the system preference. Dark → light throws a flashbang. */
+/** Switches between light and dark mode; the first click overrides the system preference. Dark → light throws a flashbang on desktop. */
 export default function ThemeToggle({ className }: { className?: string }) {
   const isDarkMode = useDarkMode();
   const setDarkMode = useSettingsStore((state) => state.setDarkMode);
@@ -23,7 +26,7 @@ export default function ThemeToggle({ className }: { className?: string }) {
 
   const toggle = (event: MouseEvent<HTMLButtonElement>) => {
     if (throwFrom) return;
-    if (!shouldFlashbang({ isDarkMode, reducedMotion })) {
+    if (!shouldFlashbang({ isDarkMode, reducedMotion, touchDevice: isTouchDevice() })) {
       setDarkMode(!isDarkMode);
       return;
     }
@@ -45,7 +48,7 @@ export default function ThemeToggle({ className }: { className?: string }) {
         aria-label={label}
         title={label}
         onClick={toggle}
-        onPointerEnter={isDarkMode && !soundMuted ? preloadFlashbangSound : undefined}
+        onPointerEnter={isDarkMode && !soundMuted && !isTouchDevice() ? preloadFlashbangSound : undefined}
         onFocus={isDarkMode && !soundMuted ? preloadFlashbangSound : undefined}
         className={cn(HEADER_BUTTON, className)}
       >

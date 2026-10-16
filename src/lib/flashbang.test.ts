@@ -3,12 +3,16 @@ import { extendRinging, landingSpot, shouldFlashbang, throwPath } from './flashb
 
 describe('flashbang theme switch', () => {
   test('only dark → light throws a flashbang', () => {
-    expect(shouldFlashbang({ isDarkMode: true, reducedMotion: false })).toBe(true);
-    expect(shouldFlashbang({ isDarkMode: false, reducedMotion: false })).toBe(false);
+    expect(shouldFlashbang({ isDarkMode: true, reducedMotion: false, touchDevice: false })).toBe(true);
+    expect(shouldFlashbang({ isDarkMode: false, reducedMotion: false, touchDevice: false })).toBe(false);
   });
 
   test('reduced motion keeps the plain switch', () => {
-    expect(shouldFlashbang({ isDarkMode: true, reducedMotion: true })).toBe(false);
+    expect(shouldFlashbang({ isDarkMode: true, reducedMotion: true, touchDevice: false })).toBe(false);
+  });
+
+  test('mobile devices keep the plain switch', () => {
+    expect(shouldFlashbang({ isDarkMode: true, reducedMotion: false, touchDevice: true })).toBe(false);
   });
 
   test('throw starts at the toggle and comes to rest past the landing spot', () => {

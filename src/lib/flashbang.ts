@@ -50,11 +50,13 @@ export function extendRinging(source: Float32Array, length: number, loop: RingLo
 interface FlashbangCheck {
   isDarkMode: boolean;
   reducedMotion: boolean;
+  /** Phones and tablets (touch as primary pointer) */
+  touchDevice: boolean;
 }
 
-/** Only switching dark → light throws a flashbang; reduced motion keeps the plain switch. */
-export function shouldFlashbang({ isDarkMode, reducedMotion }: FlashbangCheck): boolean {
-  return isDarkMode && !reducedMotion;
+/** Only switching dark → light throws a flashbang; reduced motion and mobile devices keep the plain switch. */
+export function shouldFlashbang({ isDarkMode, reducedMotion, touchDevice }: FlashbangCheck): boolean {
+  return isDarkMode && !reducedMotion && !touchDevice;
 }
 
 interface Point {
