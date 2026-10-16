@@ -25,11 +25,6 @@ export function secondsLeft(expiresAt: string, now: number): number {
   return Math.max(0, Math.ceil((Date.parse(expiresAt) - now) / 1000));
 }
 
-/** 245 → "4:05" */
-export function formatCountdown(seconds: number): string {
-  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
-}
-
 /** Runs the GET for the latest release: the release, or null when the server has none (404); anything else rethrows. */
 export async function fetchLatestRelease<T>(get: () => Promise<T>): Promise<T | null> {
   try {

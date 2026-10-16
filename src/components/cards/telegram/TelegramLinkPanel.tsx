@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import TrackerQrCode from '@/components/tracker/TrackerQrCode';
 import useInterval from '@/hooks/utils/interval.hook';
-import { formatCountdown, secondsLeft } from '@/lib/app-pairing';
+import { secondsLeft } from '@/lib/app-pairing';
+import { formatCountdown } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { TelegramAdminStatus } from '@/types/Telegram';
 import TelegramLogo from './TelegramLogo';
@@ -60,7 +61,7 @@ function QrStep({ url, expiresAt, onCancel }: { url?: string; expiresAt?: string
           {expiresAt && (
             <span className="flex items-center gap-1.5 tabular-nums">
               <Loader2Icon className="size-3.5 animate-spin text-[#229ED9]" />
-              {formatCountdown(secondsLeft(expiresAt, now))}
+              {formatCountdown(secondsLeft(expiresAt, now) * 1000)}
             </span>
           )}
         </div>

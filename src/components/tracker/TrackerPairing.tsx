@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useIsMobile } from '@/hooks/media.hook';
 import useInterval from '@/hooks/utils/interval.hook';
-import { buildPairingUrl, formatCountdown, formatPairingCode, secondsLeft } from '@/lib/app-pairing';
+import { buildPairingUrl, formatPairingCode, secondsLeft } from '@/lib/app-pairing';
+import { formatCountdown } from '@/lib/format';
 import type { PairingCode } from '@/types/Tracker';
 import TrackerQrCode from './TrackerQrCode';
 
@@ -23,7 +24,7 @@ function Countdown({ seconds }: { seconds: number }) {
   return (
     <span className="flex items-center gap-1.5 text-xs tabular-nums text-muted-foreground">
       <Loader2Icon className="size-3.5 animate-spin" />
-      {formatCountdown(seconds)}
+      {formatCountdown(seconds * 1000)}
     </span>
   );
 }

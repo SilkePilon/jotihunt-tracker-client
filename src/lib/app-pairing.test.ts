@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { absoluteUrl, buildPairingUrl, fetchLatestRelease, formatCountdown, formatPairingCode, secondsLeft } from './app-pairing';
+import { absoluteUrl, buildPairingUrl, fetchLatestRelease, formatPairingCode, secondsLeft } from './app-pairing';
 
 describe('app pairing helpers', () => {
   test('pairing URL carries the absolute, encoded API base and the code', () => {
@@ -24,8 +24,6 @@ describe('app pairing helpers', () => {
     const expiresAt = '2026-10-17T10:05:00.000Z';
     expect(secondsLeft(expiresAt, Date.parse('2026-10-17T10:00:55.400Z'))).toBe(245);
     expect(secondsLeft(expiresAt, Date.parse('2026-10-17T10:06:00Z'))).toBe(0);
-    expect(formatCountdown(245)).toBe('4:05');
-    expect(formatCountdown(0)).toBe('0:00');
   });
 });
 
