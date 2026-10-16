@@ -29,14 +29,14 @@ export function PickerTrigger({ lead, placeholder, label, invalid, className, ..
       type="button"
       aria-invalid={invalid || undefined}
       className={cn(
-        'group flex h-10 w-full min-w-0 items-center gap-2 rounded-lg bg-card px-2.5 text-left text-sm outline-none transition-[background-color,box-shadow,opacity] duration-150 hover:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-card data-[state=open]:shadow-[inset_0_0_0_2px_var(--primary)] aria-invalid:shadow-[inset_0_0_0_2px_var(--destructive)]',
+        'group flex h-8 w-full min-w-0 items-center gap-1.5 rounded-lg bg-card px-2 text-left text-[13px] outline-none transition-[background-color,box-shadow,opacity] duration-150 hover:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-card data-[state=open]:shadow-[inset_0_0_0_2px_var(--primary)] aria-invalid:shadow-[inset_0_0_0_2px_var(--destructive)]',
         className,
       )}
       {...props}
     >
       {lead}
       <span className={cn('min-w-0 flex-1 truncate', !label && 'text-muted-foreground')}>{label ?? placeholder}</span>
-      <ChevronDownIcon className="size-4 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
+      <ChevronDownIcon className="size-3.5 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
     </button>
   );
 }

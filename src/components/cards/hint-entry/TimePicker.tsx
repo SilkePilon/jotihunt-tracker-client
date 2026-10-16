@@ -52,7 +52,7 @@ export default function TimePicker({ id, value, onChange, days, open, onOpenChan
           placeholder="Tijd"
           label={value ? shortLabel(value) : undefined}
           aria-label={value ? `Tijd: ${shortLabel(value)}` : 'Tijd kiezen'}
-          lead={<ClockIcon aria-hidden className="size-4 shrink-0 text-muted-foreground" />}
+          lead={<ClockIcon aria-hidden className="size-3.5 shrink-0 text-muted-foreground" />}
         />
       </PopoverTrigger>
       <PopoverContent

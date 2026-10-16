@@ -15,10 +15,10 @@ const STATES = {
 export default function CoordinateStatus({ state }: { state: CoordinateState }) {
   const { Icon, text, className } = STATES[state];
   return (
-    <p role="status" aria-live="polite" className="min-w-0 flex-1 text-xs font-medium">
+    <p role="status" aria-live="polite" className="min-w-0 flex-1 text-[11px] font-medium">
       <AnimatePresence mode="wait" initial={false}>
         <motion.span key={state} {...SWAP} className={cn('inline-flex items-center gap-1.5', className)}>
-          <Icon aria-hidden className="size-3.5 shrink-0" />
+          <Icon aria-hidden className="size-3 shrink-0" />
           {text}
         </motion.span>
       </AnimatePresence>
