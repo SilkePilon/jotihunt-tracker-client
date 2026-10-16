@@ -2,7 +2,7 @@ import * as React from "react"
 import { cn } from "cn"
 import { CheckIcon, ChevronRightIcon } from "lucide-react"
 import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui"
-import { MENU_GROUP, MENU_LABEL, MENU_MOTION, MENU_ROW_BASE, MENU_ROW_CHECKED, MENU_SURFACE } from "@/lib/menu-styles"
+import { MENU_GROUP, MENU_LABEL, MENU_MOTION, MENU_ROW_BASE, MENU_ROW_CHECKED, MENU_ROW_DISABLED, MENU_SURFACE } from "@/lib/menu-styles"
 
 function DropdownMenu({
   ...props
@@ -76,6 +76,7 @@ function DropdownMenuItem({
       data-variant={variant}
       className={cn(
         MENU_ROW_BASE,
+        MENU_ROW_DISABLED,
         "data-[inset]:pl-8 data-[variant=destructive]:bg-(--map-danger-bg) data-[variant=destructive]:text-(--map-danger-fg) data-[variant=destructive]:focus:bg-[color-mix(in_oklab,var(--map-danger-bg)_85%,var(--map-danger-fg))] data-[variant=destructive]:*:[svg]:text-(--map-danger-fg)!",
         className
       )}
@@ -104,7 +105,7 @@ function DropdownMenuCheckboxItem({
   return (
     <DropdownMenuPrimitive.CheckboxItem
       data-slot="dropdown-menu-checkbox-item"
-      className={cn(MENU_ROW_BASE, className)}
+      className={cn(MENU_ROW_BASE, MENU_ROW_DISABLED, className)}
       checked={checked}
       {...props}
     >
@@ -135,7 +136,7 @@ function DropdownMenuRadioItem({
   return (
     <DropdownMenuPrimitive.RadioItem
       data-slot="dropdown-menu-radio-item"
-      className={cn(MENU_ROW_BASE, MENU_ROW_CHECKED, className)}
+      className={cn(MENU_ROW_BASE, MENU_ROW_DISABLED, MENU_ROW_CHECKED, className)}
       {...props}
     >
       {children}
@@ -208,7 +209,7 @@ function DropdownMenuSubTrigger({
     <DropdownMenuPrimitive.SubTrigger
       data-slot="dropdown-menu-sub-trigger"
       data-inset={inset}
-      className={cn(MENU_ROW_BASE, "data-[inset]:pl-8 data-[state=open]:bg-beheer-row-high", className)}
+      className={cn(MENU_ROW_BASE, MENU_ROW_DISABLED, "data-[inset]:pl-8 data-[state=open]:bg-beheer-row-high", className)}
       {...props}
     >
       {children}

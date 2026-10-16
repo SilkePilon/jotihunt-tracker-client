@@ -44,9 +44,13 @@ export default function Life360MembersMenu({ circleName, memberCount, members, n
       </DropdownMenuTrigger>
       <DropdownMenuContent align="center" className="w-64">
         {!members ? (
-          <DropdownMenuItem disabled>Leden laden…</DropdownMenuItem>
+          <DropdownMenuGroup>
+            <DropdownMenuItem disabled>Leden laden…</DropdownMenuItem>
+          </DropdownMenuGroup>
         ) : sharing.length === 0 ? (
-          <DropdownMenuItem disabled>Niemand deelt nu locatie</DropdownMenuItem>
+          <DropdownMenuGroup>
+            <DropdownMenuItem disabled>Niemand deelt nu locatie</DropdownMenuItem>
+          </DropdownMenuGroup>
         ) : (
           <>
             <DropdownMenuLabel className="flex items-center">

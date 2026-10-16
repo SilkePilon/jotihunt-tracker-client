@@ -9,6 +9,7 @@ import {
   MENU_MOTION,
   MENU_ROW_BASE,
   MENU_ROW_CHECKED,
+  MENU_ROW_DISABLED,
   MENU_SURFACE,
   TRIGGER_OPEN,
 } from "@/lib/menu-styles"
@@ -129,6 +130,7 @@ function SelectItem({
       data-slot="select-item"
       className={cn(
         MENU_ROW_BASE,
+        MENU_ROW_DISABLED,
         MENU_ROW_CHECKED,
         "w-full pr-9 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
         className

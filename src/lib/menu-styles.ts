@@ -13,16 +13,19 @@ export const MENU_MOTION =
 /** Rows sit in a column with 2px seams; first/last rows round to 16px. */
 export const MENU_GROUP = 'flex flex-col gap-0.5';
 
-/** Tonal row, 6px corners and 16px on the outer ends of its group. */
+/** Tonal row, 6px corners and 16px on the outer ends of its group. Callers add their own disabled dimming (Radix vs cmdk differ). */
 export const MENU_ROW_BASE =
-  "relative flex cursor-default items-center gap-2.5 rounded-md bg-beheer-row px-3 py-2.5 text-[13.5px] font-semibold outline-hidden select-none transition-colors duration-150 first:rounded-t-2xl last:rounded-b-2xl focus:bg-beheer-row-high data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-muted-foreground";
+  "relative flex cursor-default items-center gap-2.5 rounded-md bg-beheer-row px-3 py-2.5 text-[13.5px] font-semibold outline-hidden select-none transition-colors duration-150 first:rounded-t-2xl last:rounded-b-2xl focus:bg-beheer-row-high [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-muted-foreground";
 
-/** The chosen radio / select row: soft orange, icons included. */
-export const MENU_ROW_CHECKED = 'data-[state=checked]:bg-(--map-selected-bg) data-[state=checked]:text-(--map-selected-fg) data-[state=checked]:[&_svg]:text-(--map-selected-fg)!';
+/** Radix rows: dim while disabled. (cmdk items use data-[disabled=true] instead.) */
+export const MENU_ROW_DISABLED = 'data-[disabled]:pointer-events-none data-[disabled]:opacity-50';
+
+/** The chosen radio / select row: soft orange, icons included; a bit darker when focused (data-* variants come after focus:). */
+export const MENU_ROW_CHECKED = 'data-[state=checked]:bg-(--map-selected-bg) data-[state=checked]:text-(--map-selected-fg) data-[state=checked]:[&_svg]:text-(--map-selected-fg)! data-[state=checked]:focus:bg-[color-mix(in_oklab,var(--map-selected-bg)_85%,var(--map-selected-fg))]';
 
 /** Small header above a group of rows. */
 export const MENU_LABEL = 'px-1 pt-1 pb-1.5 text-[11px] font-bold tracking-wide text-muted-foreground uppercase';
 
 /** Any button that opens a dropdown or popover: soft orange while open, its `data-chevron` icon turns. */
 export const TRIGGER_OPEN =
-  'data-[state=open]:bg-(--map-selected-bg) data-[state=open]:text-(--map-selected-fg) data-[state=open]:hover:bg-(--map-selected-bg) [&_svg]:transition-colors [&_[data-chevron]]:transition-[transform,color] [&_[data-chevron]]:duration-200 data-[state=open]:[&_[data-chevron]]:rotate-180 data-[state=open]:[&_svg]:text-(--map-selected-fg)';
+  'data-[state=open]:bg-(--map-selected-bg) data-[state=open]:text-(--map-selected-fg) data-[state=open]:hover:bg-(--map-selected-bg) [&_svg]:transition-colors [&_[data-chevron]]:transition-[transform,color] [&_[data-chevron]]:duration-200 data-[state=open]:[&_[data-chevron]]:rotate-180 data-[state=open]:[&_svg]:text-(--map-selected-fg)!';

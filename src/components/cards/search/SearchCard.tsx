@@ -44,11 +44,11 @@ export default function SearchCard({ mapRef }: { mapRef: React.RefObject<MapRef 
                     aria-expanded={open}
                     className={cn(
                         MAP_TILE,
-                        "flex h-11 w-[300px] items-center gap-2.5 rounded-[14px] pr-3 pl-1.5 text-left transition-colors hover:bg-beheer-row focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none",
+                        "group flex h-11 w-[300px] items-center gap-2.5 rounded-[14px] pr-3 pl-1.5 text-left transition-colors hover:bg-beheer-row focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none",
                         TRIGGER_OPEN,
                     )}
                 >
-                    <span className={MAP_CHIP}><NavigationIcon/></span>
+                    <span className={cn(MAP_CHIP, "transition-colors group-data-[state=open]:bg-[color-mix(in_oklab,var(--map-selected-fg)_12%,var(--map-selected-bg))]")}><NavigationIcon/></span>
                     <span className="min-w-0 flex-1 truncate text-sm font-medium">Snel navigeren naar groep...</span>
                     <ChevronDownIcon data-chevron className="size-4 shrink-0 opacity-50" />
                 </button>

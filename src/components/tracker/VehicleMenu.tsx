@@ -23,7 +23,7 @@ export default function VehicleMenu({ value, saving, onChange }: VehicleMenuProp
       <DropdownMenuTrigger asChild disabled={saving}>
         <Button variant="secondary" size="sm" className={cn('rounded-full', TRIGGER_OPEN)} aria-label={`Voertuig: ${current.label}. Wijzigen`}>
           <AnimatePresence mode="wait" initial={false}>
-            <motion.span key={saving ? 'saving' : current.value} {...SWAP} className="flex items-center gap-2">
+            <motion.span key={saving ? 'saving' : current.value} {...SWAP} className="flex items-center gap-1.5">
               {saving ? <Loader2Icon className="animate-spin" /> : <Icon />}
               {current.phrase}
             </motion.span>
