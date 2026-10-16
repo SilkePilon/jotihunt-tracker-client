@@ -17,6 +17,8 @@ export interface HintCell {
   answerKind?: 'rd' | 'text';
   answerLocation?: [number, number];
   markerId?: string;
+  /** ISO; when the cell was first solved (older servers don't send it) */
+  solvedAt?: string;
   articleChanged: boolean;
 }
 

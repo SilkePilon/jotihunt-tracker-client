@@ -3,7 +3,7 @@ import { AxiosError, AxiosHeaders } from 'axios';
 import type { Article } from '@/types/Article';
 import type { HintCell } from '@/types/HintCell';
 import type { IntelItem } from '@/types/Intel';
-import { answerPreview, areaStates, initialOpenArea, buildIntelItems, deadlineLabel, deadlineTone, filterByTab, groupByDay, hasExistingMarker, isDeadlineUrgent, nextOpenArea, solvedCount, unreadCount } from './intel-window';
+import { answerPreview, areaStates, initialOpenArea, buildIntelItems, deadlineLabel, deadlineTone, filterByTab, formatSolveTime, groupByDay, hasExistingMarker, intelStats, isDeadlineUrgent, nextOpenArea, solvedCount, unreadCount, unreadLabel, unreadTab } from './intel-window';
 
 const article = (id: number, type: string, publishAt: string, extra: Partial<Article> = {}) =>
   ({ id, title: `A${id}`, type, publishAt: new Date(publishAt), content: '<p>x</p>', messageType: '', maxPoints: 0, endTime: new Date(publishAt), ...extra }) as Article;
@@ -147,4 +147,78 @@ describe('initialOpenArea', () => {
     expect(initialOpenArea(cells, null)).toBe('charlie');
   });
   test('nothing open and nothing requested: none', () => expect(initialOpenArea([cell('alpha', 'solved')], null)).toBeNull());
+});
+
+describe('intelStats', () => {
+  const slotA = '2026-10-17T11:00:00.000Z'; // 13:00 in Amsterdam
+  const slotB = '2026-10-17T12:00:00.000Z'; // 14:00
+  const at = (slotTime: string, area: string, status: HintCell['status'], solvedAfterMin?: number): HintCell =>
+    ({
+      _id: `${slotTime}-${area}`,
+      articleId: 1,
+      area,
+      publishAt: slotTime,
+      slotTime,
+      status,
+      articleChanged: false,
+      solvedAt: solvedAfterMin === undefined ? undefined : new Date(new Date(slotTime).getTime() + solvedAfterMin * 60_000).toISOString(),
+    }) as HintCell;
+
+  test('hints: geen-hint cells are not counted; percent rounded; null without hints', () => {
+    const stats = intelStats([], [at(slotA, 'alpha', 'solved'), at(slotA, 'bravo', 'open'), at(slotA, 'charlie', 'open'), at(slotA, 'delta', 'none')]);
+    expect(stats.hints).toEqual({ solved: 1, total: 3, percent: 33 });
+    expect(intelStats([], []).hints).toEqual({ solved: 0, total: 0, percent: null });
+    expect(intelStats([], [at(slotA, 'alpha', 'none')]).hints.percent).toBeNull();
+  });
+
+  test('assignments: submitted count and their max points', () => {
+    const items = [
+      { kind: 'assignment', maxPoints: 30, assignment: { status: 'submitted' } },
+      { kind: 'assignment', maxPoints: 50, assignment: { status: 'busy' } },
+      { kind: 'assignment', maxPoints: undefined, assignment: { status: 'submitted' } },
+      { kind: 'news', unread: true },
+    ] as IntelItem[];
+    expect(intelStats(items, []).assignments).toEqual({ submitted: 2, total: 3, points: 30 });
+  });
+
+  test('unread per kind', () => {
+    const items = [{ kind: 'news', unread: true }, { kind: 'news', unread: false }, { kind: 'assignment', unread: true }, { kind: 'hint', unread: false }] as IntelItem[];
+    expect(intelStats(items, []).unread).toEqual({ news: 1, assignment: 1 });
+  });
+
+  test('slots: oldest first, solved/open per slot, none skipped, hour in Dutch time, last 8 only', () => {
+    const stats = intelStats([], [at(slotB, 'alpha', 'open'), at(slotA, 'alpha', 'solved'), at(slotA, 'bravo', 'open'), at(slotB, 'bravo', 'none')]);
+    expect(stats.slots).toEqual([
+      { slotTime: slotA, hour: '13', solved: 1, open: 1 },
+      { slotTime: slotB, hour: '14', solved: 0, open: 1 },
+    ]);
+    const many = Array.from({ length: 10 }, (_, index) => at(new Date(Date.UTC(2026, 9, 17, index)).toISOString(), 'alpha', 'open'));
+    const slots = intelStats([], many).slots;
+    expect(slots).toHaveLength(8);
+    expect(slots[0].slotTime).toBe('2026-10-17T02:00:00.000Z');
+  });
+
+  test('average solve time over solved cells with solvedAt in the shown slots', () => {
+    const stats = intelStats([], [at(slotA, 'alpha', 'solved', 10), at(slotA, 'bravo', 'solved', 30), at(slotA, 'charlie', 'solved'), at(slotB, 'alpha', 'open')]);
+    expect(stats.avgSolveMs).toBe(20 * 60_000);
+    expect(intelStats([], [at(slotA, 'alpha', 'solved')]).avgSolveMs).toBeNull();
+  });
+});
+
+describe('stat labels', () => {
+  test('formatSolveTime', () => {
+    expect(formatSolveTime(18 * 60_000)).toBe('18 min');
+    expect(formatSolveTime(89 * 60_000)).toBe('89 min');
+    expect(formatSolveTime(65 * 60_000 + 25 * 60_000)).toBe('1 u 30');
+    expect(formatSolveTime(125 * 60_000)).toBe('2 u 05');
+  });
+  test('unreadLabel and unreadTab', () => {
+    expect(unreadLabel({ news: 2, assignment: 1 })).toBe('nieuws · 1 opdracht');
+    expect(unreadLabel({ news: 0, assignment: 2 })).toBe('opdrachten');
+    expect(unreadLabel({ news: 3, assignment: 0 })).toBe('nieuws');
+    expect(unreadLabel({ news: 0, assignment: 0 })).toBe('alles gelezen');
+    expect(unreadTab({ news: 0, assignment: 2 })).toBe('assignment');
+    expect(unreadTab({ news: 1, assignment: 2 })).toBe('news');
+    expect(unreadTab({ news: 0, assignment: 0 })).toBe('news');
+  });
 });

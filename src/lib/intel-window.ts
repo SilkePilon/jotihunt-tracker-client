@@ -160,6 +160,91 @@ export function answerPreview(answer: string, rd: RdPreview | null): AnswerPrevi
   return { kind: outside ? 'outside' : 'rd', rd };
 }
 
+/** Tab order left to right: a tab further right pushes the list in from the right */
+export const INTEL_TAB_ORDER: IntelTab[] = ['all', 'hint', 'assignment', 'news'];
+
+/** Bars in the oplos-tempo chart */
+export const SOLVE_CHART_SLOTS = 8;
+
+/** One hint slot in the oplos-tempo chart */
+export interface SlotBar {
+  /** ISO */
+  slotTime: string;
+  /** "18" (Dutch time) */
+  hour: string;
+  solved: number;
+  open: number;
+}
+
+/** Everything the status card shows */
+export interface IntelStats {
+  /** Cells with a hint (not "geen hint"); percent is null without any */
+  hints: { solved: number; total: number; percent: number | null };
+  /** Submitted assignments and the max points of those */
+  assignments: { submitted: number; total: number; points: number };
+  unread: { news: number; assignment: number };
+  /** The last SOLVE_CHART_SLOTS hint slots, oldest first */
+  slots: SlotBar[];
+  /** Mean time from publish to first solve over the solved cells of those slots that have a solvedAt, or null */
+  avgSolveMs: number | null;
+}
+
+const hourFormat = new Intl.DateTimeFormat('nl-NL', { timeZone: 'Europe/Amsterdam', hour: '2-digit', hourCycle: 'h23' });
+
+export function intelStats(items: IntelItem[], cells: HintCell[]): IntelStats {
+  const counted = cells.filter((cell) => cell.status !== 'none');
+  const solved = counted.filter((cell) => cell.status === 'solved').length;
+
+  const assignments = items.filter((item) => item.kind === 'assignment');
+  const submitted = assignments.filter((item) => item.assignment?.status === 'submitted');
+
+  // Per slot (normalised ISO, so differently formatted dates of one slot meet), newest SOLVE_CHART_SLOTS kept
+  const bySlot = new Map<string, HintCell[]>();
+  for (const cell of counted) {
+    const key = new Date(cell.slotTime).toISOString();
+    bySlot.set(key, [...(bySlot.get(key) ?? []), cell]);
+  }
+  const keys = [...bySlot.keys()].sort((a, b) => time(a) - time(b)).slice(-SOLVE_CHART_SLOTS);
+  const slots = keys.map((slotTime) => {
+    const slotCells = bySlot.get(slotTime)!;
+    const solvedHere = slotCells.filter((cell) => cell.status === 'solved').length;
+    return { slotTime, hour: hourFormat.format(time(slotTime)), solved: solvedHere, open: slotCells.length - solvedHere };
+  });
+
+  const durations = keys
+    .flatMap((key) => bySlot.get(key)!)
+    .filter((cell) => cell.status === 'solved' && cell.solvedAt)
+    .map((cell) => time(cell.solvedAt) - time(cell.publishAt))
+    .filter((ms) => ms >= 0);
+
+  return {
+    hints: { solved, total: counted.length, percent: counted.length ? Math.round((solved / counted.length) * 100) : null },
+    assignments: { submitted: submitted.length, total: assignments.length, points: submitted.reduce((sum, item) => sum + (item.maxPoints ?? 0), 0) },
+    unread: { news: unreadCount(items, 'news'), assignment: unreadCount(items, 'assignment') },
+    slots,
+    avgSolveMs: durations.length ? durations.reduce((sum, ms) => sum + ms, 0) / durations.length : null,
+  };
+}
+
+/** "18 min", or "1 u 05" from 90 minutes on */
+export function formatSolveTime(ms: number): string {
+  const minutes = Math.round(ms / 60_000);
+  return minutes < 90 ? `${minutes} min` : `${Math.floor(minutes / 60)} u ${String(minutes % 60).padStart(2, '0')}`;
+}
+
+/** The Ongelezen tile's sub line */
+export function unreadLabel({ news, assignment }: { news: number; assignment: number }): string {
+  const assignments = assignment === 1 ? 'opdracht' : 'opdrachten';
+  if (news && assignment) return `nieuws · ${assignment} ${assignments}`;
+  if (assignment) return assignments;
+  return news ? 'nieuws' : 'alles gelezen';
+}
+
+/** Where the Ongelezen tile leads: Opdrachten when only assignments are unread, else Nieuws */
+export function unreadTab({ news, assignment }: { news: number; assignment: number }): IntelTab {
+  return assignment && !news ? 'assignment' : 'news';
+}
+
 /**
  * The detail view (full width). The keyed detail wrapper uses `DETAIL_SWAP` with `initial="open"` (coming from the timeline:
  * the header stays in place for the card morph and the parts below rise in after it) or `initial="swap"` (another item while
@@ -185,6 +270,14 @@ export const DETAIL_HEAD: Variants = {
 };
 /** The card ↔ detail header morph (frame and title share a `layoutId`, see `useMorphIds`) */
 export const INTEL_MORPH: Transition = { type: 'spring', visualDuration: 0.42, bounce: 0.1 };
+
+/** Views and items push sideways (timeline ↔ item, item ↔ item): 1 = forward (in from the right), -1 = back */
+export const PUSH_TRANSITION: Transition = { duration: 0.36, ease: EASE_OUT };
+export const PUSH: Variants = {
+  enter: (direction: number) => ({ x: `${35 * direction}%`, opacity: 0 }),
+  center: { x: 0, opacity: 1, transition: PUSH_TRANSITION },
+  exit: (direction: number) => ({ x: `${-35 * direction}%`, opacity: 0, transition: PUSH_TRANSITION }),
+};
 
 /** The AI chat card right of the item (layout B): slides in after the detail's parts when an item opens from the timeline */
 export const CHAT_CARD_ENTER = {
