@@ -1,6 +1,6 @@
 import { RefObject, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { Loader2Icon, MapIcon, PencilIcon } from 'lucide-react';
+import { Loader2Icon, MapIcon, PencilIcon, Trash2Icon } from 'lucide-react';
 import { toast } from 'sonner';
 import SuccessBadge from '@/components/auth/SuccessBadge';
 import { BeheerCard, BeheerRows, Chevron, RowFrame } from '@/components/beheer/BeheerLayout';
@@ -21,6 +21,8 @@ import ArticleHtml from './ArticleHtml';
 
 /** Save an answer; resolves true when it is stored (false: failed or waiting for the replace-marker confirm) */
 type SaveAnswer = (cell: HintCell, label: string, answer: string) => Promise<boolean>;
+/** Ask to remove a stored answer (the confirm lives in the pane) */
+type ClearAnswer = (cell: HintCell, label: string) => void;
 
 /**
  * Hint (spec H2): one row per deelgebied, one open at a time (first the store's area, else the first open one) with the
@@ -28,7 +30,7 @@ type SaveAnswer = (cell: HintCell, label: string, answer: string) => Promise<boo
  * view, which is keyed per item (IntelDialog's PushView), so the open area never leaks into another hint.
  */
 export default function HintPane({ item, area, mapRef }: { item: IntelItem; area: string | null; mapRef: RefObject<MapRef | null> }) {
-  const { solve } = useHintBoard({ live: true });
+  const { solve, clear } = useHintBoard({ live: true });
   const cells = new Map(item.cells.map((cell) => [cell.area, cell]));
   const [openArea, setOpenArea] = useState<string | null>(() => initialOpenArea(item.cells, area));
   // The store's area changing while this hint stays on the right (openIntel on the same article) opens that area
@@ -46,6 +48,9 @@ export default function HintPane({ item, area, mapRef }: { item: IntelItem; area
   // The 409 confirm lives here, not in the row: the row folds away on success and would cut its close animation short
   const [replace, setReplace] = useState<{ cell: HintCell; label: string; answer: string } | null>(null);
   const [askReplace, setAskReplace] = useState(false);
+  // Removing an answer: the row stays open and turns back into the empty field
+  const [clearing, setClearing] = useState<{ cell: HintCell; label: string } | null>(null);
+  const [askClear, setAskClear] = useState(false);
 
   /** Fold the saved row and unfold the next open area, unless another row was opened meanwhile */
   function saved(cell: HintCell, after: HintCell) {
@@ -80,6 +85,21 @@ export default function HintPane({ item, area, mapRef }: { item: IntelItem; area
     }
   }
 
+  const askToClear: ClearAnswer = (cell, label) => {
+    setClearing({ cell, label });
+    setAskClear(true);
+  };
+
+  async function confirmClear() {
+    if (!clearing) return;
+    try {
+      await clear(item.id, clearing.cell.area);
+      setAskClear(false);
+    } catch (error) {
+      toast.error(apiErrorMessage(error, 'Antwoord wissen mislukt'));
+    }
+  }
+
   return (
     <>
       <div>
@@ -94,6 +114,7 @@ export default function HintPane({ item, area, mapRef }: { item: IntelItem; area
                 open={openArea === value}
                 onToggle={() => setOpenArea(openArea === value ? null : value)}
                 onSave={save}
+                onClear={askToClear}
                 mapRef={mapRef}
                 headerRef={(element) => {
                   if (element) headers.current.set(value, element);
@@ -117,6 +138,15 @@ export default function HintPane({ item, area, mapRef }: { item: IntelItem; area
         confirmLabel="Vervangen"
         onConfirm={confirmReplace}
       />
+      <ConfirmDialog
+        open={askClear}
+        onOpenChange={setAskClear}
+        title="Antwoord wissen?"
+        description={`${clearing?.label ?? ''}: ${clearing?.cell.answer ?? ''}. Het gebied staat daarna weer open${clearing?.cell.markerId ? ' en de hint-marker verdwijnt van de kaart' : ''}.`}
+        confirmLabel="Wissen"
+        destructive
+        onConfirm={confirmClear}
+      />
     </>
   );
 }
@@ -128,11 +158,12 @@ interface AreaRowProps {
   open: boolean;
   onToggle: () => void;
   onSave: SaveAnswer;
+  onClear: ClearAnswer;
   mapRef: RefObject<MapRef | null>;
   headerRef: (element: HTMLButtonElement | null) => void;
 }
 
-function AreaRow({ cell, area, label, open, onToggle, onSave, mapRef, headerRef }: AreaRowProps) {
+function AreaRow({ cell, area, label, open, onToggle, onSave, onClear, mapRef, headerRef }: AreaRowProps) {
   const solved = cell?.status === 'solved' && !!cell.answer;
   // Derived (as AreaChip): an area that is open on screen pops its cookie in once solved; one mounted solved just shows it
   const [poppable, setPoppable] = useState(!solved);
@@ -183,14 +214,14 @@ function AreaRow({ cell, area, label, open, onToggle, onSave, mapRef, headerRef 
           <Chevron open={open} />
         </motion.span>
       </button>
-      <Reveal>{open && <AreaBody cell={cell} label={label} onSave={onSave} mapRef={mapRef} />}</Reveal>
+      <Reveal>{open && <AreaBody cell={cell} label={label} onSave={onSave} onClear={onClear} mapRef={mapRef} />}</Reveal>
     </RowFrame>
   );
 }
 
 const previewKey = (preview: AnswerPreview) => (preview ? `${preview.kind}:${'rd' in preview ? `${preview.rd.x},${preview.rd.y}` : ''}` : '');
 
-function AreaBody({ cell, label, onSave, mapRef }: { cell: HintCell; label: string; onSave: SaveAnswer; mapRef: RefObject<MapRef | null> }) {
+function AreaBody({ cell, label, onSave, onClear, mapRef }: { cell: HintCell; label: string; onSave: SaveAnswer; onClear: ClearAnswer; mapRef: RefObject<MapRef | null> }) {
   const close = useIntelStore((state) => state.close);
   const solved = cell.status === 'solved' && !!cell.answer;
   const [editing, setEditing] = useState(!solved);
@@ -210,8 +241,16 @@ function AreaBody({ cell, label, onSave, mapRef }: { cell: HintCell; label: stri
   const [seen, setSeen] = useState(incoming);
   if (incoming !== seen) {
     setSeen(incoming);
-    if (!incoming) setTeammate(null);
-    else if (!editing) {
+    if (!incoming) {
+      setTeammate(null);
+      // The answer was removed (here or by a teammate): back to the empty field
+      if (!editing) {
+        setAnswer('');
+        setBase('');
+        setPopIn(false);
+        setEditing(true);
+      }
+    } else if (!editing) {
       setAnswer(incoming);
       setBase(incoming);
     } else if (!saving && incoming !== answer.trim()) {
@@ -318,6 +357,9 @@ function AreaBody({ cell, label, onSave, mapRef }: { cell: HintCell; label: stri
             )}
             <IconPill aria-label="Wijzigen" title="Wijzigen" autoFocus={refocus} onClick={startEdit}>
               <PencilIcon />
+            </IconPill>
+            <IconPill aria-label="Wissen" title="Wissen" onClick={() => onClear(cell, label)}>
+              <Trash2Icon />
             </IconPill>
           </motion.div>
         )}

@@ -39,11 +39,19 @@ export const useHintBoard = ({ live = false }: { live?: boolean } = {}) => {
     return cell;
   }
 
+  /** Remove a stored answer (the cell is open again, its hint marker goes) and put the returned cell in the cache */
+  async function clear(articleId: number, area: string): Promise<HintCell> {
+    const cell = (await fetcherWithMethod(`/hints/${articleId}/${area}/solve`, authHeader, 'DELETE')) as HintCell;
+    await mutate((current) => current && { ...current, cells: current.cells.map((existing) => (existing._id === cell._id ? cell : existing)) }, { revalidate: false });
+    return cell;
+  }
+
   return {
     board: data,
     isLoading: !error && !data,
     isError: error,
     solve,
+    clear,
   };
 };
 
