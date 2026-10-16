@@ -8,10 +8,10 @@ import { MapsAction, PopupActions } from '../../map/popup/PopupActions';
 import { FactDot, PopupFact, PopupFacts } from '../../map/popup/PopupFacts';
 import PopupHeader, { PopupIcon } from '../../map/popup/PopupHeader';
 import { useDistanceFromMe } from '@/hooks/distance-from-me.hook';
-import { formatBattery, formatSpeed } from '@/lib/tracker';
+import { formatBattery, formatSpeed, isActive } from '@/lib/tracker';
 import { joinParts } from '@/lib/format';
 import { vehicleGlyph, type HunterIcon } from '@/lib/marker-style';
-import { isMoreThanFiveMinutesAgo, knotsToKmh } from '@/lib/utils';
+import { knotsToKmh } from '@/lib/utils';
 import type { Position } from '@/types/Position';
 import { useMarkerPalette } from '../marker-icons';
 
@@ -30,7 +30,7 @@ export default function DevicePopup({ position, icon, onClose }: DevicePopupProp
   const { latitude: lat, longitude: lng } = position;
   const palette = useMarkerPalette();
   const distance = useDistanceFromMe(lat, lng);
-  const stale = isMoreThanFiveMinutesAgo(position.fixTime);
+  const stale = !isActive(position.fixTime);
   const age = formatDistanceToNow(position.fixTime, { locale: nl, addSuffix: true });
 
   return (

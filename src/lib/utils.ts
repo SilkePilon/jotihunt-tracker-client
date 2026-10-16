@@ -1,5 +1,4 @@
 import * as turf from '@turf/turf';
-import { isActive } from '@/lib/tracker';
 
 // Class-name merging (clsx + tailwind-merge compatible), the same helper the shadcn components use
 export {cn} from 'cn';
@@ -106,15 +105,6 @@ export const areaOptions = [
     {value: 'hotel', label: 'Hotel'},
     {value: 'oscar', label: 'Oscar'},
 ];
-
-/**
- * Check if a timestamp is more than 5 minutes ago (the inverse of {@link isActive}; kept for the map layers)
- * @param fixTime The timestamp to check
- * @return True if the timestamp is more than 5 minutes ago (or invalid), false otherwise
- */
-export function isMoreThanFiveMinutesAgo(fixTime: string) {
-    return !isActive(fixTime);
-}
 
 /**
  * Random UUID v4. `crypto.randomUUID()` only exists in secure contexts (HTTPS / localhost); the app is also opened

@@ -1,7 +1,7 @@
 import MapTooltip from '@/components/map/MapTooltip';
 import { useNow } from '@/hooks/now.hook';
 import { formatAgeShort } from '@/lib/life360';
-import { isMoreThanFiveMinutesAgo } from '@/lib/utils';
+import { isActive } from '@/lib/tracker';
 import type { Position } from '@/types/Position';
 import { useMarkerPalette } from '../marker-icons';
 
@@ -12,7 +12,7 @@ const TOOLTIP_OFFSET: [number, number] = [0, -30];
 export default function DeviceTooltip({ position }: { position: Position }) {
   const palette = useMarkerPalette();
   const now = useNow(true);
-  const stale = isMoreThanFiveMinutesAgo(position.fixTime);
+  const stale = !isActive(position.fixTime);
   return (
     <MapTooltip
       longitude={position.longitude}

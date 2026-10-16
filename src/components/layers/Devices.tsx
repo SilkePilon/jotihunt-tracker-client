@@ -3,7 +3,7 @@ import { Layer, Source, useMap, type FillLayerSpecification, type SymbolLayerSpe
 import { useDevices } from '@/hooks/devices.hook';
 import { vehicleForGroupId, vehicleGroupIdsFromEnv } from '@/lib/hunters';
 import { accuracyCircles, HUNTER_ARROWS_LAYER, hunterFeatures, HUNTERS_LAYER, type HunterIcon } from '@/lib/map-layers';
-import { isMoreThanFiveMinutesAgo } from '@/lib/utils';
+import { isActive } from '@/lib/tracker';
 import { markerIconId, themedIconExpression, themedImageId, type MarkerPalette, type MarkerTheme } from '@/lib/marker-style';
 import { featureId, useLayerInteractions, usePopupSelection } from './map-interactions';
 import { useMarkerPalette, useMarkerTheme } from './marker-icons';
@@ -67,7 +67,7 @@ export default function Devices() {
   const iconByDevice = useMemo(() => new Map((devices ?? []).map((device) => [device.id, iconForGroup(device.groupId)])), [devices]);
   const circles = useMemo(() => accuracyCircles(positions ?? []), [positions]);
   // Stale (greyed out) is decided on each poll, like before
-  const features = useMemo(() => hunterFeatures(positions ?? [], (deviceId) => iconByDevice.get(deviceId) ?? 'phone', isMoreThanFiveMinutesAgo), [positions, iconByDevice]);
+  const features = useMemo(() => hunterFeatures(positions ?? [], (deviceId) => iconByDevice.get(deviceId) ?? 'phone', (fixTime) => !isActive(fixTime)), [positions, iconByDevice]);
   const hoverFilter = useMemo<SymbolLayerSpecification['filter']>(() => ['==', ['get', 'id'], hoveredId ?? -1], [hoveredId]);
 
   // Click → popup, hover → tooltip + slightly larger icon
