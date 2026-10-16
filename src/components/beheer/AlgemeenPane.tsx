@@ -30,12 +30,12 @@ const ROW_ICON = 'size-[18px] shrink-0 text-muted-foreground';
 function HuntableAreasCard() {
   const { allowed, setAllowed } = useHuntableAreas();
   const { teams } = useTeams();
-  useAppConfig(); // re-render when the home team is configured
+  const { loaded } = useAppConfig(); // re-render when the home team is configured
   const ownArea = teams?.find(isHomeTeam)?.area;
   const { chips, count } = huntableChips(AREAS, ownArea, allowed);
   const [saving, setSaving] = useState(false);
-  // Without the teams our own area isn't known yet (it would show as a chip and be missing from the count)
-  const loading = allowed === undefined || teams === undefined;
+  // Without the teams and /config our own area isn't known yet (it would show as a chip and be missing from the count)
+  const loading = allowed === undefined || teams === undefined || !loaded;
 
   async function toggle(area: string) {
     // One PUT at a time: each one sends the whole list

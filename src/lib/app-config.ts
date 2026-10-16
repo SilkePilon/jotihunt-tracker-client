@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import type { VehicleGroupIds } from '@/lib/hunters';
 import type { Vehicle } from '@/types/Tracker';
 
@@ -31,11 +32,26 @@ interface AppConfigState {
   setConfig: (config: PublicConfig) => void;
 }
 
-export const useAppConfigStore = create<AppConfigState>()((set) => ({
-  config: DEFAULT_CONFIG,
-  loaded: false,
-  setConfig: (config) => set({ config, loaded: true }),
-}));
+/** Only `config` is persisted, so returning users start with the last known config; `loaded` stays false until /config answers. */
+export const useAppConfigStore = create<AppConfigState>()(
+  persist(
+    (set) => ({
+      config: DEFAULT_CONFIG,
+      loaded: false,
+      setConfig: (config) => set({ config, loaded: true }),
+    }),
+    {
+      name: 'jotihunt-app-config',
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({ config: state.config }),
+      // A config stored by an older client may miss newer fields
+      merge: (persisted, current) => {
+        const config = (persisted as Partial<Pick<AppConfigState, 'config'>> | undefined)?.config;
+        return config ? { ...current, config: { ...DEFAULT_CONFIG, ...config, vehicleGroups: { ...DEFAULT_CONFIG.vehicleGroups, ...config.vehicleGroups } } } : current;
+      },
+    },
+  ),
+);
 
 /** The config right now, for plain functions; components use useAppConfig() so they re-render on changes. */
 export function appConfig(): PublicConfig {

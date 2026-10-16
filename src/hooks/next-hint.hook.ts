@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useArticles } from '@/hooks/articles.hook.ts';
 import useInterval from '@/hooks/utils/interval.hook.ts';
 import { formatCountdown } from '@/lib/format';
-import { getLastHintTime, getNextHintTime } from '@/lib/next-hint';
+import { getLastHintTime, getNextHintTime, nextHintLabel } from '@/lib/next-hint';
 import { useAppConfig } from './app-config.hook';
 
 const URGENT_MS = 5 * 60 * 1000;
@@ -11,7 +11,7 @@ const NEW_HINT_HIGHLIGHT_MS = 60 * 1000;
 /**
  * Countdown to the next hint, plus a highlight when a new hint arrives (not on the first load).
  * The sound comes from the notification feed. `isCountdown` tells whether `label` is the time left, and not a message
- * ("Nieuwe hint!", "Geen hints meer") or the loading or error state. `nextAt`: when the next hint is expected, only while counting down.
+ * ("Nieuwe hint!", "Geen hints meer", "Geen hunttijd") or the loading or error state. `nextAt`: when the next hint is expected, only while counting down.
  */
 export function useNextHint(): { label: string; isUrgent: boolean; isNewHint: boolean; isCountdown: boolean; nextAt: Date | null } {
   const { articles, isLoading, isError } = useArticles();
@@ -19,7 +19,7 @@ export function useNextHint(): { label: string; isUrgent: boolean; isNewHint: bo
   const [hasLoaded, setHasLoaded] = useState(false);
   const [lastPlayedHint, setLastPlayedHint] = useState<number>();
   const [newHintUntil, setNewHintUntil] = useState(0);
-  const { huntStart, huntEnd } = useAppConfig();
+  const { huntStart, huntEnd, loaded } = useAppConfig();
 
   const lastHintTime = getLastHintTime(articles);
 
@@ -47,13 +47,21 @@ export function useNextHint(): { label: string; isUrgent: boolean; isNewHint: bo
   const huntOver = now > lastHintSlot;
   const isNewHint = now < newHintUntil;
 
-  let label = formatCountdown(remaining);
-  let isCountdown = false;
-  if (isLoading) label = '…';
-  else if (isError) label = 'Fout';
-  else if (isNewHint) label = 'Nieuwe hint!';
-  else if (huntOver) label = 'Geen hints meer';
-  else isCountdown = true;
+  const { label, isCountdown } = nextHintLabel({
+    articlesLoading: isLoading,
+    articlesError: isError,
+    isNewHint,
+    huntOver,
+    hasHuntStart: huntStart !== null,
+    configLoaded: loaded,
+    countdown: formatCountdown(remaining),
+  });
 
-  return { label, isNewHint, isCountdown, nextAt: isCountdown ? nextTime : null, isUrgent: !huntOver && !isNewHint && remaining > 0 && remaining < URGENT_MS };
+  return {
+    label,
+    isNewHint,
+    isCountdown,
+    nextAt: isCountdown ? nextTime : null,
+    isUrgent: huntStart !== null && !huntOver && !isNewHint && remaining > 0 && remaining < URGENT_MS,
+  };
 }
