@@ -43,7 +43,6 @@ const OBJECT_CHECKS: Record<string, (data: Record<string, unknown>) => boolean> 
   '/settings/huntable-areas': (data) => data.areas === null || (Array.isArray(data.areas) && data.areas.every((area) => typeof area === 'string')),
   '/admin/config': (data) => isObject(data.general) && isObject(data.ai) && isObject(data.secrets) && typeof data.settingsKeyOk === 'boolean',
   '/admin/ai/models': (data) => Array.isArray(data.models),
-  '/config': (data) => typeof data.logoUrl === 'string',
   '/account': (data) => Array.isArray(data.passkeys) && Array.isArray(data.sessions) && Array.isArray(data.devices),
 };
 
