@@ -5,7 +5,7 @@ import { nl } from 'date-fns/locale';
 import { formatCountdown } from '@/lib/format';
 import type { SidebarFox } from '@/lib/fox-status';
 import { FORBIDDEN_AREA_NOTE } from '@/lib/huntable-areas';
-import { POP, POP_SPRING } from '@/lib/motion';
+import { LAYOUT_SPRING, POP, POP_SPRING } from '@/lib/motion';
 import { cn, getColorFromArea } from '@/lib/utils';
 
 const STATUS_LABEL: Record<string, string> = { green: 'groen', orange: 'oranje', red: 'rood' };
@@ -42,7 +42,7 @@ export default function FoxChip({ fox, hidden, forbidden, popIn, onToggle }: Fox
       initial={popIn ? POP.initial : false}
       animate={POP.animate}
       exit={POP.exit}
-      transition={{ default: POP_IN, layout: { type: 'spring', stiffness: 380, damping: 34 } }}
+      transition={{ default: POP_IN, layout: LAYOUT_SPRING }}
       type="button"
       title={title}
       aria-label={title}

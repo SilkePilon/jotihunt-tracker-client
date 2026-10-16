@@ -5,7 +5,7 @@ import { ClockIcon } from 'lucide-react';
 import { Tag } from '@/components/beheer/controls/Pill';
 import { formatClock } from '@/lib/format';
 import { ASSIGNMENT_STATUS_LABELS, type DeadlineTone, INTEL_MORPH, KIND_COLOR, KIND_LABEL, areaStates, deadlineLabel, deadlineTone, groupByDay, solvedCount } from '@/lib/intel-window';
-import { EASE_OUT } from '@/lib/motion';
+import { EASE_OUT, REVEAL_TRANSITION, SWAP_TRANSITION } from '@/lib/motion';
 import { useHasMounted } from '@/hooks/has-mounted.hook';
 import { areaOptions, cn } from '@/lib/utils';
 import type { AssignmentStatus, IntelItem, IntelKind, IntelTab } from '@/types/Intel';
@@ -16,7 +16,6 @@ const STEP = 0.022;
 const BASE = 0.21;
 /** Start of the cascade while a card morphs home: the other rows come back with it, not after it */
 const RETURN_BASE = 0.06;
-const FOLD = { duration: 0.22, ease: EASE_OUT } as const;
 
 /**
  * Another tab swaps the list while hidden: the old one fades out (x −12 / 0.13 s), then the new one staggers in.
@@ -68,7 +67,7 @@ function Fold({ clip = true, children }: { clip?: boolean; children: ReactNode }
       initial={inserting ? { height: 0, opacity: 0 } : false}
       animate={{ height: 'auto', opacity: 1 }}
       exit={{ height: 0, opacity: 0 }}
-      transition={FOLD}
+      transition={SWAP_TRANSITION}
       className={clip ? 'overflow-y-clip [overflow-clip-margin:3px]' : undefined}
     >
       <InsertContext.Provider value={mounted}>{children}</InsertContext.Provider>
@@ -205,7 +204,7 @@ function UnreadDot({ unread }: { unread: boolean }) {
           initial={{ width: 0, marginRight: -8, scale: 0 }}
           animate={{ width: 7, marginRight: 0, scale: 1 }}
           exit={{ width: 0, marginRight: -8, scale: 0, opacity: 0 }}
-          transition={{ duration: 0.2, ease: EASE_OUT }}
+          transition={REVEAL_TRANSITION}
           className="h-[7px] shrink-0 rounded-full bg-primary"
           aria-label="ongelezen"
         />

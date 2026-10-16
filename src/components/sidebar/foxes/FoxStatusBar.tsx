@@ -1,10 +1,10 @@
 import { AnimatePresence, motion } from 'motion/react';
 import type { CSSProperties } from 'react';
 import type { SidebarFox } from '@/lib/fox-status';
+import { LAYOUT_SPRING } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { GROUP_CLASS } from './styles';
 
-const LAYOUT_TRANSITION = { type: 'spring', stiffness: 380, damping: 34 } as const;
 /** Diagonal stripes in the card colour over a forbidden fox's segment (light and dark theme). */
 const HATCH: CSSProperties = { backgroundImage: 'repeating-linear-gradient(135deg, transparent 0 2px, color-mix(in oklab, var(--card) 65%, transparent) 2px 3.5px)' };
 
@@ -22,7 +22,7 @@ export default function FoxStatusBar({ foxes, size, isForbidden }: { foxes: Side
           <motion.span
             key={fox.key}
             layout="position"
-            transition={LAYOUT_TRANSITION}
+            transition={LAYOUT_SPRING}
             className={cn(
               'relative flex-1 overflow-hidden rounded-[3px] transition-[background-color,opacity] duration-300 first:rounded-l-md last:rounded-r-md motion-reduce:transition-none',
               GROUP_CLASS[fox.group].bar,

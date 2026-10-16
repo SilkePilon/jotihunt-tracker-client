@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { ChevronUpIcon, ClockIcon, DownloadIcon, EyeOffIcon } from 'lucide-react';
-import { EASE_OUT } from '@/lib/motion';
+import { EASE_OUT, SWAP_TRANSITION } from '@/lib/motion';
 
 /** M3 Expressive split button: Download, with ▾ for "Later herinneren" / "Niet meer tonen". */
 export default function DownloadSplitButton({ version, onDownload, onLater, onNever }: { version: string; onDownload: () => void; onLater: () => void; onNever: () => void }) {
@@ -45,7 +45,7 @@ export default function DownloadSplitButton({ version, onDownload, onLater, onNe
             initial={{ opacity: 0, y: 8, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.96 }}
-            transition={{ duration: 0.22, ease: EASE_OUT }}
+            transition={SWAP_TRANSITION}
             style={{ transformOrigin: 'bottom right' }}
             className="absolute bottom-[54px] right-0 min-w-[190px] rounded-2xl bg-card p-1.5 shadow-[0_0_0_1px_var(--border),0_10px_30px_rgb(0_0_0/.5)]"
           >

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import CookieBadge from '@/components/tracker/CookieBadge';
 import SuccessBadge from '@/components/auth/SuccessBadge';
-import { EASE_OUT } from '@/lib/motion';
+import { SWAP_TRANSITION } from '@/lib/motion';
 import { cn, getColorFromArea } from '@/lib/utils';
 import type { AreaState } from '@/types/Intel';
 
@@ -35,7 +35,7 @@ export function AreaChip({ area, state, label }: { area: string; state: AreaStat
             initial={{ width: 0 }}
             animate={{ width: 22 }}
             exit={{ width: 0, opacity: 0, transition: { duration: 0.18 } }}
-            transition={{ duration: 0.22, ease: EASE_OUT }}
+            transition={SWAP_TRANSITION}
           >
             {poppable ? <SuccessBadge size={16} /> : <CookieBadge tone="ok" size={16} />}
           </motion.span>

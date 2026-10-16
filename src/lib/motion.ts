@@ -16,6 +16,9 @@ export const SWAP = {
 
 export const POP_SPRING: Transition = { type: 'spring', stiffness: 420, damping: 24 };
 
+/** Layout moves (chips and bar segments sliding to their new place) */
+export const LAYOUT_SPRING: Transition = { type: 'spring', stiffness: 380, damping: 34 };
+
 /** Badges and the avatar circle */
 export const POP = {
   initial: { scale: 0.4, opacity: 0 },
