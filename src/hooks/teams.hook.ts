@@ -10,8 +10,12 @@ const TEAMS_AREA_EDITING = import.meta.env.TEAMS_AREA_EDITING === 'true';
 
 /** Our own group (Beheer → Algemeen → Ons team). */
 export function isHomeTeam(team: Team): boolean {
-  const id = appConfig().homeTeamApiId;
-  return id !== null && team.apiId === id;
+  return isTeamWithApiId(team, appConfig().homeTeamApiId);
+}
+
+/** isHomeTeam with the home team id passed in (for memos that depend on it) */
+export function isTeamWithApiId(team: Team, homeTeamApiId: number | null): boolean {
+  return homeTeamApiId !== null && team.apiId === homeTeamApiId;
 }
 
 /** Our own group from the team list, or undefined while loading / when not configured. */

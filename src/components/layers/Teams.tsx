@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Layer, Source, useMap, type FillLayerSpecification, type SymbolLayerSpecification } from 'react-map-gl/maplibre';
-import { isHomeTeam, useTeams } from '@/hooks/teams.hook';
+import { isTeamWithApiId, useTeams } from '@/hooks/teams.hook';
+import { useAppConfig } from '@/hooks/app-config.hook';
 import { useAreas } from '@/hooks/areas.hook';
 import { useVisits } from '@/hooks/predictions.hook';
 import useLayersStore from '@/stores/layers.store';
@@ -43,8 +44,9 @@ export default function Teams() {
 
   const visibleTeams = useMemo(() => (teams ?? []).filter((team) => isVisible(team.area || '')), [teams, isVisible]);
   const visitedIds = useMemo(() => new Set((visits ?? []).filter((visit) => visit.state === 'visited').map((visit) => visit.teamApiId)), [visits]);
-  // Our own group gets no circle (the home circle layer draws that one)
-  const circles = useMemo(() => teamCircles(visibleTeams.filter((team) => !isHomeTeam(team))), [visibleTeams]);
+  // Our own group gets no circle (the home circle layer draws that one); recomputed when the home team is configured
+  const { homeTeamApiId } = useAppConfig();
+  const circles = useMemo(() => teamCircles(visibleTeams.filter((team) => !isTeamWithApiId(team, homeTeamApiId))), [visibleTeams, homeTeamApiId]);
   const pins = useMemo(() => teamPinFeatures(visibleTeams, visitedIds), [visibleTeams, visitedIds]);
   const hoverFilter = useMemo<SymbolLayerSpecification['filter']>(() => ['==', ['get', 'id'], hoveredId ?? ''], [hoveredId]);
 
