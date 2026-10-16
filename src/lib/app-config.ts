@@ -70,3 +70,47 @@ export function fromLocalInput(value: string): string | null {
   const d = new Date(value);
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }
+
+export type Source = 'db' | 'env' | 'default';
+export interface Sourced<T> {
+  value: T;
+  source: Source;
+}
+export const AI_SLOTS = ['ocr', 'summary', 'split', 'prediction', 'chat', 'deep', 'tools'] as const;
+export type AiSlot = (typeof AI_SLOTS)[number];
+export type SecretName = 'geminiApiKey' | 'jotihuntWebPassword' | 'telegramApiHash';
+export type PlainName = 'jotihuntWebUsername' | 'telegramApiId' | 'telegramBotUsername';
+export interface SecretView {
+  set: boolean;
+  hint: string | null;
+  source: Source;
+  /** A stored secret exists but can't be decrypted (server SETTINGS_KEY missing or rotated): the env value is used instead */
+  undecryptable: boolean;
+}
+/** GET /admin/config */
+export interface AdminConfig {
+  general: { [K in keyof PublicConfig]: Sourced<PublicConfig[K]> };
+  ai: Record<AiSlot, Sourced<string>>;
+  secrets: Record<SecretName, SecretView>;
+  plain: Record<PlainName, Sourced<string | null>>;
+  settingsKeyOk: boolean;
+}
+/** PUT /admin/config/general (null clears back to env/default) */
+export type GeneralPatch = Partial<{
+  huntStart: string | null;
+  huntEnd: string | null;
+  homeTeamApiId: number | null;
+  groupName: string | null;
+  logoUrl: string | null;
+  discordUrl: string | null;
+  vehicleGroups: Partial<Record<Vehicle, number | null>>;
+}>;
+export interface GeminiModelInfo {
+  id: string;
+  displayName: string;
+  group: 'alias' | 'latest' | 'older';
+}
+export interface ModelList {
+  models: GeminiModelInfo[];
+  fetchedAt: string;
+}

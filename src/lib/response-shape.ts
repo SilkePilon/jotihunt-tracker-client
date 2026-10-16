@@ -21,6 +21,7 @@ const LIST_PATHS = new Set([
   '/admin/broadcasts',
   '/assignments',
   '/assignments/members',
+  '/admin/traccar/groups',
 ]);
 
 const isObject = (data: unknown): data is Record<string, unknown> => typeof data === 'object' && data !== null && !Array.isArray(data);
@@ -40,6 +41,8 @@ const OBJECT_CHECKS: Record<string, (data: Record<string, unknown>) => boolean> 
   '/life360/members': (data) => typeof data.linked === 'boolean' && typeof data.stale === 'boolean' && Array.isArray(data.members),
   '/settings/invites-paused': (data) => typeof data.paused === 'boolean',
   '/settings/huntable-areas': (data) => data.areas === null || (Array.isArray(data.areas) && data.areas.every((area) => typeof area === 'string')),
+  '/admin/config': (data) => isObject(data.general) && isObject(data.ai) && isObject(data.secrets) && typeof data.settingsKeyOk === 'boolean',
+  '/admin/ai/models': (data) => Array.isArray(data.models),
   '/config': (data) => typeof data.logoUrl === 'string',
   '/account': (data) => Array.isArray(data.passkeys) && Array.isArray(data.sessions) && Array.isArray(data.devices),
 };
