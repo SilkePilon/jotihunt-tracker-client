@@ -7,7 +7,7 @@ import { useHuntReportActions } from '@/hooks/hunt-reports.hook';
 import { useNow } from '@/hooks/now.hook';
 import { apiErrorMessage } from '@/lib/api-error';
 import { HUNT_ROW_TONE_CLASS, huntRowFlag, huntRowStatus, websiteHuntStatus, type HuntRowStatus } from '@/lib/hunt-list';
-import { formatHuntTimeSafe, hasLiveCountdown, huntTimeLabel } from '@/lib/hunt-reports';
+import { formatHuntTimeSafe, hasLiveCountdown, huntTimeLabel, isQrHunt } from '@/lib/hunt-reports';
 import { capitalizeFirstLetter, cn } from '@/lib/utils';
 import type { Hunt } from '@/types/Hunt';
 import type { HuntListItem, HuntReport } from '@/types/HuntReport';
@@ -61,7 +61,8 @@ function Points({ points }: { points: number }) {
 function ReportRow({ report }: { report: HuntReport }) {
   const { deleteReport } = useHuntReportActions();
   const [confirming, setConfirming] = useState(false);
-  const codeLabel = report.huntCode ?? 'zonder code';
+  const qr = isQrHunt(report);
+  const codeLabel = report.huntCode ?? (qr ? `op ${capitalizeFirstLetter(report.area)}` : 'zonder code');
 
   async function remove() {
     try {
@@ -76,7 +77,7 @@ function ReportRow({ report }: { report: HuntReport }) {
   return (
     <BeheerExpandableRow
       id={report._id}
-      leading={<HuntMarkerIcon area={report.area} />}
+      leading={<HuntMarkerIcon area={report.area} qr={qr} />}
       title={<HuntCodeText report={report} />}
       meta={<ReportMeta report={report} />}
       trailing={report.status === 'judged' && report.site ? <Points points={report.site.points} /> : undefined}
@@ -85,7 +86,7 @@ function ReportRow({ report }: { report: HuntReport }) {
         confirming ? (
           <InlineConfirm
             title={`Hunt ${codeLabel} verwijderen?`}
-            description="De foto wordt ook verwijderd."
+            description={qr ? 'Ook de markering op de kaart verdwijnt.' : 'De foto wordt ook verwijderd.'}
             confirmLabel="Verwijderen"
             confirmIcon={<Trash2Icon />}
             onCancel={() => setConfirming(false)}
@@ -99,12 +100,12 @@ function ReportRow({ report }: { report: HuntReport }) {
   );
 }
 
-/** A jotihunt.nl hunt nobody registered in the app: no photo or actions, so the row doesn't open. */
+/** A jotihunt.nl hunt nobody registered in the app: no photo or actions, so the row doesn't open. QR hunts have no code. */
 function WebsiteRow({ hunt }: { hunt: Hunt }) {
   return (
     <BeheerRow
       leading={<HuntMarkerIcon area={hunt.area} website />}
-      title={<span className="truncate font-mono font-bold">{hunt.huntCode}</span>}
+      title={hunt.huntCode ? <span className="truncate font-mono font-bold">{hunt.huntCode}</span> : <span className="truncate font-bold">QR-hunt</span>}
       meta={
         <span className="block truncate">
           <StatusText status={websiteHuntStatus(hunt)} /> · {capitalizeFirstLetter(hunt.area.trim())} · {formatHuntTimeSafe(hunt.huntTime)} · jotihunt.nl

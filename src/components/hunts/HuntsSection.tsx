@@ -1,5 +1,9 @@
 import { useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { CameraIcon, ListIcon } from 'lucide-react';
+import { FoxIcon } from '@/components/MaterialGlyph';
+import { useHuntPhotoSetting } from '@/hooks/hunt-photo.hook';
+import { SWAP } from '@/lib/motion';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
@@ -9,7 +13,7 @@ import { useNow } from '@/hooks/now.hook';
 import { huntsSummary, pendingReports } from '@/lib/hunt-reports';
 import SidebarSection from '@/components/sidebar/SidebarSection';
 import AllHuntsDialog from './AllHuntsDialog';
-import HuntPhotoInput from './HuntPhotoInput';
+import HuntStart from './HuntStart';
 import HuntTimelineItem from './HuntTimelineItem';
 import { SOFT_PRIMARY_BUTTON, TONAL_BUTTON } from '@/lib/tonal-button';
 
@@ -18,6 +22,7 @@ export default function HuntsSection() {
   const { reports } = useHuntReports();
   const isMobile = useIsMobile();
   const now = useNow(true);
+  const { photoMode } = useHuntPhotoSetting();
   const [allOpen, setAllOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
 
@@ -44,20 +49,30 @@ export default function HuntsSection() {
               <Empty className="border-2 border-muted-foreground/40 p-4 md:p-6">
                 <EmptyHeader>
                   <EmptyTitle className="text-sm">Nog geen hunts geregistreerd</EmptyTitle>
-                  <EmptyDescription className="text-xs">Maak een foto van een hunt om hem te registreren.</EmptyDescription>
+                  <EmptyDescription className="text-xs">
+                    <AnimatePresence mode="wait" initial={false}>
+                      <motion.span key={photoMode ? 'photo' : 'qr'} className="block" {...SWAP}>
+                        {photoMode ? 'Maak een foto van een hunt om hem te registreren.' : 'Meld een hunt en scan de QR-code bij de vos.'}
+                      </motion.span>
+                    </AnimatePresence>
+                  </EmptyDescription>
                 </EmptyHeader>
               </Empty>
             )
           )}
           <div className="flex gap-2">
-            <HuntPhotoInput capture={isMobile}>
-              {(open) => (
+            <HuntStart capture={isMobile}>
+              {(open, withPhoto) => (
                 <Button size="sm" className={`flex-1 ${SOFT_PRIMARY_BUTTON}`} onClick={open}>
-                  <CameraIcon data-icon="inline-start" />
-                  Hunt registreren
+                  <AnimatePresence mode="wait" initial={false}>
+                    <motion.span key={withPhoto ? 'photo' : 'qr'} className="inline-flex items-center gap-1.5" {...SWAP}>
+                      {withPhoto ? <CameraIcon data-icon="inline-start" /> : <FoxIcon className="size-4" />}
+                      {withPhoto ? 'Hunt registreren' : 'Hunt melden'}
+                    </motion.span>
+                  </AnimatePresence>
                 </Button>
               )}
-            </HuntPhotoInput>
+            </HuntStart>
             <Button variant="ghost" size="sm" className={TONAL_BUTTON} onClick={() => openAll()} aria-label="Alle hunts bekijken">
               <ListIcon data-icon="inline-start" />
               Alle

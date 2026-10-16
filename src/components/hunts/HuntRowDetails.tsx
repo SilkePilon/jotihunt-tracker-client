@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { CheckIcon, CopyIcon, DownloadIcon, Loader2Icon, PencilIcon, SendIcon, Trash2Icon, TriangleAlertIcon, Undo2Icon } from 'lucide-react';
+import { CheckIcon, CopyIcon, DownloadIcon, Loader2Icon, PencilIcon, QrCodeIcon, SendIcon, Trash2Icon, TriangleAlertIcon, Undo2Icon } from 'lucide-react';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import { toast } from 'sonner';
 import { IconPill, Pill } from '@/components/beheer/controls/Pill';
@@ -11,7 +11,7 @@ import { useHuntReportActions } from '@/hooks/hunt-reports.hook';
 import { apiErrorMessage } from '@/lib/api-error';
 import { copyToClipboard } from '@/lib/clipboard';
 import { formatClock } from '@/lib/format';
-import { huntSourceLabel, huntTimeLabel, isReading, readFailed } from '@/lib/hunt-reports';
+import { huntSourceLabel, huntTimeLabel, isQrHunt, isReading, readFailed } from '@/lib/hunt-reports';
 import { SWAP } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import type { HuntReport } from '@/types/HuntReport';
@@ -75,11 +75,30 @@ function Warning({ children }: { children: ReactNode }) {
   );
 }
 
-/** A hunt row's unfolded part: the photo zoomed on the sticker, facts, warnings and the actions (admins: edit, re-read, delete, submit). */
+/** Stands in for the photo of a QR hunt: the QR code in a tonal circle and what the hunter does with it. */
+function QrHero() {
+  return (
+    <div className="flex h-[120px] items-center gap-4 rounded-2xl bg-black/5 px-5 dark:bg-black/15">
+      <span className="grid size-14 shrink-0 place-items-center rounded-full bg-primary-container text-on-primary-container">
+        <QrCodeIcon className="size-7" strokeWidth={1.8} />
+      </span>
+      <span className="min-w-0 text-left">
+        <span className="block text-sm font-semibold">Gemeld zonder foto</span>
+        <span className="block text-[12.5px] text-muted-foreground">De hunter bevestigt met de QR-code van de vos op jotihunt.nl.</span>
+      </span>
+    </div>
+  );
+}
+
+/**
+ * A hunt row's unfolded part: the photo zoomed on the sticker, facts, warnings and the actions (admins: edit, re-read,
+ * delete, submit). QR hunts have no photo, code, reading or "Ingestuurd": the hunter confirms them on jotihunt.nl.
+ */
 export default function HuntRowDetails({ report, onDelete }: { report: HuntReport; onDelete: () => void }) {
   const user = useAuthUser<User>();
   const { setSubmitted } = useHuntReportActions();
-  const photo = useAuthImage(report.photoUrl);
+  const qr = isQrHunt(report);
+  const photo = useAuthImage(qr ? null : report.photoUrl);
   const ref = useRef<HTMLDivElement>(null);
   const [zoomOpen, setZoomOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -91,7 +110,7 @@ export default function HuntRowDetails({ report, onDelete }: { report: HuntRepor
   const canDelete = isAdmin && !report.submittedAt && !report.site;
   const codeLabel = report.huntCode ?? 'zonder code';
   // Once submitted, who sent it in matters more than where the code came from
-  const showSubmitter = report.status === 'submitted' || report.status === 'judged';
+  const showSubmitter = !qr && (report.status === 'submitted' || report.status === 'judged');
   const sourceLabel = huntSourceLabel(report, isAdmin);
 
   // Bring the row into view once it has unfolded (also when the window opens on this hunt)
@@ -121,11 +140,13 @@ export default function HuntRowDetails({ report, onDelete }: { report: HuntRepor
     link.click();
   }
 
-  const submitAction = !report.submittedAt ? 'submit' : report.status !== 'judged' ? 'undo' : null;
+  const submitAction = qr ? null : !report.submittedAt ? 'submit' : report.status !== 'judged' ? 'undo' : null;
 
   return (
     <div ref={ref} className="flex flex-col gap-2.5">
-      {photo ? (
+      {qr ? (
+        <QrHero />
+      ) : photo ? (
         <button
           type="button"
           className="block w-full cursor-zoom-in overflow-hidden rounded-2xl outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
@@ -142,11 +163,13 @@ export default function HuntRowDetails({ report, onDelete }: { report: HuntRepor
         <Reveal gap={GAP}>
           {editOpen && (
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-xl bg-primary/8 px-3 py-2 text-sm">
-              <span className="flex items-center gap-1.5">
-                <span className="text-muted-foreground">Code</span>
-                {editing !== 'code' && <HuntCodeText report={report} />}
-                <EditCode report={report} editing={editing === 'code'} onEditingChange={(on) => setEditing(on ? 'code' : null)} />
-              </span>
+              {!qr && (
+                <span className="flex items-center gap-1.5">
+                  <span className="text-muted-foreground">Code</span>
+                  {editing !== 'code' && <HuntCodeText report={report} />}
+                  <EditCode report={report} editing={editing === 'code'} onEditingChange={(on) => setEditing(on ? 'code' : null)} />
+                </span>
+              )}
               <span className="flex items-center gap-1.5">
                 <span className="text-muted-foreground">Tijd</span>
                 {editing !== 'time' && <HuntTimeText report={report} className="font-mono" />}
@@ -161,7 +184,9 @@ export default function HuntRowDetails({ report, onDelete }: { report: HuntRepor
         <Fact label="Gemeld door">
           {report.reportedByName} · {formatClock(report.createdAt)}
         </Fact>
-        {showSubmitter ? (
+        {qr ? (
+          <Fact label="Bevestigen voor">{formatClock(report.deadline)}</Fact>
+        ) : showSubmitter ? (
           <Fact label="Ingestuurd door">{report.submittedAt ? `${report.submittedByName ?? 'Onbekend'} · ${formatClock(report.submittedAt)}` : '–'}</Fact>
         ) : (
           <Fact label="Bron" className={readFailed(report) ? 'text-destructive dark:text-red-300' : 'font-medium text-muted-foreground'}>
@@ -172,21 +197,23 @@ export default function HuntRowDetails({ report, onDelete }: { report: HuntRepor
           label="jotihunt.nl"
           className={report.site ? (report.site.points > 0 ? 'text-green-700 dark:text-green-400' : 'text-destructive dark:text-red-300') : 'font-medium text-muted-foreground'}
         >
-          {report.site ? `${report.site.status} · ${report.site.points} pt` : 'Nog niet beoordeeld'}
+          {report.site ? `${report.site.status} · ${report.site.points} pt` : qr ? 'Nog niet bevestigd' : 'Nog niet beoordeeld'}
         </Fact>
       </div>
 
-      {report.duplicateOf && <Warning>Zelfde code als hunt van {report.duplicateOf.reportedByName}</Warning>}
-      {report.needsReview && !isReading(report) && <Warning>Controleer de code en tijd met de foto.</Warning>}
+      {!qr && report.duplicateOf && <Warning>Zelfde code als hunt van {report.duplicateOf.reportedByName}</Warning>}
+      {!qr && report.needsReview && !isReading(report) && <Warning>Controleer de code en tijd met de foto.</Warning>}
 
       <div className="flex flex-wrap items-center gap-1.5">
-        {isAdmin && report.huntCode && <CopyPill value={report.huntCode} label="Code" />}
-        {isAdmin && report.huntTimeKnown && <CopyPill value={huntTimeLabel(report)} label="Tijd" />}
-        {isAdmin && (report.huntCode || report.huntTimeKnown) && <span aria-hidden className="mx-1 h-5 w-px bg-border" />}
-        <Pill variant="secondary" className={ON_OPEN_ROW} disabled={!photo} onClick={download}>
-          <DownloadIcon />
-          Foto
-        </Pill>
+        {!qr && isAdmin && report.huntCode && <CopyPill value={report.huntCode} label="Code" />}
+        {!qr && isAdmin && report.huntTimeKnown && <CopyPill value={huntTimeLabel(report)} label="Tijd" />}
+        {!qr && isAdmin && (report.huntCode || report.huntTimeKnown) && <span aria-hidden className="mx-1 h-5 w-px bg-border" />}
+        {!qr && (
+          <Pill variant="secondary" className={ON_OPEN_ROW} disabled={!photo} onClick={download}>
+            <DownloadIcon />
+            Foto
+          </Pill>
+        )}
         {isAdmin && (
           <Pill
             variant="secondary"
@@ -201,7 +228,7 @@ export default function HuntRowDetails({ report, onDelete }: { report: HuntRepor
             Bewerken
           </Pill>
         )}
-        {isAdmin && <RereadButton report={report} className={ON_OPEN_ROW} />}
+        {isAdmin && !qr && <RereadButton report={report} className={ON_OPEN_ROW} />}
         {canDelete && (
           <IconPill variant="danger-soft" aria-label="Verwijderen" title="Verwijderen" onClick={onDelete}>
             <Trash2Icon />

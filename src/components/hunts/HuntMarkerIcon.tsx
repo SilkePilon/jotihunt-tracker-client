@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { GlobeIcon } from 'lucide-react';
+import { GlobeIcon, QrCodeIcon } from 'lucide-react';
 import { useMarkerPalette } from '@/components/layers/marker-icons';
 import MarkerGlyph from '@/components/map/popup/MarkerGlyph';
 import { cookiePath, MARKER_COOKIE_DEPTH } from '@/lib/cookie-shape';
@@ -10,9 +10,10 @@ const SIZE = 48;
 
 /**
  * The map's hunt marker as a list icon: camera on the tertiary-container cookie with the area letter in a badge
- * (bottom right). Website-only hunts (no photo): a globe on the neutral cookie.
+ * (bottom right). QR hunts (reported without a photo): a QR code instead of the camera. Website-only hunts: a globe on
+ * the neutral cookie.
  */
-export default function HuntMarkerIcon({ area, website = false }: { area: string; website?: boolean }) {
+export default function HuntMarkerIcon({ area, website = false, qr = false }: { area: string; website?: boolean; qr?: boolean }) {
   const palette = useMarkerPalette();
   const path = useMemo(() => cookiePath(SIZE, MARKER_COOKIE_DEPTH), []);
   const key = areaKey(area);
@@ -26,7 +27,7 @@ export default function HuntMarkerIcon({ area, website = false }: { area: string
         <path d={path} fill={fill} />
       </svg>
       <span className="relative grid place-items-center [&_svg]:size-6" style={{ color: on }}>
-        {website ? <GlobeIcon /> : <MarkerGlyph name="photo_camera" />}
+        {website ? <GlobeIcon /> : qr ? <QrCodeIcon strokeWidth={2.2} /> : <MarkerGlyph name="photo_camera" />}
       </span>
       {letter && (
         <span

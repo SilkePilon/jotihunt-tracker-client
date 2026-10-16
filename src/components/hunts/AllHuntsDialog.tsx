@@ -8,8 +8,9 @@ import ResponsiveDialog from '@/components/ResponsiveDialog';
 import { DIALOG_SHELL } from '@/lib/dialog-shell';
 import { useHuntReports } from '@/hooks/hunt-reports.hook';
 import { useHunts } from '@/hooks/hunts.hook';
+import { useHuntPhotoSetting } from '@/hooks/hunt-photo.hook';
 import { useIsMobile } from '@/hooks/media.hook';
-import { HUNT_FILTER_LABELS, HUNT_FILTERS, huntAreaTotals, huntFilterCounts, huntItemArea, huntItemKey, huntItemPoints, matchesHuntFilter, type HuntFilter } from '@/lib/hunt-list';
+import { HUNT_FILTERS, huntAreaTotals, huntFilterLabel, huntFilterCounts, huntItemArea, huntItemKey, huntItemPoints, matchesHuntFilter, type HuntFilter } from '@/lib/hunt-list';
 import { huntListItems } from '@/lib/hunt-reports';
 import { PANE_SLIDE, PANE_SLIDE_TRANSITION, SWAP } from '@/lib/motion';
 import { cn, getColorFromArea } from '@/lib/utils';
@@ -60,6 +61,7 @@ function AllHuntsWindow({ open, initialReportId }: { open: boolean; initialRepor
   const isMobile = useIsMobile();
   const { reports } = useHuntReports();
   const { hunts } = useHunts();
+  const { photoMode } = useHuntPhotoSetting();
   const items = useMemo(() => huntListItems(reports, hunts), [reports, hunts]);
   const [view, setView] = useState<View>(ALL);
   const [openId, setOpenId] = useState<string | null>(initialReportId ?? null);
@@ -87,7 +89,7 @@ function AllHuntsWindow({ open, initialReportId }: { open: boolean; initialRepor
   const initialIndex = initialReportId ? shown.findIndex((item) => huntItemKey(item) === initialReportId) : -1;
   const limit = Math.max(PAGE_SIZE, initialIndex + 1) + extraPages * PAGE_SIZE;
   const points = shown.reduce((sum, item) => sum + huntItemPoints(item), 0);
-  const title = view.area ? (areas.find((area) => area.area === view.area)?.label ?? view.area) : HUNT_FILTER_LABELS[view.filter];
+  const title = view.area ? (areas.find((area) => area.area === view.area)?.label ?? view.area) : huntFilterLabel(view.filter, photoMode);
   const description = `${shown.length} ${shown.length === 1 ? 'hunt' : 'hunts'} · ${view.area ? '' : 'totaal '}${points} pt`;
 
   function select(next: View) {
@@ -109,7 +111,7 @@ function AllHuntsWindow({ open, initialReportId }: { open: boolean; initialRepor
         <NavItem
           key={filter}
           icon={FILTER_ICONS[filter]}
-          title={HUNT_FILTER_LABELS[filter]}
+          title={huntFilterLabel(filter, photoMode)}
           active={!phone && !view.area && view.filter === filter}
           indicatorId={phone ? undefined : 'hunts-nav-active'}
           onClick={() => select({ filter, area: null })}

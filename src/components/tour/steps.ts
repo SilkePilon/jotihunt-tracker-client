@@ -45,7 +45,7 @@ export const TOUR_STEPS: TourStep[] = [
     id: 'hunts',
     target: 'sidebar.hunts',
     title: 'Hunts',
-    body: 'Maak een foto van een hunt om hem te registreren. Hier zie je de laatste hunts en hun status.',
+    body: 'Meld hier een hunt. Je ziet ook de laatste hunts en hun status.',
     actions: [sheetSnap('full'), showSection('hunts')],
   },
   {
@@ -88,8 +88,8 @@ export const TOUR_STEPS: TourStep[] = [
   {
     id: 'hunt-capture',
     target: 'huntCapture.button',
-    title: 'Snel een hunt vastleggen',
-    body: 'Met deze cameraknop maak je meteen een foto van een hunt, waar je ook bent in de app.',
+    title: 'Snel een hunt melden',
+    body: 'Met deze knop meld je meteen een hunt, waar je ook bent in de app.',
     actions: [sheetSnap('peek')],
     only: 'mobile',
   },

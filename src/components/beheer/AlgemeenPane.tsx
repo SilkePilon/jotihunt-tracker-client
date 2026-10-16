@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { toast } from 'sonner';
-import { CheckIcon, LockIcon, MonitorPlayIcon, PauseIcon, RefreshCwIcon, SparklesIcon } from 'lucide-react';
+import { CameraIcon, CheckIcon, LockIcon, MonitorPlayIcon, PauseIcon, RefreshCwIcon, SparklesIcon } from 'lucide-react';
 import DemoModeDialog from '@/components/settings/DemoModeDialog';
 import ReloadTeamsDialog from '@/components/settings/ReloadTeamsDialog';
 import { useAppConfig } from '@/hooks/app-config.hook';
 import { useDemo } from '@/hooks/demo.hook';
 import { useHuntableAreas } from '@/hooks/huntable-areas.hook';
+import { useHuntPhotoSetting } from '@/hooks/hunt-photo.hook';
 import { useInvitesPaused } from '@/hooks/invites.hook';
 import { usePredictionSetting } from '@/hooks/predictions.hook';
 import { isHomeTeam, useTeams } from '@/hooks/teams.hook';
@@ -96,7 +97,9 @@ export default function AlgemeenPane() {
   const { enabled: predictionEnabled, setEnabled: setPredictionEnabled } = usePredictionSetting();
   const { demo } = useDemo();
   const { paused, setPaused } = useInvitesPaused();
+  const { enabled: huntPhotoEnabled, setEnabled: setHuntPhotoEnabled } = useHuntPhotoSetting();
   const [savingPrediction, setSavingPrediction] = useState(false);
+  const [savingHuntPhoto, setSavingHuntPhoto] = useState(false);
   const [savingPaused, setSavingPaused] = useState(false);
   const [demoOpen, setDemoOpen] = useState(false);
   const [reloadOpen, setReloadOpen] = useState(false);
@@ -109,6 +112,18 @@ export default function AlgemeenPane() {
       toast.error('AI-voorspelling wisselen is mislukt');
     } finally {
       setSavingPrediction(false);
+    }
+  }
+
+  async function handleHuntPhoto(enabled: boolean) {
+    setSavingHuntPhoto(true);
+    try {
+      await setHuntPhotoEnabled(enabled);
+      toast.success(enabled ? 'Hunters maken weer een foto' : 'Hunts zonder foto, met QR-code');
+    } catch {
+      toast.error('Foto bij hunt wisselen is mislukt');
+    } finally {
+      setSavingHuntPhoto(false);
     }
   }
 
@@ -137,6 +152,19 @@ export default function AlgemeenPane() {
               checked={predictionEnabled !== false}
               disabled={predictionEnabled === undefined || savingPrediction}
               onCheckedChange={(checked) => void handlePrediction(checked)}
+            />
+          </BeheerRow>
+          <BeheerRow
+            key="hunt-photo"
+            leading={<CameraIcon className={ROW_ICON} />}
+            title="Foto bij hunt"
+            meta="Uit: hunters melden een hunt zonder foto en bevestigen hem met de QR-code van de vos op jotihunt.nl."
+          >
+            <BeheerSwitch
+              aria-label="Foto bij hunt"
+              checked={huntPhotoEnabled === true}
+              disabled={huntPhotoEnabled === undefined || savingHuntPhoto}
+              onCheckedChange={(checked) => void handleHuntPhoto(checked)}
             />
           </BeheerRow>
           <BeheerRow key="demo" leading={<MonitorPlayIcon className={ROW_ICON} />} title="Demo mode" meta="Iedereen ziet demo-gegevens. De echte gegevens blijven bewaard.">

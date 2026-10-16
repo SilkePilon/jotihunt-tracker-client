@@ -1,13 +1,16 @@
 import { Loader2Icon, TriangleAlertIcon } from 'lucide-react';
-import { huntTimeLabel, isReading } from '@/lib/hunt-reports';
+import { huntTimeKnown, huntTimeLabel, isQrHunt, isReading } from '@/lib/hunt-reports';
 import { cn } from '@/lib/utils';
 import type { HuntReport } from '@/types/HuntReport';
 
 /**
  * The hunt code of a report: the known code in mono, "Wordt gelezen…" while the server
- * reads the photo, or "Onbekend" when reading found nothing.
+ * reads the photo, or "Onbekend" when reading found nothing. QR hunts have no code: "QR-hunt".
  */
 export default function HuntCodeText({ report, className }: { report: HuntReport; className?: string }) {
+  if (isQrHunt(report) && !report.huntCode) {
+    return <span className={cn('truncate font-bold', className)}>QR-hunt</span>;
+  }
   if (report.huntCode) {
     return <span className={cn('truncate font-mono font-bold', className)}>{report.huntCode}</span>;
   }
@@ -25,7 +28,7 @@ export default function HuntCodeText({ report, className }: { report: HuntReport
 /** The hunt time; "±HH:MM" (the upload time) while the time on the photo is not known yet. */
 export function HuntTimeText({ report, className }: { report: HuntReport; className?: string }) {
   return (
-    <span className={className} title={report.huntTimeKnown ? undefined : 'Tijd nog niet gelezen'}>
+    <span className={className} title={huntTimeKnown(report) ? undefined : 'Tijd nog niet gelezen'}>
       {huntTimeLabel(report)}
     </span>
   );
