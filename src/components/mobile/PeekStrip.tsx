@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useNow } from '@/hooks/now.hook';
 import { useTrackerStatus } from '@/hooks/tracker.hook';
 import { trackerPeekLine } from '@/lib/tracker';
 import { cookiePath, BADGE_COOKIE_DEPTH } from '@/lib/cookie-shape';
@@ -16,11 +16,7 @@ const GROUP_ORDER = ['green', 'orange', 'cooldown', 'red'] as const;
 /** Own tracker line; ticks every second for the age, on its own so the fox bar does not re-render with it. */
 function TrackerLine({ onOpen }: { onOpen: () => void }) {
   const { status } = useTrackerStatus();
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const id = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, []);
+  const now = useNow(true);
   const line = trackerPeekLine(status, now);
   return (
     <button type="button" onClick={onOpen} className="flex min-h-9 items-center gap-2 text-left text-[13.5px]">

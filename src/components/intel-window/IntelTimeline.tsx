@@ -1,4 +1,5 @@
 import { createContext, type ReactNode, useContext, useEffect, useState } from 'react';
+import { useNow } from '@/hooks/now.hook';
 import { AnimatePresence, motion, type Variants } from 'motion/react';
 import { ClockIcon } from 'lucide-react';
 import { Tag } from '@/components/beheer/controls/Pill';
@@ -77,12 +78,7 @@ function Fold({ clip = true, children }: { clip?: boolean; children: ReactNode }
 
 /** Ticks once a minute: deadlines and day labels */
 function useMinute() {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 60_000);
-    return () => clearInterval(timer);
-  }, []);
-  return now;
+  return useNow(true, 60_000);
 }
 
 interface TimelineProps {

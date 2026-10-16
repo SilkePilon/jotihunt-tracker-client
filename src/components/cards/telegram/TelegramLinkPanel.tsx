@@ -3,7 +3,7 @@ import { Loader2Icon, XIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import TrackerQrCode from '@/components/tracker/TrackerQrCode';
-import useInterval from '@/hooks/utils/interval.hook';
+import { useNow } from '@/hooks/now.hook';
 import { secondsLeft } from '@/lib/app-pairing';
 import { formatCountdown } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -34,8 +34,7 @@ function Header({ title, onCancel }: { title: string; onCancel: () => void }) {
 }
 
 function QrStep({ url, expiresAt, onCancel }: { url?: string; expiresAt?: string; onCancel: () => void }) {
-  const [now, setNow] = useState(() => Date.now());
-  useInterval(() => setNow(Date.now()), 1000);
+  const now = useNow(true);
   if (!url) {
     // The server is still asking Telegram for the first token
     return (

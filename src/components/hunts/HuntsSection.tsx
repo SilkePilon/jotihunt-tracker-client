@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty';
 import { useHuntReports } from '@/hooks/hunt-reports.hook';
 import { useIsMobile } from '@/hooks/media.hook';
-import useInterval from '@/hooks/utils/interval.hook';
+import { useNow } from '@/hooks/now.hook';
 import { huntsSummary, pendingReports } from '@/lib/hunt-reports';
 import SidebarSection from '@/components/sidebar/SidebarSection';
 import AllHuntsDialog from './AllHuntsDialog';
@@ -16,8 +16,7 @@ import HuntTimelineItem from './HuntTimelineItem';
 export default function HuntsSection() {
   const { reports } = useHuntReports();
   const isMobile = useIsMobile();
-  const [now, setNow] = useState(() => Date.now());
-  useInterval(() => setNow(Date.now()), 1000);
+  const now = useNow(true);
   const [allOpen, setAllOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
 

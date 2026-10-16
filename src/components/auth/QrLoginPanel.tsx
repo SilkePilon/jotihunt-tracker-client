@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useNow } from '@/hooks/now.hook';
 import { AnimatePresence, motion } from 'motion/react';
 import { RefreshCwIcon, TimerIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -133,11 +133,7 @@ function QrScene({ state, restart }: { state: QrPanelState; restart: () => void 
 }
 
 function Countdown({ until }: { until: number }) {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const interval = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(interval);
-  }, []);
+  const now = useNow(true);
   return (
     <span className="flex items-center gap-1.5 text-xs tabular-nums text-muted-foreground" aria-hidden>
       <TimerIcon className="size-3.5" />

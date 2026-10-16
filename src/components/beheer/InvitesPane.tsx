@@ -8,7 +8,7 @@ import TrackerQrCode from '@/components/tracker/TrackerQrCode';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useInvites } from '@/hooks/invites.hook';
 import { useTimedValue } from '@/hooks/timed-value.hook';
-import useInterval from '@/hooks/utils/interval.hook';
+import { SLOW_CLOCK_TICK_MS, useNow } from '@/hooks/now.hook';
 import { apiErrorMessage } from '@/lib/api-error';
 import {
   DEFAULT_EXPIRY,
@@ -34,7 +34,6 @@ const CARD_GAP = 14;
 /** A new invite's row pulses (2 × 1 s) once it shows up */
 const HIGHLIGHT_MS = 2000;
 /** The rows' "nog …" only needs a refresh now and then */
-const CLOCK_TICK_MS = 15_000;
 /** The copy button shows its check this long */
 const COPIED_MS = 1500;
 /** The segmented picker works with strings, so "Onbeperkt" travels as this value */
@@ -86,8 +85,7 @@ function Picker({ label, value, options, onChange, disabled }: { label: string; 
 /** Beheer → Invites (I5): make invite links; share (WhatsApp), copy, QR or stop the active ones; the stopped ones of the last 24 h. */
 export default function InvitesPane() {
   const { invites, error: loadError, create, revoke } = useInvites(true);
-  const [now, setNow] = useState(() => Date.now());
-  useInterval(() => setNow(Date.now()), CLOCK_TICK_MS);
+  const now = useNow(true, SLOW_CLOCK_TICK_MS);
 
   const [expiry, setExpiry] = useState<InviteExpiry>(DEFAULT_EXPIRY);
   const [maxUses, setMaxUses] = useState<number | null>(DEFAULT_MAX_USES);

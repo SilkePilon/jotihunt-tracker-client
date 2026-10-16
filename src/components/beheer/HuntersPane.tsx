@@ -9,7 +9,7 @@ import Reveal from '@/components/motion/Reveal';
 import { useAdmin } from '@/hooks/admin.hook';
 import { useDevices } from '@/hooks/devices.hook';
 import { useIsMobile } from '@/hooks/media.hook';
-import useInterval from '@/hooks/utils/interval.hook';
+import { SLOW_CLOCK_TICK_MS, useNow } from '@/hooks/now.hook';
 import { apiErrorMessage } from '@/lib/api-error';
 import { googleMapsUrl, hunterIcon, hunterMeta, hunterRows, huntersSummary, isLowBattery, vehicleGroupIdsFromEnv, type HunterRow } from '@/lib/hunters';
 import { vehicleGlyph } from '@/lib/marker-style';
@@ -24,7 +24,6 @@ import { Pill } from './controls/Pill';
 import Segmented, { type SegmentOption } from './controls/Segmented';
 
 const GROUPS = vehicleGroupIdsFromEnv(import.meta.env);
-const CLOCK_TICK_MS = 15_000;
 /** The pane's card gap (gap-3.5), so a card folding away doesn't leave a gap behind */
 const CARD_GAP = 14;
 
@@ -72,8 +71,7 @@ export default function HuntersPane({ mapRef }: { mapRef: RefObject<MapRef | nul
   const { devices, positions, isLoading, isError } = useDevices();
   const { users } = useAdmin();
   const close = useAdminStore((state) => state.close);
-  const [now, setNow] = useState(() => Date.now());
-  useInterval(() => setNow(Date.now()), CLOCK_TICK_MS);
+  const now = useNow(true, SLOW_CLOCK_TICK_MS);
 
   // A failed poll keeps the last list on screen; only show the error when there's nothing to show
   const view = isLoading ? 'loading' : isError && !devices?.length ? 'error' : 'content';

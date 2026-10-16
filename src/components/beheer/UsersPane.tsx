@@ -6,7 +6,7 @@ import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import Reveal from '@/components/motion/Reveal';
 import { useAdmin, type UserChanges } from '@/hooks/admin.hook';
 import { useTimedValue } from '@/hooks/timed-value.hook';
-import useInterval from '@/hooks/utils/interval.hook';
+import { SLOW_CLOCK_TICK_MS, useNow } from '@/hooks/now.hook';
 import { apiErrorMessage } from '@/lib/api-error';
 import { isActiveNow, passkeyText, splitUsers, userActivity, usersSummary } from '@/lib/beheer';
 import { copyToClipboard, writeClipboard } from '@/lib/clipboard';
@@ -20,7 +20,6 @@ import { Pill, Tag } from './controls/Pill';
 /** The pane's card gap (gap-3.5), so a card folding away doesn't leave a gap behind */
 const CARD_GAP = 14;
 /** The rows' "nu actief" / "… geleden" only needs a refresh now and then */
-const CLOCK_TICK_MS = 15_000;
 /** "Link gekopieerd ✓" stays this long */
 const LINK_DONE_MS = 1800;
 
@@ -28,8 +27,7 @@ const LINK_DONE_MS = 1800;
 export default function UsersPane() {
   const me = useAuthUser<User>();
   const { users, isError, updateUser, deleteUser, createRecoveryLink } = useAdmin();
-  const [now, setNow] = useState(() => Date.now());
-  useInterval(() => setNow(Date.now()), CLOCK_TICK_MS);
+  const now = useNow(true, SLOW_CLOCK_TICK_MS);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [linkBusyId, setLinkBusyId] = useState<string | null>(null);

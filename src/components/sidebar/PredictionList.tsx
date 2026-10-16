@@ -4,14 +4,13 @@ import { MapRef } from '@/components/Map';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { usePredictions } from '@/hooks/predictions.hook';
-import useInterval from '@/hooks/utils/interval.hook';
+import { AGE_CLOCK_TICK_MS, useNow } from '@/hooks/now.hook';
 import useSidebarStore from '@/stores/sidebar.store';
 import { ageLabel, CONFIDENCE_LABEL, CONFIDENCE_LEVEL, predictionStatusText } from '@/lib/prediction';
 import { capitalizeFirstLetter, cn, getColorFromArea } from '@/lib/utils';
 import type { Confidence, Prediction } from '@/types/Prediction';
 
 const FLY_TO_ZOOM = 14;
-const TICK_MS = 30_000;
 
 /** Dark text on the light area colours, white text on the dark ones (Hotel). */
 function textColorOn(hex: string): string {
@@ -35,11 +34,10 @@ function ConfidenceBars({ confidence }: { confidence: Confidence }) {
 export default function PredictionList({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
   const { predictions } = usePredictions();
   const setSheetSnap = useSidebarStore((state) => state.setSheetSnap);
-  const [now, setNow] = useState(() => Date.now());
+  const now = useNow(true, AGE_CLOCK_TICK_MS);
   const [openArea, setOpenArea] = useState<string | null>(null);
   // Radix closes a tooltip on pointerdown of its trigger; remember the state before that so a tap toggles
   const wasOpen = useRef(false);
-  useInterval(() => setNow(Date.now()), TICK_MS);
 
   if (!predictions) {
     return (

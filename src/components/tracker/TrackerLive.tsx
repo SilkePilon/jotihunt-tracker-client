@@ -1,12 +1,10 @@
-import { useState } from 'react';
-import useInterval from '@/hooks/utils/interval.hook';
+import { AGE_CLOCK_TICK_MS, useNow } from '@/hooks/now.hook';
 import { formatLastUpdate } from '@/lib/tracker';
 import type { TrackerMe, Vehicle } from '@/types/Tracker';
 import CookieBadge from './CookieBadge';
 import { inlineLinkClass } from './styles';
 import VehicleMenu from './VehicleMenu';
 
-const CLOCK_TICK_MS = 30_000;
 
 interface TrackerLiveProps {
   status: Extract<TrackerMe, { configured: true }>;
@@ -18,8 +16,7 @@ interface TrackerLiveProps {
 
 /** Paired: green cookie check while live, amber when the phone stopped reporting; plus the vehicle pill. */
 export default function TrackerLive({ status, savingVehicle, onVehicleChange, onRepair }: TrackerLiveProps) {
-  const [now, setNow] = useState(() => Date.now());
-  useInterval(() => setNow(Date.now()), CLOCK_TICK_MS);
+  const now = useNow(true, AGE_CLOCK_TICK_MS);
   const live = status.connected;
   const ago = formatLastUpdate(status.stats.lastUpdate, now);
 

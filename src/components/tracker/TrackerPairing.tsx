@@ -1,9 +1,8 @@
-import { useState } from 'react';
 import { Loader2Icon, RefreshCwIcon, SmartphoneIcon, XIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useIsMobile } from '@/hooks/media.hook';
-import useInterval from '@/hooks/utils/interval.hook';
+import { useNow } from '@/hooks/now.hook';
 import { buildPairingUrl, formatPairingCode, secondsLeft } from '@/lib/app-pairing';
 import { formatCountdown } from '@/lib/format';
 import type { PairingCode } from '@/types/Tracker';
@@ -32,8 +31,9 @@ function Countdown({ seconds }: { seconds: number }) {
 /** One-time pairing code for the Android app: a small QR next to the code (desktop), or an "open in app" button (phone). */
 export default function TrackerPairing({ pairing, creating, failed, onRetry, onClose }: TrackerPairingProps) {
   const isMobile = useIsMobile();
-  const [now, setNow] = useState(() => Date.now());
-  useInterval(() => setNow(Date.now()), pairing && Date.parse(pairing.expiresAt) > now ? 1000 : null);
+  // Ticks only until the code expires (the still clock decides, see HuntListRow)
+  const stillNow = useNow(false);
+  const now = useNow(!!pairing && Date.parse(pairing.expiresAt) > stillNow);
 
   const left = pairing ? secondsLeft(pairing.expiresAt, now) : 0;
   const active = pairing && left > 0 && !creating ? pairing : null;

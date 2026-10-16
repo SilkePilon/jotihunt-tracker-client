@@ -10,7 +10,7 @@ import { useAreas } from '@/hooks/areas.hook';
 import { useHunts } from '@/hooks/hunts.hook';
 import { useHuntReports } from '@/hooks/hunt-reports.hook';
 import { usePredictions } from '@/hooks/predictions.hook';
-import useInterval from '@/hooks/utils/interval.hook';
+import { SLOW_CLOCK_TICK_MS, useNow } from '@/hooks/now.hook';
 import { apiErrorMessage } from '@/lib/api-error';
 import { huntCooldownMs, lastHuntTimeFor } from '@/lib/fox-status';
 import { nearestArea } from '@/lib/hunt-reports';
@@ -21,7 +21,6 @@ import useHuntCaptureStore from '@/stores/hunt-capture.store';
 type Errors = { area?: string; save?: string };
 type Position = { lng: number; lat: number };
 
-const CLOCK_TICK_MS = 15_000;
 /** How long save() waits for a still-pending geolocation request before uploading without it. */
 const POSITION_WAIT_MS = 3_000;
 
@@ -49,8 +48,7 @@ export default function HuntRegistrationDialog() {
   const [saving, setSaving] = useState(false);
   /** A save failed on the network or server: the button offers a retry */
   const [failed, setFailed] = useState(false);
-  const [now, setNow] = useState(() => Date.now());
-  useInterval(() => setNow(Date.now()), open ? CLOCK_TICK_MS : null);
+  const now = useNow(open, SLOW_CLOCK_TICK_MS);
 
   /** One id per photo, sent with every upload attempt so the server can recognise a retry */
   const [uploadId, setUploadId] = useState(() => randomId());

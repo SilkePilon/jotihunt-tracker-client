@@ -4,7 +4,7 @@ import { Trash2Icon } from 'lucide-react';
 import { toast } from 'sonner';
 import { BeheerExpandableRow, BeheerRow, InlineConfirm } from '@/components/beheer/BeheerLayout';
 import { useHuntReportActions } from '@/hooks/hunt-reports.hook';
-import useInterval from '@/hooks/utils/interval.hook';
+import { useNow } from '@/hooks/now.hook';
 import { apiErrorMessage } from '@/lib/api-error';
 import { HUNT_ROW_TONE_CLASS, huntRowFlag, huntRowStatus, websiteHuntStatus, type HuntRowStatus } from '@/lib/hunt-list';
 import { formatHuntTimeSafe, hasLiveCountdown, huntTimeLabel } from '@/lib/hunt-reports';
@@ -35,8 +35,9 @@ function StatusText({ status }: { status: HuntRowStatus }) {
 
 /** "Te versturen · 8:42 · Alpha · 14:05 · Merida · controleren", with its own clock: only rows with a running countdown tick. */
 function ReportMeta({ report }: { report: HuntReport }) {
-  const [now, setNow] = useState(() => Date.now());
-  useInterval(() => setNow(Date.now()), hasLiveCountdown(report, now) ? 1000 : null);
+  // Ticks only while the countdown runs: the still clock decides, the ticking one then moves it (same shared time)
+  const stillNow = useNow(false);
+  const now = useNow(hasLiveCountdown(report, stillNow));
   const status = huntRowStatus(report, now);
   const flag = huntRowFlag(report);
   return (
