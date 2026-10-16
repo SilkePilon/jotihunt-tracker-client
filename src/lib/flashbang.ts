@@ -8,6 +8,10 @@ export const FLASH_MS = 3200;
 export const SOUND_ONSET_S = 0.14;
 /** The recording is clipped loud; keep it from blowing out speakers */
 export const SOUND_GAIN = 0.5;
+/** The ringing holds at one level and the file cuts off 4.1s after the bang; it fades out from here (s after the bang)… */
+export const SOUND_FADE_FROM_S = 0.6;
+/** …to silence just before that cut, like the ringing dying away in-game */
+export const SOUND_FADE_TO_S = 4;
 
 interface FlashbangCheck {
   isDarkMode: boolean;
