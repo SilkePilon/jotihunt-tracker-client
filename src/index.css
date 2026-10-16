@@ -545,3 +545,82 @@ body.dark {
     color: var(--muted-foreground);
   }
 }
+
+/* Dark → light theme switch as a CS:GO flashbang (components/sidebar/Flashbang.tsx), 3.2s in total = FLASH_MS.
+   The white bursts open from the grenade (--flashbang-x/y), holds about a second, then fades. Underneath, the
+   view transition keeps the frozen dark page (old snapshot) as an afterimage that blurs and fades out slower
+   than the white, like being flashed in-game. */
+.flashbang-flash {
+  view-transition-name: flashbang;
+  animation: flashbang-flash 2.6s both;
+}
+
+@keyframes flashbang-flash {
+  0% {
+    clip-path: circle(0 at var(--flashbang-x, 50%) var(--flashbang-y, 50%));
+    opacity: 1;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.2, 1);
+  }
+  5% {
+    clip-path: circle(150vmax at var(--flashbang-x, 50%) var(--flashbang-y, 50%));
+    opacity: 1;
+  }
+  38% {
+    opacity: 1;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.6, 1);
+  }
+  100% {
+    clip-path: circle(150vmax at var(--flashbang-x, 50%) var(--flashbang-y, 50%));
+    opacity: 0;
+  }
+}
+
+/* The flash element shows live through its own snapshot; no default cross-fade on top */
+html.flashbang::view-transition-group(flashbang),
+html.flashbang::view-transition-new(flashbang) {
+  animation: none;
+}
+
+html.flashbang::view-transition-group(root) {
+  animation: none;
+}
+
+html.flashbang::view-transition-old(root),
+html.flashbang::view-transition-new(root) {
+  mix-blend-mode: normal;
+}
+
+/* Afterimage: the dark page stays put and blurs; the light page covers it more and more once the white thins out */
+html.flashbang::view-transition-old(root) {
+  animation: flashbang-afterimage-old 3.2s linear both;
+}
+
+html.flashbang::view-transition-new(root) {
+  animation: flashbang-afterimage-new 3.2s both;
+}
+
+@keyframes flashbang-afterimage-old {
+  from {
+    filter: blur(0);
+  }
+  to {
+    filter: blur(3px);
+  }
+}
+
+/* Hidden while the white bursts open (5% of 2.6s ≈ the burst), then at 65% so the afterimage is a faint ghost
+   over it rather than a muddy dark/light mix */
+@keyframes flashbang-afterimage-new {
+  0%,
+  4% {
+    opacity: 0;
+  }
+  4.1%,
+  30% {
+    opacity: 0.65;
+    animation-timing-function: cubic-bezier(0.3, 0, 0.6, 1);
+  }
+  100% {
+    opacity: 1;
+  }
+}
