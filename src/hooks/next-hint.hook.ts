@@ -3,6 +3,7 @@ import { useArticles } from '@/hooks/articles.hook.ts';
 import useInterval from '@/hooks/utils/interval.hook.ts';
 import { formatCountdown } from '@/lib/format';
 import { getLastHintTime, getNextHintTime } from '@/lib/next-hint';
+import { useAppConfig } from './app-config.hook';
 
 const URGENT_MS = 5 * 60 * 1000;
 const NEW_HINT_HIGHLIGHT_MS = 60 * 1000;
@@ -18,6 +19,7 @@ export function useNextHint(): { label: string; isUrgent: boolean; isNewHint: bo
   const [hasLoaded, setHasLoaded] = useState(false);
   const [lastPlayedHint, setLastPlayedHint] = useState<number>();
   const [newHintUntil, setNewHintUntil] = useState(0);
+  const { huntStart, huntEnd } = useAppConfig();
 
   const lastHintTime = getLastHintTime(articles);
 
@@ -38,9 +40,10 @@ export function useNextHint(): { label: string; isUrgent: boolean; isNewHint: bo
     }
   }, 1000);
 
-  const nextTime = getNextHintTime(lastHintTime, new Date(import.meta.env.HUNT_START_TIME));
+  const nextTime = getNextHintTime(lastHintTime, huntStart ? new Date(huntStart) : new Date());
   const remaining = nextTime.getTime() - now;
-  const lastHintSlot = new Date(import.meta.env.HUNT_END_TIME).getTime() - 60 * 60 * 1000;
+  // No end configured: hints keep coming
+  const lastHintSlot = huntEnd ? new Date(huntEnd).getTime() - 60 * 60 * 1000 : Infinity;
   const huntOver = now > lastHintSlot;
   const isNewHint = now < newHintUntil;
 

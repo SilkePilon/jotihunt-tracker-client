@@ -11,6 +11,7 @@ import {Marker} from '@/types/Marker.ts';
 import {areaOptions} from '@/lib/utils.ts';
 import {useEffect, useId, useState} from "react";
 import {useHintFormBridge} from "@/hooks/hint-bridge.hook.ts";
+import {useAppConfig} from '@/hooks/app-config.hook';
 import {isInNetherlands} from '@/lib/netherlands';
 import {fromRD, isPlausibleRD} from '@/lib/rd';
 import {apiErrorMessage} from '@/lib/api-error';
@@ -27,15 +28,17 @@ const FormSchema = z.object({
     y: z.string().length(6),
 });
 
-const HUNT_START = new Date(import.meta.env.HUNT_START_TIME);
-const HUNT_END = new Date(import.meta.env.HUNT_END_TIME);
-
 export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef | null> }) {
     const {coords, clear} = useHintFormBridge();
     const fieldId = useId();
     const submitId = `${fieldId}-submit`;
     const {markers, createMarker} = useMarkers();
     const [timeOpen, setTimeOpen] = useState(false);
+    const {huntStart, huntEnd} = useAppConfig();
+    const HUNT_START = huntStart ? new Date(huntStart) : null;
+    const HUNT_END = huntEnd ? new Date(huntEnd) : null;
+    // Without a configured hunt window there are no hint hours to pick
+    const hintHours = (area: string) => (HUNT_START && HUNT_END ? buildHintHours(HUNT_START, HUNT_END, new Date(), markers, area) : []);
 
     const form = useForm<z.infer<typeof FormSchema>>({
         resolver: zodResolver(FormSchema),
@@ -53,7 +56,7 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
     const typedLocation = xValue?.length === 6 && yValue?.length === 6 ? fromRD(Number(xValue), Number(yValue)) : undefined;
     const outsideNetherlands = !!typedLocation && !isInNetherlands(typedLocation[0], typedLocation[1]);
     // Hours for the chosen area; hours that already have a hint are kept but marked taken
-    const hours = buildHintHours(HUNT_START, HUNT_END, new Date(), markers, selectedArea);
+    const hours = hintHours(selectedArea);
     const days = groupByDay(hours);
 
     // setValue without validation doesn't update formState.isValid in onSubmit mode, so derive from values.
@@ -77,7 +80,7 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
     function changeArea(area: string) {
         form.setValue('area', area, {shouldValidate: true, shouldDirty: true});
         const time = form.getValues('time');
-        if (time && !isFreeHour(buildHintHours(HUNT_START, HUNT_END, new Date(), markers, area), time)) {
+        if (time && !isFreeHour(hintHours(area), time)) {
             form.setValue('time', '', {shouldDirty: true});
         }
     }

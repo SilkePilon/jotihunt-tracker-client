@@ -47,6 +47,7 @@ import MarkerImages from './layers/MarkerImages';
 import {markerCssVars, useMarkerPalette} from './layers/marker-icons';
 import {vehicleGlyph} from '@/lib/marker-style';
 import {useTrackerStatus} from '@/hooks/tracker.hook';
+import {useAppConfig} from '@/hooks/app-config.hook';
 import {tourTarget} from '@/components/tour/targets';
 
 // MapLibre resolves its worker relative to its own module, which bundlers don't emit;
@@ -111,7 +112,7 @@ function phonePaddingFor(wall: boolean): number | undefined {
 // Memoized: Layout re-renders often and the map's props (ref, the HQ wall's memoized overlay) rarely change
 const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay}, ref) => {
 
-    const GROUP_NAME: string = import.meta.env.GROUP_NAME;
+    const {groupName} = useAppConfig();
 
     // Make map fly available to other components
     const mapRef = useRef<MaplibreRef>(null);
@@ -252,7 +253,7 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
             >
                 <div className="bg-background">
                     {/* Credits on the right: bottom-right on desktop; on phones top-right, above the bottom sheet; on the HQ wall top-right, above the event card. */}
-                    <AttributionControl position={isMobile || wall ? 'top-right' : 'bottom-right'} customAttribution={GROUP_NAME ? `Jotihunt Tracker | ${GROUP_NAME}` : 'Jotihunt Tracker'} compact={true}/>
+                    <AttributionControl position={isMobile || wall ? 'top-right' : 'bottom-right'} customAttribution={groupName ? `Jotihunt Tracker | ${groupName}` : 'Jotihunt Tracker'} compact={true}/>
                 </div>
                 {/* Phones: no map controls, the map is navigated by touch and the bottom sheet needs the room */}
                 {!isMobile && !wall && (

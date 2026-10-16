@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { CheckIcon, LockIcon, MonitorPlayIcon, PauseIcon, RefreshCwIcon, SparklesIcon } from 'lucide-react';
 import DemoModeDialog from '@/components/settings/DemoModeDialog';
 import ReloadTeamsDialog from '@/components/settings/ReloadTeamsDialog';
+import { useAppConfig } from '@/hooks/app-config.hook';
 import { useDemo } from '@/hooks/demo.hook';
 import { useHuntableAreas } from '@/hooks/huntable-areas.hook';
 import { useInvitesPaused } from '@/hooks/invites.hook';
@@ -28,6 +29,7 @@ const ROW_ICON = 'size-[18px] shrink-0 text-muted-foreground';
 function HuntableAreasCard() {
   const { allowed, setAllowed } = useHuntableAreas();
   const { teams } = useTeams();
+  useAppConfig(); // re-render when the home team is configured
   const ownArea = teams?.find(isHomeTeam)?.area;
   const { chips, count } = huntableChips(AREAS, ownArea, allowed);
   const [saving, setSaving] = useState(false);

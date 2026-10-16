@@ -12,7 +12,8 @@ export interface MarkerFilter {
   part1: boolean;
   /** Show markers from the split onwards */
   part2: boolean;
-  split: Date;
+  /** Undefined (no hunt start configured): no split, every marker is in part 1 */
+  split?: Date;
   isVisible: (area: string) => boolean;
 }
 
@@ -20,7 +21,7 @@ export interface MarkerFilter {
 export function filterMarkers(markers: Marker[], { part1, part2, split, isVisible }: MarkerFilter): Marker[] {
   return markers.filter((marker) => {
     const time = new Date(marker.time);
-    const inPart = (part1 && time < split) || (part2 && time >= split);
+    const inPart = split ? (part1 && time < split) || (part2 && time >= split) : part1;
     return inPart && isVisible(marker.area);
   });
 }

@@ -3,17 +3,21 @@ import { useAuthSWR } from '../lib/swr';
 import { useFetcher } from './utils/api.hook';
 import { SLOW_REQUEST_TIMEOUT_MS } from '@/lib/http';
 import { asList } from '@/lib/response-shape';
+import { appConfig } from '@/lib/app-config';
+import { useAppConfig } from './app-config.hook';
 
 const TEAMS_AREA_EDITING = import.meta.env.TEAMS_AREA_EDITING === 'true';
 
-/** Our own group (HOME_TEAM_API_ID in .env). Loose comparison: apiId is a number, the env value a string. */
+/** Our own group (Beheer → Algemeen → Ons team). */
 export function isHomeTeam(team: Team): boolean {
-  return team.apiId == import.meta.env.HOME_TEAM_API_ID;
+  const id = appConfig().homeTeamApiId;
+  return id !== null && team.apiId === id;
 }
 
 /** Our own group from the team list, or undefined while loading / when not configured. */
 export function useHomeTeam(): Team | undefined {
   const { teams } = useTeams();
+  useAppConfig(); // re-render when the home team is configured
   return teams?.find(isHomeTeam);
 }
 

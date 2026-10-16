@@ -5,6 +5,7 @@ import { useMarkers } from '@/hooks/markers.hook';
 import { useAreas } from '@/hooks/areas.hook';
 import { useHintBoard } from '@/hooks/hints.hook';
 import { useHuntableAreas } from '@/hooks/huntable-areas.hook';
+import { useAppConfig } from '@/hooks/app-config.hook';
 import { FOX_MARKERS_LAYER, markerFeatures, trailLines } from '@/lib/map-layers';
 import { filterMarkers, groupMarkersByArea, markerSplitTime } from '@/lib/markers';
 import { areaKey, HINT_LABEL_MS, hintNumbering, themedIconExpression, type MarkerTheme } from '@/lib/marker-style';
@@ -14,10 +15,6 @@ import { featureId, useLayerInteractions, usePopupSelection } from './map-intera
 import MarkerPopup from './markers/MarkerPopup';
 import MarkerTooltip from './markers/MarkerTooltip';
 
-// Split between the two marker layers (static for the lifetime of the app): 23:00 on the first hunt day
-const SPLIT = markerSplitTime(new Date(import.meta.env.HUNT_START_TIME));
-// Hint numbers count the hints inside the hunt
-const HUNT = { startMs: Date.parse(import.meta.env.HUNT_START_TIME), endMs: Date.parse(import.meta.env.HUNT_END_TIME) };
 // Longest timer the browser accepts (about 24.8 days)
 const MAX_TIMEOUT_MS = 2 ** 31 - 1;
 
@@ -59,6 +56,11 @@ export default function Markers({ part1, part2 }: MarkersProps) {
   const map = useMap().current?.getMap();
   const theme = useMarkerTheme();
   const [nowMs, setNowMs] = useState(() => Date.now());
+  const { huntStart, huntEnd } = useAppConfig();
+  // Split between the two marker layers: 23:00 on the first hunt day (none while the hunt start is unset)
+  const split = useMemo(() => (huntStart ? markerSplitTime(new Date(huntStart)) : undefined), [huntStart]);
+  // Hint numbers count the hints inside the hunt
+  const hunt = useMemo(() => ({ startMs: huntStart ? Date.parse(huntStart) : NaN, endMs: huntEnd ? Date.parse(huntEnd) : NaN }), [huntStart, huntEnd]);
 
   const { active, open: openPopup, close: closePopup } = usePopupSelection<string>();
   const [hoveredId, setHoveredId] = useState<string>();
@@ -66,11 +68,11 @@ export default function Markers({ part1, part2 }: MarkersProps) {
   const activeMarker = active ? markers?.find((marker) => marker._id === active.id) : undefined;
   const hoveredMarker = hoveredId !== undefined && !activeMarker ? markers?.find((marker) => marker._id === hoveredId) : undefined;
 
-  const visibleMarkers = useMemo(() => filterMarkers(markers ?? [], { part1, part2, split: SPLIT, isVisible }), [markers, part1, part2, isVisible]);
+  const visibleMarkers = useMemo(() => filterMarkers(markers ?? [], { part1, part2, split, isVisible }), [markers, part1, part2, split, isVisible]);
   const trails = useMemo(() => trailLines(groupMarkersByArea(visibleMarkers)), [visibleMarkers]);
   const statusByArea = useMemo(() => new Map((areas ?? []).map((area) => [areaKey(area.name), area.status])), [areas]);
   const statusOf = useCallback((area: string) => statusByArea.get(areaKey(area)), [statusByArea]);
-  const numbering = useMemo(() => hintNumbering(board, HUNT), [board]);
+  const numbering = useMemo(() => hintNumbering(board, hunt), [board, hunt]);
   const features = useMemo(() => markerFeatures(visibleMarkers, { statusOf, numbering, nowMs, isForbidden }), [visibleMarkers, statusOf, numbering, nowMs, isForbidden]);
   const layout = useMemo(() => foxLayout(theme), [theme]);
   const hoverLayout = useMemo<SymbolLayerSpecification['layout']>(() => ({ ...layout, 'icon-size': 1.1 }), [layout]);

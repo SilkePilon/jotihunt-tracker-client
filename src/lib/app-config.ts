@@ -51,7 +51,7 @@ export function huntWindow(config: PublicConfig): { start: Date | null; end: Dat
   return { start: config.huntStart ? new Date(config.huntStart) : null, end: config.huntEnd ? new Date(config.huntEnd) : null };
 }
 
-export function vehicleGroupIds(config: PublicConfig): VehicleGroupIds {
+export function vehicleGroupIds(config: Pick<PublicConfig, 'vehicleGroups'>): VehicleGroupIds {
   return Object.fromEntries(Object.entries(config.vehicleGroups).filter(([, id]) => id !== null)) as VehicleGroupIds;
 }
 

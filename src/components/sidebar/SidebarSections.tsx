@@ -1,6 +1,7 @@
 import { RefObject } from 'react';
 import { MapRef } from '@/components/Map';
 import HintEntryCard from '@/components/cards/hint-entry/HintEntryCard';
+import { useAppConfig } from '@/hooks/app-config.hook';
 import { useHintBoard } from '@/hooks/hints.hook';
 import { usePredictions, usePredictionSetting } from '@/hooks/predictions.hook';
 import { hintProgress } from '@/lib/hints';
@@ -21,6 +22,7 @@ import type { SidebarSectionId } from '@/stores/sidebar.store';
 /** All sidebar sections; `only` renders just one of them (a phone page). */
 export default function SidebarSections({ mapRef, only }: { mapRef: RefObject<MapRef | null>; only?: SidebarSectionId }) {
   const show = (id: SidebarSectionId) => !only || only === id;
+  const { homeTeamApiId } = useAppConfig();
   const { board } = useHintBoard();
   const { predictions } = usePredictions();
   const { enabled: predictionEnabled } = usePredictionSetting();
@@ -53,7 +55,7 @@ export default function SidebarSections({ mapRef, only }: { mapRef: RefObject<Ma
           <HintEntryCard mapRef={mapRef} />
         </SidebarSection>
       )}
-      {show('counterHunt') && import.meta.env.HOME_TEAM_API_ID && (
+      {show('counterHunt') && homeTeamApiId !== null && (
         <ErrorBoundary name="Tegenhunt">
           <CounterHuntSection mapRef={mapRef} />
         </ErrorBoundary>

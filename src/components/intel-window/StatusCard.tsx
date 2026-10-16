@@ -1,6 +1,7 @@
 import { type ReactNode, useMemo } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import CountUp from '@/components/motion/CountUp';
+import { useAppConfig } from '@/hooks/app-config.hook';
 import { useNextHint } from '@/hooks/next-hint.hook';
 import { formatClock } from '@/lib/format';
 import { type ChartColumn, chartColumns, formatSolveTime, intelStats, type SlotBar, unreadLabel, unreadTab } from '@/lib/intel-window';
@@ -121,8 +122,6 @@ function HintRing({ percent, entrance }: { percent: number; entrance: boolean })
   );
 }
 
-/** The last hint slot of the hunt (as in useNextHint): nothing is expected after it */
-const LAST_SLOT_MS = new Date(import.meta.env.HUNT_END_TIME).getTime() - 60 * 60 * 1000;
 const AREA_COUNT = areaOptions.length;
 
 /**
@@ -133,7 +132,10 @@ const AREA_COUNT = areaOptions.length;
 function SolveChart({ slots, avgSolveMs, entrance }: { slots: SlotBar[]; avgSolveMs: number | null; entrance: boolean }) {
   const { nextAt } = useNextHint();
   const nextMs = nextAt?.getTime() ?? null;
-  const columns = useMemo(() => chartColumns(slots, nextMs === null ? null : new Date(nextMs), LAST_SLOT_MS), [slots, nextMs]);
+  const { huntEnd } = useAppConfig();
+  // The last hint slot of the hunt (as in useNextHint): nothing is expected after it (no limit while the end is unset)
+  const lastSlotMs = huntEnd ? new Date(huntEnd).getTime() - 60 * 60 * 1000 : Infinity;
+  const columns = useMemo(() => chartColumns(slots, nextMs === null ? null : new Date(nextMs), lastSlotMs), [slots, nextMs, lastSlotMs]);
   const newestPast = slots.at(-1)?.slotTime;
   const nextColumn = columns.find((column): column is Exclude<ChartColumn, { kind: 'past' }> => column.kind === 'next');
   const side = avgSolveMs !== null ? `gem. ${formatSolveTime(avgSolveMs)} per gebied` : nextColumn ? `volgende om ${nextColumn.hour}:00` : null;

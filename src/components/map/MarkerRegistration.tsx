@@ -12,12 +12,11 @@ import { Field, FieldError, FieldGroup, FieldLabel } from '../ui/field';
 import { Input } from '../ui/input';
 import { Marker } from '@/types/Marker';
 import { useMarkers } from '@/hooks/markers.hook';
+import { useAppConfig } from '@/hooks/app-config.hook';
 import {toast} from "sonner";
 import { apiErrorMessage } from '@/lib/api-error';
 import { popupActionClass } from './popup/PopupActions';
 
-const HUNT_START_TIME = new Date(import.meta.env.HUNT_START_TIME);
-const HUNT_END_TIME = new Date(import.meta.env.HUNT_END_TIME);
 
 const FormSchema = z.object({
   area: z.enum([...areaOptions.map((option) => option.value)] as [string, ...string[]], { message: 'Geen geldig deelgebied.' }),
@@ -31,6 +30,10 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
   const [markerType, setMarkerType] = useState<MarkerType>();
   const { createMarker } = useMarkers();
   const fieldId = useId();
+  // Before the hunt window is configured the pickers offer today and any time is accepted
+  const { huntStart, huntEnd } = useAppConfig();
+  const HUNT_START_TIME = huntStart ? new Date(huntStart) : new Date();
+  const HUNT_END_TIME = huntEnd ? new Date(huntEnd) : new Date();
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
@@ -99,7 +102,7 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
     if (markerType === undefined) return;
 
     // Check if within the hunt time
-    if (newDate < HUNT_START_TIME || newDate > HUNT_END_TIME) {
+    if (huntStart && huntEnd && (newDate < HUNT_START_TIME || newDate > HUNT_END_TIME)) {
       form.setError('time', { message: 'Tijd valt buiten de hunt periode.' });
       return;
     }

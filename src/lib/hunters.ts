@@ -7,13 +7,8 @@ import type { HunterIcon } from '@/lib/marker-style';
 import { formatLastUpdate, formatSpeed, isActive, VEHICLE_OPTIONS } from '@/lib/tracker';
 import { knotsToKmh } from '@/lib/utils';
 
-/** Traccar group id per vehicle (GROUP_*_ID in .env); undefined when not configured. */
+/** Traccar group id per vehicle (Beheer → Algemeen, see vehicleGroupIds); undefined when not configured. */
 export type VehicleGroupIds = Partial<Record<Vehicle, number>>;
-
-export function vehicleGroupIdsFromEnv(env: Record<string, string | undefined>): VehicleGroupIds {
-  const id = (value: string | undefined) => (value && Number.isFinite(Number(value)) ? Number(value) : undefined);
-  return { walking: id(env.GROUP_WALKING_ID), bike: id(env.GROUP_BIKE_ID), car: id(env.GROUP_CAR_ID), motorcycle: id(env.GROUP_MOTORCYCLE_ID) };
-}
 
 export function vehicleForGroupId(groupId: number | undefined, groups: VehicleGroupIds): Vehicle | undefined {
   if (!groupId) return undefined;
