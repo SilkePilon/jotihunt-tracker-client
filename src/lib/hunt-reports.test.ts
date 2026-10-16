@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import type { Hunt } from '@/types/Hunt';
 import type { HuntReport } from '@/types/HuntReport';
 import type { Prediction } from '@/types/Prediction';
-import { hasLiveCountdown, huntListItems, linkedHuntIds, reportHasPhoto, SUBMIT_WINDOW_MS, huntStatusSentence, huntsSummary, huntSourceLabel, huntStatusLabel, huntTimeLabel, huntTimelineStatus, isReading, nearestArea, normalizeHuntCode, ocrConfidence, pendingReports, readFailed, resolveHuntTime, totalPoints } from './hunt-reports';
+import { hasLiveCountdown, huntListItems, linkedHuntIds, linkScrapedHunts, reportHasPhoto, SUBMIT_WINDOW_MS, huntStatusSentence, huntsSummary, huntSourceLabel, huntStatusLabel, huntTimeLabel, huntTimelineStatus, isReading, nearestArea, normalizeHuntCode, ocrConfidence, pendingReports, readFailed, resolveHuntTime, totalPoints } from './hunt-reports';
 
 function report(overrides: Partial<HuntReport> = {}): HuntReport {
   return {
@@ -275,6 +275,17 @@ describe('QR hunts (no photo)', () => {
     const reports = [qr({ site }), qr({ _id: 'r2', huntTime: '2026-10-17T12:02:00.000Z', site })];
     const hunts = [scraped({ _id: 'a', huntTime: new Date('2026-10-17T12:01:00.000Z') }), scraped({ _id: 'b', huntTime: new Date('2026-10-17T12:10:00.000Z') })];
     expect([...linkedHuntIds(reports, hunts)].sort()).toEqual(['a', 'b']);
+  });
+
+  test('two reports linked to one scraped hunt (two hunters, one fox): no website row, points counted once', () => {
+    const reports = [qr({ site }), qr({ _id: 'r2', huntTime: '2026-10-17T12:06:00.000Z', site })];
+    const hunts = [scraped({ _id: 'a', huntTime: new Date('2026-10-17T12:01:00.000Z') })];
+    const { linked, shared } = linkScrapedHunts(reports, hunts);
+    expect([...linked]).toEqual(['a']);
+    expect([...shared]).toEqual(['r2']);
+    const items = huntListItems(reports, hunts);
+    expect(items.map((item) => item.source)).toEqual(['app', 'app']);
+    expect(totalPoints(items)).toBe(3);
   });
 
   test('code matches win over time matches; scraped hunts without code are listed', () => {

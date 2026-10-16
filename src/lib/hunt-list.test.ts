@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import type { Hunt } from '@/types/Hunt';
 import type { HuntListItem, HuntReport } from '@/types/HuntReport';
-import { huntAreaTotals, huntFilterCounts, huntFilterLabel, huntItemKey, huntRowFlag, huntRowStatus, matchesHuntFilter, websiteHuntStatus } from './hunt-list';
+import { huntAreaTotals, huntFilterCounts, huntFilterLabel, huntItemKey, huntItemPoints, huntRowFlag, huntRowStatus, matchesHuntFilter, websiteHuntStatus } from './hunt-list';
 
 function report(overrides: Partial<HuntReport> = {}): HuntReport {
   return {
@@ -134,4 +134,9 @@ describe('QR hunts (no photo)', () => {
     expect(huntFilterLabel('pending', true)).toBe('Te versturen');
     expect(huntFilterLabel('judged', false)).toBe('Beoordeeld');
   });
+});
+
+test('huntItemPoints: a report sharing its scraped hunt counts 0', () => {
+  expect(huntItemPoints(app(judged))).toBe(10);
+  expect(huntItemPoints({ source: 'app', report: report(judged), sharedSite: true })).toBe(0);
 });

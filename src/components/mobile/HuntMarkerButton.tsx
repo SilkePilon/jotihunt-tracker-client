@@ -24,12 +24,15 @@ export default function HuntMarkerButton() {
   const bottom = useTransform(sheetVisibleHeight, (h) => h + 12);
   return (
     <HuntStart capture>
-      {(open, photoMode) => (
+      {(open, photoMode, ready) => (
         <motion.div className="fixed right-3 z-30" style={{ bottom }}>
           <AnimatePresence initial={false}>
             {snap !== 'full' && (
               <motion.button
                 {...POP}
+                // Dimmed and inert until "Foto bij hunt" is known
+                animate={{ ...POP.animate, opacity: ready ? 1 : 0.5 }}
+                disabled={!ready}
                 {...tourTarget('huntCapture.button')}
                 type="button"
                 aria-label={photoMode ? 'Hunt registreren' : 'Hunt melden'}

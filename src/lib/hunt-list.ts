@@ -25,7 +25,8 @@ export function matchesHuntFilter(item: HuntListItem, filter: HuntFilter): boole
 
 export const huntItemKey = (item: HuntListItem) => (item.source === 'app' ? item.report._id : `site-${item.hunt._id}`);
 export const huntItemArea = (item: HuntListItem) => (item.source === 'app' ? item.report.area : item.hunt.area).trim().toLowerCase();
-export const huntItemPoints = (item: HuntListItem) => (item.source === 'app' ? (item.report.site?.points ?? 0) : item.hunt.points);
+/** A report sharing its scraped hunt with another report counts 0: those points are already counted once. */
+export const huntItemPoints = (item: HuntListItem) => (item.source === 'app' ? (item.sharedSite ? 0 : (item.report.site?.points ?? 0)) : item.hunt.points);
 
 export function huntFilterCounts(items: HuntListItem[]): Record<HuntFilter, number> {
   return Object.fromEntries(HUNT_FILTERS.map((filter) => [filter, items.filter((item) => matchesHuntFilter(item, filter)).length])) as Record<HuntFilter, number>;

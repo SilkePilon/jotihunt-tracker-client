@@ -48,4 +48,7 @@ export interface HuntReport {
 }
 
 /** A row in "Alle hunts": an own report, or a scraped jotihunt.nl hunt that nobody registered in the app. */
-export type HuntListItem = { source: 'app'; report: HuntReport } | { source: 'website'; hunt: import('./Hunt').Hunt };
+export type HuntListItem =
+  /** sharedSite: linked to the same scraped hunt as another report (two hunters, one fox); its points count once */
+  | { source: 'app'; report: HuntReport; sharedSite?: boolean }
+  | { source: 'website'; hunt: import('./Hunt').Hunt };

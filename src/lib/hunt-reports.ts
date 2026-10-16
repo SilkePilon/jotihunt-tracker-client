@@ -97,39 +97,60 @@ const TIME_LINK_MS = 15 * 60 * 1000;
 
 /**
  * Scraped hunts that belong to a report, mirroring the server's linking: by normalised code first; otherwise a report
- * without code that the server linked (it has a site result) takes the scraped hunt of its area closest to its hunt
- * time within ±15 min (QR hunts have no code). Each scraped hunt belongs to at most one report.
+ * without code that the server linked (it has a site result) belongs to a scraped hunt of its area within ±15 min of
+ * its hunt time (QR hunts have no code). Closest pairs are matched one-to-one first; a linked report left over (two
+ * hunters reported the same fox, and the server linked both to one scraped hunt) takes its closest hunt anyway and is
+ * marked `shared`: that hunt's points are already counted with another report.
  */
-export function linkedHuntIds(reports: HuntReport[] | undefined, hunts: Hunt[] | undefined): Set<string> {
+export function linkScrapedHunts(reports: HuntReport[] | undefined, hunts: Hunt[] | undefined): { linked: Set<string>; shared: Set<string> } {
   const codes = new Set((reports ?? []).flatMap((report) => (report.huntCode ? [report.huntCode] : [])));
   const linked = new Set((hunts ?? []).filter((hunt) => hunt.huntCode && codes.has(normalizeHuntCode(hunt.huntCode))).map((hunt) => hunt._id));
+  const candidates = (hunts ?? []).filter((hunt) => !linked.has(hunt._id));
   const pairs: { reportId: string; huntId: string; diff: number }[] = [];
   for (const report of reports ?? []) {
     if (report.huntCode || !report.site) continue;
     const time = new Date(report.huntTime).getTime();
-    for (const hunt of hunts ?? []) {
-      if (linked.has(hunt._id) || (hunt.huntCode && codes.has(normalizeHuntCode(hunt.huntCode)))) continue;
+    for (const hunt of candidates) {
       if (hunt.area.trim().toLowerCase() !== report.area.toLowerCase()) continue;
       const diff = Math.abs(new Date(hunt.huntTime).getTime() - time);
       if (diff <= TIME_LINK_MS) pairs.push({ reportId: report._id, huntId: hunt._id, diff });
     }
   }
-  // Closest pairs first; every report and every scraped hunt is used once
-  const usedReports = new Set<string>();
-  for (const pair of pairs.sort((a, b) => a.diff - b.diff)) {
-    if (usedReports.has(pair.reportId) || linked.has(pair.huntId)) continue;
-    usedReports.add(pair.reportId);
-    linked.add(pair.huntId);
+  pairs.sort((a, b) => a.diff - b.diff);
+  // One-to-one first: every report and every scraped hunt used once
+  const paired = new Set<string>();
+  const timeLinked = new Set<string>();
+  for (const pair of pairs) {
+    if (paired.has(pair.reportId) || timeLinked.has(pair.huntId)) continue;
+    paired.add(pair.reportId);
+    timeLinked.add(pair.huntId);
   }
-  return linked;
+  // Left-over linked reports share a hunt with another report (many-to-one)
+  const shared = new Set<string>();
+  for (const pair of pairs) {
+    if (paired.has(pair.reportId)) continue;
+    paired.add(pair.reportId);
+    shared.add(pair.reportId);
+    timeLinked.add(pair.huntId);
+  }
+  for (const id of timeLinked) linked.add(id);
+  return { linked, shared };
 }
 
-/** Own reports plus scraped jotihunt.nl hunts that belong to no report (see {@link linkedHuntIds}).
+/** Ids of the scraped hunts that belong to a report (see {@link linkScrapedHunts}). */
+export function linkedHuntIds(reports: HuntReport[] | undefined, hunts: Hunt[] | undefined): Set<string> {
+  return linkScrapedHunts(reports, hunts).linked;
+}
+
+/** Own reports plus scraped jotihunt.nl hunts that belong to no report (see {@link linkScrapedHunts}).
  * Note: report.huntCode is already normalised by the server. */
 export function huntListItems(reports: HuntReport[] | undefined, hunts: Hunt[] | undefined): HuntListItem[] {
-  const linked = linkedHuntIds(reports, hunts);
+  const { linked, shared } = linkScrapedHunts(reports, hunts);
   const websiteOnly = (hunts ?? []).filter((hunt) => !linked.has(hunt._id));
-  return [...(reports ?? []).map((report) => ({ source: 'app' as const, report })), ...websiteOnly.map((hunt) => ({ source: 'website' as const, hunt }))];
+  return [
+    ...(reports ?? []).map((report) => (shared.has(report._id) ? { source: 'app' as const, report, sharedSite: true } : { source: 'app' as const, report })),
+    ...websiteOnly.map((hunt) => ({ source: 'website' as const, hunt })),
+  ];
 }
 
 /** {@link formatClock}, but "–" for a missing or invalid time (scraped jotihunt.nl hunts can lack one). */
@@ -187,7 +208,7 @@ export function huntSourceLabel(report: HuntReport, withError = false): string {
 
 /** Points of a hunt list: the jotihunt.nl result of own reports, plus website-only hunts. */
 export function totalPoints(items: HuntListItem[]): number {
-  return items.reduce((sum, item) => sum + (item.source === 'app' ? (item.report.site?.points ?? 0) : item.hunt.points), 0);
+  return items.reduce((sum, item) => sum + (item.source === 'app' ? (item.sharedSite ? 0 : (item.report.site?.points ?? 0)) : item.hunt.points), 0);
 }
 
 /** Second line of a timeline entry: what the report is waiting for, e.g. "te versturen", "te bevestigen" or "deadline verstreken". */

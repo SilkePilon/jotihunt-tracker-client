@@ -61,7 +61,8 @@ function AllHuntsWindow({ open, initialReportId }: { open: boolean; initialRepor
   const isMobile = useIsMobile();
   const { reports } = useHuntReports();
   const { hunts } = useHunts();
-  const { photoMode } = useHuntPhotoSetting();
+  // Labels as with a photo until the setting is known
+  const photoMode = useHuntPhotoSetting().photoMode !== false;
   const items = useMemo(() => huntListItems(reports, hunts), [reports, hunts]);
   const [view, setView] = useState<View>(ALL);
   const [openId, setOpenId] = useState<string | null>(initialReportId ?? null);

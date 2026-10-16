@@ -22,7 +22,7 @@ export default function HuntsSection() {
   const { reports } = useHuntReports();
   const isMobile = useIsMobile();
   const now = useNow(true);
-  const { photoMode } = useHuntPhotoSetting();
+  const photoMode = useHuntPhotoSetting().photoMode === true;
   const [allOpen, setAllOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
 
@@ -62,8 +62,9 @@ export default function HuntsSection() {
           )}
           <div className="flex gap-2">
             <HuntStart capture={isMobile}>
-              {(open, withPhoto) => (
-                <Button size="sm" className={`flex-1 ${SOFT_PRIMARY_BUTTON}`} onClick={open}>
+              {(open, withPhoto, ready) => (
+                // Disabled (fades to 50%) until "Foto bij hunt" is known
+                <Button size="sm" className={`flex-1 ${SOFT_PRIMARY_BUTTON} transition-[color,background-color,opacity]`} disabled={!ready} onClick={open}>
                   <AnimatePresence mode="wait" initial={false}>
                     <motion.span key={withPhoto ? 'photo' : 'qr'} className="inline-flex items-center gap-1.5" {...SWAP}>
                       {withPhoto ? <CameraIcon data-icon="inline-start" /> : <FoxIcon className="size-4" />}
