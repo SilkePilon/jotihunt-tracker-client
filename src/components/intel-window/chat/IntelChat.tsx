@@ -9,7 +9,7 @@ import { useHasMounted } from '@/hooks/has-mounted.hook';
 import Reveal from '@/components/motion/Reveal';
 import { apiErrorMessage } from '@/lib/api-error';
 import { BUSY_MESSAGE, CONTEXT_LABEL, chatStatusLabel, lastUserMessageId } from '@/lib/intel-chat';
-import { CHAT_EMPTY_ENTRANCE_DELAY, CHAT_MESSAGE, CHAT_SPARK } from '@/lib/intel-window';
+import { CHAT_EMPTY_ENTRANCE_DELAY, CHAT_MESSAGE } from '@/lib/intel-window';
 import { POP, SWAP } from '@/lib/motion';
 import type { IntelItem, IntelKind } from '@/types/Intel';
 import ChatEmpty from './ChatEmpty';
@@ -23,7 +23,7 @@ interface IntelChatProps {
   item: IntelItem;
   /** For "Toon op kaart" on point cards */
   mapRef: RefObject<MapRef | null>;
-  /** Pushed in after the window opened: the ✦ spins in and the empty state staggers in after the view push (not when the window opens straight on an item) */
+  /** Pushed in after the window opened: the empty state staggers in after the view push (not when the window opens straight on an item) */
   entrance: boolean;
 }
 
@@ -43,9 +43,8 @@ function ChatPanel({ item, mapRef, entrance }: IntelChatProps) {
   const [confirmReset, setConfirmReset] = useState(false);
   const busy = chat.status === 'submitted' || chat.status === 'streaming';
   const scene = chat.loading ? 'loading' : chat.loadError ? 'load-error' : chat.messages.length === 0 ? 'empty' : 'thread';
-  // The spark spin is fixed at mount; the delayed empty stagger only applies until the first settled scene is left
+  // The delayed empty stagger only applies until the first settled scene is left
   // (e.g. "Nieuw gesprek" afterwards shows the empty state without the entrance wait)
-  const [spin] = useState(entrance);
   const [emptyDelay, setEmptyDelay] = useState(entrance);
   const [prevScene, setPrevScene] = useState(scene);
   const mounted = useHasMounted();
@@ -67,7 +66,6 @@ function ChatPanel({ item, mapRef, entrance }: IntelChatProps) {
     <>
       <ChatHeader
         kind={item.kind}
-        entrance={spin}
         action={
           <AnimatePresence initial={false}>
             {chat.messages.length > 0 && (
@@ -119,12 +117,9 @@ function ChatPanel({ item, mapRef, entrance }: IntelChatProps) {
   );
 }
 
-function ChatHeader({ kind, entrance, action }: { kind: IntelKind; entrance: boolean; action?: ReactNode }) {
+function ChatHeader({ kind, action }: { kind: IntelKind; action?: ReactNode }) {
   return (
     <div className="mx-1 flex items-center gap-2">
-      <motion.span aria-hidden className="inline-block text-base leading-none text-fox-warn" {...(entrance ? CHAT_SPARK : {})}>
-        ✦
-      </motion.span>
       <h3 className="text-[15px] font-bold">Vraag de AI</h3>
       <span className="ml-auto rounded-lg bg-beheer-row-high px-2 py-0.5 text-[11.5px] font-semibold text-muted-foreground">{CONTEXT_LABEL[kind]}</span>
       {action}

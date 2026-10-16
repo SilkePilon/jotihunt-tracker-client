@@ -301,12 +301,5 @@ export const CHAT_EMPTY_PART: Variants = {
 /** The intel window's close animation: "Toon op kaart" flies only once the map is in view again */
 export const INTEL_CLOSE_MS = 260;
 
-/** The ✦ in the chat header spins in after the view push (item opened from the timeline) */
-export const CHAT_SPARK = {
-  initial: { rotate: -120, scale: 0.4, opacity: 0 },
-  animate: { rotate: 0, scale: 1, opacity: 1 },
-  transition: { type: 'spring', stiffness: 260, damping: 14, delay: 0.3 },
-} satisfies { initial: TargetAndTransition; animate: TargetAndTransition; transition: Transition };
-
-/** The empty state's parts start after the view push and the ✦ (item opened from the timeline) */
+/** The empty state's parts start after the view push (item opened from the timeline) */
 export const CHAT_EMPTY_ENTRANCE_DELAY = 0.45;

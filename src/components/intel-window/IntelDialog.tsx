@@ -134,7 +134,7 @@ function IntelWindow({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
       <IntelTopBar detail={selected !== null} onBack={() => select(null)} unread={{ news: unreadCount(items, 'news') > 0, assignment: unreadCount(items, 'assignment') > 0 }} />
       <div className="relative min-h-0 flex-1 overflow-hidden">
         {/* No initial={false} here: motion would block the initial animation of everything inside the first view too
-            (status card, bars, ring, ✦). PushView skips only its own push on the first view instead. */}
+            (status card, bars, ring, chat empty state). PushView skips only its own push on the first view instead. */}
         <AnimatePresence custom={direction}>
           <PushView key={`${view.key}-${view.gen}`} direction={direction} first={!mounted}>
             {selected ? (
@@ -219,7 +219,7 @@ function TimelineView({ items, allItems, cells, tab, memoryRef, entrance, onSele
  * the top of the body, so the title card and the chat card line up. Another item replaces the whole view (a push).
  */
 function DetailView({ item, area, mapRef, entrance }: { item: IntelItem; area: string | null; mapRef: RefObject<MapRef | null>; entrance: boolean }) {
-  // The window opened straight on this item: no ✦ spin (the dialog's own entrance plays); pushed in later: spin
+  // The window opened straight on this item: the chat waits for nothing (the dialog's own entrance plays); pushed in later: its empty state staggers in after the push
   const [firstPaint] = useState(entrance);
   return (
     <div className="flex min-h-0 flex-1 gap-3.5 px-4 pb-4">
