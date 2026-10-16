@@ -21,8 +21,8 @@ interface DigitBoxesProps {
 /** One RD coordinate: axis label and 6 digit boxes (input-otp keeps paste, the numeric keyboard and focus handling). */
 export default function DigitBoxes({ id, label, bad, ...field }: DigitBoxesProps) {
   return (
-    <div className="grid grid-cols-[20px_1fr] items-center gap-1">
-      <label htmlFor={id} className="text-sm font-bold text-muted-foreground">{label}</label>
+    <div className="grid grid-cols-[16px_1fr] items-center gap-1">
+      <label htmlFor={id} className="text-xs font-bold text-muted-foreground">{label}</label>
       <OTPInput
         id={id}
         autoComplete="off"
@@ -45,7 +45,7 @@ function DigitSlot({ index, bad }: { index: number; bad: boolean }) {
   return (
     <div
       className={cn(
-        'relative flex h-[46px] items-center justify-center rounded-[10px] text-[22px] font-semibold tabular-nums transition-[background-color,color,box-shadow] duration-150',
+        'relative flex h-9 items-center justify-center rounded-lg text-lg font-semibold tabular-nums transition-[background-color,color,box-shadow] duration-150',
         !char ? 'bg-card' : bad ? 'bg-fox-error-container text-fox-on-error' : 'bg-primary-container text-on-primary-container',
         isActive && 'shadow-[inset_0_0_0_2px_var(--primary)]',
       )}
@@ -53,7 +53,7 @@ function DigitSlot({ index, bad }: { index: number; bad: boolean }) {
       {char}
       {hasFakeCaret && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <div className="h-5 w-px animate-caret-blink bg-foreground duration-1000" />
+          <div className="h-4 w-px animate-caret-blink bg-foreground duration-1000" />
         </div>
       )}
     </div>

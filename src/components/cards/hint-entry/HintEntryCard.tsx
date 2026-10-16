@@ -159,9 +159,9 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
     );
 
     return (
-        <form onSubmit={(e) => form.handleSubmit(onSubmit)(e)} className="flex flex-col gap-3.5">
-            <div className="flex flex-col gap-1.5 rounded-[20px] bg-beheer-row p-3.5">
-                <div className="mb-1.5 flex gap-1.5">
+        <form onSubmit={(e) => form.handleSubmit(onSubmit)(e)} className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1 rounded-[16px] bg-beheer-row p-2.5">
+                <div className="mb-1 flex gap-1">
                     <Controller
                         control={form.control}
                         name="area"
@@ -188,11 +188,11 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
                 </div>
                 {coordinateField('x', 'X', () => document.getElementById(`${fieldId}-y`)?.focus())}
                 {coordinateField('y', 'Y', () => setTimeout(() => document.getElementById(submitId)?.focus()))}
-                <div className="mt-1 flex items-center justify-between gap-2">
+                <div className="mt-0.5 flex items-center justify-between gap-2">
                     <CoordinateStatus state={coordinateState}/>
                     <button type="button" onClick={clearCoordinates}
-                            className="inline-flex items-center gap-1.5 rounded-lg px-1 text-xs font-semibold text-primary outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50">
-                        <EraserIcon aria-hidden className="size-3.5"/> Wissen
+                            className="inline-flex items-center gap-1.5 rounded-lg px-1 text-[11px] font-semibold text-primary outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50">
+                        <EraserIcon aria-hidden className="size-3"/> Wissen
                     </button>
                 </div>
             </div>
