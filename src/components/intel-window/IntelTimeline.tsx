@@ -1,52 +1,42 @@
-import { createContext, type ReactNode, useContext, useEffect, useState } from 'react';
+import { createContext, type ReactNode, useContext, useState } from 'react';
 import { useNow } from '@/hooks/now.hook';
 import { AnimatePresence, motion, type Variants } from 'motion/react';
 import { ClockIcon } from 'lucide-react';
 import { Tag } from '@/components/beheer/controls/Pill';
 import { formatClock } from '@/lib/format';
-import { ASSIGNMENT_STATUS_LABELS, type DeadlineTone, INTEL_MORPH, KIND_COLOR, KIND_LABEL, areaStates, deadlineLabel, deadlineTone, groupByDay, solvedCount } from '@/lib/intel-window';
+import { ASSIGNMENT_STATUS_LABELS, type DeadlineTone, INTEL_TAB_ORDER, KIND_COLOR, KIND_LABEL, areaStates, deadlineLabel, deadlineTone, groupByDay, solvedCount } from '@/lib/intel-window';
 import { EASE_OUT, REVEAL_TRANSITION, SWAP_TRANSITION } from '@/lib/motion';
 import { useHasMounted } from '@/hooks/has-mounted.hook';
-import { areaOptions, cn } from '@/lib/utils';
+import { areaOptions } from '@/lib/utils';
 import type { AssignmentStatus, IntelItem, IntelKind, IntelTab } from '@/types/Intel';
 import { AreaChip } from './AreaChips';
-import { useMorphIds } from './morph';
 
 const STEP = 0.022;
 const BASE = 0.21;
-/** Start of the cascade while a card morphs home: the other rows come back with it, not after it */
-const RETURN_BASE = 0.06;
 
 /**
- * Another tab swaps the list while hidden: the old one fades out (x −12 / 0.13 s), then the new one staggers in.
- *
- * Labels: `hidden` = start of a staggered list entrance, `insert` = mounted while the list is on screen (no offset:
- * its `Fold` unfolds it instead), `shown` = in place. Children inherit the list's `initial` label, so the list's first
- * paint uses `false` (no entrance), then `insert` once mounted. `shown` never touches height: only a `Fold` measures it.
+ * A tab switch pushes the list sideways: the old one leaves away from the new tab (x ∓30px, 0.16 s), the new one comes
+ * in from its side (0.28 s). `custom` = direction (1: the new tab is further right). Labels: `hidden` = window just
+ * opened (the cards stagger in, the list itself is still), `push` = a tab switch, `insert` = mounted while on screen.
  */
 const list: Variants = {
   hidden: {},
+  push: (direction: number) => ({ opacity: 0, x: 30 * direction }),
   insert: {},
-  shown: {},
-  gone: { opacity: 0, x: -12, transition: { duration: 0.13, ease: 'easeIn' } },
+  shown: { opacity: 1, x: 0, transition: { duration: 0.28, ease: EASE_OUT } },
+  gone: (direction: number) => ({ opacity: 0, x: -30 * direction, transition: { duration: 0.16, ease: 'easeIn' } }),
 };
 /** A day: staggers its header and items, starting after everything above it, so the cascade runs top to bottom */
 const day: Variants = {
   hidden: {},
   insert: {},
-  shown: ({ offset, base }: { offset: number; base: number }) => ({ transition: { delayChildren: base + offset * STEP, staggerChildren: STEP } }),
+  shown: (offset: number) => ({ transition: { delayChildren: BASE + offset * STEP, staggerChildren: STEP } }),
 };
-/** `custom` = returning: the row of the card that morphs back from the detail stays in place (its frame and title morph) */
+/** A header or row. No `push` key: on a tab switch the rows ride along with the list instead of staggering. */
 const entry: Variants = {
-  hidden: (returning: boolean) => (returning ? {} : { opacity: 0, y: 8 }),
+  hidden: { opacity: 0, y: 8 },
   insert: {},
   shown: { opacity: 1, y: 0, transition: { duration: 0.32, ease: EASE_OUT } },
-};
-/** The rest of a returning row (time, rail, tags, chips): fades in once its frame has nearly landed. Inert for other rows. */
-const settle: Variants = {
-  hidden: (returning: boolean) => (returning ? { opacity: 0 } : {}),
-  insert: {},
-  shown: { opacity: 1, transition: { duration: 0.26, delay: 0.22, ease: EASE_OUT } },
 };
 
 /** Whether something mounting here now arrives while its list is on screen (and should unfold) */
@@ -55,10 +45,9 @@ const InsertContext = createContext(false);
 /**
  * Unfolds (height + opacity) when it mounts while its list is already on screen, folds away when it leaves on its own.
  * It has no padding and clips vertically (`clip`, not `hidden`: no scroll container, so sticky day headers keep working),
- * so the fold runs to exactly zero. Inside a Fold that is still unfolding, nested Folds don't unfold again. `clip={false}`
- * while a card flies home through it (the back morph), which a clip would cut off.
+ * so the fold runs to exactly zero. Inside a Fold that is still unfolding, nested Folds don't unfold again.
  */
-function Fold({ clip = true, children }: { clip?: boolean; children: ReactNode }) {
+function Fold({ children }: { children: ReactNode }) {
   const parentInserting = useContext(InsertContext);
   const [inserting] = useState(parentInserting);
   const mounted = useHasMounted();
@@ -68,7 +57,7 @@ function Fold({ clip = true, children }: { clip?: boolean; children: ReactNode }
       animate={{ height: 'auto', opacity: 1 }}
       exit={{ height: 0, opacity: 0 }}
       transition={SWAP_TRANSITION}
-      className={clip ? 'overflow-y-clip [overflow-clip-margin:3px]' : undefined}
+      className="overflow-y-clip [overflow-clip-margin:3px]"
     >
       <InsertContext.Provider value={mounted}>{children}</InsertContext.Provider>
     </motion.div>
@@ -82,47 +71,30 @@ function useMinute() {
 
 interface TimelineProps {
   items: IntelItem[];
-  /** Part of the list's key: a tab switch swaps the whole list */
+  /** Part of the list's key: a tab switch pushes the whole list sideways */
   tab: IntelTab;
   onSelect: (id: number) => void;
-  /** Read on mount: the window opened on the timeline (no entrance on the first paint) */
-  skipEntrance: boolean;
-  /** Read on mount: the item whose detail just closed; its card morphs back into place instead of fading in */
-  returnId: number | null;
+  /** Read on mount: the window just opened, so the cards stagger in */
+  entrance: boolean;
 }
 
-/**
- * Day-grouped timeline of wide cards with a time rail. Each card's frame and title share a `layoutId` with the detail
- * header (IntelDetail), so opening an item morphs the card into it and going back morphs it home. No entrance on the first paint.
- */
-export default function IntelTimeline({ items, tab, onSelect, skipEntrance, returnId: initialReturnId }: TimelineProps) {
+/** Day-grouped timeline of wide cards with a time rail. */
+export default function IntelTimeline({ items, tab, onSelect, entrance }: TimelineProps) {
   const now = useMinute();
-  const mounted = useHasMounted();
-  const [skipFirst] = useState(skipEntrance);
   const groups = groupByDay(items, now);
-  // Only the first list returns a card: after a tab switch nothing morphs back
-  const [returnId] = useState(initialReturnId);
-  const [firstTab] = useState(tab);
-  const [tabChanged, setTabChanged] = useState(false);
-  if (!tabChanged && tab !== firstTab) setTabChanged(true);
-  const morphId = tabChanged ? null : returnId;
-  // The returning card flies home unclipped (its Folds) and above its neighbours and the sticky day header, until its
-  // frame has landed (or after 1.5 s, when no morph ran: reduced motion, card not found)
-  const [lifted, setLifted] = useState(returnId !== null);
-  useEffect(() => {
-    if (!lifted) return;
-    const timer = setTimeout(() => setLifted(false), 1500);
-    return () => clearTimeout(timer);
-  }, [lifted]);
+  // Derived during render: which way the last tab switch went, and whether there was one (only the first list may stagger in)
+  const [last, setLast] = useState({ tab, direction: 1, switched: false });
+  if (last.tab !== tab) setLast({ tab, direction: INTEL_TAB_ORDER.indexOf(tab) > INTEL_TAB_ORDER.indexOf(last.tab) ? 1 : -1, switched: true });
+  const [stagger] = useState(entrance);
 
   return (
-    <AnimatePresence mode="wait">
-      <TimelineList key={tab} skipEntrance={skipFirst && !mounted}>
+    <AnimatePresence mode="wait" custom={last.direction}>
+      <TimelineList key={tab} start={last.switched ? 'push' : stagger ? 'hidden' : false} direction={last.direction}>
         {/* Outside the padded list: centred in the whole window */}
         <AnimatePresence>
           {groups.length === 0 && (
             <Fold key="empty">
-              <motion.p custom={false} variants={entry} className="py-10 text-center text-sm text-muted-foreground">
+              <motion.p variants={entry} className="py-10 text-center text-sm text-muted-foreground">
                 Nog niets gepubliceerd
               </motion.p>
             </Fold>
@@ -130,45 +102,31 @@ export default function IntelTimeline({ items, tab, onSelect, skipEntrance, retu
         </AnimatePresence>
         <div className="pr-2">
           <AnimatePresence>
-            {groups.map((group, index) => {
-              const flying = lifted && group.items.some((item) => item.id === morphId);
-              return (
-                <Fold key={group.key} clip={!flying}>
-                  <motion.section custom={{ offset: groups.slice(0, index).reduce((sum, before) => sum + 1 + before.items.length, 0), base: morphId !== null ? RETURN_BASE : BASE }} variants={day}>
-                    <motion.h3
-                      custom={false}
-                      variants={entry}
-                      className="sticky top-0 z-10 bg-linear-to-b from-beheer-window from-70% to-transparent pt-3.5 pb-2 pl-[66px] text-[11.5px] font-extrabold tracking-[0.06em] whitespace-nowrap text-muted-foreground uppercase"
-                    >
-                      {group.label}
-                    </motion.h3>
-                    <AnimatePresence>
-                      {group.items.map((item) => {
-                        const returning = item.id === morphId;
-                        return (
-                          <Fold key={item.id} clip={!(returning && lifted)}>
-                            <motion.div
-                              data-intel-id={item.id}
-                              custom={returning}
-                              variants={entry}
-                              className={cn('grid grid-cols-[52px_14px_1fr] gap-x-2.5', returning && lifted && 'relative z-20')}
-                            >
-                              <motion.div custom={returning} variants={settle} className="pt-[15px] text-right text-xs text-muted-foreground tabular-nums">
-                                {formatClock(item.publishAt)}
-                              </motion.div>
-                              <motion.div custom={returning} variants={settle} className="relative before:absolute before:inset-y-0 before:left-1.5 before:w-0.5 before:bg-beheer-row-high">
-                                <span className="absolute top-[18px] left-0.5 size-2.5 rounded-full ring-2 ring-beheer-window" style={{ backgroundColor: KIND_COLOR[item.kind] }} />
-                              </motion.div>
-                              <WideCard item={item} now={now} returning={returning} onSelect={onSelect} onLanded={returning ? () => setLifted(false) : undefined} />
-                            </motion.div>
-                          </Fold>
-                        );
-                      })}
-                    </AnimatePresence>
-                  </motion.section>
-                </Fold>
-              );
-            })}
+            {groups.map((group, index) => (
+              <Fold key={group.key}>
+                <motion.section custom={groups.slice(0, index).reduce((sum, before) => sum + 1 + before.items.length, 0)} variants={day}>
+                  <motion.h3
+                    variants={entry}
+                    className="sticky top-0 z-10 bg-linear-to-b from-beheer-window from-70% to-transparent pt-3.5 pb-2 pl-[66px] text-[11.5px] font-extrabold tracking-[0.06em] whitespace-nowrap text-muted-foreground uppercase"
+                  >
+                    {group.label}
+                  </motion.h3>
+                  <AnimatePresence>
+                    {group.items.map((item) => (
+                      <Fold key={item.id}>
+                        <motion.div data-intel-id={item.id} variants={entry} className="grid grid-cols-[52px_14px_1fr] gap-x-2.5">
+                          <div className="pt-[15px] text-right text-xs text-muted-foreground tabular-nums">{formatClock(item.publishAt)}</div>
+                          <div className="relative before:absolute before:inset-y-0 before:left-1.5 before:w-0.5 before:bg-beheer-row-high">
+                            <span className="absolute top-[18px] left-0.5 size-2.5 rounded-full ring-2 ring-beheer-window" style={{ backgroundColor: KIND_COLOR[item.kind] }} />
+                          </div>
+                          <WideCard item={item} now={now} onSelect={onSelect} />
+                        </motion.div>
+                      </Fold>
+                    ))}
+                  </AnimatePresence>
+                </motion.section>
+              </Fold>
+            ))}
           </AnimatePresence>
         </div>
       </TimelineList>
@@ -176,15 +134,19 @@ export default function IntelTimeline({ items, tab, onSelect, skipEntrance, retu
   );
 }
 
-/** One list (one tab). `skipEntrance` is read once, when it mounts. */
-function TimelineList({ skipEntrance, children }: { skipEntrance: boolean; children: ReactNode }) {
-  const [skip] = useState(skipEntrance);
+/**
+ * One list (one tab). `start` is read once, when it mounts. What mounts with the list arrives with it (rides along or
+ * staggers in); only what mounts after the list's first paint unfolds.
+ */
+function TimelineList({ start, direction, children }: { start: 'hidden' | 'push' | false; direction: number; children: ReactNode }) {
+  const [initial] = useState(start);
   const mounted = useHasMounted();
   return (
     <motion.div
+      custom={direction}
       variants={list}
-      // Read by motion only on mount for the list itself; its children inherit it when they mount
-      initial={mounted ? 'insert' : skip ? false : 'hidden'}
+      // Read by motion only on mount for the list itself; its children inherit it when they mount, so later ones get `insert`
+      initial={mounted ? 'insert' : initial}
       animate="shown"
       exit="gone"
       className="w-full pb-8"
@@ -213,66 +175,43 @@ function UnreadDot({ unread }: { unread: boolean }) {
   );
 }
 
-/**
- * The card. Its background is a separate frame (`layoutId` intel-card-<id>) and its title moves on its own
- * (`layoutId` intel-title-<id>, position only): the frame scales into the detail header and back while the text never
- * stretches; the title crossfades with the detail title on the way. `returning`: tags and chips fade in after the morph.
- */
-function WideCard({ item, now, returning, onSelect, onLanded }: { item: IntelItem; now: number; returning: boolean; onSelect: (id: number) => void; onLanded?: () => void }) {
+/** The card: a plain button whose background is the frame */
+function WideCard({ item, now, onSelect }: { item: IntelItem; now: number; onSelect: (id: number) => void }) {
   const states = item.kind === 'hint' ? areaStates(item.cells) : null;
   const count = item.kind === 'hint' ? solvedCount(item.cells) : null;
-  const morph = useMorphIds(item.id);
   const status = item.assignment?.status ?? 'open';
   return (
     <button
       type="button"
       onClick={() => onSelect(item.id)}
-      className="group relative my-[5px] block w-full rounded-[20px] px-[15px] py-[13px] text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+      className="my-[5px] block w-full rounded-[20px] bg-card px-[15px] py-[13px] text-left outline-none transition-colors hover:bg-beheer-row focus-visible:ring-[3px] focus-visible:ring-ring/50"
     >
-      <motion.span
-        layoutId={morph.card}
-        // Fixed and different from the detail header's: only the morph animates, not every change in the card's size
-        layoutDependency="card"
-        layoutCrossfade={false}
-        onLayoutAnimationComplete={onLanded}
-        transition={INTEL_MORPH}
-        // Set as a style so motion corrects the corners while the frame scales
-        style={{ borderRadius: 20 }}
-        className="absolute inset-0 bg-card transition-colors group-hover:bg-beheer-row"
-        aria-hidden
-      />
-      <span className="relative flex items-center gap-2">
+      <span className="flex items-center gap-2">
         <UnreadDot unread={item.unread} />
-        <motion.span layoutId={morph.title} layoutDependency="card" layout="position" transition={INTEL_MORPH} className="text-[14.5px] font-bold">
-          {item.title}
-        </motion.span>
-        <motion.span custom={returning} variants={settle} className="flex flex-1 items-center gap-2">
-          <KindTag kind={item.kind} />
-          {count && (
-            <span className="ml-auto shrink-0 text-xs text-muted-foreground tabular-nums">
-              {count.solved}/{count.total} opgelost
-            </span>
-          )}
-          {item.kind === 'assignment' && item.endTime && <DeadlineTag endTime={item.endTime} now={now} status={status} className="ml-auto shrink-0" />}
-        </motion.span>
+        <span className="text-[14.5px] font-bold">{item.title}</span>
+        <KindTag kind={item.kind} />
+        {count && (
+          <span className="ml-auto shrink-0 text-xs text-muted-foreground tabular-nums">
+            {count.solved}/{count.total} opgelost
+          </span>
+        )}
+        {item.kind === 'assignment' && item.endTime && <DeadlineTag endTime={item.endTime} now={now} status={status} className="ml-auto shrink-0" />}
       </span>
-      <motion.span custom={returning} variants={settle} className="relative block">
-        {item.summary && <span className="mt-[3px] line-clamp-2 block text-xs text-muted-foreground">{item.summary}</span>}
-        {states && (
-          <span className="mt-2.5 flex flex-wrap gap-1">
-            {areaOptions.map(({ value, label }) => (
-              <AreaChip key={value} area={value} state={states[value]} label={label} />
-            ))}
-          </span>
-        )}
-        {item.kind === 'assignment' && (
-          <span className="mt-2.5 flex gap-1.5">
-            <Tag>{ASSIGNMENT_STATUS_LABELS[status]}</Tag>
-            <Tag>{item.assignment?.owner?.name ?? 'niemand'}</Tag>
-            {item.maxPoints ? <Tag>max {item.maxPoints} pt</Tag> : null}
-          </span>
-        )}
-      </motion.span>
+      {item.summary && <span className="mt-[3px] line-clamp-2 block text-xs text-muted-foreground">{item.summary}</span>}
+      {states && (
+        <span className="mt-2.5 flex flex-wrap gap-1">
+          {areaOptions.map(({ value, label }) => (
+            <AreaChip key={value} area={value} state={states[value]} label={label} />
+          ))}
+        </span>
+      )}
+      {item.kind === 'assignment' && (
+        <span className="mt-2.5 flex gap-1.5">
+          <Tag>{ASSIGNMENT_STATUS_LABELS[status]}</Tag>
+          <Tag>{item.assignment?.owner?.name ?? 'niemand'}</Tag>
+          {item.maxPoints ? <Tag>max {item.maxPoints} pt</Tag> : null}
+        </span>
+      )}
     </button>
   );
 }

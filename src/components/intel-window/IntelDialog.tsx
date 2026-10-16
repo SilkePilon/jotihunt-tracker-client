@@ -90,14 +90,13 @@ function IntelWindow({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
   const selected = shown.find((item) => item.id === articleId) ?? null;
   const mounted = useHasMounted();
 
-  // The last selection that showed (derived during render); its card morphs back when the detail closes
-  const [resolvedId, setResolvedId] = useState<number | null>(null);
-  if (selected && resolvedId !== selected.id) setResolvedId(selected.id);
   // A selection that showed and then left the list (the article went) goes back to the timeline. One that never
   // showed yet stays pending: a toast for a just-published article can be quicker than the next /articles poll.
+  const shownIdRef = useRef<number | null>(null);
   useEffect(() => {
-    if (articleId !== null && articleId === resolvedId && !selected) select(null);
-  }, [articleId, resolvedId, selected, select]);
+    if (selected) shownIdRef.current = selected.id;
+    else if (articleId !== null && articleId === shownIdRef.current) select(null);
+  }, [articleId, selected, select]);
 
   // A pending article that is not in the data yet: fetch articles and the hint board now instead of at the next poll.
   // Still not there after that fetch: drop it, so the detail can't open out of the blue later.
@@ -117,25 +116,20 @@ function IntelWindow({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
     if (selected && selected.kind !== 'hint' && selected.unread) void markRead(selected.id);
   }, [selected, markRead]);
 
-  // Where the timeline was scrolled (and on which tab), so going back puts the card where it was clicked
+  // Where the timeline was scrolled (and on which tab), so going back puts the list where it was
   const timelineScroll = useRef<{ tab: IntelTab; top: number } | null>(null);
 
-  // Derived during render. `gen` keys the views, so a quick back-and-forth mounts a fresh view (with a fresh morph)
-  // instead of reviving one that is still fading out. `from`: the timeline's tab when the detail opened (openIntel can
-  // switch the tab in the same go); only going back to that tab morphs the card home.
+  // Derived during render. `gen` keys the views, so a quick back-and-forth mounts a fresh view instead of reviving one
+  // that is still fading out.
   const split = selected !== null;
-  const [timelineTab, setTimelineTab] = useState(tab);
-  if (!split && timelineTab !== tab) setTimelineTab(tab);
-  const [view, setView] = useState({ split, gen: 0, from: tab });
-  if (view.split !== split) setView({ split, gen: view.gen + 1, from: split ? timelineTab : view.from });
-  const returnId = view.from === tab ? resolvedId : null;
+  const [view, setView] = useState({ split, gen: 0 });
+  if (view.split !== split) setView({ split, gen: view.gen + 1 });
 
   /*
-   * Detail choreography. Open: the timeline fades out (0.16 s) underneath while the clicked card's frame and title morph
-   * (shared layoutId, INTEL_MORPH) into the detail header on top, then the parts below stagger in. Back: the detail fades
-   * out underneath while the header morphs back into its card on top of the timeline, which is scrolled back to where it
-   * was; the other cards stagger in and the returning card's tags fade in as it lands. Swap: only the detail content
-   * changes (DETAIL_SWAP). The views are stacked (absolute), so the leaving one never moves the entering one.
+   * Detail choreography. Open: the timeline fades out (0.16 s) underneath while the detail's parts stagger in on top.
+   * Back: the detail fades out underneath while the timeline comes back on top, scrolled to where it was (the cards
+   * don't stagger again: that is only for the window's first paint). Swap: only the detail content changes
+   * (DETAIL_SWAP). The views are stacked (absolute), so the leaving one never moves the entering one.
    */
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -148,7 +142,7 @@ function IntelWindow({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
             </View>
           ) : (
             <View key={`timeline-${view.gen}`}>
-              <TimelineView items={shown} allItems={items} cells={cells} tab={tab} memoryRef={timelineScroll} skipEntrance={!mounted} returnId={returnId} onSelect={select} />
+              <TimelineView items={shown} allItems={items} cells={cells} tab={tab} memoryRef={timelineScroll} entrance={!mounted} onSelect={select} />
             </View>
           )}
         </AnimatePresence>
@@ -179,28 +173,19 @@ interface TimelineViewProps {
   cells: HintCell[];
   tab: IntelTab;
   memoryRef: RefObject<{ tab: IntelTab; top: number } | null>;
-  skipEntrance: boolean;
-  returnId: number | null;
+  /** Read on mount: the window just opened (the cards stagger in, the status card counts up); later the timeline just comes back */
+  entrance: boolean;
   onSelect: (id: number) => void;
 }
 
 /** The scrolling timeline. `layoutScroll`: the card morph accounts for its scroll position. */
-function TimelineView({ items, allItems, cells, tab, memoryRef, skipEntrance, returnId, onSelect }: TimelineViewProps) {
+function TimelineView({ items, allItems, cells, tab, memoryRef, entrance, onSelect }: TimelineViewProps) {
   const ref = useRef<HTMLDivElement>(null);
-  // Before motion measures the returning card (a microtask after this commit): back to where the list was (same tab
-  // only), then, if the returning card is not in view there (another item was swapped in, or the window opened on the
-  // item), centre it so it never flies home off-screen
+  // Before the first paint: back to where the list was (same tab only)
   useLayoutEffect(() => {
     const scroller = ref.current;
-    if (!scroller) return;
     const saved = memoryRef.current;
-    if (saved?.tab === tab) scroller.scrollTop = saved.top;
-    const row = returnId === null ? null : scroller.querySelector(`[data-intel-id="${returnId}"]`);
-    if (!row) return;
-    const box = scroller.getBoundingClientRect();
-    const card = row.getBoundingClientRect();
-    // 44px: the sticky day header covers the top
-    if (card.top < box.top + 44 || card.bottom > box.bottom) scroller.scrollTop += card.top - box.top - Math.max(44, (box.height - card.height) / 2);
+    if (scroller && saved?.tab === tab) scroller.scrollTop = saved.top;
     // Mount only
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -218,10 +203,10 @@ function TimelineView({ items, allItems, cells, tab, memoryRef, skipEntrance, re
         }}
         className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto [scrollbar-gutter:stable]"
       >
-        <IntelTimeline items={items} tab={tab} skipEntrance={skipEntrance} returnId={returnId} onSelect={onSelect} />
+        <IntelTimeline items={items} tab={tab} entrance={entrance} onSelect={onSelect} />
       </motion.div>
-      {/* Stats over every kind, whatever the tab. skipEntrance is true on the window's first paint: that is the card's entrance */}
-      <StatusCard items={allItems} cells={cells} entrance={skipEntrance} />
+      {/* Stats over every kind, whatever the tab */}
+      <StatusCard items={allItems} cells={cells} entrance={entrance} />
     </div>
   );
 }
