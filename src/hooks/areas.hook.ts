@@ -8,6 +8,8 @@ export const useAreas = () => {
   const { data, error } = useAuthSWR<Area[]>('/areas', {
     // The server refreshes areas from the Jotihunt API every 10 s
     refreshInterval: 5000,
+    // Several components use this hook: one request per poll, not one per mount
+    dedupingInterval: 5000,
   });
 
   const { hiddenAreas, toggleHidden } = useHiddenAreasStore();

@@ -8,6 +8,8 @@ export const useMarkers = () => {
 
   const { data, error, mutate } = useAuthSWR<Marker[]>('/markers', {
     refreshInterval: 5000,
+    // Several components use this hook: one request per poll, not one per mount
+    dedupingInterval: 5000,
   });
 
   /**

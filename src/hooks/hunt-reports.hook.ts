@@ -74,7 +74,7 @@ function huntReportActions(authHeader: string, mutate: ReportsMutate) {
 
 export const useHuntReports = () => {
   const authHeader = useAuthHeader() || '';
-  const { data, error, mutate } = useAuthSWR<HuntReport[]>(REPORTS_PATH, { refreshInterval: HUNT_REPORTS_REFRESH_MS });
+  const { data, error, mutate } = useAuthSWR<HuntReport[]>(REPORTS_PATH, { refreshInterval: HUNT_REPORTS_REFRESH_MS, dedupingInterval: HUNT_REPORTS_REFRESH_MS });
   return { reports: asList(data), isError: !!error, ...huntReportActions(authHeader, mutate) };
 };
 
