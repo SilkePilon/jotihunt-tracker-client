@@ -23,6 +23,7 @@ import {
   type InviteExpiry,
 } from '@/lib/beheer';
 import { copyToClipboard, writeClipboard } from '@/lib/clipboard';
+import { TRIGGER_OPEN } from '@/lib/menu-styles';
 import { POP, SWAP } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { BeheerCard, BeheerPane, BeheerRow, BeheerRows, BeheerSkeleton, RowFrame } from './BeheerLayout';
@@ -59,15 +60,18 @@ function Picker({ label, value, options, onChange, disabled }: { label: string; 
         <button
           type="button"
           aria-label={`${label}: ${current}`}
-          className="inline-flex h-[38px] items-center gap-1.5 rounded-lg bg-beheer-row pr-2.5 pl-3.5 text-[13px] font-semibold outline-none transition-colors hover:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-50 data-[state=open]:bg-beheer-row-high"
+          className={cn(
+            'group inline-flex h-[38px] items-center gap-1.5 rounded-lg bg-beheer-row pr-2.5 pl-3.5 text-[13px] font-semibold outline-none transition-colors hover:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-50',
+            TRIGGER_OPEN,
+          )}
         >
-          <span className="font-medium text-muted-foreground">{label}</span>
+          <span className="font-medium text-muted-foreground transition-colors group-data-[state=open]:text-(--map-selected-fg)/70">{label}</span>
           <AnimatePresence mode="popLayout" initial={false}>
             <motion.span key={current} {...SWAP}>
               {current}
             </motion.span>
           </AnimatePresence>
-          <ChevronDownIcon className="size-3.5 text-muted-foreground" />
+          <ChevronDownIcon data-chevron className="size-3.5 text-muted-foreground" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-40">

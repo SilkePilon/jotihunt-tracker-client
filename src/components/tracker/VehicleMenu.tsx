@@ -1,7 +1,11 @@
+import { AnimatePresence, motion } from 'motion/react';
 import { ChevronDownIcon, Loader2Icon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { TRIGGER_OPEN } from '@/lib/menu-styles';
+import { SWAP } from '@/lib/motion';
 import { isVehicle, VEHICLE_ICONS, VEHICLE_OPTIONS } from '@/lib/tracker';
+import { cn } from '@/lib/utils';
 import type { Vehicle } from '@/types/Tracker';
 
 interface VehicleMenuProps {
@@ -17,13 +21,17 @@ export default function VehicleMenu({ value, saving, onChange }: VehicleMenuProp
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild disabled={saving}>
-        <Button variant="secondary" size="sm" className="rounded-full" aria-label={`Voertuig: ${current.label}. Wijzigen`}>
-          {saving ? <Loader2Icon className="animate-spin" /> : <Icon />}
-          {current.phrase}
-          <ChevronDownIcon className="opacity-60" />
+        <Button variant="secondary" size="sm" className={cn('rounded-full', TRIGGER_OPEN)} aria-label={`Voertuig: ${current.label}. Wijzigen`}>
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.span key={saving ? 'saving' : current.value} {...SWAP} className="flex items-center gap-2">
+              {saving ? <Loader2Icon className="animate-spin" /> : <Icon />}
+              {current.phrase}
+            </motion.span>
+          </AnimatePresence>
+          <ChevronDownIcon data-chevron className="opacity-60" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="center">
+      <DropdownMenuContent align="center" className="w-52">
         <DropdownMenuRadioGroup
           value={value}
           onValueChange={(next) => {
