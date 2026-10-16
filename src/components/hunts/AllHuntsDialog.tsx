@@ -5,13 +5,14 @@ import { BeheerCard, BeheerPane, BeheerRows, CountSwap } from '@/components/behe
 import { IconPill, Pill } from '@/components/beheer/controls/Pill';
 import { NavItem, type NavIcon } from '@/components/beheer/WindowNav';
 import ResponsiveDialog from '@/components/ResponsiveDialog';
+import { DIALOG_SHELL } from '@/lib/dialog-shell';
 import { useHuntReports } from '@/hooks/hunt-reports.hook';
 import { useHunts } from '@/hooks/hunts.hook';
 import { useIsMobile } from '@/hooks/media.hook';
 import { HUNT_FILTER_LABELS, HUNT_FILTERS, huntAreaTotals, huntFilterCounts, huntItemArea, huntItemKey, huntItemPoints, matchesHuntFilter, type HuntFilter } from '@/lib/hunt-list';
 import { huntListItems } from '@/lib/hunt-reports';
 import { PANE_SLIDE, PANE_SLIDE_TRANSITION, SWAP } from '@/lib/motion';
-import { getColorFromArea } from '@/lib/utils';
+import { cn, getColorFromArea } from '@/lib/utils';
 import HuntListRow from './HuntListRow';
 
 /** Rows rendered at first (and added per "Meer laden"), so a long list opens quickly. */
@@ -45,7 +46,8 @@ export default memo(function AllHuntsDialog({ open, onOpenChange, initialReportI
       title="Alle hunts"
       description="Alle geregistreerde hunts en hunts van jotihunt.nl."
       hideHeader
-      className="h-[640px] max-h-[85dvh] gap-0 overflow-hidden bg-beheer-window p-0 sm:max-w-[960px] sm:rounded-[20px]"
+      // Shell shared with Intel/Account/Meldingen (28px corners, tonal close button)
+      className={cn(DIALOG_SHELL, 'h-[640px] max-h-[85dvh] gap-0 overflow-hidden bg-beheer-window p-0 sm:max-w-[960px]')}
       drawerClassName="bg-beheer-window"
     >
       <AllHuntsWindow open={open} initialReportId={initialReportId} />

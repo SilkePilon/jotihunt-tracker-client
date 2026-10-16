@@ -2,6 +2,8 @@ import { lazy, Suspense, useEffect, type RefObject } from 'react';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import type { MapRef } from '@/components/Map';
 import ResponsiveDialog from '@/components/ResponsiveDialog';
+import { DIALOG_SHELL } from '@/lib/dialog-shell';
+import { cn } from '@/lib/utils';
 import useAdminStore from '@/stores/admin.store';
 import type { User } from '@/types/User';
 
@@ -35,7 +37,8 @@ export default function BeheerDialog({ mapRef }: BeheerDialogProps) {
       title="Beheer"
       description="Instellingen, gebruikers, invites, hunters en koppelingen."
       hideHeader
-      className="h-[640px] max-h-[85dvh] gap-0 overflow-hidden bg-beheer-window p-0 sm:max-w-[960px] sm:rounded-[20px]"
+      // Shell shared with Intel/Account/Meldingen (28px corners, tonal close button)
+      className={cn(DIALOG_SHELL, 'h-[640px] max-h-[85dvh] gap-0 overflow-hidden bg-beheer-window p-0 sm:max-w-[960px]')}
       drawerClassName="bg-beheer-window"
     >
       {/* Only mounted while the window is open (or closing) */}
