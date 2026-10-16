@@ -23,7 +23,7 @@ per-usage overrides that only re-implemented parts of it.
   `bg-beheer-row`, `rounded-md` with `first:rounded-t-2xl last:rounded-b-2xl`, `px-3 py-2.5 text-[13.5px] font-semibold`,
   `focus:bg-beheer-row-high`, `transition-colors duration-150`. Labels and separators split groups; rows on either side
   of them get their own outer corners.
-- **Selected state** (checked radio / checkbox / select item): soft orange row `bg-(--map-selected-bg) text-(--map-selected-fg)`
+- **Selected state** (checked radio / select item; checkbox items only get the right-hand check): soft orange row `bg-(--map-selected-bg) text-(--map-selected-fg)`
   with a check icon on the right. The stock left indicator (dot / check, `pl-8`) is removed.
 - **Destructive rows** (`variant="destructive"`): `--map-danger-bg/fg` tint.
 - **Labels**: small muted uppercase header (`text-[11px] font-bold tracking-wide uppercase text-muted-foreground`).
