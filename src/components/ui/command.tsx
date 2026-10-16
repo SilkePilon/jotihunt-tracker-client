@@ -151,7 +151,8 @@ function CommandItem({
       data-slot="command-item"
       className={cn(
         MENU_ROW_BASE,
-        "focus:bg-beheer-row data-[selected=true]:bg-beheer-row-high data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50",
+        // cmdk sets data-disabled="false" on enabled items too, which the row's bare data-[disabled] dimming would match
+        "focus:bg-beheer-row data-[selected=true]:bg-beheer-row-high data-[disabled=false]:pointer-events-auto! data-[disabled=false]:opacity-100!",
         className
       )}
       {...props}
