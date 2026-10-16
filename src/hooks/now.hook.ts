@@ -39,7 +39,12 @@ function createClock(periodMs: number): Clock {
       now = Date.now();
       return () => {};
     },
-    getNow: () => now,
+    // With nobody ticking, `now` can be hours old by the first render of a newly opened view (React renders before
+    // it subscribes); catch it up then, at most once per period so a render still reads one stable value
+    getNow() {
+      if (listeners.size === 0 && Date.now() - now >= periodMs) now = Date.now();
+      return now;
+    },
   };
 }
 
