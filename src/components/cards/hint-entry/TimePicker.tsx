@@ -3,7 +3,6 @@ import { ClockIcon } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { SWAP } from '@/lib/motion';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { MENU_CARD } from '@/components/settings/menu-parts';
 import Segmented from '@/components/beheer/controls/Segmented';
 import { cn } from '@/lib/utils';
 import { dayKey, defaultDay, shortLabel, type HintDay } from './hint-times';
@@ -59,7 +58,7 @@ export default function TimePicker({ id, value, onChange, days, open, onOpenChan
         align="end"
         sideOffset={6}
         collisionPadding={8}
-        className={cn(MENU_CARD, 'w-[280px] p-2.5')}
+        className="w-[280px] p-2.5"
         // After a pick, focus goes on to the X digits instead of back to this trigger
         onCloseAutoFocus={(event) => {
           if (!picked.current) return;

@@ -1,5 +1,5 @@
 import * as React from "react"
-import {ChevronsUpDownIcon, NavigationIcon} from "lucide-react"
+import {ChevronDownIcon, NavigationIcon} from "lucide-react"
 
 import {
     Command,
@@ -19,6 +19,7 @@ import {useTeams} from "@/hooks/teams.hook.ts";
 import {Team} from "@/types/Team.ts";
 import {cn} from "@/lib/utils.ts";
 import {MAP_CHIP, MAP_TILE} from "@/lib/map-chrome.ts";
+import {TRIGGER_OPEN} from "@/lib/menu-styles.ts";
 
 export default function SearchCard({ mapRef }: { mapRef: React.RefObject<MapRef | null> }) {
     const [open, setOpen] = React.useState(false)
@@ -44,14 +45,15 @@ export default function SearchCard({ mapRef }: { mapRef: React.RefObject<MapRef 
                     className={cn(
                         MAP_TILE,
                         "flex h-11 w-[300px] items-center gap-2.5 rounded-[14px] pr-3 pl-1.5 text-left transition-colors hover:bg-beheer-row focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none",
+                        TRIGGER_OPEN,
                     )}
                 >
                     <span className={MAP_CHIP}><NavigationIcon/></span>
                     <span className="min-w-0 flex-1 truncate text-sm font-medium">Snel navigeren naar groep...</span>
-                    <ChevronsUpDownIcon className="size-4 shrink-0 opacity-50" />
+                    <ChevronDownIcon data-chevron className="size-4 shrink-0 opacity-50" />
                 </button>
             </PopoverTrigger>
-            <PopoverContent className="w-(--radix-popover-trigger-width) overflow-hidden rounded-2xl p-0">
+            <PopoverContent className="w-(--radix-popover-trigger-width) p-3">
                 <Command>
                     <CommandInput placeholder="Zoeken..." />
                     <CommandList>

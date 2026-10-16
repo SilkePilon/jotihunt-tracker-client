@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { CheckIcon, RefreshCwIcon } from 'lucide-react';
+import { CheckIcon, ChevronDownIcon, RefreshCwIcon } from 'lucide-react';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useNow } from '@/hooks/now.hook';
 import { formatAgo } from '@/lib/account';
 import { apiErrorMessage } from '@/lib/api-error';
 import type { GeminiModelInfo } from '@/lib/app-config';
+import { TRIGGER_OPEN } from '@/lib/menu-styles';
 import { cn } from '@/lib/utils';
-import { Chevron } from './BeheerLayout';
 
 const GROUP_TITLE: Record<GeminiModelInfo['group'], string> = { alias: 'Aliassen', latest: 'Nieuwste versie', older: 'Ouder' };
 const GROUPS = ['alias', 'latest', 'older'] as const;
@@ -56,14 +56,15 @@ export default function ModelPicker({ value, defaultId, models, fetchedAt, listE
           aria-label={`Model voor ${label}`}
           className={cn(
             'inline-flex h-[34px] w-[190px] shrink-0 items-center justify-between gap-2 rounded-xl bg-beheer-row-high pr-2.5 pl-3 text-[12.5px] font-semibold outline-none transition-colors hover:bg-beheer-row-high/70 focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50',
+            TRIGGER_OPEN,
             className,
           )}
         >
           <span className="truncate">{name}</span>
-          <Chevron open={open} />
+          <ChevronDownIcon data-chevron className="size-4 text-muted-foreground" />
         </button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-80 rounded-2xl p-1.5">
+      <PopoverContent align="end" className="w-80 p-3">
         <Command>
           <CommandInput placeholder="Zoek model…" />
           <CommandList className="max-h-72">
@@ -81,7 +82,6 @@ export default function ModelPicker({ value, defaultId, models, fetchedAt, listE
                         if (model.id !== value) onChange(model.id);
                         setOpen(false);
                       }}
-                      className="gap-2.5 rounded-[10px]"
                     >
                       <CheckIcon className={cn('size-4 text-primary transition-opacity', model.id !== value && 'opacity-0')} />
                       <span className="min-w-0 flex-1">
@@ -100,7 +100,7 @@ export default function ModelPicker({ value, defaultId, models, fetchedAt, listE
           type="button"
           onClick={() => void refresh()}
           disabled={refreshing}
-          className="mt-1 flex w-full items-center gap-1.5 border-t border-border px-2.5 pt-2 pb-1 text-left text-[11.5px] text-muted-foreground transition-colors hover:text-foreground"
+          className="mt-2 flex w-full items-center gap-1.5 rounded-[14px] bg-beheer-row px-3 py-2 text-left text-[11.5px] text-muted-foreground transition-colors hover:bg-beheer-row-high hover:text-foreground"
         >
           <RefreshCwIcon className={cn('size-3.5 shrink-0', refreshing && 'animate-spin')} />
           {listError ? 'Lijst niet beschikbaar · opnieuw proberen' : `Lijst van Google${fetchedAt ? ` · ${formatAgo(fetchedAt, now)}` : ''}`}
