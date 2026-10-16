@@ -3,7 +3,7 @@ import { AxiosError, AxiosHeaders } from 'axios';
 import type { Article } from '@/types/Article';
 import type { HintCell } from '@/types/HintCell';
 import type { IntelItem } from '@/types/Intel';
-import { answerPreview, areaStates, initialOpenArea, buildIntelItems, deadlineLabel, deadlineTone, filterByTab, formatSolveTime, groupByDay, hasExistingMarker, intelStats, isDeadlineUrgent, nextOpenArea, solvedCount, unreadCount, unreadLabel, unreadTab } from './intel-window';
+import { answerPreview, areaStates, chartColumns, initialOpenArea, buildIntelItems, deadlineLabel, deadlineTone, filterByTab, formatSolveTime, groupByDay, hasExistingMarker, intelStats, isDeadlineUrgent, nextOpenArea, solvedCount, unreadCount, unreadLabel, unreadTab } from './intel-window';
 
 const article = (id: number, type: string, publishAt: string, extra: Partial<Article> = {}) =>
   ({ id, title: `A${id}`, type, publishAt: new Date(publishAt), content: '<p>x</p>', messageType: '', maxPoints: 0, endTime: new Date(publishAt), ...extra }) as Article;
@@ -219,5 +219,35 @@ describe('stat labels', () => {
     expect(unreadTab({ news: 0, assignment: 2 })).toBe('assignment');
     expect(unreadTab({ news: 1, assignment: 2 })).toBe('news');
     expect(unreadTab({ news: 0, assignment: 0 })).toBe('news');
+  });
+});
+
+describe('chartColumns', () => {
+  const hourMs = 60 * 60_000;
+  const base = Date.UTC(2026, 9, 17, 10); // 12:00 in Amsterdam
+  const past = (count: number) =>
+    Array.from({ length: count }, (_, index) => ({ slotTime: new Date(base + index * hourMs).toISOString(), hour: '', solved: 1, open: 1 }));
+  const kinds = (columns: ReturnType<typeof chartColumns>) => columns.map((column) => column.kind);
+
+  test('one hint: the rest of the 8 columns are upcoming slots, the first one is next', () => {
+    const columns = chartColumns(past(1), new Date(base + hourMs), base + 20 * hourMs);
+    expect(kinds(columns)).toEqual(['past', 'next', 'later', 'later', 'later', 'later', 'later', 'later']);
+    expect(columns[1]).toMatchObject({ kind: 'next', slotTime: new Date(base + hourMs).toISOString(), hour: '13' });
+    expect(columns[2]).toMatchObject({ hour: '14' });
+  });
+
+  test('a full chart keeps room for the next hint by dropping the oldest', () => {
+    const columns = chartColumns(past(8), new Date(base + 8 * hourMs), base + 20 * hourMs);
+    expect(kinds(columns)).toEqual(['past', 'past', 'past', 'past', 'past', 'past', 'past', 'next']);
+    expect(columns[0]).toMatchObject({ slot: { slotTime: new Date(base + hourMs).toISOString() } });
+  });
+
+  test('no upcoming slots after the last hint slot', () => {
+    expect(kinds(chartColumns(past(3), new Date(base + 3 * hourMs), base + 4 * hourMs))).toEqual(['past', 'past', 'past', 'next', 'later']);
+    expect(kinds(chartColumns(past(3), null, base))).toEqual(['past', 'past', 'past']);
+  });
+
+  test('before the first hint: only upcoming slots', () => {
+    expect(kinds(chartColumns([], new Date(base), base + 2 * hourMs))).toEqual(['next', 'later', 'later']);
   });
 });

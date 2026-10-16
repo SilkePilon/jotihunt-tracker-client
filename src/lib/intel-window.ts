@@ -226,6 +226,30 @@ export function intelStats(items: IntelItem[], cells: HintCell[]): IntelStats {
   };
 }
 
+/**
+ * One column of the oplos-tempo chart: a published hint slot, the next expected one, or a later expected one.
+ * Expected slots come every full hour from `nextAt` up to the last hint slot.
+ */
+export type ChartColumn = { kind: 'past'; slot: SlotBar } | { kind: 'next' | 'later'; slotTime: string; hour: string };
+
+/**
+ * SOLVE_CHART_SLOTS columns: the published slots, then the expected ones. A full chart drops its oldest slot so the
+ * next hint keeps a column. `lastSlotMs`: the last hint slot of the hunt (nothing expected after it).
+ */
+export function chartColumns(slots: SlotBar[], nextAt: Date | null, lastSlotMs: number): ChartColumn[] {
+  const upcoming: number[] = [];
+  if (nextAt) {
+    for (let at = nextAt.getTime(); at <= lastSlotMs && upcoming.length < SOLVE_CHART_SLOTS; at += HOUR_MS) upcoming.push(at);
+  }
+  const pastRoom = SOLVE_CHART_SLOTS - Math.min(upcoming.length, Math.max(1, SOLVE_CHART_SLOTS - slots.length));
+  const past = slots.slice(-pastRoom);
+  const expected = upcoming.slice(0, SOLVE_CHART_SLOTS - past.length);
+  return [
+    ...past.map((slot) => ({ kind: 'past' as const, slot })),
+    ...expected.map((at, index) => ({ kind: index === 0 ? ('next' as const) : ('later' as const), slotTime: new Date(at).toISOString(), hour: hourFormat.format(at) })),
+  ];
+}
+
 /** "18 min", or "1 u 05" from 90 minutes on */
 export function formatSolveTime(ms: number): string {
   const minutes = Math.round(ms / 60_000);

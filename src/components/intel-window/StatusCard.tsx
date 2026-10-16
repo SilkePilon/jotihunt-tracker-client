@@ -3,12 +3,16 @@ import { AnimatePresence, motion } from 'motion/react';
 import CountUp from '@/components/motion/CountUp';
 import { useNextHint } from '@/hooks/next-hint.hook';
 import { formatClock } from '@/lib/format';
-import { formatSolveTime, intelStats, type SlotBar, unreadLabel, unreadTab } from '@/lib/intel-window';
+import { type ChartColumn, chartColumns, formatSolveTime, intelStats, type SlotBar, unreadLabel, unreadTab } from '@/lib/intel-window';
 import { EASE_OUT, LAYOUT_SPRING, SWAP } from '@/lib/motion';
-import { cn } from '@/lib/utils';
+
+import { areaOptions, cn } from '@/lib/utils';
 import useIntelStore from '@/stores/intel.store';
 import type { HintCell } from '@/types/HintCell';
 import type { IntelItem } from '@/types/Intel';
+
+/** A bar swapping between expected (dashed) and published */
+const FADE = { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 }, transition: { duration: 0.22 } };
 
 const LABEL = 'text-[11px] font-extrabold tracking-[0.06em] uppercase';
 const BIG = 'text-[24px] leading-none font-extrabold tracking-[-0.02em] tabular-nums';
@@ -109,30 +113,44 @@ function HintRing({ percent, entrance }: { percent: number; entrance: boolean })
         strokeLinecap="round"
         className="stroke-green-600 dark:stroke-green-400"
         initial={entrance ? { pathLength: 0 } : false}
-        animate={{ pathLength: percent / 100 }}
+        // At 0% the round cap would still paint a dot
+        animate={{ pathLength: percent / 100, opacity: percent > 0 ? 1 : 0 }}
         transition={{ duration: 0.7, delay: entrance ? 0.2 : 0, ease: EASE_OUT }}
       />
     </svg>
   );
 }
 
-/** Solved (green) over open (orange) cells per hint slot, oldest left; bars grow in on entrance and ease to new heights */
+/** The last hint slot of the hunt (as in useNextHint): nothing is expected after it */
+const LAST_SLOT_MS = new Date(import.meta.env.HUNT_END_TIME).getTime() - 60 * 60 * 1000;
+const AREA_COUNT = areaOptions.length;
+
+/**
+ * Solved (green) over open (orange) cells per hint slot, oldest left, on a fixed scale of all areas (bars max 24px wide,
+ * so one hint is never one big block). Expected slots fill the rest as dashed outlines; the next one in orange. Bars
+ * grow in on entrance and ease to new heights.
+ */
 function SolveChart({ slots, avgSolveMs, entrance }: { slots: SlotBar[]; avgSolveMs: number | null; entrance: boolean }) {
-  const max = Math.max(1, ...slots.map((slot) => slot.solved + slot.open));
+  const { nextAt } = useNextHint();
+  const nextMs = nextAt?.getTime() ?? null;
+  const columns = useMemo(() => chartColumns(slots, nextMs === null ? null : new Date(nextMs), LAST_SLOT_MS), [slots, nextMs]);
+  const newestPast = slots.at(-1)?.slotTime;
+  const nextColumn = columns.find((column): column is Exclude<ChartColumn, { kind: 'past' }> => column.kind === 'next');
+  const side = avgSolveMs !== null ? `gem. ${formatSolveTime(avgSolveMs)} per gebied` : nextColumn ? `volgende om ${nextColumn.hour}:00` : null;
   return (
     <div className="flex min-h-[200px] flex-1 flex-col rounded-[18px] bg-beheer-row p-3.5">
       <div className="flex items-center justify-between gap-2">
         <span className={cn(LABEL, 'text-muted-foreground')}>Oplos-tempo</span>
         <AnimatePresence mode="wait" initial={false}>
-          {avgSolveMs !== null && (
-            <motion.span key={formatSolveTime(avgSolveMs)} {...SWAP} className="text-[11.5px] text-muted-foreground">
-              gem. {formatSolveTime(avgSolveMs)} per gebied
+          {side && (
+            <motion.span key={side} {...SWAP} className="text-[11.5px] text-muted-foreground">
+              {side}
             </motion.span>
           )}
         </AnimatePresence>
       </div>
       <AnimatePresence mode="wait" initial={false}>
-        {slots.length === 0 ? (
+        {columns.length === 0 ? (
           <motion.p key="empty" {...SWAP} className="m-auto text-sm text-muted-foreground">
             Nog geen hints
           </motion.p>
@@ -140,29 +158,55 @@ function SolveChart({ slots, avgSolveMs, entrance }: { slots: SlotBar[]; avgSolv
           <motion.div key="bars" {...SWAP} className="relative mt-3 flex min-h-0 flex-1 gap-[7px]">
             {/* initial={false} would also block the bars' grow below; with `entrance` the slots fade in as they grow */}
             <AnimatePresence initial={entrance} mode="popLayout">
-              {slots.map((slot, index) => {
-                const newest = index === slots.length - 1;
+              {columns.map((column, index) => {
+                const past = column.kind === 'past';
+                const slotTime = past ? column.slot.slotTime : column.slotTime;
+                const hour = past ? column.slot.hour : column.hour;
+                const scale = past ? Math.max(AREA_COUNT, column.slot.solved + column.slot.open) : AREA_COUNT;
                 return (
                   <motion.div
-                    key={slot.slotTime}
+                    // Keyed by slot: the next slot turning into a published one keeps its column
+                    key={slotTime}
                     layout
                     transition={LAYOUT_SPRING}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    title={`${slot.hour}:00 · ${slot.solved} van ${slot.solved + slot.open} opgelost`}
-                    className="flex min-w-0 flex-1 flex-col"
+                    title={past ? `${hour}:00 · ${column.slot.solved} van ${column.slot.solved + column.slot.open} opgelost` : `${hour}:00 · verwacht`}
+                    className="flex min-w-0 flex-1 flex-col items-center"
                   >
                     <motion.div
-                      className="flex flex-1 origin-bottom flex-col justify-end gap-0.5"
+                      className="flex w-full max-w-6 flex-1 origin-bottom flex-col justify-end gap-0.5"
                       initial={entrance ? { scaleY: 0 } : false}
                       animate={{ scaleY: 1 }}
                       transition={{ type: 'spring', stiffness: 260, damping: 22, delay: 0.12 + index * 0.045 }}
                     >
-                      <motion.div className="rounded-[4px] bg-orange-300 dark:bg-orange-400/80" initial={false} animate={{ height: `${(slot.open / max) * 100}%` }} transition={LAYOUT_SPRING} />
-                      <motion.div className="rounded-[4px] bg-green-400 dark:bg-green-500/80" initial={false} animate={{ height: `${(slot.solved / max) * 100}%` }} transition={LAYOUT_SPRING} />
+                      <AnimatePresence initial={false} mode="popLayout">
+                        {past ? (
+                          <motion.div key="bar" className="flex h-full flex-col justify-end gap-0.5" {...FADE}>
+                            <motion.div className="rounded-[4px] bg-orange-300 dark:bg-orange-400/80" initial={false} animate={{ height: `${(column.slot.open / scale) * 100}%` }} transition={LAYOUT_SPRING} />
+                            <motion.div className="rounded-[4px] bg-green-400 dark:bg-green-500/80" initial={false} animate={{ height: `${(column.slot.solved / scale) * 100}%` }} transition={LAYOUT_SPRING} />
+                          </motion.div>
+                        ) : (
+                          <motion.div
+                            key="expected"
+                            {...FADE}
+                            className={cn(
+                              'h-full rounded-[6px] border-[1.5px] border-dashed transition-colors duration-300',
+                              column.kind === 'next' ? 'border-primary/60' : 'border-muted-foreground/30',
+                            )}
+                          />
+                        )}
+                      </AnimatePresence>
                     </motion.div>
-                    <span className={cn('mt-1.5 text-center text-[11px] tabular-nums', newest ? 'font-bold text-foreground' : 'text-muted-foreground')}>{slot.hour}</span>
+                    <span
+                      className={cn(
+                        'mt-1.5 text-center text-[11px] tabular-nums transition-colors duration-300',
+                        column.kind === 'next' ? 'font-bold text-primary' : slotTime === newestPast ? 'font-bold text-foreground' : 'text-muted-foreground',
+                      )}
+                    >
+                      {hour}
+                    </span>
                   </motion.div>
                 );
               })}
@@ -178,6 +222,10 @@ function SolveChart({ slots, avgSolveMs, entrance }: { slots: SlotBar[]; avgSolv
         <span className="flex items-center gap-1.5">
           <span className="size-2 rounded-full bg-orange-300 dark:bg-orange-400/80" aria-hidden />
           open
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="size-2.5 rounded-[3px] border-[1.5px] border-dashed border-muted-foreground/50" aria-hidden />
+          verwacht
         </span>
       </div>
     </div>
