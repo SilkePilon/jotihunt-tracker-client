@@ -58,15 +58,6 @@ export function currentHuntStatus(report: HuntReport, now: number): HuntReport['
   return report.status === 'to_submit' && new Date(report.deadline).getTime() < now ? 'overdue' : report.status;
 }
 
-/** Status text with the submit countdown or the awarded points, e.g. "Te versturen · 08:42". */
-export function huntStatusText(report: HuntReport, now: number): string {
-  if (currentHuntStatus(report, now) === 'overdue') return 'Te laat!';
-  let text = huntStatusLabel(report);
-  if (report.status === 'to_submit') text += ` · ${formatCountdown(new Date(report.deadline).getTime() - now)}`;
-  if (report.status === 'judged' && report.site) text += ` · ${report.site.points} pt`;
-  return text;
-}
-
 /** The status text of a report changes every second (the "Te versturen · 08:42" countdown) until its deadline passes. */
 export function hasLiveCountdown(report: HuntReport, now: number): boolean {
   return report.status === 'to_submit' && !isReading(report) && new Date(report.deadline).getTime() > now;
