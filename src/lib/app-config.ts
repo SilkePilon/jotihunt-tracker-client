@@ -114,3 +114,60 @@ export interface ModelList {
   models: GeminiModelInfo[];
   fetchedAt: string;
 }
+
+/** Beheer → Algemeen form: one draft for the Hunt, Ons team, Voertuiggroepen and Jotihunt-site cards */
+export interface GeneralDraft {
+  /** datetime-local values */
+  huntStart: string;
+  huntEnd: string;
+  homeTeamApiId: number | null;
+  groupName: string;
+  logoUrl: string;
+  discordUrl: string;
+  vehicleGroups: Record<Vehicle, number | null>;
+  jotihuntWebUsername: string;
+  /** Only what's typed; the stored one is never sent to the client */
+  jotihuntWebPassword: string;
+}
+
+/** Form values from the admin config (db or env values are shown; a default logo shows empty) */
+export function draftFrom(config: AdminConfig): GeneralDraft {
+  const g = config.general;
+  return {
+    huntStart: toLocalInput(g.huntStart.value),
+    huntEnd: toLocalInput(g.huntEnd.value),
+    homeTeamApiId: g.homeTeamApiId.value,
+    groupName: g.groupName.value ?? '',
+    logoUrl: g.logoUrl.source === 'default' ? '' : g.logoUrl.value,
+    discordUrl: g.discordUrl.value ?? '',
+    vehicleGroups: g.vehicleGroups.value,
+    jotihuntWebUsername: config.plain.jotihuntWebUsername.value ?? '',
+    jotihuntWebPassword: '',
+  };
+}
+
+/** PUT /admin/config/general body: only what changed; empty text becomes null (back to env/default) */
+export function generalPatch(saved: GeneralDraft, draft: GeneralDraft): GeneralPatch {
+  const patch: GeneralPatch = {};
+  if (draft.huntStart !== saved.huntStart) patch.huntStart = fromLocalInput(draft.huntStart);
+  if (draft.huntEnd !== saved.huntEnd) patch.huntEnd = fromLocalInput(draft.huntEnd);
+  if (draft.homeTeamApiId !== saved.homeTeamApiId) patch.homeTeamApiId = draft.homeTeamApiId;
+  for (const key of ['groupName', 'logoUrl', 'discordUrl'] as const) if (draft[key] !== saved[key]) patch[key] = draft[key].trim() || null;
+  const vehicles = (Object.keys(draft.vehicleGroups) as Vehicle[]).filter((v) => draft.vehicleGroups[v] !== saved.vehicleGroups[v]);
+  if (vehicles.length) patch.vehicleGroups = Object.fromEntries(vehicles.map((v) => [v, draft.vehicleGroups[v]]));
+  return patch;
+}
+
+export function isDirty(saved: GeneralDraft, draft: GeneralDraft): boolean {
+  return Object.keys(generalPatch(saved, draft)).length > 0 || draft.jotihuntWebUsername !== saved.jotihuntWebUsername || draft.jotihuntWebPassword !== '';
+}
+
+const TIMELINE_MARGIN_MS = 2 * 3_600_000;
+
+/** Hunt card timeline (percentages): the range runs from min(now, start) − 2h to end + 2h; `now` is null outside it */
+export function timelineGeometry(start: number, end: number, now: number): { left: number; width: number; now: number | null } {
+  const from = Math.min(now, start) - TIMELINE_MARGIN_MS;
+  const to = Math.max(end, start) + TIMELINE_MARGIN_MS;
+  const pct = (t: number) => ((t - from) / (to - from)) * 100;
+  return { left: pct(start), width: Math.max(0, pct(end) - pct(start)), now: now >= from && now <= to ? pct(now) : null };
+}

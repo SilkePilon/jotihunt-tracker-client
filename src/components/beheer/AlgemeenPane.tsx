@@ -16,6 +16,7 @@ import { POP } from '@/lib/motion';
 import { capitalizeFirstLetter, cn, getColorFromArea } from '@/lib/utils';
 import { BeheerCard, BeheerPane, BeheerRow, BeheerRows, CountSwap } from './BeheerLayout';
 import BeheerSwitch from './controls/BeheerSwitch';
+import GeneralSettings from './GeneralSettings';
 import { Pill } from './controls/Pill';
 
 /** Leading icon of a settings row (muted, like the mockup) */
@@ -126,6 +127,7 @@ export default function AlgemeenPane() {
   return (
     <BeheerPane title="Algemeen" description="Instellingen die voor iedereen gelden.">
       <HuntableAreasCard />
+      <GeneralSettings />
 
       <BeheerCard title="Functies">
         <BeheerRows>

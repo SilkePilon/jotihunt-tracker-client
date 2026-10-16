@@ -1,16 +1,16 @@
-import { useEffect, useRef, useState, type ComponentType, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ComponentType } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { toast } from 'sonner';
-import { BrainIcon, CameraIcon, CheckIcon, FileTextIcon, KeyRoundIcon, ListTreeIcon, Loader2Icon, MessageCircleIcon, PlayIcon, RadarIcon, TriangleAlertIcon, WrenchIcon } from 'lucide-react';
+import { BrainIcon, CameraIcon, CheckIcon, FileTextIcon, KeyRoundIcon, ListTreeIcon, Loader2Icon, MessageCircleIcon, PlayIcon, RadarIcon, WrenchIcon } from 'lucide-react';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
 import Reveal from '@/components/motion/Reveal';
 import { Input } from '@/components/ui/input';
 import { testAiSlot, useAdminConfig, useAiModels } from '@/hooks/app-config.hook';
 import { AI_SLOTS, type AiSlot } from '@/lib/app-config';
 import { apiErrorMessage } from '@/lib/api-error';
-import { POP, REVEAL_TRANSITION, SWAP } from '@/lib/motion';
+import { POP, SWAP } from '@/lib/motion';
 import { cn } from '@/lib/utils';
-import { BeheerCard, BeheerPane, BeheerRow, BeheerRows, BeheerSkeleton } from './BeheerLayout';
+import { BeheerCard, BeheerPane, BeheerRow, BeheerRows, BeheerSkeleton, WarnBar } from './BeheerLayout';
 import ModelPicker from './ModelPicker';
 import { Pill, Tag } from './controls/Pill';
 
@@ -35,18 +35,6 @@ const SLOT_INFO: Record<AiSlot, { icon: ComponentType<{ className?: string }>; t
   tools: { icon: WrenchIcon, title: 'Chat-hulpmiddelen', meta: 'Luchtfoto bekijken, web zoeken, code uitvoeren' },
 };
 const TEST_OK_MS = 3000;
-
-/** Amber problem bar, as in the Koppelingen cards; folds in and out. */
-function Warn({ children }: { children: ReactNode }) {
-  return (
-    <motion.div className="overflow-hidden" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={REVEAL_TRANSITION}>
-      <div className="mt-2.5 flex items-center gap-2.5 rounded-2xl bg-amber-500/15 px-3 py-2.5 text-[12.5px] text-amber-800 dark:text-amber-200">
-        <TriangleAlertIcon className="size-4 shrink-0" />
-        <span className="flex-1">{children}</span>
-      </div>
-    </motion.div>
-  );
-}
 
 /** Ghost "▶ Test" → spinner → "✓ 0,8 s" for 3 s; a failure shows the server's message as a toast. */
 function TestButton({ slot }: { slot: AiSlot }) {
@@ -240,9 +228,9 @@ export default function AiPane() {
           )}
         </Reveal>
         <AnimatePresence initial={false}>
-          {!config.settingsKeyOk && <Warn key="nokey">SETTINGS_KEY ontbreekt op de server: de sleutel kan hier niet worden opgeslagen.</Warn>}
-          {key?.undecryptable && <Warn key="undecryptable">De opgeslagen sleutel kan niet worden ontsleuteld (andere SETTINGS_KEY). Voer hem opnieuw in.</Warn>}
-          {list.keyRejected && <Warn key="rejected">Google weigert deze sleutel. AI-functies staan stil.</Warn>}
+          {!config.settingsKeyOk && <WarnBar key="nokey">SETTINGS_KEY ontbreekt op de server: de sleutel kan hier niet worden opgeslagen.</WarnBar>}
+          {key?.undecryptable && <WarnBar key="undecryptable">De opgeslagen sleutel kan niet worden ontsleuteld (andere SETTINGS_KEY). Voer hem opnieuw in.</WarnBar>}
+          {list.keyRejected && <WarnBar key="rejected">Google weigert deze sleutel. AI-functies staan stil.</WarnBar>}
         </AnimatePresence>
       </BeheerCard>
 

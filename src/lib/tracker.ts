@@ -1,3 +1,4 @@
+import { BikeIcon, CarIcon, FootprintsIcon, MotorbikeIcon, type LucideIcon } from 'lucide-react';
 import { joinParts } from '@/lib/format';
 import type { TrackerMe, TrackerNotConfiguredReason, Vehicle } from '@/types/Tracker';
 
@@ -13,6 +14,13 @@ export const VEHICLE_OPTIONS: { value: Vehicle; label: string; phrase: string }[
   { value: 'car', label: 'Auto', phrase: 'In de auto' },
   { value: 'motorcycle', label: 'Motor', phrase: 'Op de motor' },
 ];
+
+export const VEHICLE_ICONS: Record<Vehicle, LucideIcon> = {
+  walking: FootprintsIcon,
+  bike: BikeIcon,
+  car: CarIcon,
+  motorcycle: MotorbikeIcon,
+};
 
 /** A tracker counts as active when it reported in the last 5 minutes. */
 export const ACTIVE_WINDOW_MS = 5 * 60 * 1000;

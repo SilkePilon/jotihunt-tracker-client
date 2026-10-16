@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { ChevronDownIcon, Loader2Icon } from 'lucide-react';
+import { ChevronDownIcon, Loader2Icon, TriangleAlertIcon } from 'lucide-react';
 import AutoHeight from '@/components/motion/AutoHeight';
 import Reveal from '@/components/motion/Reveal';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -352,5 +352,17 @@ export function BeheerSkeleton({ groups = 1 }: { groups?: number }) {
         </div>
       ))}
     </div>
+  );
+}
+
+/** Amber problem bar, as in the Koppelingen cards; folds in and out. */
+export function WarnBar({ children }: { children: ReactNode }) {
+  return (
+    <motion.div className="overflow-hidden" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={REVEAL_TRANSITION}>
+      <div className="mt-2.5 flex items-center gap-2.5 rounded-2xl bg-amber-500/15 px-3 py-2.5 text-[12.5px] text-amber-800 dark:text-amber-200">
+        <TriangleAlertIcon className="size-4 shrink-0" />
+        <span className="flex-1">{children}</span>
+      </div>
+    </motion.div>
   );
 }
