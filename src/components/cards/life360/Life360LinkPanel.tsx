@@ -1,4 +1,5 @@
-import { FormEvent, ReactNode, useId, useState } from 'react';
+import { FormEvent, useId, useState } from 'react';
+import InlineError from '@/components/InlineError';
 import { REGEXP_ONLY_DIGITS } from 'input-otp';
 import { Loader2Icon, XIcon } from 'lucide-react';
 import { inlineLinkClass } from '@/components/tracker/styles';
@@ -44,14 +45,6 @@ function Header({ title, onCancel }: { title: string; onCancel: () => void }) {
   );
 }
 
-function ErrorText({ id, children }: { id?: string; children: ReactNode }) {
-  return (
-    <p id={id} className="text-xs font-medium text-destructive">
-      {children}
-    </p>
-  );
-}
-
 /** "Lukt het niet? Plak token": hidden until clicked; for when the code never arrives. */
 function TokenFallback({ onSubmitToken }: { onSubmitToken: Life360LinkActions['onSubmitToken'] }) {
   const [token, setToken] = useState('');
@@ -88,7 +81,7 @@ function TokenFallback({ onSubmitToken }: { onSubmitToken: Life360LinkActions['o
               setError(null);
             }}
           />
-          {error && <ErrorText id={errorId}>{error}</ErrorText>}
+          {error && <InlineError id={errorId}>{error}</InlineError>}
           <Button type="submit" variant="outline" size="sm" disabled={!token.trim() || busy}>
             {busy && <Loader2Icon className="animate-spin" />}
             Koppel met token
@@ -143,7 +136,7 @@ function EmailStep({
             setError(null);
           }}
         />
-        {error && <ErrorText id={errorId}>{error}</ErrorText>}
+        {error && <InlineError id={errorId}>{error}</InlineError>}
         <Button type="submit" className={LIFE360_BUTTON} disabled={!email.trim() || busy}>
           {busy && <Loader2Icon className="animate-spin" />}
           Stuur code
@@ -236,7 +229,7 @@ function CodeStep({
           ))}
         </InputOTPGroup>
       </InputOTP>
-      {error && <ErrorText id={errorId}>{error}</ErrorText>}
+      {error && <InlineError id={errorId}>{error}</InlineError>}
       {error ? (
         <Button type="button" variant="outline" disabled={!!countdown || resending} onClick={() => void resend()}>
           {resending && <Loader2Icon className="animate-spin" />}
@@ -248,7 +241,7 @@ function CodeStep({
           Koppelen
         </Button>
       )}
-      {resendError && <ErrorText>{resendError}</ErrorText>}
+      {resendError && <InlineError>{resendError}</InlineError>}
       <p className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
         {/* After a wrong code the "Stuur nieuwe code" button already carries the countdown */}
         {error ? (
@@ -302,7 +295,7 @@ function CircleStep({ circles, onChooseCircle, onCancel }: { circles: Life360Cir
           );
         })}
       </div>
-      {error && <ErrorText>{error}</ErrorText>}
+      {error && <InlineError>{error}</InlineError>}
       <Button type="submit" className={LIFE360_BUTTON} disabled={!selected || busy}>
         {busy && <Loader2Icon className="animate-spin" />}
         Gebruik deze cirkel

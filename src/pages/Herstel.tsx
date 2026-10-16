@@ -10,6 +10,7 @@ import Reveal from '@/components/motion/Reveal';
 import { fetchRecovery, passkeysSupported, recoverWithoutPasskey, recoverWithPasskey } from '@/lib/auth-api';
 import { classifyPasskeyError, PASSKEY_MESSAGES } from '@/lib/passkey';
 import { useStartSession } from '@/hooks/start-session.hook';
+import InlineError from '@/components/InlineError';
 
 export default function Herstel() {
   const { token = '' } = useParams();
@@ -90,9 +91,9 @@ export default function Herstel() {
         </Button>
         <Reveal gap={16}>
           {error && (
-            <p role="alert" className="text-xs font-medium text-destructive">
+            <InlineError role="alert">
               {error}
-            </p>
+            </InlineError>
           )}
         </Reveal>
       </div>

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { JOTIBOARD_BUTTON } from './styles';
+import InlineError from '@/components/InlineError';
 
 interface JotiboardLoginFormProps {
   /** Logged out: only the password, the username is fixed */
@@ -69,9 +70,9 @@ export default function JotiboardLoginForm({ fixedUsername, submitLabel, onSubmi
       />
       <Reveal gap={8}>
         {error && (
-          <p id={errorId} className="text-xs font-medium text-destructive">
+          <InlineError id={errorId}>
             {error}
-          </p>
+          </InlineError>
         )}
       </Reveal>
       <Button type="submit" className={cn('h-9 w-full rounded-lg font-semibold', JOTIBOARD_BUTTON)} disabled={!user.trim() || !password || busy}>

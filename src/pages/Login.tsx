@@ -14,6 +14,7 @@ import { CARD_ENTER, EASE_OUT } from '@/lib/motion';
 import { nextAfterLogin } from '@/lib/qr-login';
 import { useStartSession } from '@/hooks/start-session.hook';
 import { useIsMobile } from '@/hooks/media.hook';
+import InlineError from '@/components/InlineError';
 
 const APPROVED_SHOW_MS = 1200;
 const LEAVE_MS = 200;
@@ -88,9 +89,9 @@ export default function Login() {
           </Button>
           <Reveal gap={20}>
             {error && (
-              <p role="alert" className="text-xs font-medium text-destructive">
+              <InlineError role="alert">
                 {error}
-              </p>
+              </InlineError>
             )}
           </Reveal>
           <p className="text-xs text-muted-foreground">Geen account? Vraag de organisatie om een invite-link.</p>

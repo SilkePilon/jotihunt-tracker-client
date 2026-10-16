@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import type { Life360ProblemStatus } from '@/types/Life360';
 import Life360Logo from './Life360Logo';
 import { LIFE360_BUTTON } from './styles';
+import InlineError from '@/components/InlineError';
 
 interface Life360ProblemProps {
   status: Life360ProblemStatus;
@@ -50,7 +51,7 @@ export default function Life360Problem({ status, onSendCode }: Life360ProblemPro
       <p className="mt-1.5 max-w-full truncate text-[11px] text-muted-foreground">
         naar <b className="font-semibold text-foreground">{status.email}</b>
       </p>
-      {error && <p className="text-xs font-medium text-destructive">{error}</p>}
+      {error && <InlineError>{error}</InlineError>}
     </div>
   );
 }

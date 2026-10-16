@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { apiErrorMessage } from '@/lib/api-error';
 import { classifyPasskeyError, PASSKEY_MESSAGES } from '@/lib/passkey';
+import InlineError from '@/components/InlineError';
 
 interface RenamePasskeyDialogProps {
   open: boolean;
@@ -61,9 +62,9 @@ export default function RenamePasskeyDialog({ open, name, onOpenChange, onSave }
             <Input autoFocus maxLength={40} value={value} onChange={(event) => setValue(event.target.value)} aria-label="Naam" />
             <Reveal gap={8}>
               {error && (
-                <p role="alert" className="text-xs font-medium text-destructive">
+                <InlineError role="alert">
                   {error}
-                </p>
+                </InlineError>
               )}
             </Reveal>
           </div>

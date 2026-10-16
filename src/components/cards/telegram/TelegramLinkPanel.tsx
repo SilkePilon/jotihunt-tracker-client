@@ -9,6 +9,7 @@ import { formatCountdown } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { TelegramAdminStatus } from '@/types/Telegram';
 import TelegramLogo from './TelegramLogo';
+import InlineError from '@/components/InlineError';
 
 /** Telegram's brand blue. */
 const TELEGRAM_BUTTON = 'bg-[#229ED9] text-white hover:bg-[#229ED9]/90';
@@ -98,9 +99,9 @@ function PasswordStep({ hint, onSubmit, onCancel }: { hint?: string; onSubmit: T
         onChange={(event) => setPassword(event.target.value)}
       />
       {error && (
-        <p id={errorId} className="text-xs font-medium text-destructive">
+        <InlineError id={errorId}>
           {error}
-        </p>
+        </InlineError>
       )}
       <Button type="submit" className={TELEGRAM_BUTTON} disabled={!password || busy}>
         {busy && <Loader2Icon className="animate-spin" />}

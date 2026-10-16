@@ -11,6 +11,7 @@ import Reveal from '@/components/motion/Reveal';
 import { fetchInvite, passkeysSupported, registerWithInvite, registerWithInviteWithoutPasskey, type InviteInfo } from '@/lib/auth-api';
 import { classifyPasskeyError, INVITE_REASON_TEXT, inviteGoneReason, PASSKEY_MESSAGES, type InviteReason } from '@/lib/passkey';
 import { useStartSession } from '@/hooks/start-session.hook';
+import InlineError from '@/components/InlineError';
 
 const FALLBACK_LOGO = import.meta.env.LOGO_URL || '/logo.svg';
 
@@ -124,9 +125,9 @@ export default function Invite() {
           </Button>
           <Reveal gap={16}>
             {error && (
-              <p role="alert" className="text-xs font-medium text-destructive">
+              <InlineError role="alert">
                 {error}
-              </p>
+              </InlineError>
             )}
           </Reveal>
           <p className="text-xs text-muted-foreground">

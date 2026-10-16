@@ -28,6 +28,7 @@ import { cn } from '@/lib/utils';
 import { BeheerCard, BeheerPane, BeheerRow, BeheerRows, BeheerSkeleton, RowFrame } from './BeheerLayout';
 import { IconPill, Pill, Tag } from './controls/Pill';
 import WhatsAppLogo from './WhatsAppLogo';
+import InlineError from '@/components/InlineError';
 
 /** The pane's card gap (gap-3.5), so a card folding away doesn't leave a gap behind */
 const CARD_GAP = 14;
@@ -221,9 +222,9 @@ export default function InvitesPane() {
           </div>
           <Reveal gap={10}>
             {createError && (
-              <p role="alert" className="text-xs font-medium text-destructive">
+              <InlineError role="alert">
                 {createError}
-              </p>
+              </InlineError>
             )}
           </Reveal>
         </div>

@@ -7,6 +7,7 @@ import { buildPairingUrl, formatPairingCode, secondsLeft } from '@/lib/app-pairi
 import { formatCountdown } from '@/lib/format';
 import type { PairingCode } from '@/types/Tracker';
 import TrackerQrCode from './TrackerQrCode';
+import InlineError from '@/components/InlineError';
 
 const apiBase = import.meta.env.API_BASE_URL;
 
@@ -88,7 +89,7 @@ export default function TrackerPairing({ pairing, creating, failed, onRetry, onC
         </Button>
       </div>
       {body}
-      {failed && <p className="text-xs font-medium text-destructive">Code maken is mislukt, probeer het opnieuw.</p>}
+      {failed && <InlineError>Code maken is mislukt, probeer het opnieuw.</InlineError>}
     </div>
   );
 }
