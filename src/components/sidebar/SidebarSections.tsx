@@ -1,10 +1,12 @@
 import { RefObject } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { MapRef } from '@/components/Map';
 import HintEntryCard from '@/components/cards/hint-entry/HintEntryCard';
 import { useAppConfig } from '@/hooks/app-config.hook';
 import { useHintBoard } from '@/hooks/hints.hook';
 import { usePredictions, usePredictionSetting } from '@/hooks/predictions.hook';
 import { hintProgress } from '@/lib/hints';
+import { REVEAL_TRANSITION } from '@/lib/motion';
 import { predictionSummary } from '@/lib/prediction';
 import HuntsSection from '@/components/hunts/HuntsSection';
 import SidebarSection from './SidebarSection';
@@ -18,6 +20,9 @@ import JotiboardSection from './JotiboardSection';
 import Life360Section from './Life360Section';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import type { SidebarSectionId } from '@/stores/sidebar.store';
+
+/** The parent column's flex gap (gap-1.5), folded into the reveal so the sections below don't jump by a gap */
+const SECTION_GAP_PX = 6;
 
 /** All sidebar sections; `only` renders just one of them (a phone page). */
 export default function SidebarSections({ mapRef, only }: { mapRef: RefObject<MapRef | null>; only?: SidebarSectionId }) {
@@ -55,11 +60,25 @@ export default function SidebarSections({ mapRef, only }: { mapRef: RefObject<Ma
           <HintEntryCard mapRef={mapRef} />
         </SidebarSection>
       )}
-      {show('counterHunt') && homeTeamApiId !== null && (
-        <ErrorBoundary name="Tegenhunt">
-          <CounterHuntSection mapRef={mapRef} />
-        </ErrorBoundary>
-      )}
+      {/* Unfolds once a home team is configured; overflow is only clipped while folding (the active outline sits outside) */}
+      <AnimatePresence initial={false}>
+        {show('counterHunt') && homeTeamApiId !== null && (
+          <motion.div
+            key="counterHunt"
+            style={{ marginTop: -SECTION_GAP_PX }}
+            initial={{ height: 0, opacity: 0, overflow: 'hidden' }}
+            animate={{ height: 'auto', opacity: 1, transitionEnd: { overflow: 'visible' } }}
+            exit={{ height: 0, opacity: 0, overflow: 'hidden' }}
+            transition={REVEAL_TRANSITION}
+          >
+            <div style={{ paddingTop: SECTION_GAP_PX }}>
+              <ErrorBoundary name="Tegenhunt">
+                <CounterHuntSection mapRef={mapRef} />
+              </ErrorBoundary>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {show('telegram') && (
         <ErrorBoundary name="Jotihunt-berichten">
           <TelegramSection />
