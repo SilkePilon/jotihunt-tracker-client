@@ -8,6 +8,7 @@ import { areaKey, type AreaOrNone, foxStatus, hintIconKey, markerIconId, type Fo
 import { formatClock } from '@/lib/format';
 import type { MapPin } from '@/lib/prediction';
 import type { Confidence } from '@/types/Prediction';
+import type { SyncedHunt } from '@/types/HuntSync';
 import { BUILDINGS_LAYER } from '@/lib/buildings';
 
 export type { HunterIcon } from '@/lib/marker-style';
@@ -30,6 +31,22 @@ export const LIFE360_HOVER_LAYER = 'life360-members-hover';
 /** Accuracy circles of the Life360 members. */
 export const LIFE360_ACCURACY_LAYER = 'life360-accuracy-fill';
 
+/** Accuracy circles of the synced hunts (fill + thin outline), under every marker. */
+export const HUNT_ACCURACY_FILL_LAYER = 'hunt-accuracy-fill';
+export const HUNT_ACCURACY_LINE_LAYER = 'hunt-accuracy-line';
+
+/** One circle per synced hunt with a location and a positive accuracy (metres). */
+export function huntAccuracyCircles(hunts: SyncedHunt[] | undefined): FeatureCollection<Polygon> {
+  const features: Feature<Polygon>[] = [];
+  for (const hunt of hunts ?? []) {
+    const location = hunt.location;
+    if (!location || location.accuracy === null || !(location.accuracy > 0)) continue;
+    const circle = createCircle(location.lng, location.lat, location.accuracy);
+    features.push({ ...circle, properties: { id: hunt._id, area: hunt.area.toLowerCase() } });
+  }
+  return { type: 'FeatureCollection', features };
+}
+
 /**
  * The app's map layers from bottom to top. Within the first group the order is free; every later group is drawn above
  * all groups before it. The markers stack like the Android app's: groups, foxes (and hints), prediction pins, hunters.
@@ -37,7 +54,7 @@ export const LIFE360_ACCURACY_LAYER = 'life360-accuracy-fill';
 export const MAP_LAYER_STACK: string[][] = [
   // 3D buildings under every app layer (below the style labels through beforeId; on raster styles this keeps them under the markers)
   [BUILDINGS_LAYER],
-  ['device-accuracy-fill', LIFE360_ACCURACY_LAYER, 'prediction-areas-fill', 'prediction-areas-line', 'prediction-pin-lines', 'circle-layer-home', 'team-circles-fill', 'marker-trails-line'],
+  ['device-accuracy-fill', LIFE360_ACCURACY_LAYER, HUNT_ACCURACY_FILL_LAYER, HUNT_ACCURACY_LINE_LAYER, 'prediction-areas-fill', 'prediction-areas-line', 'prediction-pin-lines', 'circle-layer-home', 'team-circles-fill', 'marker-trails-line'],
   [TEAM_PINS_LAYER],
   ['team-pins-hover'],
   [FOX_MARKERS_LAYER],

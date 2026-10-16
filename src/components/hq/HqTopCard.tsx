@@ -1,19 +1,15 @@
 import { useArticles } from '@/hooks/articles.hook';
-import { useHuntReports } from '@/hooks/hunt-reports.hook';
-import { useHunts } from '@/hooks/hunts.hook';
+import { useHuntSync } from '@/hooks/hunt-sync.hook';
 import { useNextHint } from '@/hooks/next-hint.hook';
 import { formatClock, formatCountdown } from '@/lib/format';
 import { openAssignment } from '@/lib/hq';
-import { huntListItems, totalPoints } from '@/lib/hunt-reports';
 import { cn } from '@/lib/utils';
 
 /** Clock, next hint, hunts and points; plus the open assignment and its deadline while one runs. */
 export default function HqTopCard({ now }: { now: number }) {
   const { label, isNewHint } = useNextHint();
-  const { reports } = useHuntReports();
-  const { hunts } = useHunts();
+  const { status } = useHuntSync();
   const { articles } = useArticles();
-  const items = huntListItems(reports, hunts);
   const assignment = openAssignment(articles, now);
   const left = assignment ? new Date(assignment.endTime).getTime() - now : 0;
 
@@ -26,8 +22,8 @@ export default function HqTopCard({ now }: { now: number }) {
           <div className={cn('text-[1.6rem] font-bold leading-tight tabular-nums text-primary', isNewHint && 'text-green-700 dark:text-green-400')}>{label}</div>
         </div>
         <div className="text-right">
-          <div className="text-sm text-muted-foreground tabular-nums">{items.length} hunts</div>
-          <div className="text-[1.6rem] font-bold leading-tight tabular-nums">{totalPoints(items)} pt</div>
+          <div className="text-sm text-muted-foreground tabular-nums">{status?.counts.total ?? 0} hunts</div>
+          <div className="text-[1.6rem] font-bold leading-tight tabular-nums">{status?.points ?? 0} pt</div>
         </div>
       </div>
       {assignment && (

@@ -42,12 +42,12 @@ export default function HuntSyncLog({ events, onSelect, onLoadMore }: HuntSyncLo
   );
 }
 
-const LogRow = memo(function LogRow({ event, onSelect }: { event: HuntSyncEvent; onSelect: (event: HuntSyncEvent) => void }) {
+/** Time, area dot, bold area + what happened (+ points tag); the two grid cells of a log row. */
+export function HuntEventLine({ event }: { event: HuntSyncEvent }) {
   const { area, text, points } = huntEventParts(event);
-  const clickable = event.location !== null;
-  const content = (
+  return (
     <>
-      <span className="text-right text-xs text-muted-foreground tabular-nums">{formatClock(event.at)}</span>
+      <span className="text-right text-[0.96em] text-muted-foreground tabular-nums">{formatClock(event.at)}</span>
       <span className="min-w-0">
         <span className="mr-[5px] inline-block size-2 rounded-full" style={{ background: getColorFromArea(event.area) }} />
         <b className="font-semibold">{area}</b> {text}
@@ -55,9 +55,19 @@ const LogRow = memo(function LogRow({ event, onSelect }: { event: HuntSyncEvent;
       </span>
     </>
   );
+}
+
+const LogRow = memo(function LogRow({ event, onSelect }: { event: HuntSyncEvent; onSelect: (event: HuntSyncEvent) => void }) {
+  const { area, text } = huntEventParts(event);
   const rowClass = 'grid w-full grid-cols-[36px_1fr] items-center gap-2 rounded-lg p-1 text-left text-[12.5px]';
 
-  if (!clickable) return <div className={rowClass}>{content}</div>;
+  if (event.location === null) {
+    return (
+      <div className={rowClass}>
+        <HuntEventLine event={event} />
+      </div>
+    );
+  }
   return (
     <button
       type="button"
@@ -65,7 +75,7 @@ const LogRow = memo(function LogRow({ event, onSelect }: { event: HuntSyncEvent;
       onClick={() => onSelect(event)}
       aria-label={`Toon ${area} ${text} op de kaart`}
     >
-      {content}
+      <HuntEventLine event={event} />
     </button>
   );
 });

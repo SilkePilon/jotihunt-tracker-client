@@ -1,7 +1,6 @@
 import { destination } from '@turf/turf';
 import type { Area } from '@/types/Area';
-import type { Hunt } from '@/types/Hunt';
-import type { HuntReport } from '@/types/HuntReport';
+import type { HuntSyncEvent, SyncedHunt } from '@/types/HuntSync';
 import type { Prediction } from '@/types/Prediction';
 import type { Team } from '@/types/Team';
 import { counterHuntDirection, counterHuntTitle } from './counter-hunt';
@@ -57,10 +56,10 @@ export function focusPoint(areaKey: string, predictions: Prediction[] | undefine
   return [points.reduce((sum, [lng]) => sum + lng, 0) / points.length, points.reduce((sum, [, lat]) => sum + lat, 0) / points.length];
 }
 
-export function buildFoxes({ areas, hunts, reports, predictions, teams, now }: { areas?: Area[]; hunts?: Hunt[]; reports?: HuntReport[]; predictions?: Prediction[]; teams?: Team[]; now: number }): HqFox[] {
+export function buildFoxes({ areas, hunts, predictions, teams, now }: { areas?: Area[]; hunts?: SyncedHunt[]; predictions?: Prediction[]; teams?: Team[]; now: number }): HqFox[] {
   return (areas ?? []).map((area) => {
     const key = area.name.toLowerCase();
-    const lastHunt = lastHuntTimeFor(hunts, area.name, reports);
+    const lastHunt = lastHuntTimeFor(hunts, area.name);
     const cooldownMs = huntCooldownMs(lastHunt, now);
     return { key, name: capitalizeFirstLetter(area.name), group: foxGroup(area.status, cooldownMs), cooldownMs, lastHunt, center: focusPoint(key, predictions, teams) };
   });
@@ -168,22 +167,27 @@ export function eventFromNotification(notification: AppNotification): HqEvent | 
   }
 }
 
-/** Reports that weren't there at the previous check; none on the first check (no replay after a reload). */
-export function newReports(previousIds: ReadonlySet<string> | null, reports: HuntReport[]): HuntReport[] {
+/** Sync log lines that weren't there at the previous check; none on the first check (no replay after a reload). */
+export function newSyncEvents(previousIds: ReadonlySet<string> | null, events: HuntSyncEvent[]): HuntSyncEvent[] {
   if (!previousIds) return [];
-  return reports.filter((report) => !previousIds.has(report._id));
+  return events.filter((event) => !previousIds.has(event._id));
 }
 
-export function huntEvent(report: HuntReport): HqEvent {
-  const area = report.area.toLowerCase();
-  return {
-    key: `area:${area}`,
-    kind: 'hunt',
-    title: `Hunt op ${capitalizeFirstLetter(area)}!`,
-    detail: joinParts(report.huntCode ?? (report.hasPhoto === false ? null : 'Code wordt gelezen'), `door ${report.reportedByName}`, 'cooldown gestart'),
-    tone: 'ok',
-    camera: { kind: 'area', area, zoom: HUNT_ZOOM },
-  };
+/** A sync log line as an HQ event: a new hunt flies to the fox, a verdict or points change only shows the card. */
+export function huntEvent(event: HuntSyncEvent): HqEvent {
+  const area = event.area.toLowerCase();
+  const name = capitalizeFirstLetter(area);
+  const camera: HqCamera = { kind: 'area', area, zoom: HUNT_ZOOM };
+  switch (event.type) {
+    case 'new':
+      return { key: `area:${area}`, kind: 'hunt', title: `Hunt op ${name}!`, detail: joinParts(event.huntTime && formatClock(event.huntTime), 'via jotihunt.nl', 'cooldown gestart'), tone: 'ok', camera };
+    case 'approved':
+      return { key: `hunt:${event._id}`, kind: 'message', title: `Hunt op ${name} goedgekeurd`, detail: event.points ? `+${event.points} punten` : 'Goedgekeurd op jotihunt.nl', tone: 'ok', camera: null };
+    case 'rejected':
+      return { key: `hunt:${event._id}`, kind: 'message', title: `Hunt op ${name} afgekeurd`, detail: 'Afgekeurd op jotihunt.nl', tone: 'warn', camera: null };
+    case 'points':
+      return { key: `hunt:${event._id}`, kind: 'message', title: `Punten hunt ${name} aangepast`, detail: event.points === null ? 'Aangepast op jotihunt.nl' : `Nu ${event.points} punten`, tone: 'neutral', camera: null };
+  }
 }
 
 /** Foxes whose cooldown ran out since the previous check and that can be hunted (not red); none on the first check. */

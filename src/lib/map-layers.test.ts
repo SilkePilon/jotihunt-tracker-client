@@ -3,9 +3,11 @@ import type { Marker } from '@/types/Marker';
 import { MarkerType } from '@/types/MarkerType';
 import type { Position } from '@/types/Position';
 import type { Team } from '@/types/Team';
+import type { SyncedHunt } from '@/types/HuntSync';
 import {
   accuracyCircles,
   hunterFeatures,
+  huntAccuracyCircles,
   layerStackMoves,
   markerFeatures,
   predictionAreaCircles,
@@ -60,6 +62,17 @@ describe('accuracyCircles', () => {
   test('skips positions without a usable accuracy (device id 0 is kept)', () => {
     const fc = accuracyCircles([position(0, 15), position(2, 0), position(3, Number.NaN)]);
     expect(fc.features.map((f) => f.properties.deviceId)).toEqual([0]);
+  });
+});
+
+describe('huntAccuracyCircles', () => {
+  test('only hunts with a location and a positive accuracy', () => {
+    const hunt = (id: string, location: SyncedHunt['location']): SyncedHunt => ({
+      _id: id, siteKey: id, area: 'Alpha', huntTime: null, status: 'pending', statusText: '', points: 0, qrCode: null, location, firstSeenAt: '', statusChangedAt: null,
+    });
+    const fc = huntAccuracyCircles([hunt('a', { lat: 52, lng: 6, accuracy: 12 }), hunt('b', { lat: 52, lng: 6, accuracy: null }), hunt('c', null), hunt('d', { lat: 52, lng: 6, accuracy: 0 })]);
+    expect(fc.features.map((f) => f.properties)).toEqual([{ id: 'a', area: 'alpha' }]);
+    expect(huntAccuracyCircles(undefined).features).toEqual([]);
   });
 });
 

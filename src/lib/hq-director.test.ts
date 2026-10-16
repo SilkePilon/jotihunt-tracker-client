@@ -15,7 +15,7 @@ import {
   homeTarget,
   huntEvent,
   INITIAL_DIRECTOR,
-  newReports,
+  newSyncEvents,
   teamsBounds,
   tourStops,
   type HqEvent,
@@ -23,7 +23,7 @@ import {
 } from './hq-director';
 import type { AppNotification } from './notifications';
 import type { Area } from '@/types/Area';
-import type { HuntReport } from '@/types/HuntReport';
+import type { HuntSyncEvent, SyncedHunt } from '@/types/HuntSync';
 import type { Prediction } from '@/types/Prediction';
 import type { Team } from '@/types/Team';
 
@@ -65,8 +65,8 @@ describe('focusPoint', () => {
 
 describe('buildFoxes', () => {
   test('groups, cooldown and capitalised name per area', () => {
-    const report = { _id: 'r1', area: 'bravo', huntTime: new Date(NOW - 10 * 60_000).toISOString(), huntTimeKnown: true } as HuntReport;
-    const foxes = buildFoxes({ areas: [area('alpha', 'green'), area('bravo', 'green')], reports: [report], teams: [team('alpha', 5, 52)], now: NOW });
+    const hunt = { _id: 'h1', area: 'bravo', huntTime: new Date(NOW - 10 * 60_000).toISOString(), statusText: 'Wacht op bevestiging' } as SyncedHunt;
+    const foxes = buildFoxes({ areas: [area('alpha', 'green'), area('bravo', 'green')], hunts: [hunt], teams: [team('alpha', 5, 52)], now: NOW });
     expect(foxes.map((f) => [f.key, f.name, f.group])).toEqual([
       ['alpha', 'Alpha', 'green'],
       ['bravo', 'Bravo', 'cooldown'],
@@ -147,22 +147,27 @@ describe('eventFromNotification', () => {
   test('hint and article: neutral card, no camera', () => expect(eventFromNotification(note('hint'))?.tone).toBe('neutral'));
 });
 
-describe('new hunts', () => {
-  const report = (id: string) => ({ _id: id, area: 'bravo', huntCode: '7KQ2XM', reportedByName: 'Jesse' }) as HuntReport;
-  test('nothing on the first load', () => expect(newReports(null, [report('a')])).toEqual([]));
-  test('reports not seen before', () => expect(newReports(new Set(['a']), [report('b'), report('a')]).map((r) => r._id)).toEqual(['b']));
-  test('hunt event', () => {
-    expect(huntEvent(report('b'))).toEqual({
+describe('hunt sync events', () => {
+  const event = (id: string, overrides: Partial<HuntSyncEvent> = {}): HuntSyncEvent => ({
+    _id: id, huntId: 'h', area: 'bravo', type: 'new', points: null, at: '2026-10-17T19:43:00Z', huntTime: '2026-10-17T19:42:00Z', location: null, ...overrides,
+  });
+  test('nothing on the first load', () => expect(newSyncEvents(null, [event('a')])).toEqual([]));
+  test('lines not seen before', () => expect(newSyncEvents(new Set(['a']), [event('b'), event('a')]).map((e) => e._id)).toEqual(['b']));
+  test('a new hunt flies to the fox', () => {
+    expect(huntEvent(event('b'))).toEqual({
       key: 'area:bravo',
       kind: 'hunt',
       title: 'Hunt op Bravo!',
-      detail: '7KQ2XM · door Jesse · cooldown gestart',
+      detail: '21:42 · via jotihunt.nl · cooldown gestart',
       tone: 'ok',
       camera: { kind: 'area', area: 'bravo', zoom: 12.4 },
     });
-    expect(huntEvent({ ...report('c'), huntCode: null }).detail).toBe('Code wordt gelezen · door Jesse · cooldown gestart');
-    // QR hunt: no code will ever be read
-    expect(huntEvent({ ...report('d'), huntCode: null, hasPhoto: false }).detail).toBe('door Jesse · cooldown gestart');
+    expect(huntEvent(event('c', { huntTime: null })).detail).toBe('via jotihunt.nl · cooldown gestart');
+  });
+  test('verdicts and points only show the card', () => {
+    expect(huntEvent(event('d', { type: 'approved', points: 10 }))).toMatchObject({ title: 'Hunt op Bravo goedgekeurd', detail: '+10 punten', tone: 'ok', camera: null });
+    expect(huntEvent(event('e', { type: 'rejected' }))).toMatchObject({ title: 'Hunt op Bravo afgekeurd', tone: 'warn', camera: null });
+    expect(huntEvent(event('f', { type: 'points', points: 15 })).detail).toBe('Nu 15 punten');
   });
 });
 

@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useAreas } from '@/hooks/areas.hook';
-import { useHunts } from '@/hooks/hunts.hook';
+import { useSyncedHunts } from '@/hooks/hunt-sync.hook';
 import { useHuntReports } from '@/hooks/hunt-reports.hook';
 import { usePredictions } from '@/hooks/predictions.hook';
 import { SLOW_CLOCK_TICK_MS, useNow } from '@/hooks/now.hook';
@@ -44,9 +44,9 @@ function wait(ms: number): Promise<'timeout'> {
 export default function HuntRegistrationDialog() {
   const { photo, open, session, startedAt, close } = useHuntCaptureStore();
   const { areas } = useAreas();
-  const { hunts } = useHunts();
+  const { hunts } = useSyncedHunts();
   const { predictions } = usePredictions();
-  const { reports, createReport } = useHuntReports();
+  const { createReport } = useHuntReports();
 
   const [prepared, setPrepared] = useState<{ source: File; blob: Blob; thumb: Blob | null; url: string } | null>(null);
   const [area, setArea] = useState('');
@@ -120,7 +120,7 @@ export default function HuntRegistrationDialog() {
   const suggestedArea = nearestArea(position, predictions);
   const chosenArea = area || suggestedArea || '';
   const isRed = !!chosenArea && areas?.find((candidate) => candidate.name.toLowerCase() === chosenArea)?.status === 'red';
-  const inCooldown = !!chosenArea && huntCooldownMs(lastHuntTimeFor(hunts, chosenArea, reports), now) > 0;
+  const inCooldown = !!chosenArea && huntCooldownMs(lastHuntTimeFor(hunts, chosenArea), now) > 0;
   const photoReady = !withPhoto || (!!prepared && prepared.source === photo);
 
   const clearError = (key: keyof Errors) => setErrors((current) => ({ ...current, [key]: undefined, save: undefined }));
