@@ -14,6 +14,8 @@ export interface TelegramAdminStatus {
   connected: boolean;
   /** Why the connection failed (Dutch, safe to show) */
   lastError?: string;
+  /** unavailable only because the Telegram app details (API ID / hash) are missing: Beheer can fill them in */
+  needsAppCredentials?: boolean;
 }
 
 export type BotMessageKind = 'tegenhunt' | 'hunt-approved' | 'hunt-rejected' | 'assignment' | 'happy-hour' | 'other';

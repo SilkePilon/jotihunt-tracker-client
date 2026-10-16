@@ -15,11 +15,18 @@ describe('telegramIntegration', () => {
     expect(telegramIntegration(telegram({ state: 'unavailable' }), NOW)).toEqual({
       tone: 'off',
       pill: 'Niet gekoppeld',
-      line: 'Niet ingesteld op de server (TELEGRAM_API_ID/HASH).',
+      line: 'Niet ingesteld op de server (TELEGRAM_SESSION_KEY).',
       canLink: false,
       canUnlink: false,
       canRelink: false,
     });
+  });
+
+  test('unavailable for missing app details can still start linking (step 1 = app details)', () => {
+    const view = telegramIntegration({ state: 'unavailable', connected: false, needsAppCredentials: true }, Date.now());
+    expect(view.canLink).toBe(true);
+    expect(view.line).toBe('Leest berichten van @Jotihunt_bot: tegenhunts en happy hours worden automatisch gemeld.');
+    expect(telegramIntegration({ state: 'unavailable', connected: false }, Date.now()).line).toBe('Niet ingesteld op de server (TELEGRAM_SESSION_KEY).');
   });
 
   test('unlinked: what it does, Koppelen', () => {

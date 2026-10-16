@@ -30,6 +30,7 @@ export interface IntegrationView {
 const PILL = { ok: 'Verbonden', off: 'Niet gekoppeld', warn: 'Aandacht nodig' } as const;
 const NONE = { canLink: false, canUnlink: false, canRelink: false };
 const LINKING = 'Bezig met koppelen…';
+const TELEGRAM_PITCH = 'Leest berichten van @Jotihunt_bot: tegenhunts en happy hours worden automatisch gemeld.';
 
 /** "Silke (@silke)", "Silke (+31 6 •••• 4821)", "Silke", or "Telegram" when unknown. */
 function telegramAccount(status: TelegramAdminStatus): string {
@@ -42,9 +43,11 @@ function telegramAccount(status: TelegramAdminStatus): string {
 export function telegramIntegration(status: TelegramAdminStatus, now: number): IntegrationView {
   switch (status.state) {
     case 'unavailable':
-      return { ...NONE, tone: 'off', pill: PILL.off, line: 'Niet ingesteld op de server (TELEGRAM_API_ID/HASH).' };
+      // Only the app details are missing: "Koppelen" starts with them (step 1 of 4)
+      if (status.needsAppCredentials) return { ...NONE, tone: 'off', pill: PILL.off, line: TELEGRAM_PITCH, canLink: true };
+      return { ...NONE, tone: 'off', pill: PILL.off, line: 'Niet ingesteld op de server (TELEGRAM_SESSION_KEY).' };
     case 'unlinked':
-      return { ...NONE, tone: 'off', pill: PILL.off, line: 'Leest berichten van @Jotihunt_bot: tegenhunts en happy hours worden automatisch gemeld.', canLink: true };
+      return { ...NONE, tone: 'off', pill: PILL.off, line: TELEGRAM_PITCH, canLink: true };
     case 'qr':
     case 'password':
       return { ...NONE, tone: 'off', pill: PILL.off, line: LINKING };
