@@ -5,7 +5,6 @@ import {Button} from '../../ui/button.tsx';
 import {EraserIcon, Pin} from 'lucide-react';
 import {useMarkers} from '@/hooks/markers.hook.ts';
 import {toast} from 'sonner';
-import PropTypes, {InferProps} from 'prop-types';
 import {MapRef} from '@/components/Map.tsx';
 import {MarkerType} from '@/types/MarkerType.ts';
 import {Marker} from '@/types/Marker.ts';
@@ -31,7 +30,7 @@ const FormSchema = z.object({
 const HUNT_START = new Date(import.meta.env.HUNT_START_TIME);
 const HUNT_END = new Date(import.meta.env.HUNT_END_TIME);
 
-export default function HintEntryCard({mapRef}: InferProps<typeof HintEntryCard.propTypes>) {
+export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef | null> }) {
     const {coords, clear} = useHintFormBridge();
     const fieldId = useId();
     const submitId = `${fieldId}-submit`;
@@ -199,7 +198,3 @@ export default function HintEntryCard({mapRef}: InferProps<typeof HintEntryCard.
         </form>
     );
 }
-
-HintEntryCard.propTypes = {
-    mapRef: PropTypes.object.isRequired as PropTypes.Validator<React.RefObject<MapRef | null>>,
-};

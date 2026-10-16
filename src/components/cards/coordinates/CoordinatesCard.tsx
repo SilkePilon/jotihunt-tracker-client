@@ -1,5 +1,4 @@
 import {InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput} from "@/components/ui/input-group.tsx";
-import PropTypes, {InferProps} from "prop-types";
 import * as React from "react";
 import {MapRef} from "@/components/Map.tsx";
 import {useState} from "react";
@@ -9,7 +8,7 @@ import {cn} from "@/lib/utils.ts";
 import {parseToWGS84} from "@/lib/coordinates.ts";
 import {isInNetherlands} from "@/lib/netherlands.ts";
 
-export default function CoordinatesCard({ mapRef }: InferProps<typeof CoordinatesCard.propTypes>) {
+export default function CoordinatesCard({ mapRef }: { mapRef: React.RefObject<MapRef | null> }) {
 
     const [inputValue, setInputValue] = useState("");
     const [hasError, setHasError] = useState(false);
@@ -63,7 +62,3 @@ export default function CoordinatesCard({ mapRef }: InferProps<typeof Coordinate
         </form>
     );
 }
-
-CoordinatesCard.propTypes = {
-    mapRef: PropTypes.object.isRequired as PropTypes.Validator<React.RefObject<MapRef | null>>,
-};

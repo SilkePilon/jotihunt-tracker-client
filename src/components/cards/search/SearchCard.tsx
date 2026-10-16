@@ -15,12 +15,11 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover"
-import PropTypes, {InferProps} from "prop-types";
 import {MapRef} from "@/components/Map.tsx";
 import {useTeams} from "@/hooks/teams.hook.ts";
 import {Team} from "@/types/Team.ts";
 
-export default function SearchCard({ mapRef }: InferProps<typeof SearchCard.propTypes>) {
+export default function SearchCard({ mapRef }: { mapRef: React.RefObject<MapRef | null> }) {
     const [open, setOpen] = React.useState(false)
     const {teams} = useTeams();
 
@@ -75,7 +74,3 @@ export default function SearchCard({ mapRef }: InferProps<typeof SearchCard.prop
         </div>
     )
 }
-
-SearchCard.propTypes = {
-    mapRef: PropTypes.object.isRequired as PropTypes.Validator<React.RefObject<MapRef | null>>,
-};
