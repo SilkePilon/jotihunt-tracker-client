@@ -65,7 +65,7 @@ export default function Life360MembersMenu({ circleName, memberCount, members, n
             </DropdownMenuGroup>
           </>
         )}
-        {members && hiddenCount > 0 && <p className="px-1 pt-2 text-center text-[11.5px] text-muted-foreground">{hiddenMembersText(hiddenCount)}</p>}
+        {hiddenCount > 0 && <p className="px-1 pt-2 text-center text-[11.5px] text-muted-foreground">{hiddenMembersText(hiddenCount)}</p>}
       </DropdownMenuContent>
     </DropdownMenu>
   );

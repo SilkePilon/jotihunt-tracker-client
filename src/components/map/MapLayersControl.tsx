@@ -50,7 +50,7 @@ export default function MapLayersControl({ position = 'bottom-right' }: { positi
   return createPortal(
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button type="button" aria-label="Kaartstijl en lagen" title="Kaartstijl en lagen" {...tourTarget('map.layersButton')} className="flex! items-center justify-center text-foreground data-[state=open]:bg-(--map-selected-bg)! data-[state=open]:text-(--map-selected-fg)">
+        <button type="button" aria-label="Kaartstijl en lagen" title="Kaartstijl en lagen" {...tourTarget('map.layersButton')} className="flex! items-center justify-center text-foreground">
           <LayersIcon className="size-[18px]" />
         </button>
       </PopoverTrigger>
