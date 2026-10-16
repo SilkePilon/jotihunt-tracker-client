@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { IconPill } from '@/components/beheer/controls/Pill';
 import IconAction from '@/components/IconAction';
 import { Input } from '@/components/ui/input';
-import { useHuntReports } from '@/hooks/hunt-reports.hook';
+import { useHuntReportActions } from '@/hooks/hunt-reports.hook';
 import { apiErrorMessage } from '@/lib/api-error';
 import { isReading, normalizeHuntCode, resolveHuntTime } from '@/lib/hunt-reports';
 import type { HuntReport } from '@/types/HuntReport';
@@ -26,7 +26,7 @@ function SaveCancel({ saving, onSave, onCancel }: { saving: boolean; onSave: () 
 
 /** Pencil button that turns the code into a (case-sensitive) input with save / cancel. Admins only. */
 export function EditCode({ report, editing, onEditingChange }: { report: HuntReport; editing: boolean; onEditingChange: (editing: boolean) => void }) {
-  const { updateReport } = useHuntReports();
+  const { updateReport } = useHuntReportActions();
   const [value, setValue] = useState(report.huntCode ?? '');
   const [saving, setSaving] = useState(false);
 
@@ -89,7 +89,7 @@ export function EditCode({ report, editing, onEditingChange }: { report: HuntRep
 
 /** Pencil button that turns the time into HH : MM inputs with save / cancel. Admins only. */
 export function EditTime({ report, editing, onEditingChange }: { report: HuntReport; editing: boolean; onEditingChange: (editing: boolean) => void }) {
-  const { updateReport } = useHuntReports();
+  const { updateReport } = useHuntReportActions();
   const minutesRef = useRef<HTMLInputElement>(null);
   const [hours, setHours] = useState('');
   const [minutes, setMinutes] = useState('');
@@ -178,7 +178,7 @@ export function EditTime({ report, editing, onEditingChange }: { report: HuntRep
 
 /** Refresh button: the AI reads the photo again (code and time, also values entered by hand). Admins only. */
 export function RereadButton({ report, className }: { report: HuntReport; className?: string }) {
-  const { rereadReport } = useHuntReports();
+  const { rereadReport } = useHuntReportActions();
   const [busy, setBusy] = useState(false);
   const reading = isReading(report);
   const label = reading ? 'Wordt gelezen…' : 'Opnieuw laten lezen door AI';

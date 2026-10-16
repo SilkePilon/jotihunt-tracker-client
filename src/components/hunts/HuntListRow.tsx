@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { Trash2Icon } from 'lucide-react';
 import { toast } from 'sonner';
 import { BeheerExpandableRow, BeheerRow, InlineConfirm } from '@/components/beheer/BeheerLayout';
-import { useHuntReports } from '@/hooks/hunt-reports.hook';
+import { useHuntReportActions } from '@/hooks/hunt-reports.hook';
 import useInterval from '@/hooks/utils/interval.hook';
 import { apiErrorMessage } from '@/lib/api-error';
 import { HUNT_ROW_TONE_CLASS, huntRowFlag, huntRowStatus, websiteHuntStatus, type HuntRowStatus } from '@/lib/hunt-list';
@@ -58,7 +58,7 @@ function Points({ points }: { points: number }) {
 }
 
 function ReportRow({ report }: { report: HuntReport }) {
-  const { deleteReport } = useHuntReports();
+  const { deleteReport } = useHuntReportActions();
   const [confirming, setConfirming] = useState(false);
   const codeLabel = report.huntCode ?? 'zonder code';
 

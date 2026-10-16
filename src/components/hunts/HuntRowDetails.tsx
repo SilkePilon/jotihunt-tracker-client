@@ -7,7 +7,7 @@ import { IconPill, Pill } from '@/components/beheer/controls/Pill';
 import ImageLightbox from '@/components/ImageLightbox';
 import Reveal from '@/components/motion/Reveal';
 import { useAuthImage } from '@/hooks/auth-image.hook';
-import { useHuntReports } from '@/hooks/hunt-reports.hook';
+import { useHuntReportActions } from '@/hooks/hunt-reports.hook';
 import { apiErrorMessage } from '@/lib/api-error';
 import { copyToClipboard } from '@/lib/clipboard';
 import { formatClock } from '@/lib/format';
@@ -78,7 +78,7 @@ function Warning({ children }: { children: ReactNode }) {
 /** A hunt row's unfolded part: the photo zoomed on the sticker, facts, warnings and the actions (admins: edit, re-read, delete, submit). */
 export default function HuntRowDetails({ report, onDelete }: { report: HuntReport; onDelete: () => void }) {
   const user = useAuthUser<User>();
-  const { setSubmitted } = useHuntReports();
+  const { setSubmitted } = useHuntReportActions();
   const photo = useAuthImage(report.photoUrl);
   const ref = useRef<HTMLDivElement>(null);
   const [zoomOpen, setZoomOpen] = useState(false);

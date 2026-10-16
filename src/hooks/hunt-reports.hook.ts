@@ -1,10 +1,12 @@
 import axios from 'axios';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
+import { useSWRConfig } from 'swr';
 import { fetcherWithMethod, useAuthSWR } from '@/lib/swr';
 import type { HuntReport } from '@/types/HuntReport';
 import { asList } from '@/lib/response-shape';
 
 const HUNT_REPORTS_REFRESH_MS = 10_000;
+const REPORTS_PATH = '/hunt-reports';
 
 export interface NewReportInput {
   photo: Blob;
@@ -16,10 +18,11 @@ export interface NewReportInput {
   uploadId: string;
 }
 
-export const useHuntReports = () => {
-  const authHeader = useAuthHeader() || '';
-  const { data, error, mutate } = useAuthSWR<HuntReport[]>('/hunt-reports', { refreshInterval: HUNT_REPORTS_REFRESH_MS });
+type ReportsUpdater = (current: HuntReport[] | undefined) => HuntReport[];
+type ReportsMutate = (update: ReportsUpdater, options: { revalidate: boolean }) => Promise<unknown>;
 
+/** The report actions; `mutate` updates the cached /hunt-reports list. */
+function huntReportActions(authHeader: string, mutate: ReportsMutate) {
   /** Upload a new report (multipart); the server reads the code and time from the photo afterwards. Throws the axios error on failure. */
   async function createReport(input: NewReportInput): Promise<HuntReport> {
     const form = new FormData();
@@ -66,5 +69,21 @@ export const useHuntReports = () => {
     await mutate((current) => (current ?? []).filter((existing) => existing._id !== id), { revalidate: false });
   }
 
-  return { reports: asList(data), isError: !!error, createReport, updateReport, rereadReport, setSubmitted, deleteReport };
+  return { createReport, updateReport, rereadReport, setSubmitted, deleteReport };
+}
+
+export const useHuntReports = () => {
+  const authHeader = useAuthHeader() || '';
+  const { data, error, mutate } = useAuthSWR<HuntReport[]>(REPORTS_PATH, { refreshInterval: HUNT_REPORTS_REFRESH_MS });
+  return { reports: asList(data), isError: !!error, ...huntReportActions(authHeader, mutate) };
+};
+
+/**
+ * Only the report actions, without subscribing to the list: rows that change a report don't re-render on every poll.
+ * Updates the same cache entry as useHuntReports (key: path + auth header, see useAuthSWR).
+ */
+export const useHuntReportActions = () => {
+  const header = useAuthHeader();
+  const { mutate } = useSWRConfig();
+  return huntReportActions(header || '', (update, options) => mutate<HuntReport[]>([REPORTS_PATH, header], update, options));
 };
