@@ -9,7 +9,7 @@ export interface AppNotification {
   title: string;
   body: string;
   urgent: boolean;
-  data: { area?: string; status?: string; previousStatus?: string; articleId?: number; huntId?: string; from?: string; direction?: number };
+  data: { area?: string; status?: string; previousStatus?: string; articleId?: number; huntId?: string; eventId?: string; points?: number; from?: string; direction?: number };
   createdAt: string;
 }
 

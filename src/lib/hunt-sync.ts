@@ -79,6 +79,12 @@ export function huntEventParts(event: HuntSyncEvent): HuntEventParts {
   }
 }
 
+/** The log line's time: a new hunt shows its hunt time from the site (when known), a verdict or points change when we noticed it. */
+export function huntEventTime(event: HuntSyncEvent): string {
+  if (event.type === 'new' && event.huntTime && !Number.isNaN(Date.parse(event.huntTime))) return event.huntTime;
+  return event.at;
+}
+
 /** "Alpha binnengekomen", "Delta goedgekeurd +10", "Echo afgekeurd", "Delta punten aangepast · 15". */
 export function huntEventText(event: HuntSyncEvent): string {
   const { area, text, points } = huntEventParts(event);

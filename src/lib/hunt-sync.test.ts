@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { HuntSyncEvent, HuntSyncStatus } from '@/types/HuntSync';
-import { flattenEventPages, huntEventParts, huntEventsPath, huntEventText, huntSyncLine, huntSyncSummary, huntSyncView, resultBarShares } from './hunt-sync';
+import { flattenEventPages, huntEventParts, huntEventTime, huntEventsPath, huntEventText, huntSyncLine, huntSyncSummary, huntSyncView, resultBarShares } from './hunt-sync';
 
 const NOW = Date.parse('2026-10-17T21:45:00Z');
 const ago = (ms: number) => new Date(NOW - ms).toISOString();
@@ -75,6 +75,15 @@ describe('event text', () => {
     expect(huntEventParts(event({ area: 'delta', type: 'approved', points: 10 }))).toEqual({ area: 'Delta', text: 'goedgekeurd', points: '+10' });
     expect(huntEventParts(event({ type: 'approved', points: null })).points).toBeNull();
   });
+});
+
+test('huntEventTime: hunt time for a new hunt, else when the sync noticed it', () => {
+  expect(huntEventTime(event())).toBe(ago(120_000));
+  expect(huntEventTime(event({ huntTime: null }))).toBe(ago(60_000));
+  expect(huntEventTime(event({ huntTime: 'nonsense' }))).toBe(ago(60_000));
+  expect(huntEventTime(event({ type: 'approved', points: 10 }))).toBe(ago(60_000));
+  expect(huntEventTime(event({ type: 'rejected' }))).toBe(ago(60_000));
+  expect(huntEventTime(event({ type: 'points', points: 5 }))).toBe(ago(60_000));
 });
 
 test('resultBarShares', () => {

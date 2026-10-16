@@ -1,7 +1,7 @@
 import { memo, type UIEvent } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { formatClock } from '@/lib/format';
-import { huntEventParts } from '@/lib/hunt-sync';
+import { huntEventParts, huntEventTime } from '@/lib/hunt-sync';
 import { REVEAL_TRANSITION } from '@/lib/motion';
 import { cn, getColorFromArea } from '@/lib/utils';
 import type { HuntSyncEvent } from '@/types/HuntSync';
@@ -47,7 +47,7 @@ export function HuntEventLine({ event }: { event: HuntSyncEvent }) {
   const { area, text, points } = huntEventParts(event);
   return (
     <>
-      <span className="text-right text-[0.96em] text-muted-foreground tabular-nums">{formatClock(event.at)}</span>
+      <span className="text-right text-[0.96em] text-muted-foreground tabular-nums">{formatClock(huntEventTime(event))}</span>
       <span className="min-w-0">
         <span className="mr-[5px] inline-block size-2 rounded-full" style={{ background: getColorFromArea(event.area) }} />
         <b className="font-semibold">{area}</b> {text}
