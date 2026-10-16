@@ -316,31 +316,69 @@ body.dark {
   box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
 }
 
-/* Map buttons in the shadcn style: 36px (h-9) like the cards top right, card background, rounded, thin dividers */
+/*
+ * Map buttons (map option C): 40px card tiles with a ring + soft shadow. Layers stands alone in soft orange; zoom +/-
+ * and my location / fullscreen / ruler are segmented stacks (2px gaps, 12px outer and 4px inner corners).
+ * The bottom-right corner stacks top to bottom: layers, zoom, geolocate, fullscreen, ruler, credits.
+ */
 .maplibregl-ctrl-group {
-  @apply overflow-hidden rounded-md! border border-border bg-card! shadow-xs!;
+  @apply flex flex-col gap-0.5 overflow-visible! rounded-none! border-0! bg-transparent! shadow-none!;
 
   > button {
-    @apply size-9! bg-transparent! transition-colors hover:bg-accent!;
+    @apply size-10! rounded-[4px]! bg-card! shadow-[0_0_0_1px_var(--border),0_4px_14px_rgb(0_0_0/0.22)]! transition-colors! duration-150! hover:bg-beheer-row-high!;
+  }
+
+  > button:first-child {
+    @apply rounded-t-xl!;
+  }
+
+  > button:last-child {
+    @apply rounded-b-xl!;
   }
 
   > button + button {
-    @apply border-t! border-border!;
+    @apply border-t-0!;
+  }
+
+  > button.maplibregl-ctrl-geolocate-active,
+  > button.maplibregl-ctrl-geolocate-background,
+  > button.maplibregl-ctrl-geolocate-waiting,
+  > button.-active {
+    @apply bg-primary-container! hover:bg-[color-mix(in_oklab,var(--on-primary-container)_10%,var(--primary-container))]!;
   }
 }
 
+/* Layers: on its own, soft orange */
+.maplibregl-ctrl-group.map-layers-ctrl > button {
+  @apply rounded-xl! bg-primary-container! text-on-primary-container! hover:bg-[color-mix(in_oklab,var(--on-primary-container)_10%,var(--primary-container))]!;
+}
+
+/* My location + fullscreen + ruler read as one stack */
+.maplibregl-ctrl-group:has(> .maplibregl-ctrl-geolocate) > button {
+  @apply rounded-t-xl! rounded-b-[4px]!;
+}
+
+.maplibregl-ctrl-group:has(> .maplibregl-ctrl-fullscreen, > .maplibregl-ctrl-shrink) > button {
+  @apply rounded-[4px]!;
+}
+
+.maplibregl-ctrl-group.mapbox-ctrl-ruler > button {
+  @apply rounded-t-[4px]! rounded-b-xl!;
+}
+
 .maplibregl-ctrl-bottom-right .maplibregl-ctrl {
-  @apply mr-2! mb-2!;
+  @apply mr-2! mb-1.5!;
+}
+
+.maplibregl-ctrl-bottom-right .maplibregl-ctrl-group:has(> .maplibregl-ctrl-geolocate),
+.maplibregl-ctrl-bottom-right .maplibregl-ctrl-group:has(> .maplibregl-ctrl-fullscreen, > .maplibregl-ctrl-shrink) {
+  @apply mb-0.5!;
 }
 
 /* Landscape phones at desktop width with viewport-fit=cover: keep the controls out of the notch / home indicator (0 on desktops) */
 .maplibregl-ctrl-bottom-right {
   margin-right: env(safe-area-inset-right);
   margin-bottom: env(safe-area-inset-bottom);
-}
-
-.maplibregl-ctrl-bottom-right .maplibregl-ctrl + .maplibregl-ctrl {
-  @apply mb-1.5!;
 }
 
 .maplibregl-ctrl-attrib {

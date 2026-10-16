@@ -25,7 +25,7 @@ class PortalControl implements IControl {
   readonly container = document.createElement('div');
 
   onAdd() {
-    this.container.className = 'maplibregl-ctrl maplibregl-ctrl-group';
+    this.container.className = 'maplibregl-ctrl maplibregl-ctrl-group map-layers-ctrl';
     return this.container;
   }
 
