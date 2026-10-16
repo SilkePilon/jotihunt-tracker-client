@@ -17,6 +17,7 @@ import { deviceMeta, orderSessions, passkeyMeta, sessionDevice, sessionMeta, typ
 import { apiErrorMessage } from '@/lib/api-error';
 import { addPasskey, passkeysSupported } from '@/lib/auth-api';
 import { DIALOG_SHELL } from '@/lib/dialog-shell';
+import { TRIGGER_OPEN } from '@/lib/menu-styles';
 import { REVEAL_TRANSITION, SWAP } from '@/lib/motion';
 import { classifyPasskeyError, PASSKEY_MESSAGES } from '@/lib/passkey';
 import { cn } from '@/lib/utils';
@@ -149,7 +150,7 @@ export default function AccountDialog() {
                     <Row key={passkey.id} icon={KeyRoundIcon} highlight title={passkey.name} meta={passkeyMeta(passkey, now)}>
                       <DropdownMenu modal={false}>
                         <DropdownMenuTrigger asChild>
-                          <SmallButton icon aria-label={`Opties voor ${passkey.name}`}>
+                          <SmallButton icon className={TRIGGER_OPEN} aria-label={`Opties voor ${passkey.name}`}>
                             <EllipsisIcon />
                           </SmallButton>
                         </DropdownMenuTrigger>
@@ -162,7 +163,7 @@ export default function AccountDialog() {
                             <Trash2Icon />
                             <div className="flex flex-col">
                               <span>Verwijderen</span>
-                              {lastPasskey && <span className="text-xs text-muted-foreground">Je laatste passkey kan niet weg</span>}
+                              {lastPasskey && <span className="text-xs text-(--map-danger-fg)/70">Je laatste passkey kan niet weg</span>}
                             </div>
                           </DropdownMenuItem>
                         </DropdownMenuContent>

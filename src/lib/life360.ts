@@ -163,3 +163,14 @@ export function refreshAllowed(refreshAvailableAt: string | null, now: number): 
 export function sortMembersForList<T extends Pick<Life360Member, 'name' | 'location'>>(members: readonly T[]): T[] {
   return [...members].sort((a, b) => Number(a.location === null) - Number(b.location === null) || a.name.localeCompare(b.name, 'nl'));
 }
+
+/** Members dropdown: only who shares a location (sorted by name), plus how many don't. */
+export function membersMenuList<T extends Pick<Life360Member, 'name' | 'location'>>(members: readonly T[]): { sharing: T[]; hiddenCount: number } {
+  const sharing = sortMembersForList(members.filter((member) => member.location !== null));
+  return { sharing, hiddenCount: members.length - sharing.length };
+}
+
+/** Footer under the members dropdown: "+ 27 leden delen geen locatie". */
+export function hiddenMembersText(count: number): string {
+  return count === 1 ? '+ 1 lid deelt geen locatie' : `+ ${count} leden delen geen locatie`;
+}

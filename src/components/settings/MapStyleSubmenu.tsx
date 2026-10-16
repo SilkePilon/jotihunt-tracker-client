@@ -2,8 +2,7 @@ import { LayersIcon } from 'lucide-react';
 import { DropdownMenuPortal, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSub, DropdownMenuSubContent } from '@/components/ui/dropdown-menu';
 import useSettingsStore from '@/stores/settings.store';
 import { MapStyle } from '@/types/MapStyle';
-import { cn } from '@/lib/utils';
-import { MENU_CARD, MENU_ROW, MenuSubRow, SUBMENU_SIDE_OFFSET } from './menu-parts';
+import { MenuSubRow, SUBMENU_SIDE_OFFSET } from './menu-parts';
 
 const STYLES: { value: MapStyle | ''; label: string }[] = [
   { value: '', label: 'Automatisch (Material)' },
@@ -24,18 +23,10 @@ export default function MapStyleSubmenu() {
         Kaartstijl
       </MenuSubRow>
       <DropdownMenuPortal>
-        <DropdownMenuSubContent sideOffset={SUBMENU_SIDE_OFFSET} className={cn(MENU_CARD, 'w-[240px]')}>
-          {/* The chosen style is the light-orange row (built-in radio dot hidden) */}
-          <DropdownMenuRadioGroup value={mapStyle} onValueChange={(style) => setMapStyle(style as MapStyle)} className="flex flex-col gap-0.5">
+        <DropdownMenuSubContent sideOffset={SUBMENU_SIDE_OFFSET} className="w-[240px]">
+          <DropdownMenuRadioGroup value={mapStyle} onValueChange={(style) => setMapStyle(style as MapStyle)}>
             {STYLES.map((style) => (
-              <DropdownMenuRadioItem
-                key={style.value}
-                value={style.value}
-                className={cn(
-                  MENU_ROW,
-                  'pl-3 [&>span:first-child]:hidden data-[state=checked]:bg-(--map-selected-bg) data-[state=checked]:text-(--map-selected-fg)',
-                )}
-              >
+              <DropdownMenuRadioItem key={style.value} value={style.value}>
                 {style.label}
               </DropdownMenuRadioItem>
             ))}

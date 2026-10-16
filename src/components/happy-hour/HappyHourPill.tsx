@@ -23,7 +23,7 @@ function HappyHourPillView({ hour, now }: { hour: HappyHourWindow; now: number }
       </PopoverTrigger>
       <PopoverContent align="center" className="flex w-72 flex-col gap-2 text-sm">
         <p>{happyHourExplanation(hour)}</p>
-        {hour.text && <blockquote className="rounded-md bg-muted p-2 text-xs whitespace-pre-line break-words text-muted-foreground">{hour.text}</blockquote>}
+        {hour.text && <blockquote className="rounded-xl bg-beheer-row p-2 text-xs whitespace-pre-line break-words text-muted-foreground">{hour.text}</blockquote>}
       </PopoverContent>
     </Popover>
   );

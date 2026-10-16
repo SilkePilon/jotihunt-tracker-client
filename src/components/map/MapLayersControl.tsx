@@ -54,12 +54,11 @@ export default function MapLayersControl({ position = 'bottom-right' }: { positi
           <LayersIcon className="size-[18px]" />
         </button>
       </PopoverTrigger>
-      {/* Beheer card: 24px corners, hairline + soft shadow instead of shadcn's border; scrolls inside on short windows */}
       <PopoverContent
         side="left"
         align="end"
         sideOffset={8}
-        className="flex max-h-(--radix-popover-content-available-height) w-[330px] flex-col gap-4 overflow-y-auto rounded-3xl border-0 bg-card p-4 shadow-[0_0_0_1px_var(--border),0_10px_30px_rgb(0_0_0/0.28)]"
+        className="flex max-h-(--radix-popover-content-available-height) w-[330px] flex-col gap-4 overflow-y-auto"
       >
         <StylePicker />
         <LayerSwitches fetchLife360={open} />

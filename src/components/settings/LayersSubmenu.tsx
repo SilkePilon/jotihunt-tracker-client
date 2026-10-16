@@ -1,9 +1,8 @@
 import { EyeIcon } from 'lucide-react';
 import { DropdownMenuCheckboxItem, DropdownMenuPortal, DropdownMenuSub, DropdownMenuSubContent } from '@/components/ui/dropdown-menu';
 import BeheerSwitch from '@/components/beheer/controls/BeheerSwitch';
-import { cn } from '@/lib/utils';
 import { useLayerToggles } from './layer-toggles';
-import { MENU_CARD, MENU_ROW, MenuRows, MenuSubRow, SUBMENU_SIDE_OFFSET } from './menu-parts';
+import { MenuRows, MenuSubRow, SUBMENU_SIDE_OFFSET } from './menu-parts';
 
 /** Keep the menu open while toggling layers */
 const keepOpen = (e: Event) => e.preventDefault();
@@ -20,7 +19,7 @@ export default function LayersSubmenu() {
         Zichtbare lagen
       </MenuSubRow>
       <DropdownMenuPortal>
-        <DropdownMenuSubContent sideOffset={SUBMENU_SIDE_OFFSET} className={cn(MENU_CARD, 'w-[270px]')}>
+        <DropdownMenuSubContent sideOffset={SUBMENU_SIDE_OFFSET} className="w-[270px]">
           <MenuRows>
             {toggles.map((layer) => (
               // The row is the menuitemcheckbox; the switch is only its picture (the built-in check indicator is hidden)
@@ -29,7 +28,7 @@ export default function LayersSubmenu() {
                 checked={layer.checked}
                 onCheckedChange={layer.toggle}
                 onSelect={keepOpen}
-                className={cn(MENU_ROW, 'justify-between py-2 pl-3 [&>span:first-child]:hidden')}
+                className="justify-between py-2 [&>[data-slot=dropdown-menu-item-indicator]]:hidden"
               >
                 {layer.label}
                 <BeheerSwitch checked={layer.checked} tabIndex={-1} aria-hidden className="pointer-events-none" />

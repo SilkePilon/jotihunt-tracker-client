@@ -305,15 +305,15 @@ export default function GeneralSettings() {
         <div className="mx-1 grid gap-x-3 gap-y-2.5 sm:grid-cols-2">
           <Field label="Team in Jotihunt-lijst" htmlFor={`${id}-team`}>
             <Select value={draft.homeTeamApiId !== null ? String(draft.homeTeamApiId) : sortedTeams ? NO_GROUP : ''} onValueChange={(value) => set('homeTeamApiId', value === NO_GROUP ? null : Number(value))} disabled={!sortedTeams}>
-              <SelectTrigger id={`${id}-team`} className={cn(FIELD, 'w-full font-medium')}>
+              <SelectTrigger id={`${id}-team`} className="w-full">
                 <SelectValue placeholder={sortedTeams ? 'Kies ons team' : 'Teams laden…'} />
               </SelectTrigger>
-              <SelectContent className="max-h-72 rounded-2xl">
-                <SelectItem value={NO_GROUP} className="rounded-lg text-muted-foreground">
+              <SelectContent className="max-h-72">
+                <SelectItem value={NO_GROUP} className="text-muted-foreground">
                   Geen team
                 </SelectItem>
                 {sortedTeams?.map((team) => (
-                  <SelectItem key={team._id} value={String(team.apiId)} className="rounded-lg">
+                  <SelectItem key={team._id} value={String(team.apiId)}>
                     <span aria-hidden className="size-2 shrink-0 rounded-full" style={{ background: team.area ? getColorFromArea(team.area) : 'var(--border)' }} />
                     {team.name}
                   </SelectItem>
@@ -374,15 +374,15 @@ export default function GeneralSettings() {
                 }
               >
                 <Select value={current !== null ? String(current) : NO_GROUP} onValueChange={(value) => setVehicle(vehicle, value === NO_GROUP ? null : Number(value))}>
-                  <SelectTrigger id={`${id}-${vehicle}`} className={cn(FIELD, 'w-full font-medium')}>
+                  <SelectTrigger id={`${id}-${vehicle}`} className="w-full">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="max-h-72 rounded-2xl">
-                    <SelectItem value={NO_GROUP} className="rounded-lg text-muted-foreground">
+                  <SelectContent className="max-h-72">
+                    <SelectItem value={NO_GROUP} className="text-muted-foreground">
                       Geen groep
                     </SelectItem>
                     {options.map((group) => (
-                      <SelectItem key={group.id} value={String(group.id)} className="rounded-lg">
+                      <SelectItem key={group.id} value={String(group.id)}>
                         {group.name}
                         <span className="text-xs text-muted-foreground tabular-nums">#{group.id}</span>
                       </SelectItem>

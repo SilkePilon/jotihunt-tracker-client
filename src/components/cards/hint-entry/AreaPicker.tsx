@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { MENU_CARD } from '@/components/settings/menu-parts';
 import { areaOptions, cn, getColorFromArea } from '@/lib/utils';
 import { PickerTrigger, pickerTileClass } from './picker-parts';
 
@@ -35,7 +34,7 @@ export default function AreaPicker({ id, value, onChange, invalid, afterPick }: 
         align="start"
         sideOffset={6}
         collisionPadding={8}
-        className={cn(MENU_CARD, 'w-[300px] p-2.5')}
+        className="w-[300px] p-2.5"
         // After a pick, focus goes on to the time picker instead of back to this trigger
         onCloseAutoFocus={(event) => {
           if (!picked.current) return;

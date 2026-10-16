@@ -60,7 +60,7 @@ export default function AssignmentPane({ item }: { item: IntelItem }) {
                   <SelectTrigger
                     size="sm"
                     aria-label="Eigenaar"
-                    className="rounded-lg border-0 bg-beheer-row-high px-3 text-[12.5px] font-semibold shadow-none hover:bg-beheer-row-high/70 dark:bg-beheer-row-high dark:hover:bg-beheer-row-high/70"
+                    className="px-3 text-[12.5px] font-semibold"
                   >
                     <SelectValue />
                   </SelectTrigger>

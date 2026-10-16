@@ -22,21 +22,21 @@ interface PickerTriggerProps extends ComponentProps<'button'> {
   invalid?: boolean;
 }
 
-/** Card-coloured trigger on the tonal block; the chevron turns and a primary ring shows while its popover is open. */
+/** Card-coloured trigger on the tonal block; the chevron turns and it turns soft orange while its popover is open. */
 export function PickerTrigger({ lead, placeholder, label, invalid, className, ...props }: PickerTriggerProps) {
   return (
     <button
       type="button"
       aria-invalid={invalid || undefined}
       className={cn(
-        'group flex h-8 w-full min-w-0 items-center gap-1.5 rounded-lg bg-card px-2 text-left text-[13px] outline-none transition-[background-color,box-shadow,opacity] duration-150 hover:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-card data-[state=open]:shadow-[inset_0_0_0_2px_var(--primary)] aria-invalid:shadow-[inset_0_0_0_2px_var(--destructive)]',
+        'group flex h-8 w-full min-w-0 items-center gap-1.5 rounded-lg bg-card px-2 text-left text-[13px] outline-none transition-[background-color,color,box-shadow,opacity] duration-150 hover:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-card data-[state=open]:bg-(--map-selected-bg) data-[state=open]:text-(--map-selected-fg) data-[state=open]:hover:bg-(--map-selected-bg) aria-invalid:shadow-[inset_0_0_0_2px_var(--destructive)]',
         className,
       )}
       {...props}
     >
       {lead}
-      <span className={cn('min-w-0 flex-1 truncate', !label && 'text-muted-foreground')}>{label ?? placeholder}</span>
-      <ChevronDownIcon className="size-3.5 shrink-0 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
+      <span className={cn('min-w-0 flex-1 truncate', !label && 'text-muted-foreground group-data-[state=open]:text-(--map-selected-fg)')}>{label ?? placeholder}</span>
+      <ChevronDownIcon className="size-3.5 shrink-0 text-muted-foreground transition-[transform,color] duration-200 group-data-[state=open]:rotate-180 group-data-[state=open]:text-(--map-selected-fg)" />
     </button>
   );
 }
