@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import type { Marker } from '@/types/Marker';
 import { MarkerType } from '@/types/MarkerType';
-import { filterMarkers, formatMarkerTime, groupMarkersByArea, markerSplitTime } from './markers';
+import { filterMarkers, groupMarkersByArea, markerSplitTime } from './markers';
 
 function marker(id: string, area: string, time: string, type = MarkerType.Hint): Marker {
   return { _id: id, area, time: time as unknown as Date, type, location: { type: 'Point', coordinates: [5.9, 52] } };
@@ -51,11 +51,5 @@ describe('groupMarkersByArea', () => {
 
   test('empty input gives no groups', () => {
     expect(groupMarkersByArea([])).toEqual({});
-  });
-});
-
-describe('formatMarkerTime', () => {
-  test('two-digit hours and minutes', () => {
-    expect(formatMarkerTime(new Date(2026, 9, 17, 9, 5))).toBe('09:05');
   });
 });

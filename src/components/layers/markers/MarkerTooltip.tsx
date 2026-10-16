@@ -1,5 +1,5 @@
 import MapTooltip from '@/components/map/MapTooltip';
-import { formatMarkerTime } from '@/lib/markers';
+import { formatClock } from '@/lib/format';
 import { capitalizeFirstLetter, getColorFromArea } from '@/lib/utils';
 import type { Marker as FoxMarker } from '@/types/Marker';
 import { MarkerType } from '@/types/MarkerType';
@@ -18,7 +18,7 @@ export default function MarkerTooltip({ marker }: { marker: FoxMarker }) {
       offset={marker.type === MarkerType.Hint ? HINT_TOOLTIP_OFFSET : TOOLTIP_OFFSET}
       color={getColorFromArea(marker.area)}
       title={capitalizeFirstLetter(marker.type)}
-      meta={`${capitalizeFirstLetter(marker.area)} · ${formatMarkerTime(marker.time)}`}
+      meta={`${capitalizeFirstLetter(marker.area)} · ${formatClock(marker.time)}`}
     />
   );
 }

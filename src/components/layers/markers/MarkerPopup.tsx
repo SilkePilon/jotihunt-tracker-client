@@ -7,9 +7,8 @@ import { MapsAction, PopupActions, popupActionClass } from '../../map/popup/Popu
 import PopupHeader, { PopupIcon } from '../../map/popup/PopupHeader';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useDistanceFromMe } from '@/hooks/distance-from-me.hook';
-import { joinParts } from '@/lib/format';
+import { formatClock, joinParts } from '@/lib/format';
 import { areaKey, areaLetter } from '@/lib/marker-style';
-import { formatMarkerTime } from '@/lib/markers';
 import { capitalizeFirstLetter, getColorFromArea } from '@/lib/utils';
 import type { Marker } from '@/types/Marker';
 import { MarkerType } from '@/types/MarkerType';
@@ -52,7 +51,7 @@ export default function MarkerPopup({ marker, onClose, deleteMarker }: MarkerPop
           </PopupIcon>
         }
         title={`${capitalizeFirstLetter(marker.area)} · ${capitalizeFirstLetter(marker.type)}`}
-        subtitle={joinParts(formatMarkerTime(marker.time), distance, marker.source === 'jotiboard' ? 'via Jotiboard' : undefined)}
+        subtitle={joinParts(formatClock(marker.time), distance, marker.source === 'jotiboard' ? 'via Jotiboard' : undefined)}
       />
       <CoordRows lat={lat} lng={lng} />
       <PopupActions>

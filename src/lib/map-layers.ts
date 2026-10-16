@@ -4,7 +4,8 @@ import { MarkerType } from '@/types/MarkerType';
 import type { Position } from '@/types/Position';
 import type { Team } from '@/types/Team';
 import { createCircle, getColorFromArea } from '@/lib/utils';
-import { areaKey, type AreaOrNone, formatHintClock, foxStatus, hintIconKey, markerIconId, type FoxKind, type HintNumbering, type HunterIcon } from '@/lib/marker-style';
+import { areaKey, type AreaOrNone, foxStatus, hintIconKey, markerIconId, type FoxKind, type HintNumbering, type HunterIcon } from '@/lib/marker-style';
+import { formatClock } from '@/lib/format';
 import type { MapPin } from '@/lib/prediction';
 import type { Confidence } from '@/types/Prediction';
 import { BUILDINGS_LAYER } from '@/lib/buildings';
@@ -158,7 +159,7 @@ export function markerFeatures(markers: Marker[], { statusOf, numbering, nowMs, 
       const area: AreaOrNone = areaKey(marker.area) ?? 'none';
       const hint = marker.type === MarkerType.Hint;
       const key = hint
-        ? hintIconKey(area, time, numbering.numberOf(marker._id ?? '', marker.area, time), nowMs, formatHintClock(time))
+        ? hintIconKey(area, time, numbering.numberOf(marker._id ?? '', marker.area, time), nowMs, formatClock(time))
         : { kind: 'fox' as const, type: foxKind(marker.type), status: foxStatus(statusOf(marker.area)), area, locked: area !== 'none' && isForbidden(marker.area) };
       return {
         type: 'Feature',

@@ -312,13 +312,6 @@ export function hintIconKey(area: AreaOrNone, timeMs: number, number: number | u
   return { kind: 'hint', area, label: number !== undefined ? `H${number}` : clock };
 }
 
-const HINT_CLOCK = new Intl.DateTimeFormat('nl-NL', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Amsterdam' });
-
-/** Hint label clock: always Dutch time (the game is played in the Netherlands), whatever the viewer's time zone. */
-export function formatHintClock(timeMs: number): string {
-  return HINT_CLOCK.format(timeMs);
-}
-
 /** Test hints seeded on the server have ids from here on; they never get a number. */
 const SEEDED_HINT_ID = 900_000;
 /** A hint published this long before the start still counts as a game hint. */

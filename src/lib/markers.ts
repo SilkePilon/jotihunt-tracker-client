@@ -36,8 +36,3 @@ export function groupMarkersByArea(markers: Marker[]): Record<string, Marker[]> 
   }
   return groups;
 }
-
-/** HH:mm in Dutch notation. */
-export function formatMarkerTime(time: Date | string | number): string {
-  return new Date(time).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
-}
