@@ -9,7 +9,7 @@ import { swrKeyFor } from '@/lib/telegram';
 import type { Life360AdminStatus, Life360Members } from '@/types/Life360';
 
 /** Refetch the members (after a link change), wherever they are shown. */
-export function revalidateLife360Members() {
+function revalidateLife360Members() {
   void mutateGlobal(swrKeyFor([LIFE360_MEMBERS_URL]));
 }
 

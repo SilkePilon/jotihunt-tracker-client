@@ -16,7 +16,7 @@ const TONE_CLASS: Record<ToolTone, string> = {
 const TONE_ICON: Record<ToolTone, LucideIcon> = { app: FileTextIcon, map: MapPinIcon, web: GlobeIcon, think: CalculatorIcon };
 
 /** Tonal square with the tool group's icon */
-export function ToolIcon({ name, big = false, className }: { name: string; big?: boolean; className?: string }) {
+function ToolIcon({ name, big = false, className }: { name: string; big?: boolean; className?: string }) {
   const tone = toolTone(name);
   const Icon = TONE_ICON[tone];
   return (

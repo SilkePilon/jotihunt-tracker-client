@@ -36,7 +36,7 @@ async function fetchAvatar(path: string, authHeader: string): Promise<Life360Ava
 }
 
 /** Load (once) the avatar at `path`; null when it fails. Never rejects. */
-export function loadLife360Avatar(path: string, authHeader: string): Promise<Life360Avatar | null> {
+function loadLife360Avatar(path: string, authHeader: string): Promise<Life360Avatar | null> {
   let promise = pending.get(path);
   if (!promise) {
     promise = fetchAvatar(path, authHeader).then(

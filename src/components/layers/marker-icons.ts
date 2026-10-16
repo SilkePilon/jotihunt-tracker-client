@@ -371,7 +371,7 @@ function drawing(key: MarkerIconKey, palette: MarkerPalette, measure: Ctx): Draw
 }
 
 /** Draw one marker image at `pixelRatio`. Throws when there is no 2D canvas. */
-export function drawMarkerIcon(key: MarkerIconKey, palette: MarkerPalette, pixelRatio: number): ImageData {
+function drawMarkerIcon(key: MarkerIconKey, palette: MarkerPalette, pixelRatio: number): ImageData {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('No 2D canvas');
@@ -413,7 +413,7 @@ function fallbackDot(color: string): ImageData {
  * Draw and add the marker image `id` when it is one of ours (see themedImageId).
  * @returns whether `id` is a marker image
  */
-export function addMarkerImage(map: MaplibreMap, id: string): boolean {
+function addMarkerImage(map: MaplibreMap, id: string): boolean {
   const parsed = parseMarkerImageId(id);
   if (!parsed) return false;
   if (map.hasImage(id)) return true;

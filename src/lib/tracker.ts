@@ -39,7 +39,7 @@ export function trackerRefreshInterval(status: TrackerMe | undefined): number {
 }
 
 /** Paired before (Traccar has an update) but nothing in the last 5 minutes: the app stopped or lost signal. */
-export function hasSignalLost(status: TrackerMe | undefined): boolean {
+function hasSignalLost(status: TrackerMe | undefined): boolean {
   return !!status?.configured && !status.connected && !!status.stats.lastUpdate;
 }
 

@@ -12,7 +12,7 @@ import type { TourAction } from './types';
  */
 
 /** Expand a sidebar section; the undo restores its previous open state. */
-export function openSection(id: SidebarSectionId): TourAction {
+function openSection(id: SidebarSectionId): TourAction {
   return {
     name: `openSection(${id})`,
     run: () => {

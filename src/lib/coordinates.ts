@@ -68,7 +68,7 @@ export function parseDMS(token: string, isLatGuess?: boolean): number | null {
  * Try to parse two DMS-ish tokens into lat/lng (order-agnostic via hemisphere).
  * If hemisphere letters exist, uses them; otherwise falls back to guess order: lat first, then lon.
  */
-export function tryParseDMSPair(a: string, b: string): Parsed | null {
+function tryParseDMSPair(a: string, b: string): Parsed | null {
   const hasHemiA = /[NSEW]/i.test(a);
   const hasHemiB = /[NSEW]/i.test(b);
 

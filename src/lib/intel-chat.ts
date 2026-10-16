@@ -87,7 +87,7 @@ export interface ChatToolCall {
 const isObj = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
 
 /** The tool call in a UI part (static `tool-<name>` or dynamic), or null for text, reasoning, files, step starts */
-export function toolCallOf(part: ChatPart): ChatToolCall | null {
+function toolCallOf(part: ChatPart): ChatToolCall | null {
   let name: string;
   if (part.type === 'dynamic-tool') name = part.toolName;
   else if (part.type.startsWith('tool-')) name = part.type.slice('tool-'.length);
@@ -127,7 +127,7 @@ export function isHintAnswerProposal(value: unknown): value is HintAnswerProposa
   );
 }
 
-export function isWebSearchResult(value: unknown): value is WebSearchResult {
+function isWebSearchResult(value: unknown): value is WebSearchResult {
   return isObj(value) && typeof value.answer === 'string' && Array.isArray(value.sources);
 }
 
@@ -460,7 +460,7 @@ export const BUSY_RETRY_DELAYS_MS = [400, 800, 1600];
 const abortError = () => new DOMException('Aborted', 'AbortError');
 
 /** Resolves after ms; rejects with an AbortError as soon as the signal aborts */
-export function abortableSleep(ms: number, signal?: AbortSignal | null): Promise<void> {
+function abortableSleep(ms: number, signal?: AbortSignal | null): Promise<void> {
   return new Promise((resolve, reject) => {
     if (signal?.aborted) return reject(abortError());
     const onAbort = () => {

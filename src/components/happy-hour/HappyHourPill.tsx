@@ -5,7 +5,7 @@ import { useNow } from '@/hooks/now.hook';
 import { happyHourExplanation, happyHourPill, happyHourPillText, happyHourWindow, type HappyHourWindow } from '@/lib/happy-hour';
 
 /** Amber pill (flat): "Happy hour · 2× punten · nog 34 min"; tap for the explanation and the bot's message. */
-export function HappyHourPillView({ hour, now }: { hour: HappyHourWindow; now: number }) {
+function HappyHourPillView({ hour, now }: { hour: HappyHourWindow; now: number }) {
   const { title, countdown } = happyHourPill(hour, now);
   return (
     <Popover>
