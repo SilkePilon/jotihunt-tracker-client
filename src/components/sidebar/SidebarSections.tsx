@@ -8,7 +8,7 @@ import { usePredictions, usePredictionSetting } from '@/hooks/predictions.hook';
 import { hintProgress } from '@/lib/hints';
 import { REVEAL_TRANSITION } from '@/lib/motion';
 import { predictionSummary } from '@/lib/prediction';
-import HuntsSection from '@/components/hunts/HuntsSection';
+import HuntsSyncCard from '@/components/hunts/HuntsSyncCard';
 import SidebarSection from './SidebarSection';
 import FoxesCard, { FoxesSummary } from './foxes/FoxesCard';
 import HintMiniGrid from './HintMiniGrid';
@@ -47,7 +47,7 @@ export default function SidebarSections({ mapRef, only }: { mapRef: RefObject<Ma
       )}
       {show('hunts') && (
         <ErrorBoundary name="Hunts">
-          <HuntsSection />
+          <HuntsSyncCard mapRef={mapRef} />
         </ErrorBoundary>
       )}
       {show('predictions') && predictionEnabled !== false && (
