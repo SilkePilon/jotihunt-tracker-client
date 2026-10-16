@@ -128,7 +128,7 @@ export default function IntelTimeline({ items, tab, onSelect, skipEntrance, retu
             </Fold>
           )}
         </AnimatePresence>
-        <div className="pr-[200px] pl-[150px]">
+        <div className="pr-2">
           <AnimatePresence>
             {groups.map((group, index) => {
               const flying = lifted && group.items.some((item) => item.id === morphId);

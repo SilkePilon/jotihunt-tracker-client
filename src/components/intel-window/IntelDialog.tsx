@@ -17,10 +17,12 @@ import { CHAT_CARD_ENTER, DETAIL_SWAP, buildIntelItems, filterByTab, unreadCount
 import { EASE_OUT } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import useIntelStore from '@/stores/intel.store';
+import type { HintCell } from '@/types/HintCell';
 import type { IntelItem, IntelTab } from '@/types/Intel';
 import IntelDetail from './IntelDetail';
 import IntelTimeline from './IntelTimeline';
 import IntelTopBar from './IntelTopBar';
+import StatusCard from './StatusCard';
 
 // The AI chat (with the AI SDK) is its own chunk, fetched when the window opens
 const loadIntelChat = () => import('./chat/IntelChat');
@@ -78,6 +80,7 @@ function IntelWindow({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
   const area = useIntelStore((state) => state.area);
   const { articles } = useArticles();
   const { board } = useHintBoard({ live: true });
+  const cells = useMemo(() => board?.cells ?? [], [board]);
   const { assignments } = useAssignments();
   const { readState, markRead } = useReadState();
   const items = useMemo(() => buildIntelItems({ articles, board, assignments, readState }), [articles, board, assignments, readState]);
@@ -145,7 +148,7 @@ function IntelWindow({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
             </View>
           ) : (
             <View key={`timeline-${view.gen}`}>
-              <TimelineView items={shown} tab={tab} memoryRef={timelineScroll} skipEntrance={!mounted} returnId={returnId} onSelect={select} />
+              <TimelineView items={shown} allItems={items} cells={cells} tab={tab} memoryRef={timelineScroll} skipEntrance={!mounted} returnId={returnId} onSelect={select} />
             </View>
           )}
         </AnimatePresence>
@@ -172,6 +175,8 @@ function View({ children }: { children: ReactNode }) {
 
 interface TimelineViewProps {
   items: IntelItem[];
+  allItems: IntelItem[];
+  cells: HintCell[];
   tab: IntelTab;
   memoryRef: RefObject<{ tab: IntelTab; top: number } | null>;
   skipEntrance: boolean;
@@ -180,7 +185,7 @@ interface TimelineViewProps {
 }
 
 /** The scrolling timeline. `layoutScroll`: the card morph accounts for its scroll position. */
-function TimelineView({ items, tab, memoryRef, skipEntrance, returnId, onSelect }: TimelineViewProps) {
+function TimelineView({ items, allItems, cells, tab, memoryRef, skipEntrance, returnId, onSelect }: TimelineViewProps) {
   const ref = useRef<HTMLDivElement>(null);
   // Before motion measures the returning card (a microtask after this commit): back to where the list was (same tab
   // only), then, if the returning card is not in view there (another item was swapped in, or the window opened on the
@@ -204,16 +209,20 @@ function TimelineView({ items, tab, memoryRef, skipEntrance, returnId, onSelect 
     if (ref.current) memoryRef.current = { tab, top: ref.current.scrollTop };
   }, [tab, memoryRef]);
   return (
-    <motion.div
-      ref={ref}
-      layoutScroll
-      onScroll={(event) => {
-        memoryRef.current = { tab, top: event.currentTarget.scrollTop };
-      }}
-      className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto [scrollbar-gutter:stable]"
-    >
-      <IntelTimeline items={items} tab={tab} skipEntrance={skipEntrance} returnId={returnId} onSelect={onSelect} />
-    </motion.div>
+    <div className="flex min-h-0 flex-1 gap-3.5 px-4 pb-4">
+      <motion.div
+        ref={ref}
+        layoutScroll
+        onScroll={(event) => {
+          memoryRef.current = { tab, top: event.currentTarget.scrollTop };
+        }}
+        className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto [scrollbar-gutter:stable]"
+      >
+        <IntelTimeline items={items} tab={tab} skipEntrance={skipEntrance} returnId={returnId} onSelect={onSelect} />
+      </motion.div>
+      {/* Stats over every kind, whatever the tab. skipEntrance is true on the window's first paint: that is the card's entrance */}
+      <StatusCard items={allItems} cells={cells} entrance={skipEntrance} />
+    </div>
   );
 }
 
