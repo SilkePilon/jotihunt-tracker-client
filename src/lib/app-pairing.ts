@@ -1,4 +1,4 @@
-import { isAxiosError } from 'axios';
+import { apiErrorStatus } from '@/lib/api-error';
 
 /** Absolute API base (the configured base may be relative to the site, e.g. "/api"), without trailing slash. */
 function absoluteBase(apiBase: string, origin: string): string {
@@ -30,7 +30,7 @@ export async function fetchLatestRelease<T>(get: () => Promise<T>): Promise<T | 
   try {
     return await get();
   } catch (error) {
-    if (isAxiosError(error) && error.response?.status === 404) return null;
+    if (apiErrorStatus(error) === 404) return null;
     throw error;
   }
 }

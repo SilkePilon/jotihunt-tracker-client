@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { isAxiosError } from 'axios';
 import { Loader2Icon } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -11,7 +10,7 @@ import { useHunts } from '@/hooks/hunts.hook';
 import { useHuntReports } from '@/hooks/hunt-reports.hook';
 import { usePredictions } from '@/hooks/predictions.hook';
 import { SLOW_CLOCK_TICK_MS, useNow } from '@/hooks/now.hook';
-import { apiErrorMessage } from '@/lib/api-error';
+import { apiErrorMessage, apiErrorStatus } from '@/lib/api-error';
 import { huntCooldownMs, lastHuntTimeFor } from '@/lib/fox-status';
 import { nearestArea } from '@/lib/hunt-reports';
 import { preparePhoto } from '@/lib/image';
@@ -134,7 +133,7 @@ export default function HuntRegistrationDialog() {
       close();
     } catch (error) {
       if (useHuntCaptureStore.getState().photo !== savingPhoto) return;
-      const status = isAxiosError(error) ? error.response?.status : undefined;
+      const status = apiErrorStatus(error);
       if (status !== undefined && status >= 400 && status < 500) {
         setErrors({ save: apiErrorMessage(error, 'Versturen is mislukt.') });
         setFailed(false);
