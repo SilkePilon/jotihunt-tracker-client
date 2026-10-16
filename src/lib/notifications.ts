@@ -26,7 +26,7 @@ export const NOTIFICATION_OPTIONS: { type: OptionalNotificationType; label: stri
   { type: 'fox-status', label: 'Vossen status', short: 'Rood, oranje of groen', description: 'Als een deelgebied rood, oranje of groen wordt (groen = jagen mag).' },
   { type: 'hint', label: 'Nieuwe hint', short: 'Zodra hij er is', description: 'Zodra de organisatie een hint publiceert.' },
   { type: 'article', label: 'Opdrachten en nieuws', short: 'Nieuwe berichten', description: 'Nieuwe opdrachten en nieuwsberichten.' },
-  { type: 'hunt-deadline', label: 'Hunt deadline', short: '10 min van tevoren', description: '10 minuten voordat een hunt ingestuurd moet zijn.' },
+  { type: 'hunt-deadline', label: 'Hunt deadline', short: '5 min van tevoren', description: '5 minuten voordat een hunt bevestigd of ingestuurd moet zijn.' },
   { type: 'counter-hunt', label: 'Tegenhunt', short: 'Met richting', description: 'Als de Jotihunt-bot een tegenhunt meldt, en uit welke richting.' },
   { type: 'happy-hour', label: 'Happy hour', short: 'Hunts tellen dubbel', description: 'Als er een happy hour begint: hunts tellen dan dubbel.' },
 ];

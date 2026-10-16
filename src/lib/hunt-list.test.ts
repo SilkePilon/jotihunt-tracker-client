@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import type { Hunt } from '@/types/Hunt';
 import type { HuntListItem, HuntReport } from '@/types/HuntReport';
-import { huntAreaTotals, huntFilterCounts, huntItemKey, huntRowFlag, huntRowStatus, matchesHuntFilter, websiteHuntStatus } from './hunt-list';
+import { huntAreaTotals, huntFilterCounts, huntFilterLabel, huntItemKey, huntRowFlag, huntRowStatus, matchesHuntFilter, websiteHuntStatus } from './hunt-list';
 
 function report(overrides: Partial<HuntReport> = {}): HuntReport {
   return {
@@ -115,4 +115,23 @@ test('huntRowFlag: review first, then duplicate, nothing while reading', () => {
   expect(huntRowFlag(report({ needsReview: true }))).toBe('controleren');
   expect(huntRowFlag(report({ duplicateOf: { id: 'r0', reportedByName: 'Jesse' } }))).toBe('dubbel?');
   expect(huntRowFlag(report({ needsReview: true, ocrStatus: 'reading' }))).toBeNull();
+});
+
+describe('QR hunts (no photo)', () => {
+  const qr = { hasPhoto: false, huntCode: null, photoUrl: null, huntCodeSource: null, huntTimeSource: 'manual' as const, codeConfidence: null, timeConfidence: null };
+  test('Bevestigen countdown, Bevestigd, site status', () => {
+    expect(huntRowStatus(report(qr), BEFORE)).toEqual({ tone: 'to_submit', text: 'Bevestigen · 8:42', urgent: false });
+    expect(huntRowStatus(report(qr), Date.parse('2026-10-17T12:31:00.000Z'))).toEqual({ tone: 'overdue', text: 'Te laat!', urgent: false });
+    expect(huntRowStatus(report({ ...qr, status: 'submitted' }), BEFORE)?.text).toBe('Bevestigd');
+    expect(huntRowStatus(report({ ...qr, ...judged }), BEFORE)).toEqual({ tone: 'judged', text: 'Goedgekeurd', urgent: false });
+  });
+  test('never shown as being read, never flagged for review', () => {
+    expect(huntRowStatus(report({ ...qr, ocrStatus: 'pending' }), BEFORE)?.text).toBe('Bevestigen · 8:42');
+    expect(huntRowFlag(report({ ...qr, needsReview: true }))).toBeNull();
+  });
+  test('filter label follows the photo setting', () => {
+    expect(huntFilterLabel('pending', false)).toBe('Bevestigen');
+    expect(huntFilterLabel('pending', true)).toBe('Te versturen');
+    expect(huntFilterLabel('judged', false)).toBe('Beoordeeld');
+  });
 });

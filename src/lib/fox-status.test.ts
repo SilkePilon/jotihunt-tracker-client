@@ -26,6 +26,10 @@ describe('lastHuntTimeFor with reports', () => {
     const reports = [{ area: 'alpha', huntTime: '2026-10-17T13:00:00Z', huntTimeKnown: false }] as HuntReport[];
     expect(lastHuntTimeFor(undefined, 'Alpha', reports)).toBeUndefined();
   });
+  test('a QR hunt (no photo) always counts: its time is when it was reported', () => {
+    const reports = [{ area: 'alpha', huntTime: '2026-10-17T13:00:00Z', huntTimeKnown: false, hasPhoto: false }] as HuntReport[];
+    expect(lastHuntTimeFor(undefined, 'Alpha', reports)).toBe('2026-10-17T13:00:00Z');
+  });
   test('a registered hunt starts the cooldown before the scraper sees it', () => {
     const reports = [{ area: 'alpha', huntTime: '2026-10-17T13:00:00Z', huntTimeKnown: true }] as HuntReport[];
     const hunts = [hunt('Alpha', 'Goedgekeurd', '2026-10-17T11:00:00Z')];

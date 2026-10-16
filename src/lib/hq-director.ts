@@ -180,7 +180,7 @@ export function huntEvent(report: HuntReport): HqEvent {
     key: `area:${area}`,
     kind: 'hunt',
     title: `Hunt op ${capitalizeFirstLetter(area)}!`,
-    detail: joinParts(report.huntCode ?? 'Code wordt gelezen', `door ${report.reportedByName}`, 'cooldown gestart'),
+    detail: joinParts(report.huntCode ?? (report.hasPhoto === false ? null : 'Code wordt gelezen'), `door ${report.reportedByName}`, 'cooldown gestart'),
     tone: 'ok',
     camera: { kind: 'area', area, zoom: HUNT_ZOOM },
   };

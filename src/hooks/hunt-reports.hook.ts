@@ -9,13 +9,16 @@ const HUNT_REPORTS_REFRESH_MS = 10_000;
 const REPORTS_PATH = '/hunt-reports';
 
 export interface NewReportInput {
-  photo: Blob;
+  /** null: a QR hunt ("Foto bij hunt" off), sent without photo or thumbnail */
+  photo: Blob | null;
   /** Small list thumbnail (optional; the server falls back to the photo) */
   thumb?: Blob | null;
   area: string;
   position: { lng: number; lat: number } | null;
-  /** Same id for every attempt of one photo: a retry after a lost response doesn't create a second hunt */
+  /** Same id for every attempt of one hunt: a retry after a lost response doesn't create a second hunt */
   uploadId: string;
+  /** When the hunt happened (QR hunts: when "Hunt melden" was tapped); the server uses it as the hunt time without a photo */
+  takenAt?: Date;
 }
 
 type ReportsUpdater = (current: HuntReport[] | undefined) => HuntReport[];
@@ -23,11 +26,17 @@ type ReportsMutate = (update: ReportsUpdater, options: { revalidate: boolean }) 
 
 /** The report actions; `mutate` updates the cached /hunt-reports list. */
 function huntReportActions(authHeader: string, mutate: ReportsMutate) {
-  /** Upload a new report (multipart); the server reads the code and time from the photo afterwards. Throws the axios error on failure. */
+  /**
+   * Upload a new report (multipart); with a photo the server reads the code and time from it afterwards, without one
+   * (QR hunt) only the area, time and position are sent. Throws the axios error on failure.
+   */
   async function createReport(input: NewReportInput): Promise<HuntReport> {
     const form = new FormData();
-    form.append('photo', input.photo, 'hunt.jpg');
-    if (input.thumb) form.append('thumb', input.thumb, 'hunt-thumb.jpg');
+    if (input.photo) {
+      form.append('photo', input.photo, 'hunt.jpg');
+      if (input.thumb) form.append('thumb', input.thumb, 'hunt-thumb.jpg');
+    }
+    if (input.takenAt) form.append('takenAt', input.takenAt.toISOString());
     form.append('area', input.area);
     form.append('uploadId', input.uploadId);
     if (input.position) {

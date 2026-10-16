@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import type { Hunt } from '@/types/Hunt';
 import type { HuntReport } from '@/types/HuntReport';
 import type { Prediction } from '@/types/Prediction';
-import { hasLiveCountdown, huntListItems, huntStatusSentence, huntsSummary, huntSourceLabel, huntStatusLabel, huntTimeLabel, huntTimelineStatus, isReading, nearestArea, normalizeHuntCode, ocrConfidence, pendingReports, readFailed, resolveHuntTime, totalPoints } from './hunt-reports';
+import { hasLiveCountdown, huntListItems, linkedHuntIds, reportHasPhoto, SUBMIT_WINDOW_MS, huntStatusSentence, huntsSummary, huntSourceLabel, huntStatusLabel, huntTimeLabel, huntTimelineStatus, isReading, nearestArea, normalizeHuntCode, ocrConfidence, pendingReports, readFailed, resolveHuntTime, totalPoints } from './hunt-reports';
 
 function report(overrides: Partial<HuntReport> = {}): HuntReport {
   return {
@@ -222,5 +222,64 @@ describe('hasLiveCountdown', () => {
     expect(hasLiveCountdown(report({ status: 'submitted' }), deadline - 1000)).toBe(false);
     expect(hasLiveCountdown(report({ status: 'overdue' }), deadline - 1000)).toBe(false);
     expect(hasLiveCountdown(report({ ocrStatus: 'reading' }), deadline - 1000)).toBe(false);
+  });
+});
+
+describe('QR hunts (no photo)', () => {
+  const qr = (overrides: Partial<HuntReport> = {}) =>
+    report({ hasPhoto: false, huntCode: null, photoUrl: null, huntCodeSource: null, huntTimeSource: 'manual', codeConfidence: null, timeConfidence: null, ...overrides });
+  const site = { status: 'Goedgekeurd', points: 3, seenAt: '2026-10-17T12:20:00.000Z' };
+  const scraped = (overrides: Partial<Hunt>) =>
+    ({ _id: 'h1', area: 'Alpha', huntCode: null, status: 'Goedgekeurd', points: 3, huntTime: new Date('2026-10-17T12:04:00.000Z'), updatedAt: new Date(), ...overrides }) as Hunt;
+
+  test('window is 15 minutes', () => expect(SUBMIT_WINDOW_MS).toBe(15 * 60_000));
+
+  test('hasPhoto: missing (older server) means a photo', () => {
+    expect(reportHasPhoto(report())).toBe(true);
+    expect(reportHasPhoto(qr())).toBe(false);
+  });
+
+  test('labels say bevestigen instead of versturen', () => {
+    const before = Date.parse('2026-10-17T12:21:18.000Z');
+    expect(huntStatusLabel(qr())).toBe('Bevestigen');
+    expect(huntStatusLabel(qr({ status: 'submitted' }))).toBe('Bevestigd');
+    expect(huntStatusSentence(qr(), before)).toBe('te bevestigen');
+    expect(huntTimelineStatus(qr(), before)).toBe('nog 8:42');
+    expect(huntTimelineStatus(qr({ status: 'submitted' }), before)).toBe('Bevestigd');
+    expect(huntSourceLabel(qr())).toBe('Gemeld zonder foto');
+  });
+
+  test('never being read, time always known', () => {
+    expect(isReading(qr({ ocrStatus: 'pending' }))).toBe(false);
+    expect(huntTimeLabel(qr({ huntTime: '2026-10-17T09:17:00Z', huntTimeKnown: false }))).toBe('11:17');
+  });
+
+  test('summary: te bevestigen, te versturen, or open when mixed', () => {
+    expect(huntsSummary([qr(), qr({ _id: 'r2', status: 'overdue' })])).toBe('2 te bevestigen');
+    expect(huntsSummary([qr(), report({ _id: 'r2' })])).toBe('2 open');
+  });
+
+  test('a linked report without code hides the scraped hunt closest in time (same area, ±15 min)', () => {
+    const hunts = [scraped({ _id: 'far', huntTime: new Date('2026-10-17T12:20:00.000Z') }), scraped({ _id: 'near' }), scraped({ _id: 'other', area: 'Bravo' })];
+    expect([...linkedHuntIds([qr({ site })], hunts)]).toEqual(['near']);
+    const items = huntListItems([qr({ site })], hunts);
+    expect(items.map((item) => (item.source === 'app' ? item.report._id : item.hunt._id))).toEqual(['r1', 'far', 'other']);
+  });
+
+  test('no link without a site result, or further than 15 minutes away', () => {
+    expect(linkedHuntIds([qr()], [scraped({})]).size).toBe(0);
+    expect(linkedHuntIds([qr({ site })], [scraped({ huntTime: new Date('2026-10-17T12:16:00.000Z') })]).size).toBe(0);
+  });
+
+  test('each scraped hunt links to one report, each report to one hunt', () => {
+    const reports = [qr({ site }), qr({ _id: 'r2', huntTime: '2026-10-17T12:02:00.000Z', site })];
+    const hunts = [scraped({ _id: 'a', huntTime: new Date('2026-10-17T12:01:00.000Z') }), scraped({ _id: 'b', huntTime: new Date('2026-10-17T12:10:00.000Z') })];
+    expect([...linkedHuntIds(reports, hunts)].sort()).toEqual(['a', 'b']);
+  });
+
+  test('code matches win over time matches; scraped hunts without code are listed', () => {
+    const hunts = [scraped({ _id: 'coded', huntCode: 'AB12CD' }), scraped({ _id: 'qr', area: 'Bravo' })];
+    expect([...linkedHuntIds([report()], hunts)]).toEqual(['coded']);
+    expect(huntListItems([report()], hunts).map((item) => item.source)).toEqual(['app', 'website']);
   });
 });

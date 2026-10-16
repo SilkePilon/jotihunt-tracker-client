@@ -1,5 +1,5 @@
 import { formatCountdown } from '@/lib/format';
-import { currentHuntStatus, isReading } from '@/lib/hunt-reports';
+import { currentHuntStatus, isQrHunt, isReading } from '@/lib/hunt-reports';
 import { areaOptions } from '@/lib/utils';
 import type { Hunt } from '@/types/Hunt';
 import type { HuntListItem, HuntReport } from '@/types/HuntReport';
@@ -8,6 +8,11 @@ import type { HuntListItem, HuntReport } from '@/types/HuntReport';
 export type HuntFilter = 'all' | 'pending' | 'submitted' | 'judged';
 export const HUNT_FILTERS: HuntFilter[] = ['all', 'pending', 'submitted', 'judged'];
 export const HUNT_FILTER_LABELS: Record<HuntFilter, string> = { all: 'Alles', pending: 'Te versturen', submitted: 'Ingestuurd', judged: 'Beoordeeld' };
+
+/** Filter labels; with "Foto bij hunt" off the open hunts are waiting to be confirmed, not submitted. */
+export function huntFilterLabel(filter: HuntFilter, photoMode: boolean): string {
+  return filter === 'pending' && !photoMode ? 'Bevestigen' : HUNT_FILTER_LABELS[filter];
+}
 
 /** Website-only hunts are already judged on jotihunt.nl, so they only show under Alles and Beoordeeld. */
 export function matchesHuntFilter(item: HuntListItem, filter: HuntFilter): boolean {
@@ -49,7 +54,7 @@ export type HuntRowTone = 'to_submit' | 'overdue' | 'submitted' | 'judged' | 're
 
 export interface HuntRowStatus {
   tone: HuntRowTone;
-  /** "Te versturen · 8:42", "Te laat!", "Ingestuurd", or the jotihunt.nl status ("Goedgekeurd") */
+  /** "Te versturen · 8:42" ("Bevestigen · 8:42" for QR hunts), "Te laat!", "Ingestuurd", or the jotihunt.nl status ("Goedgekeurd") */
   text: string;
   /** Less than 5 minutes left to submit: the text pulses */
   urgent: boolean;
@@ -60,15 +65,16 @@ const URGENT_MS = 5 * 60_000;
 /** Status at the start of a row's meta line; null while the photo is being read (the title shows "Wordt gelezen…"). */
 export function huntRowStatus(report: HuntReport, now: number): HuntRowStatus | null {
   if (isReading(report)) return null;
+  const qr = isQrHunt(report);
   switch (currentHuntStatus(report, now)) {
     case 'to_submit': {
       const left = new Date(report.deadline).getTime() - now;
-      return { tone: 'to_submit', text: `Te versturen · ${formatCountdown(left)}`, urgent: left < URGENT_MS };
+      return { tone: 'to_submit', text: `${qr ? 'Bevestigen' : 'Te versturen'} · ${formatCountdown(left)}`, urgent: left < URGENT_MS };
     }
     case 'overdue':
       return { tone: 'overdue', text: 'Te laat!', urgent: false };
     case 'submitted':
-      return { tone: 'submitted', text: 'Ingestuurd', urgent: false };
+      return { tone: 'submitted', text: qr ? 'Bevestigd' : 'Ingestuurd', urgent: false };
     case 'judged':
       return { tone: report.site?.points ? 'judged' : 'rejected', text: report.site?.status || 'Beoordeeld', urgent: false };
   }
@@ -80,6 +86,8 @@ export function websiteHuntStatus(hunt: Hunt): HuntRowStatus {
 
 /** Amber word at the end of the meta line: HQ should check this report. */
 export function huntRowFlag(report: HuntReport): 'controleren' | 'dubbel?' | null {
+  // QR hunts have no code or photo to check
+  if (isQrHunt(report)) return null;
   if (report.needsReview && !isReading(report)) return 'controleren';
   if (report.duplicateOf) return 'dubbel?';
   return null;

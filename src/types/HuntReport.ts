@@ -23,12 +23,17 @@ export interface HuntReport {
   site: { status: string; points: number; seenAt: string } | null;
   createdAt: string;
   status: HuntReportStatus;
-  /** ISO: huntTime + 30 min */
+  /** ISO: huntTime + 15 min (the window to submit/confirm on jotihunt.nl) */
   deadline: string;
-  /** Server path of the photo; needs the auth header */
-  photoUrl: string;
-  /** Server path of a small list thumbnail (the full photo when there is none); needs the auth header. Missing from older servers */
-  thumbUrl?: string;
+  /**
+   * false: reported without a photo (QR hunt, confirmed by the hunter on jotihunt.nl); no code, OCR or photo urls.
+   * Missing from older servers (then every report has a photo): use {@link import('@/lib/hunt-reports').reportHasPhoto}.
+   */
+  hasPhoto?: boolean;
+  /** Server path of the photo; needs the auth header. null without a photo */
+  photoUrl: string | null;
+  /** Server path of a small list thumbnail (the full photo when there is none); needs the auth header. null without a photo, missing from older servers */
+  thumbUrl?: string | null;
   ocrStatus: OcrStatus;
   ocrError: string | null;
   /** 0..1, only for OCR-read values */

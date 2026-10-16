@@ -161,6 +161,8 @@ describe('new hunts', () => {
       camera: { kind: 'area', area: 'bravo', zoom: 12.4 },
     });
     expect(huntEvent({ ...report('c'), huntCode: null }).detail).toBe('Code wordt gelezen · door Jesse · cooldown gestart');
+    // QR hunt: no code will ever be read
+    expect(huntEvent({ ...report('d'), huntCode: null, hasPhoto: false }).detail).toBe('door Jesse · cooldown gestart');
   });
 });
 
