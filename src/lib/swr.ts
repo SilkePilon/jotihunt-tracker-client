@@ -2,6 +2,7 @@ import axios from 'axios';
 import { useState } from 'react';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
 import useSWR, { type KeyedMutator, SWRConfiguration } from 'swr';
+import useSWRInfinite, { type SWRInfiniteConfiguration } from 'swr/infinite';
 import { REQUEST_TIMEOUT_MS, SLOW_REQUEST_TIMEOUT_MS } from '@/lib/http';
 import { hasExpectedShape, UnexpectedResponseError } from '@/lib/response-shape';
 import { reportFetchError, reportFetchSuccess } from '@/lib/connection';
@@ -71,6 +72,22 @@ export const useAuthSWR = <T>(url: string | null, options?: SWRConfiguration) =>
 
   return useSWR<T>(url === null ? null : [url, authHeader], swrFetcher, { focusThrottleInterval: FOCUS_THROTTLE_MS, ...options });
 };
+
+/**
+ * Paged {@link useAuthSWR}: `pathFor(index, previousPage)` gives each page's URL, null after the last page.
+ */
+export function useAuthSWRInfinite<T>(pathFor: ((index: number, previous: T | null) => string | null) | null, options?: SWRInfiniteConfiguration) {
+  const authHeader = useAuthHeader();
+  return useSWRInfinite<T>(
+    (index, previous: T | null) => {
+      if (!pathFor) return null;
+      const path = pathFor(index, previous);
+      return path === null ? null : [path, authHeader];
+    },
+    swrFetcher,
+    { focusThrottleInterval: FOCUS_THROTTLE_MS, ...options },
+  );
+}
 
 /**
  * {@link useAuthSWR} whose poll interval follows the latest data (e.g. fast while linking, slow once linked). The
