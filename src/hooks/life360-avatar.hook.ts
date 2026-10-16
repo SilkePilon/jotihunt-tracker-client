@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import axios from 'axios';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
 import useInterval from '@/hooks/utils/interval.hook';
+import { fetchAuthBlob } from '@/lib/swr';
 
 /** A loaded member photo: an object URL for <img> and the decoded image for the map's canvas. */
 export interface Life360Avatar {
@@ -22,7 +22,7 @@ async function fetchAvatar(path: string, authHeader: string): Promise<Life360Ava
   // Dev fixtures use data URLs; everything else is '/life360/avatar/<id>' relative to the API base
   const url = path.startsWith('data:')
     ? path
-    : URL.createObjectURL((await axios.get<Blob>(`${import.meta.env.API_BASE_URL}${path}`, { headers: { Authorization: authHeader }, responseType: 'blob' })).data);
+    : URL.createObjectURL(await fetchAuthBlob(path, authHeader));
   const image = new Image();
   image.src = url;
   try {

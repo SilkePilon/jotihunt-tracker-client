@@ -38,6 +38,12 @@ export const fetcherWithMethod = async (
   return response.data;
 };
 
+/** GET a file (image) from the API with the auth header, which <img src> and canvas image loads can't send. */
+export async function fetchAuthBlob(path: string, authHeader: string): Promise<Blob> {
+  const response = await axios.get<Blob>(`${baseUrl}${path}`, { headers: { Authorization: authHeader }, responseType: 'blob' });
+  return response.data;
+}
+
 /** GET for SWR: a malformed answer (proxy page, error object with status 200) fails instead of reaching the components. */
 async function swrFetcher([url, authHeader]: [string, string]) {
   try {

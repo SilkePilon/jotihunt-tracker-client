@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import axios from 'axios';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
+import { fetchAuthBlob } from '@/lib/swr';
 
 /**
  * Load an image from the API with the auth header (an <img src> can't send it) and return an object URL.
@@ -14,11 +14,10 @@ export function useAuthImage(path: string | null): string | undefined {
     if (!path) return;
     let objectUrl: string | undefined;
     let cancelled = false;
-    axios
-      .get<Blob>(`${import.meta.env.API_BASE_URL}${path}`, { headers: { Authorization: authHeader }, responseType: 'blob' })
-      .then((response) => {
+    fetchAuthBlob(path, authHeader)
+      .then((blob) => {
         if (cancelled) return;
-        objectUrl = URL.createObjectURL(response.data);
+        objectUrl = URL.createObjectURL(blob);
         setImage({ path, url: objectUrl });
       })
       .catch(() => undefined);
