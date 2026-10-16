@@ -1,8 +1,7 @@
-import { useState } from 'react';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
 import { mutate as mutateGlobal } from 'swr';
 import { SLOW_REQUEST_TIMEOUT_MS } from '@/lib/http';
-import { fetcherWithMethod, useAuthSWR } from '@/lib/swr';
+import { fetcherWithMethod, useAdaptiveSWR, useAuthSWR, useStatusAction } from '@/lib/swr';
 import {
   HAPPY_HOUR_VIEW_PATHS,
   telegramLink,
@@ -36,24 +35,15 @@ export function useTelegramMessages() {
  */
 export function useTelegramAdmin(enabled: boolean) {
   const authHeader = useAuthHeader() || '';
-  // The interval follows the latest status as a plain number (see telegramAdminRefreshInterval); the data comes from the
-  // same hook, so keep the number in state and adjust it during render when the status changes
-  const [refreshInterval, setRefreshInterval] = useState(0);
-  const { data, error, mutate } = useAuthSWR<TelegramAdminStatus>(enabled ? '/admin/telegram' : null, { refreshInterval });
-  const nextInterval = telegramAdminRefreshInterval(data);
-  if (nextInterval !== refreshInterval) setRefreshInterval(nextInterval);
+  // The interval follows the latest status (see telegramAdminRefreshInterval)
+  const { data, error, mutate } = useAdaptiveSWR<TelegramAdminStatus>(enabled ? '/admin/telegram' : null, telegramAdminRefreshInterval, 0);
+  // Failing with e.g. 409 (already linked elsewhere) or 503 refetches the status
+  const send = useStatusAction(mutate);
 
   async function post(url: string, body?: unknown): Promise<TelegramAdminStatus> {
-    try {
-      const status = (await fetcherWithMethod(url, authHeader, 'POST', body, SLOW_REQUEST_TIMEOUT_MS)) as TelegramAdminStatus;
-      await mutate(status, { revalidate: false });
-      if (status.state === 'linked') revalidateTelegramViews();
-      return status;
-    } catch (error) {
-      // E.g. 409 (already linked elsewhere) or 503: show what the server has now instead of a stale state
-      void mutate();
-      throw error;
-    }
+    const status = await send(url, 'POST', body);
+    if (status.state === 'linked') revalidateTelegramViews();
+    return status;
   }
 
   /** Start a QR login. Throws on failure. */

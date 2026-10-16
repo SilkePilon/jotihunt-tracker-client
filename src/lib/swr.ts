@@ -1,7 +1,8 @@
 import axios from 'axios';
+import { useState } from 'react';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
-import useSWR, { SWRConfiguration } from 'swr';
-import { REQUEST_TIMEOUT_MS } from '@/lib/http';
+import useSWR, { type KeyedMutator, SWRConfiguration } from 'swr';
+import { REQUEST_TIMEOUT_MS, SLOW_REQUEST_TIMEOUT_MS } from '@/lib/http';
 import { hasExpectedShape, UnexpectedResponseError } from '@/lib/response-shape';
 import { reportFetchError, reportFetchSuccess } from '@/lib/connection';
 
@@ -64,3 +65,35 @@ export const useAuthSWR = <T>(url: string | null, options?: SWRConfiguration) =>
 
   return useSWR<T>(url === null ? null : [url, authHeader], swrFetcher, { focusThrottleInterval: FOCUS_THROTTLE_MS, ...options });
 };
+
+/**
+ * {@link useAuthSWR} whose poll interval follows the latest data (e.g. fast while linking, slow once linked). The
+ * interval is a plain number kept in state and adjusted during render when the data changes.
+ * @param initialInterval The interval before the first answer
+ */
+export function useAdaptiveSWR<T>(url: string | null, intervalFor: (data: T | undefined) => number, initialInterval: number) {
+  const [refreshInterval, setRefreshInterval] = useState(initialInterval);
+  const result = useAuthSWR<T>(url, { refreshInterval });
+  const nextInterval = intervalFor(result.data);
+  if (nextInterval !== refreshInterval) setRefreshInterval(nextInterval);
+  return result;
+}
+
+/**
+ * An admin action that answers with the new status (slow timeout): the answer replaces the cached status. On failure
+ * (e.g. 409 or 503) the status is refetched, to show what the server has now instead of a stale state, and the error
+ * is rethrown.
+ */
+export function useStatusAction<T>(mutate: KeyedMutator<T>) {
+  const authHeader = useAuthHeader() || '';
+  return async (url: string, method: 'POST' | 'PATCH' | 'DELETE', body?: unknown): Promise<T> => {
+    try {
+      const status = (await fetcherWithMethod(url, authHeader, method, body, SLOW_REQUEST_TIMEOUT_MS)) as T;
+      await mutate(status, { revalidate: false });
+      return status;
+    } catch (error) {
+      void mutate();
+      throw error;
+    }
+  };
+}
