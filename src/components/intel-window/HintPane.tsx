@@ -11,7 +11,7 @@ import Reveal from '@/components/motion/Reveal';
 import CookieBadge from '@/components/tracker/CookieBadge';
 import { useHintBoard, useRdPreviewState } from '@/hooks/hints.hook';
 import { apiErrorMessage } from '@/lib/api-error';
-import { type AnswerPreview, DETAIL_PART, INTEL_CLOSE_MS, answerPreview, hasExistingMarker, initialOpenArea, nextOpenArea } from '@/lib/intel-window';
+import { type AnswerPreview, INTEL_CLOSE_MS, answerPreview, hasExistingMarker, initialOpenArea, nextOpenArea } from '@/lib/intel-window';
 import { SWAP } from '@/lib/motion';
 import { areaOptions, getColorFromArea } from '@/lib/utils';
 import useIntelStore from '@/stores/intel.store';
@@ -82,7 +82,7 @@ export default function HintPane({ item, area, mapRef }: { item: IntelItem; area
 
   return (
     <>
-      <motion.div variants={DETAIL_PART}>
+      <div>
         <BeheerCard title="Deelgebieden">
           <BeheerRows>
             {areaOptions.map(({ value, label }) => (
@@ -103,12 +103,12 @@ export default function HintPane({ item, area, mapRef }: { item: IntelItem; area
             ))}
           </BeheerRows>
         </BeheerCard>
-      </motion.div>
-      <motion.div variants={DETAIL_PART}>
+      </div>
+      <div>
         <BeheerCard title="Volledige hint">
           <ArticleHtml html={item.content} />
         </BeheerCard>
-      </motion.div>
+      </div>
       <ConfirmDialog
         open={askReplace}
         onOpenChange={setAskReplace}

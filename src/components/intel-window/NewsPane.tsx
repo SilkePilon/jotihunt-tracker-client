@@ -1,6 +1,5 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { BeheerCard } from '@/components/beheer/BeheerLayout';
-import { DETAIL_PART } from '@/lib/intel-window';
 import { POP } from '@/lib/motion';
 import type { IntelItem } from '@/types/Intel';
 import ArticleHtml from './ArticleHtml';
@@ -9,12 +8,12 @@ import ArticleHtml from './ArticleHtml';
 export default function NewsPane({ item }: { item: IntelItem }) {
   return (
     <>
-      <motion.div variants={DETAIL_PART}>
+      <div>
         <BeheerCard title="Volledige tekst">
           <ArticleHtml html={item.content} />
         </BeheerCard>
-      </motion.div>
-      <motion.div variants={DETAIL_PART}>
+      </div>
+      <div>
         <BeheerCard title="Gelezen door" count={item.readBy.length}>
           {/* No `layout` on the chips: the first name (our own, from the mark-read) usually lands while the card still slides in */}
           <div className="relative flex flex-wrap gap-1.5">
@@ -32,7 +31,7 @@ export default function NewsPane({ item }: { item: IntelItem }) {
             </AnimatePresence>
           </div>
         </BeheerCard>
-      </motion.div>
+      </div>
     </>
   );
 }

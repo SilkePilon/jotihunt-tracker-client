@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { motion } from 'motion/react';
 import { toast } from 'sonner';
 import { BeheerCard, BeheerRow, BeheerRows, RowFrame } from '@/components/beheer/BeheerLayout';
 import { Pill } from '@/components/beheer/controls/Pill';
@@ -8,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAssignments } from '@/hooks/assignments.hook';
 import { apiErrorMessage } from '@/lib/api-error';
 import { formatClock } from '@/lib/format';
-import { ASSIGNMENT_STATUS_LABELS, DETAIL_PART } from '@/lib/intel-window';
+import { ASSIGNMENT_STATUS_LABELS } from '@/lib/intel-window';
 import type { UserRef } from '@/types/HintCell';
 import type { AssignmentStatus, IntelItem } from '@/types/Intel';
 import ArticleHtml from './ArticleHtml';
@@ -50,7 +49,7 @@ export default function AssignmentPane({ item }: { item: IntelItem }) {
   return (
     <>
       <div className="grid items-start gap-3 @min-[680px]:grid-cols-2">
-        <motion.div variants={DETAIL_PART} className="min-w-0">
+        <div className="min-w-0">
           <BeheerCard>
             <BeheerRows>
               <BeheerRow key="status" title="Status">
@@ -77,8 +76,8 @@ export default function AssignmentPane({ item }: { item: IntelItem }) {
               </BeheerRow>
             </BeheerRows>
           </BeheerCard>
-        </motion.div>
-        <motion.div variants={DETAIL_PART} className="min-w-0">
+        </div>
+        <div className="min-w-0">
           <BeheerCard title="Notities" count={notes.length}>
             <BeheerRows>
               {notes.map((entry) => (
@@ -117,14 +116,14 @@ export default function AssignmentPane({ item }: { item: IntelItem }) {
               </RowFrame>
             </BeheerRows>
           </BeheerCard>
-        </motion.div>
+        </div>
       </div>
-      <motion.div variants={DETAIL_PART}>
+      <div>
         <BeheerCard title="Volledige tekst">
           {/* Capped line length: the opdracht detail is wide */}
           <ArticleHtml html={item.content} className="max-w-[90ch]" />
         </BeheerCard>
-      </motion.div>
+      </div>
     </>
   );
 }

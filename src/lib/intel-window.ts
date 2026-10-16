@@ -245,32 +245,6 @@ export function unreadTab({ news, assignment }: { news: number; assignment: numb
   return assignment && !news ? 'assignment' : 'news';
 }
 
-/**
- * The detail view (full width). The keyed detail wrapper uses `DETAIL_SWAP` with `initial="open"` (coming from the timeline:
- * the header stays in place for the card morph and the parts below rise in after it) or `initial="swap"` (another item while
- * a detail is open: every part rises in), `animate="shown"`, `exit="gone"` and `custom={swap}`. The header block uses
- * `DETAIL_HEAD`; every other top-level part is a motion element with `DETAIL_PART`.
- */
-export const DETAIL_SWAP: Variants = {
-  open: {},
-  swap: {},
-  shown: (swap: boolean) => ({ transition: swap ? { staggerChildren: 0.045 } : { staggerChildren: 0.05, delayChildren: 0.17 } }),
-  gone: { opacity: 0, transition: { duration: 0.11, ease: 'easeIn' } },
-};
-export const DETAIL_PART: Variants = {
-  open: { opacity: 0, y: 14 },
-  swap: { opacity: 0, y: 10 },
-  shown: { opacity: 1, y: 0, transition: { duration: 0.38, ease: EASE_OUT } },
-};
-/** The header block: in place on open (the card morphs into its frame), rises in on a swap */
-export const DETAIL_HEAD: Variants = {
-  open: {},
-  swap: { opacity: 0, y: 10 },
-  shown: { opacity: 1, y: 0, transition: { duration: 0.38, ease: EASE_OUT } },
-};
-/** The card ↔ detail header morph (frame and title share a `layoutId`, see `useMorphIds`) */
-export const INTEL_MORPH: Transition = { type: 'spring', visualDuration: 0.42, bounce: 0.1 };
-
 /** Views and items push sideways (timeline ↔ item, item ↔ item): 1 = forward (in from the right), -1 = back */
 export const PUSH_TRANSITION: Transition = { duration: 0.36, ease: EASE_OUT };
 export const PUSH: Variants = {
@@ -278,13 +252,6 @@ export const PUSH: Variants = {
   center: { x: 0, opacity: 1, transition: PUSH_TRANSITION },
   exit: (direction: number) => ({ x: `${-35 * direction}%`, opacity: 0, transition: PUSH_TRANSITION }),
 };
-
-/** The AI chat card right of the item (layout B): slides in after the detail's parts when an item opens from the timeline */
-export const CHAT_CARD_ENTER = {
-  initial: { opacity: 0, x: 26, scale: 0.98 },
-  animate: { opacity: 1, x: 0, scale: 1 },
-  transition: { duration: 0.45, delay: 0.28, ease: EASE_OUT },
-} satisfies { initial: TargetAndTransition; animate: TargetAndTransition; transition: Transition };
 
 /** A chat message rising in (streaming text itself is not animated per token) */
 export const CHAT_MESSAGE = {
