@@ -103,12 +103,12 @@ export function nextOpenArea(cells: HintCell[], after?: string | null): string |
 }
 
 /**
- * The area a hint opens on: the requested one if this hint has a cell there (also a "geen hint" one: the split can be
- * wrong, so it can still be answered), else the first open area (or none)
+ * The area a hint opens on: the requested one (mini grid) if this hint has a cell there (also a "geen hint" one: the
+ * split can be wrong, so it can still be answered), else none: opened from the timeline, every area starts closed
  */
 export function initialOpenArea(cells: HintCell[], area: string | null): string | null {
   const cell = area ? cells.find((existing) => existing.area === area) : undefined;
-  return cell ? cell.area : nextOpenArea(cells);
+  return cell ? cell.area : null;
 }
 
 /** "nog 42 min", "nog 1 u 05" or "verlopen" */

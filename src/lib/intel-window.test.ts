@@ -142,11 +142,10 @@ describe('initialOpenArea', () => {
     expect(initialOpenArea(cells, 'alpha')).toBe('alpha');
     expect(initialOpenArea(cells, 'bravo')).toBe('bravo');
   });
-  test('a missing area falls back to the first open one', () => {
-    expect(initialOpenArea(cells, 'oscar')).toBe('charlie');
-    expect(initialOpenArea(cells, null)).toBe('charlie');
+  test('nothing requested, or an area without a cell: all closed', () => {
+    expect(initialOpenArea(cells, 'oscar')).toBeNull();
+    expect(initialOpenArea(cells, null)).toBeNull();
   });
-  test('nothing open and nothing requested: none', () => expect(initialOpenArea([cell('alpha', 'solved')], null)).toBeNull());
 });
 
 describe('intelStats', () => {
