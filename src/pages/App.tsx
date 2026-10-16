@@ -2,7 +2,6 @@ import { useOutlet } from '@/hooks/outlet.hook.ts';
 import SearchCard from '@/components/cards/search/SearchCard.tsx';
 import CoordinatesCard from '@/components/cards/coordinates/CoordinatesCard.tsx';
 import Sidebar from '@/components/sidebar/Sidebar';
-import HuntRegistrationDialog from '@/components/hunts/HuntRegistrationDialog';
 import { tourTarget } from '@/components/tour/targets';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import HappyHourPill from '@/components/happy-hour/HappyHourPill';
@@ -36,9 +35,6 @@ function App() {
       </div>
       <ErrorBoundary name="De zijbalk" variant="floating">
         <Sidebar mapRef={mapRef} />
-      </ErrorBoundary>
-      <ErrorBoundary name="Hunt registreren" variant="floating">
-        <HuntRegistrationDialog />
       </ErrorBoundary>
     </>
   );

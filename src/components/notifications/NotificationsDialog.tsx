@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { FlagIcon, LightbulbIcon, MegaphoneIcon, NewspaperIcon, PartyPopperIcon, SwordsIcon, TimerIcon, type LucideIcon } from 'lucide-react';
+import { BadgeCheckIcon, FlagIcon, InboxIcon, LightbulbIcon, MegaphoneIcon, NewspaperIcon, PartyPopperIcon, SwordsIcon, type LucideIcon } from 'lucide-react';
 import BeheerSwitch from '@/components/beheer/controls/BeheerSwitch';
 import Reveal from '@/components/motion/Reveal';
 import NotificationTile from '@/components/notifications/NotificationTile';
@@ -24,7 +24,9 @@ const ICONS: Record<OptionalNotificationType, LucideIcon> = {
   'fox-status': FlagIcon,
   hint: LightbulbIcon,
   article: NewspaperIcon,
-  'hunt-deadline': TimerIcon,
+  'hunt-new': InboxIcon,
+  'hunt-approved': BadgeCheckIcon,
+  'hunt-rejected': BadgeCheckIcon,
   'counter-hunt': SwordsIcon,
   'happy-hour': PartyPopperIcon,
 };

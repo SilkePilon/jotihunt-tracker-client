@@ -1,25 +1,25 @@
 import type { Area } from '@/types/Area';
-import type { Hunt } from '@/types/Hunt';
-import type { HuntReport } from '@/types/HuntReport';
+import type { SyncedHunt } from '@/types/HuntSync';
 import { capitalizeFirstLetter } from './utils';
 
 export const HUNT_COOLDOWN_MS = 60 * 60 * 1000;
 
 /**
- * Time of the latest hunt on an area, from the scraped jotihunt.nl hunts and the app's own reports (so the
- * cooldown starts at registration). Tegenhunts on the site don't count for the cooldown (since 2024).
+ * Time of the latest hunt on an area, from the hunts synced from jotihunt.nl (the site registers each QR hunt with
+ * its time). Tegenhunts on the site don't count for the cooldown (since 2024); hunts without a readable time are skipped.
  */
-export function lastHuntTimeFor(hunts: Hunt[] | undefined, areaName: string, reports?: HuntReport[]): Date | string | undefined {
+export function lastHuntTimeFor(hunts: SyncedHunt[] | undefined, areaName: string): string | undefined {
   const area = areaName.toLowerCase();
-  const times: (Date | string)[] = [
-    ...(hunts ?? []).filter((hunt) => !hunt.status.toLowerCase().includes('tegenhunt') && hunt.area.toLowerCase() === area).map((hunt) => hunt.huntTime),
-    // Only once the time on the sticker is known (read from the photo or entered by an admin), not the upload time.
-    // QR hunts (no photo) always count: their time is the moment the hunter reported it.
-    ...(reports ?? []).filter((report) => (report.huntTimeKnown || report.hasPhoto === false) && report.area === area).map((report) => report.huntTime),
-  ];
-  return times
-    .filter((time) => !Number.isNaN(new Date(time).getTime()))
-    .reduce<Date | string | undefined>((latest, time) => (!latest || new Date(time).getTime() > new Date(latest).getTime() ? time : latest), undefined);
+  let latest: string | undefined;
+  let latestMs = -Infinity;
+  for (const hunt of hunts ?? []) {
+    if (hunt.area.toLowerCase() !== area || !hunt.huntTime || hunt.statusText.toLowerCase().includes('tegenhunt')) continue;
+    const ms = Date.parse(hunt.huntTime);
+    if (Number.isNaN(ms) || ms <= latestMs) continue;
+    latest = hunt.huntTime;
+    latestMs = ms;
+  }
+  return latest;
 }
 
 /**
@@ -71,10 +71,10 @@ export interface SidebarFox {
 }
 
 /** Every area as a fox, in {@link FOX_GROUP_ORDER}; cooldowns soonest-free first, the rest by area name. */
-export function sidebarFoxes({ areas, hunts, reports, now }: { areas: Area[]; hunts?: Hunt[]; reports?: HuntReport[]; now: number }): SidebarFox[] {
+export function sidebarFoxes({ areas, hunts, now }: { areas: Area[]; hunts?: SyncedHunt[]; now: number }): SidebarFox[] {
   return areas
     .map((area) => {
-      const lastHunt = lastHuntTimeFor(hunts, area.name, reports);
+      const lastHunt = lastHuntTimeFor(hunts, area.name);
       const cooldownMs = huntCooldownMs(lastHunt, now);
       return { area, key: area.name.toLowerCase(), name: capitalizeFirstLetter(area.name), group: foxGroup(area.status, cooldownMs), cooldownMs, lastHunt };
     })

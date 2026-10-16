@@ -4,7 +4,9 @@ import { asList, hasExpectedShape } from './response-shape';
 describe('hasExpectedShape', () => {
   test('list endpoints need an array', () => {
     expect(hasExpectedShape('/markers', [])).toBe(true);
-    expect(hasExpectedShape('/hunt-reports', [{ _id: 'a' }])).toBe(true);
+    expect(hasExpectedShape('/hunts', [{ _id: 'a' }])).toBe(true);
+    expect(hasExpectedShape('/hunts/events?limit=50', [])).toBe(true);
+    expect(hasExpectedShape('/hunts/events', { message: 'x' })).toBe(false);
     expect(hasExpectedShape('/markers', { message: 'x' })).toBe(false);
     expect(hasExpectedShape('/teams', '<html>proxy</html>')).toBe(false);
     expect(hasExpectedShape('/areas', null)).toBe(false);
@@ -27,6 +29,11 @@ describe('hasExpectedShape', () => {
     expect(hasExpectedShape('/assignments/members', [{ _id: 'u1', name: 'Sanne' }])).toBe(true);
     expect(hasExpectedShape('/articles/read', { read: [], readBy: {} })).toBe(true);
     expect(hasExpectedShape('/articles/read', { read: [] })).toBe(false);
+  });
+
+  test('hunt sync status', () => {
+    expect(hasExpectedShape('/hunts/sync', { configured: true, running: false, counts: { approved: 0, pending: 0, rejected: 0, total: 0 }, points: 0 })).toBe(true);
+    expect(hasExpectedShape('/hunts/sync', { configured: true })).toBe(false);
   });
 
   test('tegenhunt and Telegram answers', () => {

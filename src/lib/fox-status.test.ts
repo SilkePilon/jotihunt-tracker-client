@@ -1,11 +1,10 @@
 import { describe, expect, test } from 'bun:test';
 import type { Area } from '@/types/Area';
-import type { Hunt } from '@/types/Hunt';
-import type { HuntReport } from '@/types/HuntReport';
+import type { SyncedHunt } from '@/types/HuntSync';
 import { FOX_GROUP_ORDER, foxGroup, groupCounts, huntCooldownMs, HUNT_COOLDOWN_MS, lastHuntTimeFor, sidebarFoxes, statusPillClass } from './fox-status';
 
-function hunt(area: string, status: string, huntTime: string): Hunt {
-  return { _id: area + huntTime, area, huntCode: 'x', status, points: 1, huntTime: huntTime as unknown as Date, updatedAt: new Date() };
+function hunt(area: string, statusText: string, huntTime: string | null): SyncedHunt {
+  return { _id: area + huntTime, siteKey: area + huntTime, area, huntTime, status: 'approved', statusText, points: 1, qrCode: null, location: null, firstSeenAt: '2026-10-17T10:00:00Z', statusChangedAt: null };
 }
 
 function area(name: string, status: string): Area {
@@ -21,19 +20,10 @@ describe('lastHuntTimeFor', () => {
   });
 });
 
-describe('lastHuntTimeFor with reports', () => {
-  test('ignores reports whose time is not known yet (still being read)', () => {
-    const reports = [{ area: 'alpha', huntTime: '2026-10-17T13:00:00Z', huntTimeKnown: false }] as HuntReport[];
-    expect(lastHuntTimeFor(undefined, 'Alpha', reports)).toBeUndefined();
-  });
-  test('a QR hunt (no photo) always counts: its time is when it was reported', () => {
-    const reports = [{ area: 'alpha', huntTime: '2026-10-17T13:00:00Z', huntTimeKnown: false, hasPhoto: false }] as HuntReport[];
-    expect(lastHuntTimeFor(undefined, 'Alpha', reports)).toBe('2026-10-17T13:00:00Z');
-  });
-  test('a registered hunt starts the cooldown before the scraper sees it', () => {
-    const reports = [{ area: 'alpha', huntTime: '2026-10-17T13:00:00Z', huntTimeKnown: true }] as HuntReport[];
-    const hunts = [hunt('Alpha', 'Goedgekeurd', '2026-10-17T11:00:00Z')];
-    expect(new Date(lastHuntTimeFor(hunts, 'Alpha', reports)!).toISOString()).toBe('2026-10-17T13:00:00.000Z');
+describe('lastHuntTimeFor, latest wins', () => {
+  test('the newest hunt time, whatever the order; hunts without a (valid) time are skipped', () => {
+    const hunts = [hunt('alpha', 'Goedgekeurd', '2026-10-17T11:00:00Z'), hunt('alpha', 'Wacht op bevestiging', '2026-10-17T13:00:00Z'), hunt('alpha', 'x', null), hunt('alpha', 'x', 'nonsense')];
+    expect(lastHuntTimeFor(hunts, 'Alpha')).toBe('2026-10-17T13:00:00Z');
   });
 });
 

@@ -9,7 +9,7 @@ const LIST_PATHS = new Set([
   '/markers',
   '/areas',
   '/hunts',
-  '/hunt-reports',
+  '/hunts/events',
   '/teams',
   '/predictions',
   '/visits',
@@ -29,6 +29,7 @@ const isObject = (data: unknown): data is Record<string, unknown> => typeof data
 /** Endpoints whose object answer needs more than "is an object". */
 const OBJECT_CHECKS: Record<string, (data: Record<string, unknown>) => boolean> = {
   '/hints/board': (data) => Array.isArray(data.articles) && Array.isArray(data.cells),
+  '/hunts/sync': (data) => typeof data.configured === 'boolean' && typeof data.running === 'boolean' && isObject(data.counts) && typeof data.points === 'number',
   '/demo': (data) => typeof data.enabled === 'boolean',
   '/notifications/preferences': (data) => Array.isArray(data.disabledTypes),
   '/articles/read': (data) => Array.isArray(data.read) && isObject(data.readBy),
@@ -40,7 +41,6 @@ const OBJECT_CHECKS: Record<string, (data: Record<string, unknown>) => boolean> 
   '/admin/buildings': (data) => typeof data.tiles === 'number' && typeof data.bytes === 'number',
   '/life360/members': (data) => typeof data.linked === 'boolean' && typeof data.stale === 'boolean' && Array.isArray(data.members),
   '/settings/invites-paused': (data) => typeof data.paused === 'boolean',
-  '/settings/hunt-photo': (data) => typeof data.enabled === 'boolean',
   '/settings/huntable-areas': (data) => data.areas === null || (Array.isArray(data.areas) && data.areas.every((area) => typeof area === 'string')),
   '/admin/config': (data) => isObject(data.general) && isObject(data.ai) && isObject(data.secrets) && typeof data.settingsKeyOk === 'boolean',
   '/admin/ai/models': (data) => Array.isArray(data.models),

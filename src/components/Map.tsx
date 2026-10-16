@@ -22,6 +22,8 @@ import Markers from './layers/Markers';
 import {forwardRef, memo, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type ReactNode} from 'react';
 import {useShallow} from 'zustand/react/shallow';
 import HomeCircle from './layers/HomeCircle';
+import HuntFocus from './layers/HuntFocus';
+import HuntAccuracy from './layers/HuntAccuracy';
 import Predictions from './layers/Predictions';
 import {usePredictionSetting} from '@/hooks/predictions.hook';
 import useLayersStore from '../stores/layers.store';
@@ -283,7 +285,9 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
                 {showDevices && <Devices/>}
                 {showLife360 && <Life360/>}
                 {(showMarkersPart1 || showMarkersPart2) && <Markers part1={showMarkersPart1} part2={showMarkersPart2}/>}
+                {(showMarkersPart1 || showMarkersPart2) && <HuntAccuracy/>}
                 <HomeCircle showCircle={showHomeCircle}/>
+                {!wall && <HuntFocus/>}
                 <LayerStack/>
                 {overlay}
             </Maplibre>

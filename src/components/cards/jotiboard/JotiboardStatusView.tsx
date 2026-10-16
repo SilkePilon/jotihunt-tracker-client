@@ -1,6 +1,7 @@
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { PauseIcon } from 'lucide-react';
+import FadeText from '@/components/motion/FadeText';
 import Reveal from '@/components/motion/Reveal';
 import CookieBadge from '@/components/tracker/CookieBadge';
 import { Switch } from '@/components/ui/switch';
@@ -14,17 +15,6 @@ import { JOTIBOARD_BLOCK } from './styles';
 type LinkedView = 'syncing' | 'failing' | 'paused';
 
 const TITLE: Record<LinkedView, string> = { syncing: 'Synchroniseert', failing: 'Synchroniseert', paused: 'Gepauzeerd' };
-
-/** Text that cross-fades when `swapKey` changes (not on every tick of its content). */
-function FadeText({ swapKey, className, children }: { swapKey: string; className?: string; children: ReactNode }) {
-  return (
-    <AnimatePresence mode="wait" initial={false}>
-      <motion.p key={swapKey} className={className} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
-        {children}
-      </motion.p>
-    </AnimatePresence>
-  );
-}
 
 /**
  * Linked (mockup linked-state A): big cookie, title, sync line, "Automatisch synchroniseren" switch in a grey pill.

@@ -16,8 +16,7 @@ import StaleDataBadge from '@/components/StaleDataBadge';
 import { useAreas } from '@/hooks/areas.hook';
 import { useHqDirector } from '@/hooks/hq-director.hook';
 import { useHqEventSources } from '@/hooks/hq-events.hook';
-import { useHuntReports } from '@/hooks/hunt-reports.hook';
-import { useHunts } from '@/hooks/hunts.hook';
+import { useHuntEvents, useSyncedHunts } from '@/hooks/hunt-sync.hook';
 import { useNotificationFeed } from '@/hooks/notification-feed.hook';
 import { useNow } from '@/hooks/now.hook';
 import { usePredictions } from '@/hooks/predictions.hook';
@@ -72,14 +71,14 @@ function HqScreen({ onUnauthorized }: { onUnauthorized: () => void }) {
 
   const now = useNow(true);
   const { areas } = useAreas();
-  const { hunts } = useHunts();
-  const { reports } = useHuntReports();
+  const { hunts } = useSyncedHunts();
+  const { events } = useHuntEvents();
   const { predictions } = usePredictions();
   const { teams } = useTeams();
   useAppConfig(); // re-render when the home team is configured
   const homeTeam = teams?.find(isHomeTeam);
-  const foxes = useMemo(() => buildFoxes({ areas, hunts, reports, predictions, teams, now }), [areas, hunts, reports, predictions, teams, now]);
-  useHqEventSources(foxes, reports);
+  const foxes = useMemo(() => buildFoxes({ areas, hunts, predictions, teams, now }), [areas, hunts, predictions, teams, now]);
+  useHqEventSources(foxes, events);
   const director = useHqDirector({ mapRef, foxes, teams, homeTeam });
   const focusFox = foxes.find((fox) => fox.key === director.focusArea);
   // Keyed on the values, not the fox (rebuilt every second): an unchanged overlay lets the memoized map skip re-rendering
@@ -113,7 +112,7 @@ function HqScreen({ onUnauthorized }: { onUnauthorized: () => void }) {
           <FoxBoard foxes={foxes} focusArea={director.focusArea} />
         </ErrorBoundary>
         <ErrorBoundary>
-          <HqHunts now={now} />
+          <HqHunts events={events} />
         </ErrorBoundary>
       </aside>
       {!audioUnlocked && <AudioUnlock onUnlock={() => setAudioUnlocked(true)} />}

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ComponentType } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { toast } from 'sonner';
-import { BrainIcon, CameraIcon, CheckIcon, FileTextIcon, KeyRoundIcon, ListTreeIcon, Loader2Icon, MessageCircleIcon, PlayIcon, RadarIcon, WrenchIcon } from 'lucide-react';
+import { BrainIcon, CheckIcon, FileTextIcon, KeyRoundIcon, ListTreeIcon, Loader2Icon, MessageCircleIcon, PlayIcon, RadarIcon, WrenchIcon } from 'lucide-react';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
 import Reveal from '@/components/motion/Reveal';
 import { Input } from '@/components/ui/input';
@@ -18,7 +18,6 @@ import { Pill, Tag } from './controls/Pill';
 const ROW_ICON = 'size-[18px] shrink-0 text-muted-foreground';
 /** The server's fallbacks (settings/app-config.ts) when neither Beheer nor .env picks a model */
 const DEFAULTS: Record<AiSlot, string> = {
-  ocr: 'gemini-3.8-flash',
   summary: 'gemini-3.8-flash',
   split: 'gemini-3.8-flash',
   chat: 'gemini-3.8-flash',
@@ -27,7 +26,6 @@ const DEFAULTS: Record<AiSlot, string> = {
   deep: 'gemini-pro-latest',
 };
 const SLOT_INFO: Record<AiSlot, { icon: ComponentType<{ className?: string }>; title: string; meta: string }> = {
-  ocr: { icon: CameraIcon, title: 'Foto OCR', meta: "Leest code + tijd van de sticker op hunt-foto's" },
   summary: { icon: FileTextIcon, title: 'Artikel-samenvattingen', meta: 'Korte samenvatting bij elk nieuwsbericht' },
   split: { icon: ListTreeIcon, title: 'Hint splitsen', meta: 'Splitst een hint in losse deelgebied-delen' },
   prediction: { icon: RadarIcon, title: 'Vos-voorspelling', meta: 'Voorspelt bij elke hint waar de vos zit' },
