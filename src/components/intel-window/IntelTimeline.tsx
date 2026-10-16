@@ -116,7 +116,7 @@ export default function IntelTimeline({ items, tab, onSelect, entrance }: Timeli
                   <AnimatePresence>
                     {group.items.map((item) => (
                       <Fold key={item.id}>
-                        <motion.div data-intel-id={item.id} variants={entry} className="grid grid-cols-[52px_14px_1fr] gap-x-2.5">
+                        <motion.div variants={entry} className="grid grid-cols-[52px_14px_1fr] gap-x-2.5">
                           <div className="pt-[15px] text-right text-xs text-muted-foreground tabular-nums">{formatClock(item.publishAt)}</div>
                           <div className="relative before:absolute before:inset-y-0 before:left-1.5 before:w-0.5 before:bg-beheer-row-high">
                             <span className="absolute top-[18px] left-0.5 size-2.5 rounded-full ring-2 ring-beheer-window" style={{ backgroundColor: KIND_COLOR[item.kind] }} />

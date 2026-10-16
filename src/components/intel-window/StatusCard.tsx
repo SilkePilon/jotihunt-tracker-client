@@ -137,7 +137,7 @@ function SolveChart({ slots, avgSolveMs, entrance }: { slots: SlotBar[]; avgSolv
             Nog geen hints
           </motion.p>
         ) : (
-          <motion.div key="bars" {...SWAP} className="mt-3 flex min-h-0 flex-1 gap-[7px]">
+          <motion.div key="bars" {...SWAP} className="relative mt-3 flex min-h-0 flex-1 gap-[7px]">
             {/* initial={false} would also block the bars' grow below; with `entrance` the slots fade in as they grow */}
             <AnimatePresence initial={entrance} mode="popLayout">
               {slots.map((slot, index) => {
