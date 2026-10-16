@@ -11,6 +11,7 @@ const pill = cva(
       variant: {
         primary: 'bg-primary text-primary-foreground hover:bg-primary/90',
         secondary: 'bg-beheer-row-high text-foreground hover:bg-beheer-row-high/70',
+        ghost: 'text-muted-foreground hover:bg-beheer-row-high hover:text-foreground',
         'danger-soft': 'bg-destructive/15 text-destructive hover:bg-destructive/20 dark:text-red-300',
         'danger-outline':
           'text-destructive shadow-[inset_0_0_0_1.5px_color-mix(in_oklab,var(--destructive)_60%,transparent)] hover:bg-destructive/10 dark:text-red-300',

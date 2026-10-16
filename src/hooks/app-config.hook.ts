@@ -77,6 +77,8 @@ export function useAiModels(enabled: boolean) {
     refresh: async () => {
       await mutate((await fetcherWithMethod('/admin/ai/models?refresh=1', authHeader)) as ModelList, { revalidate: false });
     },
+    /** Plain refetch (the server's list cache is per key), so a rejected new key shows up as `keyRejected` */
+    revalidate: () => mutate(),
   };
 }
 

@@ -1,10 +1,11 @@
 import { useState, type RefObject } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { ArrowLeftIcon, ExternalLinkIcon, MapPinIcon, MegaphoneIcon, MonitorIcon, PlugIcon, SlidersHorizontalIcon, UserPlusIcon, UsersIcon } from 'lucide-react';
+import { ArrowLeftIcon, ExternalLinkIcon, MapPinIcon, MegaphoneIcon, MonitorIcon, PlugIcon, SlidersHorizontalIcon, SparklesIcon, UserPlusIcon, UsersIcon } from 'lucide-react';
 import type { MapRef } from '@/components/Map';
 import { useIsMobile } from '@/hooks/media.hook';
 import { PANE_SLIDE, PANE_SLIDE_TRANSITION, SWAP } from '@/lib/motion';
 import useAdminStore, { type AdminDialogId } from '@/stores/admin.store';
+import AiPane from './AiPane';
 import AlgemeenPane from './AlgemeenPane';
 import BroadcastPane from './BroadcastPane';
 import { IconPill } from './controls/Pill';
@@ -21,6 +22,7 @@ interface BeheerWindowProps {
 
 const SECTIONS: { id: AdminDialogId; title: string; icon: NavIcon }[] = [
   { id: 'algemeen', title: 'Algemeen', icon: SlidersHorizontalIcon },
+  { id: 'ai', title: 'AI', icon: SparklesIcon },
   { id: 'users', title: 'Gebruikers', icon: UsersIcon },
   { id: 'invites', title: 'Invites', icon: UserPlusIcon },
   { id: 'hunters', title: 'Hunters', icon: MapPinIcon },
@@ -97,16 +99,7 @@ export default function BeheerWindow({ mapRef }: BeheerWindowProps) {
             <NavItem icon={MonitorIcon} title="HQ-scherm" trailing={hqTrailing} onClick={openHq} className="mt-auto h-12 text-foreground" />
           </motion.div>
         ) : (
-          <motion.div
-            key="pane"
-            className="flex min-h-0 flex-1 flex-col"
-            custom={direction}
-            variants={PANE_SLIDE}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            transition={PANE_SLIDE_TRANSITION}
-          >
+          <motion.div key="pane" className="flex min-h-0 flex-1 flex-col" custom={direction} variants={PANE_SLIDE} initial="enter" animate="center" exit="exit" transition={PANE_SLIDE_TRANSITION}>
             <div className="flex items-center gap-2 pb-3">
               <IconPill aria-label="Terug" onClick={back}>
                 <ArrowLeftIcon />
@@ -150,6 +143,8 @@ function SectionPane({ section, mapRef }: { section: AdminDialogId; mapRef: RefO
   switch (section) {
     case 'algemeen':
       return <AlgemeenPane />;
+    case 'ai':
+      return <AiPane />;
     case 'users':
       return <UsersPane />;
     case 'invites':

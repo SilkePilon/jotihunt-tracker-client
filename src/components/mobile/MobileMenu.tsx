@@ -53,6 +53,7 @@ function MenuCard({ title, rows }: { title: string; rows: Row[] }) {
 
 const BEHEER: [AdminDialogId, string][] = [
   ['algemeen', 'Algemeen'],
+  ['ai', 'AI'],
   ['users', 'Gebruikers'],
   ['invites', 'Invites'],
   ['hunters', 'Hunters'],
