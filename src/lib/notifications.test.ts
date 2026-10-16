@@ -15,7 +15,7 @@ describe('soundKey / toastKind', () => {
   test('green fox is urgent', () => {
     expect(soundKey(n({ type: 'fox-status', data: { status: 'green' } }))).toBe('fox-green');
     expect(soundKey(n({ type: 'fox-status', data: { status: 'red' } }))).toBe('fox-status');
-    expect(soundKey(n({ type: 'hunt-deadline' }))).toBe('deadline');
+    expect(soundKey(n({ type: 'hunt-new' }))).toBe('hunt');
     expect(toastKind(n({ type: 'fox-status', data: { status: 'green' } }))).toBe('success');
     expect(toastKind(n({ type: 'broadcast' }))).toBe('warning');
     expect(toastKind(n({ type: 'article' }))).toBe('info');
@@ -35,7 +35,7 @@ describe('pickSound / pickPrimary', () => {
   const orange = n({ id: 'a', type: 'fox-status', data: { status: 'orange' } });
   const green = n({ id: 'b', type: 'fox-status', data: { status: 'green' } });
   const broadcast = n({ id: 'c', type: 'broadcast' });
-  const deadline = n({ id: 'd', type: 'hunt-deadline' });
+  const deadline = n({ id: 'd', type: 'hunt-new' });
   const hint = n({ id: 'e', type: 'hint' });
   const article = n({ id: 'f', type: 'article' });
 
@@ -49,12 +49,12 @@ describe('pickSound / pickPrimary', () => {
     expect(pickSound([])).toBeNull();
     expect(pickPrimary([])).toBeNull();
   });
-  test('priority is green > broadcast > deadline > fox-status > hint > article', () => {
+  test('priority is green > broadcast > hunt > fox-status > hint > article', () => {
     expect(pickSound([orange, green])).toBe('fox-green');
     expect(pickSound([green, broadcast])).toBe('fox-green');
     expect(pickSound([orange, broadcast])).toBe('broadcast');
     expect(pickSound([broadcast, deadline])).toBe('broadcast');
-    expect(pickSound([orange, deadline])).toBe('deadline');
+    expect(pickSound([orange, deadline])).toBe('hunt');
     expect(pickSound([hint, orange])).toBe('fox-status');
     expect(pickSound([article, hint])).toBe('hint');
     expect(pickSound([article])).toBe('article');
@@ -80,11 +80,11 @@ describe('isRecent', () => {
 });
 
 describe('happy hour', () => {
-  test('own sound key, below broadcast and above the deadline', () => {
+  test('own sound key, below broadcast and above a hunt', () => {
     const happyHour = n({ id: 'h', type: 'happy-hour', urgent: true });
     expect(soundKey(happyHour)).toBe('happy-hour');
     expect(toastKind(happyHour)).toBe('warning');
-    expect(pickSound([n({ id: 'd', type: 'hunt-deadline' }), happyHour])).toBe('happy-hour');
+    expect(pickSound([n({ id: 'd', type: 'hunt-new' }), happyHour])).toBe('happy-hour');
     expect(pickSound([happyHour, n({ id: 'c', type: 'broadcast' })])).toBe('broadcast');
   });
 
@@ -108,8 +108,14 @@ describe('notification option toggles', () => {
     expect(toggleType(['hint', 'article'], 'hint', true)).toEqual(['article']);
   });
 
+  test('the "Hunt beoordeeld" tile switches approved and rejected together', () => {
+    expect(toggleType([], 'hunt-approved', false)).toEqual(['hunt-approved', 'hunt-rejected']);
+    expect(toggleType(['hint', 'hunt-approved', 'hunt-rejected'], 'hunt-approved', true)).toEqual(['hint']);
+  });
+
   test('setAllTypes turns everything on or off', () => {
     expect(setAllTypes(true)).toEqual([]);
-    expect(setAllTypes(false)).toEqual(NOTIFICATION_OPTIONS.map((option) => option.type));
+    expect(setAllTypes(false)).toEqual(NOTIFICATION_OPTIONS.flatMap((option) => [option.type, ...(option.alsoTypes ?? [])]));
+    expect(setAllTypes(false)).toContain('hunt-rejected');
   });
 });

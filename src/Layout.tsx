@@ -10,7 +10,6 @@ import DemoReloader from './components/DemoReloader';
 import AddPasskeyPrompt from './components/AddPasskeyPrompt';
 import ErrorBoundary from './components/ErrorBoundary';
 import StaleDataBadge from './components/StaleDataBadge';
-import NewHuntToaster from './components/hunts/NewHuntToaster';
 import NotificationsDialog from './components/notifications/NotificationsDialog';
 import AccountDialog from './components/account/AccountDialog';
 import AndroidPromoDialog from './components/android-promo/AndroidPromoDialog';
@@ -108,7 +107,6 @@ export default function Layout() {
                 <DemoReloader/>
                 <AddPasskeyPrompt/>
                 {/* Here and not on the map page: hunts registered while another page is open are announced too */}
-                <NewHuntToaster/>
             </ErrorBoundary>
             <ErrorBoundary name="Deze pagina" variant="floating">
                 <Outlet context={{mapRef} satisfies OutletContextType}/>

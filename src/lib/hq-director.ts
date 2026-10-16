@@ -158,8 +158,12 @@ export function eventFromNotification(notification: AppNotification): HqEvent | 
         camera: { kind: 'home', direction },
       };
     }
+    // Hunts reach the HQ from the sync log (useHqEventSources), not twice
+    case 'hunt-new':
+    case 'hunt-approved':
+    case 'hunt-rejected':
+      return null;
     case 'broadcast':
-    case 'hunt-deadline':
     case 'happy-hour':
       return { key: id, kind: 'message', title, detail: body, tone: 'warn', camera: null };
     default:

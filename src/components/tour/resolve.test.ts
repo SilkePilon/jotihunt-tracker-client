@@ -5,7 +5,7 @@ import type { TourStep } from './types';
 const base = { title: 't', body: 'b' };
 const steps: TourStep[] = [
   { ...base, id: 'all', target: null },
-  { ...base, id: 'phone', target: 'huntCapture.button', only: 'mobile' },
+  { ...base, id: 'phone', target: 'sidebar.hunts', only: 'mobile' },
   { ...base, id: 'desk', target: 'cards.topRight', only: 'desktop' },
   { ...base, id: 'split', target: { mobile: 'sidebar.root', desktop: 'map' } },
 ];
@@ -19,7 +19,7 @@ describe('stepsForPlatform', () => {
 
 describe('targetFor', () => {
   test('plain target', () => {
-    expect(targetFor(steps[1], 'mobile')).toBe('huntCapture.button');
+    expect(targetFor(steps[1], 'mobile')).toBe('sidebar.hunts');
   });
 
   test('null target', () => {

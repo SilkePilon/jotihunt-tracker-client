@@ -139,8 +139,11 @@ describe('eventFromNotification', () => {
     expect(first.key).not.toBe(second.key);
     expect(enqueue(enqueue(INITIAL_DIRECTOR, [first]), [second]).queue).toEqual([second]);
   });
-  test('broadcast, deadline and happy hour: warn card, no camera', () => {
-    for (const type of ['broadcast', 'hunt-deadline', 'happy-hour'] as const) {
+  test('hunt notifications are skipped: the sync log brings them', () => {
+    for (const type of ['hunt-new', 'hunt-approved', 'hunt-rejected'] as const) expect(eventFromNotification(note(type))).toBeNull();
+  });
+  test('broadcast and happy hour: warn card, no camera', () => {
+    for (const type of ['broadcast', 'happy-hour'] as const) {
       expect(eventFromNotification(note(type))).toEqual({ key: `n-${type}`, kind: 'message', title: 'Titel', detail: 'Tekst', tone: 'warn', camera: null });
     }
   });

@@ -11,7 +11,6 @@ import BottomSheet from './BottomSheet';
 import PeekStrip from './PeekStrip';
 import MobileMenu from './MobileMenu';
 import MobilePage from './MobilePage';
-import HuntMarkerButton from './HuntMarkerButton';
 import ViewportDebug from './ViewportDebug';
 import { DOCK_ID } from './DockedPopup';
 import { sheetVisibleHeight } from './sheet-motion';
@@ -79,7 +78,6 @@ export default function MobileShell({ mapRef }: { mapRef: RefObject<MapRef | nul
     <>
       <ViewportDebug snaps={heights} />
       <motion.div id={DOCK_ID} className="pointer-events-none fixed inset-x-3 z-[45] flex flex-col gap-2" style={{ bottom: dockBottom }} />
-      <HuntMarkerButton />
       <BottomSheet peek={<PeekStrip />} onHeights={setHeights}>
         {/* Effects run in sibling order: the sheet entry first, so Back closes pages before lowering the sheet */}
         <SheetBackEntry />

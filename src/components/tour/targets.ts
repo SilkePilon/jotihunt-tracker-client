@@ -10,7 +10,6 @@ export const TOUR_TARGET_IDS = [
   'map',
   'sidebar.root',
   ...SIDEBAR_SECTIONS.map((id) => `sidebar.${id}` as const),
-  'huntCapture.button',
   'cards.topRight',
   'map.layersButton',
   'settings.replayItem',

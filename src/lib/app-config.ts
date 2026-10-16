@@ -92,7 +92,7 @@ export interface Sourced<T> {
   value: T;
   source: Source;
 }
-export const AI_SLOTS = ['ocr', 'summary', 'split', 'prediction', 'chat', 'deep', 'tools'] as const;
+export const AI_SLOTS = ['summary', 'split', 'prediction', 'chat', 'deep', 'tools'] as const;
 export type AiSlot = (typeof AI_SLOTS)[number];
 export type SecretName = 'geminiApiKey' | 'jotihuntWebPassword' | 'telegramApiHash';
 export type PlainName = 'jotihuntWebUsername' | 'telegramApiId' | 'telegramBotUsername';

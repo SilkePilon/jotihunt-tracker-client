@@ -45,7 +45,7 @@ export const TOUR_STEPS: TourStep[] = [
     id: 'hunts',
     target: 'sidebar.hunts',
     title: 'Hunts',
-    body: 'Meld hier een hunt. Je ziet ook de laatste hunts en hun status.',
+    body: 'Hunts komen vanzelf binnen van jotihunt.nl. Je ziet hier of ze goedgekeurd zijn; tik op een regel om hem op de kaart te zien.',
     actions: [sheetSnap('full'), showSection('hunts')],
   },
   {
@@ -84,14 +84,6 @@ export const TOUR_STEPS: TourStep[] = [
     title: 'Mijn tracker',
     body: 'Koppel je telefoon als GPS-tracker, zodat iedereen ziet waar je bent. Kies hier ook of je loopt, fietst of rijdt.',
     actions: [sheetSnap('full'), showSection('tracking')],
-  },
-  {
-    id: 'hunt-capture',
-    target: 'huntCapture.button',
-    title: 'Snel een hunt melden',
-    body: 'Met deze knop meld je meteen een hunt, waar je ook bent in de app.',
-    actions: [sheetSnap('peek')],
-    only: 'mobile',
   },
   {
     id: 'map-tools',
