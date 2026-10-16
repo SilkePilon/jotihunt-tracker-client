@@ -11,6 +11,7 @@ import {Toaster} from "@/components/ui/sonner.tsx";
 import {toast} from 'sonner';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import {MotionConfig} from 'motion/react';
+import {AppConfigSync} from '@/hooks/app-config.hook';
 
 // Service worker registration. A new version waits for the user: an automatic reload mid-hunt
 // would throw away a half-entered hunt photo or hint answer.
@@ -43,6 +44,7 @@ ReactDOM.createRoot(document.getElementById('root')!, {
     <MotionConfig reducedMotion="user">
         <TooltipProvider delayDuration={700}>
             <AuthProvider store={authStore}>
+                <AppConfigSync/>
                 <ErrorBoundary variant="page">
                     <Routes/>
                 </ErrorBoundary>
