@@ -8,10 +8,44 @@ export const FLASH_MS = 3200;
 export const SOUND_ONSET_S = 0.14;
 /** The recording is clipped loud; keep it from blowing out speakers */
 export const SOUND_GAIN = 0.5;
-/** The ringing holds at one level and the file cuts off 4.1s after the bang; it fades out from here (s after the bang)… */
+/** The ringing fades out from here (s after the bang)… */
 export const SOUND_FADE_FROM_S = 0.6;
-/** …to silence just before that cut, like the ringing dying away in-game */
-export const SOUND_FADE_TO_S = 4;
+/** …to silence here, slowly dying away like in-game. The file is shorter, so its ringing is extended to this length. */
+export const SOUND_FADE_TO_S = 8;
+/** Even fade in loudness (~4.5 dB/s) down to this share of the gain one second before the end, then linear to silence */
+export const SOUND_FADE_FLOOR = 0.04;
+/** Steady stretch of ringing in the file (s, file time) that is repeated to extend it; the file cuts off at 4.25s */
+export const RING_LOOP = { from: 3, to: 4.15, crossfade: 0.25 };
+
+interface RingLoop {
+  /** Start and end of the repeated stretch, and the overlap at every seam (samples) */
+  from: number;
+  to: number;
+  crossfade: number;
+}
+
+/**
+ * The recording with its ringing extended to `length` samples: the original up to `loop.to`, then the stretch
+ * `loop.from`..`loop.to` over and over, every seam an equal-power crossfade so it doesn't click or dip.
+ */
+export function extendRinging(source: Float32Array, length: number, loop: RingLoop): Float32Array<ArrayBuffer> {
+  const out = new Float32Array(length);
+  out.set(source.subarray(0, Math.min(loop.to, length)));
+  const segment = source.subarray(loop.from, loop.to);
+  const crossfade = Math.min(loop.crossfade, segment.length);
+  if (segment.length <= crossfade) return out;
+  for (let start = loop.to - crossfade; start < length; start += segment.length - crossfade) {
+    for (let i = 0; i < segment.length && start + i < length; i++) {
+      if (i < crossfade) {
+        const angle = (i / crossfade) * (Math.PI / 2);
+        out[start + i] = out[start + i] * Math.cos(angle) + segment[i] * Math.sin(angle);
+      } else {
+        out[start + i] = segment[i];
+      }
+    }
+  }
+  return out;
+}
 
 interface FlashbangCheck {
   isDarkMode: boolean;

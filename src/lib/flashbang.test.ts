@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { landingSpot, shouldFlashbang, throwPath } from './flashbang';
+import { extendRinging, landingSpot, shouldFlashbang, throwPath } from './flashbang';
 
 describe('flashbang theme switch', () => {
   test('only dark → light throws a flashbang', () => {
@@ -44,5 +44,33 @@ describe('flashbang theme switch', () => {
     const corner = landingSpot(1000, 800, () => 0);
     expect(corner.x).toBeCloseTo(420);
     expect(corner.y).toBeCloseTo(392);
+  });
+
+  describe('extending the ringing', () => {
+    const source = Float32Array.from({ length: 100 }, (_, i) => i);
+
+    test('keeps the recording up to the loop end, then repeats the loop', () => {
+      const out = extendRinging(source, 60, { from: 20, to: 40, crossfade: 0 });
+      expect(Array.from(out.subarray(0, 40))).toEqual(Array.from(source.subarray(0, 40)));
+      expect(Array.from(out.subarray(40, 60))).toEqual(Array.from(source.subarray(20, 40)));
+    });
+
+    test('fills the whole length, without silent gaps', () => {
+      const out = extendRinging(Float32Array.from({ length: 50 }, () => 1), 400, { from: 10, to: 40, crossfade: 8 });
+      expect(out).toHaveLength(400);
+      expect(Math.min(...out)).toBeGreaterThan(0.99);
+    });
+
+    test('seams cross-fade with equal power: constant ringing stays at the same loudness', () => {
+      const out = extendRinging(Float32Array.from({ length: 50 }, () => 0.5), 200, { from: 10, to: 40, crossfade: 10 });
+      // cos + sin peaks at √2 halfway the seam: equal power for uncorrelated noise like the ringing
+      expect(Math.max(...out)).toBeLessThanOrEqual(0.5 * Math.SQRT2 + 1e-6);
+      expect(Math.min(...out)).toBeGreaterThanOrEqual(0.5 - 1e-6);
+    });
+
+    test('shorter than the recording just cuts it', () => {
+      const out = extendRinging(source, 30, { from: 20, to: 40, crossfade: 5 });
+      expect(Array.from(out)).toEqual(Array.from(source.subarray(0, 30)));
+    });
   });
 });
