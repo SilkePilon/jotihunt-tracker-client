@@ -20,6 +20,7 @@ import TimePicker from './TimePicker';
 import DigitBoxes from './DigitBoxes';
 import CoordinateStatus, {type CoordinateState} from './CoordinateStatus';
 import {buildHintHours, groupByDay, isFreeHour} from './hint-times';
+import {SOFT_PRIMARY_BUTTON} from '@/lib/tonal-button';
 
 const FormSchema = z.object({
     area: z.enum([...areaOptions.map((option) => option.value)] as [string, ...string[]]),
@@ -195,7 +196,7 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
                     </button>
                 </div>
             </div>
-            <Button id={submitId} type="submit" className="h-11 text-[15px]" disabled={!canSubmit || form.formState.isSubmitting}>
+            <Button id={submitId} type="submit" className={`${SOFT_PRIMARY_BUTTON} h-11 text-[15px]`} disabled={!canSubmit || form.formState.isSubmitting}>
                 <Pin data-icon="inline-start"/> Registreren
             </Button>
         </form>
