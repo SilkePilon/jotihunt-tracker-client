@@ -14,9 +14,12 @@ export default function Sidebar({ mapRef }: { mapRef: RefObject<MapRef | null> }
   return (
     // Safe-area insets: landscape phones at desktop width (viewport-fit=cover); 0 on desktops, so still 8px there
     <aside className="pointer-events-none absolute bottom-[calc(0.5rem+env(safe-area-inset-bottom))] left-[calc(0.5rem+env(safe-area-inset-left))] top-[calc(0.5rem+env(safe-area-inset-top))] z-40 w-[320px]">
-      {/* Plain overflow container: Radix ScrollArea's table wrapper lets content grow wider than 300px */}
-      <div className="h-full overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <div className="pointer-events-auto flex flex-col gap-1.5 pb-2" {...tourTarget('sidebar.root')}>
+      {/* Plain overflow container: Radix ScrollArea's table wrapper lets content grow wider than 300px.
+          The scroller itself takes pointer events: iOS/iPadOS Safari won't touch-scroll a pointer-events:none
+          scroller from pointer-events:auto children (WebKit bug 183870). max-h-full, not h-full, so the empty
+          space below short content stays click-through to the map. */}
+      <div className="pointer-events-auto max-h-full overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex flex-col gap-1.5 pb-2" {...tourTarget('sidebar.root')}>
           <SidebarHeader />
           <SidebarSections mapRef={mapRef} />
         </div>
