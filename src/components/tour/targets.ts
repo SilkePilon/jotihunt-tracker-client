@@ -1,6 +1,6 @@
 import type { SidebarSectionId } from '@/stores/sidebar.store';
 
-const SIDEBAR_SECTIONS = ['foxes', 'hints', 'hunts', 'predictions', 'hintEntry', 'counterHunt', 'telegram', 'tracking', 'life360', 'jotiboard'] as const satisfies readonly SidebarSectionId[];
+const SIDEBAR_SECTIONS = ['foxes', 'hints', 'points', 'hunts', 'predictions', 'hintEntry', 'counterHunt', 'telegram', 'tracking', 'life360', 'jotiboard'] as const satisfies readonly SidebarSectionId[];
 
 /**
  * Every element the tour can point at. Components mark themselves with {...tourTarget(id)};

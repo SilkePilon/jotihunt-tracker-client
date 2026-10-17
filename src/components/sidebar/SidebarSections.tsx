@@ -4,6 +4,7 @@ import { MapRef } from '@/components/Map';
 import HintEntryCard from '@/components/cards/hint-entry/HintEntryCard';
 import { useAppConfig } from '@/hooks/app-config.hook';
 import { useHintBoard } from '@/hooks/hints.hook';
+import { useScore } from '@/hooks/score.hook';
 import { usePredictions, usePredictionSetting } from '@/hooks/predictions.hook';
 import { hintProgress } from '@/lib/hints';
 import { REVEAL_TRANSITION } from '@/lib/motion';
@@ -18,6 +19,7 @@ import CounterHuntSection from './CounterHuntSection';
 import TelegramSection from './TelegramSection';
 import JotiboardSection from './JotiboardSection';
 import Life360Section from './Life360Section';
+import PointsSection from './PointsSection';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import type { SidebarSectionId } from '@/stores/sidebar.store';
 
@@ -32,6 +34,7 @@ export default function SidebarSections({ mapRef, only }: { mapRef: RefObject<Ma
   const { predictions } = usePredictions();
   const { enabled: predictionEnabled } = usePredictionSetting();
   const progress = board ? hintProgress(board) : undefined;
+  const { score } = useScore();
 
   return (
     <>
@@ -45,6 +48,25 @@ export default function SidebarSections({ mapRef, only }: { mapRef: RefObject<Ma
           <HintMiniGrid mapRef={mapRef} />
         </SidebarSection>
       )}
+      {/* Unfolds once the jotihunt.nl score is configured (like the tegenhunt section below) */}
+      <AnimatePresence initial={false}>
+        {show('points') && score?.configured && (
+          <motion.div
+            key="points"
+            style={{ marginTop: -SECTION_GAP_PX }}
+            initial={{ height: 0, opacity: 0, overflow: 'hidden' }}
+            animate={{ height: 'auto', opacity: 1, transitionEnd: { overflow: 'visible' } }}
+            exit={{ height: 0, opacity: 0, overflow: 'hidden' }}
+            transition={REVEAL_TRANSITION}
+          >
+            <div style={{ paddingTop: SECTION_GAP_PX }}>
+              <ErrorBoundary name="Punten">
+                <PointsSection score={score} />
+              </ErrorBoundary>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {show('hunts') && (
         <ErrorBoundary name="Hunts">
           <HuntsSyncCard mapRef={mapRef} />
