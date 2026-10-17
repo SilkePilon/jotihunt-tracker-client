@@ -21,13 +21,15 @@ export function useChatModes(): [ChatModes, (mode: keyof ChatModes, on: boolean)
 /**
  * One item's conversation (per user, stored on the server). History comes from GET /intel-chat/:id and is put into the
  * chat until the user does something in this mount; a send posts only the newest message plus the modes (contract).
- * Unmounting (another item, back to the timeline) stops a running stream; the server keeps what was produced.
+ * A turn runs on on the server when this unmounts (dialog closed, another item): coming back, the history says it is
+ * still running and the chat follows its answer again from the start (GET /:id/stream). Only Stop or "Nieuw gesprek"
+ * stop it.
  */
 export function useIntelChat(articleId: number) {
   const authHeader = useAuthHeader() || '';
   const [modes] = useChatModes();
   const path = `/intel-chat/${articleId}`;
-  const history = useAuthSWR<{ messages: UIMessage[] }>(path, { revalidateOnFocus: false });
+  const history = useAuthSWR<{ messages: UIMessage[]; running?: boolean }>(path, { revalidateOnFocus: false });
   const { mutate } = history;
   const [postUnavailable, setPostUnavailable] = useState(false);
 
@@ -38,6 +40,7 @@ export function useIntelChat(articleId: number) {
         api: `${import.meta.env.API_BASE_URL}${path}`,
         fetch: (input, init) => fetchRetryingBusy(fetch, input, init),
         prepareSendMessagesRequest: ({ messages }) => ({ body: chatRequestBody(messages, modes), headers: { Authorization: authHeader } }),
+        prepareReconnectToStreamRequest: () => ({ api: `${import.meta.env.API_BASE_URL}${path}/stream`, headers: { Authorization: authHeader } }),
       }),
     [path, authHeader, modes],
   );
@@ -56,14 +59,20 @@ export function useIntelChat(articleId: number) {
       if (!isError) void mutate({ messages }, { revalidate: false });
     },
   });
-  const { setMessages, sendMessage, regenerate, stop, clearError } = chat;
+  const { setMessages, sendMessage, regenerate, resumeStream, stop, clearError } = chat;
+  const busyRef = useRef(false);
+  useEffect(() => {
+    busyRef.current = chat.status === 'submitted' || chat.status === 'streaming';
+  }, [chat.status]);
 
-  // History (cached or fresh) goes into the chat until the user sent, retried or reset something in this mount
+  // History (cached or fresh) goes into the chat until the user sent, retried or reset something in this mount. A turn
+  // still running on the server (asked before the chat was closed) is followed; not again while already following it.
   const touched = useRef(false);
   useEffect(() => {
-    if (!history.data || touched.current) return;
+    if (!history.data || touched.current || busyRef.current) return;
     setMessages(Array.isArray(history.data.messages) ? history.data.messages : []);
-  }, [history.data, setMessages]);
+    if (history.data.running) void resumeStream();
+  }, [history.data, setMessages, resumeStream]);
 
   const loadKind = history.error ? chatErrorKind(history.error) : null;
   return {
@@ -81,8 +90,10 @@ export function useIntelChat(articleId: number) {
       touched.current = true;
       void regenerate();
     },
+    /** Stop the turn on the server too (it runs on without a client); it saves what was produced */
     stop() {
       void stop();
+      fetcherWithMethod(`${path}/stop`, authHeader, 'POST').catch(() => undefined);
     },
     reload() {
       void mutate();
