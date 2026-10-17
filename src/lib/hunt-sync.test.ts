@@ -1,6 +1,14 @@
 import { describe, expect, test } from 'bun:test';
-import type { HuntSyncEvent, HuntSyncStatus } from '@/types/HuntSync';
-import { flattenEventPages, huntEventParts, huntEventTime, huntEventsPath, huntEventText, huntSyncLine, huntSyncSummary, huntSyncView, resultBarShares } from './hunt-sync';
+import type { HuntSyncEvent, HuntSyncStatus, SyncedHunt } from '@/types/HuntSync';
+import {
+  flattenEventPages,
+  huntEventParts,
+  huntLocationNote,
+  normalizeHuntEvent,
+  normalizeHuntLocation,
+  normalizeSyncedHunt,
+  syncedHuntForMarker,
+  huntEventTime, huntEventsPath, huntEventText, huntSyncLine, huntSyncSummary, huntSyncView, resultBarShares } from './hunt-sync';
 
 const NOW = Date.parse('2026-10-17T21:45:00Z');
 const ago = (ms: number) => new Date(NOW - ms).toISOString();
@@ -104,5 +112,58 @@ describe('paging', () => {
     expect(huntEventsPath(1, [event()])).toBeNull();
     const full = Array.from({ length: 50 }, (_, i) => event({ _id: String(i), at: '2026-10-17T20:00:00.000Z' }));
     expect(huntEventsPath(1, full)).toBe('/hunts/events?limit=50&before=2026-10-17T20%3A00%3A00.000Z');
+  });
+});
+
+describe('locations', () => {
+  const exact = { lat: 52, lng: 6, accuracy: 12, estimated: false, source: null };
+
+  test('an old server without estimated / source reads as exact', () => {
+    expect(normalizeHuntLocation({ lat: 52, lng: 6, accuracy: 12 })).toEqual(exact);
+    expect(normalizeHuntLocation({ lat: 52, lng: 6 })).toEqual({ ...exact, accuracy: null });
+  });
+
+  test('an estimate keeps its source (trimmed; blank is none)', () => {
+    expect(normalizeHuntLocation({ lat: 52, lng: 6, accuracy: 300, estimated: true, source: ' Jonas ' })).toEqual({ lat: 52, lng: 6, accuracy: 300, estimated: true, source: 'Jonas' });
+    expect(normalizeHuntLocation({ lat: 52, lng: 6, accuracy: 300, estimated: true, source: '  ' })?.source).toBeNull();
+    expect(normalizeHuntLocation({ lat: 52, lng: 6, accuracy: 300, estimated: true })?.source).toBeNull();
+    // A source on an exact location means nothing
+    expect(normalizeHuntLocation({ ...exact, source: 'Jonas' })?.source).toBeNull();
+  });
+
+  test('no usable coordinates is no location', () => {
+    expect(normalizeHuntLocation(null)).toBeNull();
+    expect(normalizeHuntLocation(undefined)).toBeNull();
+    expect(normalizeHuntLocation({ lat: '52', lng: 6 })).toBeNull();
+    expect(normalizeHuntLocation({ lat: Number.NaN, lng: 6 })).toBeNull();
+  });
+
+  test('events and hunts keep their identity when already normalised', () => {
+    const located = event({ location: exact });
+    expect(normalizeHuntEvent(located)).toBe(located);
+    const old = event({ location: { lat: 52, lng: 6, accuracy: 12 } as SyncedHunt['location'] });
+    expect(normalizeHuntEvent(old)).not.toBe(old);
+    expect(normalizeHuntEvent(old).location).toEqual(exact);
+    const missing = { location: undefined } as unknown as SyncedHunt;
+    expect(normalizeSyncedHunt(missing).location).toBeNull();
+  });
+
+  test('flatten normalises the locations', () => {
+    expect(flattenEventPages([[event({ location: { lat: 52, lng: 6, accuracy: null } as SyncedHunt['location'] })]])[0].location).toEqual({ ...exact, accuracy: null });
+  });
+
+  test('note', () => {
+    expect(huntLocationNote({ ...exact, estimated: true, source: 'Jonas' })).toBe('Geschatte locatie · via Jonas');
+    expect(huntLocationNote({ ...exact, estimated: true })).toBe('Geschatte locatie');
+    expect(huntLocationNote(exact)).toBeNull();
+    expect(huntLocationNote(null)).toBeNull();
+  });
+
+  test('the synced hunt behind a marker', () => {
+    const hunt = { siteKey: 'code:ab12' } as SyncedHunt;
+    expect(syncedHuntForMarker({ source: 'jotihunt', externalId: 'code:ab12' }, [hunt])).toBe(hunt);
+    expect(syncedHuntForMarker({ source: 'jotiboard', externalId: 'code:ab12' }, [hunt])).toBeUndefined();
+    expect(syncedHuntForMarker({}, [hunt])).toBeUndefined();
+    expect(syncedHuntForMarker({ source: 'jotihunt', externalId: 'code:ab12' }, undefined)).toBeUndefined();
   });
 });

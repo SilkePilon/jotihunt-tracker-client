@@ -1,5 +1,6 @@
+import { useMemo } from 'react';
 import { useAuthSWR, useAuthSWRInfinite } from '@/lib/swr';
-import { flattenEventPages, huntEventsPath } from '@/lib/hunt-sync';
+import { flattenEventPages, huntEventsPath, normalizeSyncedHunt } from '@/lib/hunt-sync';
 import { asList } from '@/lib/response-shape';
 import type { HuntSyncEvent, HuntSyncStatus, SyncedHunt } from '@/types/HuntSync';
 
@@ -22,8 +23,9 @@ export function useHuntEvents(enabled = true) {
   const lastPage = data?.[data.length - 1];
   const reachedEnd = data !== undefined && (!Array.isArray(lastPage) || huntEventsPath(data.length, lastPage) === null);
   const loadingMore = size > 0 && data !== undefined && data.length < size;
+  const events = useMemo(() => (data === undefined ? undefined : flattenEventPages(data)), [data]);
   return {
-    events: data === undefined ? undefined : flattenEventPages(data),
+    events,
     isError: !!error && !data,
     reachedEnd,
     loadingMore,
@@ -36,5 +38,6 @@ export function useHuntEvents(enabled = true) {
 /** Every synced hunt (GET /hunts); one request per poll however many components use it. */
 export function useSyncedHunts() {
   const { data, error } = useAuthSWR<SyncedHunt[]>('/hunts', { refreshInterval: HUNTS_REFRESH_MS, dedupingInterval: HUNTS_REFRESH_MS });
-  return { hunts: asList(data), isLoading: !error && !data, isError: !!error };
+  const hunts = useMemo(() => asList(data)?.map(normalizeSyncedHunt), [data]);
+  return { hunts, isLoading: !error && !data, isError: !!error };
 }
