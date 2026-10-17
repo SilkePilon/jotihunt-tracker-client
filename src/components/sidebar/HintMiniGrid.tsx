@@ -1,5 +1,6 @@
 import { Fragment, RefObject, useState } from 'react';
 import { ArrowRightIcon } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 import { MapRef } from '@/components/Map';
 import { Button } from '@/components/ui/button';
 import { useHintBoard } from '@/hooks/hints.hook';
@@ -11,13 +12,14 @@ import useIntelStore from '@/stores/intel.store';
 import useSidebarStore from '@/stores/sidebar.store';
 import { HintCell } from '@/types/HintCell';
 import { TONAL_BUTTON } from '@/lib/tonal-button';
+import { SWAP_TRANSITION } from '@/lib/motion';
 
 const MINI_GRID_ROWS = 4;
 
 const cellClass: Record<HintCell['status'], string> = {
   solved: 'bg-green-500',
   open: 'bg-muted',
-  none: 'border border-dashed border-muted-foreground/40',
+  none: 'border border-dashed border-muted-foreground/50',
 };
 
 const statusLabel: Record<HintCell['status'], string> = {
@@ -88,11 +90,16 @@ export default function HintMiniGrid({ mapRef }: { mapRef: RefObject<MapRef | nu
                     aria-pressed={isMobile ? isSelected : undefined}
                     onClick={() => selectCell(row.article.id, area.value, cell)}
                     className={cn(
-                      'h-6 cursor-pointer rounded-[6px] hover:ring-2 hover:ring-primary/50 md:h-4',
+                      'flex h-6 cursor-pointer items-center justify-center rounded-[6px] transition-colors duration-200 hover:ring-2 hover:ring-primary/50 md:h-4',
                       cellClass[cell.status],
                       isSelected && 'ring-2 ring-primary hover:ring-primary',
                     )}
-                  />
+                  >
+                    {/* No hint for this area: a dash, so it can't be read as an open (grey) cell */}
+                    <AnimatePresence initial={false}>
+                      {cell.status === 'none' && <motion.span key="none" initial={{ opacity: 0, scaleX: 0 }} animate={{ opacity: 1, scaleX: 1 }} exit={{ opacity: 0, scaleX: 0 }} transition={SWAP_TRANSITION} className="h-px w-2 rounded-full bg-muted-foreground/70" aria-hidden />}
+                    </AnimatePresence>
+                  </button>
                 );
               })}
             </Fragment>
