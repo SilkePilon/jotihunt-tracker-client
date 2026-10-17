@@ -3,7 +3,7 @@ import { AxiosError, AxiosHeaders } from 'axios';
 import type { Article } from '@/types/Article';
 import type { HintCell } from '@/types/HintCell';
 import type { Assignment, IntelItem } from '@/types/Intel';
-import { answerPreview, areaStates, chartColumns, initialOpenArea, buildIntelItems, deadlineLabel, deadlineTone, filterByTab, formatSolveTime, groupByDay, hasExistingMarker, intelStats, isDeadlineUrgent, nextOpenArea, ratingStars, siteSubmission, solvedCount, statusAuthor, unreadCount, unreadLabel, unreadTab } from './intel-window';
+import { answerPreview, areaStates, assignmentStatusLabel, earnedPoints, chartColumns, initialOpenArea, buildIntelItems, deadlineLabel, deadlineTone, filterByTab, formatSolveTime, groupByDay, hasExistingMarker, intelStats, isDeadlineUrgent, nextOpenArea, ratingStars, siteSubmission, solvedCount, statusAuthor, unreadCount, unreadLabel, unreadTab } from './intel-window';
 
 const article = (id: number, type: string, publishAt: string, extra: Partial<Article> = {}) =>
   ({ id, title: `A${id}`, type, publishAt: new Date(publishAt), content: '<p>x</p>', messageType: '', maxPoints: 0, endTime: new Date(publishAt), ...extra }) as Article;
@@ -170,14 +170,16 @@ describe('intelStats', () => {
     expect(intelStats([], [at(slotA, 'alpha', 'none')]).hints.percent).toBeNull();
   });
 
-  test('assignments: submitted count and their max points', () => {
+  test('assignments: submitted count, judged count and the points jotihunt.nl gave (not the max points)', () => {
+    const judged = (points: number | null) => ({ submitted: true, judged: true, points });
     const items = [
-      { kind: 'assignment', maxPoints: 30, assignment: { status: 'submitted' } },
+      { kind: 'assignment', maxPoints: 30, assignment: { status: 'submitted', site: judged(8) } },
       { kind: 'assignment', maxPoints: 50, assignment: { status: 'busy' } },
-      { kind: 'assignment', maxPoints: undefined, assignment: { status: 'submitted' } },
+      { kind: 'assignment', maxPoints: undefined, assignment: { status: 'submitted', site: { submitted: true, judged: false, points: null } } },
+      { kind: 'assignment', maxPoints: 40, assignment: { status: 'submitted', site: judged(30) } },
       { kind: 'news', unread: true },
     ] as IntelItem[];
-    expect(intelStats(items, []).assignments).toEqual({ submitted: 2, total: 3, points: 30 });
+    expect(intelStats(items, []).assignments).toEqual({ submitted: 3, total: 4, judged: 2, points: 38 });
   });
 
   test('unread per kind', () => {
@@ -254,7 +256,7 @@ describe('chartColumns', () => {
 
 describe('jotihunt.nl submission', () => {
   const assignment = (overrides: Partial<Assignment> = {}): Assignment => ({ _id: 'a1', articleId: 1, status: 'submitted', notes: [], ...overrides });
-  const site = { submitted: true, imageUrl: 'https://cdn.jotihunt.net/x.jpg', rating: 4, judgement: 'Nog niet beoordeeld', points: null, checkedAt: '2026-10-17T12:00:00Z' };
+  const site = { submitted: true, imageUrl: 'https://cdn.jotihunt.net/x.jpg', answerText: null, rating: 4, judgement: 'Nog niet beoordeeld', judged: false, points: null, checkedAt: '2026-10-17T12:00:00Z' };
 
   test('null when not handed in or unknown', () => {
     expect(siteSubmission(undefined)).toBeNull();
@@ -268,7 +270,17 @@ describe('jotihunt.nl submission', () => {
 
   test('drops malformed fields', () => {
     const odd = { submitted: true, imageUrl: 'javascript:alert(1)', rating: 9, judgement: '  ', points: '12', checkedAt: 5 } as unknown as Assignment['site'];
-    expect(siteSubmission(assignment({ site: odd }))).toEqual({ submitted: true, imageUrl: null, rating: null, judgement: null, points: null, checkedAt: null });
+    expect(siteSubmission(assignment({ site: odd }))).toEqual({ submitted: true, imageUrl: null, answerText: null, rating: null, judgement: null, judged: false, points: null, checkedAt: null });
+  });
+
+  test('judged: points and the green status label; before that our own status', () => {
+    const done = assignment({ site: { ...site, judgement: 'Beoordeeld (8 punten) Mooi', judged: true, points: 8 } });
+    expect(earnedPoints(done)).toBe(8);
+    expect(assignmentStatusLabel(done)).toEqual({ label: 'Beoordeeld · 8 pt', judged: true });
+    expect(earnedPoints(assignment({ site }))).toBeNull();
+    expect(assignmentStatusLabel(assignment({ site }))).toEqual({ label: 'Ingeleverd', judged: false });
+    expect(assignmentStatusLabel(undefined)).toEqual({ label: 'Open', judged: false });
+    expect(siteSubmission(assignment({ site: { ...site, imageUrl: null, answerText: ' Murkalotl ' } }))?.answerText).toBe('Murkalotl');
   });
 
   test('stars out of 5', () => {

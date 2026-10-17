@@ -1,4 +1,4 @@
-import { BeheerCard } from '@/components/beheer/BeheerLayout';
+import { BeheerCard, FadeSwap } from '@/components/beheer/BeheerLayout';
 import { ratingStars } from '@/lib/intel-window';
 import type { AssignmentSite } from '@/types/Intel';
 
@@ -15,9 +15,12 @@ export default function SiteSubmissionCard({ site }: { site: AssignmentSite }) {
           <img src={site.imageUrl} alt="Ingestuurde foto" loading="lazy" decoding="async" className="max-h-80 w-full object-cover transition-transform duration-300 hover:scale-[1.02]" />
         </a>
       )}
+      {site.answerText && (
+        <p className="mt-2.5 rounded-2xl bg-beheer-row px-3.5 py-2.5 font-mono text-[13px] font-semibold break-words whitespace-pre-line">{site.answerText}</p>
+      )}
       <div className="mx-1 mt-2.5 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[13px]">
-        {site.judgement && <span className="font-semibold">{site.judgement}</span>}
-        {site.points !== null && <span className="font-semibold text-green-700 tabular-nums dark:text-green-300">{site.points} pt</span>}
+        <FadeSwap className={site.judged ? 'font-semibold' : 'text-muted-foreground'}>{site.judgement ?? 'Nog niet beoordeeld'}</FadeSwap>
+        {site.judged && site.points !== null && <span className="font-semibold text-green-700 tabular-nums dark:text-green-300">{site.points} pt</span>}
         {site.rating !== null && (
           <span className="ml-auto text-amber-500" title={`Jullie waardering: ${site.rating} / 5`} aria-label={`Jullie waardering: ${site.rating} van 5`}>
             {ratingStars(site.rating)}

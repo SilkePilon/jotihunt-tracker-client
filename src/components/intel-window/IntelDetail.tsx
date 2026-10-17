@@ -2,11 +2,11 @@ import type { RefObject } from 'react';
 import { MapRef } from '@/components/Map';
 import { useNow } from '@/hooks/now.hook';
 import { formatClock } from '@/lib/format';
-import { solvedCount } from '@/lib/intel-window';
+import { earnedPoints, solvedCount } from '@/lib/intel-window';
 import type { AssignmentStatus, IntelItem } from '@/types/Intel';
 import AssignmentPane from './AssignmentPane';
 import HintPane from './HintPane';
-import { DeadlineTag, KindTag } from './IntelTimeline';
+import { AssignmentStatusTag, DeadlineTag, KindTag } from './IntelTimeline';
 import NewsPane from './NewsPane';
 import SummaryCard from './SummaryCard';
 
@@ -34,7 +34,8 @@ export default function IntelDetail({ item, area, mapRef }: IntelDetailProps) {
             </span>
           )}
           {item.kind === 'assignment' && item.endTime && <Deadline endTime={item.endTime} status={item.assignment?.status ?? 'open'} />}
-          {item.kind === 'assignment' && item.maxPoints ? <span>max {item.maxPoints} pt</span> : null}
+          {item.kind === 'assignment' && <AssignmentStatusTag item={item} />}
+          {item.kind === 'assignment' && item.maxPoints ? <span>{earnedPoints(item.assignment) === null ? `max ${item.maxPoints} pt` : `van max ${item.maxPoints} pt`}</span> : null}
         </div>
       </div>
       {item.summary && <SummaryCard summary={item.summary} />}

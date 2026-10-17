@@ -4,7 +4,7 @@ import { AnimatePresence, motion, useReducedMotion, type Variants } from 'motion
 import { ClockIcon } from 'lucide-react';
 import { Tag } from '@/components/beheer/controls/Pill';
 import { formatClock } from '@/lib/format';
-import { ASSIGNMENT_STATUS_LABELS, type DeadlineTone, INTEL_TAB_ORDER, KIND_COLOR, KIND_LABEL, areaStates, deadlineLabel, deadlineTone, groupByDay, solvedCount } from '@/lib/intel-window';
+import { type DeadlineTone, assignmentStatusLabel, INTEL_TAB_ORDER, KIND_COLOR, KIND_LABEL, areaStates, deadlineLabel, deadlineTone, groupByDay, solvedCount } from '@/lib/intel-window';
 import { EASE_OUT, REVEAL_TRANSITION, SWAP_TRANSITION } from '@/lib/motion';
 import { useHasMounted } from '@/hooks/has-mounted.hook';
 import { areaOptions } from '@/lib/utils';
@@ -209,12 +209,26 @@ function WideCard({ item, now, onSelect }: { item: IntelItem; now: number; onSel
       )}
       {item.kind === 'assignment' && (
         <span className="mt-2.5 flex gap-1.5">
-          <Tag>{ASSIGNMENT_STATUS_LABELS[status]}</Tag>
+          <AssignmentStatusTag item={item} />
           <Tag>{item.assignment?.owner?.name ?? 'niemand'}</Tag>
           {item.maxPoints ? <Tag>max {item.maxPoints} pt</Tag> : null}
         </span>
       )}
     </button>
+  );
+}
+
+/** Our status, or green "Beoordeeld · 8 pt" once jotihunt.nl judged it; the new label fades in */
+export function AssignmentStatusTag({ item }: { item: IntelItem }) {
+  const { label, judged } = assignmentStatusLabel(item.assignment);
+  return (
+    <Tag tone={judged ? 'ok' : 'neutral'}>
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.span key={label} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+          {label}
+        </motion.span>
+      </AnimatePresence>
+    </Tag>
   );
 }
 

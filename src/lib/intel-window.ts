@@ -180,8 +180,8 @@ export interface SlotBar {
 export interface IntelStats {
   /** Cells with a hint (not "geen hint"); percent is null without any */
   hints: { solved: number; total: number; percent: number | null };
-  /** Submitted assignments and the max points of those */
-  assignments: { submitted: number; total: number; points: number };
+  /** Submitted assignments, how many of those jotihunt.nl judged, and the points it gave them */
+  assignments: { submitted: number; total: number; judged: number; points: number };
   unread: { news: number; assignment: number };
   /** The last SOLVE_CHART_SLOTS hint slots, oldest first */
   slots: SlotBar[];
@@ -219,7 +219,12 @@ export function intelStats(items: IntelItem[], cells: HintCell[]): IntelStats {
 
   return {
     hints: { solved, total: counted.length, percent: counted.length ? Math.round((solved / counted.length) * 100) : null },
-    assignments: { submitted: submitted.length, total: assignments.length, points: submitted.reduce((sum, item) => sum + (item.maxPoints ?? 0), 0) },
+    assignments: {
+      submitted: submitted.length,
+      total: assignments.length,
+      judged: assignments.filter((item) => siteSubmission(item.assignment)?.judged).length,
+      points: assignments.reduce((sum, item) => sum + (earnedPoints(item.assignment) ?? 0), 0),
+    },
     unread: { news: unreadCount(items, 'news'), assignment: unreadCount(items, 'assignment') },
     slots,
     avgSolveMs: durations.length ? durations.reduce((sum, ms) => sum + ms, 0) / durations.length : null,
@@ -318,11 +323,26 @@ export function siteSubmission(assignment: Assignment | undefined): AssignmentSi
   return {
     submitted: true,
     imageUrl: imageUrl && /^https?:\/\//.test(imageUrl) ? imageUrl : null,
+    answerText: siteText(raw.answerText),
     rating: rating !== null && rating >= 0 && rating <= 5 ? Math.round(rating) : null,
     judgement: siteText(raw.judgement),
+    judged: raw.judged === true,
     points: siteNumber(raw.points),
     checkedAt: siteText(raw.checkedAt),
   };
+}
+
+/** The points jotihunt.nl gave an assignment once judged; null before (or when the judgement has no number) */
+export function earnedPoints(assignment: Assignment | undefined): number | null {
+  const site = siteSubmission(assignment);
+  return site?.judged ? site.points : null;
+}
+
+/** The status as shown on a card: "Beoordeeld · 8 pt" once judged, else our own status */
+export function assignmentStatusLabel(assignment: Assignment | undefined): { label: string; judged: boolean } {
+  const site = siteSubmission(assignment);
+  if (site?.judged) return { label: site.points === null ? 'Beoordeeld' : `Beoordeeld · ${site.points} pt`, judged: true };
+  return { label: ASSIGNMENT_STATUS_LABELS[assignment?.status ?? 'open'], judged: false };
 }
 
 /** "★★★★☆" for a rating out of 5 */

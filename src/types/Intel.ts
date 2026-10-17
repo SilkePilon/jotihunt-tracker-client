@@ -21,10 +21,14 @@ export interface AssignmentSite {
   submitted: boolean;
   /** The handed-in photo (cdn.jotihunt.net) */
   imageUrl: string | null;
+  /** A handed-in text answer instead of a photo */
+  answerText: string | null;
   /** Our star rating on the site, 1–5 */
   rating: number | null;
   /** The site's judgement text as shown, e.g. "Nog niet beoordeeld" */
   judgement: string | null;
+  /** The organisation judged it ("Beoordeeld (8 punten) …") */
+  judged: boolean;
   points: number | null;
   /** When the server last read the page */
   checkedAt: string | null;
