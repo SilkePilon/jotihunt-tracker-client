@@ -674,3 +674,22 @@ html.flashbang::view-transition-new(root) {
     opacity: 1;
   }
 }
+
+/* Vossen card OV block: the train glides between the two stations */
+@keyframes ov-ride {
+  from {
+    left: 0;
+  }
+  to {
+    left: calc(100% - 22px);
+  }
+}
+.ov-train {
+  animation: ov-ride 6s ease-in-out infinite alternate;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ov-train {
+    animation: none;
+    left: calc(50% - 11px);
+  }
+}

@@ -8,6 +8,7 @@ import { REVEAL_TRANSITION } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import FoxChip from './FoxChip';
 import FoxStatusBar from './FoxStatusBar';
+import OvBlock from './OvBlock';
 import { GROUP_CLASS } from './styles';
 import { useSidebarFoxes } from './useSidebarFoxes';
 
@@ -76,20 +77,26 @@ export default function FoxesCard() {
             {/* pb on the wrapper instead of a gap, so a folding group takes no space */}
             <div className="pb-1.5">
               <div className={cn('rounded-2xl px-2 pt-[7px] pb-2 transition-colors duration-300 motion-reduce:transition-none', GROUP_CLASS[group].block, GROUP_CLASS[group].on)}>
-                <div className="mx-0.5 mb-1.5 flex justify-between text-xs font-bold">
-                  <span>{FOX_GROUP_LABEL[group]}</span>
-                  <Count value={counts[group]} />
-                </div>
-                <div className="flex flex-wrap gap-1">
-                  {/* popLayout: a chip popping out leaves the flow at once, so its neighbours close the gap */}
-                  <AnimatePresence mode="popLayout" initial={false}>
-                    {foxes
-                      .filter((fox) => fox.group === group)
-                      .map((fox) => (
-                        <FoxChip key={fox.key} fox={fox} hidden={isHidden(fox.area.name)} forbidden={isForbidden(fox.area.name)} popIn={mounted} onToggle={() => toggleHidden(fox.area.name)} />
-                      ))}
-                  </AnimatePresence>
-                </div>
+                {group === 'ov' ? (
+                  <OvBlock foxes={foxes.filter((fox) => fox.group === 'ov')} isHidden={isHidden} isForbidden={isForbidden} popIn={mounted} onToggle={toggleHidden} />
+                ) : (
+                  <>
+                    <div className="mx-0.5 mb-1.5 flex justify-between text-xs font-bold">
+                      <span>{FOX_GROUP_LABEL[group]}</span>
+                      <Count value={counts[group]} />
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {/* popLayout: a chip popping out leaves the flow at once, so its neighbours close the gap */}
+                      <AnimatePresence mode="popLayout" initial={false}>
+                        {foxes
+                          .filter((fox) => fox.group === group)
+                          .map((fox) => (
+                            <FoxChip key={fox.key} fox={fox} hidden={isHidden(fox.area.name)} forbidden={isForbidden(fox.area.name)} popIn={mounted} onToggle={() => toggleHidden(fox.area.name)} />
+                          ))}
+                      </AnimatePresence>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </motion.div>
