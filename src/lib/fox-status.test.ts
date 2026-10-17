@@ -4,7 +4,7 @@ import type { SyncedHunt } from '@/types/HuntSync';
 import { FOX_GROUP_ORDER, foxGroup, groupCounts, huntCooldownMs, HUNT_COOLDOWN_MS, lastHuntTimeFor, sidebarFoxes, statusPillClass } from './fox-status';
 
 function hunt(area: string, statusText: string, huntTime: string | null): SyncedHunt {
-  return { _id: area + huntTime, siteKey: area + huntTime, area, huntTime, status: 'approved', statusText, points: 1, qrCode: null, location: null, firstSeenAt: '2026-10-17T10:00:00Z', statusChangedAt: null };
+  return { _id: area + huntTime, siteKey: area + huntTime, area, huntTime, status: 'approved', statusText, points: 1, location: null, firstSeenAt: '2026-10-17T10:00:00Z', statusChangedAt: null };
 }
 
 function area(name: string, status: string): Area {

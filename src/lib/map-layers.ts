@@ -34,6 +34,8 @@ export const LIFE360_ACCURACY_LAYER = 'life360-accuracy-fill';
 /** Accuracy circles of the synced hunts (fill + thin outline), under every marker. */
 export const HUNT_ACCURACY_FILL_LAYER = 'hunt-accuracy-fill';
 export const HUNT_ACCURACY_LINE_LAYER = 'hunt-accuracy-line';
+/** The dashed outline of estimated hunt locations (guessed from our trackers) */
+export const HUNT_ACCURACY_ESTIMATE_LINE_LAYER = 'hunt-accuracy-line-estimated';
 
 /** One circle per synced hunt with a location and a positive accuracy (metres). */
 export function huntAccuracyCircles(hunts: SyncedHunt[] | undefined): FeatureCollection<Polygon> {
@@ -42,7 +44,7 @@ export function huntAccuracyCircles(hunts: SyncedHunt[] | undefined): FeatureCol
     const location = hunt.location;
     if (!location || location.accuracy === null || !(location.accuracy > 0)) continue;
     const circle = createCircle(location.lng, location.lat, location.accuracy);
-    features.push({ ...circle, properties: { id: hunt._id, area: hunt.area.toLowerCase() } });
+    features.push({ ...circle, properties: { id: hunt._id, area: hunt.area.toLowerCase(), estimated: location.estimated } });
   }
   return { type: 'FeatureCollection', features };
 }
@@ -54,7 +56,7 @@ export function huntAccuracyCircles(hunts: SyncedHunt[] | undefined): FeatureCol
 export const MAP_LAYER_STACK: string[][] = [
   // 3D buildings under every app layer (below the style labels through beforeId; on raster styles this keeps them under the markers)
   [BUILDINGS_LAYER],
-  ['device-accuracy-fill', LIFE360_ACCURACY_LAYER, HUNT_ACCURACY_FILL_LAYER, HUNT_ACCURACY_LINE_LAYER, 'prediction-areas-fill', 'prediction-areas-line', 'prediction-pin-lines', 'circle-layer-home', 'team-circles-fill', 'marker-trails-line'],
+  ['device-accuracy-fill', LIFE360_ACCURACY_LAYER, HUNT_ACCURACY_FILL_LAYER, HUNT_ACCURACY_LINE_LAYER, HUNT_ACCURACY_ESTIMATE_LINE_LAYER, 'prediction-areas-fill', 'prediction-areas-line', 'prediction-pin-lines', 'circle-layer-home', 'team-circles-fill', 'marker-trails-line'],
   [TEAM_PINS_LAYER],
   ['team-pins-hover'],
   [FOX_MARKERS_LAYER],

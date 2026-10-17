@@ -1,4 +1,4 @@
-import type { HuntSyncEvent, HuntSyncStatus } from '@/types/HuntSync';
+import type { HuntLocation, HuntSyncEvent, HuntSyncStatus, SyncedHunt } from '@/types/HuntSync';
 import { formatAgo } from './life360';
 import { capitalizeFirstLetter } from './utils';
 
@@ -98,7 +98,45 @@ export function resultBarShares(counts: HuntSyncStatus['counts']): { approved: n
   return { approved: counts.approved / sum, pending: counts.pending / sum, rejected: counts.rejected / sum };
 }
 
-/** Pages of the sync log, newest first; duplicates (same `at` on a page boundary) are dropped. */
+/**
+ * A hunt location from the API with its newer fields defaulted: older servers omit `estimated` / `source` (read as an
+ * exact location); anything without finite coordinates is no location.
+ */
+export function normalizeHuntLocation(location: unknown): HuntLocation | null {
+  if (!location || typeof location !== 'object') return null;
+  const raw = location as Partial<Record<keyof HuntLocation, unknown>>;
+  if (typeof raw.lat !== 'number' || typeof raw.lng !== 'number' || !Number.isFinite(raw.lat) || !Number.isFinite(raw.lng)) return null;
+  const accuracy = typeof raw.accuracy === 'number' && Number.isFinite(raw.accuracy) ? raw.accuracy : null;
+  const estimated = raw.estimated === true;
+  const source = estimated && typeof raw.source === 'string' && raw.source.trim() ? raw.source.trim() : null;
+  return { lat: raw.lat, lng: raw.lng, accuracy, estimated, source };
+}
+
+/** A sync log line or synced hunt with its location normalised (same object when nothing changes, so memo keeps working). */
+function withNormalizedLocation<T extends { location: HuntLocation | null }>(item: T): T {
+  const location = normalizeHuntLocation(item.location);
+  const current = item.location;
+  if (location === current) return item;
+  if (location && current && location.lat === current.lat && location.lng === current.lng && location.accuracy === current.accuracy && location.estimated === current.estimated && location.source === current.source) return item;
+  return { ...item, location };
+}
+
+export const normalizeHuntEvent = (event: HuntSyncEvent): HuntSyncEvent => withNormalizedLocation(event);
+export const normalizeSyncedHunt = (hunt: SyncedHunt): SyncedHunt => withNormalizedLocation(hunt);
+
+/** "Geschatte locatie · via Jonas" / "Geschatte locatie" for an estimated location; null for an exact one (or none). */
+export function huntLocationNote(location: HuntLocation | null | undefined): string | null {
+  if (!location?.estimated) return null;
+  return location.source ? `Geschatte locatie · via ${location.source}` : 'Geschatte locatie';
+}
+
+/** The synced hunt a map marker was made from (the server's "jotihunt" markers carry the hunt's siteKey as externalId). */
+export function syncedHuntForMarker(marker: { source?: string; externalId?: string }, hunts: SyncedHunt[] | undefined): SyncedHunt | undefined {
+  if (marker.source !== 'jotihunt' || !marker.externalId) return undefined;
+  return hunts?.find((hunt) => hunt.siteKey === marker.externalId);
+}
+
+/** Pages of the sync log, newest first, locations normalised; duplicates (same `at` on a page boundary) are dropped. */
 export function flattenEventPages(pages: HuntSyncEvent[][] | undefined): HuntSyncEvent[] {
   const seen = new Set<string>();
   const events: HuntSyncEvent[] = [];
@@ -107,7 +145,7 @@ export function flattenEventPages(pages: HuntSyncEvent[][] | undefined): HuntSyn
     for (const event of page) {
       if (seen.has(event._id)) continue;
       seen.add(event._id);
-      events.push(event);
+      events.push(normalizeHuntEvent(event));
     }
   }
   return events;

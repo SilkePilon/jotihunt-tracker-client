@@ -5,8 +5,12 @@ export type HuntStatusClass = 'pending' | 'approved' | 'rejected' | 'unknown';
 export interface HuntLocation {
   lat: number;
   lng: number;
-  /** Metres; null when the site shows none */
+  /** Metres; null when unknown (an estimate is always at least 150 m) */
   accuracy: number | null;
+  /** Guessed from our own trackers at the hunt time (jotihunt.nl shows no location); false when exact */
+  estimated: boolean;
+  /** The tracker / member the estimate came from, e.g. "Jonas"; null when exact or unknown */
+  source: string | null;
 }
 
 /** GET /hunts/sync */
@@ -52,7 +56,6 @@ export interface SyncedHunt {
   /** The site's own status text, e.g. "Wacht op bevestiging" */
   statusText: string;
   points: number;
-  qrCode: string | null;
   location: HuntLocation | null;
   firstSeenAt: string;
   statusChangedAt: string | null;
