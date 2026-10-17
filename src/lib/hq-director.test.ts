@@ -180,6 +180,10 @@ describe('ended cooldowns', () => {
     const previous = new Map([['bravo', 1000], ['golf', 1000], ['charlie', 0]]);
     expect(endedCooldowns(previous, [fox('bravo', 'green'), fox('golf', 'red'), fox('charlie', 'green')]).map((f) => f.key)).toEqual(['bravo']);
   });
+  test('an ov fox (area status blue) is not announced when its cooldown ends', () => {
+    const previous = new Map([['hotel', 60_000]]);
+    expect(endedCooldowns(previous, [fox('hotel', 'ov')])).toEqual([]);
+  });
   test('cooldown event', () => {
     expect(cooldownEvent({ ...fox('foxtrot', 'green'), lastHunt: '2026-10-17T18:31:00Z' })).toEqual({
       key: 'area:foxtrot',

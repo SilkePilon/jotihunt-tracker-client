@@ -195,10 +195,10 @@ export function huntEvent(event: HuntSyncEvent): HqEvent {
   }
 }
 
-/** Foxes whose cooldown ran out since the previous check and that can be hunted (not red); none on the first check. */
+/** Foxes whose cooldown ran out since the previous check and that can be hunted (green or orange; not red or ov); none on the first check. */
 export function endedCooldowns(previous: ReadonlyMap<string, number> | null, foxes: HqFox[]): HqFox[] {
   if (!previous) return [];
-  return foxes.filter((fox) => (previous.get(fox.key) ?? 0) > 0 && fox.cooldownMs === 0 && fox.group !== 'red');
+  return foxes.filter((fox) => (previous.get(fox.key) ?? 0) > 0 && fox.cooldownMs === 0 && (fox.group === 'green' || fox.group === 'orange'));
 }
 
 export function cooldownEvent(fox: HqFox): HqEvent {
