@@ -2,8 +2,8 @@ import { describe, expect, test } from 'bun:test';
 import { AxiosError, AxiosHeaders } from 'axios';
 import type { Article } from '@/types/Article';
 import type { HintCell } from '@/types/HintCell';
-import type { IntelItem } from '@/types/Intel';
-import { answerPreview, areaStates, chartColumns, initialOpenArea, buildIntelItems, deadlineLabel, deadlineTone, filterByTab, formatSolveTime, groupByDay, hasExistingMarker, intelStats, isDeadlineUrgent, nextOpenArea, solvedCount, unreadCount, unreadLabel, unreadTab } from './intel-window';
+import type { Assignment, IntelItem } from '@/types/Intel';
+import { answerPreview, areaStates, chartColumns, initialOpenArea, buildIntelItems, deadlineLabel, deadlineTone, filterByTab, formatSolveTime, groupByDay, hasExistingMarker, intelStats, isDeadlineUrgent, nextOpenArea, ratingStars, siteSubmission, solvedCount, statusAuthor, unreadCount, unreadLabel, unreadTab } from './intel-window';
 
 const article = (id: number, type: string, publishAt: string, extra: Partial<Article> = {}) =>
   ({ id, title: `A${id}`, type, publishAt: new Date(publishAt), content: '<p>x</p>', messageType: '', maxPoints: 0, endTime: new Date(publishAt), ...extra }) as Article;
@@ -249,5 +249,38 @@ describe('chartColumns', () => {
 
   test('before the first hint: only upcoming slots', () => {
     expect(kinds(chartColumns([], new Date(base), base + 2 * hourMs))).toEqual(['next', 'later', 'later']);
+  });
+});
+
+describe('jotihunt.nl submission', () => {
+  const assignment = (overrides: Partial<Assignment> = {}): Assignment => ({ _id: 'a1', articleId: 1, status: 'submitted', notes: [], ...overrides });
+  const site = { submitted: true, imageUrl: 'https://cdn.jotihunt.net/x.jpg', rating: 4, judgement: 'Nog niet beoordeeld', points: null, checkedAt: '2026-10-17T12:00:00Z' };
+
+  test('null when not handed in or unknown', () => {
+    expect(siteSubmission(undefined)).toBeNull();
+    expect(siteSubmission(assignment())).toBeNull();
+    expect(siteSubmission(assignment({ site: { ...site, submitted: false } }))).toBeNull();
+  });
+
+  test('keeps a full submission', () => {
+    expect(siteSubmission(assignment({ site }))).toEqual(site);
+  });
+
+  test('drops malformed fields', () => {
+    const odd = { submitted: true, imageUrl: 'javascript:alert(1)', rating: 9, judgement: '  ', points: '12', checkedAt: 5 } as unknown as Assignment['site'];
+    expect(siteSubmission(assignment({ site: odd }))).toEqual({ submitted: true, imageUrl: null, rating: null, judgement: null, points: null, checkedAt: null });
+  });
+
+  test('stars out of 5', () => {
+    expect(ratingStars(4)).toBe('★★★★☆');
+    expect(ratingStars(0)).toBe('☆☆☆☆☆');
+  });
+
+  test('status author: a person, jotihunt.nl (null) or nobody yet', () => {
+    const clock = () => '14:02';
+    expect(statusAuthor(assignment({ statusAt: 'x', statusBy: { _id: 'u1', name: 'Sanne' } as Assignment['statusBy'] }), clock)).toBe('Sanne · 14:02');
+    expect(statusAuthor(assignment({ statusAt: 'x', statusBy: null }), clock)).toBe('jotihunt.nl · 14:02');
+    expect(statusAuthor(assignment(), clock)).toBeUndefined();
+    expect(statusAuthor(undefined, clock)).toBeUndefined();
   });
 });

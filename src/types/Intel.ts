@@ -15,17 +15,34 @@ export interface AssignmentNote {
   createdAt: string;
 }
 
+/** What jotihunt.nl shows on the assignment page under "Insturen" (read by the server) */
+export interface AssignmentSite {
+  /** We handed it in on jotihunt.nl */
+  submitted: boolean;
+  /** The handed-in photo (cdn.jotihunt.net) */
+  imageUrl: string | null;
+  /** Our star rating on the site, 1–5 */
+  rating: number | null;
+  /** The site's judgement text as shown, e.g. "Nog niet beoordeeld" */
+  judgement: string | null;
+  points: number | null;
+  /** When the server last read the page */
+  checkedAt: string | null;
+}
+
 /** Our own bookkeeping of an assignment article; articles without one are open and unowned */
 export interface Assignment {
   _id: string;
   articleId: number;
   status: AssignmentStatus;
+  /** null with a status set by the server from jotihunt.nl (shown as "jotihunt.nl") */
   statusBy?: UserRef | null;
   statusAt?: string;
   owner?: UserRef | null;
   ownerBy?: UserRef | null;
   ownerAt?: string;
   notes: AssignmentNote[];
+  site?: AssignmentSite;
 }
 
 /** Which articles the current user opened, and per article the names of everyone who opened it */

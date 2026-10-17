@@ -3,7 +3,7 @@ import type { TargetAndTransition, Transition, Variants } from 'motion/react';
 import { EASE_OUT } from '@/lib/motion';
 import type { Article } from '@/types/Article';
 import type { HintBoard, HintCell, RdPreview } from '@/types/HintCell';
-import type { AreaState, Assignment, AssignmentStatus, DayGroup, IntelItem, IntelKind, IntelTab, ReadState } from '@/types/Intel';
+import type { AreaState, Assignment, AssignmentSite, AssignmentStatus, DayGroup, IntelItem, IntelKind, IntelTab, ReadState } from '@/types/Intel';
 import { areaOptions } from '@/lib/utils';
 
 export const ASSIGNMENT_STATUS_LABELS: Record<AssignmentStatus, string> = { open: 'Open', busy: 'Bezig', submitted: 'Ingeleverd', skipped: 'Skip' };
@@ -303,3 +303,40 @@ export const INTEL_CLOSE_MS = 260;
 
 /** The empty state's parts start after the view push (item opened from the timeline) */
 export const CHAT_EMPTY_ENTRANCE_DELAY = 0.45;
+
+const siteNumber = (value: unknown): number | null => (typeof value === 'number' && Number.isFinite(value) ? value : null);
+const siteText = (value: unknown): string | null => (typeof value === 'string' && value.trim() ? value.trim() : null);
+
+/** The jotihunt.nl submission of an assignment, with malformed fields dropped; null when it was not handed in there. */
+export function siteSubmission(assignment: Assignment | undefined): AssignmentSite | null {
+  const site: unknown = assignment?.site;
+  if (typeof site !== 'object' || site === null) return null;
+  const raw = site as Record<string, unknown>;
+  if (raw.submitted !== true) return null;
+  const rating = siteNumber(raw.rating);
+  const imageUrl = siteText(raw.imageUrl);
+  return {
+    submitted: true,
+    imageUrl: imageUrl && /^https?:\/\//.test(imageUrl) ? imageUrl : null,
+    rating: rating !== null && rating >= 0 && rating <= 5 ? Math.round(rating) : null,
+    judgement: siteText(raw.judgement),
+    points: siteNumber(raw.points),
+    checkedAt: siteText(raw.checkedAt),
+  };
+}
+
+/** "★★★★☆" for a rating out of 5 */
+export function ratingStars(rating: number): string {
+  const full = Math.max(0, Math.min(5, Math.round(rating)));
+  return '★'.repeat(full) + '☆'.repeat(5 - full);
+}
+
+/**
+ * Who set the status and when ("Sanne · 14:02", "jotihunt.nl · 14:02"); undefined before anyone set it. A null author
+ * is the server's automatic status from jotihunt.nl.
+ */
+export function statusAuthor(assignment: Assignment | undefined, clock: (iso: string) => string): string | undefined {
+  if (!assignment?.statusAt) return undefined;
+  const by = assignment.statusBy === null ? 'jotihunt.nl' : (assignment.statusBy?.name ?? 'Onbekend');
+  return `${by} · ${clock(assignment.statusAt)}`;
+}
