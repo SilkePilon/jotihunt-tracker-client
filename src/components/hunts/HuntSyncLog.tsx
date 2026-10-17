@@ -1,9 +1,9 @@
-import { memo, type UIEvent } from 'react';
+import { memo, useState, type UIEvent } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { formatClock } from '@/lib/format';
 import { huntEventParts, huntEventTime } from '@/lib/hunt-sync';
 import { REVEAL_TRANSITION } from '@/lib/motion';
-import { cn, getColorFromArea } from '@/lib/utils';
+import { getColorFromArea } from '@/lib/utils';
 import type { HuntSyncEvent } from '@/types/HuntSync';
 
 /** Start fetching older lines when the scroll is this close to the end */
@@ -57,24 +57,41 @@ export function HuntEventLine({ event }: { event: HuntSyncEvent }) {
   );
 }
 
+/**
+ * A log line; flies the map to the hunt once its location is known. Without a location (the server places a hunt
+ * from our trackers a few minutes after it came in) the row is inert: no hover, default cursor, not focusable. It
+ * stays the same element either way, so when the location arrives nothing moves: the hover turns on and the row
+ * flashes once.
+ */
 const LogRow = memo(function LogRow({ event, onSelect }: { event: HuntSyncEvent; onSelect: (event: HuntSyncEvent) => void }) {
   const { area, text } = huntEventParts(event);
-  const rowClass = 'grid w-full grid-cols-[36px_1fr] items-center gap-2 rounded-lg p-1 text-left text-[12.5px]';
-
-  if (event.location === null) {
-    return (
-      <div className={rowClass}>
-        <HuntEventLine event={event} />
-      </div>
-    );
+  const located = event.location !== null;
+  // Count the moments the location arrived while this row was on screen (state adjusted during render, not in an effect)
+  const [seenLocated, setSeenLocated] = useState(located);
+  const [arrivals, setArrivals] = useState(0);
+  if (located !== seenLocated) {
+    setSeenLocated(located);
+    if (located) setArrivals((count) => count + 1);
   }
+
   return (
     <button
       type="button"
-      className={cn(rowClass, 'cursor-pointer transition-colors hover:bg-beheer-row focus-visible:bg-beheer-row focus-visible:outline-none')}
+      disabled={!located}
+      className="relative isolate grid w-full grid-cols-[36px_1fr] items-center gap-2 rounded-lg p-1 text-left text-[12.5px] transition-colors duration-200 enabled:cursor-pointer enabled:hover:bg-beheer-row focus-visible:bg-beheer-row focus-visible:outline-none disabled:cursor-default"
       onClick={() => onSelect(event)}
-      aria-label={`Toon ${area} ${text} op de kaart`}
+      aria-label={located ? `Toon ${area} ${text} op de kaart` : undefined}
     >
+      {arrivals > 0 && (
+        <motion.span
+          key={arrivals}
+          aria-hidden
+          className="pointer-events-none absolute inset-0 -z-10 rounded-lg bg-beheer-row-high"
+          initial={{ opacity: 1 }}
+          animate={{ opacity: 0 }}
+          transition={{ duration: 1.2, ease: 'easeOut' }}
+        />
+      )}
       <HuntEventLine event={event} />
     </button>
   );
