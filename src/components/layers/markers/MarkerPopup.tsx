@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Trash2Icon } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 import { toast } from 'sonner';
 import MapPopup from '../../map/MapPopup';
 import CoordRows from '../../map/popup/CoordRows';
@@ -7,7 +8,10 @@ import { MapsAction, PopupActions, popupActionClass } from '../../map/popup/Popu
 import PopupHeader, { PopupIcon } from '../../map/popup/PopupHeader';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useDistanceFromMe } from '@/hooks/distance-from-me.hook';
+import { useSyncedHunts } from '@/hooks/hunt-sync.hook';
 import { formatClock, joinParts } from '@/lib/format';
+import { huntLocationNote, syncedHuntForMarker } from '@/lib/hunt-sync';
+import { REVEAL_TRANSITION } from '@/lib/motion';
 import { areaKey, areaLetter } from '@/lib/marker-style';
 import { capitalizeFirstLetter, getColorFromArea } from '@/lib/utils';
 import type { Marker } from '@/types/Marker';
@@ -30,6 +34,8 @@ export default function MarkerPopup({ marker, onClose, deleteMarker }: MarkerPop
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [lng, lat] = marker.location.coordinates;
   const distance = useDistanceFromMe(lat, lng);
+  const { hunts } = useSyncedHunts();
+  const locationNote = huntLocationNote(syncedHuntForMarker(marker, hunts)?.location);
 
   async function handleDelete() {
     const deleted = await deleteMarker(marker._id!);
@@ -53,6 +59,21 @@ export default function MarkerPopup({ marker, onClose, deleteMarker }: MarkerPop
         title={`${capitalizeFirstLetter(marker.area)} · ${capitalizeFirstLetter(marker.type)}`}
         subtitle={joinParts(formatClock(marker.time), distance, marker.source === 'jotiboard' ? 'via Jotiboard' : undefined)}
       />
+      {/* A synced hunt placed from our own trackers (jotihunt.nl shows no location): muted, under the title */}
+      <AnimatePresence initial={false}>
+        {locationNote && (
+          <motion.p
+            key="estimate"
+            className="overflow-hidden pl-[42px] text-[11.5px] leading-snug text-(--map-muted)"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={REVEAL_TRANSITION}
+          >
+            {locationNote}
+          </motion.p>
+        )}
+      </AnimatePresence>
       <CoordRows lat={lat} lng={lng} />
       <PopupActions>
         <MapsAction lat={lat} lng={lng} label="Google Maps" />
