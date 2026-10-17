@@ -115,6 +115,12 @@ describe('eventFromNotification', () => {
       camera: { kind: 'area', area: 'delta', zoom: 11.6 },
     });
   });
+  test('fox status blue is named as public transport, not the raw API word', () => {
+    const event = eventFromNotification(note('fox-status', { area: 'Oscar', status: 'blue', previousStatus: 'red' }))!;
+    expect(event.title).toBe('Oscar reist met OV');
+    expect(event.detail).toBe('Was Inactief');
+    expect(event.tone).toBe('neutral');
+  });
   test('fox status without an area is ignored', () => expect(eventFromNotification(note('fox-status', { status: 'green' }))).toBeNull());
   test('tegenhunt flies home with the direction', () => {
     const event = eventFromNotification(note('counter-hunt', { direction: 90 }))!;

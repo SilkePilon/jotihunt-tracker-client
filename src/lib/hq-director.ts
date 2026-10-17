@@ -127,7 +127,7 @@ export function eventHoldMs(flies: boolean): number {
   return flies ? FLY_MS + EVENT_HOLD_MS : EVENT_HOLD_MS;
 }
 
-const STATUS_WORD: Record<string, string> = { green: 'Actief', orange: 'Onderweg', red: 'Inactief' };
+const STATUS_WORD: Record<string, string> = { green: 'Actief', orange: 'Onderweg', red: 'Inactief', blue: 'met OV' };
 
 export function eventFromNotification(notification: AppNotification): HqEvent | null {
   const { type, data, title, body, id } = notification;
@@ -140,7 +140,7 @@ export function eventFromNotification(notification: AppNotification): HqEvent | 
       return {
         key: `area:${area}`,
         kind: 'fox-status',
-        title: `${capitalizeFirstLetter(area)} is ${STATUS_WORD[status] ?? status}`,
+        title: status === 'blue' ? `${capitalizeFirstLetter(area)} reist met OV` : `${capitalizeFirstLetter(area)} is ${STATUS_WORD[status] ?? status}`,
         detail: previous ? `Was ${previous}` : body,
         tone: status === 'green' ? 'ok' : status === 'orange' ? 'warn' : 'neutral',
         camera: { kind: 'area', area, zoom: AREA_ZOOM },
