@@ -50,10 +50,14 @@
   --fox-error: #ba1a1a;
   --fox-error-container: #ffdad6;
   --fox-on-error-container: #93000a;
+  --fox-ov: #5b4fc4;
+  --fox-ov-container: #e5deff;
+  --fox-on-ov-container: #1a0f5c;
   --fox-ok-group: color-mix(in oklab, var(--fox-ok-container) 75%, var(--card));
   --fox-warn-group: color-mix(in oklab, var(--fox-warn-container) 75%, var(--card));
   --fox-cooldown-group: color-mix(in oklab, var(--fox-cooldown-container) 75%, var(--card));
   --fox-error-group: color-mix(in oklab, var(--fox-error-container) 75%, var(--card));
+  --fox-ov-group: color-mix(in oklab, var(--fox-ov-container) 75%, var(--card));
   --fox-chip: rgb(255 255 255 / 0.7);
   /* Intel AI chat: "Denk diep" (M3 purple tonal pair) */
   --ai-think-container: #f2daff;
@@ -100,10 +104,14 @@
   --fox-error: #ffb4ab;
   --fox-error-container: #93000a;
   --fox-on-error-container: #ffdad6;
+  --fox-ov: #c5b8ff;
+  --fox-ov-container: #3d2d8c;
+  --fox-on-ov-container: #e5deff;
   --fox-ok-group: color-mix(in oklab, var(--fox-ok-container) 55%, var(--card));
   --fox-warn-group: color-mix(in oklab, var(--fox-warn-container) 55%, var(--card));
   --fox-cooldown-group: color-mix(in oklab, var(--fox-cooldown-container) 55%, var(--card));
   --fox-error-group: color-mix(in oklab, var(--fox-error-container) 55%, var(--card));
+  --fox-ov-group: color-mix(in oklab, var(--fox-ov-container) 60%, var(--card));
   --fox-chip: rgb(0 0 0 / 0.28);
   --ai-think-container: #4f2a75;
   --ai-on-think-container: #f0dbff;
@@ -154,6 +162,10 @@
   --color-fox-warn-container: var(--fox-warn-container);
   --color-fox-cooldown-container: var(--fox-cooldown-container);
   --color-fox-error-container: var(--fox-error-container);
+  --color-fox-ov: var(--fox-ov);
+  --color-fox-on-ov: var(--fox-on-ov-container);
+  --color-fox-ov-group: var(--fox-ov-group);
+  --color-fox-ov-container: var(--fox-ov-container);
   --color-ai-think-container: var(--ai-think-container);
   --color-ai-on-think: var(--ai-on-think-container);
   --color-primary-container: var(--primary-container);

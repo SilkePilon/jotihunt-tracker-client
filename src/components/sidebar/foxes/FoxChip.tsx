@@ -3,12 +3,11 @@ import { LockIcon } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import { formatCountdown } from '@/lib/format';
-import type { SidebarFox } from '@/lib/fox-status';
+import { FOX_STATUS_TEXT, type SidebarFox } from '@/lib/fox-status';
 import { FORBIDDEN_AREA_NOTE } from '@/lib/huntable-areas';
 import { LAYOUT_SPRING, POP, POP_SPRING } from '@/lib/motion';
 import { cn, getColorFromArea } from '@/lib/utils';
 
-const STATUS_LABEL: Record<string, string> = { green: 'groen', orange: 'oranje', red: 'rood' };
 const ago = (time: Date | string) => formatDistanceToNow(new Date(time), { locale: nl, addSuffix: true });
 
 interface FoxChipProps {
@@ -31,7 +30,7 @@ const POP_IN = { ...POP_SPRING, delay: 0.15 };
 export default function FoxChip({ fox, hidden, forbidden, popIn, onToggle }: FoxChipProps) {
   const { area, lastHunt, cooldownMs } = fox;
   const title =
-    `${fox.name}: ${STATUS_LABEL[area.status] ?? area.status} (bijgewerkt ${ago(area.updatedAt)})` +
+    `${fox.name}: ${FOX_STATUS_TEXT[area.status] ?? area.status} (bijgewerkt ${ago(area.updatedAt)})` +
     ` · laatste hunt: ${lastHunt ? ago(lastHunt) : 'nog geen'}` +
     (cooldownMs > 0 ? ` · weer te hunten over ${formatCountdown(cooldownMs)}` : '') +
     (forbidden ? ` · ${FORBIDDEN_AREA_NOTE}` : '') +

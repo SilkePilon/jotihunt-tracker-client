@@ -46,18 +46,40 @@ export function statusPillClass(status: string): string {
   }
 }
 
-/** Sidebar / HQ fox groups: the area status, or `cooldown` while the fox can't be hunted yet. */
-export type FoxGroup = 'green' | 'orange' | 'red' | 'cooldown';
+/** Sidebar / HQ fox groups: the area status (`blue` = ov), or `cooldown` while the fox can't be hunted yet. */
+export type FoxGroup = 'green' | 'orange' | 'ov' | 'red' | 'cooldown';
 
-/** Display order: huntable now, on the way, free soon, inactive. */
-export const FOX_GROUP_ORDER: readonly FoxGroup[] = ['green', 'orange', 'cooldown', 'red'];
+/** Display order: huntable now, on the way, by OV (not huntable), free soon, inactive. */
+export const FOX_GROUP_ORDER: readonly FoxGroup[] = ['green', 'orange', 'ov', 'cooldown', 'red'];
 
-export const FOX_GROUP_LABEL: Record<FoxGroup, string> = { green: 'Actief', orange: 'Onderweg', red: 'Inactief', cooldown: 'Cooldown' };
+export const FOX_GROUP_LABEL: Record<FoxGroup, string> = { green: 'Actief', orange: 'Onderweg', ov: 'OV', red: 'Inactief', cooldown: 'Cooldown' };
 
-/** A fox in its hunt cooldown is listed under cooldown; an unknown status counts as inactive. */
+/** Dutch status text for tooltips ("Oscar: met OV"). */
+export const FOX_STATUS_TEXT: Record<string, string> = { green: 'groen', orange: 'oranje', red: 'rood', blue: 'met OV' };
+
+/**
+ * `blue` (travelling by OV, not huntable) is its own group, also during a cooldown; otherwise a fox in its hunt
+ * cooldown is listed under cooldown; an unknown status counts as inactive.
+ */
 export function foxGroup(status: string, cooldownMs: number): FoxGroup {
+  if (status === 'blue') return 'ov';
   if (cooldownMs > 0) return 'cooldown';
   return status === 'green' || status === 'orange' ? status : 'red';
+}
+
+/** Legend items: every group, but `ov` only while a fox travels by OV (normally four items). */
+export function legendGroups(counts: Record<FoxGroup, number>): FoxGroup[] {
+  return FOX_GROUP_ORDER.filter((group) => group !== 'ov' || counts.ov > 0);
+}
+
+/** How long a fox has been on OV: "< 1 min", "12 min", "1 u 5 min", "2 u". */
+export function formatOvDuration(ms: number): string {
+  const minutes = Math.floor(ms / 60_000);
+  if (minutes < 1) return '< 1 min';
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return rest ? `${hours} u ${rest} min` : `${hours} u`;
 }
 
 /** One area's fox in the sidebar "Vossen" card. `key` is the lowercase area name. */
@@ -87,7 +109,7 @@ export function sidebarFoxes({ areas, hunts, now }: { areas: Area[]; hunts?: Syn
 }
 
 export function groupCounts(foxes: SidebarFox[]): Record<FoxGroup, number> {
-  const counts: Record<FoxGroup, number> = { green: 0, orange: 0, cooldown: 0, red: 0 };
+  const counts: Record<FoxGroup, number> = { green: 0, orange: 0, ov: 0, cooldown: 0, red: 0 };
   for (const fox of foxes) counts[fox.group] += 1;
   return counts;
 }

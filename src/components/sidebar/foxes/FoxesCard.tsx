@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAreas } from '@/hooks/areas.hook';
 import { useHuntableAreas } from '@/hooks/huntable-areas.hook';
-import { FOX_GROUP_LABEL, FOX_GROUP_ORDER, groupCounts } from '@/lib/fox-status';
+import { FOX_GROUP_LABEL, FOX_GROUP_ORDER, groupCounts, legendGroups } from '@/lib/fox-status';
 import { REVEAL_TRANSITION } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import FoxChip from './FoxChip';
@@ -53,7 +53,7 @@ export default function FoxesCard() {
     <div className="flex flex-col">
       <FoxStatusBar foxes={foxes} size="full" isForbidden={isForbidden} />
       <div className="mt-1.5 mb-2.5 flex justify-between text-[11px] text-muted-foreground">
-        {FOX_GROUP_ORDER.map((group) => (
+        {legendGroups(counts).map((group) => (
           <span key={group} className="inline-flex items-baseline gap-1">
             <Count value={counts[group]} className="font-semibold text-foreground" />
             {FOX_GROUP_LABEL[group].toLowerCase()}
@@ -108,7 +108,7 @@ export function FoxesSummary() {
   return (
     <motion.span className="inline-flex" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
       <FoxStatusBar foxes={foxes} size="mini" isForbidden={isForbidden} />
-      <span className="sr-only">{`${counts.green} actief, ${counts.orange} onderweg, ${counts.cooldown} cooldown, ${counts.red} inactief`}</span>
+      <span className="sr-only">{`${counts.green} actief, ${counts.orange} onderweg, ${counts.ov ? `${counts.ov} met OV, ` : ''}${counts.cooldown} cooldown, ${counts.red} inactief`}</span>
     </motion.span>
   );
 }

@@ -30,6 +30,7 @@ export const GROUP_LABEL = FOX_GROUP_LABEL;
 export const GROUP_TEXT_CLASS: Record<FoxGroup, string> = {
   green: 'text-green-700 dark:text-green-400',
   orange: 'text-orange-700 dark:text-orange-300',
+  ov: 'text-indigo-700 dark:text-indigo-300',
   red: 'text-red-700 dark:text-red-300',
   cooldown: 'text-blue-700 dark:text-blue-300',
 };

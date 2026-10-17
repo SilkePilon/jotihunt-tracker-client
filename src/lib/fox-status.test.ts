@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import type { Area } from '@/types/Area';
 import type { SyncedHunt } from '@/types/HuntSync';
-import { FOX_GROUP_ORDER, foxGroup, groupCounts, huntCooldownMs, HUNT_COOLDOWN_MS, lastHuntTimeFor, sidebarFoxes, statusPillClass } from './fox-status';
+import { formatOvDuration, FOX_GROUP_ORDER, foxGroup, groupCounts, huntCooldownMs, HUNT_COOLDOWN_MS, lastHuntTimeFor, legendGroups, sidebarFoxes, statusPillClass } from './fox-status';
 
 function hunt(area: string, statusText: string, huntTime: string | null): SyncedHunt {
   return { _id: area + huntTime, siteKey: area + huntTime, area, huntTime, status: 'approved', statusText, points: 1, location: null, firstSeenAt: '2026-10-17T10:00:00Z', statusChangedAt: null };
@@ -83,13 +83,37 @@ describe('sidebarFoxes', () => {
 
   test('empty input', () => expect(sidebarFoxes({ areas: [], now })).toEqual([]));
 
-  test('group order constant', () => expect(FOX_GROUP_ORDER).toEqual(['green', 'orange', 'cooldown', 'red']));
+  test('group order constant', () => expect(FOX_GROUP_ORDER).toEqual(['green', 'orange', 'ov', 'cooldown', 'red']));
 });
 
 describe('groupCounts', () => {
   test('counts every group, zero included', () => {
     const now = new Date('2026-10-17T14:00:00Z').getTime();
     const foxes = sidebarFoxes({ areas: [area('Alpha', 'green'), area('Bravo', 'red'), area('Charlie', 'green')], now });
-    expect(groupCounts(foxes)).toEqual({ green: 2, orange: 0, cooldown: 0, red: 1 });
+    expect(groupCounts(foxes)).toEqual({ green: 2, orange: 0, ov: 0, cooldown: 0, red: 1 });
+  });
+});
+
+describe('ov (blue)', () => {
+  test('blue is the ov group, also during a cooldown', () => {
+    expect(foxGroup('blue', 0)).toBe('ov');
+    expect(foxGroup('blue', 5000)).toBe('ov');
+  });
+  test('order and counts', () => {
+    expect(FOX_GROUP_ORDER).toEqual(['green', 'orange', 'ov', 'cooldown', 'red']);
+    const foxes = sidebarFoxes({ areas: [area('Oscar', 'blue'), area('Alpha', 'green'), area('Hotel', 'red')], now: Date.parse('2026-10-17T12:00:00Z') });
+    expect(foxes.map((fox) => fox.key)).toEqual(['alpha', 'oscar', 'hotel']);
+    expect(groupCounts(foxes)).toEqual({ green: 1, orange: 0, ov: 1, cooldown: 0, red: 1 });
+  });
+  test('legend hides ov when there is none', () => {
+    expect(legendGroups({ green: 1, orange: 0, ov: 0, cooldown: 0, red: 1 })).toEqual(['green', 'orange', 'cooldown', 'red']);
+    expect(legendGroups({ green: 1, orange: 0, ov: 1, cooldown: 0, red: 1 })).toEqual(['green', 'orange', 'ov', 'cooldown', 'red']);
+  });
+  test('formatOvDuration', () => {
+    expect(formatOvDuration(-5)).toBe('< 1 min');
+    expect(formatOvDuration(59_000)).toBe('< 1 min');
+    expect(formatOvDuration(12 * 60_000 + 30_000)).toBe('12 min');
+    expect(formatOvDuration(65 * 60_000)).toBe('1 u 5 min');
+    expect(formatOvDuration(120 * 60_000)).toBe('2 u');
   });
 });
