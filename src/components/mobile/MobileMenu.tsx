@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { BellIcon, ChevronRightIcon, CrosshairIcon, FlagIcon, Grid3x3Icon, KeyRoundIcon, LayoutDashboardIcon, MapPinIcon, MessageSquareIcon, PawPrintIcon, PenLineIcon, ShieldIcon, SmartphoneIcon, UsersIcon } from 'lucide-react';
+import { BellIcon, ChevronRightIcon, CrosshairIcon, FlagIcon, Grid3x3Icon, KeyRoundIcon, LayoutDashboardIcon, MapPinIcon, MessageSquareIcon, PawPrintIcon, PenLineIcon, ShieldIcon, SmartphoneIcon, TrophyIcon, UsersIcon } from 'lucide-react';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import type { User } from '@/types/User';
 import SidebarHeader from '@/components/sidebar/SidebarHeader';
@@ -7,6 +7,8 @@ import { FoxesSummary } from '@/components/sidebar/foxes/FoxesCard';
 import { useAppConfig } from '@/hooks/app-config.hook';
 import { useHintBoard } from '@/hooks/hints.hook';
 import { hintProgress } from '@/lib/hints';
+import { useScore } from '@/hooks/score.hook';
+import { scoreSummary } from '@/lib/score';
 import { usePredictions, usePredictionSetting } from '@/hooks/predictions.hook';
 import { predictionSummary } from '@/lib/prediction';
 import { useTrackerStatus } from '@/hooks/tracker.hook';
@@ -71,6 +73,7 @@ export default function MobileMenu() {
   const { predictions } = usePredictions();
   const { enabled: predictionEnabled } = usePredictionSetting();
   const { status } = useTrackerStatus();
+  const { score } = useScore();
   const page = (id: MobilePageId) => () => push({ id });
   const icon = 'size-[18px]';
 
@@ -80,6 +83,7 @@ export default function MobileMenu() {
     { key: 'telegram', icon: <MessageSquareIcon className={icon} />, title: 'Jotihunt-berichten', onSelect: page('telegram') },
     ...(predictionEnabled !== false ? [{ key: 'predictions', icon: <MapPinIcon className={icon} />, title: 'Voorspelling', meta: predictionSummary(predictions), onSelect: page('predictions') }] : []),
     { key: 'hints', icon: <Grid3x3Icon className={icon} />, title: 'Hints', meta: progress ? `${progress.solved}/${progress.total} opgelost` : undefined, onSelect: page('hints') },
+    ...(score?.configured ? [{ key: 'points', icon: <TrophyIcon className={icon} />, title: 'Punten', meta: scoreSummary(score), onSelect: page('points') }] : []),
     { key: 'hintEntry', icon: <PenLineIcon className={icon} />, title: 'Hint registreren', onSelect: page('hintEntry') },
     ...(homeTeamApiId !== null ? [{ key: 'counterHunt', icon: <FlagIcon className={icon} />, title: 'Tegenhunt', onSelect: page('counterHunt') }] : []),
   ];

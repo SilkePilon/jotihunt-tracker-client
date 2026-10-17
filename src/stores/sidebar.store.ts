@@ -1,13 +1,14 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-export type SidebarSectionId = 'foxes' | 'hints' | 'hunts' | 'predictions' | 'hintEntry' | 'counterHunt' | 'telegram' | 'tracking' | 'life360' | 'jotiboard';
+export type SidebarSectionId = 'foxes' | 'hints' | 'points' | 'hunts' | 'predictions' | 'hintEntry' | 'counterHunt' | 'telegram' | 'tracking' | 'life360' | 'jotiboard';
 import type { SheetSnap, SnapHeights } from '@/lib/sheet-snaps';
 export type { SheetSnap };
 
 const DEFAULT_OPEN_SECTIONS: Record<SidebarSectionId, boolean> = {
   foxes: true,
   hints: true,
+  points: true,
   hunts: true,
   predictions: false,
   hintEntry: false,
