@@ -68,7 +68,7 @@ describe('accuracyCircles', () => {
 describe('huntAccuracyCircles', () => {
   test('only hunts with a location and a positive accuracy', () => {
     const hunt = (id: string, location: SyncedHunt['location']): SyncedHunt => ({
-      _id: id, siteKey: id, area: 'Alpha', huntTime: null, status: 'pending', statusText: '', points: 0, qrCode: null, location, firstSeenAt: '', statusChangedAt: null,
+      _id: id, siteKey: id, area: 'Alpha', huntTime: null, status: 'pending', statusText: '', points: 0, location, firstSeenAt: '', statusChangedAt: null,
     });
     const fc = huntAccuracyCircles([hunt('a', { lat: 52, lng: 6, accuracy: 12 }), hunt('b', { lat: 52, lng: 6, accuracy: null }), hunt('c', null), hunt('d', { lat: 52, lng: 6, accuracy: 0 })]);
     expect(fc.features.map((f) => f.properties)).toEqual([{ id: 'a', area: 'alpha' }]);

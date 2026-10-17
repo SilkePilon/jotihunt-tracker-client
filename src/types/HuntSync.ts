@@ -52,7 +52,6 @@ export interface SyncedHunt {
   /** The site's own status text, e.g. "Wacht op bevestiging" */
   statusText: string;
   points: number;
-  qrCode: string | null;
   location: HuntLocation | null;
   firstSeenAt: string;
   statusChangedAt: string | null;
