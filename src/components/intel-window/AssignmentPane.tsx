@@ -1,16 +1,18 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { BeheerCard, BeheerRow, BeheerRows, RowFrame } from '@/components/beheer/BeheerLayout';
+import { BeheerCard, BeheerRow, FadeSwap, BeheerRows, RowFrame } from '@/components/beheer/BeheerLayout';
 import { Pill } from '@/components/beheer/controls/Pill';
 import Segmented from '@/components/beheer/controls/Segmented';
+import Reveal from '@/components/motion/Reveal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAssignments } from '@/hooks/assignments.hook';
 import { apiErrorMessage } from '@/lib/api-error';
 import { formatClock } from '@/lib/format';
-import { ASSIGNMENT_STATUS_LABELS } from '@/lib/intel-window';
+import { ASSIGNMENT_STATUS_LABELS, siteSubmission, statusAuthor } from '@/lib/intel-window';
 import type { UserRef } from '@/types/HintCell';
 import type { AssignmentStatus, IntelItem } from '@/types/Intel';
 import ArticleHtml from './ArticleHtml';
+import SiteSubmissionCard from './SiteSubmissionCard';
 
 const STATUS_OPTIONS = (Object.keys(ASSIGNMENT_STATUS_LABELS) as AssignmentStatus[]).map((value) => ({ value, label: ASSIGNMENT_STATUS_LABELS[value] }));
 /** Radix Select has no empty value: "Niemand" */
@@ -27,6 +29,8 @@ export default function AssignmentPane({ item }: { item: IntelItem }) {
   const status = item.assignment?.status ?? 'open';
   const owner = item.assignment?.owner ?? null;
   const notes = item.assignment?.notes ?? [];
+  const site = siteSubmission(item.assignment);
+  const author = statusAuthor(item.assignment, formatClock);
   // An owner who is no longer a member still shows by name
   const owners: UserRef[] = owner && !members.some((member) => member._id === owner._id) ? [...members, owner] : members;
 
@@ -52,7 +56,7 @@ export default function AssignmentPane({ item }: { item: IntelItem }) {
         <div className="min-w-0">
           <BeheerCard>
             <BeheerRows>
-              <BeheerRow key="status" title="Status">
+              <BeheerRow key="status" title="Status" meta={author && <FadeSwap>{author}</FadeSwap>}>
                 <Segmented label="Status" value={status} options={STATUS_OPTIONS} onChange={(next) => run(() => setStatus(item.id, next), 'Status opslaan mislukt')} />
               </BeheerRow>
               <BeheerRow key="owner" title="Eigenaar">
@@ -76,6 +80,14 @@ export default function AssignmentPane({ item }: { item: IntelItem }) {
               </BeheerRow>
             </BeheerRows>
           </BeheerCard>
+          {/* Unfolds when the server sees our submission on jotihunt.nl */}
+          <Reveal>
+            {site && (
+              <div className="pt-3">
+                <SiteSubmissionCard site={site} />
+              </div>
+            )}
+          </Reveal>
         </div>
         <div className="min-w-0">
           <BeheerCard title="Notities" count={notes.length}>
