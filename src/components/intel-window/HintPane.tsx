@@ -12,8 +12,10 @@ import CookieBadge from '@/components/tracker/CookieBadge';
 import { useHintBoard, useRdPreviewState } from '@/hooks/hints.hook';
 import { apiErrorMessage } from '@/lib/api-error';
 import { type AnswerPreview, INTEL_CLOSE_MS, answerPreview, hasExistingMarker, initialOpenArea, nextOpenArea } from '@/lib/intel-window';
+import { type GuessStatus, guessStatus, parseGuess, parseGuessAnswer } from '@/lib/hint-guess';
 import { SWAP } from '@/lib/motion';
-import { areaOptions, getColorFromArea } from '@/lib/utils';
+import { areaOptions, cn, getColorFromArea } from '@/lib/utils';
+import useHintGuessStore from '@/stores/hint-guess.store';
 import useIntelStore from '@/stores/intel.store';
 import type { HintCell } from '@/types/HintCell';
 import type { IntelItem } from '@/types/Intel';
@@ -235,6 +237,19 @@ function AreaBody({ cell, label, onSave, onClear, mapRef }: { cell: HintCell; la
   const [teammate, setTeammate] = useState<string | null>(null);
   // The done view after a teammate's answer took over an untouched field: its cookie pops in
   const [popIn, setPopIn] = useState(false);
+  // A candidate picked on the map for this row (Toon op kaart): filled into the field, not saved yet
+  const pendingAnswer = useHintGuessStore((state) => state.pendingAnswer);
+  const [usedPending, setUsedPending] = useState<number | null>(null);
+  if (pendingAnswer && pendingAnswer.id !== usedPending && pendingAnswer.articleId === cell.articleId && pendingAnswer.area === cell.area) {
+    setUsedPending(pendingAnswer.id);
+    setAnswer(pendingAnswer.text);
+    setTeammate(null);
+    setPopIn(false);
+    setEditing(true);
+  }
+  useEffect(() => {
+    if (usedPending !== null) useHintGuessStore.getState().clearPending(usedPending);
+  }, [usedPending]);
 
   // Someone else's answer arriving (a poll) while this row is open. Our own save also changes it: ignored while saving.
   const incoming = solved ? (cell.answer ?? '') : '';
@@ -273,9 +288,29 @@ function AreaBody({ cell, label, onSave, onClear, mapRef }: { cell: HintCell; la
   if (settled && previewKey(current) !== previewKey(line)) setLine(current);
   const shown = settled ? current : line;
 
+  // '?' (or '*') for unknown digits: candidates instead of the RD preview, and no saving until it's filled in
+  const guessAnswer = editing ? parseGuessAnswer(answer) : null;
+  const guess = guessAnswer ? parseGuess(guessAnswer.x, guessAnswer.y) : null;
+  const wildcard = editing && /[?*]/.test(answer);
+  const canShowGuess = !!guess && (guess.kind === 'points' ? guess.points.length > 0 : !guess.wide);
+
+  function showGuess() {
+    if (!guessAnswer) return;
+    useHintGuessStore.getState().show({
+      source: 'intel',
+      x: guessAnswer.x,
+      y: guessAnswer.y,
+      area: cell.area,
+      at: Date.parse(cell.slotTime || cell.publishAt) || null,
+      articleId: cell.articleId,
+      format: guessAnswer.format,
+    });
+    close();
+  }
+
   async function save() {
     const value = answer.trim();
-    if (!value || saving) return;
+    if (!value || saving || /[?*]/.test(value)) return;
     setSaving(true);
     const ok = await onSave(cell, label, value);
     setSaving(false);
@@ -342,7 +377,7 @@ function AreaBody({ cell, label, onSave, onClear, mapRef }: { cell: HintCell; la
               aria-label={`Antwoord ${label}`}
               className="h-8 w-44 min-w-0 rounded-[10px] bg-beheer-window px-2.5 font-mono text-[13px] ring-1 ring-border outline-none placeholder:text-muted-foreground read-only:opacity-60 focus:ring-primary"
             />
-            <Pill variant="primary" disabled={!answer.trim() || saving} onClick={() => void save()} morphKey={saving ? 'saving' : 'idle'} aria-label={saving ? 'Opslaan…' : undefined}>
+            <Pill variant="primary" disabled={!answer.trim() || saving || wildcard} onClick={() => void save()} morphKey={saving ? 'saving' : 'idle'} aria-label={saving ? 'Opslaan…' : undefined}>
               {saving ? <Loader2Icon className="animate-spin" /> : 'Opslaan'}
             </Pill>
           </motion.div>
@@ -372,13 +407,20 @@ function AreaBody({ cell, label, onSave, onClear, mapRef }: { cell: HintCell; la
         )}
       </Reveal>
       <Reveal>
-        {shown && (
+        {shown && !guessAnswer && (
           <div className="pt-2 text-xs">
             <AnimatePresence mode="wait" initial={false}>
               <motion.p key={shown.kind} {...SWAP}>
                 <PreviewLine preview={shown} />
               </motion.p>
             </AnimatePresence>
+          </div>
+        )}
+      </Reveal>
+      <Reveal>
+        {guessAnswer && (
+          <div className="pt-2 text-xs">
+            <GuessLine status={guessStatus(guess)} onShow={canShowGuess ? showGuess : undefined} />
           </div>
         )}
       </Reveal>
@@ -394,6 +436,25 @@ function PreviewLine({ preview }: { preview: NonNullable<AnswerPreview> }) {
   return (
     <span className="text-muted-foreground tabular-nums">
       <span className="text-green-600 dark:text-green-300">✓</span> RD {x} {y} · {lat.toFixed(4)} N, {lng.toFixed(4)} E
+    </span>
+  );
+}
+
+/** The preview line for an answer with unknown digits: how many candidates, and a button to see them on the map. */
+function GuessLine({ status, onShow }: { status: GuessStatus; onShow?: () => void }) {
+  return (
+    <span className={cn('flex flex-wrap items-center gap-2', status.tone === 'warn' ? 'text-amber-600 dark:text-amber-300' : 'text-on-guess-container')}>
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.span key={status.text} {...SWAP}>
+          {status.tone === 'warn' ? '⚠ ' : ''}
+          {status.text.replace(' · tik er een op de kaart', '').replace(' · tik de stip', '')}
+        </motion.span>
+      </AnimatePresence>
+      {onShow && (
+        <Pill onClick={onShow}>
+          <MapIcon /> Toon op kaart
+        </Pill>
+      )}
     </span>
   );
 }
