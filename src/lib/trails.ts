@@ -1,3 +1,4 @@
+import { isAxiosError } from 'axios';
 import type { FeatureCollection, LineString } from 'geojson';
 import type { LegMode, TrailCollection, TrailProperties } from '@/types/Trail';
 
@@ -67,3 +68,25 @@ export function legRows(p: TrailProperties) {
 
 export const flipTarget = (p: TrailProperties): 'walk' | 'car' => (isCar(p) ? 'walk' : 'car');
 export const flipLabel = (p: TrailProperties): string => (isCar(p) ? 'Toch gelopen' : 'Toch met auto');
+
+/** Every leg is a straight fallback: the router is not ready or down, so the old coloured trails are clearer. */
+export function allFallback(trails: TrailCollection): boolean {
+  return trails.features.length > 0 && trails.features.every((f) => f.properties.fallback);
+}
+
+/** What a leg looks like on the map: a change means it should fade in again. */
+export type LegLooks = Map<string, string>;
+export function legLooks(features: { properties: Pick<TrailProperties, 'id' | 'mode' | 'fallback'> }[]): LegLooks {
+  return new Map(features.map((f) => [f.properties.id, `${f.properties.mode}:${f.properties.fallback ? 1 : 0}`]));
+}
+
+/** Ids of legs that are new in `next` or changed mode/fallback since `previous`. */
+export function changedLegIds(previous: LegLooks, next: LegLooks): string[] {
+  return [...next].filter(([id, look]) => previous.get(id) !== look).map(([id]) => id);
+}
+
+export type RebuildResult = 'started' | 'busy' | 'failed';
+/** A failed rebuild request: 409 means a rebuild is already running. */
+export function rebuildFailure(error: unknown): Exclude<RebuildResult, 'started'> {
+  return isAxiosError(error) && error.response?.status === 409 ? 'busy' : 'failed';
+}

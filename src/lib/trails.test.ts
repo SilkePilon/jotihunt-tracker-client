@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
-import { badgeImageId, flipLabel, flipTarget, formatDuration, formatKm, legRows, legSubtitle, legTitle, parseBadgeImageId, visibleTrails } from './trails';
+import { AxiosError, AxiosHeaders } from 'axios';
+import { allFallback, badgeImageId, rebuildFailure, changedLegIds, legLooks, flipLabel, flipTarget, formatDuration, formatKm, legRows, legSubtitle, legTitle, parseBadgeImageId, visibleTrails } from './trails';
 import type { TrailCollection, TrailProperties } from '@/types/Trail';
 
 const base: TrailProperties = {
@@ -65,5 +66,36 @@ describe('visibleTrails', () => {
     const out = visibleTrails(trails, new Set(['a', 'b']), () => '#ea580c');
     expect(out.features).toHaveLength(1);
     expect(out.features[0].properties).toMatchObject({ color: '#ea580c', badge: 'trail-badge:car:#ea580c' });
+  });
+});
+
+describe('allFallback', () => {
+  const collection = (...fallbacks: boolean[]): TrailCollection => ({
+    type: 'FeatureCollection',
+    features: fallbacks.map((fallback, i) => ({ type: 'Feature', geometry: { type: 'LineString', coordinates: [[5, 52], [5.1, 52]] }, properties: { ...base, id: `l${i}`, fallback } })),
+  });
+  test('only when every leg is a fallback', () => {
+    expect(allFallback(collection(true, true))).toBe(true);
+    expect(allFallback(collection(true, false))).toBe(false);
+    expect(allFallback(collection())).toBe(false);
+  });
+});
+
+describe('changedLegIds', () => {
+  const look = (id: string, mode: TrailProperties['mode'], fallback = false) => ({ properties: { id, mode, fallback } });
+  test('new legs and mode or fallback changes, not unchanged ones', () => {
+    const previous = legLooks([look('a', 'walk'), look('b', 'walk'), look('c', 'car', true), look('gone', 'walk')]);
+    const next = legLooks([look('a', 'walk'), look('b', 'car'), look('c', 'car'), look('d', 'walk')]);
+    expect(changedLegIds(previous, next)).toEqual(['b', 'c', 'd']);
+    expect(changedLegIds(next, next)).toEqual([]);
+  });
+});
+
+describe('rebuildFailure', () => {
+  const axiosError = (status: number) => new AxiosError('x', 'ERR', undefined, undefined, { status, statusText: '', data: {}, headers: {}, config: { headers: new AxiosHeaders() } });
+  test('409 is busy, anything else failed', () => {
+    expect(rebuildFailure(axiosError(409))).toBe('busy');
+    expect(rebuildFailure(axiosError(503))).toBe('failed');
+    expect(rebuildFailure(new Error('network'))).toBe('failed');
   });
 });
