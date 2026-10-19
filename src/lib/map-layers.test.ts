@@ -11,6 +11,8 @@ import {
   huntAccuracyCircles,
   layerStackMoves,
   MAP_LAYER_STACK,
+  NIGHT_AREA_LAYERS,
+  NIGHT_DRAW_LAYERS,
   ROUTED_TRAIL_LAYERS,
   TRAILS_HIT_LAYER,
   markerFeatures,
@@ -220,6 +222,23 @@ describe('routed trail layers', () => {
       result.splice(result.indexOf(beforeId), 0, id);
     }
     expect(result).toEqual(['base', ...ROUTED_TRAIL_LAYERS, 'fox-markers']);
+  });
+});
+
+describe('night area layers', () => {
+  test('one group right above the trails, below the markers', () => {
+    const trails = MAP_LAYER_STACK.findIndex((ids) => ids.includes('marker-trails-badge'));
+    expect(MAP_LAYER_STACK[trails + 1]).toEqual([...NIGHT_AREA_LAYERS, ...NIGHT_DRAW_LAYERS]);
+    expect(MAP_LAYER_STACK.findIndex((ids) => ids.includes('fox-markers'))).toBeGreaterThan(trails + 1);
+  });
+  test('restacking puts them between the trails and the markers', () => {
+    const order = ['base', 'fox-markers', 'night-draw-line', 'night-areas-fill', 'marker-trails-walk'];
+    const result = [...order];
+    for (const [id, beforeId] of layerStackMoves(order, MAP_LAYER_STACK)) {
+      result.splice(result.indexOf(id), 1);
+      result.splice(result.indexOf(beforeId), 0, id);
+    }
+    expect(result).toEqual(['base', 'marker-trails-walk', 'night-draw-line', 'night-areas-fill', 'fox-markers']);
   });
 });
 

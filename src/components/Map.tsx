@@ -52,6 +52,12 @@ import {vehicleGlyph} from '@/lib/marker-style';
 import {useTrackerStatus} from '@/hooks/tracker.hook';
 import {useAppConfig} from '@/hooks/app-config.hook';
 import {tourTarget} from '@/components/tour/targets';
+import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
+import {AnimatePresence} from 'motion/react';
+import type {User} from '@/types/User';
+import {useNightDraw} from '@/stores/night-draw.store';
+import NightAreaDraw from './layers/trails/NightAreaDraw';
+import NightAreasLayer from './layers/trails/NightAreasLayer';
 
 // MapLibre resolves its worker relative to its own module, which bundlers don't emit;
 // let Vite bundle the worker and hand MapLibre the resulting URL. Here, not in main.tsx, so the
@@ -116,6 +122,9 @@ function phonePaddingFor(wall: boolean): number | undefined {
 const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay}, ref) => {
 
     const {groupName} = useAppConfig();
+    // Admins draw their own night areas on the map (Beheer → Routes); never on the HQ wall
+    const isAdmin = !!useAuthUser<User>()?.admin && !wall;
+    const drawing = useNightDraw((state) => state.active) && isAdmin;
 
     // Make map fly available to other components
     const mapRef = useRef<MaplibreRef>(null);
@@ -229,7 +238,7 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
      * Open the current location popup when the map is clicked.
      */
     function openPopup(e: MapLayerMouseEvent) {
-        if (popupPosition || rulerActive || e.features?.length) return;
+        if (popupPosition || rulerActive || drawing || e.features?.length) return;
 
         setPopupPosition(e.lngLat);
     }
@@ -293,6 +302,8 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
                 {(showMarkersPart1 || showMarkersPart2) && <HuntAccuracy/>}
                 <HomeCircle showCircle={showHomeCircle}/>
                 {!wall && <HuntFocus/>}
+                {isAdmin && <NightAreasLayer/>}
+                <AnimatePresence>{drawing && <NightAreaDraw key="draw"/>}</AnimatePresence>
                 <LayerStack/>
                 {overlay}
             </Maplibre>
