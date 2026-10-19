@@ -12,7 +12,9 @@ export function VisitStatusRow({ teamApiId }: { teamApiId: number }) {
   const { visits } = useVisits();
   const visit = visits?.find((candidate) => candidate.teamApiId === teamApiId);
   const manualVisited = visitSelection(visit) === 'visited';
-  return <PopupRow icon={manualVisited ? <CheckIcon /> : <SparklesIcon />} title={visitStatusText(visit)} tone={manualVisited ? 'success' : 'default'} />;
+  if (manualVisited) return <PopupRow icon={<CheckIcon />} title={visitStatusText(visit)} tone="success" />;
+  // The AI's view is a guess, so its text stays muted
+  return <PopupRow icon={<SparklesIcon />} title={<span className="text-(--map-muted)">{visitStatusText(visit)}</span>} />;
 }
 
 /** House button next to Route: marks the group visited (green), tapping again hands it back to the AI. */

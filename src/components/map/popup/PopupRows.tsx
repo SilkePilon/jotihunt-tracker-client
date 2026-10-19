@@ -16,12 +16,18 @@ export function PopupRows({ children }: { children: ReactNode }) {
   return <div className="mt-3 flex flex-col gap-0.5 [&>*]:rounded-md [&>*:first-child]:rounded-t-2xl [&>*:last-child]:rounded-b-2xl">{children}</div>;
 }
 
-/** Two rows side by side (one fills the width); the group's outer corners clip them. */
+/**
+ * Two rows side by side (one fills the width); the group's outer corners clip them.
+ * Must be a direct child of `PopupRows`, which gives it the rounded corners its `overflow-hidden` clips to.
+ */
 export function PopupRowSplit({ children }: { children: ReactNode }) {
   return <div className="grid auto-cols-fr grid-flow-col gap-0.5 overflow-hidden">{children}</div>;
 }
 
-/** One row: optional icon, optional uppercase label, title, optional meta line, optional trailing buttons. */
+/**
+ * One row: optional icon, optional uppercase label, title, optional meta line, optional trailing buttons.
+ * A tone colours the icon, title and meta; the `label` stays muted on toned rows too.
+ */
 export function PopupRow({ icon, label, title, meta, trailing, tone = 'default' }: { icon?: ReactNode; label?: string; title: ReactNode; meta?: ReactNode; trailing?: ReactNode; tone?: RowTone }) {
   const toned = tone !== 'default';
   return (

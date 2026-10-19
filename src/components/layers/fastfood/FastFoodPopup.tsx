@@ -34,12 +34,12 @@ export default function FastFoodPopup({ restaurant, nowMs, onClose }: { restaura
         subtitle={joinParts(restaurant.branch, distance)}
       />
       <PopupRows>
-        {/* FadeSwap is a block motion.div inside the row's truncating wrapper, so it truncates itself */}
+        {/* FadeSwap is a block motion.div inside the row's truncating wrapper, so it truncates itself; the meta ticks every minute, so it stays plain */}
         <PopupRow
           icon={<ClockIcon />}
           tone={TONE[status.state]}
           title={<FadeSwap className="truncate">{status.title}</FadeSwap>}
-          meta={<FadeSwap className="truncate">{status.meta}</FadeSwap>}
+          meta={status.meta}
         />
         {(line1 || line2) && <PopupRow icon={<MapPinIcon />} title={line1 ?? line2} meta={line1 ? line2 : undefined} />}
         {restaurant.driveThrough !== undefined && <PopupRow icon={<CarIcon />} title={restaurant.driveThrough ? 'Drive-thru' : 'Geen drive-thru'} />}

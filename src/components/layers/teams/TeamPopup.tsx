@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { MapPinIcon } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 import { toast } from 'sonner';
 import MapPopup from '../../map/MapPopup';
 import { PopupActions, RouteAction } from '../../map/popup/PopupActions';
@@ -11,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAreas } from '@/hooks/areas.hook';
 import { useDistanceFromMe } from '@/hooks/distance-from-me.hook';
 import { usePredictionSetting } from '@/hooks/predictions.hook';
+import { REVEAL_TRANSITION } from '@/lib/motion';
 import { getColorFromArea } from '@/lib/utils';
 import type { Team } from '@/types/Team';
 
@@ -75,7 +77,21 @@ export default function TeamPopup({ team, onClose, setTeamArea }: TeamPopupProps
       />
       <PopupRows>
         <PopupRow icon={<MapPinIcon />} title={team.accomodation || address} meta={team.accomodation ? address : undefined} />
-        {showVisits && <VisitStatusRow teamApiId={team.apiId} />}
+        {/* The wrapper is PopupRows' direct child, so it takes the corner rounding and clips the row to it */}
+        <AnimatePresence initial={false}>
+          {showVisits && (
+            <motion.div
+              key="visits"
+              className="overflow-hidden"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={REVEAL_TRANSITION}
+            >
+              <VisitStatusRow teamApiId={team.apiId} />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </PopupRows>
       {TEAMS_AREA_EDITING && (
         <Select onValueChange={handleAreaChange} value={area ?? 'onbekend'}>

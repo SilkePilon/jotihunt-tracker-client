@@ -43,6 +43,8 @@ function dayLabel(ms: number, nowMs: number): string {
   const days = Math.round((Date.parse(dayKey.format(ms)) - Date.parse(dayKey.format(nowMs))) / 86_400_000);
   if (days <= 0) return 'vandaag';
   if (days === 1) return 'morgen';
+  // A week or more ahead (same weekday as today): "volgende zaterdag"
+  if (days >= 7) return `volgende ${weekday.format(ms)}`;
   return weekday.format(ms);
 }
 

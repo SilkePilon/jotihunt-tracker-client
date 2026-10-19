@@ -43,6 +43,9 @@ describe('fastfoodStatus', () => {
   test('closed, opening on a later weekday', () => {
     expect(fastfoodStatus([iv('2026-10-19T10:00:00+02:00', '2026-10-19T22:00:00+02:00')], NOW).meta).toBe('opent maandag 10:00');
   });
+  test('closed, opening on the same weekday next week', () => {
+    expect(fastfoodStatus([iv('2026-10-24T09:00:00+02:00', '2026-10-24T22:00:00+02:00')], NOW).meta).toBe('opent volgende zaterdag 09:00');
+  });
   test('closed the whole window', () => {
     expect(fastfoodStatus([], NOW)).toEqual({ state: 'closed', title: 'Dicht', meta: 'opent niet in de komende week', short: 'dicht' });
   });
