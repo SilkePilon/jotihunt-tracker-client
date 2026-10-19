@@ -3,7 +3,7 @@ import { useReducedMotion } from 'motion/react';
 import { Layer, Source, useMap, type LineLayerSpecification, type SymbolLayerSpecification } from 'react-map-gl/maplibre';
 import type { ExpressionSpecification } from 'maplibre-gl';
 import { useTrails } from '@/hooks/trails.hook';
-import { ROUTED_TRAIL_LAYERS, TRAILS_HIT_LAYER } from '@/lib/map-layers';
+import { ROUTED_TRAIL_LAYERS, TRAIL_BADGE_LAYER, TRAILS_HIT_LAYER } from '@/lib/map-layers';
 import { badgePoints, changedLegIds, legLooks, visibleTrails, type LegLooks } from '@/lib/trails';
 import { getColorFromArea } from '@/lib/utils';
 import { featureId, useLayerInteractions, usePopupSelection } from '../map-interactions';
@@ -12,7 +12,8 @@ import { addTrailBadge } from './trail-badges';
 
 const SOURCE = 'marker-trails-routed';
 const BADGE_SOURCE = 'marker-trails-badges';
-const [CASING_LAYER, WALK_LAYER, CAR_LAYER, FALLBACK_LAYER, , BADGE_LAYER] = ROUTED_TRAIL_LAYERS;
+const [CASING_LAYER, WALK_LAYER, CAR_LAYER, FALLBACK_LAYER] = ROUTED_TRAIL_LAYERS;
+const BADGE_LAYER = TRAIL_BADGE_LAYER;
 const HIT_LAYERS = [TRAILS_HIT_LAYER];
 
 const LINE_LAYOUT: LineLayerSpecification['layout'] = { 'line-cap': 'round', 'line-join': 'round' };
