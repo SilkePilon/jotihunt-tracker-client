@@ -1,16 +1,10 @@
 import type { ComponentProps, ReactNode } from 'react';
-import { DropdownMenuItem, DropdownMenuSubTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { MENU_GROUP, MENU_SURFACE } from '@/lib/menu-styles';
 import { cn } from '@/lib/utils';
 
 /** The menu card (now the default of every dropdown); kept for popovers that show a menu-like card. */
 export const MENU_CARD = `${MENU_SURFACE} p-3`;
-
-/**
- * Submenus are phone-only and a 290px card leaves no room beside it, so they open over the card instead: shifted back
- * by the row width (290px card minus 2×12px padding) they start at the row's left edge and stay on screen.
- */
-export const SUBMENU_SIDE_OFFSET = -266;
 
 /** Groups rows with 2px seams. Conditional rows render nothing, so first/last corners stay right. */
 export function MenuRows({ className, children }: { className?: string; children: ReactNode }) {
@@ -19,11 +13,6 @@ export function MenuRows({ className, children }: { className?: string; children
 
 export function MenuRow(props: ComponentProps<typeof DropdownMenuItem>) {
   return <DropdownMenuItem {...props} />;
-}
-
-/** Row that opens a submenu (phones: Zichtbare lagen, Kaartstijl); stays highlighted while its submenu is open. */
-export function MenuSubRow(props: ComponentProps<typeof DropdownMenuSubTrigger>) {
-  return <DropdownMenuSubTrigger {...props} />;
 }
 
 /** Quick tile: icon above a short label. Give the icon `size-5` itself. */

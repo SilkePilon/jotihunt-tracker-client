@@ -98,23 +98,3 @@ export function useLayerGroups(fetchLife360: boolean): LayerGroups {
   const { data: life360 } = useLife360Members(fetchLife360);
   return layerGroups(layers, { predictions: predictionEnabled !== false, life360: !!life360?.linked });
 }
-
-/** @deprecated Flat list for the old popover and submenu; removed with them in the next tasks. */
-export interface LayerToggle {
-  id: string;
-  label: string;
-  checked: boolean;
-  toggle: () => void;
-}
-
-/** @deprecated See LayerToggle. */
-export function useLayerToggles(fetchLife360: boolean): LayerToggle[] {
-  const { groups, food } = useLayerGroups(fetchLife360);
-  const rows = groups.flatMap((group) => group.rows);
-  return [
-    ...rows.flatMap((row): LayerToggle[] =>
-      row.kind === 'switch' ? [row] : row.parts.map((part) => ({ id: part.id, label: `Markers (speelhelft ${part.label})`, checked: part.checked, toggle: part.toggle })),
-    ),
-    ...food.toggles.map((toggle) => ({ id: toggle.brand, label: toggle.label, checked: toggle.checked, toggle: toggle.toggle })),
-  ];
-}

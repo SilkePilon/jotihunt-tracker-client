@@ -9,6 +9,7 @@ import {
     VolumeXIcon,
     UserRoundIcon,
     ShieldIcon,
+    LayersIcon,
 } from 'lucide-react';
 import {siDiscord} from "simple-icons"
 import {cn} from '@/lib/utils';
@@ -25,12 +26,11 @@ import {Dialog, DialogTrigger} from './ui/dialog';
 import DebugInfo from './DebugInfo';
 import useNotificationsDialogStore from '@/stores/notifications-dialog.store';
 import useAccountDialogStore from '@/stores/account-dialog.store';
+import useLayersDialogStore from '@/stores/layers-dialog.store';
 import useSettingsMenuStore from '@/stores/settings-menu.store';
 import useTourStore from '@/components/tour/tour.store';
 import {tourTarget} from '@/components/tour/targets';
 import {useLogout} from '@/hooks/logout.hook';
-import LayersSubmenu from './settings/LayersSubmenu';
-import MapStyleSubmenu from './settings/MapStyleSubmenu';
 import useAdminStore from '@/stores/admin.store';
 import {useIsMobile} from '@/hooks/media.hook';
 import {useAppConfig} from '@/hooks/app-config.hook';
@@ -53,6 +53,7 @@ export default function Settings({onReplayTour}: SettingsProps) {
 
     const openNotifications = useNotificationsDialogStore((state) => state.setOpen);
     const openAccount = useAccountDialogStore((state) => state.setOpen);
+    const openLayers = useLayersDialogStore((state) => state.setOpen);
     const soundMuted = useSettingsStore((state) => state.soundMuted);
     const setSoundMuted = useSettingsStore((state) => state.setSoundMuted);
     const {isStandalone, isInstallPromptSupported, promptInstall} = usePWA();
@@ -116,12 +117,15 @@ export default function Settings({onReplayTour}: SettingsProps) {
                                 Installeer app
                             </MenuRow>
                         )}
-                        {/* Desktop has the layers button on the map; phones have no map controls */}
+                        {/* Desktop has the layers button on the map; phones get the same panel in a drawer */}
                         {isMobile && (
-                            <>
-                                <LayersSubmenu/>
-                                <MapStyleSubmenu/>
-                            </>
+                            <MenuRow onClick={() => {
+                                setMenuOpen(false);
+                                openLayers(true);
+                            }}>
+                                <LayersIcon/>
+                                Kaart &amp; lagen
+                            </MenuRow>
                         )}
                         {auth?.admin && (
                             <>

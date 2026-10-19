@@ -12,6 +12,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import StaleDataBadge from './components/StaleDataBadge';
 import NotificationsDialog from './components/notifications/NotificationsDialog';
 import AccountDialog from './components/account/AccountDialog';
+import LayersDialog from './components/map/layers/LayersDialog';
 import AndroidPromoDialog from './components/android-promo/AndroidPromoDialog';
 import {useNotificationsPrompt} from './components/notifications/useNotificationsPrompt';
 import {useTheme} from "@/hooks/theme.hook.ts";
@@ -121,6 +122,7 @@ export default function Layout() {
                 <IntelDialog mapRef={mapRef}/>
                 <NotificationsDialog/>
                 <AccountDialog/>
+                <LayersDialog/>
                 <AndroidPromoDialog/>
                 <AndroidPromoAutoOpen/>
                 {typeof qrLogin === 'string' && (
