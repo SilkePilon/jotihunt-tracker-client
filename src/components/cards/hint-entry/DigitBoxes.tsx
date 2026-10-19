@@ -23,7 +23,7 @@ interface DigitBoxesProps {
  * One RD coordinate: axis label and 6 digit boxes (input-otp keeps paste, the keyboard and focus handling). A box also
  * takes '?' for an unknown digit; '.', ',', '*', '-' and space become '?' too (a phone's number pad has no '?').
  */
-export default function DigitBoxes({ id, label, bad, onChange, ...field }: DigitBoxesProps) {
+export default function DigitBoxes({ id, label, bad, onChange, onComplete, ...field }: DigitBoxesProps) {
   return (
     <div className="grid grid-cols-[16px_1fr] items-center gap-1">
       <label htmlFor={id} className="text-xs font-bold text-muted-foreground">{label}</label>
@@ -36,6 +36,10 @@ export default function DigitBoxes({ id, label, bad, onChange, ...field }: Digit
         aria-invalid={bad || undefined}
         containerClassName="grid grid-cols-6 gap-1"
         onChange={(value) => onChange(sanitizeDigits(value))}
+        // input-otp completes on the raw value (before sanitizing), so six letters would move focus with an empty field
+        onComplete={(value: string) => {
+          if (sanitizeDigits(value).length === 6) onComplete();
+        }}
         {...field}
       >
         {[0, 1, 2, 3, 4, 5].map((index) => <DigitSlot key={index} index={index} bad={bad} />)}

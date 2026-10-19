@@ -43,11 +43,16 @@ export default function HintGuess() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- refit only when the guess changes, not on every marker poll
   }, [map, fitKey]);
 
-  // Escape takes the guess off the map
+  // Escape takes the guess off the map, but only when nothing else used that key press: Radix dialogs/popovers close on
+  // Escape in the document capture phase and preventDefault it, so this bubble-phase window listener runs after them
   useEffect(() => {
     if (!input) return;
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') clear();
+      if (event.key !== 'Escape' || event.defaultPrevented) return;
+      const target = event.target instanceof Element ? event.target : null;
+      if (target?.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])')) return;
+      if (target?.closest('[role="dialog"], [role="menu"], [data-radix-popper-content-wrapper]')) return;
+      clear();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -56,7 +61,6 @@ export default function HintGuess() {
   const purple = dark ? '#b9a6ff' : '#7b61d1';
   const red = dark ? '#ffb4ab' : '#ba1a1a';
   const points = guess?.kind === 'points' ? guess.points : [];
-  const keyBase = input ? `${input.x}|${input.y}` : '';
 
   return (
     <>
@@ -69,7 +73,7 @@ export default function HintGuess() {
         {points.map((point, index) => {
           const role = rank?.roles[index] ?? 'in';
           return (
-            <Marker key={`${keyBase}|${point.digit}`} longitude={point.lng} latitude={point.lat} anchor="center"
+            <Marker key={point.digit} longitude={point.lng} latitude={point.lat} anchor="center"
                     onClick={(event) => {
                       event.originalEvent.stopPropagation();
                       pick(point.digit);
@@ -78,9 +82,9 @@ export default function HintGuess() {
                 type="button"
                 aria-label={guess?.kind === 'points' && guess.collapsed ? 'Gebruik deze plek' : `Gebruik cijfer ${point.digit}`}
                 initial={{ opacity: 0, scale: 0.5 }}
-                animate={{ opacity: role === 'out' ? 0.4 : 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.5 }}
-                transition={{ duration: 0.2, delay: index * 0.02 }}
+                // The stagger is for entering only; dots leave together
+                animate={{ opacity: role === 'out' ? 0.4 : 1, scale: 1, transition: { duration: 0.2, delay: index * 0.02 } }}
+                exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.2 } }}
                 className={cn(
                   'flex cursor-pointer items-center justify-center rounded-full font-bold tabular-nums shadow-md outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
                   role === 'best'
