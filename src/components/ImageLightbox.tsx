@@ -13,10 +13,12 @@ const START: View = { scale: 1, x: 0, y: 0 };
 
 const clampScale = (scale: number) => Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale));
 
+/** The toolbar buttons: the close button's shape, dark and translucent so they read on any photo. */
+const TOOL_BUTTON = cn(CLOSE_BUTTON_CLASS, 'bg-black/50 text-white backdrop-blur hover:bg-black/65 disabled:opacity-40 disabled:pointer-events-none');
+
 /**
  * Full-screen photo viewer with zoom: mouse wheel, pinch, double click/tap and +/- buttons; drag to pan when zoomed.
  */
-const TOOL_BUTTON = cn(CLOSE_BUTTON_CLASS, 'bg-black/50 text-white backdrop-blur hover:bg-black/65 disabled:opacity-40 disabled:pointer-events-none');
 
 export default function ImageLightbox({ src, alt, open, onOpenChange }: { src: string; alt: string; open: boolean; onOpenChange: (open: boolean) => void }) {
   const [view, setView] = useState<View>(START);

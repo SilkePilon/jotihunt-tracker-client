@@ -147,6 +147,7 @@ function FoodButton({ toggle }: { toggle: FoodToggle }) {
         className={cn('grid size-7 place-items-center rounded-[9px] border-2 border-white shadow-[0_1px_3px_rgb(0_0_0/0.25)] transition-[filter,opacity] duration-200', !toggle.checked && 'opacity-45 grayscale')}
         style={{ background: BRAND_COLOR[toggle.brand] }}
       >
+        {/* 2px smaller than on the 28px marker: the white rim sits inside this tile's box */}
         <img src={BRAND_LOGO_URL[toggle.brand]} alt="" width={FASTFOOD_LOGO_WIDTH[toggle.brand] - 2} draggable={false} />
       </span>
       <span className="text-[11px] font-semibold">{toggle.label}</span>

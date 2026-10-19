@@ -42,8 +42,8 @@ export interface LayerGroups {
   food: { title: string; toggles: FoodToggle[] };
 }
 
-/** The layers store without its persist plumbing: every show flag and its toggle. */
-export type LayerFlags = Omit<LayersState, never>;
+/** The layers store: every show flag and its toggle. */
+export type LayerFlags = LayersState;
 
 const sw = (id: string, label: string, icon: LucideIcon, checked: boolean, toggle: () => void): SwitchRow => ({ kind: 'switch', id, label, icon, checked, toggle });
 
