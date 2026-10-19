@@ -143,7 +143,8 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
             return true;
         },
         markPoint: (lngLat: LngLat) => {
-            if (mapRef.current) {
+            // No location popup while a night area is being drawn
+            if (mapRef.current && !drawing) {
                 setPopupPosition(lngLat);
             }
         },
@@ -178,6 +179,10 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
     // Stable, so the ruler doesn't re-subscribe its map events on every render
     const activateRuler = useCallback(() => setRulerActive(true), []);
     const deactivateRuler = useCallback(() => setRulerActive(false), []);
+    // Drawing a night area takes over map clicks: close the location popup (the ruler is switched off below)
+    useEffect(() => {
+        if (drawing) setPopupPosition(undefined);
+    }, [drawing]);
 
     // Store for settings
     const mapStyle = useSettingsStore((state) => state.mapStyle);
@@ -279,7 +284,7 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
                         <Ruler linePaint={RULER_LINE_PAINT} markerPaint={RULER_MARKER_PAINT}
                                labelLayout={RULER_LABEL_LAYOUT} labelPaint={RULER_LABEL_PAINT}
                                position="bottom-right" onActivate={activateRuler}
-                               onDeactivate={deactivateRuler}/>
+                               onDeactivate={deactivateRuler} disabled={drawing}/>
                         <FullscreenControl position="bottom-right"/>
                         <GeolocateControl position="bottom-right"/>
                         <NavigationControl position="bottom-right" showCompass={false}/>
