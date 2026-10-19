@@ -1,5 +1,6 @@
 import { isAxiosError } from 'axios';
-import type { FeatureCollection, LineString } from 'geojson';
+import { along, length } from '@turf/turf';
+import type { FeatureCollection, LineString, Point } from 'geojson';
 import type { LegMode, TrailCollection, TrailProperties } from '@/types/Trail';
 
 const CLOCK = new Intl.DateTimeFormat('nl-NL', { timeZone: 'Europe/Amsterdam', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
@@ -37,6 +38,18 @@ export function visibleTrails(trails: TrailCollection, visibleIds: Set<string>, 
         return { ...f, properties: { ...f.properties, color, badge: f.properties.fallback ? null : badgeImageId(f.properties.mode, color) } };
       }),
   };
+}
+
+/** One point per badged leg at the midpoint of its length (a line-center symbol repeats per tile piece). */
+export function badgePoints(trails: FeatureCollection<LineString, { id: string; badge: string | null }>): FeatureCollection<Point, { id: string; badge: string }> {
+  const features: FeatureCollection<Point, { id: string; badge: string }>['features'] = [];
+  for (const f of trails.features) {
+    const badge = f.properties.badge;
+    if (badge == null) continue;
+    const mid = along(f, length(f) / 2);
+    features.push({ type: 'Feature', properties: { id: f.properties.id, badge }, geometry: mid.geometry });
+  }
+  return { type: 'FeatureCollection', features };
 }
 
 const isCar = (p: TrailProperties) => p.mode !== 'walk';

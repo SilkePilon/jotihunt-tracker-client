@@ -4,13 +4,14 @@ import { Layer, Source, useMap, type LineLayerSpecification, type SymbolLayerSpe
 import type { ExpressionSpecification } from 'maplibre-gl';
 import { useTrails } from '@/hooks/trails.hook';
 import { ROUTED_TRAIL_LAYERS, TRAILS_HIT_LAYER } from '@/lib/map-layers';
-import { changedLegIds, legLooks, visibleTrails, type LegLooks } from '@/lib/trails';
+import { badgePoints, changedLegIds, legLooks, visibleTrails, type LegLooks } from '@/lib/trails';
 import { getColorFromArea } from '@/lib/utils';
 import { featureId, useLayerInteractions, usePopupSelection } from '../map-interactions';
 import LegPopup from './LegPopup';
 import { addTrailBadge } from './trail-badges';
 
 const SOURCE = 'marker-trails-routed';
+const BADGE_SOURCE = 'marker-trails-badges';
 const [CASING_LAYER, WALK_LAYER, CAR_LAYER, FALLBACK_LAYER, , BADGE_LAYER] = ROUTED_TRAIL_LAYERS;
 const HIT_LAYERS = [TRAILS_HIT_LAYER];
 
@@ -19,7 +20,6 @@ const NOT_FALLBACK: ExpressionSpecification = ['!', ['get', 'fallback']];
 const WALK_FILTER: ExpressionSpecification = ['all', NOT_FALLBACK, ['==', ['get', 'mode'], 'walk']];
 const CAR_FILTER: ExpressionSpecification = ['all', NOT_FALLBACK, ['!=', ['get', 'mode'], 'walk']];
 const FALLBACK_FILTER: ExpressionSpecification = ['==', ['get', 'fallback'], true];
-const BADGE_FILTER: ExpressionSpecification = ['!=', ['get', 'badge'], null];
 
 // Fade of a leg that is new or flipped (walk/car/fallback): a per-leg feature-state stepped 0 → 1 over FADE_MS.
 // Paint transitions do not run on feature-state changes, so the fade is driven frame by frame.
@@ -35,7 +35,7 @@ const FALLBACK_PAINT: LineLayerSpecification['paint'] = { 'line-color': '#a8a29e
 const BADGE_PAINT: SymbolLayerSpecification['paint'] = { 'icon-opacity': FADE };
 const HIT_PAINT: LineLayerSpecification['paint'] = { 'line-color': '#000000', 'line-width': 16, 'line-opacity': 0 };
 const BADGE_LAYOUT: SymbolLayerSpecification['layout'] = {
-  'symbol-placement': 'line-center',
+  'symbol-placement': 'point',
   'icon-image': ['get', 'badge'],
   'icon-size': 1,
   'icon-allow-overlap': true,
@@ -48,6 +48,7 @@ export default function TrailLayers({ visibleIds }: { visibleIds: Set<string> })
   const map = useMap().current?.getMap();
   const { data, setLegMode } = useTrails();
   const trails = useMemo(() => (data ? visibleTrails(data.trails, visibleIds, getColorFromArea) : undefined), [data, visibleIds]);
+  const badges = useMemo(() => (trails ? badgePoints(trails) : undefined), [trails]);
   const { active, open, close } = usePopupSelection<string>();
   const [anchor, setAnchor] = useState<[number, number]>();
   const reduceMotion = useReducedMotion();
@@ -63,8 +64,10 @@ export default function TrailLayers({ visibleIds }: { visibleIds: Set<string> })
     const ids = changedLegIds(previous, next);
     if (!ids.length) return;
     const setFade = (fade: number) => {
-      if (!map.getSource(SOURCE)) return;
-      for (const id of ids) map.setFeatureState({ source: SOURCE, id }, { fade });
+      for (const source of [SOURCE, BADGE_SOURCE]) {
+        if (!map.getSource(source)) continue;
+        for (const id of ids) map.setFeatureState({ source, id }, { fade });
+      }
     };
     setFade(0);
     const start = performance.now();
@@ -103,7 +106,7 @@ export default function TrailLayers({ visibleIds }: { visibleIds: Set<string> })
 
   // From the current data, so the popup follows a flip (and closes once the leg is gone)
   const activeLeg = active ? trails?.features.find((feature) => feature.properties.id === active.id) : undefined;
-  if (!trails) return null;
+  if (!trails || !badges) return null;
   return (
     <>
       <Source id={SOURCE} type="geojson" data={trails} promoteId="id">
@@ -112,7 +115,9 @@ export default function TrailLayers({ visibleIds }: { visibleIds: Set<string> })
         <Layer id={CAR_LAYER} type="line" filter={CAR_FILTER} layout={LINE_LAYOUT} paint={CAR_PAINT} />
         <Layer id={FALLBACK_LAYER} type="line" filter={FALLBACK_FILTER} layout={LINE_LAYOUT} paint={FALLBACK_PAINT} />
         <Layer id={TRAILS_HIT_LAYER} type="line" layout={LINE_LAYOUT} paint={HIT_PAINT} />
-        <Layer id={BADGE_LAYER} type="symbol" filter={BADGE_FILTER} layout={BADGE_LAYOUT} paint={BADGE_PAINT} />
+      </Source>
+      <Source id={BADGE_SOURCE} type="geojson" data={badges} promoteId="id">
+        <Layer id={BADGE_LAYER} type="symbol" layout={BADGE_LAYOUT} paint={BADGE_PAINT} />
       </Source>
       {activeLeg && anchor && <LegPopup key={active!.opened} leg={activeLeg.properties} longitude={anchor[0]} latitude={anchor[1]} onClose={close} onSetMode={setLegMode} />}
     </>

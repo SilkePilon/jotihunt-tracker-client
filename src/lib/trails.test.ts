@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { AxiosError, AxiosHeaders } from 'axios';
-import { allFallback, badgeImageId, rebuildFailure, changedLegIds, legLooks, flipLabel, flipTarget, formatDuration, formatKm, legRows, legSubtitle, legTitle, parseBadgeImageId, visibleTrails } from './trails';
+import { allFallback, badgePoints, badgeImageId, rebuildFailure, changedLegIds, legLooks, flipLabel, flipTarget, formatDuration, formatKm, legRows, legSubtitle, legTitle, parseBadgeImageId, visibleTrails } from './trails';
 import type { TrailCollection, TrailProperties } from '@/types/Trail';
 
 const base: TrailProperties = {
@@ -97,5 +97,20 @@ describe('rebuildFailure', () => {
     expect(rebuildFailure(axiosError(409))).toBe('busy');
     expect(rebuildFailure(axiosError(503))).toBe('failed');
     expect(rebuildFailure(new Error('network'))).toBe('failed');
+  });
+});
+
+describe('badgePoints', () => {
+  test('one midpoint per badged leg, none for badge-less legs', () => {
+    const line = (id: string, badge: string | null, coordinates: number[][]) => ({ type: 'Feature' as const, properties: { id, badge }, geometry: { type: 'LineString' as const, coordinates } });
+    const out = badgePoints({ type: 'FeatureCollection', features: [
+      line('a:b', 'trail-badge:car:#fff', [[5, 52], [5.2, 52]]),
+      line('b:c', null, [[5, 52], [5.1, 52]]),
+    ] });
+    expect(out.features).toHaveLength(1);
+    expect(out.features[0].properties).toEqual({ id: 'a:b', badge: 'trail-badge:car:#fff' });
+    const [lng, lat] = out.features[0].geometry.coordinates;
+    expect(lng).toBeCloseTo(5.1, 3);
+    expect(lat).toBeCloseTo(52, 3);
   });
 });
