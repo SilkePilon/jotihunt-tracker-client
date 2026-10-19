@@ -6,6 +6,8 @@ import { useAreas } from '@/hooks/areas.hook';
 import { useHintBoard } from '@/hooks/hints.hook';
 import { useHuntableAreas } from '@/hooks/huntable-areas.hook';
 import { useAppConfig } from '@/hooks/app-config.hook';
+import { useTrails } from '@/hooks/trails.hook';
+import { allFallback } from '@/lib/trails';
 import { FOX_MARKERS_LAYER, markerFeatures, trailLines } from '@/lib/map-layers';
 import { filterMarkers, groupMarkersByArea, markerSplitTime } from '@/lib/markers';
 import { areaKey, HINT_LABEL_MS, hintNumbering, themedIconExpression, type MarkerTheme } from '@/lib/marker-style';
@@ -14,6 +16,7 @@ import { HINT_ANCHOR_OFFSET, useMarkerTheme } from './marker-icons';
 import { featureId, useLayerInteractions, usePopupSelection } from './map-interactions';
 import MarkerPopup from './markers/MarkerPopup';
 import MarkerTooltip from './markers/MarkerTooltip';
+import TrailLayers from './trails/TrailLayers';
 
 // Longest timer the browser accepts (about 24.8 days)
 const MAX_TIMEOUT_MS = 2 ** 31 - 1;
@@ -69,6 +72,11 @@ export default function Markers({ part1, part2 }: MarkersProps) {
   const hoveredMarker = hoveredId !== undefined && !activeMarker ? markers?.find((marker) => marker._id === hoveredId) : undefined;
 
   const visibleMarkers = useMemo(() => filterMarkers(markers ?? [], { part1, part2, split, isVisible }), [markers, part1, part2, split, isVisible]);
+  // Routed legs from the server when routes are on; otherwise (until they load, or while the router is not ready and
+  // every leg is a straight fallback) the coloured straight trail per area
+  const { data: routed } = useTrails();
+  const routesOn = routed?.enabled === true && !allFallback(routed.trails);
+  const visibleIds = useMemo(() => new Set(visibleMarkers.flatMap((marker) => (marker._id ? [marker._id] : []))), [visibleMarkers]);
   const trails = useMemo(() => trailLines(groupMarkersByArea(visibleMarkers)), [visibleMarkers]);
   const statusByArea = useMemo(() => new Map((areas ?? []).map((area) => [areaKey(area.name), area.status])), [areas]);
   const statusOf = useCallback((area: string) => statusByArea.get(areaKey(area)), [statusByArea]);
@@ -103,9 +111,13 @@ export default function Markers({ part1, part2 }: MarkersProps) {
 
   return (
     <>
-      <Source id={TRAILS_SOURCE} type="geojson" data={trails}>
-        <Layer id={TRAILS_LAYER} type="line" source={TRAILS_SOURCE} paint={TRAILS_PAINT} />
-      </Source>
+      {routesOn ? (
+        <TrailLayers visibleIds={visibleIds} />
+      ) : (
+        <Source id={TRAILS_SOURCE} type="geojson" data={trails}>
+          <Layer id={TRAILS_LAYER} type="line" source={TRAILS_SOURCE} paint={TRAILS_PAINT} />
+        </Source>
+      )}
       <Source id={FOX_SOURCE} type="geojson" data={features}>
         <Layer id={FOX_MARKERS_LAYER} type="symbol" source={FOX_SOURCE} layout={layout} />
         <Layer id={FOX_HOVER_LAYER} type="symbol" source={FOX_SOURCE} layout={hoverLayout} filter={hoverFilter} />

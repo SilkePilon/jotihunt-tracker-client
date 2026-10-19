@@ -10,6 +10,11 @@ import {
   hunterFeatures,
   huntAccuracyCircles,
   layerStackMoves,
+  MAP_LAYER_STACK,
+  NIGHT_AREA_LAYERS,
+  NIGHT_DRAW_LAYERS,
+  ROUTED_TRAIL_LAYERS,
+  TRAILS_HIT_LAYER,
   markerFeatures,
   predictionAreaCircles,
   PREDICTION_RADIUS_M,
@@ -200,6 +205,41 @@ describe('predictionAreaCircles', () => {
     expect(northM(0)).toBeCloseTo(200, -1);
     expect(northM(1)).toBeCloseTo(400, -1);
     expect(northM(2)).toBeCloseTo(700, -1);
+  });
+});
+
+describe('routed trail layers', () => {
+  test('stack with the straight trail, in draw order, the badge on top and the hit line among them', () => {
+    expect([...ROUTED_TRAIL_LAYERS]).toEqual(['marker-trails-casing', 'marker-trails-walk', 'marker-trails-car', 'marker-trails-fallback', TRAILS_HIT_LAYER]);
+    const group = MAP_LAYER_STACK.find((ids) => ids.includes('marker-trails-line'))!;
+    expect(group.slice(group.indexOf('marker-trails-line'))).toEqual(['marker-trails-line', ...ROUTED_TRAIL_LAYERS]);
+    expect(MAP_LAYER_STACK[MAP_LAYER_STACK.indexOf(group) + 1]).toEqual(['marker-trails-badge']);
+  });
+  test('restacking keeps their order below the markers', () => {
+    const order = ['base', 'fox-markers', 'marker-trails-badge', 'marker-trails-casing', 'marker-trails-walk', 'marker-trails-car', 'marker-trails-fallback', 'marker-trails-hit'];
+    const result = [...order];
+    for (const [id, beforeId] of layerStackMoves(order, MAP_LAYER_STACK)) {
+      result.splice(result.indexOf(id), 1);
+      result.splice(result.indexOf(beforeId), 0, id);
+    }
+    expect(result).toEqual(['base', ...ROUTED_TRAIL_LAYERS, 'marker-trails-badge', 'fox-markers']);
+  });
+});
+
+describe('night area layers', () => {
+  test('one group right above the trails, below the markers', () => {
+    const trails = MAP_LAYER_STACK.findIndex((ids) => ids.includes('marker-trails-badge'));
+    expect(MAP_LAYER_STACK[trails + 1]).toEqual([...NIGHT_AREA_LAYERS, ...NIGHT_DRAW_LAYERS]);
+    expect(MAP_LAYER_STACK.findIndex((ids) => ids.includes('fox-markers'))).toBeGreaterThan(trails + 1);
+  });
+  test('restacking puts them between the trails and the markers', () => {
+    const order = ['base', 'fox-markers', 'night-draw-line', 'night-areas-fill', 'marker-trails-walk'];
+    const result = [...order];
+    for (const [id, beforeId] of layerStackMoves(order, MAP_LAYER_STACK)) {
+      result.splice(result.indexOf(id), 1);
+      result.splice(result.indexOf(beforeId), 0, id);
+    }
+    expect(result).toEqual(['base', 'marker-trails-walk', 'night-draw-line', 'night-areas-fill', 'fox-markers']);
   });
 });
 
