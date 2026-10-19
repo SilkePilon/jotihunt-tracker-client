@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { CheckIcon } from 'lucide-react';
 import { Layer, Marker, Source, useMap, type FillLayerSpecification, type LineLayerSpecification } from 'react-map-gl/maplibre';
+import { useIsMobile } from '@/hooks/media.hook';
 import { useMarkers } from '@/hooks/markers.hook';
 import { useDarkMode } from '@/hooks/utils/darkmode.hook';
 import {
@@ -11,7 +12,10 @@ import {
 import { INTEL_CLOSE_MS } from '@/lib/intel-window';
 import { cn } from '@/lib/utils';
 import useHintGuessStore from '@/stores/hint-guess.store';
+import useSidebarStore from '@/stores/sidebar.store';
 
+/** The map's padding ease after the phone sheet moves (Map.tsx easeTo 300 ms), plus a little slack */
+const SHEET_EASE_MS = 350;
 const AREA_FILTER: FillLayerSpecification['filter'] = ['==', ['get', 'role'], 'area'];
 const REACH_FILTER: LineLayerSpecification['filter'] = ['==', ['get', 'role'], 'reach'];
 
@@ -26,6 +30,7 @@ export default function HintGuess() {
   const { markers } = useMarkers();
   const dark = useDarkMode();
   const map = useMap().current;
+  const isMobile = useIsMobile();
 
   const guess = useMemo(() => (input ? parseGuess(input.x, input.y) : null), [input]);
   const fix = useMemo(() => (input?.area && input.at !== null ? lastFoxFix(markers ?? [], input.area, input.at) : null), [input, markers]);
@@ -38,11 +43,17 @@ export default function HintGuess() {
     if (!map || !guess || !input) return;
     const bounds = guessBounds(guess, fix);
     if (!bounds) return;
+    // Phones: the sheet covers the map, lower it so the candidates can be tapped. The map's own padding then eases to
+    // the peek height (~300 ms, an ease that would cancel our fit) and fitBounds adds its padding on top of it.
+    if (isMobile) useSidebarStore.getState().setSheetSnap('peek');
+    const delay = input.source === 'intel' ? INTEL_CLOSE_MS : isMobile ? SHEET_EASE_MS : 0;
     const timer = setTimeout(() => {
       // Desktop: the sidebar floats over the map's left edge, keep the candidates out from under it
-      const sidebar = window.innerWidth >= 768 ? document.querySelector('aside')?.getBoundingClientRect().right ?? 0 : 0;
-      map.fitBounds(bounds, { padding: { top: 80, right: 80, bottom: 80, left: 80 + sidebar }, maxZoom: 15, duration: 1200 });
-    }, input.source === 'intel' ? INTEL_CLOSE_MS : 0);
+      const padding = isMobile
+        ? { top: 64, right: 32, bottom: 32, left: 32 }
+        : { top: 80, right: 80, bottom: 80, left: 80 + (document.querySelector('aside')?.getBoundingClientRect().right ?? 0) };
+      map.fitBounds(bounds, { padding, maxZoom: 15, duration: 1200 });
+    }, delay);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- refit only when the guess changes, not on every marker poll
   }, [map, fitKey]);
