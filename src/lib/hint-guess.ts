@@ -227,15 +227,17 @@ export function guessBounds(guess: Guess, fix: FoxFix | null): [[number, number]
 export interface GuessStatus {
   tone: 'guess' | 'warn';
   text: string;
+  /** What to do on the map (" · tik …"): the card shows it after the text, Intel (which has its own button) doesn't */
+  action?: string;
 }
 
-/** The line under the input. null: a '?' is typed but not every box is filled yet. */
+/** The line under the input (a null guess: a '?' is typed but not every box is filled yet). */
 export function guessStatus(guess: Guess | null): GuessStatus {
   if (!guess) return { tone: 'guess', text: 'Vul alle vakjes in · ? = onbekend' };
   if (guess.kind === 'area') {
     return guess.wide ? { tone: 'warn', text: 'Te breed — vul meer cijfers in' } : { tone: 'guess', text: 'Gebied op kaart · vul meer cijfers in' };
   }
   if (!guess.points.length) return { tone: 'warn', text: 'Geen mogelijkheden in Nederland' };
-  if (guess.collapsed) return { tone: 'guess', text: 'Onbekend cijfer maakt niet uit · tik de stip' };
-  return { tone: 'guess', text: `${guess.points.length} mogelijk · tik er een op de kaart` };
+  if (guess.collapsed) return { tone: 'guess', text: 'Onbekend cijfer maakt niet uit', action: ' · tik de stip' };
+  return { tone: 'guess', text: `${guess.points.length} mogelijk`, action: ' · tik er een op de kaart' };
 }

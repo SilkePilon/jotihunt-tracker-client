@@ -9,7 +9,7 @@ import {MapRef} from '@/components/Map.tsx';
 import {MarkerType} from '@/types/MarkerType.ts';
 import {Marker} from '@/types/Marker.ts';
 import {areaOptions} from '@/lib/utils.ts';
-import {useEffect, useId, useState} from "react";
+import {useEffect, useId, useRef, useState} from "react";
 import {useHintFormBridge} from "@/hooks/hint-bridge.hook.ts";
 import {useAppConfig} from '@/hooks/app-config.hook';
 import {isInNetherlands} from '@/lib/netherlands';
@@ -21,7 +21,7 @@ import DigitBoxes from './DigitBoxes';
 import CoordinateStatus, {type CoordinateState} from './CoordinateStatus';
 import {buildHintHours, groupByDay, isFreeHour} from './hint-times';
 import {SOFT_PRIMARY_BUTTON} from '@/lib/tonal-button';
-import {guessStatus, hasWildcard, parseGuess} from '@/lib/hint-guess';
+import {type GuessStatus, guessStatus, hasWildcard, parseGuess} from '@/lib/hint-guess';
 import useHintGuessStore from '@/stores/hint-guess.store';
 
 const FormSchema = z.object({
@@ -71,16 +71,43 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
         && isFreeHour(hours, timeValue);
     const coordinateState: CoordinateState = outsideNetherlands ? 'outside' : typedLocation ? 'inside' : 'idle';
     const guess = wildcard && complete ? parseGuess(xValue, yValue) : null;
-    const status = wildcard ? guessStatus(guess) : null;
+    // The typed guess, when it should be on the map ('' otherwise)
+    const guessKey = wildcard && complete ? `${xValue}|${yValue}|${selectedArea}|${timeValue}` : '';
+    // The guess key that was taken off the map from elsewhere (Escape, an Intel guess replacing it) while still typed:
+    // the line then says how to get it back instead of "tik er een op de kaart". Tapping a box shows it again.
+    const [hiddenKey, setHiddenKey] = useState<string | null>(null);
+    const latestKey = useRef('');
+    const offMap = !!guessKey && hiddenKey === guessKey;
+    const status: GuessStatus | null = !wildcard
+        ? null
+        : offMap
+            ? {tone: 'guess', text: 'Tik op een vakje om de kandidaten weer te tonen'}
+            : guessStatus(guess);
+
+    /** Put the typed guess on the map (an equal one already there stays as it is) */
+    function showCardGuess() {
+        if (!wildcard || !complete) return;
+        useHintGuessStore.getState().show({
+            source: 'card', x: xValue, y: yValue, area: selectedArea || null,
+            at: (timeValue ? Date.parse(timeValue) : NaN) || null, articleId: null, format: 'split',
+        });
+    }
+
+    // Declared before the show effect: the store listener reads the key of this render
+    useEffect(() => {
+        latestKey.current = guessKey;
+    });
+    useEffect(() => useHintGuessStore.subscribe((state, prev) => {
+        if (state.input?.source === 'card') setHiddenKey(null);
+        // The card's own clear (boxes no longer complete) runs after latestKey went '' and doesn't count
+        else if (prev.input?.source === 'card' && latestKey.current) setHiddenKey(latestKey.current);
+    }), []);
 
     // Show (or take away) the candidates on the map as the boxes change; picking one fills the boxes via the bridge
     useEffect(() => {
-        const {show, clear: clearGuess} = useHintGuessStore.getState();
-        if (wildcard && complete) {
-            show({source: 'card', x: xValue, y: yValue, area: selectedArea || null, at: timeValue ? Date.parse(timeValue) : null, articleId: null, format: 'split'});
-        } else {
-            clearGuess('card');
-        }
+        if (wildcard && complete) showCardGuess();
+        else useHintGuessStore.getState().clear('card');
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- showCardGuess reads exactly these values
     }, [wildcard, complete, xValue, yValue, selectedArea, timeValue]);
     useEffect(() => () => useHintGuessStore.getState().clear('card'), []);
 
@@ -205,8 +232,11 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
                         )}
                     />
                 </div>
-                {coordinateField('x', 'X', () => document.getElementById(`${fieldId}-y`)?.focus())}
-                {coordinateField('y', 'Y', () => setTimeout(() => document.getElementById(submitId)?.focus()))}
+                {/* Tapping a box brings a guess that was taken off the map back */}
+                <div className="contents" onFocus={showCardGuess} onPointerDown={showCardGuess}>
+                    {coordinateField('x', 'X', () => document.getElementById(`${fieldId}-y`)?.focus())}
+                    {coordinateField('y', 'Y', () => setTimeout(() => document.getElementById(submitId)?.focus()))}
+                </div>
                 <div className="mt-0.5 flex items-center justify-between gap-2">
                     <CoordinateStatus state={coordinateState} guess={status}/>
                     <button type="button" onClick={clearCoordinates}

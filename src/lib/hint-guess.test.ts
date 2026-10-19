@@ -160,9 +160,12 @@ describe('shapes, bounds and status', () => {
     expect(guessBounds(parseGuess('1??000', '463000')!, null)).toBeNull();
   });
   test('guessStatus texts', () => {
-    expect(guessStatus(parseGuess('15?000', '463000')).text).toBe('10 mogelijk · tik er een op de kaart');
-    expect(guessStatus(parseGuess('15500?', '463000')).text).toBe('Onbekend cijfer maakt niet uit · tik de stip');
-    expect(guessStatus(parseGuess('15??00', '463000')).text).toBe('Gebied op kaart · vul meer cijfers in');
+    const card = (status: ReturnType<typeof guessStatus>) => status.text + (status.action ?? '');
+    expect(guessStatus(parseGuess('15?000', '463000'))).toEqual({ tone: 'guess', text: '10 mogelijk', action: ' · tik er een op de kaart' });
+    expect(card(guessStatus(parseGuess('15?000', '463000')))).toBe('10 mogelijk · tik er een op de kaart');
+    expect(guessStatus(parseGuess('15500?', '463000'))).toEqual({ tone: 'guess', text: 'Onbekend cijfer maakt niet uit', action: ' · tik de stip' });
+    expect(card(guessStatus(parseGuess('15500?', '463000')))).toBe('Onbekend cijfer maakt niet uit · tik de stip');
+    expect(guessStatus(parseGuess('15??00', '463000'))).toEqual({ tone: 'guess', text: 'Gebied op kaart · vul meer cijfers in' });
     expect(guessStatus(parseGuess('1??000', '463000'))).toEqual({ tone: 'warn', text: 'Te breed — vul meer cijfers in' });
     expect(guessStatus({ kind: 'points', points: [], collapsed: false })).toEqual({ tone: 'warn', text: 'Geen mogelijkheden in Nederland' });
     expect(guessStatus(null).text).toBe('Vul alle vakjes in · ? = onbekend');

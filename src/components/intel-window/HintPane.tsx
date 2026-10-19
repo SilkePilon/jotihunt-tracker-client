@@ -293,6 +293,21 @@ function AreaBody({ cell, label, onSave, onClear, mapRef }: { cell: HintCell; la
   const guess = guessAnswer ? parseGuess(guessAnswer.x, guessAnswer.y) : null;
   const canShowGuess = !!guess && (guess.kind === 'points' ? guess.points.length > 0 : !guess.wide);
 
+  // This row's guess on the map goes away once the field stops holding a guess or the row folds/unmounts. Only while
+  // the Intel window is open: "Toon op kaart" closes the window, which unmounts every row, and that guess must stay
+  // (the window is already closed by then). Only a field that held a guess clears: a row opening fresh (e.g. reopening
+  // Intel while the guess is on the map) leaves it alone.
+  const holdsGuess = !!guessAnswer;
+  const { articleId, area } = cell;
+  useEffect(() => {
+    if (!holdsGuess) return;
+    // Runs when the field stops holding a guess, and on unmount while it holds one
+    return () => {
+      const { input, clear: clearGuess } = useHintGuessStore.getState();
+      if (useIntelStore.getState().open && input?.source === 'intel' && input.articleId === articleId && input.area === area) clearGuess('intel');
+    };
+  }, [holdsGuess, articleId, area]);
+
   function showGuess() {
     if (!guessAnswer) return;
     useHintGuessStore.getState().show({
@@ -444,16 +459,21 @@ function GuessLine({ status, onShow }: { status: GuessStatus; onShow?: () => voi
   return (
     <span className={cn('flex flex-wrap items-center gap-2', status.tone === 'warn' ? 'text-amber-600 dark:text-amber-300' : 'text-on-guess-container')}>
       <AnimatePresence mode="wait" initial={false}>
+        {/* No status.action: the map instruction is for the card, here the button shows the candidates */}
         <motion.span key={status.text} {...SWAP}>
           {status.tone === 'warn' ? '⚠ ' : ''}
-          {status.text.replace(' · tik er een op de kaart', '').replace(' · tik de stip', '')}
+          {status.text}
         </motion.span>
       </AnimatePresence>
-      {onShow && (
-        <Pill onClick={onShow}>
-          <MapIcon /> Toon op kaart
-        </Pill>
-      )}
+      <AnimatePresence initial={false}>
+        {onShow && (
+          <motion.span key="show" {...SWAP}>
+            <Pill onClick={onShow}>
+              <MapIcon /> Toon op kaart
+            </Pill>
+          </motion.span>
+        )}
+      </AnimatePresence>
     </span>
   );
 }

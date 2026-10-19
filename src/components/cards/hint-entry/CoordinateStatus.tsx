@@ -14,10 +14,12 @@ const STATES = {
 
 /** Live check under the digit boxes: typing hint, inside the Netherlands, outside, or (with a '?') the guess line. */
 export default function CoordinateStatus({ state, guess }: { state: CoordinateState; guess?: GuessStatus | null }) {
+  // The card shows the map instruction too (" · tik er een op de kaart")
+  const guessText = guess ? guess.text + (guess.action ?? '') : '';
   const view = guess
     ? guess.tone === 'warn'
-      ? { Icon: TriangleAlertIcon, text: guess.text, className: 'text-fox-error' }
-      : { Icon: CircleHelpIcon, text: guess.text, className: 'text-on-guess-container' }
+      ? { Icon: TriangleAlertIcon, text: guessText, className: 'text-fox-error' }
+      : { Icon: CircleHelpIcon, text: guessText, className: 'text-on-guess-container' }
     : STATES[state];
   const { Icon, text, className } = view;
   return (
