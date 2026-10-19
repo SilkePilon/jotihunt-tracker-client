@@ -1,5 +1,6 @@
 import { useContext, type Ref } from 'react';
-import { OTPInput, OTPInputContext, REGEXP_ONLY_DIGITS } from 'input-otp';
+import { OTPInput, OTPInputContext } from 'input-otp';
+import { sanitizeDigits } from '@/lib/hint-guess';
 import { cn } from '@/lib/utils';
 
 interface DigitBoxesProps {
@@ -10,7 +11,7 @@ interface DigitBoxesProps {
   value: string;
   onChange: (value: string) => void;
   onBlur: () => void;
-  /** All 6 digits entered: move focus on */
+  /** All 6 boxes filled (digits or '?'): move focus on */
   onComplete: () => void;
   /** Outside the Netherlands or rejected: filled boxes turn red */
   bad: boolean;
@@ -18,19 +19,23 @@ interface DigitBoxesProps {
   disabled?: boolean;
 }
 
-/** One RD coordinate: axis label and 6 digit boxes (input-otp keeps paste, the numeric keyboard and focus handling). */
-export default function DigitBoxes({ id, label, bad, ...field }: DigitBoxesProps) {
+/**
+ * One RD coordinate: axis label and 6 digit boxes (input-otp keeps paste, the keyboard and focus handling). A box also
+ * takes '?' for an unknown digit; '.', ',', '*', '-' and space become '?' too (a phone's number pad has no '?').
+ */
+export default function DigitBoxes({ id, label, bad, onChange, ...field }: DigitBoxesProps) {
   return (
     <div className="grid grid-cols-[16px_1fr] items-center gap-1">
       <label htmlFor={id} className="text-xs font-bold text-muted-foreground">{label}</label>
       <OTPInput
         id={id}
         autoComplete="off"
-        inputMode="numeric"
+        // decimal: the number pad with a '.' or ',' key for unknown digits
+        inputMode="decimal"
         maxLength={6}
-        pattern={REGEXP_ONLY_DIGITS}
         aria-invalid={bad || undefined}
         containerClassName="grid grid-cols-6 gap-1"
+        onChange={(value) => onChange(sanitizeDigits(value))}
         {...field}
       >
         {[0, 1, 2, 3, 4, 5].map((index) => <DigitSlot key={index} index={index} bad={bad} />)}
@@ -39,14 +44,20 @@ export default function DigitBoxes({ id, label, bad, ...field }: DigitBoxesProps
   );
 }
 
-/** Card-coloured box; the box being typed in gets a primary ring, filled boxes an orange (or red) tonal fill. */
+/** Card-coloured box; the box being typed in gets a primary ring, filled boxes an orange (or red) tonal fill, an unknown digit a dashed purple one. */
 function DigitSlot({ index, bad }: { index: number; bad: boolean }) {
   const { char, hasFakeCaret, isActive } = useContext(OTPInputContext).slots[index];
   return (
     <div
       className={cn(
         'relative flex h-9 items-center justify-center rounded-lg text-lg font-semibold tabular-nums transition-[background-color,color,box-shadow] duration-150',
-        !char ? 'bg-card' : bad ? 'bg-fox-error-container text-fox-on-error' : 'bg-primary-container text-on-primary-container',
+        !char
+          ? 'bg-card'
+          : char === '?'
+            ? 'bg-guess-container text-on-guess-container [outline:1.5px_dashed_var(--guess)] [outline-offset:-1.5px]'
+            : bad
+              ? 'bg-fox-error-container text-fox-on-error'
+              : 'bg-primary-container text-on-primary-container',
         isActive && 'shadow-[inset_0_0_0_2px_var(--primary)]',
       )}
     >

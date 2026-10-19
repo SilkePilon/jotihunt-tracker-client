@@ -21,6 +21,8 @@ import DigitBoxes from './DigitBoxes';
 import CoordinateStatus, {type CoordinateState} from './CoordinateStatus';
 import {buildHintHours, groupByDay, isFreeHour} from './hint-times';
 import {SOFT_PRIMARY_BUTTON} from '@/lib/tonal-button';
+import {guessStatus, hasWildcard, parseGuess} from '@/lib/hint-guess';
+import useHintGuessStore from '@/stores/hint-guess.store';
 
 const FormSchema = z.object({
     area: z.enum([...areaOptions.map((option) => option.value)] as [string, ...string[]]),
@@ -53,8 +55,11 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
     const selectedArea = useWatch({control: form.control, name: 'area'});
     const [timeValue, xValue, yValue] = useWatch({control: form.control, name: ['time', 'x', 'y']});
 
+    // A '?' in a box is an unknown digit: the candidates go on the map (lib/hint-guess.ts) and Registreren waits
+    const wildcard = hasWildcard(xValue ?? '', yValue ?? '');
+    const complete = xValue?.length === 6 && yValue?.length === 6;
     // Live check once both coordinates are complete: hints are always in the Netherlands
-    const typedLocation = xValue?.length === 6 && yValue?.length === 6 ? fromRD(Number(xValue), Number(yValue)) : undefined;
+    const typedLocation = complete && !wildcard ? fromRD(Number(xValue), Number(yValue)) : undefined;
     const outsideNetherlands = !!typedLocation && !isInNetherlands(typedLocation[0], typedLocation[1]);
     // Hours for the chosen area; hours that already have a hint are kept but marked taken
     const hours = hintHours(selectedArea);
@@ -62,9 +67,22 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
 
     // setValue without validation doesn't update formState.isValid in onSubmit mode, so derive from values.
     // The chosen hour is rechecked: a teammate can register it while this form is open.
-    const canSubmit = !!selectedArea && !!timeValue && xValue?.length === 6 && yValue?.length === 6 && !outsideNetherlands
+    const canSubmit = !!selectedArea && !!timeValue && complete && !wildcard && !outsideNetherlands
         && isFreeHour(hours, timeValue);
     const coordinateState: CoordinateState = outsideNetherlands ? 'outside' : typedLocation ? 'inside' : 'idle';
+    const guess = wildcard && complete ? parseGuess(xValue, yValue) : null;
+    const status = wildcard ? guessStatus(guess) : null;
+
+    // Show (or take away) the candidates on the map as the boxes change; picking one fills the boxes via the bridge
+    useEffect(() => {
+        const {show, clear: clearGuess} = useHintGuessStore.getState();
+        if (wildcard && complete) {
+            show({source: 'card', x: xValue, y: yValue, area: selectedArea || null, at: timeValue ? Date.parse(timeValue) : null, articleId: null, format: 'split'});
+        } else {
+            clearGuess('card');
+        }
+    }, [wildcard, complete, xValue, yValue, selectedArea, timeValue]);
+    useEffect(() => () => useHintGuessStore.getState().clear('card'), []);
 
     // Handle hint bridge
     useEffect(() => {
@@ -140,6 +158,7 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
         form.setValue('x', '');
         form.setValue('y', '');
         form.clearErrors(['x', 'y']);
+        useHintGuessStore.getState().clear('card');
         document.getElementById(`${fieldId}-x`)?.focus();
     }
 
@@ -189,7 +208,7 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
                 {coordinateField('x', 'X', () => document.getElementById(`${fieldId}-y`)?.focus())}
                 {coordinateField('y', 'Y', () => setTimeout(() => document.getElementById(submitId)?.focus()))}
                 <div className="mt-0.5 flex items-center justify-between gap-2">
-                    <CoordinateStatus state={coordinateState}/>
+                    <CoordinateStatus state={coordinateState} guess={status}/>
                     <button type="button" onClick={clearCoordinates}
                             className="inline-flex items-center gap-1.5 rounded-lg px-1 text-[11px] font-semibold text-primary outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50">
                         <EraserIcon aria-hidden className="size-3"/> Wissen
