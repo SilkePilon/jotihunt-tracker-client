@@ -8,6 +8,10 @@ export interface SegmentOption<T extends string> {
   value: T;
   label: string;
   icon?: ReactNode;
+  /** Background of the selected segment instead of the card colour (night area kinds: red / green tonal) */
+  selectedClassName?: string;
+  /** Text colour of the selected segment instead of the foreground */
+  selectedTextClassName?: string;
 }
 
 interface SegmentedProps<T extends string> {
@@ -41,10 +45,10 @@ export default function Segmented<T extends string>({ value, options, onChange, 
             value={option.value}
             className={cn(
               'relative inline-flex h-[30px] items-center rounded-[9px] px-3 text-[12.5px] font-semibold outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-50 [&_svg]:size-3.5 [&_svg]:shrink-0',
-              selected ? 'text-foreground' : 'text-muted-foreground hover:text-foreground',
+              selected ? (option.selectedTextClassName ?? 'text-foreground') : 'text-muted-foreground hover:text-foreground',
             )}
           >
-            {selected && <motion.span layoutId={`${id}-selected`} aria-hidden className="absolute inset-0 rounded-[9px] bg-card shadow-[0_1px_3px_rgb(0_0_0/0.25)]" transition={POP_SPRING} />}
+            {selected && <motion.span layoutId={`${id}-selected`} aria-hidden className={cn('absolute inset-0 rounded-[9px] transition-colors', option.selectedClassName ?? 'bg-card shadow-[0_1px_3px_rgb(0_0_0/0.25)]')} transition={POP_SPRING} />}
             <span className="relative inline-flex items-center gap-1.5">
               {option.icon}
               {option.label}

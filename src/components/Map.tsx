@@ -45,7 +45,7 @@ import '@mapbox-controls/ruler/src/index.css';
 import Ruler from "@/components/map/RulerControl.tsx";
 import type {SymbolLayerSpecification} from '@maplibre/maplibre-gl-style-spec';
 import {DEFAULT_VIEW} from '@/lib/map-view';
-import {FASTFOOD_LAYER, FOX_MARKERS_LAYER, HUNTER_ARROWS_LAYER, HUNTERS_LAYER, LIFE360_LAYER, TEAM_PINS_LAYER} from '@/lib/map-layers';
+import {FASTFOOD_LAYER, FOX_MARKERS_LAYER, HUNTER_ARROWS_LAYER, HUNTERS_LAYER, LIFE360_LAYER, TEAM_PINS_LAYER, TRAILS_HIT_LAYER} from '@/lib/map-layers';
 import LayerStack from './layers/LayerStack';
 import MarkerImages from './layers/MarkerImages';
 import {markerCssVars, useMarkerPalette} from './layers/marker-icons';
@@ -53,6 +53,12 @@ import {vehicleGlyph} from '@/lib/marker-style';
 import {useTrackerStatus} from '@/hooks/tracker.hook';
 import {useAppConfig} from '@/hooks/app-config.hook';
 import {tourTarget} from '@/components/tour/targets';
+import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
+import {AnimatePresence} from 'motion/react';
+import type {User} from '@/types/User';
+import {useNightDraw} from '@/stores/night-draw.store';
+import NightAreaDraw from './layers/trails/NightAreaDraw';
+import NightAreasLayer from './layers/trails/NightAreasLayer';
 
 // MapLibre resolves its worker relative to its own module, which bundlers don't emit;
 // let Vite bundle the worker and hand MapLibre the resulting URL. Here, not in main.tsx, so the
@@ -105,7 +111,7 @@ const RULER_LABEL_LAYOUT: SymbolLayerSpecification['layout'] = {
 const RULER_LABEL_PAINT = {'text-color': '#fff', 'text-halo-color': RULER_COLOR, 'text-halo-width': 3.5};
 
 // Clicks on these canvas layers open their own popup instead of the location popup
-const INTERACTIVE_LAYER_IDS = [FOX_MARKERS_LAYER, TEAM_PINS_LAYER, HUNTERS_LAYER, HUNTER_ARROWS_LAYER, LIFE360_LAYER, FASTFOOD_LAYER];
+const INTERACTIVE_LAYER_IDS = [FOX_MARKERS_LAYER, TEAM_PINS_LAYER, HUNTERS_LAYER, HUNTER_ARROWS_LAYER, LIFE360_LAYER, FASTFOOD_LAYER, TRAILS_HIT_LAYER];
 
 /** Bottom map padding for the phone sheet's current snap (undefined on desktop, the HQ wall, or before the sheet measured) */
 function phonePaddingFor(wall: boolean): number | undefined {
@@ -117,6 +123,9 @@ function phonePaddingFor(wall: boolean): number | undefined {
 const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay}, ref) => {
 
     const {groupName} = useAppConfig();
+    // Admins draw their own night areas on the map (Beheer → Routes); never on the HQ wall
+    const isAdmin = !!useAuthUser<User>()?.admin && !wall;
+    const drawing = useNightDraw((state) => state.active) && isAdmin;
 
     // Make map fly available to other components
     const mapRef = useRef<MaplibreRef>(null);
@@ -135,7 +144,8 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
             return true;
         },
         markPoint: (lngLat: LngLat) => {
-            if (mapRef.current) {
+            // No location popup while a night area is being drawn
+            if (mapRef.current && !drawing) {
                 setPopupPosition(lngLat);
             }
         },
@@ -170,6 +180,10 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
     // Stable, so the ruler doesn't re-subscribe its map events on every render
     const activateRuler = useCallback(() => setRulerActive(true), []);
     const deactivateRuler = useCallback(() => setRulerActive(false), []);
+    // Drawing a night area takes over map clicks: close the location popup (the ruler is switched off below)
+    useEffect(() => {
+        if (drawing) setPopupPosition(undefined);
+    }, [drawing]);
 
     // Store for settings
     const mapStyle = useSettingsStore((state) => state.mapStyle);
@@ -230,7 +244,7 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
      * Open the current location popup when the map is clicked.
      */
     function openPopup(e: MapLayerMouseEvent) {
-        if (popupPosition || rulerActive || e.features?.length) return;
+        if (popupPosition || rulerActive || drawing || e.features?.length) return;
 
         setPopupPosition(e.lngLat);
     }
@@ -271,7 +285,7 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
                         <Ruler linePaint={RULER_LINE_PAINT} markerPaint={RULER_MARKER_PAINT}
                                labelLayout={RULER_LABEL_LAYOUT} labelPaint={RULER_LABEL_PAINT}
                                position="bottom-right" onActivate={activateRuler}
-                               onDeactivate={deactivateRuler}/>
+                               onDeactivate={deactivateRuler} disabled={drawing}/>
                         <FullscreenControl position="bottom-right"/>
                         <GeolocateControl position="bottom-right"/>
                         <NavigationControl position="bottom-right" showCompass={false}/>
@@ -295,6 +309,8 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
                 <HomeCircle showCircle={showHomeCircle}/>
                 {!wall && <HuntFocus/>}
                 {!wall && <HintGuess/>}
+                {isAdmin && <NightAreasLayer/>}
+                <AnimatePresence>{drawing && <NightAreaDraw key="draw"/>}</AnimatePresence>
                 <LayerStack/>
                 {overlay}
             </Maplibre>

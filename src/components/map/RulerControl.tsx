@@ -15,6 +15,8 @@ type RulerProps = {
     markerPaint?: CircleLayerSpecification['paint'];
     labelLayout?: SymbolLayerSpecification['layout'];
     labelPaint?: SymbolLayerSpecification['paint'];
+    /** Keep the ruler off (e.g. while drawing a night area): switches it off now and whenever it is switched on */
+    disabled?: boolean;
 };
 
 // @mapbox-controls/ruler emits custom, non-standard event names ('ruler.on',
@@ -24,10 +26,10 @@ type CustomEventMap = {
     off(type: string, listener: () => void): unknown;
 };
 
-export default function Ruler({position = 'bottom-right', onActivate, onDeactivate, ...options}: RulerProps) {
+export default function Ruler({position = 'bottom-right', onActivate, onDeactivate, disabled = false, ...options}: RulerProps) {
     // Add the control
     // The package is typed against mapbox-gl's style spec; the MapLibre one is the same for these layers
-    useControl(() => withMaplibreClasses(new RulerControl(options as ConstructorParameters<typeof RulerControl>[0])), {position});
+    const control = useControl(() => withMaplibreClasses(new RulerControl(options as ConstructorParameters<typeof RulerControl>[0])), {position});
 
     // Wire map events
     const {current: mapRef} = useMap();
@@ -43,6 +45,25 @@ export default function Ruler({position = 'bottom-right', onActivate, onDeactiva
             if (onDeactivate) map.off('ruler.off', onDeactivate);
         };
     }, [mapRef, onActivate, onDeactivate]);
+
+    useEffect(() => {
+        const map = mapRef?.getMap() as unknown as CustomEventMap | undefined;
+        if (!disabled || !map) return;
+        const off = () => {
+            if (control.isActive) control.deactivate();
+        };
+        off();
+        // After activate() has finished (it fires 'ruler.on' halfway through)
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        const onOn = () => {
+            timer = setTimeout(off, 0);
+        };
+        map.on('ruler.on', onOn);
+        return () => {
+            map.off('ruler.on', onOn);
+            clearTimeout(timer);
+        };
+    }, [mapRef, control, disabled]);
 
     return null;
 }

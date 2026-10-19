@@ -13,6 +13,7 @@ import { BUILDINGS_LAYER } from '@/lib/buildings';
 import { HINT_GUESS_AREA_FILL_LAYER, HINT_GUESS_AREA_LINE_LAYER, HINT_GUESS_REACH_LAYER } from '@/lib/hint-guess';
 import { fastfoodStatus, type Brand } from '@/lib/fastfood';
 import type { FastfoodRestaurant } from '@/types/Fastfood';
+import type { NightAreaKind } from '@/types/Trail';
 
 export type { HunterIcon } from '@/lib/marker-style';
 
@@ -29,6 +30,20 @@ export const FASTFOOD_HOVER_LAYER = 'fastfood-hover';
 export const HUNTERS_LAYER = 'hunters';
 /** Heading arrows next to moving hunters (clicking one is clicking the hunter, like the former HTML marker). */
 export const HUNTER_ARROWS_LAYER = 'hunter-arrows';
+/** Invisible wide line over the routed trail legs; clicks open the leg popup. */
+export const TRAILS_HIT_LAYER = 'marker-trails-hit';
+/** Routed trail layers (style A), bottom to top: white casing, walk (solid), car (dotted), straight fallback, hit. */
+export const ROUTED_TRAIL_LAYERS = ['marker-trails-casing', 'marker-trails-walk', 'marker-trails-car', 'marker-trails-fallback', TRAILS_HIT_LAYER] as const;
+/** The car badge, on its own source: its own stack group keeps it above all the trail lines. */
+export const TRAIL_BADGE_LAYER = 'marker-trails-badge';
+/** Own night areas (Beheer → Routes): fill, outline, name label; shown while the Routes card is open or while drawing. */
+export const NIGHT_AREA_LAYERS = ['night-areas-fill', 'night-areas-line', 'night-areas-label'] as const;
+/** The area being drawn: fill, dashed outline, corner dots. */
+export const NIGHT_DRAW_LAYERS = ['night-draw-fill', 'night-draw-line', 'night-draw-vertices'] as const;
+/** Night area fill per kind: red for closed at night, green for open (saved areas and the one being drawn) */
+export const NIGHT_FILL: Record<NightAreaKind, string> = { closed: 'rgba(186,26,26,0.18)', open: 'rgba(27,109,47,0.18)' };
+export const NIGHT_LINE: Record<NightAreaKind, string> = { closed: '#ba1a1a', open: '#1b6d2f' };
+
 /** Symbol layer with the AI prediction pins (not clickable). */
 export const PREDICTION_PINS_LAYER = 'prediction-pins';
 /** Symbol layer with the Life360 members (avatar cookies); clicks open the member popup. */
@@ -63,7 +78,12 @@ export function huntAccuracyCircles(hunts: SyncedHunt[] | undefined): FeatureCol
 export const MAP_LAYER_STACK: string[][] = [
   // 3D buildings under every app layer (below the style labels through beforeId; on raster styles this keeps them under the markers)
   [BUILDINGS_LAYER],
-  ['device-accuracy-fill', LIFE360_ACCURACY_LAYER, HUNT_ACCURACY_FILL_LAYER, HUNT_ACCURACY_LINE_LAYER, HUNT_ACCURACY_ESTIMATE_LINE_LAYER, 'prediction-areas-fill', 'prediction-areas-line', 'prediction-pin-lines', 'circle-layer-home', 'team-circles-fill', 'marker-trails-line', HINT_GUESS_REACH_LAYER, HINT_GUESS_AREA_FILL_LAYER, HINT_GUESS_AREA_LINE_LAYER],
+  ['device-accuracy-fill', LIFE360_ACCURACY_LAYER, HUNT_ACCURACY_FILL_LAYER, HUNT_ACCURACY_LINE_LAYER, HUNT_ACCURACY_ESTIMATE_LINE_LAYER, 'prediction-areas-fill', 'prediction-areas-line', 'prediction-pin-lines', 'circle-layer-home', 'team-circles-fill', 'marker-trails-line', ...ROUTED_TRAIL_LAYERS],
+  [TRAIL_BADGE_LAYER],
+  // Above the trails, below the markers: the night areas, the one being drawn on top
+  [...NIGHT_AREA_LAYERS, ...NIGHT_DRAW_LAYERS],
+  // A partly solved hint's reach circle and candidate area (lib/hint-guess.ts); the candidate dots are HTML markers
+  [HINT_GUESS_REACH_LAYER, HINT_GUESS_AREA_FILL_LAYER, HINT_GUESS_AREA_LINE_LAYER],
   [FASTFOOD_LAYER],
   [FASTFOOD_HOVER_LAYER],
   [TEAM_PINS_LAYER],
