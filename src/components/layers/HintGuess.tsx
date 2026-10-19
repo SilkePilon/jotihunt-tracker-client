@@ -1,13 +1,14 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
+import type { Feature, FeatureCollection, Polygon } from 'geojson';
 import { CheckIcon } from 'lucide-react';
 import { Layer, Marker, Source, useMap, type FillLayerSpecification, type LineLayerSpecification } from 'react-map-gl/maplibre';
 import { useIsMobile } from '@/hooks/media.hook';
 import { useMarkers } from '@/hooks/markers.hook';
 import { useDarkMode } from '@/hooks/utils/darkmode.hook';
 import {
-  guessBounds, guessShapes, HINT_GUESS_AREA_FILL_LAYER, HINT_GUESS_AREA_LINE_LAYER, HINT_GUESS_REACH_LAYER, HINT_GUESS_SOURCE,
-  lastFoxFix, parseGuess, rankGuess,
+  guessBounds, guessShapes, type GuessShapeProps, HINT_GUESS_AREA_FILL_LAYER, HINT_GUESS_AREA_LINE_LAYER, HINT_GUESS_REACH_LAYER,
+  HINT_GUESS_SOURCE, lastFoxFix, parseGuess, rankGuess,
 } from '@/lib/hint-guess';
 import { INTEL_CLOSE_MS } from '@/lib/intel-window';
 import { cn } from '@/lib/utils';
@@ -18,6 +19,26 @@ import useSidebarStore from '@/stores/sidebar.store';
 const SHEET_EASE_MS = 350;
 const AREA_FILTER: FillLayerSpecification['filter'] = ['==', ['get', 'role'], 'area'];
 const REACH_FILTER: LineLayerSpecification['filter'] = ['==', ['get', 'role'], 'reach'];
+/** Fade of the rectangle and the reach circle (paint *-opacity-transition) */
+const SHAPE_FADE_MS = 200;
+const SHAPE_FADE = { duration: SHAPE_FADE_MS, delay: 0 };
+
+type Shape = Feature<Polygon, GuessShapeProps>;
+
+/**
+ * A shape that fades: while it is gone, the last one stays as data (at opacity 0) for the fade-out, then is dropped.
+ * @returns the shape to draw (current or fading out) and whether it should be visible
+ */
+function useFadingShape(shape: Shape | null): { data: Shape | null; visible: boolean } {
+  const [kept, setKept] = useState(shape);
+  if (shape && shape !== kept) setKept(shape);
+  useEffect(() => {
+    if (shape) return;
+    const timer = setTimeout(() => setKept(null), SHAPE_FADE_MS);
+    return () => clearTimeout(timer);
+  }, [shape]);
+  return { data: shape ?? kept, visible: !!shape };
+}
 
 /**
  * The partly solved hint being typed (hint card or Intel row): numbered candidate dots (tap = fill in that digit), or
@@ -36,6 +57,12 @@ export default function HintGuess() {
   const fix = useMemo(() => (input?.area && input.at !== null ? lastFoxFix(markers ?? [], input.area, input.at) : null), [input, markers]);
   const rank = useMemo(() => (guess ? rankGuess(guess, fix, input?.at ?? null) : null), [guess, fix, input]);
   const shapes = useMemo(() => guessShapes(guess, rank), [guess, rank]);
+  const area = useFadingShape(shapes.features.find((feature) => feature.properties.role === 'area') ?? null);
+  const reach = useFadingShape(shapes.features.find((feature) => feature.properties.role === 'reach') ?? null);
+  const data = useMemo<FeatureCollection<Polygon, GuessShapeProps>>(
+    () => ({ type: 'FeatureCollection', features: [area.data, reach.data].filter((feature) => feature !== null) }),
+    [area.data, reach.data],
+  );
 
   // Fly to the candidates when the guess itself changes (from Intel: once the window has closed)
   const fitKey = input ? `${input.source}|${input.x}|${input.y}|${input.area}` : '';
@@ -46,7 +73,9 @@ export default function HintGuess() {
     // Phones: the sheet covers the map, lower it so the candidates can be tapped. The map's own padding then eases to
     // the peek height (~300 ms, an ease that would cancel our fit) and fitBounds adds its padding on top of it.
     if (isMobile) useSidebarStore.getState().setSheetSnap('peek');
-    const delay = input.source === 'intel' ? INTEL_CLOSE_MS : isMobile ? SHEET_EASE_MS : 0;
+    // From Intel: after the window has closed; phones: after the sheet's padding ease, whichever is later
+    const intel = input.source === 'intel';
+    const delay = isMobile ? Math.max(SHEET_EASE_MS, intel ? INTEL_CLOSE_MS : 0) : intel ? INTEL_CLOSE_MS : 0;
     const timer = setTimeout(() => {
       // Desktop: the sidebar floats over the map's left edge, keep the candidates out from under it
       const padding = isMobile
@@ -79,10 +108,13 @@ export default function HintGuess() {
 
   return (
     <>
-      <Source id={HINT_GUESS_SOURCE} type="geojson" data={shapes}>
-        <Layer id={HINT_GUESS_REACH_LAYER} type="line" filter={REACH_FILTER} paint={{ 'line-color': red, 'line-width': 2, 'line-dasharray': [2, 2] }} />
-        <Layer id={HINT_GUESS_AREA_FILL_LAYER} type="fill" filter={AREA_FILTER} paint={{ 'fill-color': purple, 'fill-opacity': 0.15 }} />
-        <Layer id={HINT_GUESS_AREA_LINE_LAYER} type="line" filter={AREA_FILTER} paint={{ 'line-color': purple, 'line-width': 2, 'line-dasharray': [3, 2] }} />
+      <Source id={HINT_GUESS_SOURCE} type="geojson" data={data}>
+        <Layer id={HINT_GUESS_REACH_LAYER} type="line" filter={REACH_FILTER}
+               paint={{ 'line-color': red, 'line-width': 2, 'line-dasharray': [2, 2], 'line-opacity': reach.visible ? 1 : 0, 'line-opacity-transition': SHAPE_FADE }} />
+        <Layer id={HINT_GUESS_AREA_FILL_LAYER} type="fill" filter={AREA_FILTER}
+               paint={{ 'fill-color': purple, 'fill-opacity': area.visible ? 0.15 : 0, 'fill-opacity-transition': SHAPE_FADE }} />
+        <Layer id={HINT_GUESS_AREA_LINE_LAYER} type="line" filter={AREA_FILTER}
+               paint={{ 'line-color': purple, 'line-width': 2, 'line-dasharray': [3, 2], 'line-opacity': area.visible ? 1 : 0, 'line-opacity-transition': SHAPE_FADE }} />
       </Source>
       <AnimatePresence>
         {points.map((point, index) => {
@@ -98,13 +130,13 @@ export default function HintGuess() {
                 aria-label={guess?.kind === 'points' && guess.collapsed ? 'Gebruik deze plek' : `Gebruik cijfer ${point.digit}`}
                 initial={{ opacity: 0, scale: 0.5 }}
                 // The stagger is for entering only; dots leave together
-                animate={{ opacity: role === 'out' ? 0.4 : 1, scale: 1, transition: { duration: 0.2, delay: index * 0.02 } }}
+                // The best candidate is drawn 1.25× (scale, so the swap between best and in animates)
+                animate={{ opacity: role === 'out' ? 0.4 : 1, scale: role === 'best' ? 1.25 : 1, transition: { duration: 0.2, delay: index * 0.02 } }}
                 exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.2 } }}
+                // before: an invisible ~32 px tap target around the 22 px dot
                 className={cn(
-                  'flex cursor-pointer items-center justify-center rounded-full font-bold tabular-nums shadow-md outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
-                  role === 'best'
-                    ? 'size-7 bg-guess text-[12px] text-card ring-4 ring-guess/30'
-                    : 'size-[22px] bg-card text-[11px] text-on-guess-container ring-2 ring-guess',
+                  "relative flex size-[22px] cursor-pointer items-center justify-center rounded-full text-[11px] font-bold tabular-nums shadow-md outline-none transition-[background-color,color,box-shadow] duration-200 before:absolute before:-inset-[5px] before:rounded-full before:content-[''] focus-visible:ring-[3px] focus-visible:ring-ring/50",
+                  role === 'best' ? 'bg-guess text-card ring-4 ring-guess/30' : 'bg-card text-on-guess-container ring-2 ring-guess',
                 )}
               >
                 {guess?.kind === 'points' && guess.collapsed ? <CheckIcon aria-hidden className="size-3.5" /> : point.digit}
