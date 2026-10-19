@@ -4,6 +4,7 @@
  * drawing lives in `components/layers/marker-icons.ts`.
  */
 import type { HintBoard } from '@/types/HintCell';
+import { BRANDS, type Brand } from './fastfood';
 import { getColorFromArea } from './utils';
 
 export type MarkerTheme = 'light' | 'dark';
@@ -217,7 +218,8 @@ export type MarkerIconKey =
   | { kind: 'hintdot' }
   | { kind: 'group'; area: AreaOrNone; visited: boolean }
   | { kind: 'prediction'; area: AreaOrNone; stale: boolean; locked: boolean }
-  | { kind: 'arrow' };
+  | { kind: 'arrow' }
+  | { kind: 'fastfood'; brand: Brand; closed: boolean };
 
 const live = (stale: boolean) => (stale ? 'stale' : 'live');
 
@@ -237,6 +239,8 @@ export function markerIconId(key: MarkerIconKey): string {
       return `group|${key.area}|${key.visited ? 'visited' : 'open'}`;
     case 'prediction':
       return `predict|${key.area}|${live(key.stale)}${lockSuffix(key.locked)}`;
+    case 'fastfood':
+      return `fastfood|${key.brand}|${key.closed ? 'closed' : 'open'}`;
     default:
       return key.kind;
   }
@@ -285,6 +289,10 @@ function parseKey(p: string[]): MarkerIconKey | undefined {
       const locked = parseLocked(p, 3);
       return locked !== undefined && isArea(p[1]) && stale !== undefined ? { kind: 'prediction', area: p[1], stale, locked } : undefined;
     }
+    case 'fastfood':
+      return p.length === 3 && (BRANDS as readonly string[]).includes(p[1]) && (p[2] === 'open' || p[2] === 'closed')
+        ? { kind: 'fastfood', brand: p[1] as Brand, closed: p[2] === 'closed' }
+        : undefined;
     case 'hintdot':
     case 'arrow':
       return p.length === 1 ? { kind: p[0] } : undefined;

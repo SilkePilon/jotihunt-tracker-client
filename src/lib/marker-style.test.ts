@@ -193,3 +193,22 @@ describe('hintNumbering', () => {
     expect(hintNumbering(undefined, HUNT).numberOf('m1', 'alpha', 0)).toBeUndefined();
   });
 });
+
+describe('fastfood icon ids', () => {
+  test('id format', () => {
+    expect(markerIconId({ kind: 'fastfood', brand: 'kfc', closed: false })).toBe('fastfood|kfc|open');
+    expect(markerIconId({ kind: 'fastfood', brand: 'burgerking', closed: true })).toBe('fastfood|burgerking|closed');
+  });
+  test('round trip', () => {
+    for (const brand of ['mcdonalds', 'kfc', 'burgerking'] as const) {
+      for (const closed of [false, true]) {
+        const key = { kind: 'fastfood' as const, brand, closed };
+        expect(parseMarkerImageId(themedImageId('dark', markerIconId(key)))).toEqual({ theme: 'dark', key });
+      }
+    }
+  });
+  test('unknown brand or state is not ours', () => {
+    expect(parseMarkerImageId('jh|light|fastfood|subway|open')).toBeUndefined();
+    expect(parseMarkerImageId('jh|light|fastfood|kfc|maybe')).toBeUndefined();
+  });
+});

@@ -17,6 +17,8 @@ import {
 import { FOX_OUTLINE, GLYPHS } from './marker-glyphs';
 import { mapImagePixelRatio } from './map-images';
 import { BADGE_COOKIE_DEPTH, cookiePoints, MARKER_COOKIE_DEPTH } from '@/lib/cookie-shape';
+import { BRAND_COLOR } from '@/lib/fastfood';
+import { brandLogo, FASTFOOD_LOGO_WIDTH } from './brand-logos';
 
 /*
  * The map marker images, drawn like the Android app's MarkerIconFactory: every shape has a 2px surfaceContainerLowest
@@ -76,18 +78,18 @@ class Painter {
     this.circle(r, r, r - RIM, fill);
   }
 
-  /** Square with 14px corners at (0, 0) with rim and shadow. */
-  roundedSquare(size: number, fill: string) {
+  /** Square with `radius` corners (14px: fox markers) at (0, 0) with rim and shadow. */
+  roundedSquare(size: number, fill: string, radius = 14) {
     const { ctx } = this;
     this.shadow(3, 1);
     ctx.fillStyle = this.palette.surfaceContainerLowest;
     ctx.beginPath();
-    ctx.roundRect(0, 0, size, size, 14);
+    ctx.roundRect(0, 0, size, size, radius);
     ctx.fill();
     this.noShadow();
     ctx.fillStyle = fill;
     ctx.beginPath();
-    ctx.roundRect(RIM, RIM, size - 2 * RIM, size - 2 * RIM, 14 - RIM);
+    ctx.roundRect(RIM, RIM, size - 2 * RIM, size - 2 * RIM, radius - RIM);
     ctx.fill();
   }
 
@@ -217,9 +219,21 @@ function fadeImage(image: ImageData, alpha: number) {
   for (let i = 3; i < image.data.length; i += 4) image.data[i] = Math.round(image.data[i] * alpha);
 }
 
+/** Closed restaurants: greyscale (luminance), like the CSS grayscale() of the mockups. */
+function greyImage(image: ImageData) {
+  const { data } = image;
+  for (let i = 0; i < data.length; i += 4) {
+    const grey = Math.round(0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2]);
+    data[i] = data[i + 1] = data[i + 2] = grey;
+  }
+}
+
+const CLOSED_ALPHA = 0.6;
+
 const FOX_SIZE = 38;
 const HUNTER_SIZE = 38;
 const GROUP_SIZE = 28;
+const FASTFOOD_SIZE = 28;
 const PREDICTION_SIZE = 30;
 const ARROW_SIZE = 14;
 
@@ -302,6 +316,22 @@ function drawing(key: MarkerIconKey, palette: MarkerPalette, measure: Ctx): Draw
         'cookie',
       );
     }
+    case 'fastfood': {
+      const logo = brandLogo(key.brand);
+      return {
+        width: FASTFOOD_SIZE + 2 * PAD,
+        height: FASTFOOD_SIZE + 2 * PAD,
+        draw: (p) => {
+          const s = FASTFOOD_SIZE;
+          p.ctx.translate(PAD, PAD);
+          p.roundedSquare(s, BRAND_COLOR[key.brand], 9);
+          if (!logo) return;
+          const width = FASTFOOD_LOGO_WIDTH[key.brand];
+          const height = logo.naturalWidth ? (width * logo.naturalHeight) / logo.naturalWidth : width;
+          p.ctx.drawImage(logo, (s - width) / 2, (s - height) / 2, width, height);
+        },
+      };
+    }
     case 'hint': {
       const letter = areaLetter(key.area);
       const label = [letter, key.label].filter(Boolean).join(' · ');
@@ -382,6 +412,10 @@ function drawMarkerIcon(key: MarkerIconKey, palette: MarkerPalette, pixelRatio: 
   draw(new Painter(ctx, palette, pixelRatio));
   const image = ctx.getImageData(0, 0, canvas.width, canvas.height);
   if (isLocked(key)) fadeImage(image, LOCKED_ALPHA);
+  if (key.kind === 'fastfood' && key.closed) {
+    greyImage(image);
+    fadeImage(image, CLOSED_ALPHA);
+  }
   // Release the backing store right away (iOS Safari limits the total canvas memory)
   canvas.width = 0;
   canvas.height = 0;
