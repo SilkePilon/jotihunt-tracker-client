@@ -99,7 +99,9 @@ export default function RoutesCard() {
   async function handleRebuild() {
     setRebuilding(true);
     try {
-      if (await rebuild()) toast.success('Kaartdata wordt vernieuwd');
+      const result = await rebuild();
+      if (result === 'started') toast.success('Kaartdata wordt vernieuwd');
+      else if (result === 'busy') toast.info('Kaartdata wordt al vernieuwd');
       else toast.error('Router niet bereikbaar');
     } finally {
       setRebuilding(false);
