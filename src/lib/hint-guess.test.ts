@@ -63,10 +63,30 @@ describe('parseGuess', () => {
     if (narrow?.kind !== 'area') return;
     expect(narrow.wide).toBe(false);
     expect(narrow.ring[0]).toEqual(narrow.ring[narrow.ring.length - 1]);
-    const [minLng] = fromRD(150000, 463000);
+    const [minLng] = fromRD(150000, 462950);
     expect(narrow.ring[0][0]).toBeCloseTo(minLng, 6);
     const wide = parseGuess('1??000', '463000');
     expect(wide?.kind === 'area' && wide.wide).toBe(true);
+  });
+  test('a ? on one axis only draws a visible strip around the known axis', () => {
+    const strip = parseGuess('15??00', '463000');
+    if (strip?.kind !== 'area') throw new Error('expected an area');
+    const lats = strip.ring.map(([, lat]) => lat);
+    expect(Math.max(...lats) - Math.min(...lats)).toBeGreaterThan(0);
+    const [minLng, minLat] = fromRD(150000, 462950);
+    const [maxLng, maxLat] = fromRD(159900, 463050);
+    expect(strip.ring[0][0]).toBeCloseTo(minLng, 6);
+    expect(strip.ring[0][1]).toBeCloseTo(minLat, 6);
+    const far = strip.ring[32]; // third corner: (maxX, maxY)
+    expect(far[0]).toBeCloseTo(maxLng, 6);
+    expect(far[1]).toBeCloseTo(maxLat, 6);
+  });
+  test('a 4-digit ? covers the whole last hectometre cell', () => {
+    const strip = parseGuess('15??', '4630');
+    if (strip?.kind !== 'area') throw new Error('expected an area');
+    const [maxLng, minLat] = fromRD(160000, 462950);
+    expect(strip.ring[16][0]).toBeCloseTo(maxLng, 6); // second corner: (maxX, minY)
+    expect(strip.ring[16][1]).toBeCloseTo(minLat, 6);
   });
 });
 

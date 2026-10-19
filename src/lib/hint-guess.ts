@@ -22,6 +22,8 @@ export const REACH_KMH = 6;
 const COLLAPSE_M = 50;
 /** A rectangle wider than this (either axis) is useless on the map */
 const WIDE_M = 60_000;
+/** Half-width of the strip around an axis without '?': that axis is exact, the corridor only makes the strip visible */
+const CORRIDOR_M = 50;
 /** Steps per rectangle edge: RD straight lines are slightly curved in WGS84 */
 const RING_STEPS = 16;
 
@@ -76,6 +78,15 @@ function rdRing(minX: number, minY: number, maxX: number, maxY: number): [number
   return ring;
 }
 
+/** RD [min, max] of one axis of a rectangle guess: a '?' axis covers its whole last cell, a known axis a thin corridor. */
+function axisExtent(pattern: string, scale: number): [number, number] {
+  const min = Number(pattern.replaceAll('?', '0')) * scale;
+  if (!pattern.includes('?')) return [min - CORRIDOR_M, min + CORRIDOR_M];
+  const top = Number(pattern.replaceAll('?', '9'));
+  // A hectometre value names a 100 m cell, so the last cell ends one step further; metre values are used as is
+  return [min, scale === 100 ? (top + 1) * scale : top];
+}
+
 /**
  * The candidates of an X/Y digit pattern pair (both 4 digits = hectometres, or both 6 = metres).
  * @returns null without a '?' or when the lengths don't fit
@@ -103,10 +114,8 @@ export function parseGuess(x: string, y: string): Guess | null {
     return { kind: 'points', points, collapsed: false };
   }
 
-  const minX = Number(x.replaceAll('?', '0')) * scale;
-  const maxX = Number(x.replaceAll('?', '9')) * scale;
-  const minY = Number(y.replaceAll('?', '0')) * scale;
-  const maxY = Number(y.replaceAll('?', '9')) * scale;
+  const [minX, maxX] = axisExtent(x, scale);
+  const [minY, maxY] = axisExtent(y, scale);
   return { kind: 'area', ring: rdRing(minX, minY, maxX, maxY), wide: maxX - minX > WIDE_M || maxY - minY > WIDE_M };
 }
 
