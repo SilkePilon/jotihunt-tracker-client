@@ -36,7 +36,7 @@ export default function FastFood() {
   const { active, open: openPopup, close: closePopup, dismiss: dismissPopup } = usePopupSelection<string>();
   const [hoveredId, setHoveredId] = useState<string>();
   const activeRestaurant = active ? restaurants?.find((restaurant) => restaurant.osmId === active.id && brands.includes(restaurant.brand)) : undefined;
-  const hoveredRestaurant = hoveredId !== undefined && !activeRestaurant ? restaurants?.find((restaurant) => restaurant.osmId === hoveredId) : undefined;
+  const hoveredRestaurant = hoveredId !== undefined && !activeRestaurant ? restaurants?.find((restaurant) => restaurant.osmId === hoveredId && brands.includes(restaurant.brand)) : undefined;
 
   const features = useMemo(() => fastfoodFeatures(restaurants ?? [], brands, nowMs), [restaurants, brands, nowMs]);
   const hoverFilter = useMemo<SymbolLayerSpecification['filter']>(() => ['==', ['get', 'id'], hoveredId ?? ''], [hoveredId]);

@@ -142,7 +142,7 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
     }));
 
     // Store for all layers
-    const {showTeams, showDevices, showMarkersPart1, showMarkersPart2, showHomeCircle, showPredictions, showLife360, showBuildings3d} = useLayersStore(
+    const {showTeams, showDevices, showMarkersPart1, showMarkersPart2, showHomeCircle, showPredictions, showLife360, showBuildings3d, showMcDonalds, showKfc, showBurgerKing} = useLayersStore(
         useShallow((state) => ({
             showTeams: state.showTeams,
             showDevices: state.showDevices,
@@ -152,6 +152,9 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
             showPredictions: state.showPredictions,
             showLife360: state.showLife360,
             showBuildings3d: state.showBuildings3d,
+            showMcDonalds: state.showMcDonalds,
+            showKfc: state.showKfc,
+            showBurgerKing: state.showBurgerKing,
         })),
     );
     const {enabled: predictionEnabled} = usePredictionSetting();
@@ -283,7 +286,7 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
                 <Buildings3D visible={showBuildings3d}/>
                 {showPredictions && predictionEnabled !== false && <Predictions/>}
                 {showTeams && <Teams/>}
-                <FastFood/>
+                {(showMcDonalds || showKfc || showBurgerKing) && <FastFood/>}
                 {showDevices && <Devices/>}
                 {showLife360 && <Life360/>}
                 {(showMarkersPart1 || showMarkersPart2) && <Markers part1={showMarkersPart1} part2={showMarkersPart2}/>}

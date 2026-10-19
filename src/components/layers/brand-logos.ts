@@ -10,6 +10,8 @@ export const FASTFOOD_LOGO_WIDTH: Record<Brand, number> = { mcdonalds: 15, kfc: 
 
 const images = new Map<Brand, HTMLImageElement>();
 let loading: Promise<void> | undefined;
+/** True once every logo has loaded or failed */
+let settled = false;
 
 /** Load the three logos once; a logo that fails to load is left out (the tile is drawn without it). */
 export function loadBrandLogos(): Promise<void> {
@@ -26,7 +28,9 @@ export function loadBrandLogos(): Promise<void> {
           image.src = BRAND_LOGO_URL[brand];
         }),
     ),
-  ).then(() => undefined);
+  ).then(() => {
+    settled = true;
+  });
   return loading;
 }
 
@@ -37,7 +41,7 @@ export function brandLogo(brand: Brand): HTMLImageElement | undefined {
 
 /** True once the logos are loaded: the fastfood layer waits for it, so its icons are never drawn without logo. */
 export function useBrandLogosReady(): boolean {
-  const [ready, setReady] = useState(() => loading !== undefined && images.size > 0);
+  const [ready, setReady] = useState(() => settled);
   useEffect(() => {
     let cancelled = false;
     void loadBrandLogos().then(() => {
