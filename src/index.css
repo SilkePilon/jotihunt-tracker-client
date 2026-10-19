@@ -262,6 +262,7 @@ body {
   --map-selected-fg: #7c2d12;
   --map-success: #1b6d2f;
   --map-success-bg: rgb(27 109 47 / 0.12);
+  --map-warn-bg: #ffedd5;
 }
 
 body.dark {
@@ -272,6 +273,7 @@ body.dark {
   --map-selected-fg: #ffedd5;
   --map-success: #86efac;
   --map-success-bg: rgb(22 163 74 / 0.2);
+  --map-warn-bg: rgb(154 74 0 / 0.3);
 }
 
 /* Beheer window: in light mode the window is a step darker than its (white) cards; rows are a tonal step above the
@@ -286,34 +288,36 @@ body.dark {
   --beheer-window: var(--background);
 }
 
-/* MapLibre popup styling: compact card like the markers */
+/* MapLibre popup styling: the dialog look (DIALOG_SHELL) at popup size */
 .maplibregl-popup-content {
-  @apply animate-in fade-in;
+  @apply animate-in fade-in zoom-in-95;
   background: var(--map-surface) !important;
   color: var(--map-on-surface);
   font-family: var(--map-font);
-  font-size: 12.5px;
+  font-size: 13px;
   line-height: 1.35;
-  border-radius: 16px !important;
-  padding: 10px;
+  border-radius: 24px !important;
+  padding: 14px;
   box-shadow:
     0 0 0 1px var(--map-hairline),
-    0 6px 20px rgb(0 0 0 / 0.5);
+    0 18px 50px rgb(0 0 0 / 0.35);
 }
 
 .maplibregl-popup-close-button {
-  top: 8px;
-  right: 8px;
-  width: 24px;
-  height: 24px;
-  border-radius: 9999px;
-  font-size: 16px;
+  top: 12px;
+  right: 12px;
+  width: 34px;
+  height: 32px;
+  border-radius: 12px;
+  font-size: 18px;
   line-height: 1;
   color: var(--map-muted);
+  background: var(--beheer-row) !important;
+  transition: background-color 150ms;
 }
 
 .maplibregl-popup-close-button:hover {
-  background: var(--map-surface-high) !important;
+  background: var(--beheer-row-high) !important;
 }
 
 .maplibregl-popup-tip {

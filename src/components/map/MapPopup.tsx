@@ -17,7 +17,7 @@ interface MapPopupProps {
 
 const defaultOffset: OffsetObject = { bottom: [0, -45] };
 
-/** Compact map card (236px, styled in index.css) above a point; on phones docked above the sheet instead. */
+/** Map card (248px, styled in index.css) above a point; on phones docked above the sheet instead. */
 export default function MapPopup({ longitude, latitude, onClose, offset = defaultOffset, children }: MapPopupProps) {
   const isMobile = useIsMobile();
   if (isMobile) {
@@ -35,10 +35,10 @@ export default function MapPopup({ longitude, latitude, onClose, offset = defaul
       onClose={onClose}
       closeOnClick={true}
       offset={offset as PopupProps['offset']}
-      maxWidth="236px"
+      maxWidth="248px"
       className="z-20"
     >
-      <div className="flex w-[216px] flex-col">{children}</div>
+      <div className="flex w-[220px] flex-col">{children}</div>
     </Popup>
   );
 }

@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import type { Device } from '@/types/Device';
 import type { Position } from '@/types/Position';
 import type { User } from '@/types/User';
-import { googleMapsUrl, hunterIcon, hunterMeta, hunterRows, huntersSummary, isLowBattery, vehicleForGroupId, type VehicleGroupIds } from './hunters';
+import { googleMapsUrl, googleRouteUrl, hunterIcon, hunterMeta, hunterRows, huntersSummary, isLowBattery, vehicleForGroupId, type VehicleGroupIds } from './hunters';
 
 const NOW = new Date('2026-10-17T12:00:00Z').getTime();
 const groups: VehicleGroupIds = { walking: 1, bike: 2, car: 3 };
@@ -75,4 +75,10 @@ test('isLowBattery: under 20 %', () => {
   expect(isLowBattery(19)).toBe(true);
   expect(isLowBattery(20)).toBe(false);
   expect(isLowBattery(undefined)).toBe(false);
+});
+
+describe('googleRouteUrl', () => {
+  test('directions to the point with 6 decimals', () => {
+    expect(googleRouteUrl(51.98181234, 5.9089)).toBe('https://www.google.com/maps/dir/?api=1&destination=51.981812,5.908900');
+  });
 });

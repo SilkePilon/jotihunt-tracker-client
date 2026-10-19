@@ -94,12 +94,17 @@ export default function DockedPopup({ longitude, latitude, onClose, children }: 
         onClose();
       }}
       inert={closing}
-      className="pointer-events-auto relative rounded-2xl bg-card p-2.5 text-[12.5px] leading-[1.35] text-card-foreground shadow-[0_0_0_1px_var(--border),0_6px_20px_rgb(0_0_0/.5)]"
+      className="pointer-events-auto relative rounded-3xl bg-card p-3.5 text-[13px] leading-[1.35] text-card-foreground shadow-[0_0_0_1px_var(--border),0_18px_50px_rgb(0_0_0/.35)]"
     >
-      <button type="button" aria-label="Sluiten" onClick={requestClose} className="absolute right-1.5 top-1.5 grid size-8 place-items-center rounded-full text-muted-foreground">
+      <button
+        type="button"
+        aria-label="Sluiten"
+        onClick={requestClose}
+        className="absolute top-3 right-3 grid h-8 w-[34px] place-items-center rounded-xl bg-beheer-row text-muted-foreground transition-colors hover:bg-beheer-row-high"
+      >
         <XIcon className="size-4" />
       </button>
-      <div className="flex flex-col pr-6">{children}</div>
+      <div className="flex flex-col">{children}</div>
     </motion.div>,
     dock,
   );
