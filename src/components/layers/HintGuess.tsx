@@ -38,7 +38,11 @@ export default function HintGuess() {
     if (!map || !guess || !input) return;
     const bounds = guessBounds(guess, fix);
     if (!bounds) return;
-    const timer = setTimeout(() => map.fitBounds(bounds, { padding: 80, maxZoom: 15, duration: 1200 }), input.source === 'intel' ? INTEL_CLOSE_MS : 0);
+    const timer = setTimeout(() => {
+      // Desktop: the sidebar floats over the map's left edge, keep the candidates out from under it
+      const sidebar = window.innerWidth >= 768 ? document.querySelector('aside')?.getBoundingClientRect().right ?? 0 : 0;
+      map.fitBounds(bounds, { padding: { top: 80, right: 80, bottom: 80, left: 80 + sidebar }, maxZoom: 15, duration: 1200 });
+    }, input.source === 'intel' ? INTEL_CLOSE_MS : 0);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- refit only when the guess changes, not on every marker poll
   }, [map, fitKey]);
