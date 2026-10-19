@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-interface LayersState {
+export interface LayersState {
   showTeams: boolean;
   showDevices: boolean;
   showMarkersPart1: boolean;
