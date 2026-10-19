@@ -80,7 +80,7 @@ hours are unknown, `[]` when known but closed for the next 8 days.
 ### Layers
 
 - `layers.store.ts`: `showMcDonalds`, `showKfc`, `showBurgerKing` + toggles; default `false`; persisted like the rest
-  (bump the store version with a migration that adds the keys as `false`).
+  (no version bump: persist's merge gives existing users the `false` defaults).
 - `layer-toggles.ts`: three rows at the end — "McDonald's", "KFC", "Burger King". Appear in `MapLayersControl`
   (desktop) and `LayersSubmenu` (phone) automatically.
 - `hooks/fastfood.hook.ts`: SWR `GET /fastfood`, only when any of the three is on; refresh every 30 min.
@@ -144,10 +144,10 @@ Shared building blocks change; every popup follows:
 Per popup:
 
 - Groep: address row; visit-status row (green check when visited, sparkles + muted otherwise); Route + house toggle.
-- Hunter: split row speed | battery (speed hidden when stale); Route + marker registration (+).
+- Hunter: split row speed | battery (speed hidden when stale); Route as 44px icon button + the existing Hunt/Spot buttons.
 - Vos-marker: estimate note stays under the header; coordinate rows; Route + delete (danger).
 - Life360: split row driving | battery; accuracy row when usable; Route.
-- Gekozen locatie: coordinate rows with hint lightbulb; Route + "Marker" (+) button.
+- Gekozen locatie: coordinate rows with hint lightbulb; Route as 44px icon button + the existing Hunt/Spot buttons.
 
 All enter/exit/swap states animate (motion/react), per the app rule.
 
