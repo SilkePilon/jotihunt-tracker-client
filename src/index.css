@@ -53,6 +53,10 @@
   --fox-ov: #5b4fc4;
   --fox-ov-container: #e5deff;
   --fox-on-ov-container: #1a0f5c;
+  /* Partly solved hint: unknown digit boxes and the candidate dots/area on the map (lib/hint-guess.ts) */
+  --guess: #7b61d1;
+  --guess-container: #e8e2f8;
+  --on-guess-container: #3b2a73;
   --fox-ok-group: color-mix(in oklab, var(--fox-ok-container) 75%, var(--card));
   --fox-warn-group: color-mix(in oklab, var(--fox-warn-container) 75%, var(--card));
   --fox-cooldown-group: color-mix(in oklab, var(--fox-cooldown-container) 75%, var(--card));
@@ -107,6 +111,9 @@
   --fox-ov: #c5b8ff;
   --fox-ov-container: #3d2d8c;
   --fox-on-ov-container: #e5deff;
+  --guess: #b9a6ff;
+  --guess-container: #352a5c;
+  --on-guess-container: #e3dbff;
   --fox-ok-group: color-mix(in oklab, var(--fox-ok-container) 55%, var(--card));
   --fox-warn-group: color-mix(in oklab, var(--fox-warn-container) 55%, var(--card));
   --fox-cooldown-group: color-mix(in oklab, var(--fox-cooldown-container) 55%, var(--card));
@@ -166,6 +173,9 @@
   --color-fox-on-ov: var(--fox-on-ov-container);
   --color-fox-ov-group: var(--fox-ov-group);
   --color-fox-ov-container: var(--fox-ov-container);
+  --color-guess: var(--guess);
+  --color-guess-container: var(--guess-container);
+  --color-on-guess-container: var(--on-guess-container);
   --color-ai-think-container: var(--ai-think-container);
   --color-ai-on-think: var(--ai-on-think-container);
   --color-primary-container: var(--primary-container);

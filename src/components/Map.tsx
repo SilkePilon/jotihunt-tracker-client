@@ -25,6 +25,7 @@ import {useShallow} from 'zustand/react/shallow';
 import HomeCircle from './layers/HomeCircle';
 import HuntFocus from './layers/HuntFocus';
 import HuntAccuracy from './layers/HuntAccuracy';
+import HintGuess from './layers/HintGuess';
 import Predictions from './layers/Predictions';
 import {usePredictionSetting} from '@/hooks/predictions.hook';
 import useLayersStore from '../stores/layers.store';
@@ -293,6 +294,7 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
                 {(showMarkersPart1 || showMarkersPart2) && <HuntAccuracy/>}
                 <HomeCircle showCircle={showHomeCircle}/>
                 {!wall && <HuntFocus/>}
+                {!wall && <HintGuess/>}
                 <LayerStack/>
                 {overlay}
             </Maplibre>
