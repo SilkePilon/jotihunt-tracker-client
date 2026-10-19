@@ -2,16 +2,15 @@ import { useState } from 'react';
 import { MapPinIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import MapPopup from '../../map/MapPopup';
-import { MapsAction, PopupActions } from '../../map/popup/PopupActions';
-import { PopupFact, PopupFacts } from '../../map/popup/PopupFacts';
+import { PopupActions, RouteAction } from '../../map/popup/PopupActions';
+import { PopupRow, PopupRows } from '../../map/popup/PopupRows';
 import PopupHeader from '../../map/popup/PopupHeader';
 import TeamLogo from '../../map/TeamLogo';
-import { VisitStatusFact, VisitToggleButton } from '../../map/VisitControls';
+import { VisitStatusRow, VisitToggleButton } from '../../map/VisitControls';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAreas } from '@/hooks/areas.hook';
 import { useDistanceFromMe } from '@/hooks/distance-from-me.hook';
 import { usePredictionSetting } from '@/hooks/predictions.hook';
-import { joinParts } from '@/lib/format';
 import { getColorFromArea } from '@/lib/utils';
 import type { Team } from '@/types/Team';
 
@@ -28,7 +27,7 @@ interface TeamPopupProps {
 // Above the group (28px circle, centred)
 const POPUP_OFFSET = { bottom: [0, -16] as [number, number] };
 
-/** Details of a group: address, visit status, area select (TEAMS_AREA_EDITING) and Google Maps. */
+/** Details of a group: address, visit status, area select (TEAMS_AREA_EDITING) and Route. */
 export default function TeamPopup({ team, onClose, setTeamArea }: TeamPopupProps) {
   const { areas } = useAreas();
   const { enabled: predictionEnabled } = usePredictionSetting();
@@ -59,7 +58,7 @@ export default function TeamPopup({ team, onClose, setTeamArea }: TeamPopupProps
   return (
     <MapPopup longitude={lng} latitude={lat} onClose={onClose} offset={POPUP_OFFSET}>
       <PopupHeader
-        icon={<TeamLogo name={team.name} logoUrl={team.logoUrl} className="size-8 rounded-[10px] border-0 shadow-none" />}
+        icon={<TeamLogo name={team.name} logoUrl={team.logoUrl} className="size-9 rounded-[11px] border-0 shadow-none" />}
         title={team.name}
         subtitle={
           <>
@@ -74,13 +73,10 @@ export default function TeamPopup({ team, onClose, setTeamArea }: TeamPopupProps
           </>
         }
       />
-      <PopupFacts>
-        <PopupFact>
-          <MapPinIcon />
-          <span className="truncate">{joinParts(team.accomodation, address)}</span>
-        </PopupFact>
-        {showVisits && <VisitStatusFact teamApiId={team.apiId} />}
-      </PopupFacts>
+      <PopupRows>
+        <PopupRow icon={<MapPinIcon />} title={team.accomodation || address} meta={team.accomodation ? address : undefined} />
+        {showVisits && <VisitStatusRow teamApiId={team.apiId} />}
+      </PopupRows>
       {TEAMS_AREA_EDITING && (
         <Select onValueChange={handleAreaChange} value={area ?? 'onbekend'}>
           <SelectTrigger autoFocus={false} size="sm" className="mt-2 w-full">
@@ -97,7 +93,7 @@ export default function TeamPopup({ team, onClose, setTeamArea }: TeamPopupProps
         </Select>
       )}
       <PopupActions>
-        <MapsAction lat={lat} lng={lng} label="Google Maps" />
+        <RouteAction lat={lat} lng={lng} />
         {showVisits && <VisitToggleButton teamApiId={team.apiId} />}
       </PopupActions>
     </MapPopup>

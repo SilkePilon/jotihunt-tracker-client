@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
-import { MapIcon, NavigationIcon } from 'lucide-react';
-import { googleMapsUrl, googleRouteUrl } from '@/lib/hunters';
+import { NavigationIcon } from 'lucide-react';
+import { googleRouteUrl } from '@/lib/hunters';
 import { cn } from '@/lib/utils';
 
 const BASE =
@@ -42,23 +42,6 @@ export function RouteAction({ lat, lng, compact }: { lat: number; lng: number; c
     >
       <NavigationIcon />
       {!compact && 'Route'}
-    </a>
-  );
-}
-
-/** Google Maps link: icon-only (30px square) without a label, otherwise full width with the label. */
-export function MapsAction({ lat, lng, label }: { lat: number; lng: number; label?: string }) {
-  return (
-    <a
-      target="_blank"
-      rel="noreferrer"
-      href={googleMapsUrl(lat, lng)}
-      aria-label={label ?? 'Bekijk op Google Maps'}
-      title={label ? undefined : 'Bekijk op Google Maps'}
-      className={popupActionClass('neutral', label ? 'flex-1' : 'w-[30px] px-0')}
-    >
-      <MapIcon />
-      {label}
     </a>
   );
 }

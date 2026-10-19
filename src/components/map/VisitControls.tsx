@@ -3,25 +3,19 @@ import { CheckIcon, SparklesIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { useVisits } from '@/hooks/predictions.hook';
 import { nextVisitChoice, visitSelection, visitStatusText } from '@/lib/prediction';
-import { cn } from '@/lib/utils';
 import MarkerGlyph from './popup/MarkerGlyph';
-import { popupActionClass } from './popup/PopupActions';
-import { PopupFact } from './popup/PopupFacts';
+import { ICON_ACTION, popupActionClass } from './popup/PopupActions';
+import { PopupRow } from './popup/PopupRows';
 
-/** The group's visit status as a fact line: green check when manually visited, sparkles for the AI's view. */
-export function VisitStatusFact({ teamApiId }: { teamApiId: number }) {
+/** The group's visit status as a row: green with a check when manually visited, sparkles for the AI's view. */
+export function VisitStatusRow({ teamApiId }: { teamApiId: number }) {
   const { visits } = useVisits();
   const visit = visits?.find((candidate) => candidate.teamApiId === teamApiId);
   const manualVisited = visitSelection(visit) === 'visited';
-  return (
-    <PopupFact>
-      {manualVisited ? <CheckIcon className="text-(--map-success)!" /> : <SparklesIcon />}
-      <span className={cn('truncate', manualVisited ? 'text-(--map-success)' : 'text-(--map-muted)')}>{visitStatusText(visit)}</span>
-    </PopupFact>
-  );
+  return <PopupRow icon={manualVisited ? <CheckIcon /> : <SparklesIcon />} title={visitStatusText(visit)} tone={manualVisited ? 'success' : 'default'} />;
 }
 
-/** House button next to Google Maps: marks the group visited (green), tapping again hands it back to the AI. */
+/** House button next to Route: marks the group visited (green), tapping again hands it back to the AI. */
 export function VisitToggleButton({ teamApiId }: { teamApiId: number }) {
   const { visits, setVisit } = useVisits();
   const [busy, setBusy] = useState(false);
@@ -49,7 +43,7 @@ export function VisitToggleButton({ teamApiId }: { teamApiId: number }) {
       title={title}
       disabled={busy}
       onClick={toggle}
-      className={popupActionClass('neutral', cn('w-[30px] px-0', visited && 'bg-(--map-success-bg) text-(--map-success)'))}
+      className={popupActionClass(visited ? 'success' : 'neutral', ICON_ACTION)}
     >
       <MarkerGlyph name="home" />
     </button>

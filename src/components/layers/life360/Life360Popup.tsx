@@ -1,8 +1,8 @@
 import { BatteryIcon, CrosshairIcon, GaugeIcon } from 'lucide-react';
 import Life360Avatar from '@/components/cards/life360/Life360Avatar';
 import MapPopup from '@/components/map/MapPopup';
-import { MapsAction, PopupActions } from '@/components/map/popup/PopupActions';
-import { FactDot, PopupFact, PopupFacts } from '@/components/map/popup/PopupFacts';
+import { PopupActions, RouteAction } from '@/components/map/popup/PopupActions';
+import { PopupRow, PopupRowSplit, PopupRows } from '@/components/map/popup/PopupRows';
 import PopupHeader from '@/components/map/popup/PopupHeader';
 import { useDistanceFromMe } from '@/hooks/distance-from-me.hook';
 import { joinParts } from '@/lib/format';
@@ -24,7 +24,7 @@ interface Life360PopupProps {
   onClose: () => void;
 }
 
-/** Like the hunter popup: age, distance, driving speed, battery, accuracy, Navigeer. */
+/** Like the hunter popup: age, distance, driving speed, battery, accuracy, Route. */
 export default function Life360Popup({ member, location, linkStale, now, onClose }: Life360PopupProps) {
   const driving = life360DrivingText(location, linkStale, now);
   const stale = isLocationStale(location, linkStale, now);
@@ -34,32 +34,20 @@ export default function Life360Popup({ member, location, linkStale, now, onClose
   return (
     <MapPopup longitude={location.lon} latitude={location.lat} onClose={onClose} offset={POPUP_OFFSET}>
       <PopupHeader
-        icon={<Life360Avatar member={member} size={32} />}
+        icon={<Life360Avatar member={member} size={36} />}
         title={member.name}
         subtitle={joinParts(life360Age(location.at, now) ?? 'onbekend', stale ? 'laatst bekend' : distance)}
         stale={stale}
       />
-      <PopupFacts>
-        <PopupFact>
-          {driving && (
-            <>
-              <GaugeIcon />
-              {driving.toLowerCase()}
-              <FactDot />
-            </>
-          )}
-          <BatteryIcon />
-          {battery}
-        </PopupFact>
-        {hasUsableAccuracy(location.accuracyM) && (
-          <PopupFact>
-            <CrosshairIcon />
-            {formatAccuracy(location.accuracyM)} nauwkeurig
-          </PopupFact>
-        )}
-      </PopupFacts>
+      <PopupRows>
+        <PopupRowSplit>
+          {driving && <PopupRow icon={<GaugeIcon />} title={driving} />}
+          <PopupRow icon={<BatteryIcon />} title={battery} />
+        </PopupRowSplit>
+        {hasUsableAccuracy(location.accuracyM) && <PopupRow icon={<CrosshairIcon />} title={`${formatAccuracy(location.accuracyM)} nauwkeurig`} />}
+      </PopupRows>
       <PopupActions>
-        <MapsAction lat={location.lat} lng={location.lon} label="Navigeer" />
+        <RouteAction lat={location.lat} lng={location.lon} />
       </PopupActions>
     </MapPopup>
   );

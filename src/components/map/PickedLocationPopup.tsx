@@ -8,13 +8,13 @@ import { useIsMobile } from '@/hooks/media.hook';
 import MapPopup from './MapPopup';
 import MarkerRegistration from './MarkerRegistration';
 import CoordRows from './popup/CoordRows';
-import { MapsAction, PopupActions } from './popup/PopupActions';
+import { PopupActions, RouteAction } from './popup/PopupActions';
 import PopupHeader, { PopupIcon } from './popup/PopupHeader';
 
 // Above the 18px picked-location puck
 const POPUP_OFFSET = { bottom: [0, -15] as [number, number] };
 
-/** The clicked map point: coordinates (copy, into the hint form), Google Maps and register a hunt / spot here. */
+/** The clicked map point: coordinates (copy, into the hint form), Route and register a hunt / spot here. */
 export default function PickedLocationPopup({ lat, lng, onClose }: { lat: number; lng: number; onClose: () => void }) {
   const setCoords = useHintFormBridge((s) => s.setCoords);
   const openSection = useSidebarStore((s) => s.openSection);
@@ -47,7 +47,7 @@ export default function PickedLocationPopup({ lat, lng, onClose }: { lat: number
         />
         <CoordRows lat={lat} lng={lng} onHint={setHintCoords} />
         <PopupActions>
-          <MapsAction lat={lat} lng={lng} />
+          <RouteAction lat={lat} lng={lng} compact />
           <MarkerRegistration lat={lat} lng={lng} />
         </PopupActions>
       </MapPopup>

@@ -4,8 +4,8 @@ import { BatteryIcon, GaugeIcon } from 'lucide-react';
 import MapPopup from '../../map/MapPopup';
 import MarkerRegistration from '../../map/MarkerRegistration';
 import MarkerGlyph from '../../map/popup/MarkerGlyph';
-import { MapsAction, PopupActions } from '../../map/popup/PopupActions';
-import { FactDot, PopupFact, PopupFacts } from '../../map/popup/PopupFacts';
+import { PopupActions, RouteAction } from '../../map/popup/PopupActions';
+import { PopupRow, PopupRowSplit, PopupRows } from '../../map/popup/PopupRows';
 import PopupHeader, { PopupIcon } from '../../map/popup/PopupHeader';
 import { useDistanceFromMe } from '@/hooks/distance-from-me.hook';
 import { formatBattery, formatSpeed, isActive } from '@/lib/tracker';
@@ -25,7 +25,7 @@ interface DevicePopupProps {
   onClose: () => void;
 }
 
-/** Age, distance, speed and battery of a hunter, plus Google Maps and "register a hunt / spot here". */
+/** Age, distance, speed and battery of a hunter, plus Route and "register a hunt / spot here". */
 export default function DevicePopup({ position, icon, onClose }: DevicePopupProps) {
   const { latitude: lat, longitude: lng } = position;
   const palette = useMarkerPalette();
@@ -45,21 +45,14 @@ export default function DevicePopup({ position, icon, onClose }: DevicePopupProp
         subtitle={joinParts(age, stale ? 'laatst bekend' : distance)}
         stale={stale}
       />
-      <PopupFacts>
-        <PopupFact>
-          {!stale && (
-            <>
-              <GaugeIcon />
-              {formatSpeed(knotsToKmh(position.speed))}
-              <FactDot />
-            </>
-          )}
-          <BatteryIcon />
-          {formatBattery(position.attributes.batteryLevel)}
-        </PopupFact>
-      </PopupFacts>
+      <PopupRows>
+        <PopupRowSplit>
+          {!stale && <PopupRow icon={<GaugeIcon />} title={formatSpeed(knotsToKmh(position.speed))} />}
+          <PopupRow icon={<BatteryIcon />} title={formatBattery(position.attributes.batteryLevel)} />
+        </PopupRowSplit>
+      </PopupRows>
       <PopupActions>
-        <MapsAction lat={lat} lng={lng} />
+        <RouteAction lat={lat} lng={lng} compact />
         <MarkerRegistration lat={lat} lng={lng} />
       </PopupActions>
     </MapPopup>

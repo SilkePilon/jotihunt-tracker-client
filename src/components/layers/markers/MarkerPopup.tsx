@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { toast } from 'sonner';
 import MapPopup from '../../map/MapPopup';
 import CoordRows from '../../map/popup/CoordRows';
-import { MapsAction, PopupActions, popupActionClass } from '../../map/popup/PopupActions';
+import { ICON_ACTION, PopupActions, popupActionClass, RouteAction } from '../../map/popup/PopupActions';
 import PopupHeader, { PopupIcon } from '../../map/popup/PopupHeader';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useDistanceFromMe } from '@/hooks/distance-from-me.hook';
@@ -29,7 +29,7 @@ interface MarkerPopupProps {
   deleteMarker: (id: string) => Promise<boolean>;
 }
 
-/** Marker details (WGS84 + RD coordinates), Google Maps and delete (with confirmation). */
+/** Marker details (WGS84 + RD coordinates), Route and delete (with confirmation). */
 export default function MarkerPopup({ marker, onClose, deleteMarker }: MarkerPopupProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [lng, lat] = marker.location.coordinates;
@@ -64,7 +64,7 @@ export default function MarkerPopup({ marker, onClose, deleteMarker }: MarkerPop
         {locationNote && (
           <motion.p
             key="estimate"
-            className="overflow-hidden pl-[42px] text-[11.5px] leading-snug text-(--map-muted)"
+            className="overflow-hidden pl-[46px] text-xs leading-snug text-(--map-muted)"
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
@@ -76,8 +76,8 @@ export default function MarkerPopup({ marker, onClose, deleteMarker }: MarkerPop
       </AnimatePresence>
       <CoordRows lat={lat} lng={lng} />
       <PopupActions>
-        <MapsAction lat={lat} lng={lng} label="Google Maps" />
-        <button type="button" aria-label="Verwijderen" title="Verwijderen" className={popupActionClass('danger', 'w-[30px] px-0')} onClick={() => setConfirmOpen(true)}>
+        <RouteAction lat={lat} lng={lng} />
+        <button type="button" aria-label="Verwijderen" title="Verwijderen" className={popupActionClass('danger', ICON_ACTION)} onClick={() => setConfirmOpen(true)}>
           <Trash2Icon />
         </button>
       </PopupActions>
