@@ -288,10 +288,9 @@ function AreaBody({ cell, label, onSave, onClear, mapRef }: { cell: HintCell; la
   if (settled && previewKey(current) !== previewKey(line)) setLine(current);
   const shown = settled ? current : line;
 
-  // '?' (or '*') for unknown digits: candidates instead of the RD preview, and no saving until it's filled in
+  // '?' (or '*') for unknown digits in a coordinate: candidates instead of the RD preview, and no saving until it's filled in (word answers with '?' still save)
   const guessAnswer = editing ? parseGuessAnswer(answer) : null;
   const guess = guessAnswer ? parseGuess(guessAnswer.x, guessAnswer.y) : null;
-  const wildcard = editing && /[?*]/.test(answer);
   const canShowGuess = !!guess && (guess.kind === 'points' ? guess.points.length > 0 : !guess.wide);
 
   function showGuess() {
@@ -310,7 +309,7 @@ function AreaBody({ cell, label, onSave, onClear, mapRef }: { cell: HintCell; la
 
   async function save() {
     const value = answer.trim();
-    if (!value || saving || /[?*]/.test(value)) return;
+    if (!value || saving || parseGuessAnswer(value)) return;
     setSaving(true);
     const ok = await onSave(cell, label, value);
     setSaving(false);
@@ -377,7 +376,7 @@ function AreaBody({ cell, label, onSave, onClear, mapRef }: { cell: HintCell; la
               aria-label={`Antwoord ${label}`}
               className="h-8 w-44 min-w-0 rounded-[10px] bg-beheer-window px-2.5 font-mono text-[13px] ring-1 ring-border outline-none placeholder:text-muted-foreground read-only:opacity-60 focus:ring-primary"
             />
-            <Pill variant="primary" disabled={!answer.trim() || saving || wildcard} onClick={() => void save()} morphKey={saving ? 'saving' : 'idle'} aria-label={saving ? 'Opslaan…' : undefined}>
+            <Pill variant="primary" disabled={!answer.trim() || saving || !!guessAnswer} onClick={() => void save()} morphKey={saving ? 'saving' : 'idle'} aria-label={saving ? 'Opslaan…' : undefined}>
               {saving ? <Loader2Icon className="animate-spin" /> : 'Opslaan'}
             </Pill>
           </motion.div>
