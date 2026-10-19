@@ -86,12 +86,12 @@ Reference: `DIALOG_SHELL` close — 34×32 button, 12px corners, `bg-beheer-row`
 - **Map popups** (`MapPopup`): `closeButton={false}` on the MapLibre `Popup` and a `CloseButton` positioned
   `absolute top-3 right-3` inside the card (popup padding 14px). Remove the `.maplibregl-popup-close-button` CSS.
   `DockedPopup` uses `CloseButton` too (it already looks like it).
-- **ResponsiveDialog**: desktop `DialogContent` gets `DIALOG_SHELL` by default (callers that already pass it keep
-  working — `cn` merges); the phone drawer (vaul, in ResponsiveDialog) keeps closing by
+- **ResponsiveDialog**: every caller already passes `DIALOG_SHELL`, and the base `ui/dialog.tsx` close gets the same
+  look, so nothing else changes on desktop; the phone drawer (vaul, in ResponsiveDialog) keeps closing by
   handle swipe / Back as today — no button added.
 - **Other dialogs** without the shell: `RenamePasskeyDialog`, `MarkerRegistration`, `TrackerGuideDialog`,
   `DebugInfo` → add `DIALOG_SHELL` to their `DialogContent` (and the shell's window background like the others,
-  `bg-card`); `QrConfirmDrawer` → `CloseButton` where its close sits now; `ImageLightbox` → `CloseButton` with
+  `bg-card`); `QrConfirmDrawer` has no close button (it closes itself / via its buttons) — unchanged; `ImageLightbox` → `CloseButton` with
   `bg-black/50 text-white hover:bg-black/65 backdrop-blur` (same size, corners and icon) so it reads on photos.
 - Hover/press transitions as on the Account dialog.
 
