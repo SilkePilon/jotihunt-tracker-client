@@ -6,6 +6,7 @@ import type { Team } from '@/types/Team';
 import type { SyncedHunt } from '@/types/HuntSync';
 import {
   accuracyCircles,
+  fastfoodFeatures,
   hunterFeatures,
   huntAccuracyCircles,
   layerStackMoves,
@@ -238,4 +239,23 @@ describe('layerStackMoves', () => {
     }
     return result;
   }
+});
+
+describe('fastfoodFeatures', () => {
+  const NOW = Date.parse('2026-10-17T23:40:00+02:00');
+  const base = { location: { type: 'Point' as const, coordinates: [5.9, 51.98] as [number, number] }, updatedAt: '' };
+  const restaurants = [
+    { ...base, osmId: 'node/1', brand: 'mcdonalds' as const, intervals: [{ start: '2026-10-17T06:30:00.000Z', end: '2026-10-17T23:30:00.000Z' }] },
+    { ...base, osmId: 'node/2', brand: 'kfc' as const, intervals: [] },
+    { ...base, osmId: 'node/3', brand: 'burgerking' as const },
+  ];
+  test('only shown brands; closed when the status is closed, unknown stays open', () => {
+    const features = fastfoodFeatures(restaurants, ['mcdonalds', 'kfc', 'burgerking'], NOW).features;
+    expect(features.map((feature) => [feature.properties.id, feature.properties.icon])).toEqual([
+      ['node/1', 'fastfood|mcdonalds|open'],
+      ['node/2', 'fastfood|kfc|closed'],
+      ['node/3', 'fastfood|burgerking|open'],
+    ]);
+    expect(fastfoodFeatures(restaurants, ['kfc'], NOW).features.map((feature) => feature.properties.id)).toEqual(['node/2']);
+  });
 });

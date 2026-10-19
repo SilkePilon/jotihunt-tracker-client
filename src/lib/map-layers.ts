@@ -10,6 +10,8 @@ import type { MapPin } from '@/lib/prediction';
 import type { Confidence } from '@/types/Prediction';
 import type { SyncedHunt } from '@/types/HuntSync';
 import { BUILDINGS_LAYER } from '@/lib/buildings';
+import { fastfoodStatus, type Brand } from '@/lib/fastfood';
+import type { FastfoodRestaurant } from '@/types/Fastfood';
 
 export type { HunterIcon } from '@/lib/marker-style';
 
@@ -18,6 +20,10 @@ export const FOX_MARKERS_LAYER = 'fox-markers';
 
 /** Symbol layer with the group pins; clicks on it open the team popup. */
 export const TEAM_PINS_LAYER = 'team-pins';
+/** Symbol layer with the fastfood tiles (McDonald's, KFC, Burger King); clicks open the restaurant popup. */
+export const FASTFOOD_LAYER = 'fastfood';
+/** The hovered restaurant, 10% larger. */
+export const FASTFOOD_HOVER_LAYER = 'fastfood-hover';
 /** Symbol layer with the hunters' vehicle icons; clicks on it open the device popup. */
 export const HUNTERS_LAYER = 'hunters';
 /** Heading arrows next to moving hunters (clicking one is clicking the hunter, like the former HTML marker). */
@@ -57,6 +63,8 @@ export const MAP_LAYER_STACK: string[][] = [
   // 3D buildings under every app layer (below the style labels through beforeId; on raster styles this keeps them under the markers)
   [BUILDINGS_LAYER],
   ['device-accuracy-fill', LIFE360_ACCURACY_LAYER, HUNT_ACCURACY_FILL_LAYER, HUNT_ACCURACY_LINE_LAYER, HUNT_ACCURACY_ESTIMATE_LINE_LAYER, 'prediction-areas-fill', 'prediction-areas-line', 'prediction-pin-lines', 'circle-layer-home', 'team-circles-fill', 'marker-trails-line'],
+  [FASTFOOD_LAYER],
+  [FASTFOOD_HOVER_LAYER],
   [TEAM_PINS_LAYER],
   ['team-pins-hover'],
   [FOX_MARKERS_LAYER],
@@ -197,6 +205,22 @@ export function teamPinFeatures(teams: Team[], visitedApiIds: Set<number>): Feat
       geometry: { type: 'Point', coordinates: [team.location.coordinates[0], team.location.coordinates[1]] },
       properties: { id: team._id, icon: markerIconId({ kind: 'group', area: areaKey(team.area) ?? 'none', visited: visitedApiIds.has(team.apiId) }) },
     })),
+  );
+}
+
+/** One tile per restaurant of a shown brand; grey when closed now (unknown hours stay in colour). */
+export function fastfoodFeatures(restaurants: FastfoodRestaurant[], brands: Brand[], nowMs: number): FeatureCollection<Point, { id: string; icon: string }> {
+  return collection(
+    restaurants
+      .filter((restaurant) => brands.includes(restaurant.brand))
+      .map((restaurant) => ({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: restaurant.location.coordinates },
+        properties: {
+          id: restaurant.osmId,
+          icon: markerIconId({ kind: 'fastfood', brand: restaurant.brand, closed: fastfoodStatus(restaurant.intervals, nowMs).state === 'closed' }),
+        },
+      })),
   );
 }
 
