@@ -28,6 +28,11 @@ export const FASTFOOD_HOVER_LAYER = 'fastfood-hover';
 export const HUNTERS_LAYER = 'hunters';
 /** Heading arrows next to moving hunters (clicking one is clicking the hunter, like the former HTML marker). */
 export const HUNTER_ARROWS_LAYER = 'hunter-arrows';
+/** Invisible wide line over the routed trail legs; clicks open the leg popup. */
+export const TRAILS_HIT_LAYER = 'marker-trails-hit';
+/** Routed trail layers (style A), bottom to top: white casing, walk (solid), car (dotted), straight fallback, hit, car badge. */
+export const ROUTED_TRAIL_LAYERS = ['marker-trails-casing', 'marker-trails-walk', 'marker-trails-car', 'marker-trails-fallback', TRAILS_HIT_LAYER, 'marker-trails-badge'] as const;
+
 /** Symbol layer with the AI prediction pins (not clickable). */
 export const PREDICTION_PINS_LAYER = 'prediction-pins';
 /** Symbol layer with the Life360 members (avatar cookies); clicks open the member popup. */
@@ -62,7 +67,7 @@ export function huntAccuracyCircles(hunts: SyncedHunt[] | undefined): FeatureCol
 export const MAP_LAYER_STACK: string[][] = [
   // 3D buildings under every app layer (below the style labels through beforeId; on raster styles this keeps them under the markers)
   [BUILDINGS_LAYER],
-  ['device-accuracy-fill', LIFE360_ACCURACY_LAYER, HUNT_ACCURACY_FILL_LAYER, HUNT_ACCURACY_LINE_LAYER, HUNT_ACCURACY_ESTIMATE_LINE_LAYER, 'prediction-areas-fill', 'prediction-areas-line', 'prediction-pin-lines', 'circle-layer-home', 'team-circles-fill', 'marker-trails-line'],
+  ['device-accuracy-fill', LIFE360_ACCURACY_LAYER, HUNT_ACCURACY_FILL_LAYER, HUNT_ACCURACY_LINE_LAYER, HUNT_ACCURACY_ESTIMATE_LINE_LAYER, 'prediction-areas-fill', 'prediction-areas-line', 'prediction-pin-lines', 'circle-layer-home', 'team-circles-fill', 'marker-trails-line', ...ROUTED_TRAIL_LAYERS],
   [FASTFOOD_LAYER],
   [FASTFOOD_HOVER_LAYER],
   [TEAM_PINS_LAYER],

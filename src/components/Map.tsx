@@ -44,7 +44,7 @@ import '@mapbox-controls/ruler/src/index.css';
 import Ruler from "@/components/map/RulerControl.tsx";
 import type {SymbolLayerSpecification} from '@maplibre/maplibre-gl-style-spec';
 import {DEFAULT_VIEW} from '@/lib/map-view';
-import {FASTFOOD_LAYER, FOX_MARKERS_LAYER, HUNTER_ARROWS_LAYER, HUNTERS_LAYER, LIFE360_LAYER, TEAM_PINS_LAYER} from '@/lib/map-layers';
+import {FASTFOOD_LAYER, FOX_MARKERS_LAYER, HUNTER_ARROWS_LAYER, HUNTERS_LAYER, LIFE360_LAYER, TEAM_PINS_LAYER, TRAILS_HIT_LAYER} from '@/lib/map-layers';
 import LayerStack from './layers/LayerStack';
 import MarkerImages from './layers/MarkerImages';
 import {markerCssVars, useMarkerPalette} from './layers/marker-icons';
@@ -104,7 +104,7 @@ const RULER_LABEL_LAYOUT: SymbolLayerSpecification['layout'] = {
 const RULER_LABEL_PAINT = {'text-color': '#fff', 'text-halo-color': RULER_COLOR, 'text-halo-width': 3.5};
 
 // Clicks on these canvas layers open their own popup instead of the location popup
-const INTERACTIVE_LAYER_IDS = [FOX_MARKERS_LAYER, TEAM_PINS_LAYER, HUNTERS_LAYER, HUNTER_ARROWS_LAYER, LIFE360_LAYER, FASTFOOD_LAYER];
+const INTERACTIVE_LAYER_IDS = [FOX_MARKERS_LAYER, TEAM_PINS_LAYER, HUNTERS_LAYER, HUNTER_ARROWS_LAYER, LIFE360_LAYER, FASTFOOD_LAYER, TRAILS_HIT_LAYER];
 
 /** Bottom map padding for the phone sheet's current snap (undefined on desktop, the HQ wall, or before the sheet measured) */
 function phonePaddingFor(wall: boolean): number | undefined {

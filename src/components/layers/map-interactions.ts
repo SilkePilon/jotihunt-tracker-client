@@ -2,8 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Map as MaplibreMap, MapGeoJSONFeature, MapMouseEvent } from 'maplibre-gl';
 
 export interface LayerInteractions {
-  /** Click or tap on a feature of the layer */
-  onClick?: (feature: MapGeoJSONFeature) => void;
+  /** Click or tap on a feature of the layer; `event` gives the clicked point (e.g. to anchor a popup on a line) */
+  onClick?: (feature: MapGeoJSONFeature, event: MapMouseEvent) => void;
   /** The pointer moved onto a feature of the layer (or off it: undefined) */
   onHover?: (feature: MapGeoJSONFeature | undefined) => void;
 }
@@ -56,7 +56,7 @@ function registryFor(map: MaplibreMap): Registry {
   };
   const onClick = (e: MapMouseEvent) => {
     const feature = topFeature(e);
-    if (feature) registry.layers.get(feature.layer.id)?.current.onClick?.(feature);
+    if (feature) registry.layers.get(feature.layer.id)?.current.onClick?.(feature, e);
   };
   const onMove = (e: MapMouseEvent) => setHovered(topFeature(e));
   const onOut = () => setHovered(undefined);
