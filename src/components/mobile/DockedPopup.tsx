@@ -1,8 +1,8 @@
 import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'motion/react';
-import { XIcon } from 'lucide-react';
 import { useMap } from 'react-map-gl/maplibre';
+import { CloseButton } from '@/components/ui/close-button';
 import { useBackEntry } from '@/hooks/back-entry.hook';
 import { EASE_OUT } from '@/lib/motion';
 
@@ -96,14 +96,7 @@ export default function DockedPopup({ longitude, latitude, onClose, children }: 
       inert={closing}
       className="pointer-events-auto relative rounded-3xl bg-card p-3.5 text-[13px] leading-[1.35] text-card-foreground shadow-[0_0_0_1px_var(--border),0_18px_50px_rgb(0_0_0/.35)]"
     >
-      <button
-        type="button"
-        aria-label="Sluiten"
-        onClick={requestClose}
-        className="absolute top-3 right-3 grid h-8 w-[34px] place-items-center rounded-xl bg-beheer-row text-muted-foreground transition-colors hover:bg-beheer-row-high"
-      >
-        <XIcon className="size-4" />
-      </button>
+      <CloseButton onClick={requestClose} className="absolute top-3 right-3" />
       <div className="flex flex-col">{children}</div>
     </motion.div>,
     dock,

@@ -303,23 +303,6 @@ body.dark {
     0 18px 50px rgb(0 0 0 / 0.35);
 }
 
-.maplibregl-popup-close-button {
-  top: 12px;
-  right: 12px;
-  width: 34px;
-  height: 32px;
-  border-radius: 12px;
-  font-size: 18px;
-  line-height: 1;
-  color: var(--map-muted);
-  background: var(--beheer-row) !important;
-  transition: background-color 150ms;
-}
-
-.maplibregl-popup-close-button:hover {
-  background: var(--beheer-row-high) !important;
-}
-
 .maplibregl-popup-tip {
   @apply animate-in fade-in;
 }

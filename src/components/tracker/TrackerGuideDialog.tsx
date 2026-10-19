@@ -13,6 +13,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useIsMobile } from '@/hooks/media.hook';
+import { DIALOG_SHELL } from '@/lib/dialog-shell';
+import { cn } from '@/lib/utils';
 import { TRACCAR_APP_STORE_URL, TRACCAR_PLAY_STORE_URL } from '@/lib/tracker';
 import type { TrackerMe } from '@/types/Tracker';
 import TrackerQrCode from './TrackerQrCode';
@@ -50,7 +52,7 @@ export default function TrackerGuideDialog({ open, onOpenChange, status }: Track
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-md" data-tracker-guide>
+      <DialogContent className={cn(DIALOG_SHELL, 'max-h-[90dvh] overflow-y-auto bg-card sm:max-w-md')} data-tracker-guide>
         <DialogHeader>
           <DialogTitle>Je telefoon koppelen</DialogTitle>
           <DialogDescription>Zo deelt je telefoon zijn locatie met het team. Dit hoef je maar één keer te doen.</DialogDescription>

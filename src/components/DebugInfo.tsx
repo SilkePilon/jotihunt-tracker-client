@@ -1,4 +1,6 @@
 import { useAppConfig } from '@/hooks/app-config.hook';
+import { DIALOG_SHELL } from '@/lib/dialog-shell';
+import { cn } from '@/lib/utils';
 import { Button } from './ui/button';
 import { DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
 
@@ -11,7 +13,7 @@ export default function DebugInfo() {
   const formatTime = (iso: string | null) => (iso ? new Date(iso).toLocaleString('nl-NL') : '–');
 
   return (
-    <DialogContent>
+    <DialogContent className={cn(DIALOG_SHELL, 'bg-card')}>
       <DialogHeader>
         <DialogTitle>Debug informatie</DialogTitle>
         <DialogDescription>Informatie voor ontwikkelaars</DialogDescription>

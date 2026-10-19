@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input';
 import { apiErrorMessage } from '@/lib/api-error';
 import { classifyPasskeyError, PASSKEY_MESSAGES } from '@/lib/passkey';
 import InlineError from '@/components/InlineError';
+import { cn } from '@/lib/utils';
+import { DIALOG_SHELL } from '@/lib/dialog-shell';
 
 interface RenamePasskeyDialogProps {
   open: boolean;
@@ -52,7 +54,7 @@ export default function RenamePasskeyDialog({ open, name, onOpenChange, onSave }
 
   return (
     <Dialog open={open} onOpenChange={(next) => !saving && onOpenChange(next)}>
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent className={cn(DIALOG_SHELL, 'bg-card sm:max-w-sm')}>
         <form onSubmit={submit} className="flex flex-col gap-4">
           <DialogHeader>
             <DialogTitle>Passkey hernoemen</DialogTitle>

@@ -4,7 +4,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { MarkerType } from '@/types/MarkerType';
 import { useId, useState } from 'react';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { areaOptions, capitalizeFirstLetter } from '@/lib/utils';
+import { areaOptions, capitalizeFirstLetter, cn } from '@/lib/utils';
+import { DIALOG_SHELL } from '@/lib/dialog-shell';
 import { z } from 'zod';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -233,7 +234,7 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
 
   const dialog = () => (
     <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
-      <DialogContent>
+      <DialogContent className={cn(DIALOG_SHELL, 'bg-card')}>
         <DialogHeader>
           <DialogTitle>{capitalizeFirstLetter(markerType ?? '')} registreren</DialogTitle>
           <DialogDescription>Plaats een marker op de kaart.</DialogDescription>

@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { MinusIcon, PlusIcon, RotateCcwIcon, XIcon } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { CLOSE_BUTTON_CLASS } from '@/components/ui/close-button';
+import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 
 const MIN_SCALE = 1;
@@ -15,6 +16,8 @@ const clampScale = (scale: number) => Math.min(MAX_SCALE, Math.max(MIN_SCALE, sc
 /**
  * Full-screen photo viewer with zoom: mouse wheel, pinch, double click/tap and +/- buttons; drag to pan when zoomed.
  */
+const TOOL_BUTTON = cn(CLOSE_BUTTON_CLASS, 'bg-black/50 text-white backdrop-blur hover:bg-black/65 disabled:opacity-40 disabled:pointer-events-none');
+
 export default function ImageLightbox({ src, alt, open, onOpenChange }: { src: string; alt: string; open: boolean; onOpenChange: (open: boolean) => void }) {
   const [view, setView] = useState<View>(START);
   const [dragging, setDragging] = useState(false);
@@ -89,18 +92,18 @@ export default function ImageLightbox({ src, alt, open, onOpenChange }: { src: s
           />
         </div>
         <div className="absolute right-3 top-3 flex gap-2">
-          <Button variant="secondary" size="icon" aria-label="Uitzoomen" onClick={() => zoom(1 / STEP)} disabled={view.scale <= MIN_SCALE}>
+          <button type="button" className={TOOL_BUTTON} aria-label="Uitzoomen" onClick={() => zoom(1 / STEP)} disabled={view.scale <= MIN_SCALE}>
             <MinusIcon />
-          </Button>
-          <Button variant="secondary" size="icon" aria-label="Inzoomen" onClick={() => zoom(STEP)} disabled={view.scale >= MAX_SCALE}>
+          </button>
+          <button type="button" className={TOOL_BUTTON} aria-label="Inzoomen" onClick={() => zoom(STEP)} disabled={view.scale >= MAX_SCALE}>
             <PlusIcon />
-          </Button>
-          <Button variant="secondary" size="icon" aria-label="Zoom herstellen" onClick={() => setView(START)} disabled={view.scale === 1}>
+          </button>
+          <button type="button" className={TOOL_BUTTON} aria-label="Zoom herstellen" onClick={() => setView(START)} disabled={view.scale === 1}>
             <RotateCcwIcon />
-          </Button>
-          <Button variant="secondary" size="icon" aria-label="Sluiten" onClick={() => handleOpenChange(false)}>
+          </button>
+          <button type="button" className={TOOL_BUTTON} aria-label="Sluiten" onClick={() => handleOpenChange(false)}>
             <XIcon />
-          </Button>
+          </button>
         </div>
       </DialogContent>
     </Dialog>
