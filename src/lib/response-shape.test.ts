@@ -81,6 +81,11 @@ describe('hasExpectedShape', () => {
     expect(hasExpectedShape('/happy-hour', { message: 'x' })).toBe(false);
   });
 
+  test('/fastfood must be a list', () => {
+    expect(hasExpectedShape('/fastfood', [])).toBe(true);
+    expect(hasExpectedShape('/fastfood', { message: 'x' })).toBe(false);
+  });
+
   test('the query string is ignored', () => {
     expect(hasExpectedShape('/markers?since=x', [])).toBe(true);
     expect(hasExpectedShape('/hints/rd-preview?answer=1', { rd: null })).toBe(true);

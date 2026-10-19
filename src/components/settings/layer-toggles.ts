@@ -27,6 +27,9 @@ export function useLayerToggles(fetchLife360: boolean): LayerToggle[] {
       showPredictions: state.showPredictions,
       showLife360: state.showLife360,
       showBuildings3d: state.showBuildings3d,
+      showMcDonalds: state.showMcDonalds,
+      showKfc: state.showKfc,
+      showBurgerKing: state.showBurgerKing,
       toggleTeams: state.toggleTeams,
       toggleDevices: state.toggleDevices,
       toggleMarkersPart1: state.toggleMarkersPart1,
@@ -36,6 +39,9 @@ export function useLayerToggles(fetchLife360: boolean): LayerToggle[] {
       togglePredictions: state.togglePredictions,
       toggleLife360: state.toggleLife360,
       toggleBuildings3d: state.toggleBuildings3d,
+      toggleMcDonalds: state.toggleMcDonalds,
+      toggleKfc: state.toggleKfc,
+      toggleBurgerKing: state.toggleBurgerKing,
     })),
   );
   const { enabled: predictionEnabled } = usePredictionSetting();
@@ -56,5 +62,10 @@ export function useLayerToggles(fetchLife360: boolean): LayerToggle[] {
   if (life360?.linked) {
     toggles.push({ id: 'life360', label: 'Life360', checked: layers.showLife360, toggle: layers.toggleLife360 });
   }
+  toggles.push(
+    { id: 'mcdonalds', label: "McDonald's", checked: layers.showMcDonalds, toggle: layers.toggleMcDonalds },
+    { id: 'kfc', label: 'KFC', checked: layers.showKfc, toggle: layers.toggleKfc },
+    { id: 'burgerking', label: 'Burger King', checked: layers.showBurgerKing, toggle: layers.toggleBurgerKing },
+  );
   return toggles;
 }

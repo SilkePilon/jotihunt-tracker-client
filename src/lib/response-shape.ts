@@ -11,6 +11,7 @@ const LIST_PATHS = new Set([
   '/hunts',
   '/hunts/events',
   '/teams',
+  '/fastfood',
   '/predictions',
   '/visits',
   '/tracker/positions',

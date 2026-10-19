@@ -11,6 +11,9 @@ interface LayersState {
   showPredictions: boolean;
   showLife360: boolean;
   showBuildings3d: boolean;
+  showMcDonalds: boolean;
+  showKfc: boolean;
+  showBurgerKing: boolean;
   toggleTeams: () => void;
   toggleDevices: () => void;
   toggleMarkersPart1: () => void;
@@ -20,6 +23,9 @@ interface LayersState {
   togglePredictions: () => void;
   toggleLife360: () => void;
   toggleBuildings3d: () => void;
+  toggleMcDonalds: () => void;
+  toggleKfc: () => void;
+  toggleBurgerKing: () => void;
 }
 
 /**
@@ -43,6 +49,10 @@ const useLayersStore = create<LayersState>()(
       showPredictions: true,
       showLife360: true,
       showBuildings3d: true,
+      // Fastfood layers: off until someone wants food (persist's merge gives existing users these defaults)
+      showMcDonalds: false,
+      showKfc: false,
+      showBurgerKing: false,
       toggleTeams: () => {
         set((state) => ({ showTeams: !state.showTeams }));
       },
@@ -69,6 +79,15 @@ const useLayersStore = create<LayersState>()(
       },
       toggleBuildings3d: () => {
         set((state) => ({ showBuildings3d: !state.showBuildings3d }));
+      },
+      toggleMcDonalds: () => {
+        set((state) => ({ showMcDonalds: !state.showMcDonalds }));
+      },
+      toggleKfc: () => {
+        set((state) => ({ showKfc: !state.showKfc }));
+      },
+      toggleBurgerKing: () => {
+        set((state) => ({ showBurgerKing: !state.showBurgerKing }));
       },
     }),
     {
