@@ -12,7 +12,7 @@ export default function ReloadTeamsDialog({ open, onOpenChange }: ReloadTeamsDia
   const { reloadTeams } = useTeams();
 
   async function handleReload() {
-    // Never throws; false on any error (e.g. 409 while demo mode is on)
+    // Never throws; false on any error (e.g. 423 while an archive edition is shown)
     const ok = await reloadTeams();
     if (ok) {
       toast.success('Teams herladen', {

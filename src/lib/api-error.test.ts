@@ -2,8 +2,8 @@ import { describe, expect, test } from 'bun:test';
 import { AxiosError, AxiosHeaders, type AxiosResponse } from 'axios';
 import { apiErrorMessage } from './api-error';
 
-function axiosError(data: unknown): AxiosError {
-  const response = { data, status: 400, statusText: 'Bad Request', headers: {}, config: { headers: new AxiosHeaders() } } as AxiosResponse;
+function axiosError(data: unknown, status = 400): AxiosError {
+  const response = { data, status, statusText: 'Bad Request', headers: {}, config: { headers: new AxiosHeaders() } } as AxiosResponse;
   return new AxiosError('Request failed with status code 400', 'ERR_BAD_REQUEST', undefined, undefined, response);
 }
 
@@ -18,6 +18,11 @@ describe('apiErrorMessage', () => {
 
   test('message wins over validation errors', () => {
     expect(apiErrorMessage(axiosError({ message: 'Eerst', errors: [{ msg: 'Daarna' }] }), 'fallback')).toBe('Eerst');
+  });
+
+  test('archive message for a 423, also without a body', () => {
+    expect(apiErrorMessage(axiosError({ message: 'Archief is alleen-lezen' }, 423), 'fallback')).toBe('Archief is alleen-lezen');
+    expect(apiErrorMessage(axiosError(undefined, 423), 'fallback')).toBe('Archief is alleen-lezen');
   });
 
   test('fallback for empty or non-string messages, missing bodies and non-axios errors', () => {

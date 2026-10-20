@@ -18,8 +18,8 @@ describe('hasExpectedShape', () => {
     expect(hasExpectedShape('/tracker/me', [])).toBe(false);
     expect(hasExpectedShape('/hints/board', { articles: [], cells: [] })).toBe(true);
     expect(hasExpectedShape('/hints/board', { message: 'x' })).toBe(false);
-    expect(hasExpectedShape('/demo', { enabled: false, enabledAt: null, startedAt: null })).toBe(true);
-    expect(hasExpectedShape('/demo', { message: 'x' })).toBe(false);
+    expect(hasExpectedShape('/editions', { editions: [], liveYear: 2026, shownYear: 2026, readOnly: false })).toBe(true);
+    expect(hasExpectedShape('/editions', { message: 'x' })).toBe(false);
     expect(hasExpectedShape('/notifications/preferences', { message: 'x' })).toBe(false);
   });
 

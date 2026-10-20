@@ -6,7 +6,7 @@ import Map, {MapRef} from './components/Map';
 import PWAPrompt from 'react-ios-pwa-prompt';
 import BeheerDialog from './components/beheer/BeheerDialog';
 import IntelDialog from './components/intel-window/IntelDialog';
-import DemoReloader from './components/DemoReloader';
+import EditionReloader from '@/components/EditionReloader';
 import AddPasskeyPrompt from './components/AddPasskeyPrompt';
 import ErrorBoundary from './components/ErrorBoundary';
 import StaleDataBadge from './components/StaleDataBadge';
@@ -105,7 +105,7 @@ export default function Layout() {
         <SWRConfig value={swrConfig}>
             {/* Separate boundaries: one crashing part (a dialog, the map, a sidebar section) must not take the rest down */}
             <ErrorBoundary variant="floating">
-                <DemoReloader/>
+                <EditionReloader/>
                 <AddPasskeyPrompt/>
                 {/* Here and not on the map page: hunts registered while another page is open are announced too */}
             </ErrorBoundary>
