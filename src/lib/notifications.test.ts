@@ -119,3 +119,16 @@ describe('notification option toggles', () => {
     expect(setAllTypes(false)).toContain('hunt-rejected');
   });
 });
+
+describe('hunt-cooldown', () => {
+  test('silent, info toast, own tile switched on its own', () => {
+    const cooldown = n({ type: 'hunt-cooldown', urgent: false, data: { area: 'alpha', status: 'green' } });
+    expect(isSilent(cooldown)).toBe(true);
+    expect(pickSound([cooldown])).toBeNull();
+    expect(toastKind(cooldown)).toBe('info');
+    expect(soundKey(cooldown)).toBe('fox-status');
+    expect(NOTIFICATION_OPTIONS.find((option) => option.type === 'hunt-cooldown')?.label).toBe('Weer huntbaar');
+    expect(toggleType([], 'hunt-cooldown', false)).toEqual(['hunt-cooldown']);
+    expect(setAllTypes(false)).toContain('hunt-cooldown');
+  });
+});
