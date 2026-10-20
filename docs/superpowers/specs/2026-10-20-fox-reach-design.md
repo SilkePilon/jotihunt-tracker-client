@@ -61,8 +61,8 @@ shape for that area.
 
 ### Refresh
 
-- Server memoises the whole response; recomputes when markers, visits, status or night areas changed, or after
-  2 minutes (the area grows). Isochrone results cached in memory per `area|fixId|profile|distance rounded to 100 m`.
+- Server memoises the whole response for 30 seconds (new markers, visits and status show up within that); the area
+  grows in 100 m steps, isochrones cached in memory per `fixId|profile|distance`.
 - Client: SWR `/reach`, refresh every 60 s, only while the layer is on.
 
 ## API
