@@ -14,6 +14,7 @@ import { POP } from '@/lib/motion';
 import { capitalizeFirstLetter, cn, getColorFromArea } from '@/lib/utils';
 import { BeheerCard, BeheerPane, BeheerRow, BeheerRows, CountSwap } from './BeheerLayout';
 import BeheerSwitch from './controls/BeheerSwitch';
+import EditionsCard from './EditionsCard';
 import GeneralSettings from './GeneralSettings';
 import RoutesCard from './RoutesCard';
 import { Pill } from './controls/Pill';
@@ -123,6 +124,7 @@ export default function AlgemeenPane() {
 
   return (
     <BeheerPane title="Algemeen" description="Instellingen die voor iedereen gelden.">
+      <EditionsCard />
       <HuntableAreasCard />
       <GeneralSettings />
       <RoutesCard />
