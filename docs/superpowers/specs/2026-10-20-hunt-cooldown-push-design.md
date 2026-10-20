@@ -43,10 +43,10 @@ On every notifier run (every 10 s, `runNotifier`), per area:
 
 - `NotificationType` + `OptionalNotificationType` gain `hunt-cooldown`.
 - Meldingen tile: `{ type: 'hunt-cooldown', label: 'Weer huntbaar', short: '1 uur na onze hunt', description: 'Als
-  een vos die we gehunt hebben na het uur weer gehunt mag worden (en groen of oranje is).' }`, icon lucide `TimerIcon`,
-  blue tone matching `COOLDOWN_PILL_CLASS`. On by default (as every optional type: not in `disabledTypes`).
+  een vos die we gehunt hebben na het uur weer gehunt mag worden (en groen of oranje is).' }`, icon lucide `TimerIcon`
+  (tiles share one style, no per-type tone). On by default (as every optional type: not in `disabledTypes`).
 - No row in the tour's `NotificationSoundsPanel`: it lists sounds to play, and this push has none.
-- HQ director: ignores the type (no camera move).
+- HQ director: ignores the type (no card, no camera move; the board's cooldown group shows it).
 - Server `NOTIFICATION_TYPES` gains `hunt-cooldown`, so it is switchable (`OPTIONAL_NOTIFICATION_TYPES`).
 
 ## Structure

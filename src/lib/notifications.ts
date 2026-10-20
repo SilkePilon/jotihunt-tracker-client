@@ -1,4 +1,4 @@
-export type NotificationType = 'fox-status' | 'hint' | 'article' | 'hunt-new' | 'hunt-approved' | 'hunt-rejected' | 'broadcast' | 'counter-hunt' | 'happy-hour';
+export type NotificationType = 'fox-status' | 'hint' | 'article' | 'hunt-new' | 'hunt-approved' | 'hunt-rejected' | 'broadcast' | 'counter-hunt' | 'happy-hour' | 'hunt-cooldown';
 /** Broadcasts from HQ can't be switched off */
 export type OptionalNotificationType = Exclude<NotificationType, 'broadcast'>;
 export type SoundKey = 'fox-green' | 'fox-status' | 'hint' | 'article' | 'hunt' | 'broadcast' | 'counter-hunt' | 'happy-hour';
@@ -19,7 +19,7 @@ export interface NotificationPrefs {
 }
 
 /** Bump to show the "Meldingen" dialog again to everyone (e.g. after adding a type). */
-export const NOTIFICATIONS_PROMPT_VERSION = 4;
+export const NOTIFICATIONS_PROMPT_VERSION = 5;
 
 /**
  * `short` is the one-liner on the tile; `description` stays as its tooltip and screen-reader text. `alsoTypes` are
@@ -33,6 +33,7 @@ export const NOTIFICATION_OPTIONS: { type: OptionalNotificationType; alsoTypes?:
   { type: 'hunt-approved', alsoTypes: ['hunt-rejected'], label: 'Hunt beoordeeld', short: 'Goed- of afgekeurd', description: 'Als jotihunt.nl een hunt goedkeurt (met punten) of afkeurt.' },
   { type: 'counter-hunt', label: 'Tegenhunt', short: 'Met richting', description: 'Als de Jotihunt-bot een tegenhunt meldt, en uit welke richting.' },
   { type: 'happy-hour', label: 'Happy hour', short: 'Hunts tellen dubbel', description: 'Als er een happy hour begint: hunts tellen dan dubbel.' },
+  { type: 'hunt-cooldown', label: 'Weer huntbaar', short: '1 uur na onze hunt', description: 'Als een vos die we gehunt hebben na het uur weer gehunt mag worden (en groen of oranje is).' },
 ];
 
 /** A tile's type plus the types switched with it. */
@@ -64,6 +65,8 @@ export function soundKey(notification: Pick<AppNotification, 'type' | 'data'>): 
     case 'hunt-approved':
     case 'hunt-rejected':
       return 'hunt';
+    case 'hunt-cooldown':
+      return 'fox-status';
     default:
       return notification.type;
   }
@@ -87,9 +90,9 @@ export function pickPrimary<T extends Pick<AppNotification, 'type' | 'data'>>(no
   return best;
 }
 
-/** The server sends "Happy hour voorbij" as a silent, non-urgent notification: no sound for that one. */
+/** Quiet notifications: "Happy hour voorbij" (sent non-urgent) and "weer huntbaar". No sound for those. */
 export function isSilent(notification: Pick<AppNotification, 'type'> & { urgent?: boolean }): boolean {
-  return notification.type === 'happy-hour' && notification.urgent === false;
+  return notification.type === 'hunt-cooldown' || (notification.type === 'happy-hour' && notification.urgent === false);
 }
 
 export function pickSound(notifications: readonly (Pick<AppNotification, 'type' | 'data'> & { urgent?: boolean })[]): SoundKey | null {

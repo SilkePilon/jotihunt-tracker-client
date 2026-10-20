@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { BadgeCheckIcon, FlagIcon, InboxIcon, LightbulbIcon, MegaphoneIcon, NewspaperIcon, PartyPopperIcon, SwordsIcon, type LucideIcon } from 'lucide-react';
+import { BadgeCheckIcon, FlagIcon, InboxIcon, LightbulbIcon, MegaphoneIcon, NewspaperIcon, PartyPopperIcon, SwordsIcon, TimerIcon, type LucideIcon } from 'lucide-react';
 import BeheerSwitch from '@/components/beheer/controls/BeheerSwitch';
 import Reveal from '@/components/motion/Reveal';
 import NotificationTile from '@/components/notifications/NotificationTile';
@@ -31,6 +31,7 @@ const ICONS: Record<OptionalNotificationType, LucideIcon> = {
   'hunt-rejected': BadgeCheckIcon,
   'counter-hunt': SwordsIcon,
   'happy-hour': PartyPopperIcon,
+  'hunt-cooldown': TimerIcon,
 };
 
 const NOTICE = 'mt-2.5 rounded-2xl bg-beheer-row p-3 text-xs';

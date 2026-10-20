@@ -164,6 +164,9 @@ export function eventFromNotification(notification: AppNotification): HqEvent | 
     case 'hunt-approved':
     case 'hunt-rejected':
       return null;
+    // The board's cooldown group already shows when a fox is huntable again
+    case 'hunt-cooldown':
+      return null;
     case 'broadcast':
     case 'happy-hour':
       return { key: id, kind: 'message', title, detail: body, tone: 'warn', camera: null };
