@@ -67,7 +67,7 @@ shape for that area.
 
 ## API
 
-`GET /api/reach` (`verifyToken`):
+`GET /routes/reach` (`verifyToken`):
 
 ```ts
 interface ReachResponse { enabled: boolean; areas: AreaReach[] }
@@ -107,6 +107,8 @@ Client (`jotihunt-tracker-client`):
 
 - Router errors never fail the request: circle fallback per area, logged once per cooldown.
 - No markers / no teams / no visits: the parts that need them are skipped.
+- Geometry errors stay per area: a failing cone gives `cone: null`, an unusable isochrone shape gives the circle
+  with `estimate: true`, any other error skips that area. Each is logged once per area + fix.
 
 ## Testing
 
@@ -116,6 +118,14 @@ Client (`jotihunt-tracker-client`):
 - Client unit: chip text (minutes, `3u+`, `~`), feature building.
 - Router: build locally or on the cluster, check `foot_night` isochrone answers.
 - Browser: fake API with `/reach` fixture, desktop + phone, light + dark.
+
+## Rollout
+
+1. Router first: the new image rebuilds the graph with `foot_night` in the background on first start (config hash
+   changed); the old graph keeps serving meanwhile, so `foot_night` isochrones fall back to circles until it is done.
+2. Server next, then client.
+3. Rolling the router image back after a `foot_night` graph exists: the old image cannot load the new graph's
+   profiles. Trigger `POST /rebuild` on the supervisor admin port (8990) or restore the previous graph dir.
 
 ## Out of scope
 
