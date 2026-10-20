@@ -148,6 +148,10 @@ describe('eventFromNotification', () => {
   test('hunt notifications are skipped: the sync log brings them', () => {
     for (const type of ['hunt-new', 'hunt-approved', 'hunt-rejected'] as const) expect(eventFromNotification(note(type))).toBeNull();
   });
+
+  test('hunt cooldown notifications are not shown (the board shows the cooldown)', () => {
+    expect(eventFromNotification(note('hunt-cooldown', { area: 'alpha', status: 'green' }))).toBeNull();
+  });
   test('broadcast and happy hour: warn card, no camera', () => {
     for (const type of ['broadcast', 'happy-hour'] as const) {
       expect(eventFromNotification(note(type))).toEqual({ key: `n-${type}`, kind: 'message', title: 'Titel', detail: 'Tekst', tone: 'warn', camera: null });
