@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { inlineLinkClass } from '@/components/tracker/styles';
+import { useEdition } from '@/hooks/edition.hook';
+import { cn } from '@/lib/utils';
 import type { BotMessage, TelegramAdminStatus } from '@/types/Telegram';
 import BotMessageTimeline from './BotMessageTimeline';
 import TelegramLinkPanel, { type TelegramLinkActions } from './TelegramLinkPanel';
@@ -22,6 +24,8 @@ interface TelegramCardProps {
 /** "Jotihunt-berichten": every @Jotihunt_bot message as a timeline; admins link the Telegram account here. */
 export default function TelegramCard({ messages, admin }: TelegramCardProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
+  // Unlinking is refused while an archive edition is shown (423)
+  const { readOnly } = useEdition();
   const status = admin?.status;
   const linking = !!status && status.state !== 'linked';
   const linkedAccount = status?.state === 'linked' ? status.account : undefined;
@@ -45,7 +49,7 @@ export default function TelegramCard({ messages, admin }: TelegramCardProps) {
             <span className="min-w-0 truncate">
               {status.connected === false ? 'Geen verbinding via' : 'Luistert via'} <b className="font-semibold text-foreground">{linkedAccount?.name ?? 'Telegram'}</b>
             </span>
-            <button type="button" className={inlineLinkClass} onClick={() => setConfirmOpen(true)}>
+            <button type="button" className={cn(inlineLinkClass, 'disabled:cursor-default disabled:text-muted-foreground disabled:no-underline')} disabled={readOnly} onClick={() => setConfirmOpen(true)}>
               ontkoppelen
             </button>
           </div>

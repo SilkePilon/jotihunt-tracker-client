@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { Loader2Icon, XIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import AutoHeight from '@/components/motion/AutoHeight';
+import { useEdition } from '@/hooks/edition.hook';
 import { useNightAreas, useRouterStatus } from '@/hooks/night-areas.hook';
 import { POP, SWAP } from '@/lib/motion';
 import useAdminStore from '@/stores/admin.store';
@@ -78,6 +79,7 @@ export default function RoutesCard() {
   const [saving, setSaving] = useState(false);
   const [rebuilding, setRebuilding] = useState(false);
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const { readOnly } = useEdition();
 
   // The saved areas show on the map while this card is open
   useEffect(() => {
@@ -123,7 +125,7 @@ export default function RoutesCard() {
           <BeheerSwitch
             aria-label="Routes tekenen"
             checked={setting?.enabled !== false}
-            disabled={!setting || saving}
+            disabled={!setting || saving || readOnly}
             onCheckedChange={(enabled) => void persist({ ...setting!, enabled })}
           />
         </BeheerRow>
@@ -138,7 +140,7 @@ export default function RoutesCard() {
         </BeheerRow>
       </BeheerRows>
       <div className="mt-3 flex">
-        <Pill variant="secondary" morphKey={rebuilding ? 'busy' : 'idle'} disabled={!status?.configured || status.building || rebuilding} onClick={() => void handleRebuild()}>
+        <Pill variant="secondary" morphKey={rebuilding ? 'busy' : 'idle'} disabled={!status?.configured || status.building || rebuilding || readOnly} onClick={() => void handleRebuild()}>
           {rebuilding && <Loader2Icon className="animate-spin" />}
           Kaartdata vernieuwen
         </Pill>
@@ -157,7 +159,7 @@ export default function RoutesCard() {
             key={area.id}
             area={area}
             confirming={confirmId === area.id}
-            disabled={saving}
+            disabled={saving || readOnly}
             onAsk={() => setConfirmId(area.id)}
             onCancel={() => setConfirmId(null)}
             onDelete={async () => {
@@ -168,7 +170,7 @@ export default function RoutesCard() {
         ))}
       </BeheerRows>
       <div className="mt-3 flex">
-        <Pill variant="primary" disabled={!setting} onClick={startDrawing}>
+        <Pill variant="primary" disabled={!setting || readOnly} onClick={startDrawing}>
           + Gebied tekenen
         </Pill>
       </div>

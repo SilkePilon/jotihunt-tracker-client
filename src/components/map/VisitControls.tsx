@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { CheckIcon, SparklesIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import { useEdition } from '@/hooks/edition.hook';
 import { useVisits } from '@/hooks/predictions.hook';
 import { nextVisitChoice, visitSelection, visitStatusText } from '@/lib/prediction';
 import MarkerGlyph from './popup/MarkerGlyph';
@@ -21,6 +22,7 @@ export function VisitStatusRow({ teamApiId }: { teamApiId: number }) {
 export function VisitToggleButton({ teamApiId }: { teamApiId: number }) {
   const { visits, setVisit } = useVisits();
   const [busy, setBusy] = useState(false);
+  const { readOnly } = useEdition();
   const visit = visits?.find((candidate) => candidate.teamApiId === teamApiId);
   const selection = visitSelection(visit);
   const visited = selection === 'visited';
@@ -43,7 +45,7 @@ export function VisitToggleButton({ teamApiId }: { teamApiId: number }) {
       aria-pressed={visited}
       aria-label="Bezocht"
       title={title}
-      disabled={busy}
+      disabled={busy || readOnly}
       onClick={toggle}
       className={popupActionClass(visited ? 'success' : 'neutral', ICON_ACTION)}
     >

@@ -3,6 +3,7 @@ import { Loader2Icon, XIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import TrackerQrCode from '@/components/tracker/TrackerQrCode';
+import { useEdition } from '@/hooks/edition.hook';
 import { useNow } from '@/hooks/now.hook';
 import { secondsLeft } from '@/lib/app-pairing';
 import { formatCountdown } from '@/lib/format';
@@ -114,6 +115,8 @@ function PasswordStep({ hint, onSubmit, onCancel }: { hint?: string; onSubmit: T
 /** Admins: link the group's Telegram account (L1, inside the "Jotihunt-berichten" card). Nothing once linked. */
 export default function TelegramLinkPanel({ status, onLink, onCancel, onSubmitPassword }: { status: TelegramAdminStatus } & TelegramLinkActions) {
   const [starting, setStarting] = useState(false);
+  // Linking is refused while an archive edition is shown (423)
+  const { readOnly } = useEdition();
 
   async function start() {
     setStarting(true);
@@ -137,7 +140,7 @@ export default function TelegramLinkPanel({ status, onLink, onCancel, onSubmitPa
       return (
         <div className="flex flex-col gap-2.5" data-telegram-state="unlinked">
           <p className="text-xs text-muted-foreground">Koppel het Telegram-account dat de berichten van @Jotihunt_bot krijgt. Tegenhunts worden dan automatisch gemeld.</p>
-          <Button size="lg" className={cn('h-11 w-full rounded-lg text-sm font-semibold', TELEGRAM_BUTTON)} disabled={starting} onClick={() => void start()}>
+          <Button size="lg" className={cn('h-11 w-full rounded-lg text-sm font-semibold', TELEGRAM_BUTTON)} disabled={starting || readOnly} onClick={() => void start()}>
             {starting ? <Loader2Icon className="animate-spin" /> : <TelegramLogo className="size-[18px]" />}
             Koppel Telegram
           </Button>

@@ -1,6 +1,7 @@
 import { ReactNode, useState } from 'react';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { inlineLinkClass } from '@/components/tracker/styles';
+import { useEdition } from '@/hooks/edition.hook';
 import { life360View } from '@/lib/life360';
 import { cn } from '@/lib/utils';
 import type { Life360AdminStatus, Life360Member } from '@/types/Life360';
@@ -25,6 +26,8 @@ export default function Life360Card({ status, isError, members, onRefresh, onUnl
   const [emailStep, setEmailStep] = useState(false);
   const [emailPrefill, setEmailPrefill] = useState('');
   const [confirmOpen, setConfirmOpen] = useState(false);
+  // Unlinking and "ververs" are refused while an archive edition is shown (423)
+  const { readOnly } = useEdition();
 
   // Leaving "unlinked" (code sent, or linked elsewhere) closes the e-mail step, so a later unlink shows the button again
   const state = status?.state;
@@ -55,7 +58,7 @@ export default function Life360Card({ status, isError, members, onRefresh, onUnl
     case 'error':
       return <p className="text-xs text-muted-foreground">Life360-status ophalen is mislukt.</p>;
     case 'linked':
-      body = status?.state === 'linked' && <Life360Linked status={status} members={members} onRefresh={onRefresh} onFlyTo={onFlyTo} />;
+      body = status?.state === 'linked' && <Life360Linked status={status} members={members} readOnly={readOnly} onRefresh={onRefresh} onFlyTo={onFlyTo} />;
       break;
     case 'loggedOut':
     case 'paused':
@@ -87,7 +90,7 @@ export default function Life360Card({ status, isError, members, onRefresh, onUnl
             <span className="min-w-0 truncate">
               Leest via <b className="font-semibold text-foreground">{footer.email}</b>
             </span>
-            <button type="button" className={cn(inlineLinkClass, 'shrink-0')} onClick={() => setConfirmOpen(true)}>
+            <button type="button" className={cn(inlineLinkClass, 'shrink-0', 'disabled:cursor-default disabled:text-muted-foreground disabled:no-underline')} disabled={readOnly} onClick={() => setConfirmOpen(true)}>
               ontkoppelen
             </button>
           </div>

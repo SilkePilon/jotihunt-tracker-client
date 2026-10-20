@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Input } from '@/components/ui/input';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import { useEdition } from '@/hooks/edition.hook';
 import { useNow } from '@/hooks/now.hook';
 import { isSixDigits, resendCountdown } from '@/lib/life360';
 import { cn } from '@/lib/utils';
@@ -321,6 +322,8 @@ export interface Life360LinkPanelProps extends Life360LinkActions {
 /** Admins: link the team's Life360 account (inside the Life360 card) — every step before "linked". */
 export default function Life360LinkPanel({ view, status, emailPrefill, onOpenEmail, onCloseEmail, onOtherAddress, ...actions }: Life360LinkPanelProps) {
   const cancel = () => void actions.onCancel();
+  // Linking is refused while an archive edition is shown (423)
+  const { readOnly } = useEdition();
 
   switch (view) {
     case 'unavailable':
@@ -329,7 +332,7 @@ export default function Life360LinkPanel({ view, status, emailPrefill, onOpenEma
       return (
         <div className="flex flex-col gap-2.5" data-life360-state="unlinked">
           <p className="text-xs text-muted-foreground">Koppel het Life360-account dat in de team-cirkel zit. Iedereen in die cirkel verschijnt dan als eigen laag op de kaart.</p>
-          <Button size="lg" className={cn('h-11 w-full rounded-lg text-sm font-semibold', LIFE360_BUTTON)} onClick={onOpenEmail}>
+          <Button size="lg" className={cn('h-11 w-full rounded-lg text-sm font-semibold', LIFE360_BUTTON)} disabled={readOnly} onClick={onOpenEmail}>
             <Life360Logo className="size-5" />
             Koppel Life360
           </Button>

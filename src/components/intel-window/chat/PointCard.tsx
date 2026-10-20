@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Pill, Tag } from '@/components/beheer/controls/Pill';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import type { MapRef } from '@/components/Map';
+import { useEdition } from '@/hooks/edition.hook';
 import { useHintBoard } from '@/hooks/hints.hook';
 import { apiErrorMessage } from '@/lib/api-error';
 import { areaLabel, formatDistance, sameAnswer } from '@/lib/intel-chat';
@@ -94,6 +95,8 @@ export function Row({ name, children }: { name: string; children: ReactNode }) {
  */
 function SaveAnswerButton({ proposal }: { proposal: HintAnswerProposal }) {
   const { board, solve } = useHintBoard({ live: true });
+  // An archive edition is read-only: the chat stays, storing its answer doesn't
+  const { readOnly } = useEdition();
   const cell = board?.cells.find((existing) => existing.articleId === proposal.articleId && existing.area === proposal.area);
   const stored = cell?.status === 'solved' && cell.answer ? cell.answer : null;
   const [saving, setSaving] = useState(false);
@@ -122,7 +125,7 @@ function SaveAnswerButton({ proposal }: { proposal: HintAnswerProposal }) {
   }
 
   function click() {
-    if (saved || saving) return;
+    if (saved || saving || readOnly) return;
     if (stored) {
       setReplacing(stored);
       setAsk('overwrite');
@@ -132,7 +135,7 @@ function SaveAnswerButton({ proposal }: { proposal: HintAnswerProposal }) {
 
   return (
     <>
-      <Pill variant={saved ? 'success' : 'primary'} disabled={saving} aria-disabled={saved} onClick={click} morphKey={saved ? 'saved' : saving ? 'saving' : 'idle'}>
+      <Pill variant={saved ? 'success' : 'primary'} disabled={saving || (readOnly && !saved)} aria-disabled={saved} onClick={click} morphKey={saved ? 'saved' : saving ? 'saving' : 'idle'}>
         {saved ? (
           <>
             Opgeslagen

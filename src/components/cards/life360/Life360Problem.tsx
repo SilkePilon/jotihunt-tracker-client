@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Loader2Icon } from 'lucide-react';
 import CookieBadge from '@/components/tracker/CookieBadge';
 import { Button } from '@/components/ui/button';
+import { useEdition } from '@/hooks/edition.hook';
 import { formatClock } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import type { Life360ProblemStatus } from '@/types/Life360';
@@ -18,6 +19,8 @@ interface Life360ProblemProps {
 /** Linked before, not readable now: logged out (mockup expired A) or paused by Life360's rate limit. */
 export default function Life360Problem({ status, onSendCode }: Life360ProblemProps) {
   const [busy, setBusy] = useState(false);
+  // Logging in again is refused while an archive edition is shown (423)
+  const { readOnly } = useEdition();
   const [error, setError] = useState<string | null>(null);
 
   async function sendCode() {
@@ -44,7 +47,7 @@ export default function Life360Problem({ status, onSendCode }: Life360ProblemPro
       <CookieBadge tone="warn" size={72} />
       <p className="mt-2 text-base font-bold">Uitgelogd</p>
       <p className="text-xs text-muted-foreground">Life360 heeft de sessie beëindigd. Laatste posities blijven grijs op de kaart.</p>
-      <Button size="lg" className={cn('mt-2.5 h-11 w-full rounded-lg text-sm font-semibold', LIFE360_BUTTON)} disabled={busy} onClick={() => void sendCode()}>
+      <Button size="lg" className={cn('mt-2.5 h-11 w-full rounded-lg text-sm font-semibold', LIFE360_BUTTON)} disabled={busy || readOnly} onClick={() => void sendCode()}>
         {busy ? <Loader2Icon className="animate-spin" /> : <Life360Logo className="size-5" />}
         Stuur nieuwe code
       </Button>

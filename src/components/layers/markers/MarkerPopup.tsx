@@ -8,6 +8,7 @@ import { ICON_ACTION, PopupActions, popupActionClass, RouteAction } from '../../
 import PopupHeader, { PopupIcon } from '../../map/popup/PopupHeader';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useDistanceFromMe } from '@/hooks/distance-from-me.hook';
+import { useEdition } from '@/hooks/edition.hook';
 import { useSyncedHunts } from '@/hooks/hunt-sync.hook';
 import { formatClock, joinParts } from '@/lib/format';
 import { huntLocationNote, syncedHuntForMarker } from '@/lib/hunt-sync';
@@ -32,6 +33,7 @@ interface MarkerPopupProps {
 /** Marker details (WGS84 + RD coordinates), Route and delete (with confirmation). */
 export default function MarkerPopup({ marker, onClose, deleteMarker }: MarkerPopupProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const { readOnly } = useEdition();
   const [lng, lat] = marker.location.coordinates;
   const distance = useDistanceFromMe(lat, lng);
   const { hunts } = useSyncedHunts();
@@ -77,7 +79,7 @@ export default function MarkerPopup({ marker, onClose, deleteMarker }: MarkerPop
       <CoordRows lat={lat} lng={lng} />
       <PopupActions>
         <RouteAction lat={lat} lng={lng} />
-        <button type="button" aria-label="Verwijderen" title="Verwijderen" className={popupActionClass('danger', ICON_ACTION)} onClick={() => setConfirmOpen(true)}>
+        <button type="button" aria-label="Verwijderen" title="Verwijderen" className={popupActionClass('danger', ICON_ACTION)} disabled={readOnly} onClick={() => setConfirmOpen(true)}>
           <Trash2Icon />
         </button>
       </PopupActions>

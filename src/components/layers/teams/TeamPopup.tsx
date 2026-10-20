@@ -11,6 +11,7 @@ import { VisitStatusRow, VisitToggleButton } from '../../map/VisitControls';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAreas } from '@/hooks/areas.hook';
 import { useDistanceFromMe } from '@/hooks/distance-from-me.hook';
+import { useEdition } from '@/hooks/edition.hook';
 import { usePredictionSetting } from '@/hooks/predictions.hook';
 import { REVEAL_TRANSITION } from '@/lib/motion';
 import { getColorFromArea } from '@/lib/utils';
@@ -33,6 +34,7 @@ const POPUP_OFFSET = { bottom: [0, -16] as [number, number] };
 export default function TeamPopup({ team, onClose, setTeamArea }: TeamPopupProps) {
   const { areas } = useAreas();
   const { enabled: predictionEnabled } = usePredictionSetting();
+  const { readOnly } = useEdition();
   // Optimistic area while saving; dropped once the save settles, so the (revalidated) team list shows the outcome
   const [pendingArea, setPendingArea] = useState<{ teamId: string; area: string | undefined }>();
   const area = pendingArea?.teamId === team._id ? pendingArea.area : team.area;
@@ -46,7 +48,7 @@ export default function TeamPopup({ team, onClose, setTeamArea }: TeamPopupProps
    * @param value The new area to set.
    */
   async function handleAreaChange(value: string) {
-    if (!TEAMS_AREA_EDITING) return;
+    if (!TEAMS_AREA_EDITING || readOnly) return;
     const pending = { teamId: team._id, area: value === 'onbekend' ? undefined : value };
     setPendingArea(pending);
     const saved = await setTeamArea(pending.teamId, pending.area);
@@ -94,7 +96,7 @@ export default function TeamPopup({ team, onClose, setTeamArea }: TeamPopupProps
         </AnimatePresence>
       </PopupRows>
       {TEAMS_AREA_EDITING && (
-        <Select onValueChange={handleAreaChange} value={area ?? 'onbekend'}>
+        <Select onValueChange={handleAreaChange} value={area ?? 'onbekend'} disabled={readOnly}>
           <SelectTrigger autoFocus={false} size="sm" className="mt-2 w-full">
             <SelectValue placeholder="Kies deelgebied..." />
           </SelectTrigger>

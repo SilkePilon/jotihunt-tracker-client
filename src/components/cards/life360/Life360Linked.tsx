@@ -12,14 +12,16 @@ interface Life360LinkedProps {
   members: Life360Member[] | undefined;
   /** Ask Life360 for fresh fixes (toasts inside) */
   onRefresh: () => Promise<void>;
+  /** An archive edition is shown: "ververs" is refused (423), so it's disabled */
+  readOnly?: boolean;
   onFlyTo: (member: Life360Member) => void;
 }
 
 /** Linked (mockup A): green cookie, "Gekoppeld", live count + last poll + "ververs", members pill. */
-export default function Life360Linked({ status, members, onRefresh, onFlyTo }: Life360LinkedProps) {
+export default function Life360Linked({ status, members, readOnly, onRefresh, onFlyTo }: Life360LinkedProps) {
   const now = useNow(true);
   const [refreshing, setRefreshing] = useState(false);
-  const canRefresh = !refreshing && refreshAllowed(status.refreshAvailableAt, now);
+  const canRefresh = !refreshing && !readOnly && refreshAllowed(status.refreshAvailableAt, now);
 
   async function refresh() {
     setRefreshing(true);

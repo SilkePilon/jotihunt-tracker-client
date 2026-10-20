@@ -12,6 +12,7 @@ import TelegramLogo from '@/components/cards/telegram/TelegramLogo';
 import Reveal from '@/components/motion/Reveal';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAdminConfig } from '@/hooks/app-config.hook';
+import { useEdition } from '@/hooks/edition.hook';
 import { useJotiboardAdmin } from '@/hooks/jotiboard.hook';
 import { useLife360Admin } from '@/hooks/life360.hook';
 import { useNow } from '@/hooks/now.hook';
@@ -70,7 +71,7 @@ const LIFE360_STEPS = ['code', 'circle', 'unlinked', 'loggedOut'];
 const JOTIBOARD_STEPS = ['unlinked', 'loggedOut'];
 
 /** Life360's "ververs": asks for fresh fixes (max 1 per minute); spins while it runs. */
-function RefreshButton({ status, onRefresh }: { status: Life360LinkedStatus; onRefresh: () => Promise<void> }) {
+function RefreshButton({ status, disabled, onRefresh }: { status: Life360LinkedStatus; disabled?: boolean; onRefresh: () => Promise<void> }) {
   const now = useNow(true);
   const [refreshing, setRefreshing] = useState(false);
   const canRefresh = !refreshing && refreshAllowed(status.refreshAvailableAt, now);
@@ -85,7 +86,7 @@ function RefreshButton({ status, onRefresh }: { status: Life360LinkedStatus; onR
   }
 
   return (
-    <IconPill className="size-[26px]" aria-label="Life360 verversen" disabled={!canRefresh} onClick={() => void refresh()}>
+    <IconPill className="size-[26px]" aria-label="Life360 verversen" disabled={!canRefresh || disabled} onClick={() => void refresh()}>
       <RefreshCwIcon className={cn('size-3.5', refreshing && 'animate-spin')} />
     </IconPill>
   );
@@ -108,6 +109,8 @@ interface IntegrationCardProps {
   /** An amber bar that isn't the server's problem (e.g. a missing SETTINGS_KEY) */
   warning?: ReactNode;
   onRelink?: () => void;
+  /** Link actions are refused (an archive edition is shown): "Opnieuw koppelen" is disabled */
+  readOnly?: boolean;
   /** The inline confirm while asking to unlink */
   confirm?: ReactNode;
   /** The link steps while linking */
@@ -115,7 +118,7 @@ interface IntegrationCardProps {
 }
 
 /** K1: one card per integration — logo, name + status pill, "gekoppeld als …", sync line, amber problem bar, confirm, link steps. */
-function IntegrationCard({ name, brand, logo, view, isError, action, actionKey, syncAction, footer, warning, onRelink, confirm, panel }: IntegrationCardProps) {
+function IntegrationCard({ name, brand, logo, view, isError, action, actionKey, syncAction, footer, warning, onRelink, readOnly, confirm, panel }: IntegrationCardProps) {
   return (
     <BeheerCard>
       <div className="flex items-center gap-3">
@@ -166,7 +169,7 @@ function IntegrationCard({ name, brand, logo, view, isError, action, actionKey, 
               <TriangleAlertIcon className="size-4 shrink-0" />
               <span className="min-w-0 flex-1 basis-48 text-[12.5px]">{view.problem}</span>
               {view.canRelink && onRelink && (
-                <Pill variant="warn" onClick={onRelink}>
+                <Pill variant="warn" disabled={readOnly} onClick={onRelink}>
                   Opnieuw koppelen
                 </Pill>
               )}
@@ -195,6 +198,8 @@ export default function KoppelingenPane({ mapRef }: { mapRef: RefObject<MapRef |
   const life360 = useLife360Admin(true);
   const jotiboard = useJotiboardAdmin(true);
   const now = useNow(true);
+  // Linking, unlinking and refreshing are refused while an archive edition is shown (423)
+  const { readOnly } = useEdition();
   const [confirming, setConfirming] = useState<'telegram' | 'life360' | 'jotiboard' | null>(null);
 
   // Telegram: "Koppelen" starts the QR login; the panel shows while the server is in a link step
@@ -370,13 +375,14 @@ export default function KoppelingenPane({ mapRef }: { mapRef: RefObject<MapRef |
   const confirmStale =
     (confirming === 'telegram' && !telegramView?.canUnlink) ||
     (confirming === 'life360' && !life360Card?.canUnlink) ||
-    (confirming === 'jotiboard' && !jotiboardCard?.canUnlink);
+    (confirming === 'jotiboard' && !jotiboardCard?.canUnlink) ||
+    (confirming !== null && readOnly);
   if (confirmStale) setConfirming(null);
 
   let telegramAction: ReactNode = null;
   if (telegramView?.canUnlink) {
     telegramAction = (
-      <Pill variant="danger-outline" disabled={confirming === 'telegram'} onClick={() => setConfirming('telegram')}>
+      <Pill variant="danger-outline" disabled={confirming === 'telegram' || readOnly} onClick={() => setConfirming('telegram')}>
         Ontkoppelen
       </Pill>
     );
@@ -386,7 +392,7 @@ export default function KoppelingenPane({ mapRef }: { mapRef: RefObject<MapRef |
         variant="primary"
         morphKey={telegramStarting ? 'busy' : 'idle'}
         // Without SETTINGS_KEY the app details (step 1) can't be saved
-        disabled={telegramStarting || (needsAppCredentials && settingsKeyMissing)}
+        disabled={telegramStarting || (needsAppCredentials && settingsKeyMissing) || readOnly}
         onClick={() => void startTelegram()}
       >
         {telegramStarting ? <Loader2Icon className="animate-spin" /> : <LinkIcon />}
@@ -398,13 +404,13 @@ export default function KoppelingenPane({ mapRef }: { mapRef: RefObject<MapRef |
   let life360Action: ReactNode = null;
   if (life360Card?.canUnlink) {
     life360Action = (
-      <Pill variant="danger-outline" disabled={confirming === 'life360'} onClick={() => setConfirming('life360')}>
+      <Pill variant="danger-outline" disabled={confirming === 'life360' || readOnly} onClick={() => setConfirming('life360')}>
         Ontkoppelen
       </Pill>
     );
   } else if (life360Card?.canLink && !emailStep) {
     life360Action = (
-      <Pill variant="primary" onClick={openLife360}>
+      <Pill variant="primary" disabled={readOnly} onClick={openLife360}>
         <LinkIcon />
         Koppelen
       </Pill>
@@ -414,13 +420,13 @@ export default function KoppelingenPane({ mapRef }: { mapRef: RefObject<MapRef |
   let jotiboardAction: ReactNode = null;
   if (jotiboardCard?.canUnlink) {
     jotiboardAction = (
-      <Pill variant="danger-outline" disabled={confirming === 'jotiboard'} onClick={() => setConfirming('jotiboard')}>
+      <Pill variant="danger-outline" disabled={confirming === 'jotiboard' || readOnly} onClick={() => setConfirming('jotiboard')}>
         Ontkoppelen
       </Pill>
     );
   } else if (jotiboardCard?.canLink && !jotiboardForm) {
     jotiboardAction = (
-      <Pill variant="primary" onClick={() => setJotiboardForm(true)}>
+      <Pill variant="primary" disabled={readOnly} onClick={() => setJotiboardForm(true)}>
         <LinkIcon />
         Koppelen
       </Pill>
@@ -505,8 +511,9 @@ export default function KoppelingenPane({ mapRef }: { mapRef: RefObject<MapRef |
         isError={life360.isError}
         action={life360Action}
         actionKey={life360Card?.canUnlink ? 'unlink' : 'link'}
-        syncAction={life360Status?.state === 'linked' && <RefreshButton status={life360Status} onRefresh={refreshLife360} />}
+        syncAction={life360Status?.state === 'linked' && <RefreshButton status={life360Status} disabled={readOnly} onRefresh={refreshLife360} />}
         onRelink={openLife360}
+        readOnly={readOnly}
         confirm={
           confirming === 'life360' && life360Card?.canUnlink && (
             <InlineConfirm
@@ -550,6 +557,7 @@ export default function KoppelingenPane({ mapRef }: { mapRef: RefObject<MapRef |
         actionKey={jotiboardCard?.canUnlink ? 'unlink' : 'link'}
         // The server state doesn't change on relink (as Life360's does): hide "Opnieuw koppelen" while the form is open
         onRelink={jotiboardForm ? undefined : () => setJotiboardForm(true)}
+        readOnly={readOnly}
         confirm={
           confirming === 'jotiboard' && jotiboardCard?.canUnlink && (
             <InlineConfirm
