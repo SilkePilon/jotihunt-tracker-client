@@ -1,15 +1,16 @@
 import { createContext, type ReactNode, useContext, useState } from 'react';
 import { useNow } from '@/hooks/now.hook';
 import { AnimatePresence, motion, useReducedMotion, type Variants } from 'motion/react';
-import { ClockIcon } from 'lucide-react';
+import { ClipboardListIcon, ClockIcon, LightbulbIcon, type LucideIcon, MegaphoneIcon } from 'lucide-react';
+import CookieBadge from '@/components/tracker/CookieBadge';
+import SuccessBadge from '@/components/auth/SuccessBadge';
 import { Tag } from '@/components/beheer/controls/Pill';
 import { formatClock } from '@/lib/format';
-import { type DeadlineTone, assignmentStatusLabel, INTEL_TAB_ORDER, KIND_COLOR, KIND_LABEL, areaStates, deadlineLabel, deadlineTone, groupByDay, solvedCount } from '@/lib/intel-window';
+import { type DeadlineTone, type MetaSegment, type MetaTone, assignmentMeta, assignmentStatusLabel, INTEL_TAB_ORDER, isHintDone, KIND_COLOR, KIND_LABEL, areaStates, deadlineLabel, deadlineTone, groupByDay, siteSubmission, solvedCount } from '@/lib/intel-window';
 import { EASE_OUT, REVEAL_TRANSITION, SWAP_TRANSITION } from '@/lib/motion';
 import { useHasMounted } from '@/hooks/has-mounted.hook';
-import { areaOptions } from '@/lib/utils';
-import type { AssignmentStatus, IntelItem, IntelKind, IntelTab } from '@/types/Intel';
-import { AreaChip } from './AreaChips';
+import { areaOptions, cn, getColorFromArea } from '@/lib/utils';
+import type { AreaState, AssignmentStatus, IntelItem, IntelKind, IntelTab } from '@/types/Intel';
 
 const STEP = 0.022;
 const BASE = 0.21;
@@ -78,7 +79,7 @@ interface TimelineProps {
   entrance: boolean;
 }
 
-/** Day-grouped timeline of wide cards with a time rail. */
+/** Day-grouped timeline: per day one tonal card of rows. */
 export default function IntelTimeline({ items, tab, onSelect, entrance }: TimelineProps) {
   const now = useMinute();
   const groups = groupByDay(items, now);
@@ -107,25 +108,21 @@ export default function IntelTimeline({ items, tab, onSelect, entrance }: Timeli
             {groups.map((group, index) => (
               <Fold key={group.key}>
                 <motion.section custom={groups.slice(0, index).reduce((sum, before) => sum + 1 + before.items.length, 0)} variants={day}>
-                  <motion.h3
-                    variants={entry}
-                    className="sticky top-0 z-10 bg-linear-to-b from-beheer-window from-70% to-transparent pt-3.5 pb-2 pl-[66px] text-[11.5px] font-extrabold tracking-[0.06em] whitespace-nowrap text-muted-foreground uppercase"
-                  >
+                  <motion.h3 variants={entry} className="sticky top-0 z-10 bg-linear-to-b from-beheer-window from-70% to-transparent pt-3.5 pb-2 pl-1 text-[11.5px] font-extrabold tracking-[0.06em] whitespace-nowrap text-muted-foreground uppercase">
                     {group.label}
                   </motion.h3>
-                  <AnimatePresence>
-                    {group.items.map((item) => (
-                      <Fold key={item.id}>
-                        <motion.div variants={entry} className="grid grid-cols-[52px_14px_1fr] gap-x-2.5">
-                          <div className="pt-[15px] text-right text-xs text-muted-foreground tabular-nums">{formatClock(item.publishAt)}</div>
-                          <div className="relative before:absolute before:inset-y-0 before:left-1.5 before:w-0.5 before:bg-beheer-row-high">
-                            <span className="absolute top-[18px] left-0.5 size-2.5 rounded-full ring-2 ring-beheer-window" style={{ backgroundColor: KIND_COLOR[item.kind] }} />
-                          </div>
-                          <WideCard item={item} now={now} onSelect={onSelect} />
-                        </motion.div>
-                      </Fold>
-                    ))}
-                  </AnimatePresence>
+                  {/* The window colour shows through the 2px gaps as row separators */}
+                  <div className="flex flex-col gap-0.5 overflow-hidden rounded-[20px] bg-beheer-window">
+                    <AnimatePresence>
+                      {group.items.map((item) => (
+                        <Fold key={item.id}>
+                          <motion.div variants={entry}>
+                            <Row item={item} now={now} onSelect={onSelect} />
+                          </motion.div>
+                        </Fold>
+                      ))}
+                    </AnimatePresence>
+                  </div>
                 </motion.section>
               </Fold>
             ))}
@@ -158,63 +155,146 @@ function TimelineList({ start, direction, children }: { start: 'hidden' | 'push'
   );
 }
 
-/** The "ongelezen" dot; grows from zero width (cancelling the flex gap) so the title slides instead of jumping */
-function UnreadDot({ unread }: { unread: boolean }) {
-  return (
-    <AnimatePresence initial={false}>
-      {unread && (
-        <motion.span
-          key="dot"
-          initial={{ width: 0, marginRight: -8, scale: 0 }}
-          animate={{ width: 7, marginRight: 0, scale: 1 }}
-          exit={{ width: 0, marginRight: -8, scale: 0, opacity: 0 }}
-          transition={REVEAL_TRANSITION}
-          className="h-[7px] shrink-0 rounded-full bg-primary"
-          aria-label="ongelezen"
-        />
-      )}
-    </AnimatePresence>
-  );
-}
+const KIND_ICON: Record<IntelKind, LucideIcon> = { news: MegaphoneIcon, assignment: ClipboardListIcon, hint: LightbulbIcon };
 
-/** The card: a plain button whose background is the frame */
-function WideCard({ item, now, onSelect }: { item: IntelItem; now: number; onSelect: (id: number) => void }) {
-  const states = item.kind === 'hint' ? areaStates(item.cells) : null;
-  const count = item.kind === 'hint' ? solvedCount(item.cells) : null;
-  const status = item.assignment?.status ?? 'open';
+const META_TONE: Record<MetaTone, string> = {
+  muted: '',
+  ok: 'text-green-600 dark:text-green-400',
+  info: 'text-blue-500 dark:text-blue-400',
+  warn: 'text-amber-600 dark:text-amber-400',
+  danger: 'text-red-600 dark:text-red-400',
+};
+
+/**
+ * One row of a day group: kind tile, title, grey line. `--row-bg` is the row's background (card, lighter on hover); the
+ * badges on the tile ring themselves in it so they cut out cleanly.
+ */
+function Row({ item, now, onSelect }: { item: IntelItem; now: number; onSelect: (id: number) => void }) {
+  const done = item.kind === 'assignment' ? !!siteSubmission(item.assignment)?.judged : item.kind === 'hint' && isHintDone(item.cells);
   return (
     <button
       type="button"
       onClick={() => onSelect(item.id)}
-      className="my-[5px] block w-full rounded-[20px] bg-card px-[15px] py-[13px] text-left outline-none transition-colors hover:bg-beheer-row focus-visible:ring-[3px] focus-visible:ring-ring/50"
+      className="flex w-full items-center gap-3 bg-(--row-bg) px-3.5 py-[11px] text-left outline-none transition-colors [--row-bg:var(--card)] hover:[--row-bg:var(--beheer-row)] focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset"
     >
-      <span className="flex items-center gap-2">
-        <UnreadDot unread={item.unread} />
-        <span className="text-[14.5px] font-bold">{item.title}</span>
-        <KindTag kind={item.kind} />
-        {count && (
-          <span className="ml-auto shrink-0 text-xs text-muted-foreground tabular-nums">
-            {count.solved}/{count.total} opgelost
-          </span>
-        )}
-        {item.kind === 'assignment' && item.endTime && <DeadlineTag endTime={item.endTime} now={now} status={status} className="ml-auto shrink-0" />}
+      <KindTile kind={item.kind} unread={item.unread} done={done} />
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-bold">{item.title}</span>
+        <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+          <span className="tabular-nums">{formatClock(item.publishAt)}</span>
+          <RowMeta item={item} now={now} />
+        </span>
       </span>
-      {item.summary && <span className="mt-[3px] line-clamp-2 block text-xs text-muted-foreground">{item.summary}</span>}
-      {states && (
-        <span className="mt-2.5 flex flex-wrap gap-1">
-          {areaOptions.map(({ value, label }) => (
-            <AreaChip key={value} area={value} state={states[value]} label={label} />
-          ))}
-        </span>
-      )}
-      {item.kind === 'assignment' && (
-        <span className="mt-2.5 flex gap-1.5">
-          <AssignmentStatusTag item={item} />
-          <Tag>{item.assignment?.owner?.name ?? 'niemand'}</Tag>
-          {item.maxPoints ? <Tag>max {item.maxPoints} pt</Tag> : null}
-        </span>
-      )}
     </button>
+  );
+}
+
+/** Tonal kind tile; a white dot top-right while unread, a green cookie check bottom-right once judged / fully solved */
+function KindTile({ kind, unread, done }: { kind: IntelKind; unread: boolean; done: boolean }) {
+  const Icon = KIND_ICON[kind];
+  // As AreaChip did: a check that appears on screen pops in (SuccessBadge), one mounted done is static
+  const [poppable, setPoppable] = useState(!done);
+  if (!done && !poppable) setPoppable(true);
+  return (
+    <span
+      className="relative grid size-[34px] shrink-0 place-items-center rounded-xl"
+      style={{ color: KIND_COLOR[kind], backgroundColor: `color-mix(in oklab, ${KIND_COLOR[kind]} 16%, var(--card))` }}
+    >
+      <Icon className="size-[17px]" strokeWidth={2.2} />
+      <AnimatePresence initial={false}>
+        {unread && (
+          <motion.span
+            key="unread"
+            aria-label="ongelezen"
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            transition={REVEAL_TRANSITION}
+            className="absolute -top-0.5 -right-0.5 size-[9px] rounded-full bg-foreground shadow-[0_0_0_2.5px_var(--row-bg)]"
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence initial={false}>
+        {done && (
+          <motion.span
+            key="done"
+            exit={{ scale: 0.6, opacity: 0, transition: { duration: 0.15 } }}
+            className="absolute -right-1 -bottom-1 grid place-items-center rounded-full bg-(--row-bg) p-0.5"
+          >
+            {poppable ? <SuccessBadge size={16} /> : <CookieBadge tone="ok" size={16} />}
+          </motion.span>
+        )}
+      </AnimatePresence>
+    </span>
+  );
+}
+
+/** The rest of the grey line after the time */
+function RowMeta({ item, now }: { item: IntelItem; now: number }) {
+  if (item.kind === 'news') return item.summary ? <> · {item.summary}</> : null;
+  if (item.kind === 'hint') return <HintMeta cells={item.cells} />;
+  return assignmentMeta(item, now).map((segment, index) => <MetaPart key={index} segment={segment} />);
+}
+
+/** " · text"; a new text fades in, a new colour eases */
+function MetaPart({ segment }: { segment: MetaSegment }) {
+  return (
+    <>
+      {' · '}
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.span
+          key={segment.text}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+          className={cn('transition-colors', META_TONE[segment.tone])}
+        >
+          {segment.text}
+        </motion.span>
+      </AnimatePresence>
+    </>
+  );
+}
+
+/** " · ●○○○ 1/8 opgelost": a dot per area in its colour (filled = solved, ring = open, faint ring = no hint) */
+function HintMeta({ cells }: { cells: IntelItem['cells'] }) {
+  const states = areaStates(cells);
+  const { solved, total } = solvedCount(cells);
+  return (
+    <>
+      {' · '}
+      <span className="mr-1.5 inline-flex gap-[3px] align-middle">
+        {areaOptions.map(({ value, label }) => (
+          <AreaDot key={value} area={value} label={label} state={states[value]} />
+        ))}
+      </span>
+      <span className={cn('transition-colors', total > 0 && solved === total && META_TONE.ok)}>
+        {solved}/{total} opgelost
+      </span>
+    </>
+  );
+}
+
+const AREA_TITLE: Record<AreaState, string> = { solved: 'opgelost', open: 'nog open', none: 'geen hint', missing: 'geen hint' };
+
+/** Fills (with a short pop) when its area gets solved on screen; mounting solved just shows it filled */
+function AreaDot({ area, label, state }: { area: string; label: string; state: AreaState }) {
+  const color = getColorFromArea(area);
+  const solved = state === 'solved';
+  return (
+    <motion.span
+      title={`${label}: ${AREA_TITLE[state]}`}
+      initial={false}
+      animate={{ scale: solved ? [1, 1.6, 1] : 1 }}
+      transition={{ duration: 0.35, ease: EASE_OUT }}
+      className="block size-[7px] rounded-full transition-[background-color,box-shadow,opacity] duration-200"
+      style={{
+        backgroundColor: solved ? color : 'transparent',
+        boxShadow: solved ? 'none' : `inset 0 0 0 1.5px ${color}`,
+        opacity: solved ? 1 : state === 'open' ? 0.7 : 0.3,
+      }}
+    />
   );
 }
 

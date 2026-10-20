@@ -33,8 +33,8 @@ Segments joined by ` · `, all `text-muted-foreground` unless noted.
 - **Assignment, not judged**: `HH:MM · <deadline> · <status label, only if not open> · <owner|niemand>`; deadline
   (`deadlineLabel`) only with an `endTime`, coloured by `deadlineTone`: calm = blue, urgent = amber, expired = red,
   done = muted.
-- **Hint**: `HH:MM · <dots> <solved>/<total> opgelost`. Dots: one 6px dot per area in `areaOptions` order in the area
-  colour; solved = filled, open = ring (1.4px inset shadow, 70% opacity), none/missing = ring at 30% opacity. Count
+- **Hint**: `HH:MM · <dots> <solved>/<total> opgelost`. Dots: one 7px dot per area in `areaOptions` order in the area
+  colour; solved = filled, open = ring (1.5px inset shadow, 70% opacity), none/missing = ring at 30% opacity. Count
   text green when all solved.
 
 The summary of a hint/assignment is no longer shown in the list (only news shows it).

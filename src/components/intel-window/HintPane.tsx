@@ -167,7 +167,7 @@ interface AreaRowProps {
 
 function AreaRow({ cell, area, label, open, onToggle, onSave, onClear, mapRef, headerRef }: AreaRowProps) {
   const solved = cell?.status === 'solved' && !!cell.answer;
-  // Derived (as AreaChip): an area that is open on screen pops its cookie in once solved; one mounted solved just shows it
+  // Derived during render: an area that is open on screen pops its cookie in once solved; one mounted solved just shows it
   const [poppable, setPoppable] = useState(!solved);
   if (!solved && !poppable) setPoppable(true);
   const dot = <span className="size-[9px] shrink-0 rounded-full" style={{ backgroundColor: getColorFromArea(area) }} aria-hidden />;
