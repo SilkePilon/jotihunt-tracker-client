@@ -94,6 +94,7 @@ export async function unsubscribePush(fetch: Fetch, timeoutMs = UNSUBSCRIBE_TIME
       await subscription.unsubscribe();
     }
   } catch (error) {
-    console.warn('[push] unsubscribe failed', error);
+    // A 423 (archive edition shown) is expected; the browser subscription is dropped anyway
+    if (!isArchiveError(error)) console.warn('[push] unsubscribe failed', error);
   }
 }
