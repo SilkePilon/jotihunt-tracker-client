@@ -45,7 +45,7 @@ On every notifier run (every 10 s, `runNotifier`), per area:
 - Meldingen tile: `{ type: 'hunt-cooldown', label: 'Weer huntbaar', short: '1 uur na onze hunt', description: 'Als
   een vos die we gehunt hebben na het uur weer gehunt mag worden (en groen of oranje is).' }`, icon lucide `TimerIcon`,
   blue tone matching `COOLDOWN_PILL_CLASS`. On by default (as every optional type: not in `disabledTypes`).
-- Tour panel `NotificationSoundsPanel`: row "Weer huntbaar", "Stil, zonder geluid", timer icon, blue tone.
+- No row in the tour's `NotificationSoundsPanel`: it lists sounds to play, and this push has none.
 - HQ director: ignores the type (no camera move).
 - Server `NOTIFICATION_TYPES` gains `hunt-cooldown`, so it is switchable (`OPTIONAL_NOTIFICATION_TYPES`).
 
@@ -59,8 +59,7 @@ Server (`jotihunt-tracker-server`):
 - `push.service.ts` / payload unchanged (type + urgent already sent).
 
 Client (`jotihunt-tracker-client`):
-- `lib/notifications.ts` (types, option, `isSilent`), `NotificationsDialog.tsx` icon, `HighlightToast.tsx` if it maps
-  every type, `NotificationSoundsPanel.tsx`, `public/push-sw.js` silent rule, `notification-sounds.ts` /
+- `lib/notifications.ts` (types, option, `isSilent`), `NotificationsDialog.tsx` icon, `public/push-sw.js` silent rule, `notification-sounds.ts` /
   `SoundKey` only if the type needs a key (silent: map to `fox-status`, never played).
 
 ## Testing
