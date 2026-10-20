@@ -9,6 +9,7 @@ export interface LayersState {
   showHomeCircle: boolean;
   showGroupCircles: boolean;
   showPredictions: boolean;
+  showReach: boolean;
   showLife360: boolean;
   showBuildings3d: boolean;
   showMcDonalds: boolean;
@@ -21,6 +22,7 @@ export interface LayersState {
   toggleHomeCircle: () => void;
   toggleGroupCircles: () => void;
   togglePredictions: () => void;
+  toggleReach: () => void;
   toggleLife360: () => void;
   toggleBuildings3d: () => void;
   toggleMcDonalds: () => void;
@@ -47,6 +49,8 @@ const useLayersStore = create<LayersState>()(
       showHomeCircle: true,
       showGroupCircles: false,
       showPredictions: true,
+      // Fox reach areas: off until wanted (persist's merge gives existing users this default)
+      showReach: false,
       showLife360: true,
       showBuildings3d: true,
       // Fastfood layers: off until someone wants food (persist's merge gives existing users these defaults)
@@ -73,6 +77,9 @@ const useLayersStore = create<LayersState>()(
       },
       togglePredictions: () => {
         set((state) => ({ showPredictions: !state.showPredictions }));
+      },
+      toggleReach: () => {
+        set((state) => ({ showReach: !state.showReach }));
       },
       toggleLife360: () => {
         set((state) => ({ showLife360: !state.showLife360 }));
