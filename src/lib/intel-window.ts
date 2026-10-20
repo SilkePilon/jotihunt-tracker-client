@@ -134,6 +134,40 @@ export function deadlineTone(endTime: string, now: number, status: AssignmentSta
   return isDeadlineUrgent(endTime, now, status) ? 'urgent' : 'calm';
 }
 
+/** Every area that has a hint is solved (and there is at least one) */
+export function isHintDone(cells: HintCell[]): boolean {
+  const { solved, total } = solvedCount(cells);
+  return total > 0 && solved === total;
+}
+
+/** How a part of a timeline row's grey line is coloured */
+export type MetaTone = 'muted' | 'ok' | 'info' | 'warn' | 'danger';
+export interface MetaSegment {
+  text: string;
+  tone: MetaTone;
+}
+
+const DEADLINE_META_TONE: Record<DeadlineTone, MetaTone> = { done: 'muted', expired: 'danger', urgent: 'warn', calm: 'info' };
+
+/**
+ * An assignment row's grey line after its time: "Beoordeeld · 9/9 pt" (green) once judged, else the deadline (coloured
+ * by urgency) and our status when not open; the owner (or "niemand") last.
+ */
+export function assignmentMeta(item: IntelItem, now: number): MetaSegment[] {
+  const assignment = item.assignment;
+  const owner: MetaSegment = { text: assignment?.owner?.name ?? 'niemand', tone: 'muted' };
+  const site = siteSubmission(assignment);
+  if (site?.judged) {
+    const points = site.points === null ? '' : item.maxPoints ? ` · ${site.points}/${item.maxPoints} pt` : ` · ${site.points} pt`;
+    return [{ text: `Beoordeeld${points}`, tone: 'ok' }, owner];
+  }
+  const status = assignment?.status ?? 'open';
+  const segments: MetaSegment[] = [];
+  if (item.endTime) segments.push({ text: deadlineLabel(item.endTime, now), tone: DEADLINE_META_TONE[deadlineTone(item.endTime, now, status)] });
+  if (status !== 'open') segments.push({ text: ASSIGNMENT_STATUS_LABELS[status], tone: 'muted' });
+  return [...segments, owner];
+}
+
 /** The solve was refused because another hint marker exists for that area and hour */
 export function hasExistingMarker(error: unknown): boolean {
   return isAxiosError(error) && error.response?.status === 409 && !!(error.response.data as { existingMarkerId?: string } | undefined)?.existingMarkerId;

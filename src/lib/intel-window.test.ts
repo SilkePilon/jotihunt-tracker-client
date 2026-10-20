@@ -3,7 +3,7 @@ import { AxiosError, AxiosHeaders } from 'axios';
 import type { Article } from '@/types/Article';
 import type { HintCell } from '@/types/HintCell';
 import type { Assignment, IntelItem } from '@/types/Intel';
-import { answerPreview, areaStates, assignmentStatusLabel, earnedPoints, chartColumns, initialOpenArea, buildIntelItems, deadlineLabel, deadlineTone, filterByTab, formatSolveTime, groupByDay, hasExistingMarker, intelStats, isDeadlineUrgent, nextOpenArea, ratingStars, siteSubmission, solvedCount, statusAuthor, unreadCount, unreadLabel, unreadTab } from './intel-window';
+import { answerPreview, areaStates, assignmentMeta, assignmentStatusLabel, earnedPoints, chartColumns, initialOpenArea, buildIntelItems, deadlineLabel, deadlineTone, filterByTab, formatSolveTime, groupByDay, hasExistingMarker, intelStats, isDeadlineUrgent, isHintDone, nextOpenArea, ratingStars, siteSubmission, solvedCount, statusAuthor, unreadCount, unreadLabel, unreadTab } from './intel-window';
 
 const article = (id: number, type: string, publishAt: string, extra: Partial<Article> = {}) =>
   ({ id, title: `A${id}`, type, publishAt: new Date(publishAt), content: '<p>x</p>', messageType: '', maxPoints: 0, endTime: new Date(publishAt), ...extra }) as Article;
@@ -294,5 +294,50 @@ describe('jotihunt.nl submission', () => {
     expect(statusAuthor(assignment({ statusAt: 'x', statusBy: null }), clock)).toBe('jotihunt.nl · 14:02');
     expect(statusAuthor(assignment(), clock)).toBeUndefined();
     expect(statusAuthor(undefined, clock)).toBeUndefined();
+  });
+});
+
+describe('isHintDone', () => {
+  test('all areas with a hint solved', () => {
+    expect(isHintDone([cell('alpha', 'solved'), cell('bravo', 'solved'), cell('oscar', 'none')])).toBe(true);
+  });
+  test('an open area or no hint at all is not done', () => {
+    expect(isHintDone([cell('alpha', 'solved'), cell('bravo', 'open')])).toBe(false);
+    expect(isHintDone([cell('oscar', 'none')])).toBe(false);
+    expect(isHintDone([])).toBe(false);
+  });
+});
+
+describe('assignmentMeta', () => {
+  const now = Date.parse('2026-10-18T11:18:00Z');
+  const item = (extra: Partial<IntelItem> = {}): IntelItem => ({
+    id: 1, kind: 'assignment', title: 'T', publishAt: '2026-10-18T10:00:00Z', content: '', cells: [], unread: false, readBy: [],
+    endTime: '2026-10-18T12:00:00Z', maxPoints: 9, ...extra,
+  });
+  const site = (extra: Record<string, unknown>) => ({ submitted: true, judged: true, ...extra }) as unknown as Assignment['site'];
+
+  test('open and unowned: deadline coloured by urgency, then niemand', () => {
+    expect(assignmentMeta(item(), now)).toEqual([{ text: 'nog 42 min', tone: 'warn' }, { text: 'niemand', tone: 'muted' }]);
+  });
+  test('our status (not open) and the owner follow the deadline', () => {
+    const assignment: Assignment = { _id: 'a', articleId: 1, status: 'busy', owner: { _id: 'u', name: 'Jesse' } as Assignment['owner'], notes: [] };
+    expect(assignmentMeta(item({ assignment, endTime: '2026-10-18T14:00:00Z' }), now)).toEqual([
+      { text: 'nog 2 u 42', tone: 'info' }, { text: 'Bezig', tone: 'muted' }, { text: 'Jesse', tone: 'muted' },
+    ]);
+  });
+  test('expired is red, submitted is muted', () => {
+    expect(assignmentMeta(item({ endTime: '2026-10-18T11:00:00Z' }), now)[0]).toEqual({ text: 'verlopen', tone: 'danger' });
+    const assignment: Assignment = { _id: 'a', articleId: 1, status: 'submitted', notes: [] };
+    expect(assignmentMeta(item({ assignment }), now).slice(0, 2)).toEqual([{ text: 'nog 42 min', tone: 'muted' }, { text: 'Ingeleverd', tone: 'muted' }]);
+  });
+  test('judged: points out of max in green, no deadline', () => {
+    const assignment: Assignment = { _id: 'a', articleId: 1, status: 'submitted', notes: [], site: site({ points: 9 }) };
+    expect(assignmentMeta(item({ assignment }), now)).toEqual([{ text: 'Beoordeeld · 9/9 pt', tone: 'ok' }, { text: 'niemand', tone: 'muted' }]);
+    expect(assignmentMeta(item({ assignment, maxPoints: 0 }), now)[0].text).toBe('Beoordeeld · 9 pt');
+    const noPoints: Assignment = { ...assignment, site: site({ points: null }) };
+    expect(assignmentMeta(item({ assignment: noPoints }), now)[0].text).toBe('Beoordeeld');
+  });
+  test('no deadline: only status and owner', () => {
+    expect(assignmentMeta(item({ endTime: undefined }), now)).toEqual([{ text: 'niemand', tone: 'muted' }]);
   });
 });
