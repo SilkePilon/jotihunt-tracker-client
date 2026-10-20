@@ -19,7 +19,7 @@ export interface NotificationPrefs {
 }
 
 /** Bump to show the "Meldingen" dialog again to everyone (e.g. after adding a type). */
-export const NOTIFICATIONS_PROMPT_VERSION = 4;
+export const NOTIFICATIONS_PROMPT_VERSION = 5;
 
 /**
  * `short` is the one-liner on the tile; `description` stays as its tooltip and screen-reader text. `alsoTypes` are
