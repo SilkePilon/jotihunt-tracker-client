@@ -27,6 +27,7 @@ import HuntFocus from './layers/HuntFocus';
 import HuntAccuracy from './layers/HuntAccuracy';
 import HintGuess from './layers/HintGuess';
 import Predictions from './layers/Predictions';
+import Reach from './layers/Reach';
 import {usePredictionSetting} from '@/hooks/predictions.hook';
 import useLayersStore from '../stores/layers.store';
 import useSettingsStore from '../stores/settings.store';
@@ -153,7 +154,7 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
     }));
 
     // Store for all layers
-    const {showTeams, showDevices, showMarkersPart1, showMarkersPart2, showHomeCircle, showPredictions, showLife360, showBuildings3d, showMcDonalds, showKfc, showBurgerKing} = useLayersStore(
+    const {showTeams, showDevices, showMarkersPart1, showMarkersPart2, showHomeCircle, showPredictions, showReach, showLife360, showBuildings3d, showMcDonalds, showKfc, showBurgerKing} = useLayersStore(
         useShallow((state) => ({
             showTeams: state.showTeams,
             showDevices: state.showDevices,
@@ -161,6 +162,7 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
             showMarkersPart2: state.showMarkersPart2,
             showHomeCircle: state.showHomeCircle,
             showPredictions: state.showPredictions,
+            showReach: state.showReach,
             showLife360: state.showLife360,
             showBuildings3d: state.showBuildings3d,
             showMcDonalds: state.showMcDonalds,
@@ -300,6 +302,7 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
                                                        onClose={() => setPopupPosition(undefined)}/>}
                 <Buildings3D visible={showBuildings3d}/>
                 {showPredictions && predictionEnabled !== false && <Predictions/>}
+                <Reach visible={showReach && !wall}/>
                 {showTeams && <Teams/>}
                 {(showMcDonalds || showKfc || showBurgerKing) && <FastFood/>}
                 {showDevices && <Devices/>}
