@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useEdition } from '@/hooks/edition.hook';
 import { useNotificationPrefs } from '@/hooks/notification-prefs.hook';
 import { NOTIFICATIONS_PROMPT_VERSION } from '@/lib/notifications';
 import useNotificationsDialogStore from '@/stores/notifications-dialog.store';
@@ -9,7 +10,9 @@ const PROMPT_DELAY_MS = 1500;
 export function useNotificationsPrompt(blocked: boolean) {
   const { prefs } = useNotificationPrefs();
   const setOpen = useNotificationsDialogStore((state) => state.setOpen);
-  const due = !!prefs && prefs.promptedVersion < NOTIFICATIONS_PROMPT_VERSION;
+  // Not while an archive is shown: saving (and marking it seen) is refused there, so it would come back every load
+  const { readOnly } = useEdition();
+  const due = !!prefs && prefs.promptedVersion < NOTIFICATIONS_PROMPT_VERSION && !readOnly;
 
   useEffect(() => {
     if (!due || blocked) return;

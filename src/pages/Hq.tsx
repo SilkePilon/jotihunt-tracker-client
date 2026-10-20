@@ -10,7 +10,7 @@ import HqEventCard from '@/components/hq/HqEventCard';
 import HqHunts from '@/components/hq/HqHunts';
 import HqTopCard from '@/components/hq/HqTopCard';
 import TourChip from '@/components/hq/TourChip';
-import DemoReloader from '@/components/DemoReloader';
+import EditionReloader from '@/components/EditionReloader';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import StaleDataBadge from '@/components/StaleDataBadge';
 import { useAreas } from '@/hooks/areas.hook';
@@ -39,7 +39,7 @@ export default function Hq() {
   // Outside Layout, so it needs its own handler: an expired session sends the TV to the login page
   return (
     <SWRConfig value={{ onError: (error) => isUnauthorized(error) && endSession() }}>
-      <DemoReloader />
+      <EditionReloader />
       <StaleDataBadge />
       <HqScreen onUnauthorized={endSession} />
     </SWRConfig>

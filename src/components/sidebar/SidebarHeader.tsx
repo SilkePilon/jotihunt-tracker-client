@@ -2,7 +2,7 @@ import Settings from '@/components/Settings';
 import { useAppConfig } from '@/hooks/app-config.hook';
 import { apiAssetUrl } from '@/lib/app-config';
 import { useStartTour } from '@/components/tour/useTour';
-import DemoBadge from './DemoBadge';
+import EditionBadge from './EditionBadge';
 import ThemeToggle from './ThemeToggle';
 
 export default function SidebarHeader() {
@@ -17,7 +17,7 @@ export default function SidebarHeader() {
         <p className="truncate text-sm font-bold leading-tight">Jotihunt Tracker</p>
         {groupName && <p className="truncate text-xs text-muted-foreground">{groupName}</p>}
       </div>
-      <DemoBadge />
+      <EditionBadge />
       {/* Joined tonal group: 2px seam, 12px outer and 6px inner corners */}
       <div className="flex shrink-0 gap-0.5">
         <ThemeToggle className="rounded-l-lg rounded-r-[6px]" />

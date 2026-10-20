@@ -157,7 +157,7 @@ export function BeheerRows({ children, className, openId: controlledOpenId, onOp
   );
 }
 
-export type RowTone = 'default' | 'open' | 'danger' | 'muted';
+export type RowTone = 'default' | 'open' | 'danger' | 'muted' | 'shown';
 
 const TONE: Record<RowTone, string> = {
   default: 'bg-beheer-row',
@@ -165,6 +165,8 @@ const TONE: Record<RowTone, string> = {
   danger: 'bg-destructive/12',
   // motion owns the block's opacity (fold in/out), so dim the content instead
   muted: 'bg-beheer-row [&>*]:opacity-60',
+  // The edition everyone sees (soft orange, like primary pills)
+  shown: 'bg-primary-container text-on-primary-container [&_.text-muted-foreground]:text-on-primary-container/75',
 };
 
 /**

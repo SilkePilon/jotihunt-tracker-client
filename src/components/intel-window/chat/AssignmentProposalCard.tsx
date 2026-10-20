@@ -3,6 +3,7 @@ import { CheckIcon, Loader2Icon } from 'lucide-react';
 import { toast } from 'sonner';
 import { Pill, Tag } from '@/components/beheer/controls/Pill';
 import { useAssignments } from '@/hooks/assignments.hook';
+import { useEdition } from '@/hooks/edition.hook';
 import { apiErrorMessage } from '@/lib/api-error';
 import { sameAnswer } from '@/lib/intel-chat';
 import { ASSIGNMENT_STATUS_LABELS } from '@/lib/intel-window';
@@ -22,12 +23,14 @@ export default function AssignmentProposalCard({ proposal }: { proposal: Assignm
   const statusDone = !proposal.status || currentStatus === proposal.status;
   const noteDone = !note || (assignment?.notes ?? []).some((existing) => sameAnswer(existing.text, note));
   const [saving, setSaving] = useState(false);
+  // An archive edition is read-only: the chat stays, applying its proposal doesn't
+  const { readOnly } = useEdition();
   const [justSaved, setJustSaved] = useState(false);
   // Before the list loaded nothing is known yet: offer "Opslaan". justSaved only bridges until the cache reflects the save
   const saved = assignments === undefined ? justSaved : statusDone && noteDone;
 
   async function save() {
-    if (saved || saving) return;
+    if (saved || saving || readOnly) return;
     setSaving(true);
     try {
       if (proposal.status && !statusDone) await setStatus(proposal.articleId, proposal.status);
@@ -56,7 +59,7 @@ export default function AssignmentProposalCard({ proposal }: { proposal: Assignm
           </div>
         )}
         <div className="mt-1 flex flex-wrap gap-1.5">
-          <Pill variant={saved ? 'success' : 'primary'} disabled={saving} aria-disabled={saved} onClick={save} morphKey={saved ? 'saved' : saving ? 'saving' : 'idle'}>
+          <Pill variant={saved ? 'success' : 'primary'} disabled={saving || (readOnly && !saved)} aria-disabled={saved} onClick={save} morphKey={saved ? 'saved' : saving ? 'saving' : 'idle'}>
             {saved ? (
               <>
                 Opgeslagen

@@ -1,6 +1,7 @@
 import { toast } from 'sonner';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useTeams } from '@/hooks/teams.hook';
+import { apiErrorMessage } from '@/lib/api-error';
 
 interface ReloadTeamsDialogProps {
   open: boolean;
@@ -12,15 +13,15 @@ export default function ReloadTeamsDialog({ open, onOpenChange }: ReloadTeamsDia
   const { reloadTeams } = useTeams();
 
   async function handleReload() {
-    // Never throws; false on any error (e.g. 409 while demo mode is on)
-    const ok = await reloadTeams();
-    if (ok) {
+    // Never throws; the error on failure (a 423 while an archive edition is shown reads "Archief is alleen-lezen")
+    const error = await reloadTeams();
+    if (!error) {
       toast.success('Teams herladen', {
         description: 'Alle teams zijn succesvol herladen vanuit de Jotihunt API.',
       });
     } else {
       toast.error('Fout bij herladen teams', {
-        description: 'Er is iets misgegaan bij het herladen van de teams. Probeer het later opnieuw.',
+        description: apiErrorMessage(error, 'Er is iets misgegaan bij het herladen van de teams. Probeer het later opnieuw.'),
       });
     }
     onOpenChange(false);

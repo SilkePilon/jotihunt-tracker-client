@@ -20,7 +20,7 @@ const TITLE: Record<LinkedView, string> = { syncing: 'Synchroniseert', failing: 
  * Linked (mockup linked-state A): big cookie, title, sync line, "Automatisch synchroniseren" switch in a grey pill.
  * Stays mounted across syncing / failing / paused: only the badge pops, the texts fade and the switch's thumb slides.
  */
-export function JotiboardLinked({ status, view, onSetSync }: { status: JotiboardLinkedStatus; view: LinkedView; onSetSync: (enabled: boolean) => Promise<void> }) {
+export function JotiboardLinked({ status, view, disabled, onSetSync }: { status: JotiboardLinkedStatus; view: LinkedView; disabled?: boolean; onSetSync: (enabled: boolean) => Promise<void> }) {
   const now = useNow(true);
   const [busy, setBusy] = useState(false);
 
@@ -52,7 +52,7 @@ export function JotiboardLinked({ status, view, onSetSync }: { status: Jotiboard
       </FadeText>
       <label className={cn('mt-3 flex w-full cursor-pointer items-center justify-between gap-3 px-2.5 py-2', JOTIBOARD_BLOCK)}>
         <span className="text-[13px] font-medium">Automatisch synchroniseren</span>
-        <Switch checked={status.syncEnabled} disabled={busy} onCheckedChange={(checked) => void toggle(checked)} className="data-[state=checked]:bg-green-600" />
+        <Switch checked={status.syncEnabled} disabled={busy || disabled} onCheckedChange={(checked) => void toggle(checked)} className="data-[state=checked]:bg-green-600" />
       </label>
     </div>
   );

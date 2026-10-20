@@ -12,6 +12,7 @@ import {areaOptions} from '@/lib/utils.ts';
 import {useEffect, useId, useRef, useState} from "react";
 import {useHintFormBridge} from "@/hooks/hint-bridge.hook.ts";
 import {useAppConfig} from '@/hooks/app-config.hook';
+import {useEdition} from '@/hooks/edition.hook';
 import {isInNetherlands} from '@/lib/netherlands';
 import {fromRD, isPlausibleRD} from '@/lib/rd';
 import {apiErrorMessage} from '@/lib/api-error';
@@ -38,6 +39,8 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
     const {markers, createMarker} = useMarkers();
     const [timeOpen, setTimeOpen] = useState(false);
     const {huntStart, huntEnd} = useAppConfig();
+    // An archive edition is read-only: the boxes (and wildcard guesses) still work, Registreren doesn't
+    const {readOnly} = useEdition();
     const HUNT_START = huntStart ? new Date(huntStart) : null;
     const HUNT_END = huntEnd ? new Date(huntEnd) : null;
     // Without a configured hunt window there are no hint hours to pick
@@ -136,6 +139,7 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
      * Checks if the coördinates are valid.
      */
     async function onSubmit(data: z.infer<typeof FormSchema>) {
+        if (readOnly) return;
         // Convert RD coordinates to WGS84
         const x = Number(data.x);
         const y = Number(data.y);
@@ -245,7 +249,7 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
                     </button>
                 </div>
             </div>
-            <Button id={submitId} type="submit" className={`${SOFT_PRIMARY_BUTTON} h-11 text-[15px]`} disabled={!canSubmit || form.formState.isSubmitting}>
+            <Button id={submitId} type="submit" className={`${SOFT_PRIMARY_BUTTON} h-11 text-[15px]`} disabled={!canSubmit || form.formState.isSubmitting || readOnly}>
                 <Pin data-icon="inline-start"/> Registreren
             </Button>
         </form>

@@ -7,6 +7,7 @@ import Reveal from '@/components/motion/Reveal';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { testJotihuntLogin, useAdminConfig, useTraccarGroups } from '@/hooks/app-config.hook';
+import { useEdition } from '@/hooks/edition.hook';
 import { useNow } from '@/hooks/now.hook';
 import { useTeams } from '@/hooks/teams.hook';
 import { apiErrorMessage } from '@/lib/api-error';
@@ -115,12 +116,13 @@ function Timeline({ startMs, endMs, now }: { startMs: number; endMs: number; now
   );
 }
 
-function DateTimeInput({ id, value, invalid, onChange }: { id: string; value: string; invalid?: boolean; onChange: (value: string) => void }) {
+function DateTimeInput({ id, value, invalid, disabled, onChange }: { id: string; value: string; invalid?: boolean; disabled?: boolean; onChange: (value: string) => void }) {
   return (
     <Input
       id={id}
       type="datetime-local"
       value={value}
+      disabled={disabled}
       aria-invalid={invalid || undefined}
       onChange={(event) => onChange(event.target.value)}
       className={cn(FIELD, 'tabular-nums [color-scheme:light] dark:[color-scheme:dark]')}
@@ -208,6 +210,8 @@ export default function GeneralSettings() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [login, setLogin] = useState<LoginState>('idle');
+  // The server rejects hunt times while an archive is shown (423); the other general settings stay editable
+  const { readOnly } = useEdition();
 
   const config = admin.config;
   if (!config) {
@@ -293,10 +297,10 @@ export default function GeneralSettings() {
         <HuntTimeline start={fromLocalInput(draft.huntStart)} end={fromLocalInput(draft.huntEnd)} />
         <div className="mx-1 mt-2 grid gap-x-3 gap-y-2.5 sm:grid-cols-2">
           <Field label="Start" htmlFor={`${id}-start`}>
-            <DateTimeInput id={`${id}-start`} value={draft.huntStart} onChange={(value) => set('huntStart', value)} />
+            <DateTimeInput id={`${id}-start`} value={draft.huntStart} disabled={readOnly} onChange={(value) => set('huntStart', value)} />
           </Field>
           <Field label="Einde" htmlFor={`${id}-end`} error={endBeforeStart ? 'Einde moet na de start liggen.' : undefined}>
-            <DateTimeInput id={`${id}-end`} value={draft.huntEnd} invalid={endBeforeStart} onChange={(value) => set('huntEnd', value)} />
+            <DateTimeInput id={`${id}-end`} value={draft.huntEnd} invalid={endBeforeStart} disabled={readOnly} onChange={(value) => set('huntEnd', value)} />
           </Field>
         </div>
       </BeheerCard>

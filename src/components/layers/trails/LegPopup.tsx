@@ -6,6 +6,7 @@ import MapPopup from '../../map/MapPopup';
 import { PopupActions, popupActionClass } from '../../map/popup/PopupActions';
 import PopupHeader, { PopupIcon } from '../../map/popup/PopupHeader';
 import { PopupRow, PopupRows } from '../../map/popup/PopupRows';
+import { useEdition } from '@/hooks/edition.hook';
 import { POP, REVEAL_TRANSITION, SWAP } from '@/lib/motion';
 import { flipLabel, flipTarget, legRows, legSubtitle, legTitle } from '@/lib/trails';
 import { capitalizeFirstLetter } from '@/lib/utils';
@@ -39,6 +40,8 @@ interface LegPopupProps {
 /** Trail leg (popup B): why it is walk or car, its time and route, one flip button and a way back to automatic. */
 export default function LegPopup({ leg, longitude, latitude, onClose, onSetMode }: LegPopupProps) {
   const [saving, setSaving] = useState(false);
+  // An archive edition is read-only: the leg's mode can't be changed
+  const { readOnly } = useEdition();
   const rows = legRows(leg);
   const car = leg.mode !== 'walk';
 
@@ -77,7 +80,7 @@ export default function LegPopup({ leg, longitude, latitude, onClose, onSetMode 
         <PopupRow icon={<RouteIcon />} title={<Swap text={rows.route.title} />} meta={<Swap text={rows.route.meta} />} />
       </PopupRows>
       <PopupActions>
-        <button type="button" disabled={saving} className={popupActionClass('primary', 'min-w-0 flex-1')} onClick={() => void apply(flipTarget(leg))}>
+        <button type="button" disabled={saving || readOnly} className={popupActionClass('primary', 'min-w-0 flex-1')} onClick={() => void apply(flipTarget(leg))}>
           {car ? <FootprintsIcon /> : <CarIcon />}
           <Swap text={flipLabel(leg)} />
         </button>
@@ -87,7 +90,7 @@ export default function LegPopup({ leg, longitude, latitude, onClose, onSetMode 
           <motion.div key="reset" className="overflow-hidden" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={REVEAL_TRANSITION}>
             <button
               type="button"
-              disabled={saving}
+              disabled={saving || readOnly}
               className="mt-1.5 w-full rounded-md py-1 text-center text-xs text-(--map-muted) underline-offset-2 outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-50"
               onClick={() => void apply(null)}
             >

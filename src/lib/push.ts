@@ -1,4 +1,5 @@
 import type { AxiosResponse } from 'axios';
+import { isArchiveError } from './editions';
 
 export type Fetch = <T>(url: string, method?: 'GET' | 'POST' | 'DELETE' | 'PUT', body?: unknown) => Promise<AxiosResponse<T>>;
 export type PushResult = 'subscribed' | 'denied' | 'unsupported' | 'unavailable' | 'error';
@@ -55,7 +56,8 @@ export async function subscribePush(fetch: Fetch): Promise<PushResult> {
   }
 }
 
-/** On load: send an existing subscription again, so it belongs to the logged-in user (and survives a demo switch). */
+/** On load: send an existing subscription again, so it belongs to the logged-in user (and survives an edition switch).
+ * Quiet while an archive edition is shown: the server refuses it with 423 then. */
 export async function resyncPush(fetch: Fetch): Promise<void> {
   if (!isPushSupported() || Notification.permission !== 'granted') return;
   try {
@@ -63,7 +65,7 @@ export async function resyncPush(fetch: Fetch): Promise<void> {
     const subscription = await registration?.pushManager.getSubscription();
     if (subscription) await fetch('/push/subscribe', 'POST', subscription.toJSON());
   } catch (error) {
-    console.warn('[push] resync failed', error);
+    if (!isArchiveError(error)) console.warn('[push] resync failed', error);
   }
 }
 
@@ -92,6 +94,7 @@ export async function unsubscribePush(fetch: Fetch, timeoutMs = UNSUBSCRIBE_TIME
       await subscription.unsubscribe();
     }
   } catch (error) {
-    console.warn('[push] unsubscribe failed', error);
+    // A 423 (archive edition shown) is expected; the browser subscription is dropped anyway
+    if (!isArchiveError(error)) console.warn('[push] unsubscribe failed', error);
   }
 }

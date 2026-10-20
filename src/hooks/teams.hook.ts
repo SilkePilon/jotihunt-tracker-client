@@ -45,12 +45,13 @@ export const useTeams = () => {
     }
   }
 
-  async function reloadTeams(): Promise<boolean> {
+  /** @returns null when the teams were reloaded, else the error (never throws; show it with apiErrorMessage) */
+  async function reloadTeams(): Promise<unknown> {
     try {
       const result = await fetch('/teams/reload', 'POST', undefined, SLOW_REQUEST_TIMEOUT_MS);
-      return result.status === 200;
-    } catch {
-      return false;
+      return result.status === 200 ? null : new Error(`Unexpected status ${result.status}`);
+    } catch (error) {
+      return error ?? new Error('Request failed');
     } finally {
       await mutate();
     }

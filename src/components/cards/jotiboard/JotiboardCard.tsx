@@ -4,6 +4,7 @@ import { EllipsisIcon, XIcon } from 'lucide-react';
 import AutoHeight from '@/components/motion/AutoHeight';
 import Reveal from '@/components/motion/Reveal';
 import { Button } from '@/components/ui/button';
+import { useEdition } from '@/hooks/edition.hook';
 import { hasImports, jotiboardView } from '@/lib/jotiboard';
 import { SWAP } from '@/lib/motion';
 import { cn } from '@/lib/utils';
@@ -29,6 +30,8 @@ export interface JotiboardCardProps {
 export default function JotiboardCard({ status, isError, onLink, onSetSync, onUnlink, onPurge }: JotiboardCardProps) {
   const [formOpen, setFormOpen] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
+  // Linking, the sync switch, unlink and delete are refused while an archive edition is shown (423)
+  const { readOnly } = useEdition();
   const view = jotiboardView(status, isError);
 
   // Leaving "unlinked" closes the login form, so a later unlink shows the button again
@@ -52,7 +55,7 @@ export default function JotiboardCard({ status, isError, onLink, onSetSync, onUn
     setPreviousUsername(username);
     setActionsOpen(false);
   }
-  if (actionsOpen && !showMenu) setActionsOpen(false);
+  if (actionsOpen && (!showMenu || readOnly)) setActionsOpen(false);
 
   if (view === 'loading') return null;
   if (view === 'error') return <p className="text-xs text-muted-foreground">Jotiboard-status ophalen is mislukt.</p>;
@@ -70,14 +73,14 @@ export default function JotiboardCard({ status, isError, onLink, onSetSync, onUn
             {scene === 'unlinked' && (
               <div className="flex flex-col gap-2.5">
                 <p className="text-xs text-muted-foreground">Koppel het Jotiboard-account. Pins en opgeloste hints van Jotiboard komen dan automatisch in de tracker.</p>
-                <Button size="lg" className={cn('h-11 w-full rounded-lg text-sm font-semibold', JOTIBOARD_BUTTON)} onClick={() => setFormOpen(true)}>
+                <Button size="lg" className={cn('h-11 w-full rounded-lg text-sm font-semibold', JOTIBOARD_BUTTON)} disabled={readOnly} onClick={() => setFormOpen(true)}>
                   <JotiboardLogo className="size-5" />
                   Koppel Jotiboard
                 </Button>
               </div>
             )}
             {scene === 'form' && <JotiboardLoginForm submitLabel="Koppelen" onSubmit={onLink} onCancel={() => setFormOpen(false)} />}
-            {scene === 'linked' && linked && linkedView && <JotiboardLinked status={linked} view={linkedView} onSetSync={onSetSync} />}
+            {scene === 'linked' && linked && linkedView && <JotiboardLinked status={linked} view={linkedView} disabled={readOnly} onSetSync={onSetSync} />}
             {view === 'loggedOut' && username && (
               <div className="flex flex-col items-center gap-2">
                 <JotiboardLoggedOutHeader />
@@ -113,6 +116,7 @@ export default function JotiboardCard({ status, isError, onLink, onSetSync, onUn
                 className={cn('size-[26px] rounded-full', actionsOpen && 'bg-zinc-200 dark:bg-zinc-700')}
                 aria-label={actionsOpen ? 'Acties sluiten' : 'Acties'}
                 aria-expanded={actionsOpen}
+                disabled={readOnly}
                 onClick={() => setActionsOpen((open) => !open)}
               >
                 <AnimatePresence mode="wait" initial={false}>

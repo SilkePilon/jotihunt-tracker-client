@@ -6,6 +6,7 @@ import Segmented from '@/components/beheer/controls/Segmented';
 import Reveal from '@/components/motion/Reveal';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAssignments } from '@/hooks/assignments.hook';
+import { useEdition } from '@/hooks/edition.hook';
 import { apiErrorMessage } from '@/lib/api-error';
 import { formatClock } from '@/lib/format';
 import { ASSIGNMENT_STATUS_LABELS, siteSubmission, statusAuthor } from '@/lib/intel-window';
@@ -26,6 +27,8 @@ export default function AssignmentPane({ item }: { item: IntelItem }) {
   const { members, setStatus, setOwner, addNote } = useAssignments();
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
+  // An archive edition is read-only: status, owner and notes can't change
+  const { readOnly } = useEdition();
   const status = item.assignment?.status ?? 'open';
   const owner = item.assignment?.owner ?? null;
   const notes = item.assignment?.notes ?? [];
@@ -38,7 +41,7 @@ export default function AssignmentPane({ item }: { item: IntelItem }) {
 
   async function submitNote() {
     const text = note.trim();
-    if (!text || saving) return;
+    if (!text || saving || readOnly) return;
     setSaving(true);
     try {
       await addNote(item.id, text);
@@ -57,10 +60,10 @@ export default function AssignmentPane({ item }: { item: IntelItem }) {
           <BeheerCard>
             <BeheerRows>
               <BeheerRow key="status" title="Status" meta={author && <FadeSwap>{author}</FadeSwap>}>
-                <Segmented label="Status" value={status} options={STATUS_OPTIONS} onChange={(next) => run(() => setStatus(item.id, next), 'Status opslaan mislukt')} />
+                <Segmented label="Status" value={status} options={STATUS_OPTIONS} disabled={readOnly} onChange={(next) => run(() => setStatus(item.id, next), 'Status opslaan mislukt')} />
               </BeheerRow>
               <BeheerRow key="owner" title="Eigenaar">
-                <Select value={owner?._id ?? NO_OWNER} onValueChange={(next) => run(() => setOwner(item.id, next === NO_OWNER ? null : next), 'Eigenaar opslaan mislukt')}>
+                <Select value={owner?._id ?? NO_OWNER} onValueChange={(next) => run(() => setOwner(item.id, next === NO_OWNER ? null : next), 'Eigenaar opslaan mislukt')} disabled={readOnly}>
                   <SelectTrigger
                     size="sm"
                     aria-label="Eigenaar"
@@ -113,7 +116,7 @@ export default function AssignmentPane({ item }: { item: IntelItem }) {
                       // A draft: Escape clears it (data-inline-edit kept the window and the detail open)
                       if (event.key === 'Escape' && note) setNote('');
                     }}
-                    readOnly={saving}
+                    readOnly={saving || readOnly}
                     data-inline-edit={note ? '' : undefined}
                     placeholder="Notitie toevoegen…"
                     maxLength={1000}
@@ -121,7 +124,7 @@ export default function AssignmentPane({ item }: { item: IntelItem }) {
                     data-1p-ignore
                     className="h-8 min-w-0 flex-1 rounded-[10px] bg-beheer-window px-2.5 text-[13px] ring-1 ring-border outline-none placeholder:text-muted-foreground read-only:opacity-60 focus:ring-primary"
                   />
-                  <Pill variant="primary" disabled={!note.trim() || saving} onClick={() => void submitNote()}>
+                  <Pill variant="primary" disabled={!note.trim() || saving || readOnly} onClick={() => void submitNote()}>
                     Toevoegen
                   </Pill>
                 </div>

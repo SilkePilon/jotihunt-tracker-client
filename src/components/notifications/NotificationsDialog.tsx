@@ -7,7 +7,9 @@ import NotificationTile from '@/components/notifications/NotificationTile';
 import { NOTIFICATION_OPTIONS, NOTIFICATIONS_PROMPT_VERSION, setAllTypes, toggleType, type OptionalNotificationType } from '@/lib/notifications';
 import ResponsiveDialog from '@/components/ResponsiveDialog';
 import { useFetcher } from '@/hooks/utils/api.hook';
+import { useEdition } from '@/hooks/edition.hook';
 import { useNotificationPrefs } from '@/hooks/notification-prefs.hook';
+import { apiErrorMessage } from '@/lib/api-error';
 import { DIALOG_SHELL } from '@/lib/dialog-shell';
 import { isPushSupported, isStandalone, needsIosInstall, pushPermission, subscribePush, type PushResult } from '@/lib/push';
 import useNotificationsDialogStore from '@/stores/notifications-dialog.store';
@@ -41,6 +43,8 @@ export default function NotificationsDialog() {
   const { fetch } = useFetcher();
   const [disabled, setDisabled] = useState<OptionalNotificationType[] | null>(null);
   const [saving, setSaving] = useState(false);
+  // Preferences live in the edition's data: read-only while an archive is shown
+  const { readOnly } = useEdition();
 
   // Local edits start from the server prefs each time the dialog opens; reset once it has faded out, so the switches don't snap back mid-close
   const current = disabled ?? prefs?.disabledTypes ?? [];
@@ -74,8 +78,8 @@ export default function NotificationsDialog() {
         toast.success('Meldingen opgeslagen');
       }
       setOpen(false);
-    } catch {
-      toast.error('Opslaan is mislukt, probeer het opnieuw.');
+    } catch (error) {
+      toast.error(apiErrorMessage(error, 'Opslaan is mislukt, probeer het opnieuw.'));
     } finally {
       setSaving(false);
     }
@@ -120,7 +124,7 @@ export default function NotificationsDialog() {
           <button
             type="button"
             onClick={() => void save()}
-            disabled={saving || !prefs}
+            disabled={saving || !prefs || readOnly}
             className="h-11 flex-1 cursor-pointer rounded-xl bg-primary-container text-sm font-semibold text-on-primary-container outline-none transition-[filter,opacity] hover:brightness-105 focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Opslaan

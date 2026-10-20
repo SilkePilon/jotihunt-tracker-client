@@ -9,6 +9,7 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import { MapRef } from '@/components/Map';
 import Reveal from '@/components/motion/Reveal';
 import CookieBadge from '@/components/tracker/CookieBadge';
+import { useEdition } from '@/hooks/edition.hook';
 import { useHintBoard, useRdPreviewState } from '@/hooks/hints.hook';
 import { apiErrorMessage } from '@/lib/api-error';
 import { type AnswerPreview, INTEL_CLOSE_MS, answerPreview, hasExistingMarker, initialOpenArea, nextOpenArea } from '@/lib/intel-window';
@@ -229,6 +230,8 @@ function AreaBody({ cell, label, onSave, onClear, mapRef }: { cell: HintCell; la
   const [editing, setEditing] = useState(!solved);
   const [answer, setAnswer] = useState(cell.answer ?? '');
   const [saving, setSaving] = useState(false);
+  // An archive edition is read-only: the field still shows guesses on the map, but answers can't be stored or removed
+  const { readOnly } = useEdition();
   // Escape-cancel: the pencil takes focus back when it mounts again
   const [refocus, setRefocus] = useState(false);
   // What the field started from (stored answer or empty): unchanged from it counts as untouched
@@ -324,7 +327,7 @@ function AreaBody({ cell, label, onSave, onClear, mapRef }: { cell: HintCell; la
 
   async function save() {
     const value = answer.trim();
-    if (!value || saving || parseGuessAnswer(value)) return;
+    if (!value || saving || readOnly || parseGuessAnswer(value)) return;
     setSaving(true);
     const ok = await onSave(cell, label, value);
     setSaving(false);
@@ -391,7 +394,7 @@ function AreaBody({ cell, label, onSave, onClear, mapRef }: { cell: HintCell; la
               aria-label={`Antwoord ${label}`}
               className="h-8 w-44 min-w-0 rounded-[10px] bg-beheer-window px-2.5 font-mono text-[13px] ring-1 ring-border outline-none placeholder:text-muted-foreground read-only:opacity-60 focus:ring-primary"
             />
-            <Pill variant="primary" disabled={!answer.trim() || saving || !!guessAnswer} onClick={() => void save()} morphKey={saving ? 'saving' : 'idle'} aria-label={saving ? 'Opslaan…' : undefined}>
+            <Pill variant="primary" disabled={!answer.trim() || saving || !!guessAnswer || readOnly} onClick={() => void save()} morphKey={saving ? 'saving' : 'idle'} aria-label={saving ? 'Opslaan…' : undefined}>
               {saving ? <Loader2Icon className="animate-spin" /> : 'Opslaan'}
             </Pill>
           </motion.div>
@@ -404,10 +407,10 @@ function AreaBody({ cell, label, onSave, onClear, mapRef }: { cell: HintCell; la
                 <MapIcon />
               </IconPill>
             )}
-            <IconPill aria-label="Wijzigen" title="Wijzigen" autoFocus={refocus} onClick={startEdit}>
+            <IconPill aria-label="Wijzigen" title="Wijzigen" autoFocus={refocus} disabled={readOnly} onClick={startEdit}>
               <PencilIcon />
             </IconPill>
-            <IconPill aria-label="Wissen" title="Wissen" onClick={() => onClear(cell, label)}>
+            <IconPill aria-label="Wissen" title="Wissen" disabled={readOnly} onClick={() => onClear(cell, label)}>
               <Trash2Icon />
             </IconPill>
           </motion.div>

@@ -6,6 +6,7 @@ import type { MapRef } from '@/components/Map';
 import Reveal from '@/components/motion/Reveal';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useBuildingsAdmin } from '@/hooks/buildings.hook';
+import { useEdition } from '@/hooks/edition.hook';
 import { apiErrorMessage } from '@/lib/api-error';
 import { formatMegabytes, JOB_NAMES, jobRunning, PREFETCH_RADII, type BuildingsJob } from '@/lib/buildings';
 import { EASE_OUT, SWAP_TRANSITION } from '@/lib/motion';
@@ -64,7 +65,10 @@ export default function BuildingsCard({ mapRef }: { mapRef: RefObject<MapRef | n
   // The action whose request is on its way (the job itself shows through the polled status)
   const [starting, setStarting] = useState<Action | null>(null);
   const running = jobRunning(status);
+  // The cache actions are refused while an archive edition is shown (423)
+  const { readOnly } = useEdition();
   const busy = running || starting !== null;
+  const locked = busy || readOnly;
   const spinning = (kind: 'refresh' | 'prefetch') => starting === kind || (running && status?.job?.kind === kind);
 
   // A job that vanishes while running means the server restarted mid-job
@@ -144,13 +148,13 @@ export default function BuildingsCard({ mapRef }: { mapRef: RefObject<MapRef | n
         <Pill
           variant="primary"
           morphKey={spinning('refresh') ? 'busy' : 'idle'}
-          disabled={busy || !status?.tiles}
+          disabled={locked || !status?.tiles}
           onClick={() => void run('refresh', refresh, 'Vernieuwen starten is mislukt.')}
         >
           {spinning('refresh') ? <Loader2Icon className="animate-spin" /> : <RefreshCwIcon />}
           Vernieuwen
         </Pill>
-        <Pill variant="secondary" morphKey={spinning('prefetch') ? 'busy' : 'idle'} disabled={busy || !status} onClick={prefetchAroundCentre}>
+        <Pill variant="secondary" morphKey={spinning('prefetch') ? 'busy' : 'idle'} disabled={locked || !status} onClick={prefetchAroundCentre}>
           {spinning('prefetch') ? <Loader2Icon className="animate-spin" /> : <DownloadIcon />}
           Vooraf laden
         </Pill>
@@ -161,7 +165,7 @@ export default function BuildingsCard({ mapRef }: { mapRef: RefObject<MapRef | n
               key={radius}
               type="button"
               aria-pressed={radius === radiusKm}
-              disabled={busy}
+              disabled={locked}
               onClick={() => setRadiusKm(radius)}
               className={cn(
                 'inline-flex h-8 items-center rounded-lg px-3 text-[12.5px] font-semibold tabular-nums outline-none transition-[background-color,color,transform] duration-200 focus-visible:ring-[3px] focus-visible:ring-ring/50 active:scale-[0.97] disabled:opacity-50 motion-reduce:transition-none',
@@ -172,14 +176,14 @@ export default function BuildingsCard({ mapRef }: { mapRef: RefObject<MapRef | n
             </button>
           ))}
         </div>
-        <Pill variant="danger-outline" disabled={busy || confirming || !status?.tiles} onClick={() => setConfirming(true)}>
+        <Pill variant="danger-outline" disabled={locked || confirming || !status?.tiles} onClick={() => setConfirming(true)}>
           <Trash2Icon />
           Cache wissen
         </Pill>
       </div>
 
       <Reveal>
-        {confirming && (
+        {confirming && !readOnly && (
           <div className="pt-3">
             <InlineConfirm
               className={CONFIRM_BOX}

@@ -31,7 +31,7 @@ const isObject = (data: unknown): data is Record<string, unknown> => typeof data
 const OBJECT_CHECKS: Record<string, (data: Record<string, unknown>) => boolean> = {
   '/hints/board': (data) => Array.isArray(data.articles) && Array.isArray(data.cells),
   '/hunts/sync': (data) => typeof data.configured === 'boolean' && typeof data.running === 'boolean' && isObject(data.counts) && typeof data.points === 'number',
-  '/demo': (data) => typeof data.enabled === 'boolean',
+  '/editions': (data) => Array.isArray(data.editions) && typeof data.shownYear === 'number',
   '/notifications/preferences': (data) => Array.isArray(data.disabledTypes),
   '/articles/read': (data) => Array.isArray(data.read) && isObject(data.readBy),
   '/counter-hunt': (data) => typeof data.active === 'boolean',

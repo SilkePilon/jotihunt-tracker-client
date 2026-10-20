@@ -1,5 +1,6 @@
-import { expect, test } from 'bun:test';
-import { isIos, needsIosInstall, unsubscribePush, urlBase64ToUint8Array } from './push';
+import { expect, spyOn, test } from 'bun:test';
+import { AxiosError, AxiosHeaders } from 'axios';
+import { isIos, needsIosInstall, resyncPush, unsubscribePush, urlBase64ToUint8Array } from './push';
 
 const IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15';
 const ANDROID = 'Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 Chrome/140 Mobile Safari/537.36';
@@ -37,6 +38,34 @@ test('unsubscribePush deletes the endpoint on the server, then unsubscribes the 
     await unsubscribePush((() => new Promise(() => {})) as never, 20);
     expect(calls).toEqual(['unsubscribe']);
   } finally {
+    g.window = original.window;
+    g.Notification = original.Notification;
+    Object.defineProperty(globalThis, 'navigator', { configurable: true, value: original.navigator });
+  }
+});
+
+test('a 423 (archive edition shown) on resync or unsubscribe stays quiet', async () => {
+  const calls: string[] = [];
+  const g = globalThis as unknown as Record<string, unknown>;
+  const original = { window: g.window, navigator: g.navigator, Notification: g.Notification };
+  const subscription = { endpoint: 'https://push.example/1', toJSON: () => ({}), unsubscribe: async () => void calls.push('unsubscribe') };
+  g.window = { PushManager: {}, Notification: {} };
+  g.Notification = { permission: 'granted' };
+  Object.defineProperty(globalThis, 'navigator', { configurable: true, value: { serviceWorker: { getRegistration: async () => ({ pushManager: { getSubscription: async () => subscription } }) } } });
+  const warn = spyOn(console, 'warn').mockImplementation(() => {});
+  const archive = (async () => {
+    throw new AxiosError('x', 'E', undefined, undefined, { status: 423, data: { message: 'Archief is alleen-lezen' }, statusText: '', headers: {}, config: { headers: new AxiosHeaders() } });
+  }) as never;
+  try {
+    await resyncPush(archive);
+    await unsubscribePush(archive);
+    expect(warn).not.toHaveBeenCalled();
+    expect(calls).toEqual(['unsubscribe']);
+    // other errors still warn
+    await resyncPush((async () => { throw new Error('offline'); }) as never);
+    expect(warn).toHaveBeenCalledTimes(1);
+  } finally {
+    warn.mockRestore();
     g.window = original.window;
     g.Notification = original.Notification;
     Object.defineProperty(globalThis, 'navigator', { configurable: true, value: original.navigator });

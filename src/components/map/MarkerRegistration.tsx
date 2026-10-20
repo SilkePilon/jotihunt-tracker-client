@@ -14,6 +14,7 @@ import { Input } from '../ui/input';
 import { Marker } from '@/types/Marker';
 import { useMarkers } from '@/hooks/markers.hook';
 import { useAppConfig } from '@/hooks/app-config.hook';
+import { useEdition } from '@/hooks/edition.hook';
 import {toast} from "sonner";
 import { apiErrorMessage } from '@/lib/api-error';
 import { popupActionClass } from './popup/PopupActions';
@@ -30,6 +31,8 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
   const [dialogOpen, setDialogOpen] = useState(false);
   const [markerType, setMarkerType] = useState<MarkerType>();
   const { createMarker } = useMarkers();
+  // An archive edition is read-only: no new markers
+  const { readOnly } = useEdition();
   const fieldId = useId();
   // Before the hunt window is configured the pickers offer today and any time is accepted
   const { huntStart, huntEnd } = useAppConfig();
@@ -223,7 +226,7 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
           <Button variant="outline" type="button" onClick={() => handleOpenChange(false)}>
             Annuleren
           </Button>
-          <Button variant="default" type="submit" disabled={!form.formState.isValid}>
+          <Button variant="default" type="submit" disabled={!form.formState.isValid || readOnly}>
             <PinIcon data-icon="inline-start" />
             Opslaan
           </Button>
@@ -247,10 +250,10 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
   return (
     <>
       {dialog()}
-      <button type="button" className={popupActionClass('primary', 'min-w-0 flex-1')} onClick={() => openDialog(MarkerType.Hunt)}>
+      <button type="button" className={popupActionClass('primary', 'min-w-0 flex-1')} disabled={readOnly} onClick={() => openDialog(MarkerType.Hunt)}>
         <LocateFixedIcon /> Hunt
       </button>
-      <button type="button" className={popupActionClass('primary', 'min-w-0 flex-1')} onClick={() => openDialog(MarkerType.Spot)}>
+      <button type="button" className={popupActionClass('primary', 'min-w-0 flex-1')} disabled={readOnly} onClick={() => openDialog(MarkerType.Spot)}>
         <GlassesIcon /> Spot
       </button>
     </>
