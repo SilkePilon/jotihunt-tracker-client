@@ -19,7 +19,7 @@ export default function EditionsCard() {
   // The question stays set while the dialog closes, so its text doesn't change during the exit animation
   const [pending, setPending] = useState<Pending>({ kind: 'create' });
   const [open, setOpen] = useState(false);
-  const nextYear = (state?.liveYear ?? 0) + 1;
+  const liveYear = state?.liveYear;
 
   function ask(next: Pending) {
     setPending(next);
@@ -45,7 +45,10 @@ export default function EditionsCard() {
       ? pending.edition.live
         ? { title: `Terug naar Jotihunt ${pending.edition.year}?`, description: 'Iedereen ziet weer de live editie.', confirmLabel: 'Terug naar live' }
         : { title: `Archief ${pending.edition.year} tonen?`, description: `Iedereen ziet nu archief ${pending.edition.year}. Alleen-lezen.`, confirmLabel: 'Tonen' }
-      : { title: `Jotihunt ${nextYear} starten?`, description: `${state?.liveYear} wordt archief. ${nextYear} begint leeg; eigen nachtgebieden gaan mee.`, confirmLabel: 'Starten' };
+      : liveYear !== undefined
+        ? { title: `Jotihunt ${liveYear + 1} starten?`, description: `${liveYear} wordt archief. ${liveYear + 1} begint leeg; eigen nachtgebieden gaan mee. Herlaad daarna de teams.`, confirmLabel: 'Starten' }
+        : // The button is disabled until the editions load; never show "undefined" meanwhile
+          { title: 'Nieuwe editie starten?', description: 'De live editie wordt archief. De nieuwe begint leeg; eigen nachtgebieden gaan mee. Herlaad daarna de teams.', confirmLabel: 'Starten' };
 
   return (
     <BeheerCard title="Jotihunt-editie" description="Iedereen ziet de gekozen editie. Archief is alleen-lezen.">
