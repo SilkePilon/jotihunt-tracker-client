@@ -5,10 +5,10 @@ function flags(overrides: Partial<LayerFlags> = {}): LayerFlags {
   const noop = mock(() => {});
   return {
     showTeams: true, showDevices: true, showMarkersPart1: false, showMarkersPart2: true, showHomeCircle: true,
-    showGroupCircles: false, showPredictions: true, showLife360: true, showBuildings3d: true,
+    showGroupCircles: false, showPredictions: true, showReach: false, showLife360: true, showBuildings3d: true,
     showMcDonalds: false, showKfc: true, showBurgerKing: false,
     toggleTeams: noop, toggleDevices: noop, toggleMarkersPart1: noop, toggleMarkersPart2: noop, toggleHomeCircle: noop,
-    toggleGroupCircles: noop, togglePredictions: noop, toggleLife360: noop, toggleBuildings3d: noop,
+    toggleGroupCircles: noop, togglePredictions: noop, toggleReach: noop, toggleLife360: noop, toggleBuildings3d: noop,
     toggleMcDonalds: noop, toggleKfc: noop, toggleBurgerKing: noop,
     ...overrides,
   };
@@ -19,13 +19,13 @@ const labels = (result: ReturnType<typeof layerGroups>) => result.groups.map((gr
 describe('layerGroups', () => {
   test('groups, order and labels', () => {
     expect(labels(layerGroups(flags(), { predictions: true, life360: true }))).toEqual([
-      ['Spel', ['Groepen', 'Groepscirkels', 'Tegenhunt-cirkel', 'Markers', 'Voorspelling']],
+      ['Spel', ['Groepen', 'Groepscirkels', 'Tegenhunt-cirkel', 'Markers', 'Voorspelling', 'Bereik vossen']],
       ['Team & kaart', ["Auto's", 'Life360', '3D-gebouwen']],
     ]);
   });
   test('Voorspelling only with predictions, Life360 only when linked', () => {
     expect(labels(layerGroups(flags(), { predictions: false, life360: false }))).toEqual([
-      ['Spel', ['Groepen', 'Groepscirkels', 'Tegenhunt-cirkel', 'Markers']],
+      ['Spel', ['Groepen', 'Groepscirkels', 'Tegenhunt-cirkel', 'Markers', 'Bereik vossen']],
       ['Team & kaart', ["Auto's", '3D-gebouwen']],
     ]);
   });
@@ -43,7 +43,16 @@ describe('layerGroups', () => {
   });
   test('switch rows reflect the store', () => {
     const rows = layerGroups(flags(), { predictions: true, life360: true }).groups[0].rows;
-    expect(rows.filter((row) => row.kind === 'switch').map((row) => (row.kind === 'switch' ? row.checked : null))).toEqual([true, false, true, true]);
+    expect(rows.filter((row) => row.kind === 'switch').map((row) => (row.kind === 'switch' ? row.checked : null))).toEqual([true, false, true, true, false]);
+  });
+  test('Bereik vossen row reflects and toggles showReach', () => {
+    const toggleReach = mock(() => {});
+    const row = layerGroups(flags({ showReach: true, toggleReach }), { predictions: true, life360: true }).groups[0].rows.find((r) => r.id === 'reach');
+    expect(row?.kind).toBe('switch');
+    if (row?.kind !== 'switch') return;
+    expect(row.checked).toBe(true);
+    row.toggle();
+    expect(toggleReach).toHaveBeenCalledTimes(1);
   });
   test('food toggles in brand order', () => {
     const { food } = layerGroups(flags(), { predictions: true, life360: true });

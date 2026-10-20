@@ -1,4 +1,4 @@
-import { Building2Icon, CarIcon, CircleDashedIcon, MapPinIcon, SparklesIcon, TargetIcon, UserRoundIcon, UsersIcon, type LucideIcon } from 'lucide-react';
+import { Building2Icon, CarIcon, CircleDashedIcon, MapPinIcon, RadarIcon, SparklesIcon, TargetIcon, UserRoundIcon, UsersIcon, type LucideIcon } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import useLayersStore, { type LayersState } from '@/stores/layers.store';
 import { useLife360Members } from '@/hooks/life360.hook';
@@ -49,7 +49,7 @@ const sw = (id: string, label: string, icon: LucideIcon, checked: boolean, toggl
 
 /**
  * The map layers for the layers panel, grouped (Spel, Team & kaart) plus the fastfood brands (Eten). Voorspelling only
- * while predictions are on, Life360 only with a linked account.
+ * while predictions are on, Bereik vossen always, Life360 only with a linked account.
  */
 export function layerGroups(layers: LayerFlags, options: { predictions: boolean; life360: boolean }): LayerGroups {
   const game: LayerRow[] = [
@@ -68,6 +68,7 @@ export function layerGroups(layers: LayerFlags, options: { predictions: boolean;
     },
   ];
   if (options.predictions) game.push(sw('predictions', 'Voorspelling', SparklesIcon, layers.showPredictions, layers.togglePredictions));
+  game.push(sw('reach', 'Bereik vossen', RadarIcon, layers.showReach, layers.toggleReach));
 
   const team: LayerRow[] = [sw('devices', "Auto's", CarIcon, layers.showDevices, layers.toggleDevices)];
   if (options.life360) team.push(sw('life360', 'Life360', UserRoundIcon, layers.showLife360, layers.toggleLife360));
