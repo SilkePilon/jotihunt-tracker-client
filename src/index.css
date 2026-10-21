@@ -690,3 +690,115 @@ html.flashbang::view-transition-new(root) {
     left: calc(50% - 11px);
   }
 }
+
+/* Vossen card fox history (components/sidebar/foxes/FoxHistoryTimeline.tsx): blocks per kind (`--c` = lane colour),
+   the running block's cap + shine sweep, and the shimmering status word in the panel. Status colours (P4) are the
+   same in light and dark; hint "puzzelen" blocks are a pastel of the lane colour. */
+.fox-history {
+  --fox-history-pastel: 26%;
+}
+.dark .fox-history {
+  --fox-history-pastel: 34%;
+}
+.fox-history-block {
+  background: var(--c);
+}
+.fox-history-block[data-kind='green'] {
+  background: #22c55e;
+}
+.fox-history-block[data-kind='orange'] {
+  background: #f97316;
+}
+.fox-history-block[data-kind='blue'] {
+  background: #6366f1;
+}
+.fox-history-block[data-kind='red'] {
+  background: repeating-linear-gradient(-45deg, color-mix(in oklab, #ef4444 75%, transparent) 0 1px, transparent 1px 4px), color-mix(in oklab, #ef4444 10%, var(--card));
+  box-shadow: inset 0 0 0 1px #ef4444;
+}
+.fox-history-block[data-kind='think'] {
+  background: color-mix(in oklab, var(--c) var(--fox-history-pastel), var(--card));
+}
+.fox-history-block[data-kind='wait'] {
+  background: repeating-linear-gradient(-45deg, color-mix(in oklab, var(--c) 60%, transparent) 0 1px, transparent 1px 4px), color-mix(in oklab, var(--c) 8%, var(--card));
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--c) 55%, transparent);
+}
+.fox-history-block[data-kind='fail'] {
+  background: color-mix(in oklab, var(--fox-error) 16%, var(--card));
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--fox-error) 70%, transparent);
+  color: var(--fox-error);
+}
+.fox-history-block[data-kind='green'] {
+  --c: #22c55e;
+}
+.fox-history-block[data-kind='orange'] {
+  --c: #f97316;
+}
+.fox-history-block[data-kind='blue'] {
+  --c: #6366f1;
+}
+.fox-history-block[data-kind='red'] {
+  --c: #ef4444;
+}
+.fox-history-block[data-kind='fail'] {
+  --c: var(--fox-error);
+}
+.fox-history-live {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.fox-history-live::after {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  right: 0;
+  width: 2px;
+  background: var(--c);
+  filter: brightness(1.25);
+}
+.fox-history-live::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  left: -22px;
+  width: 22px;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.4), transparent);
+  animation: fox-history-shine 1.5s ease-in-out infinite;
+}
+@keyframes fox-history-shine {
+  0% {
+    left: -22px;
+  }
+  70%,
+  100% {
+    left: 100%;
+  }
+}
+/* Status word: 1.8 s sweep, then a 0.576 s pause (75.7 % of 2.376 s) */
+.fox-history-shimmer {
+  background: linear-gradient(90deg, var(--muted-foreground) 0%, var(--muted-foreground) 40%, var(--foreground) 50%, var(--muted-foreground) 60%, var(--muted-foreground) 100%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: fox-history-shimmer 2.376s linear infinite;
+}
+@keyframes fox-history-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  75.7%,
+  100% {
+    background-position: 0 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fox-history-live::before {
+    display: none;
+  }
+  .fox-history-shimmer {
+    animation: none;
+    background: none;
+    color: var(--muted-foreground);
+  }
+}
