@@ -38,7 +38,7 @@ export const TOUR_STEPS: TourStep[] = [
     id: 'foxes',
     target: 'sidebar.foxes',
     title: 'Vossen',
-    body: 'De status van elk deelgebied: rood, oranje of groen. Tik op een letter om dat gebied op de kaart te verbergen of weer te tonen.',
+    body: 'De status van elk deelgebied: rood, oranje of groen. Tik op een vos voor zijn laatste 3 uur; daar kun je hem ook op de kaart verbergen.',
     actions: [sheetSnap('full'), showSection('foxes')],
   },
   {
