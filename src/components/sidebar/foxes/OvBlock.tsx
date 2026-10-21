@@ -32,7 +32,10 @@ interface OvRowProps {
   onOpen: () => void;
 }
 
-/** One OV fox: name + time on OV (click opens/closes its history), and a rail with a gliding train. */
+/**
+ * One OV fox: name + time on OV (click opens/closes its history), and a rail with a gliding train. The row pads itself
+ * and takes the same space back with negative margins, so the open ring has room around the text without moving it.
+ */
 function OvRow({ fox, hidden, forbidden, popIn, now, open, onOpen }: OvRowProps) {
   const since = new Date(fox.area.updatedAt);
   const duration = formatOvDuration(now - since.getTime());
@@ -52,7 +55,7 @@ function OvRow({ fox, hidden, forbidden, popIn, now, open, onOpen }: OvRowProps)
       aria-controls={open ? `fox-history-${fox.key}` : undefined}
       onClick={onOpen}
       className={cn(
-        'block w-full cursor-pointer rounded-xl text-left ring-current transition-shadow duration-200 focus-visible:outline-2 focus-visible:outline-ring motion-reduce:transition-none',
+        '-mx-1 -my-1 block w-[calc(100%+0.5rem)] cursor-pointer rounded-xl px-1 py-1 text-left ring-current transition-shadow duration-200 focus-visible:outline-2 focus-visible:outline-ring motion-reduce:transition-none',
         open ? 'ring-[1.5px]' : 'ring-0',
       )}
     >

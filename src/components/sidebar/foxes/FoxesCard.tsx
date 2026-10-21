@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion, useReducedMotion, type Transition } from 'motion/react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAreas } from '@/hooks/areas.hook';
@@ -36,6 +36,58 @@ const PANEL_EXIT: Transition = { height: { duration: 0.26, ease: EASE_OUT }, opa
 const PANEL_TRANSITION_REDUCED: Transition = { height: { duration: 0 }, opacity: { duration: 0.15 } };
 /** Switching foxes: the open panel folds away for this long before the next one unfolds. */
 const PANEL_SWITCH_MS = 280;
+
+interface HistoryPanelProps {
+  id: string;
+  reduced: boolean;
+  children: ReactNode;
+}
+
+/**
+ * The fold itself. While unfolding it springs to the content's measured height and retargets when that changes (the
+ * skeleton making way for the timeline mid-open), instead of motion's `height: auto`, which measures once and snaps to
+ * the real height at the end. Once there it rests at `height: auto` with overflow visible, whenever the data arrives;
+ * later scene swaps are animated inside FoxHistory. The gap above is padding inside the measured box, so it can't
+ * collapse differently once clipping stops.
+ */
+function HistoryPanel({ id, reduced, children }: HistoryPanelProps) {
+  const outer = useRef<HTMLDivElement>(null);
+  const inner = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState<number | null>(null);
+  const [settled, setSettled] = useState(false);
+
+  useLayoutEffect(() => {
+    const element = inner.current;
+    if (!element || settled) return;
+    const measure = () => setHeight(element.offsetHeight);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [settled]);
+
+  // An interrupted (retargeted) spring also completes: only settle once the fold has really reached the content
+  const onComplete = () => {
+    if (settled || !outer.current || !inner.current) return;
+    if (Math.abs(outer.current.offsetHeight - inner.current.offsetHeight) <= 1) setSettled(true);
+  };
+
+  return (
+    <motion.div
+      ref={outer}
+      id={id}
+      initial={{ height: 0, opacity: 0, overflow: 'hidden' }}
+      animate={{ height: settled ? 'auto' : (height ?? 0), opacity: 1, overflow: settled ? 'visible' : 'hidden' }}
+      exit={{ height: 0, opacity: 0, overflow: 'hidden', transition: reduced ? PANEL_TRANSITION_REDUCED : PANEL_EXIT }}
+      transition={settled ? { duration: 0 } : reduced ? PANEL_TRANSITION_REDUCED : PANEL_TRANSITION}
+      onAnimationComplete={onComplete}
+    >
+      <div ref={inner} className="pt-2">
+        {children}
+      </div>
+    </motion.div>
+  );
+}
 
 interface GroupBlockProps {
   group: FoxGroup;
@@ -77,16 +129,9 @@ function GroupBlock({ group, foxes, count, popIn, openKey, panelFox, onOpen }: G
       {/* The open fox's history; follows the fox when it changes group (folds out here, unfolds there) */}
       <AnimatePresence mode="wait">
         {panelFox && (
-          <motion.div
-            key={panelFox.key}
-            id={`fox-history-${panelFox.key}`}
-            initial={{ height: 0, opacity: 0, overflow: 'hidden' }}
-            animate={{ height: 'auto', opacity: 1, transitionEnd: { overflow: 'visible' } }}
-            exit={{ height: 0, opacity: 0, overflow: 'hidden', transition: reduced ? PANEL_TRANSITION_REDUCED : PANEL_EXIT }}
-            transition={reduced ? PANEL_TRANSITION_REDUCED : PANEL_TRANSITION}
-          >
+          <HistoryPanel key={panelFox.key} id={`fox-history-${panelFox.key}`} reduced={reduced}>
             <FoxHistory fox={panelFox} hidden={isHidden(panelFox.area.name)} onToggleHidden={() => toggleHidden(panelFox.area.name)} />
-          </motion.div>
+          </HistoryPanel>
         )}
       </AnimatePresence>
     </div>

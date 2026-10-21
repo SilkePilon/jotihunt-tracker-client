@@ -102,7 +102,7 @@ export default function FoxHistory({ fox, hidden, onToggleHidden }: FoxHistoryPr
   const swap = reduced ? { ...SWAP, transition: { duration: 0 } } : SWAP;
 
   return (
-    <div className="mt-2 rounded-2xl bg-card p-2.5 text-foreground">
+    <div className="rounded-2xl bg-card p-2.5 text-foreground">
       <div className="mx-0.5 flex items-baseline justify-between text-[12.5px] font-medium">
         <span className="inline-flex min-w-0 items-center gap-1.5">
           <span aria-hidden className="size-[7px] shrink-0 rounded-full" style={{ backgroundColor: getColorFromArea(fox.area.name) }} />
