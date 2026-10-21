@@ -25,11 +25,14 @@ const LANE_ICON: Record<LaneKey, { icon: LucideIcon; name: string }> = {
   hunt: { icon: CrosshairIcon, name: 'Hunts' },
 };
 
+/** Spots lane: Tailwind teal-500, the same in light and dark, so it can't be mistaken for the orange status. */
+const SPOT_COLOR = '#14b8a6';
+
 /** Lane colour (`--c`) for blocks without a fixed kind colour, branch lines and dots. */
 const LANE_COLOR: Record<LaneKey, string> = {
   status: 'var(--foreground)',
   hint: 'var(--muted-foreground)',
-  spot: 'var(--primary)',
+  spot: SPOT_COLOR,
   hunt: 'var(--fox-cooldown)',
 };
 
@@ -52,7 +55,7 @@ const LEGEND: { label: string; style: CSSProperties }[] = [
       boxShadow: 'inset 0 0 0 1px color-mix(in oklab, var(--fox-cooldown) 55%, transparent)',
     },
   },
-  { label: 'spot', style: { background: 'var(--primary)' } },
+  { label: 'spot', style: { background: SPOT_COLOR } },
 ];
 
 const HIDDEN_PATH = { pathLength: 0, opacity: 0 };
