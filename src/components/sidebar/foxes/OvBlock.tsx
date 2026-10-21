@@ -17,11 +17,23 @@ interface OvBlockProps {
   isForbidden: (area: string) => boolean;
   /** Pop rows in on mount (a status change moved the fox here); false on the card's first render */
   popIn: boolean;
-  onToggle: (area: string) => void;
+  /** Key of the fox whose history panel is open (ring on its row) */
+  openKey: string | null;
+  onOpen: (key: string) => void;
 }
 
-/** One OV fox: name + time on OV (click hides/shows it on the map), and a rail with a gliding train. */
-function OvRow({ fox, hidden, forbidden, popIn, now, onToggle }: { fox: SidebarFox; hidden: boolean; forbidden: boolean; popIn: boolean; now: number; onToggle: () => void }) {
+interface OvRowProps {
+  fox: SidebarFox;
+  hidden: boolean;
+  forbidden: boolean;
+  popIn: boolean;
+  now: number;
+  open: boolean;
+  onOpen: () => void;
+}
+
+/** One OV fox: name + time on OV (click opens/closes its history), and a rail with a gliding train. */
+function OvRow({ fox, hidden, forbidden, popIn, now, open, onOpen }: OvRowProps) {
   const since = new Date(fox.area.updatedAt);
   const duration = formatOvDuration(now - since.getTime());
   const title =
@@ -36,9 +48,12 @@ function OvRow({ fox, hidden, forbidden, popIn, now, onToggle }: { fox: SidebarF
       type="button"
       title={title}
       aria-label={title}
-      aria-pressed={!hidden}
-      onClick={onToggle}
-      className="block w-full cursor-pointer rounded-xl text-left focus-visible:outline-2 focus-visible:outline-ring"
+      aria-expanded={open}
+      onClick={onOpen}
+      className={cn(
+        'block w-full cursor-pointer rounded-xl text-left ring-current transition-shadow duration-200 focus-visible:outline-2 focus-visible:outline-ring motion-reduce:transition-none',
+        open ? 'ring-[1.5px]' : 'ring-0',
+      )}
     >
       <span className={cn('block px-0.5 transition-opacity duration-200 motion-reduce:transition-none', hidden ? 'opacity-40' : forbidden && 'opacity-45')}>
         <span className="flex items-center justify-between gap-2 text-xs font-bold">
@@ -81,13 +96,13 @@ function OvRow({ fox, hidden, forbidden, popIn, now, onToggle }: { fox: SidebarF
 }
 
 /** The Vossen card's OV group (mockup G): one row with a rail per fox travelling by OV (API status `blue`). */
-export default function OvBlock({ foxes, isHidden, isForbidden, popIn, onToggle }: OvBlockProps) {
+export default function OvBlock({ foxes, isHidden, isForbidden, popIn, openKey, onOpen }: OvBlockProps) {
   const now = useNow(true);
   return (
     <div className="flex flex-col gap-2">
       <AnimatePresence mode="popLayout" initial={false}>
         {foxes.map((fox) => (
-          <OvRow key={fox.key} fox={fox} hidden={isHidden(fox.area.name)} forbidden={isForbidden(fox.area.name)} popIn={popIn} now={now} onToggle={() => onToggle(fox.area.name)} />
+          <OvRow key={fox.key} fox={fox} hidden={isHidden(fox.area.name)} forbidden={isForbidden(fox.area.name)} popIn={popIn} now={now} open={openKey === fox.key} onOpen={() => onOpen(fox.key)} />
         ))}
       </AnimatePresence>
     </div>

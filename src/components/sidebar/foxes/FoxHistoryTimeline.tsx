@@ -15,6 +15,7 @@ const CORNER = 5; // branch line corner radius
 const PLAY_MS = 1600;
 const SYNC_MS = 50;
 const RETURN_DOT_DELAY = 0.26;
+const LEAVE_MS = 90; // grace before a mouse-leave closes the card, so crossing the gap to the next block slides it
 const ENTER = [0.16, 1, 0.3, 1] as const;
 
 const LANE_ICON: Record<LaneKey, { icon: LucideIcon; name: string }> = {
@@ -35,10 +36,22 @@ const LANE_COLOR: Record<LaneKey, string> = {
 const LEGEND: { label: string; style: CSSProperties }[] = [
   { label: 'groen', style: { background: '#22c55e' } },
   { label: 'oranje', style: { background: '#f97316' } },
-  { label: 'rood', style: { background: 'repeating-linear-gradient(-45deg, #ef4444 0 1px, transparent 1px 3px)', boxShadow: 'inset 0 0 0 1px #ef4444' } },
+  {
+    label: 'rood',
+    style: {
+      background: 'repeating-linear-gradient(-45deg, color-mix(in oklab, #ef4444 75%, transparent) 0 1px, transparent 1px 4px), color-mix(in oklab, #ef4444 10%, var(--card))',
+      boxShadow: 'inset 0 0 0 1px #ef4444',
+    },
+  },
   { label: 'OV', style: { background: '#6366f1' } },
   { label: 'puzzelen', style: { background: 'color-mix(in oklab, var(--muted-foreground) var(--fox-history-pastel), var(--card))' } },
-  { label: 'cooldown', style: { background: 'repeating-linear-gradient(-45deg, var(--fox-cooldown) 0 1px, transparent 1px 3px)', boxShadow: 'inset 0 0 0 1px var(--fox-cooldown)' } },
+  {
+    label: 'cooldown',
+    style: {
+      background: 'repeating-linear-gradient(-45deg, color-mix(in oklab, var(--fox-cooldown) 60%, transparent) 0 1px, transparent 1px 4px), color-mix(in oklab, var(--fox-cooldown) 8%, var(--card))',
+      boxShadow: 'inset 0 0 0 1px color-mix(in oklab, var(--fox-cooldown) 55%, transparent)',
+    },
+  },
   { label: 'spot', style: { background: 'var(--primary)' } },
 ];
 
@@ -66,9 +79,10 @@ interface ActiveCard {
  * One fox's last three hours as four lanes (status, hints, spots, hunts) in uiarc's agent-timeline look: blocks grow
  * from one CSS variable (`--t`, minutes) during a 1.6 s play-in, branch lines draw down from the status lane as the
  * playhead passes them, a running block shines. Hover/tap a block for a card; tap a lane to highlight it.
- * A new `playKey` replays the play-in; a new `model` for the same key only re-lays out.
+ * A new `playKey` replays the play-in; a new `model` for the same key only re-lays out. While `play` is false the window
+ * waits empty (e.g. until the panel around it has opened); reduced motion shows everything at once regardless.
  */
-export default function FoxHistoryTimeline({ model, playKey }: { model: HistoryModel; playKey: string }) {
+export default function FoxHistoryTimeline({ model, playKey, play = true }: { model: HistoryModel; playKey: string; play?: boolean }) {
   const reduced = useReducedMotion() ?? false;
   const wrapRef = useRef<HTMLDivElement>(null);
   const plotRef = useRef<HTMLDivElement>(null);
@@ -78,6 +92,7 @@ export default function FoxHistoryTimeline({ model, playKey }: { model: HistoryM
   const lastPointer = useRef('mouse');
   const [active, setActive] = useState<ActiveCard | null>(null);
   const [focusLane, setFocusLane] = useState<LaneKey | null>(null);
+  const leaveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // A different fox: start over (adjusting state during render, not in an effect)
   const [shownKey, setShownKey] = useState(playKey);
@@ -107,6 +122,7 @@ export default function FoxHistoryTimeline({ model, playKey }: { model: HistoryM
       return;
     }
     setT(0);
+    if (!play) return;
     let start: number | null = null;
     let lastSync = 0;
     let frame = requestAnimationFrame(function step(time) {
@@ -121,7 +137,9 @@ export default function FoxHistoryTimeline({ model, playKey }: { model: HistoryM
       if (k < 1) frame = requestAnimationFrame(step);
     });
     return () => cancelAnimationFrame(frame);
-  }, [playKey, reduced]);
+  }, [playKey, reduced, play]);
+
+  useEffect(() => () => clearTimeout(leaveTimer.current), []);
 
   // A tapped card closes on a tap anywhere outside a block
   useEffect(() => {
@@ -160,14 +178,24 @@ export default function FoxHistoryTimeline({ model, playKey }: { model: HistoryM
   };
 
   const onBlockEnter = (block: HistoryBlock) => (event: ReactPointerEvent) => {
-    if (event.pointerType === 'mouse') setActive({ block, touch: false });
+    if (event.pointerType !== 'mouse') return;
+    clearTimeout(leaveTimer.current);
+    setActive({ block, touch: false });
   };
+  // Close a little later: moving straight to the next block (across the 1.5 px gap) re-targets the card instead
   const onBlockLeave = (event: ReactPointerEvent) => {
-    if (event.pointerType === 'mouse') setActive((current) => (current?.touch ? current : null));
+    if (event.pointerType !== 'mouse') return;
+    clearTimeout(leaveTimer.current);
+    leaveTimer.current = setTimeout(() => setActive((current) => (current?.touch ? current : null)), LEAVE_MS);
   };
   const onBlockTap = (block: HistoryBlock) => (event: MouseEvent) => {
-    // A mouse already shows the card on hover; taps and keyboard "clicks" (detail 0) toggle it
-    if (event.detail > 0 && lastPointer.current === 'mouse') return;
+    // Enter/Space (a click with detail 0): show this block's card, never close it (focus already opened it)
+    if (event.detail === 0) {
+      setActive((current) => (current?.block.id === block.id ? current : { block, touch: false }));
+      return;
+    }
+    // A mouse already shows the card on hover; a tap toggles it
+    if (lastPointer.current === 'mouse') return;
     setActive((current) => (current?.block.id === block.id ? null : { block, touch: true }));
   };
   // Keyboard focus shows the card too (not the focus a tap or click gives the button)
@@ -185,7 +213,7 @@ export default function FoxHistoryTimeline({ model, playKey }: { model: HistoryM
   return (
     <div
       ref={wrapRef}
-      role="img"
+      role="group"
       aria-label={label}
       className="fox-history relative grid grid-cols-[20px_minmax(0,1fr)] text-foreground"
       style={{ '--t': reduced ? HISTORY_WINDOW_MIN : 0 } as CSSProperties}
@@ -194,16 +222,20 @@ export default function FoxHistoryTimeline({ model, playKey }: { model: HistoryM
       <div style={{ paddingTop: TOP }}>
         {LANES.map((lane) => {
           const { icon: Icon, name } = LANE_ICON[lane];
+          // The keyboard way to highlight a lane (the plot rows hold block buttons, so they can't be buttons themselves)
           return (
-            <div
+            <button
               key={lane}
+              type="button"
               title={name}
+              aria-label={`Markeer ${name.toLowerCase()}`}
+              aria-pressed={focusLane === lane}
               onClick={onLaneTap(lane)}
-              className="flex cursor-pointer items-center text-muted-foreground transition-opacity duration-200 motion-reduce:transition-none"
+              className="flex w-full cursor-pointer items-center rounded-[4px] text-muted-foreground transition-opacity duration-200 focus-visible:outline-2 focus-visible:outline-ring motion-reduce:transition-none"
               style={{ height: ROW, opacity: dim(lane, 0.28) }}
             >
               <Icon aria-hidden size={13} />
-            </div>
+            </button>
           );
         })}
       </div>

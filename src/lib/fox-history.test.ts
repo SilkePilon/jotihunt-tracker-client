@@ -146,7 +146,7 @@ describe('chipSinceText', () => {
     expect(chipSinceText(fox({}), now)).toBe('1u05m');
   });
   test('cooldown keeps the countdown', () => {
-    expect(chipSinceText(fox({ group: 'cooldown', cooldownMs: 32 * MIN }), now)).toBe('nog 32:00');
+    expect(chipSinceText(fox({ group: 'cooldown', cooldownMs: 32 * MIN }), now)).toBe('32:00');
   });
 });
 

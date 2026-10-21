@@ -70,9 +70,9 @@ export function formatSince(ms: number): string {
   return `${Math.floor(minutes / 60)}u${String(minutes % 60).padStart(2, '0')}m`;
 }
 
-/** Chip text after a fox's name: the cooldown countdown ("nog 32:00"), otherwise the time since its last status change. */
+/** Chip text after a fox's name: the cooldown countdown ("32:00", as before), otherwise the time since its last status change. */
 export function chipSinceText(fox: SidebarFox, now: number): string {
-  if (fox.group === 'cooldown') return `nog ${formatCountdown(fox.cooldownMs)}`;
+  if (fox.group === 'cooldown') return formatCountdown(fox.cooldownMs);
   return formatSince(now - Date.parse(fox.area.updatedAt));
 }
 

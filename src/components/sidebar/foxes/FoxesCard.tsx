@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion, useReducedMotion, type Transition } from 'motion/react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAreas } from '@/hooks/areas.hook';
 import { useHuntableAreas } from '@/hooks/huntable-areas.hook';
-import { FOX_GROUP_LABEL, FOX_GROUP_ORDER, groupCounts, legendGroups } from '@/lib/fox-status';
-import { REVEAL_TRANSITION } from '@/lib/motion';
+import { FOX_GROUP_LABEL, FOX_GROUP_ORDER, groupCounts, legendGroups, type FoxGroup, type SidebarFox } from '@/lib/fox-status';
+import { EASE_OUT, REVEAL_TRANSITION } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import FoxChip from './FoxChip';
+import FoxHistory from './FoxHistory';
 import FoxStatusBar from './FoxStatusBar';
 import OvBlock from './OvBlock';
 import { GROUP_CLASS } from './styles';
@@ -25,11 +26,93 @@ function Count({ value, className }: { value: number; className?: string }) {
   );
 }
 
+/**
+ * History panel fold: height spring + fade (the spring stops within half a pixel, no long tail); it clips only while it
+ * moves, so the timeline's hover card can reach past the panel once open. Folding away is a fixed 0.26 s, so the next
+ * panel can follow after {@link PANEL_SWITCH_MS}.
+ */
+const PANEL_TRANSITION: Transition = { height: { type: 'spring', visualDuration: 0.32, bounce: 0, restDelta: 0.5 }, opacity: { duration: 0.2, ease: EASE_OUT } };
+const PANEL_EXIT: Transition = { height: { duration: 0.26, ease: EASE_OUT }, opacity: { duration: 0.16, ease: EASE_OUT } };
+const PANEL_TRANSITION_REDUCED: Transition = { height: { duration: 0 }, opacity: { duration: 0.15 } };
+/** Switching foxes: the open panel folds away for this long before the next one unfolds. */
+const PANEL_SWITCH_MS = 280;
+
+interface GroupBlockProps {
+  group: FoxGroup;
+  foxes: SidebarFox[];
+  count: number;
+  popIn: boolean;
+  /** Fox whose chip shows as open (ring, aria-expanded) */
+  openKey: string | null;
+  /** Fox whose panel is shown in this group, if it's in this group */
+  panelFox: SidebarFox | undefined;
+  onOpen: (key: string) => void;
+}
+
+/** One tonal group: header + chips (or the OV rows), and the history panel of the open fox when it's in this group. */
+function GroupBlock({ group, foxes, count, popIn, openKey, panelFox, onOpen }: GroupBlockProps) {
+  const { toggleHidden, isHidden } = useAreas();
+  const { isForbidden } = useHuntableAreas();
+  const reduced = useReducedMotion() ?? false;
+  return (
+    <div className={cn('rounded-2xl px-2 pt-[7px] pb-2 transition-colors duration-300 motion-reduce:transition-none', GROUP_CLASS[group].block, GROUP_CLASS[group].on)}>
+      {group === 'ov' ? (
+        <OvBlock foxes={foxes} isHidden={isHidden} isForbidden={isForbidden} popIn={popIn} openKey={openKey} onOpen={onOpen} />
+      ) : (
+        <>
+          <div className="mx-0.5 mb-1.5 flex justify-between text-xs font-bold">
+            <span>{FOX_GROUP_LABEL[group]}</span>
+            <Count value={count} />
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {/* popLayout: a chip popping out leaves the flow at once, so its neighbours close the gap */}
+            <AnimatePresence mode="popLayout" initial={false}>
+              {foxes.map((fox) => (
+                <FoxChip key={fox.key} fox={fox} hidden={isHidden(fox.area.name)} forbidden={isForbidden(fox.area.name)} popIn={popIn} open={openKey === fox.key} onOpen={() => onOpen(fox.key)} />
+              ))}
+            </AnimatePresence>
+          </div>
+        </>
+      )}
+      {/* The open fox's history; follows the fox when it changes group (folds out here, unfolds there) */}
+      <AnimatePresence mode="wait">
+        {panelFox && (
+          <motion.div
+            key={panelFox.key}
+            initial={{ height: 0, opacity: 0, overflow: 'hidden' }}
+            animate={{ height: 'auto', opacity: 1, transitionEnd: { overflow: 'visible' } }}
+            exit={{ height: 0, opacity: 0, overflow: 'hidden', transition: reduced ? PANEL_TRANSITION_REDUCED : PANEL_EXIT }}
+            transition={reduced ? PANEL_TRANSITION_REDUCED : PANEL_TRANSITION}
+          >
+            <FoxHistory fox={panelFox} hidden={isHidden(panelFox.area.name)} onToggleHidden={() => toggleHidden(panelFox.area.name)} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 /** "Vossen" card (mockup C2): status bar, count legend, one tonal block per non-empty group with area chips. */
 export default function FoxesCard() {
   const foxes = useSidebarFoxes();
-  const { toggleHidden, isHidden } = useAreas();
   const { isForbidden } = useHuntableAreas();
+  const reduced = useReducedMotion() ?? false;
+  // One fox open per card: `openKey` follows the taps at once (ring), `panelKey` lags while the old panel folds away
+  const [openKey, setOpenKey] = useState<string | null>(null);
+  const [panelKey, setPanelKey] = useState<string | null>(null);
+  const switchTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => () => clearTimeout(switchTimer.current), []);
+  const onOpen = (key: string) => {
+    const next = openKey === key ? null : key;
+    setOpenKey(next);
+    clearTimeout(switchTimer.current);
+    if (next === null || panelKey === null || reduced) {
+      setPanelKey(next);
+      return;
+    }
+    setPanelKey(null);
+    switchTimer.current = setTimeout(() => setPanelKey(next), PANEL_SWITCH_MS);
+  };
   // Chips already there on the first render don't pop in; later ones (moved by a status change) do
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
@@ -50,6 +133,7 @@ export default function FoxesCard() {
   if (foxes.length === 0) return <p className="text-xs text-muted-foreground">Nog geen vossen</p>;
 
   const counts = groupCounts(foxes);
+  const panelFox = panelKey === null ? undefined : foxes.find((fox) => fox.key === panelKey);
   return (
     <div className="flex flex-col">
       <FoxStatusBar foxes={foxes} size="full" isForbidden={isForbidden} />
@@ -76,28 +160,15 @@ export default function FoxesCard() {
             {/* clip only on exit (fold out); entering and resting groups stay overflow-visible so popping chips aren't cut off */}
             {/* pb on the wrapper instead of a gap, so a folding group takes no space */}
             <div className="pb-1.5">
-              <div className={cn('rounded-2xl px-2 pt-[7px] pb-2 transition-colors duration-300 motion-reduce:transition-none', GROUP_CLASS[group].block, GROUP_CLASS[group].on)}>
-                {group === 'ov' ? (
-                  <OvBlock foxes={foxes.filter((fox) => fox.group === 'ov')} isHidden={isHidden} isForbidden={isForbidden} popIn={mounted} onToggle={toggleHidden} />
-                ) : (
-                  <>
-                    <div className="mx-0.5 mb-1.5 flex justify-between text-xs font-bold">
-                      <span>{FOX_GROUP_LABEL[group]}</span>
-                      <Count value={counts[group]} />
-                    </div>
-                    <div className="flex flex-wrap gap-1">
-                      {/* popLayout: a chip popping out leaves the flow at once, so its neighbours close the gap */}
-                      <AnimatePresence mode="popLayout" initial={false}>
-                        {foxes
-                          .filter((fox) => fox.group === group)
-                          .map((fox) => (
-                            <FoxChip key={fox.key} fox={fox} hidden={isHidden(fox.area.name)} forbidden={isForbidden(fox.area.name)} popIn={mounted} onToggle={() => toggleHidden(fox.area.name)} />
-                          ))}
-                      </AnimatePresence>
-                    </div>
-                  </>
-                )}
-              </div>
+              <GroupBlock
+                group={group}
+                foxes={foxes.filter((fox) => fox.group === group)}
+                count={counts[group]}
+                popIn={mounted}
+                openKey={openKey}
+                panelFox={panelFox?.group === group ? panelFox : undefined}
+                onOpen={onOpen}
+              />
             </div>
           </motion.div>
         ))}
