@@ -79,6 +79,7 @@ function GroupBlock({ group, foxes, count, popIn, openKey, panelFox, onOpen }: G
         {panelFox && (
           <motion.div
             key={panelFox.key}
+            id={`fox-history-${panelFox.key}`}
             initial={{ height: 0, opacity: 0, overflow: 'hidden' }}
             animate={{ height: 'auto', opacity: 1, transitionEnd: { overflow: 'visible' } }}
             exit={{ height: 0, opacity: 0, overflow: 'hidden', transition: reduced ? PANEL_TRANSITION_REDUCED : PANEL_EXIT }}
