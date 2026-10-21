@@ -99,7 +99,9 @@ export default function FoxesCard() {
   const reduced = useReducedMotion() ?? false;
   // One fox open per card: `openKey` follows the taps at once (ring), `panelKey` lags while the old panel folds away
   const [openKey, setOpenKey] = useState<string | null>(null);
-  const [panelKey, setPanelKey] = useState<string | null>(null);
+  const [laggingPanelKey, setPanelKey] = useState<string | null>(null);
+  // The panel only ever shows the open fox; a stale value (open fox gone, a switch timer that fired late) counts as none
+  const panelKey = laggingPanelKey === openKey ? laggingPanelKey : null;
   const switchTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => () => clearTimeout(switchTimer.current), []);
   const onOpen = (key: string) => {
@@ -113,6 +115,9 @@ export default function FoxesCard() {
     setPanelKey(null);
     switchTimer.current = setTimeout(() => setPanelKey(next), PANEL_SWITCH_MS);
   };
+  // The open fox left the list (area removed or renamed): forget it during render, so the next tap opens at once
+  // and the panel doesn't come back by itself when the area returns
+  if (foxes && openKey !== null && !foxes.some((fox) => fox.key === openKey)) setOpenKey(null);
   // Chips already there on the first render don't pop in; later ones (moved by a status change) do
   const [mounted, setMounted] = useState(false);
   useEffect(() => {

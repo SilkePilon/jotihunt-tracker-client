@@ -49,6 +49,7 @@ function OvRow({ fox, hidden, forbidden, popIn, now, open, onOpen }: OvRowProps)
       title={title}
       aria-label={title}
       aria-expanded={open}
+      aria-controls={open ? `fox-history-${fox.key}` : undefined}
       onClick={onOpen}
       className={cn(
         'block w-full cursor-pointer rounded-xl text-left ring-current transition-shadow duration-200 focus-visible:outline-2 focus-visible:outline-ring motion-reduce:transition-none',
