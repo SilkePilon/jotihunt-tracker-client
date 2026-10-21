@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { SidebarFox } from './fox-status';
-import { axisTicks, chipSinceText, formatSince, historyModel, historyStatusLine, type AreaHistory } from './fox-history';
+import { axisTicks, chipSinceText, formatSince, historyModel, historyStatusLine, statusSinceText, type AreaHistory } from './fox-history';
 
 const MIN = 60_000;
 // 18:40 Amsterdam; the window runs 15:40 – 18:40.
@@ -148,11 +148,32 @@ describe('chipSinceText', () => {
   test('cooldown keeps the countdown', () => {
     expect(chipSinceText(fox({ group: 'cooldown', cooldownMs: 32 * MIN }), now)).toBe('32:00');
   });
+  test('capped at "24u+" after a day', () => {
+    expect(chipSinceText(fox({ area: { _id: 'a', name: 'alpha', status: 'red', updatedAt: new Date(now - 24 * 60 * MIN).toISOString() } }), now)).toBe('24u00m');
+    expect(chipSinceText(fox({ area: { _id: 'a', name: 'alpha', status: 'red', updatedAt: new Date(now - (24 * 60 + 1) * MIN).toISOString() } }), now)).toBe('24u+');
+    expect(chipSinceText(fox({ area: { _id: 'a', name: 'alpha', status: 'red', updatedAt: new Date(now - 365 * 24 * 60 * MIN).toISOString() } }), now)).toBe('24u+');
+  });
+  test('read-only (archive): no elapsed text, the cooldown countdown stays', () => {
+    expect(chipSinceText(fox({}), now, true)).toBeNull();
+    expect(chipSinceText(fox({ group: 'cooldown', cooldownMs: 32 * MIN }), now, true)).toBe('32:00');
+  });
+});
+
+describe('statusSinceText', () => {
+  test('formatSince up to a day, then "24u+"; null when read-only', () => {
+    expect(statusSinceText(iso(175), now)).toBe('5m');
+    expect(statusSinceText(new Date(now - 310 * MIN).toISOString(), now)).toBe('5u10m');
+    expect(statusSinceText(new Date(now - 25 * 60 * MIN).toISOString(), now)).toBe('24u+');
+    expect(statusSinceText(iso(175), now, true)).toBeNull();
+  });
 });
 
 describe('historyStatusLine', () => {
-  test('current status with its duration, hunts and hints in the window', () => {
+  const red = { status: 'red', updatedAt: iso(55) };
+
+  test('status from the local fox data, hunts and hints in the window from the history', () => {
     const line = historyStatusLine(
+      red,
       history({
         status: [
           { status: 'green', from: iso(-30), to: iso(55) },
@@ -176,13 +197,29 @@ describe('historyStatusLine', () => {
     expect(line).toEqual({ status: 'red', word: 'Rood · 2u05m', rest: '2 hunts · 2/3 hints' });
   });
 
+  test('duration runs past the 3-hour window (the server clips the period at the window start)', () => {
+    const area = { status: 'red', updatedAt: new Date(now - 310 * MIN).toISOString() };
+    const line = historyStatusLine(area, history({ status: [{ status: 'red', from: iso(0), to: null }] }), now);
+    expect(line.word).toBe('Rood · 5u10m');
+  });
+
+  test('without history (loading or failed fetch): the status word, no counts', () => {
+    expect(historyStatusLine(red, undefined, now)).toEqual({ status: 'red', word: 'Rood · 2u05m', rest: null });
+  });
+
   test('singular hunt, other status words', () => {
-    const line = historyStatusLine(history({ status: [{ status: 'blue', from: iso(170), to: null }], hunts: [{ id: 'h', at: iso(10), result: 'approved' }] }), now);
+    const line = historyStatusLine({ status: 'blue', updatedAt: iso(170) }, history({ hunts: [{ id: 'h', at: iso(10), result: 'approved' }] }), now);
     expect(line).toEqual({ status: 'blue', word: 'OV · 10m', rest: '1 hunt · 0/0 hints' });
   });
 
-  test('no status known', () => {
-    expect(historyStatusLine(history(), now)).toEqual({ status: null, word: 'Onbekend', rest: '0 hunts · 0/0 hints' });
+  test('read-only (archive): status word without duration; capped at "24u+"', () => {
+    expect(historyStatusLine(red, undefined, now, true).word).toBe('Rood');
+    expect(historyStatusLine({ status: 'green', updatedAt: new Date(now - 30 * 60 * MIN).toISOString() }, undefined, now).word).toBe('Groen · 24u+');
+  });
+
+  test('unknown status', () => {
+    expect(historyStatusLine({ status: 'purple', updatedAt: iso(170) }, history(), now)).toEqual({ status: null, word: 'Onbekend', rest: '0 hunts · 0/0 hints' });
+    expect(historyStatusLine({ status: 'toString', updatedAt: iso(170) }, undefined, now).status).toBeNull();
   });
 });
 

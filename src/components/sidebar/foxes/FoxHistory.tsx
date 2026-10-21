@@ -4,6 +4,7 @@ import { EyeIcon, EyeOffIcon, RotateCwIcon } from 'lucide-react';
 import AutoHeight from '@/components/motion/AutoHeight';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAreaHistory } from '@/hooks/area-history.hook';
+import { useEdition } from '@/hooks/edition.hook';
 import { useNow } from '@/hooks/now.hook';
 import { historyModel, historyStatusLine } from '@/lib/fox-history';
 import type { SidebarFox } from '@/lib/fox-status';
@@ -78,7 +79,9 @@ export default function FoxHistory({ fox, hidden, onToggleHidden }: FoxHistoryPr
   const { history, error, mutate } = useAreaHistory(fox.area.name);
   const now = useNow(true, MINUTE_MS);
   const model = useMemo(() => (history ? historyModel(history, now) : undefined), [history, now]);
-  const line = useMemo(() => (history ? historyStatusLine(history, now) : undefined), [history, now]);
+  const { readOnly } = useEdition();
+  // The status word comes from the local fox data, so it shows while loading and after a failed fetch; the counts need the history
+  const line = useMemo(() => historyStatusLine(fox.area, history, now, readOnly), [fox.area, history, now, readOnly]);
 
   const [opened, setOpened] = useState(false);
   useEffect(() => {
@@ -110,32 +113,38 @@ export default function FoxHistory({ fox, hidden, onToggleHidden }: FoxHistoryPr
 
       {/* Status line: the word shimmers and swaps (fade + blur-up) when the status changes */}
       <div className="mx-0.5 mt-0.5 flex min-h-4 flex-wrap items-center text-xs text-muted-foreground tabular-nums">
-        {line ? (
-          <>
-            <span className="relative inline-flex">
-              <AnimatePresence mode="popLayout" initial={false}>
-                <motion.span
-                  key={line.status ?? 'none'}
-                  className="fox-history-shimmer whitespace-nowrap"
-                  initial={{ opacity: 0, y: 4, filter: 'blur(4px)' }}
-                  animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                  exit={{ opacity: 0, filter: 'blur(4px)' }}
-                  transition={reduced ? { duration: 0 } : { duration: 0.24, ease: EASE_OUT }}
-                >
-                  {line.word}
-                </motion.span>
-              </AnimatePresence>
-            </span>
-            {line.rest.split(' · ').map((part) => (
-              <Fragment key={part}>
-                <span className="px-1 opacity-50">·</span>
-                {part}
-              </Fragment>
-            ))}
-          </>
-        ) : (
-          scene === 'loading' && <Skeleton className="h-2.5 w-36" />
-        )}
+        <span className="relative inline-flex">
+          <AnimatePresence mode="popLayout" initial={false}>
+            <motion.span
+              key={line.status ?? 'none'}
+              className="fox-history-shimmer whitespace-nowrap"
+              initial={{ opacity: 0, y: 4, filter: 'blur(4px)' }}
+              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, filter: 'blur(4px)' }}
+              transition={reduced ? { duration: 0 } : { duration: 0.24, ease: EASE_OUT }}
+            >
+              {line.word}
+            </motion.span>
+          </AnimatePresence>
+        </span>
+        <AnimatePresence mode="popLayout" initial={false}>
+          {line.rest !== null ? (
+            <motion.span key="rest" className="inline-flex items-center" {...swap}>
+              {line.rest.split(' · ').map((part, index) => (
+                <Fragment key={index}>
+                  <span className="px-1 opacity-50">·</span>
+                  {part}
+                </Fragment>
+              ))}
+            </motion.span>
+          ) : (
+            scene === 'loading' && (
+              <motion.span key="loading" className="ml-2 inline-flex" {...swap}>
+                <Skeleton className="h-2.5 w-24" />
+              </motion.span>
+            )
+          )}
+        </AnimatePresence>
       </div>
 
       <AutoHeight scene={scene} className="mt-1">

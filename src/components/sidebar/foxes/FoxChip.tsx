@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { LockIcon } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { nl } from 'date-fns/locale';
+import { useEdition } from '@/hooks/edition.hook';
 import { useNow } from '@/hooks/now.hook';
 import { formatCountdown } from '@/lib/format';
 import { chipSinceText } from '@/lib/fox-history';
@@ -34,6 +35,9 @@ const POP_IN = { ...POP_SPRING, delay: 0.15 };
 export default function FoxChip({ fox, hidden, forbidden, popIn, open, onOpen }: FoxChipProps) {
   const { area, lastHunt, cooldownMs } = fox;
   const now = useNow(true, 60_000);
+  // Archive editions: the time since the last change is meaningless (EditionReloader reloads the page on a switch)
+  const { readOnly } = useEdition();
+  const since = chipSinceText(fox, now, readOnly);
   const title =
     `${fox.name}: ${FOX_STATUS_TEXT[area.status] ?? area.status} (bijgewerkt ${ago(area.updatedAt)})` +
     ` · laatste hunt: ${lastHunt ? ago(lastHunt) : 'nog geen'}` +
@@ -51,6 +55,7 @@ export default function FoxChip({ fox, hidden, forbidden, popIn, open, onOpen }:
       title={title}
       aria-label={title}
       aria-expanded={open}
+      aria-controls={open ? `fox-history-${fox.key}` : undefined}
       onClick={onOpen}
       className={cn(
         'cursor-pointer rounded-full ring-current transition-shadow duration-200 focus-visible:outline-2 focus-visible:outline-ring motion-reduce:transition-none',
@@ -85,7 +90,7 @@ export default function FoxChip({ fox, hidden, forbidden, popIn, open, onOpen }:
           </AnimatePresence>
         </span>
         {fox.name}
-        <span className="tabular-nums opacity-80">{chipSinceText(fox, now)}</span>
+        {since !== null && <span className="tabular-nums opacity-80">{since}</span>}
       </span>
     </motion.button>
   );

@@ -70,10 +70,23 @@ export function formatSince(ms: number): string {
   return `${Math.floor(minutes / 60)}u${String(minutes % 60).padStart(2, '0')}m`;
 }
 
-/** Chip text after a fox's name: the cooldown countdown ("32:00", as before), otherwise the time since its last status change. */
-export function chipSinceText(fox: SidebarFox, now: number): string {
+/** Above this the elapsed time reads "24u+": after a day the exact time no longer matters. */
+const SINCE_CAP_MIN = 24 * 60;
+
+/**
+ * Time since a fox's last status change for the chip and the history status line: "1u05m", "24u+" after a day; null in
+ * a read-only (archive) edition, where the time since the last change is meaningless.
+ */
+export function statusSinceText(updatedAt: string, now: number, readOnly = false): string | null {
+  if (readOnly) return null;
+  const ms = now - Date.parse(updatedAt);
+  return ms > SINCE_CAP_MIN * MINUTE_MS ? `${SINCE_CAP_MIN / 60}u+` : formatSince(ms);
+}
+
+/** Chip text after a fox's name: the cooldown countdown ("32:00", as before), otherwise the time since its last status change (null = none). */
+export function chipSinceText(fox: SidebarFox, now: number, readOnly = false): string | null {
   if (fox.group === 'cooldown') return formatCountdown(fox.cooldownMs);
-  return formatSince(now - Date.parse(fox.area.updatedAt));
+  return statusSinceText(fox.area.updatedAt, now, readOnly);
 }
 
 /**
@@ -173,11 +186,25 @@ export function historyModel(history: AreaHistory, now: number): HistoryModel {
   return { from, to: now, blocks, links };
 }
 
+type FoxStatus = AreaHistory['status'][number]['status'];
+
 /**
- * Status line above the timeline: `word` "Rood · 2u05m" (the latest status and how long it has lasted), `rest`
- * "2 hunts · 4/4 hints" (approved + pending hunts, solved / published hints within the window).
+ * Status line above the timeline. `word` "Rood · 2u05m" comes from the local fox data (its status and the time since
+ * `updatedAt`, same as the chip), so it shows while the history loads or after a failed fetch. `rest` "2 hunts · 4/4
+ * hints" (approved + pending hunts, solved / published hints within the window) needs the history; null without it.
  */
-export function historyStatusLine(history: AreaHistory, now: number): { status: 'green' | 'orange' | 'red' | 'blue' | null; word: string; rest: string } {
+export function historyStatusLine(
+  area: { status: string; updatedAt: string },
+  history: AreaHistory | undefined,
+  now: number,
+  readOnly = false,
+): { status: FoxStatus | null; word: string; rest: string | null } {
+  const status = Object.hasOwn(STATUS_WORD, area.status) ? (area.status as FoxStatus) : null;
+  const since = statusSinceText(area.updatedAt, now, readOnly);
+  const label = status ? STATUS_WORD[status] : 'Onbekend';
+  const word = status && since ? `${label} · ${since}` : label;
+  if (!history) return { status, word, rest: null };
+
   const from = now - HISTORY_WINDOW_MIN * MINUTE_MS;
   const inWindow = (iso: string) => {
     const ms = Date.parse(iso);
@@ -186,11 +213,7 @@ export function historyStatusLine(history: AreaHistory, now: number): { status: 
   const hunts = history.hunts.filter((hunt) => hunt.result !== 'rejected' && inWindow(hunt.at)).length;
   const published = history.hints.filter((hint) => inWindow(hint.publishAt));
   const solved = published.filter((hint) => hint.solvedAt !== null).length;
-  const rest = `${hunts} ${hunts === 1 ? 'hunt' : 'hunts'} · ${solved}/${published.length} hints`;
-
-  const current = history.status.at(-1);
-  if (!current) return { status: null, word: 'Onbekend', rest };
-  return { status: current.status, word: `${STATUS_WORD[current.status]} · ${formatSince(now - Date.parse(current.from))}`, rest };
+  return { status, word, rest: `${hunts} ${hunts === 1 ? 'hunt' : 'hunts'} · ${solved}/${published.length} hints` };
 }
 
 /** Axis labels: window start, middle (Dutch clock) and "nu". */
