@@ -48,7 +48,7 @@ export default function PeekStrip() {
 
   return (
     // isolate: the buttons' 44px touch areas (COARSE_HIT_AREA) stay above the sheet's background
-    <div className="isolate flex flex-col gap-2 px-4 pb-3">
+    <div className="isolate flex flex-col gap-2 pr-[max(1rem,env(safe-area-inset-right))] pb-3 pl-[max(1rem,env(safe-area-inset-left))]">
       <TrackerLine onOpen={() => push({ id: 'tracking' })} />
       <div className="relative h-8">
         <AnimatePresence initial={false}>

@@ -12,7 +12,7 @@ import SidebarSections from '@/components/sidebar/SidebarSections';
 export default function MobilePage({ page, depth, mapRef }: { page: Page; depth: number; mapRef: RefObject<MapRef | null> }) {
   const pop = useMobileNavStore((s) => s.pop);
   return (
-    <div className="flex flex-col gap-3 px-3 pb-8">
+    <div className="flex flex-col gap-3 pr-[max(0.75rem,env(safe-area-inset-right))] pb-8 pl-[max(0.75rem,env(safe-area-inset-left))]">
       {/* Takes focus when the page pushes in (MobileShell); 44px tall on touch screens */}
       <button type="button" data-view-back onClick={pop} aria-label={depth > 1 ? undefined : 'Terug naar menu'} className="flex h-10 w-fit items-center gap-1 rounded-xl pl-1 pr-2.5 text-[13.5px] font-semibold text-muted-foreground pointer-coarse:h-11">
         <ChevronLeftIcon className="size-5" /> {depth > 1 ? 'Terug' : 'Menu'}

@@ -87,7 +87,7 @@ export default function MobileShell({ mapRef }: { mapRef: RefObject<MapRef | nul
   return (
     <>
       <ViewportDebug snaps={heights} />
-      <motion.div id={DOCK_ID} className="pointer-events-none fixed inset-x-3 z-[45] flex flex-col gap-2" style={{ bottom: dockBottom }}>
+      <motion.div id={DOCK_ID} className="pointer-events-none fixed right-[max(0.75rem,env(safe-area-inset-right))] left-[max(0.75rem,env(safe-area-inset-left))] z-[45] flex flex-col gap-2" style={{ bottom: dockBottom }}>
         {/* Always the dock's first node (display: contents, so it adds no gap): popups portal in after it, under the button */}
         <div className="contents">
           <MyLocationButton mapRef={mapRef} />

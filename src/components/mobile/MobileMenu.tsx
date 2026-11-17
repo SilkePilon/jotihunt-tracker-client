@@ -100,7 +100,7 @@ export default function MobileMenu() {
   const beheer: Row[] = BEHEER.map(([id, title]) => ({ key: id, icon: <ShieldIcon className={icon} />, title, onSelect: () => useAdminStore.getState().openDialog(id) }));
 
   return (
-    <div className="flex flex-col gap-3 px-3 pb-8">
+    <div className="flex flex-col gap-3 pr-[max(0.75rem,env(safe-area-inset-right))] pb-8 pl-[max(0.75rem,env(safe-area-inset-left))]">
       <SidebarHeader />
       <MenuCard title="Spel" rows={spel} />
       <MenuCard title="Jij" rows={jij} />
