@@ -27,9 +27,9 @@ interface JotiboardActionsProps {
 function Row({ icon, title, subtitle, danger, onClick }: { icon: ReactNode; title: string; subtitle: string; danger?: boolean; onClick: () => void }) {
   return (
     <button type="button" onClick={onClick} className="flex w-full items-center gap-2.5 border-t border-border px-0.5 py-2.5 text-left first:border-t-0 [&_svg]:size-4 [&_svg]:shrink-0">
-      <span className={cn(danger && 'text-destructive')}>{icon}</span>
+      <span className={cn(danger && 'text-destructive-text')}>{icon}</span>
       <span className="min-w-0 flex-1">
-        <span className={cn('block text-[13px] font-medium', danger && 'text-destructive')}>{title}</span>
+        <span className={cn('block text-[13px] font-medium', danger && 'text-destructive-text')}>{title}</span>
         <span className="block text-[11px] text-muted-foreground">{subtitle}</span>
       </span>
       <ChevronRightIcon className="text-muted-foreground" />

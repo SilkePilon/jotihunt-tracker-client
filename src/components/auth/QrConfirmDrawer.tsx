@@ -159,7 +159,7 @@ export default function QrConfirmDrawer({ code, onClose }: { code: string; onClo
               <ReadyMeta where={joinParts(view.scan.requester.location, formatLastUpdate(view.scan.createdAt, now))} name={user?.name} />
               <Reveal>
                 {view.error && (
-                  <p role="alert" className="pt-3 text-xs font-medium text-destructive">
+                  <p role="alert" className="pt-3 text-xs font-medium text-destructive-text">
                     {view.error}
                   </p>
                 )}

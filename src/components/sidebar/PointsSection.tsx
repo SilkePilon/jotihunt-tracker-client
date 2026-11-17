@@ -46,7 +46,7 @@ function ScoreLegend({ parts }: { parts: ScoreParts }) {
           <AnimatePresence mode="popLayout" initial={false}>
             <motion.span
               key={entry.value === null ? 'unknown' : 'known'}
-              className={cn('font-semibold', entry.tone === 'muted' && 'font-normal text-muted-foreground', entry.tone === 'penalty' && 'text-red-700 dark:text-red-300')}
+              className={cn('font-semibold', entry.tone === 'muted' && 'font-normal text-muted-foreground', entry.tone === 'penalty' && 'text-destructive-text')}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}

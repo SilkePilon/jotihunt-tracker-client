@@ -40,7 +40,7 @@ function Field({ label, htmlFor, error, className, children }: { label: ReactNod
       <AnimatePresence initial={false}>
         {error && (
           <motion.span key="error" className="block overflow-hidden" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={REVEAL_TRANSITION}>
-            <span className="mt-1 ml-0.5 block text-xs text-destructive">{error}</span>
+            <span className="mt-1 ml-0.5 block text-xs text-destructive-text">{error}</span>
           </motion.span>
         )}
       </AnimatePresence>

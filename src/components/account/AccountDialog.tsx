@@ -254,8 +254,8 @@ export default function AccountDialog() {
                   {hasOtherSessions && (
                     <Row key="logout-others">
                       <ActionRow
-                        className="text-destructive"
-                        iconClassName="text-destructive"
+                        className="text-destructive-text"
+                        iconClassName="text-destructive-text"
                         icon={<LogOutIcon />}
                         onClick={() =>
                           ask({

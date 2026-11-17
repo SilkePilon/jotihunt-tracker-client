@@ -60,7 +60,7 @@ export default function ToolsUsed({ calls }: { calls: ChatToolCall[] }) {
                     <ToolIcon name={call.name} big />
                     <span className="shrink-0 font-semibold">{toolDoneLabel(call.name)}</span>
                     {summary && (
-                      <span className={cn('flex min-w-0 items-center gap-1.5', call.state === 'error' ? 'text-destructive dark:text-red-300' : 'text-muted-foreground')}>
+                      <span className={cn('flex min-w-0 items-center gap-1.5', call.state === 'error' ? 'text-destructive-text' : 'text-muted-foreground')}>
                         {call.state === 'error' && <span className="size-1.5 shrink-0 rounded-full bg-destructive" aria-hidden />}
                         <span className="truncate">{summary}</span>
                       </span>

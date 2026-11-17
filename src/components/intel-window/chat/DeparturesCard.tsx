@@ -56,7 +56,7 @@ function DepartureRow({ departure }: { departure: OvDeparture }) {
       )}
       <span className="flex shrink-0 items-baseline gap-1 font-semibold tabular-nums">
         {ovClock(departure.expected)}
-        {delay && <span className="text-[11.5px] font-bold text-destructive dark:text-red-300">{delay}</span>}
+        {delay && <span className="text-[11.5px] font-bold text-destructive-text">{delay}</span>}
       </span>
     </li>
   );

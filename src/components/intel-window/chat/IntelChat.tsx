@@ -163,7 +163,7 @@ function ChatThread({ chat, mapRef }: { chat: IntelChatState; mapRef: RefObject<
 
 function ErrorRow({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
-    <div className="mx-1 flex items-center gap-2 rounded-xl bg-destructive/12 py-1.5 pr-1.5 pl-3 text-[12.5px] text-destructive dark:text-red-300">
+    <div className="mx-1 flex items-center gap-2 rounded-xl bg-destructive/12 py-1.5 pr-1.5 pl-3 text-[12.5px] text-destructive-text">
       <span className="flex-1">{message}</span>
       <Pill variant="danger-soft" onClick={onRetry}>
         <RotateCcwIcon />
@@ -185,7 +185,7 @@ function ChatFooter({ chat, itemId, kind, busy }: { chat: IntelChatState; itemId
         <motion.div key="input" className="flex flex-col" {...SWAP}>
           <Reveal>
             {chat.sendFailed && (
-              <p role="alert" className="mx-1 mb-2 rounded-xl bg-destructive/12 px-3 py-1.5 text-[12.5px] text-destructive dark:text-red-300">
+              <p role="alert" className="mx-1 mb-2 rounded-xl bg-destructive/12 px-3 py-1.5 text-[12.5px] text-destructive-text">
                 {OFFLINE_SEND_MESSAGE}
               </p>
             )}

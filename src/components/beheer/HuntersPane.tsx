@@ -57,7 +57,7 @@ function HunterMarker({ row }: { row: HunterRow }) {
 function Battery({ percent }: { percent: number | undefined }) {
   if (percent === undefined) return null;
   return (
-    <span title="Batterij" className={cn('inline-flex items-center gap-1.5 text-xs font-bold tabular-nums transition-colors', isLowBattery(percent) ? 'text-destructive dark:text-red-300' : 'text-foreground/80')}>
+    <span title="Batterij" className={cn('inline-flex items-center gap-1.5 text-xs font-bold tabular-nums transition-colors', isLowBattery(percent) ? 'text-destructive-text' : 'text-foreground/80')}>
       <span aria-hidden className="relative inline-block h-[11px] w-[22px] rounded-[3px] shadow-[inset_0_0_0_1.5px_currentColor]">
         <span className="absolute inset-y-[2px] left-[2px] rounded-[1px] bg-current transition-[width] duration-300 motion-reduce:transition-none" style={{ width: Math.max(2, (18 * percent) / 100) }} />
       </span>
