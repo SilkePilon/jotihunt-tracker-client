@@ -17,5 +17,5 @@ export const useBroadcasts = (enabled: boolean) => {
     void mutate();
   }
 
-  return { broadcasts: asList(data), error, send };
+  return { broadcasts: asList(data), error, retry: () => mutate(), send };
 };

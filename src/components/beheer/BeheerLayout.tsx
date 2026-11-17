@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { ChevronDownIcon, Loader2Icon, TriangleAlertIcon } from 'lucide-react';
+import LoadError from '@/components/LoadError';
 import AutoHeight from '@/components/motion/AutoHeight';
 import Reveal from '@/components/motion/Reveal';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -357,6 +358,15 @@ export function BeheerSkeleton({ groups = 1 }: { groups?: number }) {
         </div>
       ))}
     </div>
+  );
+}
+
+/** A pane whose data failed to load (nothing to show yet): a card with the problem and "Opnieuw proberen". */
+export function BeheerLoadError({ message, onRetry }: { message: string; onRetry: () => unknown }) {
+  return (
+    <section className="rounded-3xl bg-card p-4">
+      <LoadError className="px-1 text-[13px]" message={message} onRetry={onRetry} />
+    </section>
   );
 }
 

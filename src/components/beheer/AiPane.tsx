@@ -12,7 +12,7 @@ import { AI_SLOTS, type AiSlot } from '@/lib/app-config';
 import { apiErrorMessage } from '@/lib/api-error';
 import { POP, SWAP } from '@/lib/motion';
 import { cn } from '@/lib/utils';
-import { BeheerCard, BeheerPane, BeheerRow, BeheerRows, BeheerSkeleton, WarnBar } from './BeheerLayout';
+import { BeheerCard, BeheerLoadError, BeheerPane, BeheerRow, BeheerRows, BeheerSkeleton, WarnBar } from './BeheerLayout';
 import ModelPicker from './ModelPicker';
 import { Pill, Tag } from './controls/Pill';
 
@@ -140,7 +140,11 @@ export default function AiPane() {
   if (!config) {
     return (
       <BeheerPane title="AI" description="Gemini-sleutel en welk model wat doet.">
-        {admin.isError ? <p className="text-sm text-muted-foreground">De instellingen konden niet worden geladen.</p> : <BeheerSkeleton groups={2} />}
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div key={admin.isError ? 'error' : 'loading'} {...SWAP}>
+            {admin.isError ? <BeheerLoadError message="De instellingen konden niet worden geladen." onRetry={admin.retry} /> : <BeheerSkeleton groups={2} />}
+          </motion.div>
+        </AnimatePresence>
       </BeheerPane>
     );
   }

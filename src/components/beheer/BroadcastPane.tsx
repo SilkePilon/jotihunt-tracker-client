@@ -7,7 +7,7 @@ import { useBroadcasts } from '@/hooks/broadcasts.hook';
 import { broadcastMeta, SEND_CONFIRM_MS, SEND_DONE_MS, sendButtonLabel, sendTransition, type Broadcast } from '@/lib/beheer';
 import { SWAP } from '@/lib/motion';
 import { cn } from '@/lib/utils';
-import { BeheerCard, BeheerPane, BeheerRow, BeheerRows, BeheerSkeleton } from './BeheerLayout';
+import { BeheerCard, BeheerLoadError, BeheerPane, BeheerRow, BeheerRows, BeheerSkeleton } from './BeheerLayout';
 import { Pill } from './controls/Pill';
 
 /** The server's limit */
@@ -15,7 +15,7 @@ const MAX_LENGTH = 200;
 
 /** Beheer → Bericht versturen (B4): push + sound to everyone after a second tap, and what was sent in the last 48 h. */
 export default function BroadcastPane() {
-  const { broadcasts, error, send } = useBroadcasts(true);
+  const { broadcasts, error, retry, send } = useBroadcasts(true);
   const { users } = useAdmin();
   const [message, setMessage] = useState('');
   const [state, dispatch] = useReducer(sendTransition, 'idle');
@@ -109,9 +109,9 @@ export default function BroadcastPane() {
           </motion.div>
         )}
         {view === 'error' && (
-          <motion.p key="error" className="text-sm text-muted-foreground" {...SWAP}>
-            Kan de verstuurde berichten niet laden.
-          </motion.p>
+          <motion.div key="error" {...SWAP}>
+            <BeheerLoadError message="Kan de verstuurde berichten niet laden." onRetry={retry} />
+          </motion.div>
         )}
         {view === 'content' && (
           <motion.div key="content" {...SWAP}>

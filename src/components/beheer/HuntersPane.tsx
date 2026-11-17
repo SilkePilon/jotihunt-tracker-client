@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils';
 import useAdminStore from '@/stores/admin.store';
 import useSidebarStore from '@/stores/sidebar.store';
 import type { Vehicle } from '@/types/Tracker';
-import { BeheerCard, BeheerExpandableRow, BeheerPane, BeheerRows, BeheerSkeleton } from './BeheerLayout';
+import { BeheerCard, BeheerExpandableRow, BeheerLoadError, BeheerPane, BeheerRows, BeheerSkeleton } from './BeheerLayout';
 import { Pill } from './controls/Pill';
 import Segmented, { type SegmentOption } from './controls/Segmented';
 
@@ -69,7 +69,7 @@ function Battery({ percent }: { percent: number | undefined }) {
 /** Beheer → Hunters (H1): every Traccar device, live ones first; tap for Toon op kaart, Google Maps and the vehicle. */
 export default function HuntersPane({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
   const isMobile = useIsMobile();
-  const { devices, positions, isLoading, isError } = useDevices();
+  const { devices, positions, isLoading, isError, retry } = useDevices();
   const { users } = useAdmin();
   const close = useAdminStore((state) => state.close);
   const now = useNow(true, SLOW_CLOCK_TICK_MS);
@@ -111,9 +111,9 @@ export default function HuntersPane({ mapRef }: { mapRef: RefObject<MapRef | nul
           </motion.div>
         )}
         {view === 'error' && (
-          <motion.p key="error" className="text-sm text-muted-foreground" {...SWAP}>
-            Kan de hunters niet laden.
-          </motion.p>
+          <motion.div key="error" {...SWAP}>
+            <BeheerLoadError message="Kan de hunters niet laden." onRetry={retry} />
+          </motion.div>
         )}
         {view === 'content' && (
           <motion.div key="content" className="flex flex-col gap-3.5" {...SWAP}>
