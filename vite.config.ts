@@ -27,6 +27,13 @@ const pwaManifest: Partial<VitePWAOptions> = {
     name: 'Jotihunt Tracker',
     short_name: 'Jotihunt Tracker',
     description: 'Volg de Jotihunt in real-time met de Jotihunt Tracker!',
+    // A stable identity (installs survive a start_url change) and Dutch like index.html
+    id: '/',
+    lang: 'nl',
+    // Without these vite-plugin-pwa fills in its own green theme colour: the title bar and splash screen match the light
+    // theme instead (index.html's light theme-color meta and --background)
+    theme_color: '#ffffff',
+    background_color: '#ffffff',
     // Lets Chrome's getInstalledRelatedApps() see the Android app (the APK also needs an asset statement for this site)
     related_applications: [{ platform: 'play', url: 'https://play.google.com/store/apps/details?id=nl.jotihunt.tracker', id: 'nl.jotihunt.tracker' }],
     prefer_related_applications: false,
