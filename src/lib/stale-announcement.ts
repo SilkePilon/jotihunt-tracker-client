@@ -6,8 +6,11 @@ import type { ConnectionProblem } from '@/lib/connection';
  */
 export function problemAnnouncement(problem: ConnectionProblem | null): string {
   if (!problem) return '';
-  const { ageMs, feeds } = problem;
-  if (feeds.length === 0) return ageMs === null ? 'Geen verbinding' : 'Geen verbinding, gegevens niet bijgewerkt';
+  const { ageMs, feeds, offline } = problem;
+  if (feeds.length === 0) {
+    if (ageMs === null) return offline ? 'Geen verbinding' : 'Geen actuele gegevens';
+    return offline ? 'Geen verbinding, gegevens niet bijgewerkt' : 'Gegevens niet bijgewerkt';
+  }
   const names = feeds.length === 1 ? feeds[0] : `${feeds.slice(0, -1).join(', ')} en ${feeds[feeds.length - 1]}`;
   const subject = names.charAt(0).toUpperCase() + names.slice(1);
   return ageMs === null ? `${subject} niet geladen` : `${subject} niet bijgewerkt`;
