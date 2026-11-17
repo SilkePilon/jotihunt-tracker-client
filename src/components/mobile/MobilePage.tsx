@@ -1,5 +1,5 @@
-import { type ReactNode, type RefObject, type TouchEvent, useRef } from 'react';
-import { animate, motion, useMotionValue, useReducedMotion } from 'motion/react';
+import { type ReactNode, type RefObject, type TouchEvent, useEffect, useRef } from 'react';
+import { animate, motion, useIsPresent, useMotionValue, useReducedMotion } from 'motion/react';
 import { ChevronLeftIcon } from 'lucide-react';
 import type { MapRef } from '@/components/Map';
 import type { MobilePage as Page } from '@/lib/mobile-nav';
@@ -72,6 +72,13 @@ function useSwipeBack(pop: () => void, enabled: boolean) {
     if (reduceMotion) x.set(0);
     else animate(x, 0, PANE_SLIDE_TRANSITION);
   };
+
+  // A swipe that popped the page leaves x at the finger's offset while it slides out. Pushed again before that exit
+  // finishes, AnimatePresence brings this same page back: start it from 0, or it would return shifted sideways.
+  const isPresent = useIsPresent();
+  useEffect(() => {
+    if (isPresent) x.set(0);
+  }, [isPresent, x]);
 
   const onTouchStart = (event: TouchEvent<HTMLDivElement>) => {
     swallowClick.current = false;
