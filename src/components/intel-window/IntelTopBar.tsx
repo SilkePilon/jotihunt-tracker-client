@@ -51,7 +51,7 @@ export default function IntelTopBar({ unread, detail, onBack }: { unread: Partia
                 <motion.span layoutId="intel-tab" className="absolute inset-0 rounded-[9px] bg-card shadow-[0_1px_2px_rgb(0_0_0/0.06)]" transition={{ type: 'spring', stiffness: 500, damping: 38 }} />
               )}
               <span className="relative">{LABELS[value]}</span>
-              <AnimatePresence>{unread[value] && <motion.span key="dot" {...POP} aria-hidden className="relative size-[7px] rounded-full bg-primary" />}</AnimatePresence>
+              <AnimatePresence>{unread[value] && <motion.span key="dot" {...POP} aria-hidden className="relative size-[7px] rounded-full bg-primary-text dark:bg-primary" />}</AnimatePresence>
               {unread[value] && <span className="sr-only">, ongelezen</span>}
             </button>
           );
