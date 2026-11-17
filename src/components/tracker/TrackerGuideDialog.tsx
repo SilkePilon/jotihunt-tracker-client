@@ -11,7 +11,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import ResponsiveDialog from '@/components/ResponsiveDialog';
 import { useIsMobile } from '@/hooks/media.hook';
 import { DIALOG_SHELL } from '@/lib/dialog-shell';
 import { cn } from '@/lib/utils';
@@ -51,12 +51,18 @@ export default function TrackerGuideDialog({ open, onOpenChange, status }: Track
   const firstCommonStep = isMobile ? 3 : 4;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={cn(DIALOG_SHELL, 'max-h-[90dvh] overflow-y-auto bg-card sm:max-w-md')} data-tracker-guide>
-        <DialogHeader>
-          <DialogTitle>Je telefoon koppelen</DialogTitle>
-          <DialogDescription>Zo deelt je telefoon zijn locatie met het team. Dit hoef je maar één keer te doen.</DialogDescription>
-        </DialogHeader>
+    // Phones: the bottom drawer like the other dialogs (safe areas, Back closes it); desktop: the card dialog
+    <ResponsiveDialog
+      open={open}
+      onClose={() => onOpenChange(false)}
+      title="Je telefoon koppelen"
+      description="Zo deelt je telefoon zijn locatie met het team. Dit hoef je maar één keer te doen."
+      compact
+      className={cn(DIALOG_SHELL, 'bg-card sm:max-w-md')}
+      drawerClassName="bg-card"
+    >
+      {/* The steps scroll on short screens; the 4px inset keeps the buttons' focus rings inside the clip */}
+      <div className="-m-1 min-h-0 flex-1 overflow-y-auto overscroll-contain p-1" data-tracker-guide>
         <ol className="flex flex-col gap-4">
           <Step number={1} icon={DownloadIcon} title='Installeer de app "Traccar Client".'>
             <div className="flex gap-2">
@@ -116,7 +122,7 @@ export default function TrackerGuideDialog({ open, onOpenChange, status }: Track
             </div>
           </Step>
         </ol>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </ResponsiveDialog>
   );
 }
