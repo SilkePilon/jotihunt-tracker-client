@@ -401,6 +401,13 @@ body.dark {
   }
 }
 
+/* Touch (landscape phones, tablets at desktop width): 44px tiles, the minimum comfortable target */
+@media (pointer: coarse) {
+  .maplibregl-ctrl-group > button {
+    @apply size-11!;
+  }
+}
+
 /* Keyboard focus on map controls: the app's solid focus ring. The tile shadow above (with !important) would
    otherwise hide MapLibre's own focus box-shadow, leaving no visible focus at all. */
 .maplibregl-ctrl-group > button:focus-visible,
