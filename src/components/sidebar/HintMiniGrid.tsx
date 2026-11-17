@@ -107,7 +107,8 @@ export default function HintMiniGrid({ mapRef }: { mapRef: RefObject<MapRef | nu
                     aria-pressed={isMobile ? isSelected : undefined}
                     onClick={() => selectCell(row.article.id, area.value, cell)}
                     className={cn(
-                      'flex h-6 cursor-pointer items-center justify-center rounded-[6px] transition-colors duration-200 hover:ring-2 hover:ring-primary/50 md:h-4',
+                      // Keyboard focus: a thicker ring in the focus colour, distinct from hover (2px primary/50) and selected (2px)
+                      'flex h-6 cursor-pointer items-center justify-center rounded-[6px] outline-none transition-colors duration-200 hover:ring-2 hover:ring-primary/50 focus-visible:ring-[3px] focus-visible:ring-ring md:h-4',
                       COARSE_HIT_AREA,
                       cellClass[cell.status],
                       isSelected && 'ring-2 ring-ring hover:ring-ring',
