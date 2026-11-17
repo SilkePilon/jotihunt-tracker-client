@@ -30,7 +30,7 @@ function Row({ icon, title, subtitle, danger, onClick }: { icon: ReactNode; titl
       <span className={cn(danger && 'text-destructive-text')}>{icon}</span>
       <span className="min-w-0 flex-1">
         <span className={cn('block text-[13px] font-medium', danger && 'text-destructive-text')}>{title}</span>
-        <span className="block text-[11px] text-muted-foreground">{subtitle}</span>
+        <span className="block text-xs text-muted-foreground md:text-[11px]">{subtitle}</span>
       </span>
       <ChevronRightIcon className="text-muted-foreground" />
     </button>
@@ -69,7 +69,7 @@ export default function JotiboardActions({ counts, canUnlink, canPurge, onUnlink
           {step !== 'list' && (
             <div className="flex flex-col py-2.5 text-left">
               <p className="text-sm font-bold">{step === 'purge' ? 'Data verwijderen?' : 'Jotiboard ontkoppelen?'}</p>
-              <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
+              <p className="mt-0.5 text-xs leading-snug text-muted-foreground md:text-[11px]">
                 {step === 'purge'
                   ? `${purgeText(counts)} van Jotiboard. Onze eigen markers en oplossingen blijven staan. Automatisch synchroniseren gaat uit.`
                   : 'De server vergeet de Jotiboard-sessie. Wat al geïmporteerd is blijft staan.'}
@@ -87,7 +87,7 @@ export default function JotiboardActions({ counts, canUnlink, canPurge, onUnlink
                 {step === 'purge' ? <Trash2Icon /> : <UnlinkIcon />}
                 Ingedrukt houden…
               </HoldButton>
-              <button type="button" className={cn(inlineLinkClass, 'mt-1.5 self-center text-[11px]')} disabled={busy} onClick={() => setStep('list')}>
+              <button type="button" className={cn(inlineLinkClass, 'mt-1.5 self-center text-xs md:text-[11px]')} disabled={busy} onClick={() => setStep('list')}>
                 annuleren
               </button>
             </div>

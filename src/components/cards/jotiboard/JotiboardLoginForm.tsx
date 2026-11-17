@@ -85,7 +85,7 @@ export default function JotiboardLoginForm({ fixedUsername, submitLabel, onSubmi
         <BusyIcon busy={busy} />
         {submitLabel}
       </Button>
-      {!hideNote && <p className="text-[11px] leading-snug text-muted-foreground">Het wachtwoord wordt niet bewaard, alleen een versleutelde sessie.</p>}
+      {!hideNote && <p className="text-xs leading-snug text-muted-foreground md:text-[11px]">Het wachtwoord wordt niet bewaard, alleen een versleutelde sessie.</p>}
     </form>
   );
 }

@@ -23,7 +23,7 @@ export default function CoordinateStatus({ state, guess }: { state: CoordinateSt
     : STATES[state];
   const { Icon, text, className } = view;
   return (
-    <p role="status" aria-live="polite" className="min-w-0 flex-1 text-[11px] font-medium">
+    <p role="status" aria-live="polite" className="min-w-0 flex-1 text-xs font-medium md:text-[11px]">
       <AnimatePresence mode="wait" initial={false}>
         <motion.span key={text} {...SWAP} className={cn('inline-flex items-center gap-1.5', className)}>
           <Icon aria-hidden className="size-3 shrink-0" />

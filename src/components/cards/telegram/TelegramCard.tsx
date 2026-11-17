@@ -99,7 +99,7 @@ export default function TelegramCard({ messages, loadState, onRetry, admin }: Te
                     ontkoppelen
                   </button>
                 </div>
-                {status.connected === false && status.lastError && <p className="-mt-2 text-[11px] leading-snug text-muted-foreground">{status.lastError}</p>}
+                {status.connected === false && status.lastError && <p className="-mt-2 text-xs leading-snug text-muted-foreground md:text-[11px]">{status.lastError}</p>}
               </>
             )}
           </motion.div>

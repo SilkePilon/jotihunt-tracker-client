@@ -111,10 +111,10 @@ export function IconPill({ variant, className, type = 'button', ...props }: Comp
   return <button type={type} className={cn(iconPill({ variant }), className)} {...props} />;
 }
 
-const tag = cva('inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[10.5px] leading-4 font-extrabold transition-colors duration-300 [&_svg]:size-3', {
+const tag = cva('inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs leading-4 font-extrabold md:text-[10.5px] transition-colors duration-300 [&_svg]:size-3', {
   variants: {
     tone: {
-      // -800 in light: the 10.5px text needs >= 4.5:1 on its tint over the rows (-700 was below)
+      // -800 in light: the small (12px phone, 10.5px desktop) text needs >= 4.5:1 on its tint over the rows (-700 was below)
       primary: 'bg-primary/20 text-orange-800 dark:text-orange-300',
       neutral: 'bg-beheer-row-high text-muted-foreground',
       ok: 'bg-green-500/15 text-green-800 dark:text-green-300',
