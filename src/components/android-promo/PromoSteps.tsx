@@ -8,6 +8,7 @@ import { POP_SPRING, SWAP, revealTransition } from '@/lib/motion';
 import type { PromoStep } from '@/stores/android-promo.store';
 import { useAppOpenCheck, type PairPhase } from './pair-launch';
 import { cn } from '@/lib/utils';
+import { TONAL_HOVER } from '@/lib/tonal-button';
 
 const CHECK = cookiePath(72, BADGE_COOKIE_DEPTH);
 const STEP_INDEX: Partial<Record<PromoStep, number>> = { download: 0, install: 1, pair: 2 };
@@ -25,7 +26,7 @@ export function Stepper({ step }: { step: PromoStep }) {
 
 /** The way out of every step after the intro: the shared close button, a tonal step up from the window background */
 export function StepClose({ onClose }: { onClose: () => void }) {
-  return <CloseButton onClick={onClose} className="bg-beheer-row-high hover:bg-[color-mix(in_oklab,var(--foreground)_14%,var(--card))]" />;
+  return <CloseButton onClick={onClose} className={`bg-beheer-row-high ${TONAL_HOVER}`} />;
 }
 
 /**

@@ -17,6 +17,7 @@ import { useEdition } from '@/hooks/edition.hook';
 import { useNotificationPrefs } from '@/hooks/notification-prefs.hook';
 import { apiErrorMessage } from '@/lib/api-error';
 import { DIALOG_SHELL } from '@/lib/dialog-shell';
+import { TONAL_HOVER } from '@/lib/tonal-button';
 import { SWAP } from '@/lib/motion';
 import { markDevicePrompted } from '@/lib/notifications-prompt';
 import { currentDevicePush, subscribePush, type PushResult } from '@/lib/push';
@@ -176,7 +177,7 @@ export default function NotificationsDialog() {
               onClick={requestClose}
               // aria-disabled while saving, not disabled: the focused button would drop the focus to <body>
               aria-disabled={saving || undefined}
-              className={cn('h-11 flex-1 cursor-pointer rounded-xl bg-beheer-row-high text-sm font-semibold outline-none transition-[background-color,opacity] hover:bg-[color-mix(in_oklab,var(--foreground)_14%,var(--card))] focus-visible:ring-[3px] focus-visible:ring-ring', BUSY_CLASSES)}
+              className={cn('h-11 flex-1 cursor-pointer rounded-xl bg-beheer-row-high text-sm font-semibold outline-none transition-[background-color,opacity] focus-visible:ring-[3px] focus-visible:ring-ring', TONAL_HOVER, BUSY_CLASSES)}
             >
               Later
             </button>
@@ -186,7 +187,7 @@ export default function NotificationsDialog() {
               disabled={readOnly || !prefs}
               {...busyProps(saving)}
               className={cn(
-                'inline-flex h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-primary-container text-sm font-semibold text-on-primary-container outline-none transition-[filter,opacity] hover:brightness-105 focus-visible:ring-[3px] focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:pointer-events-none [&_svg]:size-4',
+                'inline-flex h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-primary-container text-sm font-semibold text-on-primary-container outline-none transition-[background-color,opacity] hover:bg-[color-mix(in_oklab,var(--on-primary-container)_10%,var(--primary-container))] focus-visible:ring-[3px] focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:pointer-events-none [&_svg]:size-4',
                 // Saving keeps full colour and the focus (the spinner says it's busy); only "can't save" dims
               )}
             >

@@ -71,7 +71,7 @@ function FoxChip({ fox, hidden, forbidden, popIn, open, onOpen }: FoxChipProps) 
       {/* Hidden / forbidden dim this inner layer, so the pop's own opacity on the button stays independent; the stronger dim (hidden) wins */}
       <span
         className={cn(
-          'inline-flex h-[26px] items-center gap-1.5 rounded-full bg-fox-chip px-2.5 text-xs font-semibold transition-opacity duration-200 hover:brightness-110 motion-reduce:transition-none pointer-coarse:h-8 pointer-coarse:text-sm',
+          'inline-flex h-[26px] items-center gap-1.5 rounded-full bg-fox-chip px-2.5 text-xs font-semibold transition-[opacity,background-color] duration-200 hover:bg-[color-mix(in_oklab,currentColor_10%,var(--fox-chip))] motion-reduce:transition-none pointer-coarse:h-8 pointer-coarse:text-sm',
           hidden ? 'opacity-70' : forbidden && 'opacity-75',
         )}
       >
