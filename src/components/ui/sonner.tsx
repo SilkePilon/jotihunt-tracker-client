@@ -11,12 +11,16 @@ import { useDarkMode } from "@/hooks/utils/darkmode.hook.ts"
 import { useIsMobile } from "@/hooks/media.hook"
 import { phoneToastOffset } from "@/lib/top-stack"
 import useTopStackStore from "@/stores/top-stack.store"
+import { COARSE_HIT_AREA } from "@/lib/hit-area"
 
 /**
  * Desktop (bottom-right): left of the 40px map control column (8px margin + 40px + 12px gap, plus the landscape-phone
  * safe area), so a long-lived toast never covers zoom, layers or my location.
  */
 const DESKTOP_OFFSET = { right: "calc(env(safe-area-inset-right) + 60px)" }
+
+/** Action / cancel buttons: `!` beats sonner's own [data-button] rules */
+const TOAST_BUTTON = `${COARSE_HIT_AREA} h-8! rounded-xl! px-3! text-[13px]! font-semibold! focus-visible:ring-[3px]! focus-visible:ring-ring!`
 
 const Toaster = ({ ...props }: ToasterProps) => {
   // Follow the app's own dark mode (body.dark), which can differ from the OS
@@ -60,10 +64,14 @@ const Toaster = ({ ...props }: ToasterProps) => {
           // Keeps sonner's own focus ring visible: ring-* composes with this shadow
           toast: "border-0! shadow-[0_0_0_1px_var(--border),0_10px_30px_rgb(0_0_0/0.28)]! focus-visible:ring-[3px] focus-visible:ring-ring",
           description: "text-muted-foreground!",
-          actionButton: "bg-primary-container! text-on-primary-container!",
-          cancelButton: "bg-muted! text-muted-foreground!",
-          // 24px instead of sonner's 20px; on touch an invisible ::after grows the target to 44px
-          closeButton: "size-6! pointer-coarse:after:absolute pointer-coarse:after:-inset-2.5 pointer-coarse:after:content-['']",
+          // The app's small buttons (h-8, 12px corners, 13px semibold, 3px focus ring) instead of sonner's 24px / 4px
+          // corners; on touch an invisible ::after grows the target to 44px (the toast is its own stacking context)
+          actionButton: `${TOAST_BUTTON} bg-primary-container! text-on-primary-container!`,
+          // Tonal like the other secondary buttons
+          cancelButton: `${TOAST_BUTTON} bg-beheer-row-high! text-foreground!`,
+          // 24px instead of sonner's 20px, with the card hairline so its edge reads where it overhangs the toast's
+          // corner; on touch an invisible ::after grows the target to 44px
+          closeButton: "size-6! shadow-[0_0_0_1px_var(--border)]! focus-visible:ring-[3px] focus-visible:ring-ring pointer-coarse:after:absolute pointer-coarse:after:-inset-2.5 pointer-coarse:after:content-['']",
         },
       }}
       position={isMobile ? "top-center" : "bottom-right"}
