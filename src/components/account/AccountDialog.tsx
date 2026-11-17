@@ -13,7 +13,7 @@ import { useAccount } from '@/hooks/account.hook';
 import { useAuth } from '@/hooks/auth.hook';
 import { useLogout } from '@/hooks/logout.hook';
 import { useNow } from '@/hooks/now.hook';
-import { deviceMeta, orderSessions, passkeyMeta, sessionDevice, sessionMeta, type AccountPasskey, type SessionDevice } from '@/lib/account';
+import { deviceMeta, logoutDescription, orderSessions, passkeyMeta, sessionDevice, sessionMeta, type AccountPasskey, type SessionDevice } from '@/lib/account';
 import { apiErrorMessage } from '@/lib/api-error';
 import { addPasskey, passkeysSupported } from '@/lib/auth-api';
 import { DIALOG_SHELL } from '@/lib/dialog-shell';
@@ -216,9 +216,7 @@ export default function AccountDialog() {
                             session.current
                               ? {
                                   title: 'Uitloggen op dit apparaat?',
-                                  description: noPasskey
-                                    ? 'Je hebt nog geen passkey: daarna kom je alleen weer binnen met een QR-code of een herstel-link.'
-                                    : 'Je moet daarna opnieuw inloggen.',
+                                  description: logoutDescription(noPasskey),
                                   confirmLabel: 'Uitloggen',
                                   action: async () => {
                                     try {

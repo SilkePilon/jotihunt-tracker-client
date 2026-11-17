@@ -30,7 +30,8 @@ import useLayersDialogStore from '@/stores/layers-dialog.store';
 import useSettingsMenuStore from '@/stores/settings-menu.store';
 import useTourStore from '@/components/tour/tour.store';
 import {tourTarget} from '@/components/tour/targets';
-import {useLogout} from '@/hooks/logout.hook';
+import LogoutConfirmDialog from '@/components/account/LogoutConfirmDialog';
+import {useState} from 'react';
 import useAdminStore from '@/stores/admin.store';
 import {useIsMobile} from '@/hooks/media.hook';
 import {useAppConfig} from '@/hooks/app-config.hook';
@@ -61,7 +62,8 @@ export default function Settings({onReplayTour}: SettingsProps) {
     const isMobile = useIsMobile();
 
     const auth = useAuthUser<User>();
-    const logout = useLogout();
+    // Same confirm as Account → "Dit apparaat" (with the lockout warning when there's no passkey yet)
+    const [logoutOpen, setLogoutOpen] = useState(false);
 
     return (
         <Dialog>
@@ -155,7 +157,10 @@ export default function Settings({onReplayTour}: SettingsProps) {
                     </MenuRows>
 
                     <MenuRows className="mt-1.5">
-                        <MenuRow variant="destructive" onClick={logout}>
+                        <MenuRow variant="destructive" onClick={() => {
+                            setMenuOpen(false);
+                            setLogoutOpen(true);
+                        }}>
                             <LogOutIcon/>
                             Uitloggen
                         </MenuRow>
@@ -164,6 +169,7 @@ export default function Settings({onReplayTour}: SettingsProps) {
             </DropdownMenu>
 
             <DebugInfo/>
+            <LogoutConfirmDialog open={logoutOpen} onOpenChange={setLogoutOpen} noPasskey={auth?.passkeyCount === 0}/>
         </Dialog>
     );
 }
