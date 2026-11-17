@@ -88,7 +88,7 @@ function StyleBar() {
                 src={isDarkMode && style.darkThumb ? style.darkThumb : style.thumb}
                 alt=""
                 draggable={false}
-                className="relative aspect-[1.3] w-full rounded-[9px] object-cover transition-transform duration-200 group-hover:scale-[1.04]"
+                className="relative aspect-[1.3] w-full rounded-[9px] object-cover transition-transform duration-200 motion-safe:group-hover:scale-[1.04]"
               />
               <span className={cn('relative text-xs transition-colors desk:text-[11px]', selected ? 'font-semibold text-on-primary-container' : 'text-muted-foreground')}>{style.label}</span>
             </RadioGroupPrimitive.Item>

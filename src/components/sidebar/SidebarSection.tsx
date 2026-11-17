@@ -61,7 +61,7 @@ export default function SidebarSection({ id, title, summary, open: openProp, onO
                 </motion.span>
               )}
             </AnimatePresence>
-            <ChevronDownIcon className={cn('size-4 shrink-0 transition-transform', open && 'rotate-180')} />
+            <ChevronDownIcon className={cn('size-4 shrink-0 transition-transform duration-200 ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none', open && 'rotate-180')} />
           </span>
         </CollapsibleTrigger>
       </h2>

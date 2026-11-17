@@ -29,4 +29,4 @@ export const MENU_LABEL = 'px-1 pt-1 pb-1.5 text-xs desk:text-[11px] font-bold t
 
 /** Any button that opens a dropdown or popover: soft orange while open, its `data-chevron` icon turns. */
 export const TRIGGER_OPEN =
-  'data-[state=open]:bg-(--map-selected-bg) data-[state=open]:text-(--map-selected-fg) data-[state=open]:hover:bg-(--map-selected-bg) [&_svg]:transition-colors [&_[data-chevron]]:transition-[transform,color] [&_[data-chevron]]:duration-200 data-[state=open]:[&_[data-chevron]]:rotate-180 data-[state=open]:[&_svg]:text-(--map-selected-fg)!';
+  'data-[state=open]:bg-(--map-selected-bg) data-[state=open]:text-(--map-selected-fg) data-[state=open]:hover:bg-(--map-selected-bg) [&_svg]:transition-colors [&_[data-chevron]]:transition-[transform,color] motion-reduce:[&_[data-chevron]]:transition-colors [&_[data-chevron]]:duration-200 data-[state=open]:[&_[data-chevron]]:rotate-180 data-[state=open]:[&_svg]:text-(--map-selected-fg)!';

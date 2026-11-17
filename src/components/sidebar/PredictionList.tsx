@@ -104,7 +104,7 @@ export default function PredictionList({ mapRef }: { mapRef: RefObject<MapRef | 
                     }}
                     className={cn(
                       // Keyboard focus: an outline in --ring, so it shows over the open state's area-coloured ring too
-                      'inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-badge px-2.5 text-xs font-semibold transition-[transform,box-shadow,background-color] outline-none active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+                      'inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-badge px-2.5 text-xs font-semibold transition-[transform,box-shadow,background-color] outline-none motion-safe:active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
                       COARSE_HIT_AREA,
                       // Stale: only the background softens; text and icons keep full contrast
                       !active && (prediction.stale ? 'bg-beheer-row-high/60 text-muted-foreground' : 'bg-beheer-row-high text-muted-foreground'),
