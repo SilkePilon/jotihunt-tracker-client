@@ -15,12 +15,18 @@ import { useMarkers } from '@/hooks/markers.hook';
 import { useAppConfig } from '@/hooks/app-config.hook';
 import { useEdition } from '@/hooks/edition.hook';
 import {toast} from "sonner";
-import { apiErrorMessage } from '@/lib/api-error';
+import { apiErrorMessage, isNetworkError } from '@/lib/api-error';
+import { lostResponseOutcome, markerLostResponseMessage } from '@/lib/hint-submit';
+import InlineError from '../InlineError';
+import Reveal from '../motion/Reveal';
 import { popupActionClass } from './popup/PopupActions';
 import BusyIcon from '../motion/BusyIcon';
 
 
 type FormValues = { area: string; day: Date; time: Date };
+
+/** "zaterdag 18 oktober" */
+const formatDay = (day: Date) => day.toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' });
 
 const formResolver = fieldsResolver<FormValues>({
   area: oneOf(areaOptions.map((option) => option.value), 'Geen geldig deelgebied.'),
@@ -32,7 +38,9 @@ const formResolver = fieldsResolver<FormValues>({
 export default function MarkerRegistration({ lat, lng }: { lat: number; lng: number }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [markerType, setMarkerType] = useState<MarkerType>();
-  const { createMarker } = useMarkers();
+  const { createMarker, fetchFreshMarkers } = useMarkers();
+  // A save that got no answer and couldn't be confirmed: shown above the buttons, the form stays open
+  const [submitError, setSubmitError] = useState<string | null>(null);
   // An archive edition is read-only: no new markers
   const { readOnly } = useEdition();
   const fieldId = useId();
@@ -94,6 +102,7 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
     // While the marker is being saved, Annuleren, Esc and the backdrop leave the dialog open
     if (!open && form.formState.isSubmitting) return;
     setDialogOpen(open);
+    setSubmitError(null);
     form.reset();
   }
 
@@ -125,15 +134,23 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
       },
     };
 
+    setSubmitError(null);
     const error = await createMarker(marker);
-    if (!error) {
-      setDialogOpen(false);
-      form.reset();
-      toast.success('Marker geplaatst');
-    } else {
+    if (error && isNetworkError(error)) {
+      // No answer (offline, timeout) doesn't mean it failed: the server may have saved it. A fresh list tells.
+      const outcome = lostResponseOutcome(await fetchFreshMarkers(), marker);
+      if (outcome !== 'registered') {
+        setSubmitError(markerLostResponseMessage(outcome));
+        return;
+      }
+    } else if (error) {
       // The server's message for e.g. a 429 (too many markers in a row)
       toast.error('Marker plaatsen is mislukt', { description: apiErrorMessage(error, 'Probeer het opnieuw.') });
+      return;
     }
+    setDialogOpen(false);
+    form.reset();
+    toast.success('Marker geplaatst');
   }
 
   const { isSubmitting } = form.formState;
@@ -149,7 +166,7 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
               <Field data-invalid={fieldState.invalid}>
                 <FieldLabel htmlFor={`${fieldId}-area`}>Deelgebied</FieldLabel>
                 <Select name={field.name} onValueChange={field.onChange} value={field.value}>
-                  <SelectTrigger id={`${fieldId}-area`} className="w-full" aria-invalid={fieldState.invalid}>
+                  <SelectTrigger id={`${fieldId}-area`} className="w-full pointer-coarse:data-[size=default]:h-11" aria-invalid={fieldState.invalid}>
                     <SelectValue placeholder="Kies deelgebied..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -167,7 +184,8 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
             )}
           />
         </div>
-        <div className="flex gap-4 w-full">
+        {/* Stacked on a phone; side by side once both fit (the day truncates rather than pushing the time out) */}
+        <div className="grid w-full grid-cols-1 gap-4 min-[420px]:grid-cols-2">
           {/* Select with all days */}
           <Controller
             control={form.control}
@@ -175,17 +193,23 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
             render={({ field, fieldState }) => {
               const dateValue = field.value instanceof Date ? field.value : new Date(field.value); // Ensure it's a Date
               return (
-                <Field data-invalid={fieldState.invalid}>
+                <Field data-invalid={fieldState.invalid} className="min-w-0">
                   <FieldLabel htmlFor={`${fieldId}-day`}>Dag</FieldLabel>
                   <Select name={field.name} onValueChange={(value) => field.onChange(new Date(value))} value={dateValue.toDateString()}>
-                    <SelectTrigger id={`${fieldId}-day`} className="w-full" aria-invalid={fieldState.invalid}>
-                      <SelectValue placeholder="Kies dag..." />
+                    <SelectTrigger
+                      id={`${fieldId}-day`}
+                      className="w-full min-w-0 pointer-coarse:data-[size=default]:h-11 *:data-[slot=select-value]:min-w-0"
+                      aria-invalid={fieldState.invalid}
+                    >
+                      <SelectValue placeholder="Kies dag...">
+                        <span className="min-w-0 truncate">{formatDay(dateValue)}</span>
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
                         {getDays().map((day) => (
                           <SelectItem key={day.toDateString()} value={day.toDateString()}>
-                            {day.toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' })}
+                            {formatDay(day)}
                           </SelectItem>
                         ))}
                       </SelectGroup>
@@ -207,7 +231,7 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
                   : ''; // Ensure it's a time string in HH:MM
 
               return (
-                <Field data-invalid={fieldState.invalid}>
+                <Field data-invalid={fieldState.invalid} className="min-w-0">
                   <FieldLabel htmlFor={`${fieldId}-time`}>Tijd</FieldLabel>
                   <Input
                     id={`${fieldId}-time`}
@@ -221,7 +245,7 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
                       updatedDate.setMinutes(parseInt(minutes, 10));
                       field.onChange(updatedDate); // Update the form field value with the selected time
                     }}
-                    className="border p-2 rounded w-full"
+                    className="w-full border p-2 pointer-coarse:h-11"
                   />
                   {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                 </Field>
@@ -229,6 +253,9 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
             }}
           />
         </div>
+        <Reveal gap={16}>
+          {submitError && <InlineError role="alert">{submitError}</InlineError>}
+        </Reveal>
         <DialogFooter className="gap-2">
           <Button variant="outline" type="button" className={DIALOG_ACTION_CANCEL} disabled={isSubmitting} onClick={() => handleOpenChange(false)}>
             Annuleren
