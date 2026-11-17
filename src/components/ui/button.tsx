@@ -10,8 +10,9 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: "bg-primary-container text-on-primary-container hover:bg-[color-mix(in_oklab,var(--on-primary-container)_10%,var(--primary-container))]",
+        // White text: 4.83:1 on the light fill, 8.4:1 on the dark /60 fill. Hover darkens (6.4:1); the old /90 lightened to 4.3:1
         destructive:
-          "bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive dark:bg-destructive/60",
+          "bg-destructive text-white hover:bg-[color-mix(in_oklab,var(--destructive)_88%,black)] focus-visible:ring-destructive dark:bg-destructive/60 dark:hover:bg-destructive/70",
         // Secondary action: the grey tonal sidebar button (TONAL_BUTTON) without border or shadow; 12px corners via compoundVariants
         outline:
           "border-0 bg-beheer-row-high text-foreground shadow-none hover:bg-[color-mix(in_oklab,var(--foreground)_14%,var(--card))] hover:text-foreground",
