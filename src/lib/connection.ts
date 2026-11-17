@@ -2,8 +2,8 @@
  * Tracks whether polled data still refreshes, for the "no connection" badge. Module state on purpose: every SWR fetch
  * reports here, and only the badge reads it (on a timer), so a successful poll doesn't re-render anything.
  *
- * Besides one overall record, the critical feeds (foxes, hunts, markers, positions) are tracked on their own: one
- * successful poll elsewhere (e.g. /hunts) must not hide that /areas keeps failing.
+ * Besides one overall record, the critical feeds (foxes, hunts, markers, positions, hints, predictions, bot messages)
+ * are tracked on their own: one successful poll elsewhere (e.g. /hunts) must not hide that /areas keeps failing.
  */
 
 /** Without a successful refresh for this long (and a failure or offline since), the data counts as stale. */
@@ -28,6 +28,9 @@ export const CRITICAL_FEEDS: Record<string, string> = {
   '/hunts': 'hunts',
   '/markers': 'markers',
   '/tracker/positions': 'posities',
+  '/hints/board': 'hints',
+  '/predictions': 'voorspellingen',
+  '/telegram/messages': 'berichten',
 };
 
 export interface ConnectionSnapshot {
