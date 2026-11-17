@@ -154,7 +154,7 @@ export default function HintMiniGrid({ mapRef }: { mapRef: RefObject<MapRef | nu
           <p className="text-center text-xs text-muted-foreground">Oplossen kan alleen op een laptop</p>
         </>
       ) : (
-        <Button variant="ghost" size="sm" className={TONAL_BUTTON} onClick={() => openIntel()}>Open hints <ArrowRightIcon /></Button>
+        <Button variant="ghost" size="sm" className={TONAL_BUTTON} onClick={() => openIntel()}>Open Intel <ArrowRightIcon /></Button>
       )}
     </div>
   );
