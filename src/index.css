@@ -123,6 +123,14 @@
   --status-ok-text: #166534;
   /* Informational small text (Pill info tone, Intel meta "info"): sky-800, >= 5:1 on the sky tint and the tonal rows */
   --status-info-text: #075985;
+  /* Score categories (lib/score.ts: Punten bar segments + legend squares, hunt result bar). Hints is amber-600 in light:
+     yellow-500 was 1.9:1 on white, a legend square needs >= 3:1 (this is 3.2:1) */
+  --score-hunts: var(--color-orange-500);
+  --score-counter-hunts: var(--color-purple-500);
+  --score-assignments: var(--color-blue-500);
+  --score-photo: var(--color-teal-500);
+  --score-hints: var(--color-amber-600);
+  --score-penalty: var(--color-red-500);
   /* Intel kinds (hint orange, opdracht blue, nieuws purple): the -800 shades as text/icons on their own tonal tile
      (>= 6:1); the tile is the kind's 400 shade over the card, as in dark mode */
   --intel-hint: #9a3412;
@@ -199,6 +207,8 @@
   --status-ok-text: #4ade80;
   /* sky-300: >= 6.2:1 on the sky tint and the tonal rows */
   --status-info-text: #7dd3fc;
+  /* yellow-500 reads on the dark card (the light theme's amber-600 is darker than it needs to be) */
+  --score-hints: var(--color-yellow-500);
   --intel-hint: #fb923c;
   --intel-assignment: #60a5fa;
   --intel-news: #c084fc;
@@ -277,6 +287,12 @@
   --color-beheer-window: var(--beheer-window);
   --color-beheer-row: var(--beheer-row);
   --color-beheer-row-high: var(--beheer-row-high);
+  --color-score-hunts: var(--score-hunts);
+  --color-score-counter-hunts: var(--score-counter-hunts);
+  --color-score-assignments: var(--score-assignments);
+  --color-score-photo: var(--score-photo);
+  --color-score-hints: var(--score-hints);
+  --color-score-penalty: var(--score-penalty);
 
   /* Named type scale for the off-Tailwind sizes (text-label / text-caption / text-body; text-xs 12px, text-sm 14px and
      up stay Tailwind's). label: overlines, meta and tags on the desktop shell; caption: secondary lines; body: the

@@ -57,14 +57,14 @@ export function formatDelta(delta: number): string {
 
 export type ScorePartKey = keyof ScoreParts;
 
-/** Per category: label and the Tailwind fill of its bar segment and legend square (mockup B colours) */
+/** Per category: label and the fill of its bar segment and legend square (mockup B colours, --score-* in index.css) */
 export const SCORE_CATEGORIES: Record<ScorePartKey, { label: string; fill: string }> = {
-  hunts: { label: 'Hunts', fill: 'bg-orange-500' },
-  counterHunts: { label: 'Tegenhunts', fill: 'bg-purple-500' },
-  assignments: { label: 'Opdrachten', fill: 'bg-blue-500' },
-  photoAssignments: { label: 'Foto', fill: 'bg-teal-500' },
-  hints: { label: 'Hints', fill: 'bg-yellow-500' },
-  penalty: { label: 'Straf', fill: 'bg-red-500' },
+  hunts: { label: 'Hunts', fill: 'bg-score-hunts' },
+  counterHunts: { label: 'Tegenhunts', fill: 'bg-score-counter-hunts' },
+  assignments: { label: 'Opdrachten', fill: 'bg-score-assignments' },
+  photoAssignments: { label: 'Foto', fill: 'bg-score-photo' },
+  hints: { label: 'Hints', fill: 'bg-score-hints' },
+  penalty: { label: 'Straf', fill: 'bg-score-penalty' },
 };
 
 /** Bar order: hunts, tegenhunts, opdrachten, foto, hints */
