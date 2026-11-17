@@ -17,6 +17,8 @@ import { useStartSession } from '@/hooks/start-session.hook';
 import InlineError from '@/components/InlineError';
 import { useAppConfig } from '@/hooks/app-config.hook';
 import { apiAssetUrl } from '@/lib/app-config';
+import { AUTH_CARD } from '@/components/auth/auth-card';
+import { cn } from '@/lib/utils';
 
 function GroupLogo({ url, className }: { url: string | null; className: string }) {
   const fallback = apiAssetUrl(useAppConfig().logoUrl);
@@ -26,11 +28,11 @@ function GroupLogo({ url, className }: { url: string | null; className: string }
 function InvalidCard({ text }: { text: string }) {
   const navigate = useNavigate();
   return (
-    <div className="flex w-full max-w-sm flex-col items-center gap-3 rounded-xl border bg-card p-7 text-center shadow-lg">
+    <div className={cn(AUTH_CARD, 'flex w-full max-w-sm flex-col items-center gap-3 p-7 text-center')}>
       <div className="flex size-10 items-center justify-center rounded-lg bg-muted">
         <Link2OffIcon className="size-5 text-muted-foreground" />
       </div>
-      <h2 className="text-lg font-medium tracking-tight">Deze uitnodiging werkt niet meer</h2>
+      <h2 className="text-lg font-bold tracking-tight">Deze uitnodiging werkt niet meer</h2>
       <p className="text-sm/relaxed text-muted-foreground">{text}</p>
       <Button variant="outline" className="mt-1 w-full" onClick={() => navigate('/login')}>
         Naar inloggen
@@ -115,7 +117,7 @@ export default function Invite() {
   if (done) [scene, content] = ['done', <WelcomeCard name={done.name} withPasskey={done.withPasskey} />];
   else if (goneReason) [scene, content] = ['invalid', <InvalidCard text={INVITE_REASON_TEXT[goneReason]} />];
   else if (unreachable) [scene, content] = ['unreachable', <UnreachableCard onRetry={load} />];
-  else if (!invite) [scene, content] = ['loading', <Skeleton className="h-72 w-full max-w-[760px] rounded-xl" />];
+  else if (!invite) [scene, content] = ['loading', <Skeleton className="h-72 w-full max-w-[760px] rounded-[28px]" />];
   else if (!invite.valid) [scene, content] = ['invalid', <InvalidCard text={INVITE_REASON_TEXT[invite.reason ?? 'unknown']} />];
   else [scene, content] = ['form', renderForm(invite)];
 
@@ -128,7 +130,7 @@ export default function Invite() {
   function renderForm(invite: InviteInfo) {
     const counts = `${invite.memberCount} ${invite.memberCount === 1 ? 'lid' : 'leden'}`;
     return (
-      <div className="w-full max-w-[760px] overflow-hidden rounded-xl border bg-card text-card-foreground shadow-lg md:grid md:grid-cols-[1fr_auto_1fr]">
+      <div className={cn(AUTH_CARD, 'w-full max-w-[760px] overflow-hidden md:grid md:grid-cols-[1fr_auto_1fr]')}>
         {/* Phone: compact header row; desktop: big left half */}
         <div className="flex items-center gap-3 border-b p-5 md:flex-col md:justify-center md:gap-4 md:border-b-0 md:p-8 md:text-center">
           <GroupLogo url={invite.group.logoUrl} className="size-11 md:size-20" />
@@ -144,7 +146,7 @@ export default function Invite() {
         <div className="my-8 hidden w-px bg-border md:block" />
         <form className="flex flex-col justify-center gap-4 p-5 md:p-8" onSubmit={handleSubmit}>
           <div className="hidden md:block">
-            <h2 className="text-lg font-semibold">Maak je account</h2>
+            <h2 className="text-lg font-bold">Maak je account</h2>
             <p className="text-sm text-muted-foreground">Kost 10 seconden.</p>
           </div>
           <div className="flex flex-col gap-2">
@@ -170,7 +172,7 @@ export default function Invite() {
               }}
             />
           </div>
-          <Button type={signupDone ? 'button' : 'submit'} size="lg" className="w-full" disabled={busy} onClick={signupDone ? () => navigate('/login') : undefined}>
+          <Button type={signupDone ? 'button' : 'submit'} size="lg" className="w-full rounded-xl" disabled={busy} onClick={signupDone ? () => navigate('/login') : undefined}>
             <AnimatePresence mode="popLayout" initial={false}>
               <motion.span key={signupDone ? 'login' : 'signup'} className="inline-flex items-center gap-2" {...SWAP}>
                 {signupDone ? (

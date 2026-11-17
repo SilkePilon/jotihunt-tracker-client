@@ -6,6 +6,8 @@ import usePWA from 'react-pwa-install-prompt';
 import { isMobile as isMobileDevice } from 'react-device-detect';
 import { Button } from '@/components/ui/button';
 import AuthScreen from '@/components/auth/AuthScreen';
+import { AUTH_CARD } from '@/components/auth/auth-card';
+import { cn } from '@/lib/utils';
 import QrLoginPanel from '@/components/auth/QrLoginPanel';
 import Reveal from '@/components/motion/Reveal';
 import { passkeyLogin, passkeysSupported, type SessionResult } from '@/lib/auth-api';
@@ -73,7 +75,7 @@ export default function Login() {
   return (
     <AuthScreen>
       <motion.div
-        className="w-full max-w-sm rounded-xl border bg-card text-card-foreground shadow-lg md:grid md:max-w-3xl md:grid-cols-[1fr_auto_auto]"
+        className={cn(AUTH_CARD, 'w-full max-w-sm md:grid md:max-w-3xl md:grid-cols-[1fr_auto_auto]')}
         initial={CARD_ENTER.initial}
         animate={leaving ? { opacity: 0, y: 0, scale: 0.98 } : { ...CARD_ENTER.animate, scale: 1 }}
         transition={leaving ? { duration: LEAVE_MS / 1000, ease: EASE_OUT } : CARD_ENTER.transition}
@@ -87,7 +89,7 @@ export default function Login() {
             </div>
           </div>
           <p className="text-sm text-muted-foreground">Gebruik de vingerafdruk, het gezicht of de schermvergrendeling van dit apparaat.</p>
-          <Button size="lg" className="w-full" onClick={handleLogin} disabled={busy || !supported}>
+          <Button size="lg" className="w-full rounded-xl" onClick={handleLogin} disabled={busy || !supported}>
             {busy ? <Loader2Icon className="animate-spin" /> : <KeyRoundIcon />}
             Inloggen met passkey
           </Button>
