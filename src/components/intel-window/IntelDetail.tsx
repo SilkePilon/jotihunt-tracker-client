@@ -24,7 +24,10 @@ export default function IntelDetail({ item, area, mapRef }: IntelDetailProps) {
   return (
     <div className="flex flex-col gap-3">
       <div className="rounded-[24px] bg-card px-6 pt-5 pb-[18px]">
-        <h2 className="text-[21px] leading-tight font-bold">{item.title}</h2>
+        {/* Takes focus when the item pushes in (IntelDialog), so keyboard users land on what they opened; no ring for that */}
+        <h2 tabIndex={-1} data-view-focus className="text-[21px] leading-tight font-bold outline-none">
+          {item.title}
+        </h2>
         <div className="mt-2 flex flex-wrap items-center gap-2 text-[12.5px] text-muted-foreground">
           <KindTag kind={item.kind} />
           <span className="tabular-nums">{formatClock(item.publishAt)}</span>

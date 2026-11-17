@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { focusRestoreTarget, ownsKey } from './focus';
+import { focusDropped, focusRestoreTarget, ownsKey } from './focus';
 
 const node = (isConnected = true) => ({ isConnected });
 const box = (...children: unknown[]) => ({ contains: (other: unknown) => children.includes(other) });
@@ -51,5 +51,27 @@ describe('ownsKey', () => {
 
   test('a key someone already handled is left alone', () => {
     expect(ownsKey({ defaultPrevented: true, target: body }, body, [])).toBe(false);
+  });
+});
+
+describe('focusDropped', () => {
+  const body = { isConnected: true, closest: () => null };
+  const el = (isConnected: boolean, inert: boolean) => ({ isConnected, closest: (selector: string) => (inert && selector === '[inert]' ? {} : null) });
+
+  test('nothing or <body> focused: dropped', () => {
+    expect(focusDropped(null, body)).toBe(true);
+    expect(focusDropped(body, body)).toBe(true);
+  });
+
+  test('a removed node: dropped', () => {
+    expect(focusDropped(el(false, false), body)).toBe(true);
+  });
+
+  test('inside a leaving (inert) view: dropped', () => {
+    expect(focusDropped(el(true, true), body)).toBe(true);
+  });
+
+  test('a live, interactive node: kept', () => {
+    expect(focusDropped(el(true, false), body)).toBe(false);
   });
 });

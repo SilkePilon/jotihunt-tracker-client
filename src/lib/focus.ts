@@ -25,3 +25,17 @@ export function ownsKey(event: { defaultPrevented: boolean; target: unknown }, b
   if (event.target === body) return true;
   return within.some((container) => container?.contains(event.target) ?? false);
 }
+
+export interface FocusedNode extends ConnectedNode {
+  closest(selector: string): unknown;
+}
+
+/**
+ * Whether focus was dropped by a view change: it sits on nothing or <body>, on a removed node, or inside an inert
+ * subtree (a pushed view that is leaving, a collapsed button). Then the arriving view may take it; otherwise focus
+ * moved somewhere on purpose and stays.
+ */
+export function focusDropped(active: FocusedNode | null, body: unknown): boolean {
+  if (!active || active === body || !active.isConnected) return true;
+  return active.closest('[inert]') !== null;
+}

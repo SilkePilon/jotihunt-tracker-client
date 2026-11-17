@@ -12,6 +12,7 @@ import { useHintBoard } from '@/hooks/hints.hook';
 import { useHasMounted } from '@/hooks/has-mounted.hook';
 import { useIsMobile } from '@/hooks/media.hook';
 import { useReadState } from '@/hooks/read-state.hook';
+import { useViewFocus } from '@/hooks/view-focus.hook';
 import { DIALOG_SHELL } from '@/lib/dialog-shell';
 import { keepOpenWhileEditing } from '@/lib/inline-edit';
 import { PUSH, buildIntelItems, filterByTab, unreadCount } from '@/lib/intel-window';
@@ -140,7 +141,15 @@ function IntelWindow({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
         {/* No initial={false} here: motion would block the initial animation of everything inside the first view too
             (status card, bars, ring, chat empty state). PushView skips only its own push on the first view instead. */}
         <AnimatePresence custom={direction}>
-          <PushView key={`${view.key}-${view.gen}`} direction={direction} first={!mounted}>
+          <PushView
+            key={`${view.key}-${view.gen}`}
+            direction={direction}
+            first={!mounted}
+            // Focus sat in the view that leaves (now inert): the item's title, or back on the row that opened the item
+            focusTarget={(root) =>
+              selected ? root.querySelector('[data-view-focus]') : (root.querySelector(`[data-id="${shownIdRef.current}"]`) ?? root.querySelector('[data-id]'))
+            }
+          >
             {selected ? (
               <DetailView item={selected} area={area} mapRef={mapRef} entrance={!mounted} />
             ) : (
@@ -165,13 +174,16 @@ function IntelWindow({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
 
 /**
  * One view, pushed in and out sideways (PUSH, custom = direction). The leaving one sits underneath and takes no input.
- * `first` (read on mount): the window's first view, which arrives with the dialog instead of pushing in.
+ * `first` (read on mount): the window's first view, which arrives with the dialog instead of pushing in. A later view
+ * takes focus (`focusTarget`) when the push dropped it.
  */
-function PushView({ direction, first, children }: { direction: number; first: boolean; children: ReactNode }) {
+function PushView({ direction, first, focusTarget, children }: { direction: number; first: boolean; focusTarget: (root: HTMLDivElement) => Element | null; children: ReactNode }) {
   const isPresent = useIsPresent();
   const [initial] = useState(first ? false : 'enter');
+  const ref = useViewFocus<HTMLDivElement>(!first, focusTarget);
   return (
     <motion.div
+      ref={ref}
       custom={direction}
       variants={PUSH}
       initial={initial}
