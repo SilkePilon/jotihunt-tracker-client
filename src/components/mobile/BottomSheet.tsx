@@ -233,7 +233,8 @@ export default function BottomSheet({ peek, children, onHeights }: { peek: React
           onClick={() => setSnap(nextSnap(snap))}
           className="relative flex h-6 shrink-0 cursor-grab touch-none select-none items-center justify-center rounded-t-3xl outline-none pointer-coarse:after:absolute pointer-coarse:after:-top-2 pointer-coarse:after:bottom-0 pointer-coarse:after:left-1/2 pointer-coarse:after:w-28 pointer-coarse:after:-translate-x-1/2 pointer-coarse:after:content-[''] focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset"
         >
-          <span className="h-[5px] w-9 rounded-full bg-muted-foreground/70" />
+          {/* /80: at least 3:1 on the light beheer-window background (/70 was borderline) */}
+          <span className="h-[5px] w-9 rounded-full bg-muted-foreground/80" />
         </button>
         {/* Dragging the grab/peek must not select text; the body's text stays selectable (copy a coordinate, a code) */}
         <div ref={peekRef} className="shrink-0 touch-none select-none [&_input]:select-text [&_textarea]:select-text">
