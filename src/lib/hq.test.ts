@@ -1,5 +1,5 @@
-import { expect, test } from 'bun:test';
-import { openAssignment } from './hq';
+import { describe, expect, test } from 'bun:test';
+import { openAssignment, isHqWall } from './hq';
 import type { Article } from '@/types/Article';
 
 const now = new Date('2026-10-17T19:00:00Z').getTime();
@@ -23,4 +23,14 @@ test('openAssignment skips news and hints, even with an endTime', () => {
 test('openAssignment skips closed assignments and ones without a deadline', () => {
   const articles = [article(1, 'assignment', '2026-10-17T17:00:00Z', '2026-10-17T21:00:00Z'), article(2, 'assignment', '2026-10-17T18:00:00Z', '2026-10-17T18:59:00Z'), article(3, 'assignment', '2026-10-17T18:30:00Z')];
   expect(openAssignment(articles, now)?.id).toBe(1);
+});
+
+describe('isHqWall', () => {
+  test('only the /hq route', () => {
+    expect(isHqWall('/hq')).toBe(true);
+    expect(isHqWall('/hq/')).toBe(true);
+    expect(isHqWall('/')).toBe(false);
+    expect(isHqWall('/hqx')).toBe(false);
+    expect(isHqWall('/beheer/hq')).toBe(false);
+  });
 });

@@ -28,7 +28,8 @@ import { useTheme } from '@/hooks/theme.hook';
 import { buildFoxes, eventFromNotification, type HqEvent } from '@/lib/hq-director';
 import { loadState } from '@/lib/load-state';
 import { isUnauthorized } from '@/lib/session';
-import { getColorFromArea } from '@/lib/utils';
+import { cn, getColorFromArea } from '@/lib/utils';
+import { createWakeLock } from '@/lib/wake-lock';
 import useHqDirectorStore from '@/stores/hq-director.store';
 import type { User } from '@/types/User';
 
@@ -51,6 +52,14 @@ export default function Hq() {
 function HqScreen({ onUnauthorized }: { onUnauthorized: () => void }) {
   const user = useAuthUser<User>();
   const [audioUnlocked, setAudioUnlocked] = useState(false);
+  // The beamer must never dim or sleep: a screen wake lock from the unlock click on (a user activation, which some
+  // browsers want), requested again whenever the page is shown again (createWakeLock), let go when leaving the wall
+  const [wakeLock] = useState(createWakeLock);
+  useEffect(() => () => wakeLock.stop(), [wakeLock]);
+  const unlock = () => {
+    wakeLock.start();
+    setAudioUnlocked(true);
+  };
   const mapRef = useRef<MapRef>(null);
   const push = useHqDirectorStore((state) => state.push);
   useTheme();
@@ -96,7 +105,8 @@ function HqScreen({ onUnauthorized }: { onUnauthorized: () => void }) {
   if (!user?.admin) return <Navigate to="/" replace />;
 
   return (
-    <main className="grid h-dvh w-dvw grid-cols-[58fr_42fr] overflow-hidden bg-background text-foreground">
+    // After the unlock click nobody points at the wall: no cursor parked on top of the map or the board
+    <main className={cn('grid h-dvh w-dvw grid-cols-[58fr_42fr] overflow-hidden bg-background text-foreground', audioUnlocked && 'cursor-none [&_*]:cursor-none')}>
       {/* sr-only (absolutely positioned): not a grid item */}
       <h1 className="sr-only">HQ-scherm</h1>
       <div className="relative min-h-0 overflow-hidden rounded-r-2xl">
@@ -121,7 +131,7 @@ function HqScreen({ onUnauthorized }: { onUnauthorized: () => void }) {
           <HqHunts events={events} isError={eventsError} onRetry={retryEvents} />
         </ErrorBoundary>
       </aside>
-      <AnimatePresence>{!audioUnlocked && <AudioUnlock key="audio" onUnlock={() => setAudioUnlocked(true)} />}</AnimatePresence>
+      <AnimatePresence>{!audioUnlocked && <AudioUnlock key="audio" onUnlock={unlock} />}</AnimatePresence>
     </main>
   );
 }
