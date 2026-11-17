@@ -1,5 +1,6 @@
 import type { Map as MaplibreMap } from 'maplibre-gl';
 import useSidebarStore from '@/stores/sidebar.store';
+import useViewportStore from '@/stores/viewport.store';
 import { DOCK_GAP, phoneMapPadding, type CameraPadding } from './sheet-snaps';
 
 export interface ScreenPoint {
@@ -30,8 +31,9 @@ export function pointHiddenByDock(point: ScreenPoint, size: MapSize, padding: Ca
  * sheet measured (desktop, the HQ wall).
  */
 export function currentPhonePadding(mapHeight = window.innerHeight): CameraPadding | undefined {
-  const { sheetSnapHeights, sheetSnap, dockCardHeight } = useSidebarStore.getState();
-  return sheetSnapHeights ? phoneMapPadding({ sheet: sheetSnapHeights[sheetSnap], card: dockCardHeight, mapHeight }) : undefined;
+  const { sheetSnapHeights, sheetSnap, dockCardHeight, sheetSide } = useSidebarStore.getState();
+  const { safeBottom } = useViewportStore.getState();
+  return sheetSnapHeights ? phoneMapPadding({ sheet: sheetSnapHeights[sheetSnap], card: dockCardHeight, mapHeight, sheetSide, safeBottom }) : undefined;
 }
 
 /**

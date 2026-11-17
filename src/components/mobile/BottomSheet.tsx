@@ -1,7 +1,9 @@
 import { type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { animate, motion, useReducedMotion, useTransform } from 'motion/react';
-import { computeSnapHeights, grabLabel, nextSnap, rubberBand, settleSnap, type SnapHeights } from '@/lib/sheet-snaps';
+import { computeSnapHeights, grabLabel, landscapeSheetBox, nextSnap, rubberBand, settleSnap, type SnapHeights } from '@/lib/sheet-snaps';
+import { useLandscapePhone } from '@/hooks/media.hook';
+import { cn } from '@/lib/utils';
 import useSidebarStore from '@/stores/sidebar.store';
 import useViewportStore from '@/stores/viewport.store';
 import { tourTarget } from '@/components/tour/targets';
@@ -38,7 +40,8 @@ function scrollerFor(target: Node, body: HTMLElement): HTMLElement {
 }
 
 /**
- * The phone sheet: fixed to bottom:0 (above bottom browser toolbars), moved only with translateY, three snaps.
+ * The phone sheet: fixed to bottom:0 (above bottom browser toolbars), moved only with translateY, three snaps. A phone
+ * held sideways gets it as a left column (at most 400px, half the screen) instead of the full width.
  * Drag from the grab/peek area; drag down from the body only when it is scrolled to the top. The body's height
  * follows the settled snap, so content scrolls at every height.
  */
@@ -47,7 +50,16 @@ export default function BottomSheet({ peek, children, onHeights }: { peek: React
   const setSnap = useSidebarStore((s) => s.setSheetSnap);
   const setSheetHeight = useSidebarStore((s) => s.setSheetHeight);
   const setSheetSnapHeights = useSidebarStore((s) => s.setSheetSnapHeights);
-  const { visibleH, safeTop, safeBottom, keyboard } = useViewportStore(useShallow((s) => ({ visibleH: s.visibleH, safeTop: s.safeTop, safeBottom: s.safeBottom, keyboard: s.keyboard })));
+  const { visibleH, safeTop, safeBottom, keyboard, width, safeLeft } = useViewportStore(
+    useShallow((s) => ({ visibleH: s.visibleH, safeTop: s.safeTop, safeBottom: s.safeBottom, keyboard: s.keyboard, width: s.width, safeLeft: s.safeLeft })),
+  );
+  // Held sideways: a left column instead of the full width (the map keeps the rest; Map.tsx pads for it)
+  const landscape = useLandscapePhone();
+  const box = landscape ? landscapeSheetBox(width, safeLeft) : null;
+  const side = box ? box.left + box.width : 0;
+  const setSheetSide = useSidebarStore((s) => s.setSheetSide);
+  useEffect(() => setSheetSide(side), [side, setSheetSide]);
+  useEffect(() => () => setSheetSide(0), [setSheetSide]);
   const peekRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -217,8 +229,8 @@ export default function BottomSheet({ peek, children, onHeights }: { peek: React
       role="region"
       aria-label="Paneel"
       {...{ [WORK_AREA_ATTRIBUTE]: '' }}
-      className="fixed inset-x-0 bottom-0 z-40 flex flex-col rounded-t-3xl bg-beheer-window shadow-[0_-6px_30px_rgb(0_0_0/.25)] [-webkit-touch-callout:none]"
-      style={{ height: heights.full, y, marginBottom: keyboard, paddingBottom: 'env(safe-area-inset-bottom)' }}
+      className={cn('fixed bottom-0 z-40 flex flex-col rounded-t-3xl bg-beheer-window shadow-[0_-6px_30px_rgb(0_0_0/.25)] [-webkit-touch-callout:none]', !box && 'inset-x-0')}
+      style={{ height: heights.full, y, marginBottom: keyboard, paddingBottom: 'env(safe-area-inset-bottom)', ...(box && { left: box.left, width: box.width }) }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerEnd}

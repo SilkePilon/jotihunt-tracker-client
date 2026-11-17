@@ -19,6 +19,26 @@ export function useIsMobile(): boolean {
   return useSyncExternalStore(subscribe, () => window.matchMedia(MOBILE_QUERY).matches);
 }
 
+/**
+ * A phone held sideways (inside the mobile shell): the sheet becomes a left column instead of spanning the width.
+ * Orientation and the layout viewport's height, not the visible height, so an open keyboard never switches it.
+ * Mirrored by the `landscape-phone:` CSS variant (index.css).
+ */
+export const LANDSCAPE_PHONE_QUERY = '(orientation: landscape) and (max-height: 500px)';
+
+function subscribeLandscape(callback: () => void) {
+  const media = window.matchMedia(LANDSCAPE_PHONE_QUERY);
+  media.addEventListener('change', callback);
+  return () => media.removeEventListener('change', callback);
+}
+
+/** Whether the mobile shell is on a phone held sideways (see {@link LANDSCAPE_PHONE_QUERY}). */
+export function useLandscapePhone(): boolean {
+  const mobile = useIsMobile();
+  const landscape = useSyncExternalStore(subscribeLandscape, () => window.matchMedia(LANDSCAPE_PHONE_QUERY).matches);
+  return mobile && landscape;
+}
+
 /** The `data-shell` value on <html> for the CSS `shell-mobile:` variant (index.css). */
 export function shellAttribute(mobile: boolean): 'mobile' | 'desktop' {
   return mobile ? 'mobile' : 'desktop';

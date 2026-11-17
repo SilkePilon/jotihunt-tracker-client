@@ -32,6 +32,7 @@ import {usePredictionSetting} from '@/hooks/predictions.hook';
 import useLayersStore from '../stores/layers.store';
 import useSettingsStore from '../stores/settings.store';
 import useSidebarStore from '@/stores/sidebar.store';
+import useViewportStore from '@/stores/viewport.store';
 import {MapStyle} from '@/types/MapStyle';
 import {getHybridSatelliteStyle, resolveStaticMapStyle, themeRasters} from '@/lib/map-styles';
 import {materialMapStyle} from '@/lib/map-style';
@@ -247,14 +248,18 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
     // above the card docked on the sheet while one is open (so the point it belongs to isn't under it)
     const sheetHeight = useSidebarStore((state) => state.sheetHeight);
     const dockCardHeight = useSidebarStore((state) => state.dockCardHeight);
-    const {bottom: bottomPadding, left: leftPadding} = isMobile && !wall ? phoneMapPadding({sheet: sheetHeight, card: dockCardHeight, mapHeight: window.innerHeight}) : NO_PADDING;
-    // The sheet height the padding was last applied for: a sheet move eases, a docked card coming or going doesn't move the view
-    const paddedSheet = useRef(sheetHeight);
+    // Phones held sideways: the sheet is a left column (BottomSheet), the left pads for it instead of the bottom
+    const sheetSide = useSidebarStore((state) => state.sheetSide);
+    const safeBottom = useViewportStore((state) => state.safeBottom);
+    const {bottom: bottomPadding, left: leftPadding} = isMobile && !wall ? phoneMapPadding({sheet: sheetHeight, card: dockCardHeight, mapHeight: window.innerHeight, sheetSide, safeBottom}) : NO_PADDING;
+    // The sheet the padding was last applied for: a sheet move eases, a docked card coming or going doesn't move the view
+    const sheetKey = `${sheetHeight}:${sheetSide}`;
+    const paddedSheet = useRef(sheetKey);
     useEffect(() => {
         const map = mapRef.current?.getMap();
         if (!map) return;
-        const sheetMoved = paddedSheet.current !== sheetHeight;
-        paddedSheet.current = sheetHeight;
+        const sheetMoved = paddedSheet.current !== sheetKey;
+        paddedSheet.current = sheetKey;
         const padding = {top: 0, right: 0, bottom: bottomPadding, left: leftPadding};
         const apply = () => {
             // Nothing to do (desktop/HQ on mount, or a camera move that already carried this padding)
@@ -273,7 +278,7 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
             };
         }
         apply();
-    }, [bottomPadding, leftPadding, sheetHeight]);
+    }, [bottomPadding, leftPadding, sheetKey]);
     // Own position like the Android app's: the vehicle of our own tracker (a person without one)
     const {status: tracker} = useTrackerStatus();
     const markerPalette = useMarkerPalette();
