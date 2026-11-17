@@ -25,7 +25,7 @@ const TONE_FILL = { ok: 'var(--status-ok-dot)', warn: 'var(--status-warn-dot)', 
 function TrackerLine({ onOpen }: { onOpen: () => void }) {
   const { status, isError, retry } = useTrackerStatus();
   const now = useNow(true);
-  // A failed first load says so ("tik om opnieuw te proberen"): the tap fetches again and opens the tracker page
+  // A failed first load says so ("tik voor opnieuw"): the tap fetches again and opens the tracker page
   const line = trackerPeekLine(status, now, isError, isIOSDevice());
   const open = () => {
     if (!status && isError) void retry();
@@ -110,7 +110,7 @@ function PeekLegend({ foxes, counts, hidden }: { foxes: SidebarFox[]; counts: Re
  */
 export default function PeekStrip() {
   const foxes = useSidebarFoxes();
-  const { isError, isHidden } = useAreas();
+  const { isError, isHidden, retry } = useAreas();
   const { isForbidden } = useHuntableAreas();
   const push = useMobileNavStore((s) => s.push);
   const counts = foxes ? groupCounts(foxes) : undefined;
@@ -137,8 +137,9 @@ export default function PeekStrip() {
                 <Skeleton className="h-4 w-full" />
               </div>
             ) : (
-              <button type="button" onClick={() => push({ id: 'foxes' })} className={cn('flex h-full w-full items-center text-left text-xs text-muted-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset rounded-md', COARSE_HIT_AREA)}>
-                {scene === 'error' ? 'Vossen niet geladen — tik om te openen' : 'Nog geen vossen'}
+              // A failed load: the tap fetches the areas again (and opens Vossen, like the tracker line)
+              <button type="button" onClick={() => { if (scene === 'error') void retry(); push({ id: 'foxes' }); }} className={cn('flex h-full w-full items-center text-left text-xs text-muted-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset rounded-md', COARSE_HIT_AREA)}>
+                {scene === 'error' ? 'Vossen niet geladen — tik voor opnieuw' : 'Nog geen vossen'}
               </button>
             )}
           </motion.div>
