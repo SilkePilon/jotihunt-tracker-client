@@ -35,8 +35,9 @@
   --border: hsl(20 0% 90%);
   /* Text field outlines (border-input): >= 3:1 against white so the field's boundary is visible */
   --input: hsl(20 0% 54%);
-  /* Focus ring: the darker orange of dark mode, so a solid ring is >= 3:1 against white cards */
-  --ring: hsl(20.5 90.2% 48.2%);
+  /* Focus ring: orange-700, so a solid ring is >= 3:1 against white cards, the tonal rows and primary containers
+     (the orange-600 of dark mode was 2.73:1 on beheer-row-high / primary-container) */
+  --ring: #c2410c;
   --radius: 0.75rem;
   --chart-1: hsl(12 76% 61%);
   --chart-2: hsl(173 58% 39%);

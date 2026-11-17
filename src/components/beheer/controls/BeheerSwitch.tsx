@@ -4,13 +4,13 @@ import { cn } from '@/lib/utils';
 
 /**
  * Material 3 switch: a 44×26 track with an outline when off and orange when on; the thumb grows from 12 to 20 px as it
- * slides over. CSS transitions (off for reduced motion).
+ * slides over. CSS transitions (off for reduced motion). The focus ring sits 2px off the track, so it reads on the orange.
  */
 export default function BeheerSwitch({ className, ...props }: ComponentProps<typeof SwitchPrimitive.Root>) {
   return (
     <SwitchPrimitive.Root
       className={cn(
-        'inline-flex h-[26px] w-11 shrink-0 items-center rounded-full outline-none transition-[background-color,box-shadow] duration-200 focus-visible:ring-[3px] focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none',
+        'inline-flex h-[26px] w-11 shrink-0 items-center rounded-full outline-none transition-[background-color,box-shadow] duration-200 focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none',
         'data-[state=checked]:bg-primary data-[state=unchecked]:bg-beheer-row data-[state=unchecked]:shadow-[inset_0_0_0_2px_color-mix(in_oklab,var(--muted-foreground)_70%,transparent)]',
         className,
       )}
