@@ -392,7 +392,7 @@ function AreaBody({ cell, label, onSave, onClear, mapRef }: { cell: HintCell; la
               spellCheck={false}
               data-1p-ignore
               aria-label={`Antwoord ${label}`}
-              className="h-8 w-44 min-w-0 rounded-[10px] bg-beheer-window px-2.5 font-mono text-base ring-1 ring-input outline-none md:text-[13px] placeholder:text-muted-foreground read-only:opacity-60 focus:ring-2 focus:ring-ring"
+              className="h-8 w-44 min-w-0 rounded-[10px] bg-beheer-window px-2.5 font-mono text-base ring-1 ring-input outline-none desk:text-[13px] placeholder:text-muted-foreground read-only:opacity-60 focus:ring-2 focus:ring-ring"
             />
             <Pill variant="primary" disabled={!answer.trim() || !!guessAnswer || readOnly} busy={saving} onClick={() => void save()} morphKey={saving ? 'saving' : 'idle'} aria-label={saving ? 'Opslaan…' : undefined}>
               {saving ? <Loader2Icon className="animate-spin" /> : 'Opslaan'}

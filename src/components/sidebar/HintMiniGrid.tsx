@@ -82,7 +82,7 @@ export default function HintMiniGrid({ mapRef }: { mapRef: RefObject<MapRef | nu
       ) : rows.length === 0 ? (
         <motion.p key="empty" {...SWAP} className="text-xs text-muted-foreground">Nog geen hints</motion.p>
       ) : (
-        <motion.div key="grid" {...SWAP} className="isolate grid grid-cols-[2.5rem_repeat(9,1fr)] items-center gap-0.5 text-xs md:text-[10px]">
+        <motion.div key="grid" {...SWAP} className="isolate grid grid-cols-[2.5rem_repeat(9,1fr)] items-center gap-0.5 text-xs desk:text-[10px]">
           <span />
           {areaOptions.map((area) => (
             <span key={area.value} className="text-center font-semibold">

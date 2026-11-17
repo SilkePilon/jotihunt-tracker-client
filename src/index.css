@@ -5,6 +5,15 @@
 /* The mobile shell on a screen at least md wide (a phone held sideways, hooks/media.hook.ts): undoes the md: desktop
    positions. :is() with the attribute outranks a plain md: class, whatever order the variants are emitted in */
 @custom-variant shell-mobile (&:is([data-shell="mobile"] *));
+/* Desktop shell at md width and up: the smaller desktop text sizes. A phone held sideways is md wide but keeps the
+   phone sizes (the text-xs floor, 16px inputs that iOS doesn't zoom into) */
+@custom-variant desk {
+  @media (width >= 48rem) {
+    &:not(:is([data-shell="mobile"] *)) {
+      @slot;
+    }
+  }
+}
 
 @utility container {
   margin-inline: auto;

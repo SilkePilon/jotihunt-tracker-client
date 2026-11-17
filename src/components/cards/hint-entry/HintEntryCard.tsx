@@ -387,7 +387,7 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
                 <div className="isolate mt-0.5 flex items-center justify-between gap-2">
                     <CoordinateStatus state={coordinateState} guess={status} missing={missingPickText(selectedArea, timeValue)}/>
                     <button type="button" onClick={clearCoordinates}
-                            className={`${COARSE_HIT_AREA} inline-flex items-center gap-1.5 rounded-lg px-1 text-xs font-semibold text-primary-text md:text-[11px] outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring`}>
+                            className={`${COARSE_HIT_AREA} inline-flex items-center gap-1.5 rounded-lg px-1 text-xs font-semibold text-primary-text desk:text-[11px] outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring`}>
                         <EraserIcon aria-hidden className="size-3"/> Wissen
                     </button>
                 </div>

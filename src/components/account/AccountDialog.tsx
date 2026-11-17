@@ -454,12 +454,12 @@ function Row({
               <div className="flex min-w-0 items-center gap-1.5">
                 <span className="truncate text-[13.5px] font-semibold">{title}</span>
                 {chip && (
-                  <span className="inline-flex h-[18px] flex-none items-center rounded-full bg-(--map-selected-bg) px-[7px] text-xs font-bold text-(--map-selected-fg) md:text-[10.5px]">
+                  <span className="inline-flex h-[18px] flex-none items-center rounded-full bg-(--map-selected-bg) px-[7px] text-xs font-bold text-(--map-selected-fg) desk:text-[10.5px]">
                     {chip}
                   </span>
                 )}
               </div>
-              <div className="text-xs leading-snug text-muted-foreground md:text-[11.5px]">{meta}</div>
+              <div className="text-xs leading-snug text-muted-foreground desk:text-[11.5px]">{meta}</div>
             </div>
             {children}
           </div>

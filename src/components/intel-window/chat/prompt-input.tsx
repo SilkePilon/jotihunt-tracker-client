@@ -69,7 +69,7 @@ export function PromptInputTextarea({ className, onKeyDown, ...props }: Omit<Com
         }
       }}
       className={cn(
-        'block min-h-[38px] w-full resize-none overflow-y-auto bg-transparent px-2.5 py-2 text-base leading-snug md:text-[13.5px] outline-none placeholder:text-muted-foreground disabled:opacity-60',
+        'block min-h-[38px] w-full resize-none overflow-y-auto bg-transparent px-2.5 py-2 text-base leading-snug desk:text-[13.5px] outline-none placeholder:text-muted-foreground disabled:opacity-60',
         className,
       )}
     />

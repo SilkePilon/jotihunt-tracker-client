@@ -30,7 +30,7 @@ function Field({ label, htmlFor, error, className, children }: { label: ReactNod
   const reduced = useReducedMotion() ?? false;
   return (
     <div className={cn('min-w-0', className)}>
-      <label htmlFor={htmlFor} className="mb-1 ml-0.5 flex items-center gap-1.5 text-xs md:text-[11.5px] font-semibold text-muted-foreground">
+      <label htmlFor={htmlFor} className="mb-1 ml-0.5 flex items-center gap-1.5 text-xs desk:text-[11.5px] font-semibold text-muted-foreground">
         {label}
       </label>
       {children}

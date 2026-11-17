@@ -91,10 +91,10 @@ function TokenFallback({ busy, blocked, onSubmit }: { busy: boolean; blocked: bo
 
   return (
     <Collapsible className="flex flex-col">
-      <CollapsibleTrigger className={cn(inlineLinkClass, 'self-start text-xs font-normal text-muted-foreground md:text-[11px]')}>Lukt het niet? Plak token</CollapsibleTrigger>
+      <CollapsibleTrigger className={cn(inlineLinkClass, 'self-start text-xs font-normal text-muted-foreground desk:text-[11px]')}>Lukt het niet? Plak token</CollapsibleTrigger>
       <CollapsibleContent>
         <form className="flex flex-col gap-2 pt-2" onSubmit={submit}>
-          <p className="text-xs leading-snug text-muted-foreground md:text-[11px]">
+          <p className="text-xs leading-snug text-muted-foreground desk:text-[11px]">
             Log in op life360.com en kopieer de cookie <b className="font-semibold text-foreground">LIFE360_AUTH_TOKEN</b>.
           </p>
           <Input
@@ -178,7 +178,7 @@ function EmailStep({
           <BusyIcon busy={pending === 'code'} />
           Stuur code
         </Button>
-        <p className="text-xs leading-snug text-muted-foreground md:text-[11px]">Life360 mailt een code van 6 cijfers. Gebruik een apart account, niet je eigen.</p>
+        <p className="text-xs leading-snug text-muted-foreground desk:text-[11px]">Life360 mailt een code van 6 cijfers. Gebruik een apart account, niet je eigen.</p>
       </form>
       <TokenFallback busy={pending === 'token'} blocked={!!pending} onSubmit={(token) => run('token', () => settle(() => onSubmitToken(token)))} />
     </div>
@@ -295,7 +295,7 @@ function CodeStep({
         </Button>
       )}
       <Reveal gap={8}>{resendError && <InlineError>{resendError}</InlineError>}</Reveal>
-      <p className="flex items-center justify-between gap-2 text-xs text-muted-foreground md:text-[11px]">
+      <p className="flex items-center justify-between gap-2 text-xs text-muted-foreground desk:text-[11px]">
         {/* After a wrong code the "Stuur nieuwe code" button already carries the countdown */}
         {error ? (
           <span />
