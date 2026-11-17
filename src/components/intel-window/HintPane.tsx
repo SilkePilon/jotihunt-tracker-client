@@ -1,4 +1,4 @@
-import { RefObject, useEffect, useRef, useState } from 'react';
+import { RefObject, useEffect, useId, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Loader2Icon, MapIcon, PencilIcon, Trash2Icon } from 'lucide-react';
 import { toast } from 'sonner';
@@ -296,6 +296,12 @@ function AreaBody({ cell, label, onSave, onClear, mapRef }: { cell: HintCell; la
   const guess = guessAnswer ? parseGuess(guessAnswer.x, guessAnswer.y) : null;
   const canShowGuess = !!guess && (guess.kind === 'points' ? guess.points.length > 0 : !guess.wide);
 
+  // The lines under the field describe it (stable ids on their wrappers: the text inside swaps); the two ⚠ previews mark it invalid
+  const ids = { teammate: useId(), preview: useId(), guess: useId(), guessReason: useId() };
+  const showPreview = !!shown && !guessAnswer;
+  const describedBy = [editing && teammate && ids.teammate, showPreview && ids.preview, guessAnswer && ids.guess].filter(Boolean).join(' ') || undefined;
+  const invalid = showPreview && (shown.kind === 'invalid' || shown.kind === 'outside');
+
   // This row's guess on the map goes away once the field stops holding a guess or the row folds/unmounts. Only while
   // the Intel window is open: "Toon op kaart" closes the window, which unmounts every row, and that guess must stay
   // (the window is already closed by then). Only a field that held a guess clears: a row opening fresh (e.g. reopening
@@ -392,25 +398,42 @@ function AreaBody({ cell, label, onSave, onClear, mapRef }: { cell: HintCell; la
               spellCheck={false}
               data-1p-ignore
               aria-label={`Antwoord ${label}`}
+              aria-describedby={describedBy}
+              aria-invalid={invalid || undefined}
               className="h-8 w-44 min-w-0 rounded-md bg-beheer-window px-2.5 font-mono text-base ring-1 ring-input outline-none desk:text-body placeholder:text-muted-foreground read-only:opacity-60 focus:ring-2 focus:ring-ring"
             />
-            <Pill variant="primary" disabled={!answer.trim() || !!guessAnswer || readOnly} busy={saving} onClick={() => void save()} morphKey={saving ? 'saving' : 'idle'} aria-label={saving ? 'Opslaan…' : undefined}>
+            {/* An answer with unknown digits can't be saved yet: aria-disabled with the reason, so it stays findable */}
+            <Pill
+              variant="primary"
+              disabled={!answer.trim() || readOnly}
+              busy={saving}
+              aria-disabled={!!guessAnswer || undefined}
+              aria-describedby={guessAnswer ? ids.guessReason : undefined}
+              onClick={() => void save()}
+              morphKey={saving ? 'saving' : 'idle'}
+              aria-label={saving ? 'Opslaan…' : undefined}
+            >
               {saving ? <Loader2Icon className="animate-spin" /> : 'Opslaan'}
             </Pill>
+            {guessAnswer && (
+              <span id={ids.guessReason} className="sr-only">
+                Vul eerst de onbekende cijfers in.
+              </span>
+            )}
           </motion.div>
         ) : (
           <motion.div key="done" {...SWAP} className="flex min-w-0 items-center gap-2">
             <span className="min-w-0 truncate font-mono text-body font-bold text-fox-ok">{cell.answer}</span>
             {popIn ? <SuccessBadge size={18} /> : <CookieBadge tone="ok" size={18} />}
             {cell.answerLocation && (
-              <IconPill aria-label="Op kaart" title="Op kaart" onClick={showOnMap}>
+              <IconPill aria-label={`Antwoord ${label} op kaart`} title="Op kaart" onClick={showOnMap}>
                 <MapIcon />
               </IconPill>
             )}
-            <IconPill aria-label="Wijzigen" title="Wijzigen" autoFocus={refocus} disabled={readOnly} onClick={startEdit}>
+            <IconPill aria-label={`Antwoord ${label} wijzigen`} title="Wijzigen" autoFocus={refocus} disabled={readOnly} onClick={startEdit}>
               <PencilIcon />
             </IconPill>
-            <IconPill aria-label="Wissen" title="Wissen" disabled={readOnly} onClick={() => onClear(cell, label)}>
+            <IconPill aria-label={`Antwoord ${label} wissen`} title="Wissen" disabled={readOnly} onClick={() => onClear(cell, label)}>
               <Trash2Icon />
             </IconPill>
           </motion.div>
@@ -418,14 +441,14 @@ function AreaBody({ cell, label, onSave, onClear, mapRef }: { cell: HintCell; la
       </AnimatePresence>
       <Reveal>
         {editing && teammate && (
-          <p className="pt-2 text-xs text-muted-foreground">
+          <p id={ids.teammate} className="pt-2 text-xs text-muted-foreground">
             Intussen ingevuld door een teamgenoot: <span className="font-mono font-semibold text-foreground">{teammate}</span>
           </p>
         )}
       </Reveal>
       <Reveal>
-        {shown && !guessAnswer && (
-          <div className="pt-2 text-xs">
+        {showPreview && (
+          <div id={ids.preview} className="pt-2 text-xs">
             <AnimatePresence mode="wait" initial={false}>
               <motion.p key={shown.kind} {...SWAP}>
                 <PreviewLine preview={shown} />
@@ -436,7 +459,7 @@ function AreaBody({ cell, label, onSave, onClear, mapRef }: { cell: HintCell; la
       </Reveal>
       <Reveal>
         {guessAnswer && (
-          <div className="pt-2 text-xs">
+          <div id={ids.guess} className="pt-2 text-xs">
             <GuessLine status={guessStatus(guess)} onShow={canShowGuess ? showGuess : undefined} />
           </div>
         )}
