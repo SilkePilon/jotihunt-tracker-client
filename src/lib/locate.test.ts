@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { followTarget, geolocationGranted, locateMe } from './locate';
+import { followTarget, geolocationGranted, HUNT_HERE_GRACE_MS, huntHereFix, huntHereVisible, locateMe, olderTrackerFixNote } from './locate';
 
 function fakeGeolocation(result: { lat: number; lng: number; accuracy?: number } | { code: number }): Geolocation {
   return {
@@ -65,5 +65,41 @@ describe('geolocationGranted', () => {
   test('no Permissions API or a failing query: not granted', async () => {
     expect(await geolocationGranted(undefined)).toBe(false);
     expect(await geolocationGranted({ query: () => Promise.reject(new TypeError('unsupported')) })).toBe(false);
+  });
+});
+
+describe('Hunt hier', () => {
+  const located = { lat: 52, lng: 5, at: 1_000 };
+  test('shows while following, and for a while after a locate', () => {
+    expect(huntHereVisible(true, null, 0)).toBe(true);
+    expect(huntHereVisible(false, null, 0)).toBe(false);
+    expect(huntHereVisible(false, located, 1_000 + HUNT_HERE_GRACE_MS - 1)).toBe(true);
+    expect(huntHereVisible(false, located, 1_000 + HUNT_HERE_GRACE_MS)).toBe(false);
+  });
+
+  test('marks at the own position now, else where the locate found you', () => {
+    const live = { lat: 1, lng: 1 };
+    const browser = { lat: 2, lng: 2 };
+    const recent = { lat: 3, lng: 3 };
+    expect(huntHereFix(live, browser, recent, located)).toBe(live);
+    expect(huntHereFix(undefined, browser, recent, located)).toBe(browser);
+    expect(huntHereFix(undefined, null, recent, located)).toBe(recent);
+    expect(huntHereFix(undefined, null, undefined, located)).toBe(located);
+    expect(huntHereFix(undefined, null, undefined, null)).toBeUndefined();
+  });
+});
+
+describe('olderTrackerFixNote', () => {
+  const now = Date.parse('2026-10-18T12:00:00Z');
+  test('names the age of an older tracker fix', () => {
+    expect(olderTrackerFixNote('tracker', undefined, new Date(now - 2 * 60_000), now)).toBe('Laatste trackerpositie · 2 min geleden');
+    expect(olderTrackerFixNote('tracker', undefined, '2026-10-18T11:59:30Z', now)).toBe('Laatste trackerpositie · zojuist');
+  });
+
+  test('nothing for a live fix, a browser position or no time', () => {
+    expect(olderTrackerFixNote('tracker', { lat: 1, lng: 1 }, new Date(now - 60_000), now)).toBeNull();
+    expect(olderTrackerFixNote('browser', undefined, new Date(now - 60_000), now)).toBeNull();
+    expect(olderTrackerFixNote('tracker', undefined, undefined, now)).toBeNull();
+    expect(olderTrackerFixNote('tracker', undefined, 'nope', now)).toBeNull();
   });
 });

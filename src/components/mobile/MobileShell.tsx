@@ -17,6 +17,7 @@ import useViewportStore from '@/stores/viewport.store';
 import BottomSheet from './BottomSheet';
 import PeekStrip from './PeekStrip';
 import MyLocationButton from './MyLocationButton';
+import HuntHereButton from './HuntHereButton';
 import ResetNorthButton from './ResetNorthButton';
 import ZoomButtons from './ZoomButtons';
 import MobileMenu from './MobileMenu';
@@ -167,6 +168,8 @@ export default function MobileShell({ mapRef }: { mapRef: RefObject<MapRef | nul
           {/* Bottom to top: Mijn locatie, zoom + and −, and the reset tile while the map is turned or tilted (like the desktop stack) */}
           <ResetNorthButton mapRef={mapRef} />
           <ZoomButtons mapRef={mapRef} />
+          {/* While following (or just after a locate): mark a hunt where you stand */}
+          <HuntHereButton />
           <MyLocationButton mapRef={mapRef} />
         </motion.div>
       </motion.div>

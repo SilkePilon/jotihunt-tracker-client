@@ -52,7 +52,8 @@ export default function Hq() {
   return (
     <SWRConfig value={{ onError: (error) => isUnauthorized(error) && endSession() }}>
       <EditionReloader />
-      <StaleDataBadge />
+      {/* Centred over the map column, not the whole screen */}
+      <StaleDataBadge wall />
       <HqScreen onUnauthorized={endSession} />
     </SWRConfig>
   );

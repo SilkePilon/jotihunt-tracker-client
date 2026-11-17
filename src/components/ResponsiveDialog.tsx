@@ -28,6 +28,8 @@ interface ResponsiveDialogProps {
   onEscapeKeyDown?: (event: KeyboardEvent) => void;
   /** Phones: the Back button closes the drawer (default). Off for drawers that manage their own history entry. */
   backEntry?: boolean;
+  /** Always the desktop dialog, also in the mobile shell (the Intel window in a laptop window narrowed for split screen) */
+  alwaysDialog?: boolean;
 }
 
 // vaul's slide-out (TRANSITIONS.DURATION) and the Radix dialog's `duration-200` fade/zoom-out, plus a margin so the content never unmounts a frame early
@@ -35,8 +37,8 @@ const DRAWER_CLOSE_MS = 500;
 const DIALOG_CLOSE_MS = 250;
 
 /** Frame shared by the large dialogs: a large dialog on desktop, a bottom drawer on phones. */
-export default function ResponsiveDialog({ open, onClose, title, description, children, className, drawerClassName, hideHeader, compact, onClosed, onEscapeKeyDown, backEntry = true }: ResponsiveDialogProps) {
-  const isMobile = useIsMobile();
+export default function ResponsiveDialog({ open, onClose, title, description, children, className, drawerClassName, hideHeader, compact, onClosed, onEscapeKeyDown, backEntry = true, alwaysDialog = false }: ResponsiveDialogProps) {
+  const isMobile = useIsMobile() && !alwaysDialog;
   // Phones: Back closes the drawer instead of lowering the sheet behind it. A dialog may refuse to close (e.g. while it
   // saves); Back has used up its history entry by then, so a fresh one is opened for the next Back press
   const id = useId();

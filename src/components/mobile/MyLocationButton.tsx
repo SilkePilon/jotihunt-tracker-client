@@ -5,7 +5,8 @@ import { toast } from 'sonner';
 import type { MapRef } from '@/components/Map';
 import { useDevices } from '@/hooks/devices.hook';
 import { useTrackerStatus } from '@/hooks/tracker.hook';
-import { LOCATE_ZOOM, geolocationGranted, locateMe } from '@/lib/locate';
+import { LOCATE_ZOOM, geolocationGranted, locateMe, olderTrackerFixNote } from '@/lib/locate';
+import { ERROR_TOAST_MS } from '@/lib/markers';
 import { MAP_TILE, MAP_LOCATION_COLOR } from '@/lib/map-chrome';
 import { POP, SWAP_TRANSITION } from '@/lib/motion';
 import { OWN_POSITION_FRESH_MS, OWN_POSITION_LIVE_MS, ownDeviceId, ownTrackerPosition } from '@/lib/own-position';
@@ -42,8 +43,9 @@ export default function MyLocationButton({ mapRef }: { mapRef: RefObject<MapRef 
     try {
       const deviceId = ownDeviceId(devices, status?.configured ? status.uniqueId : undefined);
       const now = Date.now();
+      const live = ownTrackerPosition(positions, deviceId, now, OWN_POSITION_LIVE_MS);
       const { lat, lng, accuracy, source } = await locateMe({
-        live: ownTrackerPosition(positions, deviceId, now, OWN_POSITION_LIVE_MS),
+        live,
         recent: ownTrackerPosition(positions, deviceId, now, OWN_POSITION_FRESH_MS),
         granted: await geolocationGranted(),
       });
@@ -53,9 +55,15 @@ export default function MyLocationButton({ mapRef }: { mapRef: RefObject<MapRef 
       mapRef.current?.flyTo({ center: [lng, lat], zoom: Math.max(LOCATE_ZOOM, mapRef.current.getZoom() ?? 0), duration: 1200 });
       // After the flight call: any other camera move through the map ref ends following
       useFollowMeStore.getState().start();
+      // "Hunt hier" (above this button) registers here
+      useFollowMeStore.getState().setLocated({ lat, lng, at: Date.now() });
       useHuntFocusStore.getState().show({ lng, lat, color: MAP_LOCATION_COLOR });
+      // An older tracker fix (no live one, no browser position): say how old, so it isn't taken for where you are now
+      const fixTime = deviceId === undefined ? undefined : positions?.find((position) => position.deviceId === deviceId)?.fixTime;
+      const note = olderTrackerFixNote(source, live, fixTime, Date.now());
+      if (note) toast.info(note);
     } catch (error) {
-      toast.error('Locatie niet gevonden', { description: error instanceof Error ? error.message : undefined });
+      toast.error('Locatie niet gevonden', { description: error instanceof Error ? error.message : undefined, duration: ERROR_TOAST_MS });
     } finally {
       setBusy(false);
     }

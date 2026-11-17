@@ -85,12 +85,16 @@ export function toastKind(notification: Pick<AppNotification, 'type' | 'data'>):
   return 'info';
 }
 
+/** Phones: how long an HQ broadcast or a tegenhunt toast stays (it would otherwise cover the map until closed) */
+export const PHONE_STICKY_TOAST_MS = 120_000;
+
 /**
- * How long the toast stays: an HQ broadcast or a tegenhunt until it is closed (its close button), since missing one
- * costs; urgent ones 30 s, the rest 8 s.
+ * How long the toast stays: an HQ broadcast or a tegenhunt until it is closed (its close button) on a laptop, since
+ * missing one costs; on a phone two minutes (PHONE_STICKY_TOAST_MS), so it doesn't sit over the map for good (Meldingen
+ * keeps it). Urgent ones 30 s, the rest 8 s.
  */
-export function toastDuration(notification: Pick<AppNotification, 'type' | 'urgent'>): number {
-  if (notification.type === 'broadcast' || notification.type === 'counter-hunt') return Infinity;
+export function toastDuration(notification: Pick<AppNotification, 'type' | 'urgent'>, phone = false): number {
+  if (notification.type === 'broadcast' || notification.type === 'counter-hunt') return phone ? PHONE_STICKY_TOAST_MS : Infinity;
   return notification.urgent ? 30_000 : 8000;
 }
 

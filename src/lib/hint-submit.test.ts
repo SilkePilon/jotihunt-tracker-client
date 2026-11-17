@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { hintPrimaryAction, holdsUnconfirmedHint, isSameMarker, sameDraft, lostResponseMessage, lostResponseOutcome, markerLostResponseMessage, type UnconfirmedHint } from './hint-submit';
+import { hintPrimaryAction, holdsUnconfirmedHint, isSameMarker, sameDraft, lostResponseMessage, lostResponseOutcome, markerLostResponseMessage, isKnownOffline, OFFLINE_NOT_SENT_MESSAGE, type UnconfirmedHint } from './hint-submit';
 import { MarkerType } from '@/types/MarkerType';
 import type { Marker } from '@/types/Marker';
 
@@ -61,9 +61,12 @@ describe('a lost Hunt/Spot', () => {
   });
 
   test('messages', () => {
-    expect(markerLostResponseMessage('unknown')).toStartWith('Geen antwoord ontvangen. Misschien is de marker toch geplaatst');
+    expect(markerLostResponseMessage('unknown')).toStartWith('Geen antwoord ontvangen. Misschien is de hunt toch geplaatst');
     expect(markerLostResponseMessage('unknown')).toContain('controleer het opnieuw');
     expect(markerLostResponseMessage('absent')).toContain('niet geplaatst');
+    // Says what it is: hunt or spot, never "marker"
+    expect(markerLostResponseMessage('absent', MarkerType.Spot)).toStartWith('Geen antwoord ontvangen en de spot staat niet op de kaart');
+    expect(markerLostResponseMessage('unknown', MarkerType.Hunt)).not.toContain('marker');
   });
 });
 
@@ -112,5 +115,17 @@ describe('hintPrimaryAction', () => {
     expect(hintPrimaryAction({ sent, values, outcome: 'absent' }, values)).toBe('register');
     expect(hintPrimaryAction(null, values)).toBe('register');
     expect(hintPrimaryAction({ sent, values, outcome: 'unknown' }, { ...values, x: '123457' })).toBe('register');
+  });
+});
+
+describe('offline at submit', () => {
+  test('only a known "offline" counts', () => {
+    expect(isKnownOffline({ onLine: false })).toBe(true);
+    expect(isKnownOffline({ onLine: true })).toBe(false);
+    expect(isKnownOffline(undefined)).toBe(false);
+  });
+
+  test('the message says nothing went out and the input stays', () => {
+    expect(OFFLINE_NOT_SENT_MESSAGE).toBe('Je bent offline — niet verstuurd. Je invoer blijft staan.');
   });
 });

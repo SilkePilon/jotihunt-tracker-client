@@ -38,7 +38,7 @@ export const TOUR_STEPS: TourStep[] = [
     target: 'map',
     title: 'De kaart',
     body: `Hier zie je de deelnemende groepen, de vossen per deelgebied en waar onze hunters rijden. Straks tik of klik je op de kaart om de coördinaten van een plek te zien en daar een hunt of spot te registreren. ${TAP_OR_CLICK_TO_CONTINUE}`,
-    bodyMobile: `Hier zie je de deelnemende groepen, de vossen per deelgebied en waar onze hunters rijden. Straks tik je op de kaart om de coördinaten van een plek te zien en daar een hunt of spot te registreren. Tik op Mijn locatie en daarna op je eigen stip om een hunt of spot te melden waar je staat. ${TAP_TO_CONTINUE}`,
+    bodyMobile: `Hier zie je de deelnemende groepen, de vossen per deelgebied en waar onze hunters rijden. Straks tik je op de kaart om de coördinaten van een plek te zien en daar een hunt of spot te registreren. Om een hunt te markeren waar je staat, tik je op Mijn locatie en dan op Hunt hier. ${TAP_TO_CONTINUE}`,
     actions: [sheetSnap('peek'), flyToOverview()],
   },
   {

@@ -21,7 +21,7 @@ import {useEdition} from '@/hooks/edition.hook';
 import {isInNetherlands} from '@/lib/netherlands';
 import {fromRD, isPlausibleRD} from '@/lib/rd';
 import {apiErrorMessage, isNetworkError} from '@/lib/api-error';
-import {hintPrimaryAction, holdsUnconfirmedHint, lostResponseMessage, lostResponseOutcome, sameDraft, type UnconfirmedHint} from '@/lib/hint-submit';
+import {hintPrimaryAction, holdsUnconfirmedHint, isKnownOffline, lostResponseMessage, lostResponseOutcome, OFFLINE_NOT_SENT_MESSAGE, sameDraft, type UnconfirmedHint} from '@/lib/hint-submit';
 import AreaPicker from './AreaPicker';
 import TimePicker from './TimePicker';
 import DigitBoxes from './DigitBoxes';
@@ -221,6 +221,11 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
             type: MarkerType.Hint,
         };
 
+        // Known offline: nothing is sent (it can't arrive); the typed hint stays and the button says "Opnieuw registreren"
+        if (isKnownOffline()) {
+            setSubmitError(OFFLINE_NOT_SENT_MESSAGE);
+            return;
+        }
         setSubmitError(null);
         setPending(null);
         const error = await createMarker(marker);
@@ -326,6 +331,8 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
     // No answer and no fresh list: registering again could place it twice, so checking leads (like the Hunt/Spot dialog)
     const primary = hintPrimaryAction(pending, {area: selectedArea, time: timeValue, x: xValue, y: yValue});
     const busy = submitting || checking;
+    // Offline at Registreren: nothing went out, the same hint is sent again with "Opnieuw registreren"
+    const retryLabel = submitError === OFFLINE_NOT_SENT_MESSAGE;
 
     /** Wissen: empty both coordinates. */
     function clearCoordinates() {
@@ -425,15 +432,16 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
                 </div>
             </div>
             {/* One button whose action follows the state, so its label swaps instead of a new button popping in */}
-            <Button id={submitId} type="submit" className={`${SOFT_PRIMARY_BUTTON} h-11 text-[15px]`}
+            {/* Busy: full colour with the spinner, not the greyed-out look of "can't press" */}
+            <Button id={submitId} type="submit" className={`${SOFT_PRIMARY_BUTTON} h-11 text-[15px] aria-busy:aria-disabled:opacity-100`}
                     disabled={primary === 'register' && (!canSubmit || readOnly)}
                     aria-disabled={busy || undefined} aria-busy={busy || undefined}>
                 <AnimatePresence mode="popLayout" initial={false}>
-                    <motion.span key={`${primary}-${checking ? 'check' : busy ? 'busy' : 'idle'}`} className="inline-flex items-center gap-2" {...SWAP}>
+                    <motion.span key={`${primary}-${checking ? 'check' : busy ? 'busy' : retryLabel ? 'retry' : 'idle'}`} className="inline-flex items-center gap-2" {...SWAP}>
                         {busy ? <Loader2Icon className="animate-spin"/> : primary === 'recheck' ? <RefreshCwIcon/> : <Pin/>}
                         {primary === 'recheck'
                             ? (checking ? 'Controleren…' : 'Opnieuw controleren')
-                            : (submitting ? (checking ? 'Controleren…' : 'Registreren…') : 'Registreren')}
+                            : (submitting ? (checking ? 'Controleren…' : 'Registreren…') : retryLabel ? 'Opnieuw registreren' : 'Registreren')}
                     </motion.span>
                 </AnimatePresence>
             </Button>

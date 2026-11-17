@@ -1,4 +1,5 @@
 import type { LatLng } from './own-position';
+import { formatAgo } from './account';
 
 /** Zoom for "Mijn locatie": close enough to see the streets around you. */
 export const LOCATE_ZOOM = 15;
@@ -65,4 +66,31 @@ export async function geolocationGranted(
   } catch {
     return false;
   }
+}
+
+/** How long the phone's "Hunt hier" tile stays after a successful "Mijn locatie" once following has ended */
+export const HUNT_HERE_GRACE_MS = 30_000;
+
+/** Whether "Hunt hier" shows: while following, or within the grace time after the last successful locate. */
+export function huntHereVisible(following: boolean, located: { at: number } | null, now: number): boolean {
+  return following || (located !== null && now - located.at < HUNT_HERE_GRACE_MS);
+}
+
+/**
+ * Where "Hunt hier" marks: the own position now, like following (live tracker, browser, recent tracker), else the spot
+ * the last locate found.
+ */
+export function huntHereFix(live: LatLng | undefined, browser: LatLng | null | undefined, recent: LatLng | undefined, located: LatLng | null): LatLng | undefined {
+  return followTarget(live, browser, recent) ?? located ?? undefined;
+}
+
+/**
+ * The note after "Mijn locatie" landed on an older tracker fix (no live one, no browser fix): "Laatste trackerpositie ·
+ * 2 min geleden", so nobody takes it for where they are now; null for a live fix or a browser position.
+ */
+export function olderTrackerFixNote(source: LocateSource, live: LatLng | undefined, fixTime: Date | string | undefined, now: number): string | null {
+  if (source !== 'tracker' || live || fixTime === undefined) return null;
+  const time = new Date(fixTime);
+  if (Number.isNaN(time.getTime())) return null;
+  return `Laatste trackerpositie · ${formatAgo(time.toISOString(), now)}`;
 }

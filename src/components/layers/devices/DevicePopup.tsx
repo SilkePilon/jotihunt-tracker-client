@@ -54,7 +54,8 @@ export default function DevicePopup({ position, icon, onClose }: DevicePopupProp
       </PopupRows>
       <PopupActions>
         <RouteAction lat={lat} lng={lng} compact />
-        <MarkerRegistration lat={lat} lng={lng} />
+        {/* Registered here: done with this hunter's popup, it goes once the dialog has closed */}
+        <MarkerRegistration lat={lat} lng={lng} onRegistered={onClose} />
       </PopupActions>
       {/* Hunt/Spot are greyed out in an archive edition: say why */}
       <ArchiveReadOnlyNote className="pt-2 text-(--map-muted)" />

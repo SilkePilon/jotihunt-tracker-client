@@ -6,6 +6,8 @@ import useHiddenAreasStore from '@/stores/hiddenareas.store';
 import usePromptQueueStore from '@/stores/prompt-queue.store';
 
 const EDITION_TOAST_ID = 'edition-changed';
+/** The "Editie gewijzigd" toast: long enough to read while a form keeps the reload waiting, not forever */
+const EDITION_TOAST_MS = 30_000;
 
 /**
  * Reloads the page when another edition is shown (e.g. an admin switched it) while the app is open: first a toast says
@@ -33,7 +35,8 @@ export default function EditionReloader() {
     if (changedAt === null) return;
     toast.info('Editie gewijzigd — app wordt herladen', {
       id: EDITION_TOAST_ID,
-      duration: Infinity,
+      // Finite: the reload follows (right away, or once the open window or form closes; the toast comes back then)
+      duration: EDITION_TOAST_MS,
       description: busy ? 'Zodra je dit venster of formulier sluit.' : undefined,
     });
     const wait = editionReloadWait(changedAt, Date.now(), busy);

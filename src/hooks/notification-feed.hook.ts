@@ -8,6 +8,7 @@ import { playNotificationSound } from '@/lib/notification-sounds';
 import { currentDevicePush } from '@/lib/push';
 import { showHighlightToast } from '@/components/notifications/HighlightToast';
 import { useNotificationPrefs } from '@/hooks/notification-prefs.hook';
+import { MOBILE_QUERY } from '@/hooks/media.hook';
 import useSettingsStore from '@/stores/settings.store';
 import { revalidateHappyHour, revalidateTelegramViews } from '@/hooks/telegram.hook';
 
@@ -88,7 +89,8 @@ export function useNotificationFeed({ respectPreferences = true, toasts = true, 
         if (sound && !options.soundMuted) playNotificationSound(sound);
         if (options.toasts) {
           for (const notification of alertable) {
-            const duration = toastDuration(notification);
+            // Phones (the mobile shell): broadcasts and tegenhunts time out instead of covering the map until closed
+            const duration = toastDuration(notification, window.matchMedia(MOBILE_QUERY).matches);
             if (showHighlightToast(notification, duration)) continue;
             const action = toastAction(notification, options);
             toast[toastKind(notification)](notification.title, { description: notification.body || undefined, duration, action });

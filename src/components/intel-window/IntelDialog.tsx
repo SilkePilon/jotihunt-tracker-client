@@ -10,7 +10,7 @@ import { useArticles } from '@/hooks/articles.hook';
 import { useAssignments } from '@/hooks/assignments.hook';
 import { useHintBoard } from '@/hooks/hints.hook';
 import { useHasMounted } from '@/hooks/has-mounted.hook';
-import { useIsMobile } from '@/hooks/media.hook';
+import { useIntelAvailable } from '@/hooks/media.hook';
 import { useReadState } from '@/hooks/read-state.hook';
 import { useViewFocus } from '@/hooks/view-focus.hook';
 import { DIALOG_SHELL, CARD_TITLE } from '@/lib/dialog-shell';
@@ -32,21 +32,22 @@ const IntelChat = lazy(loadIntelChat);
 
 /** Desktop window with hints, opdrachten and nieuws (phones keep the sidebar mini grid). */
 export default function IntelDialog({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
-  const isMobile = useIsMobile();
+  // Phones use the Hints page; a laptop window narrowed to phone width (split screen, fine pointer) keeps the window
+  const available = useIntelAvailable();
   const open = useIntelStore((state) => state.open);
   const close = useIntelStore((state) => state.close);
 
   // The store is global: Layout unmounts on /login, and a window left open would pop up again after the next login
   useEffect(() => () => useIntelStore.getState().close(), []);
-  // Shrinking the window to phone size closes it
+  // No longer offered here (e.g. a tablet turned to the phone layout): close it
   useEffect(() => {
-    if (isMobile && useIntelStore.getState().open) close();
-  }, [isMobile, close]);
+    if (!available && useIntelStore.getState().open) close();
+  }, [available, close]);
   useEffect(() => {
-    if (open && !isMobile) void loadIntelChat();
-  }, [open, isMobile]);
+    if (open && available) void loadIntelChat();
+  }, [open, available]);
 
-  if (isMobile) return null;
+  if (!available) return null;
   return (
     <ResponsiveDialog
       open={open}
@@ -54,6 +55,8 @@ export default function IntelDialog({ mapRef }: { mapRef: RefObject<MapRef | nul
       title="Intel"
       description="Hints, opdrachten en nieuws."
       hideHeader
+      // A laptop window narrowed to the phone layout (split screen) keeps the window, not a bottom drawer
+      alwaysDialog
       onEscapeKeyDown={(event) => {
         // Escape inside an inline editor (a hint answer being changed) only cancels the edit
         keepOpenWhileEditing(event);

@@ -74,7 +74,7 @@ export function huntAccuracyCircles(hunts: SyncedHunt[] | undefined): FeatureCol
 
 /**
  * The app's map layers from bottom to top. Within the first group the order is free; every later group is drawn above
- * all groups before it. Markers bottom to top: fast food, hunters and Life360 members, groups, foxes (and hints),
+ * all groups before it. Markers bottom to top: fast food, groups, hunters and Life360 members, foxes (and hints),
  * prediction pins.
  */
 export const MAP_LAYER_STACK: string[][] = [
@@ -88,12 +88,13 @@ export const MAP_LAYER_STACK: string[][] = [
   [HINT_GUESS_REACH_LAYER, HINT_GUESS_AREA_FILL_LAYER, HINT_GUESS_AREA_LINE_LAYER],
   [FASTFOOD_LAYER],
   [FASTFOOD_HOVER_LAYER],
-  // The people (hunters, Life360) under the groups and foxes: where those overlap, the game's markers stay readable
+  [TEAM_PINS_LAYER],
+  ['team-pins-hover'],
+  // The people (hunters, Life360) above the groups (our own hunters near a group's pin stay visible) but under the
+  // foxes, so the game's markers stay readable where they overlap
   [HUNTER_ARROWS_LAYER],
   [HUNTERS_LAYER, LIFE360_LAYER],
   ['hunters-hover', LIFE360_HOVER_LAYER],
-  [TEAM_PINS_LAYER],
-  ['team-pins-hover'],
   [FOX_MARKERS_LAYER],
   ['fox-markers-hover'],
   [PREDICTION_PINS_LAYER],
