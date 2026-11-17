@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ComponentType } from 'react';
+import { useEffect, useId, useRef, useState, type ComponentType } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { toast } from 'sonner';
 import { BrainIcon, CheckIcon, FileTextIcon, KeyRoundIcon, ListTreeIcon, Loader2Icon, MessageCircleIcon, PlayIcon, RadarIcon, WrenchIcon } from 'lucide-react';
@@ -95,6 +95,8 @@ export default function AiPane() {
   const [saving, setSaving] = useState(false);
   const [clearOpen, setClearOpen] = useState(false);
   const [clearing, setClearing] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const resetReasonId = useId();
   // The model rows stack their controls by their own width (the Beheer dialog's content area), not the screen's
   const [rowsElement, setRowsElement] = useState<HTMLDivElement | null>(null);
   const stacked = aiRowsStacked(useElementWidth(rowsElement));
@@ -162,11 +164,15 @@ export default function AiPane() {
   }
 
   async function resetModels() {
+    if (resetting) return;
+    setResetting(true);
     try {
       await admin.saveModels(Object.fromEntries(AI_SLOTS.map((slot) => [slot, null])));
       toast.success('Standaardmodellen hersteld');
     } catch (error) {
       toast.error(apiErrorMessage(error, 'Herstellen is mislukt.'));
+    } finally {
+      setResetting(false);
     }
   }
 
@@ -299,9 +305,20 @@ export default function AiPane() {
                 </motion.span>
               )}
             </AnimatePresence>
-            <Pill variant="ghost" disabled={!key?.set || !hasCustomModels} onClick={() => void resetModels()}>
+            {/* Nothing to reset (also right after a reset): aria-disabled, so the focus stays on the pill */}
+            <Pill
+              variant="ghost"
+              disabled={!key?.set}
+              busy={resetting}
+              aria-disabled={!hasCustomModels || undefined}
+              aria-describedby={key?.set && !hasCustomModels && !resetting ? resetReasonId : undefined}
+              onClick={() => void resetModels()}
+            >
               Standaard herstellen
             </Pill>
+            <span id={resetReasonId} className="sr-only">
+              Alle functies gebruiken al het standaardmodel.
+            </span>
           </span>
         }
       >
