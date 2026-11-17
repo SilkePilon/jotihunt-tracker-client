@@ -7,7 +7,7 @@ import SuccessBadge from '@/components/auth/SuccessBadge';
 import { Tag } from '@/components/beheer/controls/Pill';
 import { formatClock } from '@/lib/format';
 import { type DeadlineTone, type MetaSegment, type MetaTone, assignmentMeta, assignmentStatusLabel, INTEL_TAB_ORDER, isHintDone, KIND_COLOR, KIND_CONTAINER, KIND_LABEL, areaStates, deadlineLabel, deadlineTone, groupByDay, siteSubmission, solvedCount } from '@/lib/intel-window';
-import { EASE_OUT, REVEAL_TRANSITION, SWAP_TRANSITION } from '@/lib/motion';
+import { EASE_OUT, REVEAL_TRANSITION, revealTransition } from '@/lib/motion';
 import { useHasMounted } from '@/hooks/has-mounted.hook';
 import { areaOptions, cn, getColorFromArea } from '@/lib/utils';
 import LoadError from '@/components/LoadError';
@@ -55,12 +55,14 @@ function Fold({ children }: { children: ReactNode }) {
   const parentInserting = useContext(InsertContext);
   const [inserting] = useState(parentInserting);
   const mounted = useHasMounted();
+  const reduced = useReducedMotion() ?? false;
   return (
     <motion.div
       initial={inserting ? { height: 0, opacity: 0 } : false}
       animate={{ height: 'auto', opacity: 1 }}
-      exit={{ height: 0, opacity: 0 }}
-      transition={SWAP_TRANSITION}
+      exit={{ height: 0, opacity: 0, transition: revealTransition(reduced, 'exit') }}
+      // Reduced motion: the row takes and gives back its room at once and only fades
+      transition={revealTransition(reduced, 'enter')}
       className="overflow-y-clip [overflow-clip-margin:3px]"
     >
       <InsertContext.Provider value={mounted}>{children}</InsertContext.Provider>

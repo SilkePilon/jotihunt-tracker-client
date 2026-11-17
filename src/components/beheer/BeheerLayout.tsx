@@ -1,12 +1,12 @@
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode, type Ref } from 'react';
-import { AnimatePresence, motion, useIsPresent } from 'motion/react';
+import { AnimatePresence, motion, useIsPresent, useReducedMotion } from 'motion/react';
 import { ChevronDownIcon, Loader2Icon, TriangleAlertIcon } from 'lucide-react';
 import LoadError from '@/components/LoadError';
 import AutoHeight from '@/components/motion/AutoHeight';
 import Reveal from '@/components/motion/Reveal';
 import { useIsMobile } from '@/hooks/media.hook';
 import { focusDropped, neighbourIndex } from '@/lib/focus';
-import { REVEAL_TRANSITION, SWAP, SWAP_TRANSITION } from '@/lib/motion';
+import { SWAP, SWAP_TRANSITION, revealTransition } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { Pill } from './controls/Pill';
 
@@ -180,14 +180,16 @@ const TONE: Record<RowTone, string> = {
  * animates to zero without a jump. `className` goes on the block (e.g. the new-invite ring).
  */
 export function RowFrame({ tone = 'default', className, children, ref, exiting }: { tone?: RowTone; className?: string; children: ReactNode; ref?: Ref<HTMLDivElement>; exiting?: boolean }) {
+  const reduced = useReducedMotion() ?? false;
   return (
     <motion.div
       // isolate: the pills' 44px touch areas on phones (COARSE_HIT_AREA) stay above the block's background
       className={cn('isolate overflow-hidden rounded-(--radius-segment) transition-colors duration-200 first:rounded-t-2xl last:rounded-b-2xl', TONE[tone], className)}
       initial={{ opacity: 0, height: 0 }}
       animate={{ opacity: 1, height: 'auto' }}
-      exit={{ opacity: 0, height: 0 }}
-      transition={REVEAL_TRANSITION}
+      exit={{ opacity: 0, height: 0, transition: revealTransition(reduced, 'exit') }}
+      // Reduced motion: the row takes and gives back its room at once and only fades
+      transition={revealTransition(reduced, 'enter')}
       ref={ref}
       // Skipped when focus moves on from a row that goes away (focusNeighbourRow)
       data-exiting={exiting || undefined}
@@ -443,8 +445,15 @@ export function BeheerLoadError({ message, onRetry }: { message: string; onRetry
 
 /** Amber problem bar, as in the Koppelingen cards; folds in and out. */
 export function WarnBar({ children }: { children: ReactNode }) {
+  const reduced = useReducedMotion() ?? false;
   return (
-    <motion.div className="overflow-hidden" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={REVEAL_TRANSITION}>
+    <motion.div
+      className="overflow-hidden"
+      initial={{ height: 0, opacity: 0 }}
+      animate={{ height: 'auto', opacity: 1 }}
+      exit={{ height: 0, opacity: 0, transition: revealTransition(reduced, 'exit') }}
+      transition={revealTransition(reduced, 'enter')}
+    >
       <div className="mt-2.5 flex items-center gap-2.5 rounded-2xl bg-amber-500/15 px-3 py-2.5 text-[12.5px] text-amber-800 dark:text-amber-200">
         <TriangleAlertIcon className="size-4 shrink-0" />
         <span className="flex-1">{children}</span>
