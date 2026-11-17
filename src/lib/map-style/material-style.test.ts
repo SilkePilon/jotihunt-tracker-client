@@ -3,6 +3,7 @@ import type { LayerSpecification, StyleSpecification } from 'maplibre-gl';
 import libertyJson from './liberty.json';
 import {
   ANDROID_SEED,
+  MAP_PALETTES,
   MAP_SEED,
   argbToCss,
   hueOf,
@@ -12,10 +13,11 @@ import {
   roleOf,
   waterColors,
 } from './material-style';
+import { mapPaletteFromSeed } from './palette-from-seed';
 
 const liberty = libertyJson as unknown as StyleSpecification;
-const light = mapPalette(ANDROID_SEED, false);
-const dark = mapPalette(ANDROID_SEED, true);
+const light = mapPaletteFromSeed(ANDROID_SEED, false);
+const dark = mapPaletteFromSeed(ANDROID_SEED, true);
 
 function layer(style: StyleSpecification, id: string): LayerSpecification {
   const found = style.layers.find((l) => l.id === id);
@@ -45,11 +47,18 @@ describe('mapPalette', () => {
 
   test('the website seed is the app green, so parks and woods stay green', () => {
     expect(MAP_SEED).toBe(ANDROID_SEED);
-    const p = mapPalette(MAP_SEED, false);
+    const p = mapPalette(false);
     // Green hue (HSL 90..150) for the primary container, which fills parks and woods
     expect(hueOf(p.primaryContainer)).toBeGreaterThan(90);
     expect(hueOf(p.primaryContainer)).toBeLessThan(150);
-    expect(mapPalette(MAP_SEED, true).dark).toBe(true);
+    expect(mapPalette(true).dark).toBe(true);
+  });
+
+  test('the precomputed palettes match the library for the site seed', () => {
+    expect(MAP_PALETTES.light).toEqual(mapPaletteFromSeed(MAP_SEED, false));
+    expect(MAP_PALETTES.dark).toEqual(mapPaletteFromSeed(MAP_SEED, true));
+    expect(mapPalette(false)).toBe(MAP_PALETTES.light);
+    expect(mapPalette(true)).toBe(MAP_PALETTES.dark);
   });
 
   test('css colours', () => {
@@ -195,7 +204,7 @@ describe('materialMapStyle', () => {
     expect(materialMapStyle(false)).toBe(materialMapStyle(false));
     expect(materialMapStyle(true)).not.toBe(materialMapStyle(false));
     const bg = materialMapStyle(true).layers.find((l) => l.id === 'background') as { paint: Record<string, unknown> };
-    expect(bg.paint['background-color']).toBe(mapPalette(MAP_SEED, true).surface);
+    expect(bg.paint['background-color']).toBe(mapPalette(true).surface);
   });
 });
 

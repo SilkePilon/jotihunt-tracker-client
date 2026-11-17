@@ -1,6 +1,6 @@
 import type { ExpressionSpecification } from 'maplibre-gl';
 import { MapStyle } from '@/types/MapStyle';
-import { mapPalette, MAP_SEED } from '@/lib/map-style/material-style';
+import { mapPalette } from '@/lib/map-style/material-style';
 
 /** 3D buildings from 3DBAG, served by our server as z15 vector tiles (layer "buildings", property h in metres). */
 export const BUILDINGS_SOURCE = 'buildings3d';
@@ -80,7 +80,7 @@ export function createTileCache(load: (key: string) => Promise<ArrayBuffer>, cap
 /** '' is the Material map: palette tones by height (follows the theme); the other basemaps get a fixed grey. */
 export function buildingColor(mapStyle: MapStyle | '', dark: boolean): string | ExpressionSpecification {
   if (!mapStyle) {
-    const p = mapPalette(MAP_SEED, dark);
+    const p = mapPalette(dark);
     return ['interpolate', ['linear'], ['get', 'h'], 0, p.surfaceContainerHigh, RAMP_TOP_M, p.surfaceContainerHighest];
   }
   return mapStyle === MapStyle.Satellite ? GREY_DARK : GREY_LIGHT;

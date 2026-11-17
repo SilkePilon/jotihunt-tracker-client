@@ -1,6 +1,6 @@
 import type { StyleSpecification } from 'maplibre-gl';
 import libertyJson from './liberty.json';
-import { MAP_SEED, mapPalette, materialStyle } from './material-style';
+import { mapPalette, materialStyle } from './material-style';
 
 /**
  * OpenFreeMap Liberty, bundled (a copy of the Android app's `assets/map/liberty.json`) so the default map style is
@@ -11,8 +11,8 @@ const LIBERTY = libertyJson as unknown as StyleSpecification;
 
 const cache: Partial<Record<'light' | 'dark', StyleSpecification>> = {};
 
-/** The Material map style (seed {@link MAP_SEED}) for the light or dark theme; built once per theme. */
+/** The Material map style (seed `MAP_SEED`) for the light or dark theme; built once per theme. */
 export function materialMapStyle(dark: boolean): StyleSpecification {
   const key = dark ? 'dark' : 'light';
-  return (cache[key] ??= materialStyle(LIBERTY, mapPalette(MAP_SEED, dark)));
+  return (cache[key] ??= materialStyle(LIBERTY, mapPalette(dark)));
 }

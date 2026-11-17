@@ -2,7 +2,6 @@
  * The Android app's "Material You" map, for the website: OpenFreeMap Liberty recoloured with Material 3 colour roles.
  * A port of the app's `MapStyles.materialYou`, `MapPalette` and `waterColors`; pure, so it is unit tested.
  */
-import { Hct, SchemeTonalSpot } from '@material/material-color-utilities';
 import type { LayerSpecification, StyleSpecification } from 'maplibre-gl';
 
 /** The Android app's fallback seed (#4C8C4A). */
@@ -36,7 +35,7 @@ export interface MapPalette {
 export const SHIELD_TEXT = '#191d17';
 
 /** The app's `LightStatusColors` / `DarkStatusColors` warn container (amber; Material 3 has no warn role). */
-const WARN_CONTAINER = { light: '#ffddb8', dark: '#693c00' };
+export const WARN_CONTAINER = { light: '#ffddb8', dark: '#693c00' };
 
 /** "#rrggbb" when opaque, else "rgba(r, g, b, a)" (a with up to 3 decimals). */
 export function argbToCss(argb: number): string {
@@ -48,26 +47,49 @@ export function argbToCss(argb: number): string {
   return `rgba(${r}, ${g}, ${b}, ${Number((a / 255).toFixed(3))})`;
 }
 
-/** The map palette of the tonal-spot scheme for [seed] (RGB, alpha ignored). */
-export function mapPalette(seed: number, dark: boolean): MapPalette {
-  const s = new SchemeTonalSpot(Hct.fromInt((0xff000000 | seed) >>> 0), dark, 0);
-  const water = waterColors(s.primary, dark);
-  return {
-    dark,
-    surface: argbToCss(s.surface),
-    surfaceContainerLowest: argbToCss(s.surfaceContainerLowest),
-    surfaceContainerLow: argbToCss(s.surfaceContainerLow),
-    surfaceContainer: argbToCss(s.surfaceContainer),
-    surfaceContainerHigh: argbToCss(s.surfaceContainerHigh),
-    surfaceContainerHighest: argbToCss(s.surfaceContainerHighest),
-    onSurfaceVariant: argbToCss(s.onSurfaceVariant),
-    outline: argbToCss(s.outline),
-    outlineVariant: argbToCss(s.outlineVariant),
-    primaryContainer: argbToCss(s.primaryContainer),
-    warnContainer: dark ? WARN_CONTAINER.dark : WARN_CONTAINER.light,
-    water: argbToCss(water.water),
-    onWater: argbToCss(water.onWater),
-  };
+/**
+ * The map palettes of the tonal-spot scheme for {@link MAP_SEED}, precomputed so @material/material-color-utilities
+ * (~18 KB gzip) stays out of the bundle. `mapPaletteFromSeed` (palette-from-seed.ts) derives them with the library; a
+ * unit test checks these still match it, so after changing the seed or the roles paste its output here.
+ */
+export const MAP_PALETTES: { light: MapPalette; dark: MapPalette } = {
+  light: {
+    dark: false,
+    surface: '#f7fbf1',
+    surfaceContainerLowest: '#ffffff',
+    surfaceContainerLow: '#f1f5eb',
+    surfaceContainer: '#ecefe6',
+    surfaceContainerHigh: '#e6e9e0',
+    surfaceContainerHighest: '#e0e4db',
+    onSurfaceVariant: '#424940',
+    outline: '#72796f',
+    outlineVariant: '#c2c9bd',
+    primaryContainer: '#bcf0b4',
+    warnContainer: '#ffddb8',
+    water: '#b0dbe8',
+    onWater: '#1e4c5a',
+  },
+  dark: {
+    dark: true,
+    surface: '#10140f',
+    surfaceContainerLowest: '#0b0f0a',
+    surfaceContainerLow: '#191d17',
+    surfaceContainer: '#1d211b',
+    surfaceContainerHigh: '#272b25',
+    surfaceContainerHighest: '#323630',
+    onSurfaceVariant: '#c2c9bd',
+    outline: '#8c9388',
+    outlineVariant: '#424940',
+    primaryContainer: '#245024',
+    warnContainer: '#693c00',
+    water: '#2d4b54',
+    onWater: '#abdcea',
+  },
+};
+
+/** The map palette (seed {@link MAP_SEED}) for the light or dark theme. */
+export function mapPalette(dark: boolean): MapPalette {
+  return dark ? MAP_PALETTES.dark : MAP_PALETTES.light;
 }
 
 // ---- Water: always blue (Android `WaterColors.kt`) ----
