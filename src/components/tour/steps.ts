@@ -28,7 +28,7 @@ export const TOUR_STEPS: TourStep[] = [
     id: 'map',
     target: 'map',
     title: 'De kaart',
-    body: 'Hier zie je de deelnemende groepen, de vossen per deelgebied en waar onze hunters rijden. Tik of klik op de kaart om de coördinaten van die plek te zien.',
+    body: 'Hier zie je de deelnemende groepen, de vossen per deelgebied en waar onze hunters rijden. Straks tik of klik je op de kaart om de coördinaten van een plek te zien; tik nu op de kaart om verder te gaan.',
     actions: [sheetSnap('peek'), flyToOverview()],
   },
   {
