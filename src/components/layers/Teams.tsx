@@ -71,6 +71,14 @@ export default function Teams() {
       const id = featureId(feature);
       setHoveredId(typeof id === 'string' ? id : undefined);
     },
+    // Opened from the group search: the caller already flies the map there
+    onOpen: (id) => {
+      const team = visibleTeams.find((candidate) => candidate._id === id);
+      if (!team) return false;
+      setHoveredId(undefined);
+      openPopup(team._id);
+      return true;
+    },
   });
 
   return (

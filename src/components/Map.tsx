@@ -64,6 +64,7 @@ import {useNightDraw} from '@/stores/night-draw.store';
 import NightAreaDraw from './layers/trails/NightAreaDraw';
 import NightAreasLayer from './layers/trails/NightAreasLayer';
 import MapUnavailableCard from './map/MapUnavailableCard';
+import {openLayerFeature} from './layers/map-interactions';
 import {useMapAvailability} from './map/useMapAvailability';
 
 // MapLibre resolves its worker relative to its own module, which bundlers don't emit;
@@ -81,6 +82,12 @@ export interface MapRef {
     fitBounds(bounds: FitBoundsArgs[0], options?: FitBoundsArgs[1]): boolean;
 
     markPoint(lngLat: LngLat): void;
+
+    /**
+     * Open the popup of a canvas marker layer's feature (by its `id` property), the same popup a click opens: for
+     * lists that fly the map to a marker. False when the layer is hidden or has no such feature.
+     */
+    openFeature(layer: string, id: string | number): boolean;
 
     /** The map's centre; null while the map isn't created yet. */
     getCenter(): LngLat | null;
@@ -157,6 +164,10 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
             if (mapRef.current && !drawing) {
                 setPopupPosition(lngLat);
             }
+        },
+        openFeature: (layer: string, id: string | number) => {
+            const map = mapRef.current?.getMap();
+            return !!map && !wall && openLayerFeature(map, layer, id);
         },
         getCenter: () => mapRef.current?.getCenter() ?? null,
         getZoom: () => mapRef.current?.getZoom() ?? null,

@@ -102,6 +102,13 @@ export default function Life360() {
       const id = featureId(feature);
       setHoveredId(typeof id === 'string' ? id : undefined);
     },
+    // Opened from the sidebar's member list: the caller already flies the map there
+    onOpen: (id) => {
+      if (typeof id !== 'string' || !members.some((member) => member.id === id && member.location)) return false;
+      setHoveredId(undefined);
+      openPopup(id);
+      return true;
+    },
   });
 
   if (!data?.linked) return null;

@@ -107,6 +107,13 @@ export default function Markers({ part1, part2 }: MarkersProps) {
       const id = featureId(feature);
       setHoveredId(typeof id === 'string' ? id : undefined);
     },
+    // Opened from a list (e.g. the hunt sync log): only markers the map shows right now
+    onOpen: (id) => {
+      if (typeof id !== 'string' || !visibleIds.has(id)) return false;
+      setHoveredId(undefined);
+      openPopup(id);
+      return true;
+    },
   });
 
   return (

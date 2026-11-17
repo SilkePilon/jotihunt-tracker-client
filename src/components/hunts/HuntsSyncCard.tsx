@@ -7,9 +7,12 @@ import Reveal from '@/components/motion/Reveal';
 import { Skeleton } from '@/components/ui/skeleton';
 import SidebarSection from '@/components/sidebar/SidebarSection';
 import CookieBadge from '@/components/tracker/CookieBadge';
-import { useHuntEvents, useHuntSync } from '@/hooks/hunt-sync.hook';
+import { useHuntEvents, useHuntSync, useSyncedHunts } from '@/hooks/hunt-sync.hook';
+import { useMarkers } from '@/hooks/markers.hook';
 import { useNow } from '@/hooks/now.hook';
 import { HUNT_SYNC_TITLE, huntSyncLine, huntSyncSummary, huntSyncView, type HuntSyncView } from '@/lib/hunt-sync';
+import { huntMarkerId } from '@/lib/hunt-marker';
+import { FOX_MARKERS_LAYER } from '@/lib/map-layers';
 import { POP, SWAP } from '@/lib/motion';
 import { getColorFromArea } from '@/lib/utils';
 import useHuntFocusStore from '@/stores/hunt-focus.store';
@@ -147,6 +150,8 @@ export default function HuntsSyncCard({ mapRef }: { mapRef: RefObject<MapRef | n
   const { events, loadMore, isError: eventsFailed, loadingMore, pageFailed, retry: retryEvents } = useHuntEvents(linked);
   const setSheetSnap = useSidebarStore((state) => state.setSheetSnap);
   const showFocus = useHuntFocusStore((state) => state.show);
+  const { hunts } = useSyncedHunts();
+  const { markers } = useMarkers();
 
   const flyTo = useCallback(
     (event: HuntSyncEvent) => {
@@ -155,8 +160,11 @@ export default function HuntsSyncCard({ mapRef }: { mapRef: RefObject<MapRef | n
       setSheetSnap('peek');
       mapRef.current?.flyTo({ center: [lng, lat], zoom: FLY_TO_ZOOM, duration: 1500 });
       showFocus({ lng, lat, color: getColorFromArea(event.area) });
+      // The hunt marker's popup when the map shows one (made from this hunt), as if it was clicked
+      const markerId = huntMarkerId(event.huntId, hunts, markers);
+      if (markerId) mapRef.current?.openFeature(FOX_MARKERS_LAYER, markerId);
     },
-    [mapRef, setSheetSnap, showFocus],
+    [mapRef, setSheetSnap, showFocus, hunts, markers],
   );
 
   return (

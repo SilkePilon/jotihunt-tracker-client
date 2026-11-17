@@ -7,6 +7,11 @@ export interface LayerInteractions {
   onClick?: (feature: MapGeoJSONFeature, event: MapMouseEvent) => void;
   /** The pointer moved onto a feature of the layer (or off it: undefined) */
   onHover?: (feature: MapGeoJSONFeature | undefined) => void;
+  /**
+   * Open the popup of the feature with this `id` property without a click (e.g. after a sidebar list flew the map
+   * there): the same popup a click opens. Return false when there is no such (visible) feature.
+   */
+  onOpen?: (id: string | number) => boolean;
 }
 
 type HandlersRef = { readonly current: LayerInteractions };
@@ -80,6 +85,36 @@ function registryFor(map: MaplibreMap): Registry {
 }
 
 /**
+ * Open a feature's popup as if it was clicked (see {@link LayerInteractions.onOpen}). False when the layer isn't
+ * mounted (hidden), can't open popups from outside, or has no such feature.
+ */
+export function openLayerFeature(map: MaplibreMap, layerId: string, id: string | number): boolean {
+  // Drawing a night area: no marker popups (like clicks)
+  if (useNightDraw.getState().active) return false;
+  const onOpen = registries.get(map)?.layers.get(layerId)?.current.onOpen;
+  return onOpen ? onOpen(id) : false;
+}
+
+/** Route the map's clicks and hovers on these layers to `handlers`; returns the cleanup (see {@link useLayerInteractions}). */
+export function registerLayerHandlers(map: MaplibreMap, layerIds: readonly string[], handlers: HandlersRef): () => void {
+  const registry = registryFor(map);
+  for (const id of layerIds) registry.layers.set(id, handlers);
+  return () => {
+    for (const id of layerIds) {
+      if (registry.layers.get(id) === handlers) registry.layers.delete(id);
+      if (registry.hovered?.layer === id) {
+        registry.hovered = undefined;
+        map.getCanvas().style.cursor = registry.previousCursor ?? '';
+      }
+    }
+    if (!registry.layers.size) {
+      registry.detach();
+      registries.delete(map);
+    }
+  };
+}
+
+/**
  * Click and hover handling for canvas marker layers (see {@link registryFor}). The handlers may change on every
  * render; `layerIds` share them (e.g. a hunter's icon and its heading arrow).
  */
@@ -90,25 +125,7 @@ export function useLayerInteractions(map: MaplibreMap | undefined, layerIds: rea
   });
 
   const key = layerIds.join('\n');
-  useEffect(() => {
-    if (!map) return;
-    const ids = key.split('\n');
-    const registry = registryFor(map);
-    for (const id of ids) registry.layers.set(id, handlers);
-    return () => {
-      for (const id of ids) {
-        if (registry.layers.get(id) === handlers) registry.layers.delete(id);
-        if (registry.hovered?.layer === id) {
-          registry.hovered = undefined;
-          map.getCanvas().style.cursor = registry.previousCursor ?? '';
-        }
-      }
-      if (!registry.layers.size) {
-        registry.detach();
-        registries.delete(map);
-      }
-    };
-  }, [map, key]);
+  useEffect(() => (map ? registerLayerHandlers(map, key.split('\n'), handlers) : undefined), [map, key]);
 }
 
 /**

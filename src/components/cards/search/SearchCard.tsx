@@ -25,6 +25,7 @@ import {MAP_CHIP, MAP_TILE} from "@/lib/map-chrome.ts";
 import {TRIGGER_OPEN} from "@/lib/menu-styles.ts";
 import {loadState} from "@/lib/load-state.ts";
 import {SWAP} from "@/lib/motion.ts";
+import {TEAM_PINS_LAYER} from "@/lib/map-layers.ts";
 
 /** Placeholder rows while the groups load, about as wide as group names */
 const SKELETON_WIDTHS = ['70%', '55%', '80%', '62%', '48%'];
@@ -42,6 +43,8 @@ export default function SearchCard({ mapRef, onDone }: { mapRef: React.RefObject
             center: [team.location.coordinates[0], team.location.coordinates[1]],
             zoom: 14,
         });
+        // The group's popup, as if its pin was clicked (nothing when the groups layer is off)
+        mapRef.current?.openFeature(TEAM_PINS_LAYER, team._id);
         onDone?.();
     }
 
