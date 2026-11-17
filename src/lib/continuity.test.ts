@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { CONTINUITY_MAX_AGE_MS, freshRecord, parseSavedPage, parseSavedView } from './continuity';
+import { CONTINUITY_MAX_AGE_MS, freshRecord, parseSavedPage, parseSavedView, restoredSnap } from './continuity';
 
 const NOW = Date.parse('2026-10-17T12:00:00Z');
 const VIEW = { longitude: 5.9, latitude: 52.2, zoom: 13.5, bearing: -20, pitch: 45 };
@@ -56,5 +56,13 @@ describe('parseSavedPage', () => {
   test('an unknown page id or a stale record restores nothing', () => {
     expect(parseSavedPage(record({ id: 'beheer', snap: 'full' }, NOW), NOW)).toBeUndefined();
     expect(parseSavedPage(record({ id: 'foxes', snap: 'full' }, NOW - CONTINUITY_MAX_AGE_MS - 1), NOW)).toBeUndefined();
+  });
+});
+
+describe('restoredSnap', () => {
+  test('a full page comes back at half, so the map shows first', () => {
+    expect(restoredSnap('full')).toBe('half');
+    expect(restoredSnap('half')).toBe('half');
+    expect(restoredSnap('peek')).toBe('peek');
   });
 });

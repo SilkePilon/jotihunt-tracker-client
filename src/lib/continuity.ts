@@ -69,6 +69,14 @@ export function parseSavedPage(raw: string | null, now: number): SavedPage | und
   return { id: id as MobilePageId, snap: typeof snap === 'string' && SNAPS.has(snap) ? (snap as SheetSnap) : 'full' };
 }
 
+/**
+ * The snap a restored page opens at: never higher than half, so the map is what you see first after a reload (the
+ * page is one drag away). Peek stays peek.
+ */
+export function restoredSnap(snap: SheetSnap): SheetSnap {
+  return snap === 'full' ? 'half' : snap;
+}
+
 /** Storage may be missing or throw (private mode, blocked site data, quota): continuity is a nicety, never an error. */
 function storage(kind: 'localStorage' | 'sessionStorage'): Storage | undefined {
   try {
