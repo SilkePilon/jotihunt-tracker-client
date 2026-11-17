@@ -12,6 +12,7 @@ import { useReadState } from '@/hooks/read-state.hook';
 import { DIALOG_SHELL } from '@/lib/dialog-shell';
 import { keepOpenWhileEditing } from '@/lib/inline-edit';
 import { PUSH, buildIntelItems, filterByTab, unreadCount } from '@/lib/intel-window';
+import { loadState, type LoadState } from '@/lib/load-state';
 import { cn } from '@/lib/utils';
 import useIntelStore from '@/stores/intel.store';
 import type { HintCell } from '@/types/HintCell';
@@ -75,7 +76,7 @@ export default function IntelDialog({ mapRef }: { mapRef: RefObject<MapRef | nul
 function IntelWindow({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
   const tab = useIntelStore((state) => state.tab);
   const area = useIntelStore((state) => state.area);
-  const { articles } = useArticles();
+  const { articles, error: articlesError, retry: retryArticles } = useArticles();
   const { board } = useHintBoard({ live: true });
   const cells = useMemo(() => board?.cells ?? [], [board]);
   const { assignments } = useAssignments();
@@ -140,7 +141,17 @@ function IntelWindow({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
             {selected ? (
               <DetailView item={selected} area={area} mapRef={mapRef} entrance={!mounted} />
             ) : (
-              <TimelineView items={shown} allItems={items} cells={cells} tab={tab} memoryRef={timelineScroll} entrance={!mounted} onSelect={select} />
+              <TimelineView
+                items={shown}
+                allItems={items}
+                cells={cells}
+                tab={tab}
+                memoryRef={timelineScroll}
+                entrance={!mounted}
+                onSelect={select}
+                status={loadState(articles, articlesError)}
+                onRetry={retryArticles}
+              />
             )}
           </PushView>
         </AnimatePresence>
@@ -180,10 +191,12 @@ interface TimelineViewProps {
   /** Read on mount: the window just opened (the cards stagger in, the status card counts up); later the timeline just comes back */
   entrance: boolean;
   onSelect: (id: number) => void;
+  status: LoadState;
+  onRetry: () => unknown;
 }
 
 /** The scrolling timeline (remembers its scroll position per tab) and the status card. */
-function TimelineView({ items, allItems, cells, tab, memoryRef, entrance, onSelect }: TimelineViewProps) {
+function TimelineView({ items, allItems, cells, tab, memoryRef, entrance, onSelect, status, onRetry }: TimelineViewProps) {
   const ref = useRef<HTMLDivElement>(null);
   // Before the first paint: back to where the list was (same tab only)
   useLayoutEffect(() => {
@@ -206,7 +219,7 @@ function TimelineView({ items, allItems, cells, tab, memoryRef, entrance, onSele
         }}
         className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto [scrollbar-gutter:stable]"
       >
-        <IntelTimeline items={items} tab={tab} entrance={entrance} onSelect={onSelect} />
+        <IntelTimeline items={items} tab={tab} entrance={entrance} onSelect={onSelect} status={status} onRetry={onRetry} />
       </div>
       {/* Stats over every kind, whatever the tab */}
       <StatusCard items={allItems} cells={cells} entrance={entrance} />

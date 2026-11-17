@@ -12,7 +12,10 @@ import useIntelStore from '@/stores/intel.store';
 import useSidebarStore from '@/stores/sidebar.store';
 import { HintCell } from '@/types/HintCell';
 import { TONAL_BUTTON } from '@/lib/tonal-button';
-import { SWAP_TRANSITION } from '@/lib/motion';
+import { SWAP, SWAP_TRANSITION } from '@/lib/motion';
+import { loadState } from '@/lib/load-state';
+import LoadError from '@/components/LoadError';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const MINI_GRID_ROWS = 4;
 
@@ -38,8 +41,9 @@ export default function HintMiniGrid({ mapRef }: { mapRef: RefObject<MapRef | nu
   const setSheetSnap = useSidebarStore((state) => state.setSheetSnap);
   const [selected, setSelected] = useState<{ articleId: number; area: string } | null>(null);
   // Default (slow) polling: this is an overview, the intel window polls fast
-  const { board } = useHintBoard();
+  const { board, error, retry } = useHintBoard();
   const rows = board ? lastHintRows(board, MINI_GRID_ROWS) : [];
+  const view = loadState(board, error);
 
   // Looked up in the live rows, so the line follows answers by others
   const selectedRow = selected ? rows.find((row) => row.article.id === selected.articleId) : undefined;
@@ -61,10 +65,21 @@ export default function HintMiniGrid({ mapRef }: { mapRef: RefObject<MapRef | nu
 
   return (
     <div className="flex flex-col gap-2">
-      {rows.length === 0 ? (
-        <p className="text-xs text-muted-foreground">Nog geen hints</p>
+      <AnimatePresence mode="wait" initial={false}>
+      {view === 'loading' ? (
+        <motion.div key="loading" {...SWAP} className="flex flex-col gap-0.5" aria-label="Hints laden" role="status">
+          {Array.from({ length: MINI_GRID_ROWS + 1 }, (_, index) => (
+            <Skeleton key={index} className="h-6 w-full rounded-[6px] md:h-4" />
+          ))}
+        </motion.div>
+      ) : view === 'error' ? (
+        <motion.div key="error" {...SWAP}>
+          <LoadError message="Hints konden niet worden geladen." onRetry={retry} />
+        </motion.div>
+      ) : rows.length === 0 ? (
+        <motion.p key="empty" {...SWAP} className="text-xs text-muted-foreground">Nog geen hints</motion.p>
       ) : (
-        <div className="grid grid-cols-[2.5rem_repeat(9,1fr)] items-center gap-0.5 text-[10px]">
+        <motion.div key="grid" {...SWAP} className="grid grid-cols-[2.5rem_repeat(9,1fr)] items-center gap-0.5 text-[10px]">
           <span />
           {areaOptions.map((area) => (
             <span key={area.value} className="text-center font-semibold">
@@ -104,8 +119,9 @@ export default function HintMiniGrid({ mapRef }: { mapRef: RefObject<MapRef | nu
               })}
             </Fragment>
           ))}
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
       {isMobile ? (
         <>
           {selectedRow && selectedCell && selectedArea && (

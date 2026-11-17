@@ -4,7 +4,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useAreas } from '@/hooks/areas.hook';
 import { useHuntableAreas } from '@/hooks/huntable-areas.hook';
 import { FOX_GROUP_LABEL, FOX_GROUP_ORDER, groupCounts, legendGroups, type FoxGroup, type SidebarFox } from '@/lib/fox-status';
-import { EASE_OUT, REVEAL_TRANSITION } from '@/lib/motion';
+import LoadError from '@/components/LoadError';
+import { EASE_OUT, REVEAL_TRANSITION, SWAP, SWAP_TRANSITION } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import FoxChip from './FoxChip';
 import FoxHistory from './FoxHistory';
@@ -141,6 +142,7 @@ function GroupBlock({ group, foxes, count, popIn, openKey, panelFox, onOpen }: G
 /** "Vossen" card (mockup C2): status bar, count legend, one tonal block per non-empty group with area chips. */
 export default function FoxesCard() {
   const foxes = useSidebarFoxes();
+  const { isError: areasError, retry: retryAreas } = useAreas();
   const { isForbidden } = useHuntableAreas();
   const reduced = useReducedMotion() ?? false;
   // One fox open per card: `openKey` follows the taps at once (ring), `panelKey` lags while the old panel folds away
@@ -171,22 +173,37 @@ export default function FoxesCard() {
     return () => cancelAnimationFrame(frame);
   }, []);
 
-  if (!foxes) {
+  if (!foxes || foxes.length === 0) {
+    const scene = foxes ? 'empty' : areasError ? 'error' : 'loading';
     return (
-      <div className="flex flex-col gap-2">
-        <Skeleton className="h-2.5 w-full rounded-md" />
-        <Skeleton className="h-3 w-full" />
-        <Skeleton className="h-16 w-full rounded-2xl" />
-        <Skeleton className="h-16 w-full rounded-2xl" />
-      </div>
+      <AnimatePresence mode="wait" initial={false}>
+        {scene === 'loading' && (
+          <motion.div key="loading" {...SWAP} className="flex flex-col gap-2" role="status" aria-label="Vossen laden">
+            <Skeleton className="h-2.5 w-full rounded-md" />
+            <Skeleton className="h-3 w-full" />
+            <Skeleton className="h-16 w-full rounded-2xl" />
+            <Skeleton className="h-16 w-full rounded-2xl" />
+          </motion.div>
+        )}
+        {scene === 'error' && (
+          <motion.div key="error" {...SWAP}>
+            <LoadError message="Vossen konden niet worden geladen." onRetry={retryAreas} />
+          </motion.div>
+        )}
+        {scene === 'empty' && (
+          <motion.p key="empty" {...SWAP} className="text-xs text-muted-foreground">
+            Nog geen vossen
+          </motion.p>
+        )}
+      </AnimatePresence>
     );
   }
-  if (foxes.length === 0) return <p className="text-xs text-muted-foreground">Nog geen vossen</p>;
 
   const counts = groupCounts(foxes);
   const panelFox = panelKey === null ? undefined : foxes.find((fox) => fox.key === panelKey);
   return (
-    <div className="flex flex-col">
+    // Fades in when it takes over from the skeleton (or the empty line)
+    <motion.div className="flex flex-col" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={SWAP_TRANSITION}>
       <FoxStatusBar foxes={foxes} size="full" isForbidden={isForbidden} />
       <div className="mt-1.5 mb-2.5 flex justify-between text-[11px] text-muted-foreground">
         {legendGroups(counts).map((group) => (
@@ -224,7 +241,7 @@ export default function FoxesCard() {
           </motion.div>
         ))}
       </AnimatePresence>
-    </div>
+    </motion.div>
   );
 }
 

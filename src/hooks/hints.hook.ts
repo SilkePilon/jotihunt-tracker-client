@@ -50,6 +50,8 @@ export const useHintBoard = ({ live = false }: { live?: boolean } = {}) => {
     board: data,
     isLoading: !error && !data,
     isError: error,
+    error,
+    retry: () => mutate(),
     solve,
     clear,
   };

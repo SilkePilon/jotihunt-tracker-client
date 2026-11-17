@@ -10,6 +10,9 @@ import { type DeadlineTone, type MetaSegment, type MetaTone, assignmentMeta, ass
 import { EASE_OUT, REVEAL_TRANSITION, SWAP_TRANSITION } from '@/lib/motion';
 import { useHasMounted } from '@/hooks/has-mounted.hook';
 import { areaOptions, cn, getColorFromArea } from '@/lib/utils';
+import LoadError from '@/components/LoadError';
+import { Skeleton } from '@/components/ui/skeleton';
+import type { LoadState } from '@/lib/load-state';
 import type { AreaState, AssignmentStatus, IntelItem, IntelKind, IntelTab } from '@/types/Intel';
 
 const STEP = 0.022;
@@ -77,10 +80,14 @@ interface TimelineProps {
   onSelect: (id: number) => void;
   /** Read on mount: the window just opened, so the cards stagger in */
   entrance: boolean;
+  /** Whether the articles are in: while loading a skeleton, after a failed first load an error with a retry */
+  status?: LoadState;
+  /** Refetch after a failed first load */
+  onRetry?: () => unknown;
 }
 
 /** Day-grouped timeline: per day one tonal card of rows. */
-export default function IntelTimeline({ items, tab, onSelect, entrance }: TimelineProps) {
+export default function IntelTimeline({ items, tab, onSelect, entrance, status = 'ready', onRetry }: TimelineProps) {
   const now = useMinute();
   const groups = groupByDay(items, now);
   // Derived during render: which way the last tab switch went, and whether there was one (only the first list may stagger in)
@@ -95,11 +102,28 @@ export default function IntelTimeline({ items, tab, onSelect, entrance }: Timeli
       <TimelineList key={tab} start={last.switched ? 'push' : stagger ? 'hidden' : false} direction={direction}>
         {/* Outside the padded list: centred in the whole window */}
         <AnimatePresence>
-          {groups.length === 0 && (
+          {groups.length === 0 && status === 'ready' && (
             <Fold key="empty">
               <motion.p variants={entry} className="py-10 text-center text-sm text-muted-foreground">
                 Nog niets gepubliceerd
               </motion.p>
+            </Fold>
+          )}
+          {groups.length === 0 && status === 'error' && (
+            <Fold key="error">
+              <motion.div variants={entry} className="py-10">
+                <LoadError centered message="Intel kon niet worden geladen." onRetry={() => onRetry?.()} />
+              </motion.div>
+            </Fold>
+          )}
+          {groups.length === 0 && status === 'loading' && (
+            <Fold key="loading">
+              <motion.div variants={entry} className="flex flex-col gap-0.5 pt-3.5 pr-2" role="status" aria-label="Intel laden">
+                <Skeleton className="mb-2 ml-1 h-3 w-24" />
+                {Array.from({ length: 4 }, (_, index) => (
+                  <Skeleton key={index} className={cn('h-16 w-full rounded-md bg-card', index === 0 && 'rounded-t-[20px]', index === 3 && 'rounded-b-[20px]')} />
+                ))}
+              </motion.div>
             </Fold>
           )}
         </AnimatePresence>

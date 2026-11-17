@@ -5,7 +5,7 @@ import useHiddenAreasStore from '@/stores/hiddenareas.store';
 import { asList } from '@/lib/response-shape';
 
 export const useAreas = () => {
-  const { data, error } = useAuthSWR<Area[]>('/areas', {
+  const { data, error, mutate } = useAuthSWR<Area[]>('/areas', {
     // The server refreshes areas from the Jotihunt API every 10 s
     refreshInterval: 5000,
     // Several components use this hook: one request per poll, not one per mount
@@ -22,6 +22,7 @@ export const useAreas = () => {
     areas: asList(data),
     isLoading: !error && !data,
     isError: error,
+    retry: () => mutate(),
     toggleHidden,
     isHidden,
     isVisible,
