@@ -2,7 +2,9 @@ import { memo, useState, type UIEvent } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { formatClock } from '@/lib/format';
 import { huntEventParts, huntEventTime } from '@/lib/hunt-sync';
-import { REVEAL_TRANSITION } from '@/lib/motion';
+import { Loader2Icon } from 'lucide-react';
+import LoadError from '@/components/LoadError';
+import { REVEAL_TRANSITION, SWAP } from '@/lib/motion';
 import { getColorFromArea } from '@/lib/utils';
 import type { HuntSyncEvent } from '@/types/HuntSync';
 
@@ -13,10 +15,15 @@ interface HuntSyncLogProps {
   events: HuntSyncEvent[];
   onSelect: (event: HuntSyncEvent) => void;
   onLoadMore: () => void;
+  /** An older page is on its way: a "Oudere hunts laden…" row at the end */
+  loadingMore?: boolean;
+  /** Loading an older page failed: a row with a retry at the end */
+  pageFailed?: boolean;
+  onRetryPage?: () => unknown;
 }
 
 /** The sync log (mockup C v3): time, area dot, bold area + what happened; newest first, scrolls for older lines. */
-export default function HuntSyncLog({ events, onSelect, onLoadMore }: HuntSyncLogProps) {
+export default function HuntSyncLog({ events, onSelect, onLoadMore, loadingMore = false, pageFailed = false, onRetryPage }: HuntSyncLogProps) {
   function onScroll(event: UIEvent<HTMLDivElement>) {
     const element = event.currentTarget;
     if (element.scrollHeight - element.scrollTop - element.clientHeight < LOAD_MORE_PX) onLoadMore();
@@ -36,6 +43,22 @@ export default function HuntSyncLog({ events, onSelect, onLoadMore }: HuntSyncLo
               </div>
             </motion.li>
           ))}
+          {(loadingMore || pageFailed) && (
+            <motion.li key="more" className="overflow-hidden" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={REVEAL_TRANSITION}>
+              <AnimatePresence mode="wait" initial={false}>
+                {pageFailed ? (
+                  <motion.div key="failed" className="p-1" {...SWAP}>
+                    <LoadError message="Oudere hunts laden is mislukt." onRetry={() => onRetryPage?.()} />
+                  </motion.div>
+                ) : (
+                  <motion.p key="loading" role="status" className="flex items-center justify-center gap-1.5 p-1.5 text-xs text-muted-foreground" {...SWAP}>
+                    <Loader2Icon className="size-3.5 animate-spin" />
+                    Oudere hunts laden…
+                  </motion.p>
+                )}
+              </AnimatePresence>
+            </motion.li>
+          )}
         </AnimatePresence>
       </ul>
     </div>
