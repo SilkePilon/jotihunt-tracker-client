@@ -1,7 +1,9 @@
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import MaterialGlyph from '@/components/MaterialGlyph';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useHappyHour } from '@/hooks/happy-hour.hook';
 import { useNow } from '@/hooks/now.hook';
+import { LAYOUT_SPRING, SWAP_TRANSITION, swapPreset } from '@/lib/motion';
 import { happyHourExplanation, happyHourPill, happyHourPillText, happyHourWindow, type HappyHourWindow } from '@/lib/happy-hour';
 
 /**
@@ -10,19 +12,36 @@ import { happyHourExplanation, happyHourPill, happyHourPillText, happyHourWindow
  */
 function HappyHourPillView({ hour, now }: { hour: HappyHourWindow; now: number }) {
   const { title, countdown } = happyHourPill(hour, now);
+  // Reduced motion: no blur (and MotionConfig skips the slide), so the swap is a plain fade
+  const swap = swapPreset(useReducedMotion() ?? false);
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button
+        <motion.button
           type="button"
           aria-label={happyHourPillText(hour, now)}
-          className="pointer-events-auto flex cursor-pointer items-center gap-2 rounded-full bg-happy-hour py-1.5 pr-3.5 pl-2.5 text-[13px] font-bold whitespace-nowrap text-on-happy-hour outline-none focus-visible:ring-[3px] focus-visible:ring-ring"
+          // Fades in and out with the happy hour (AnimatePresence below); eases to its new width when the label swaps
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ default: SWAP_TRANSITION, layout: LAYOUT_SPRING }}
+          layout
+          // Set as a style so motion corrects the corners while the width animates
+          style={{ borderRadius: 9999 }}
+          className="pointer-events-auto flex cursor-pointer items-center gap-2 bg-happy-hour py-1.5 pr-3.5 pl-2.5 text-[13px] font-bold whitespace-nowrap text-on-happy-hour outline-none focus-visible:ring-[3px] focus-visible:ring-ring"
           data-happy-hour={hour.state}
         >
-          <MaterialGlyph name="celebration" size={18} />
-          {title}
-          <span className="font-medium tabular-nums opacity-80">{countdown}</span>
-        </button>
+          <motion.span layout="position" className="grid place-items-center">
+            <MaterialGlyph name="celebration" size={18} />
+          </motion.span>
+          {/* Upcoming → active: the old label swaps out for the new one */}
+          <AnimatePresence mode="popLayout" initial={false}>
+            <motion.span key={hour.state} layout="position" className="flex items-center gap-2" {...swap}>
+              {title}
+              <span className="font-medium tabular-nums opacity-80">{countdown}</span>
+            </motion.span>
+          </AnimatePresence>
+        </motion.button>
       </PopoverTrigger>
       <PopoverContent align="center" className="flex w-72 flex-col gap-2 text-sm">
         <p>{happyHourExplanation(hour)}</p>
@@ -32,11 +51,11 @@ function HappyHourPillView({ hour, now }: { hour: HappyHourWindow; now: number }
   );
 }
 
-/** The happy-hour pill from the server's /happy-hour; nothing when there is none. */
+/** The happy-hour pill from the server's /happy-hour; nothing when there is none. Fades in and out. */
 export default function HappyHourPill() {
   const { view } = useHappyHour();
   // Ticks while there is a happy hour; a new or changed one renders with the current time right away
   const now = useNow(!!view && view.state !== 'none');
   const hour = happyHourWindow(view, now);
-  return hour ? <HappyHourPillView hour={hour} now={now} /> : null;
+  return <AnimatePresence>{hour && <HappyHourPillView key="pill" hour={hour} now={now} />}</AnimatePresence>;
 }
