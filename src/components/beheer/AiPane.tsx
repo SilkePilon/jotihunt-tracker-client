@@ -58,19 +58,28 @@ function TestButton({ slot, compact }: { slot: AiSlot; compact?: boolean }) {
   }
 
   const key = typeof state === 'object' ? 'ok' : state;
+  const title = SLOT_INFO[slot].title;
+  const seconds = typeof state === 'object' ? `${(state.ms / 1000).toLocaleString('nl-NL', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} s` : null;
   return (
-    <Pill
-      variant="ghost"
-      morphKey={key}
-      // tabular-nums: the latency ("1,4 s") doesn't wobble the pill's width between runs
-      className={cn('tabular-nums', key === 'ok' && 'text-green-800 hover:text-green-800 dark:text-green-300 dark:hover:text-green-300')}
-      busy={state === 'busy'}
-      onClick={() => void run()}
-      aria-label={`Test ${SLOT_INFO[slot].title}`}
-    >
-      {key === 'busy' ? <Loader2Icon className="animate-spin" /> : key === 'ok' ? <CheckIcon /> : <PlayIcon />}
-      {typeof state === 'object' ? `${(state.ms / 1000).toLocaleString('nl-NL', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} s` : key === 'busy' || compact ? null : 'Test'}
-    </Pill>
+    <>
+      <Pill
+        variant="ghost"
+        morphKey={key}
+        // tabular-nums: the latency ("1,4 s") doesn't wobble the pill's width between runs
+        className={cn('tabular-nums', key === 'ok' && 'text-green-800 hover:text-green-800 dark:text-green-300 dark:hover:text-green-300')}
+        busy={state === 'busy'}
+        onClick={() => void run()}
+        // The name carries the result too: the visible "✓ 0,8 s" would otherwise be hidden behind "Test …"
+        aria-label={seconds ? `Test ${title}: werkt, ${seconds}` : `Test ${title}`}
+      >
+        {key === 'busy' ? <Loader2Icon className="animate-spin" /> : key === 'ok' ? <CheckIcon /> : <PlayIcon />}
+        {seconds ?? (key === 'busy' || compact ? null : 'Test')}
+      </Pill>
+      {/* Always mounted, so the result is announced (failures come as a toast) */}
+      <span role="status" className="sr-only">
+        {seconds ? `${title} werkt, antwoord in ${seconds}` : ''}
+      </span>
+    </>
   );
 }
 
@@ -196,7 +205,13 @@ export default function AiPane() {
             }
             meta={key?.source === 'env' ? 'Opslaan hier gaat vóór de .env-waarde.' : undefined}
           >
-            <Pill ref={keyPill} variant={key?.set ? 'secondary' : 'primary'} morphKey={key?.set ? 'edit' : 'add'} disabled={!config.settingsKeyOk} onClick={() => (editing ? closeEditor() : setEditing(true))}>
+            <Pill
+              ref={keyPill}
+              variant={key?.set ? 'secondary' : 'primary'}
+              morphKey={key?.set ? 'edit' : 'add'}
+              disabled={!config.settingsKeyOk}
+              onClick={() => (editing ? closeEditor() : setEditing(true))}
+            >
               {key?.set ? 'Wijzigen' : 'Sleutel toevoegen'}
             </Pill>
             <AnimatePresence initial={false}>
