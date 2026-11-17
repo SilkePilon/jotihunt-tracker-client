@@ -22,7 +22,7 @@ export default function MapTooltip({ longitude, latitude, offset, color, title, 
       <div className="relative flex w-fit items-center gap-[7px] rounded-[10px] bg-(--map-surface) px-2.5 py-1.5 font-(family-name:--map-font) text-[12.5px] whitespace-nowrap text-(--map-on-surface) shadow-[0_0_0_1px_var(--map-hairline),0_4px_12px_rgb(0_0_0/0.5)]">
         <span className="size-2 shrink-0 rounded-full" style={{ background: color }} />
         <span className="font-semibold">{title}</span>
-        {meta && <span className="text-(--map-muted)">{meta}</span>}
+        {meta && <span className="text-(--map-muted) tabular-nums">{meta}</span>}
         <span className="absolute top-full left-1/2 size-2 -translate-x-1/2 -translate-y-1 rotate-45 rounded-[1px] bg-(--map-surface)" />
       </div>
     </Marker>
