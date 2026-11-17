@@ -406,7 +406,7 @@ function Row({
                   </span>
                 )}
               </div>
-              <div className="text-[11.5px] leading-snug text-muted-foreground">{meta}</div>
+              <div className="text-xs leading-snug text-muted-foreground md:text-[11.5px]">{meta}</div>
             </div>
             {children}
           </div>
