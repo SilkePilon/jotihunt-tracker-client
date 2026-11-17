@@ -8,6 +8,7 @@ import SidebarSections from '@/components/sidebar/SidebarSections';
 import { useWorkHold } from '@/stores/prompt-queue.store';
 import { isFormPage } from '@/lib/mobile-nav';
 import { PANE_SLIDE_TRANSITION } from '@/lib/motion';
+import { SHEET_COLUMN } from './sheet-column';
 import { startsInOwnGesture, SWIPE_EDGE_PX, swipeAxis, swipeGoesBack, swipeOffset, type SwipeAxis } from '@/lib/swipe-back';
 
 /**
@@ -27,7 +28,7 @@ export default function MobilePage({ page, depth, mapRef }: { page: Page; depth:
       ref={swipeRef}
       style={{ x }}
       {...handlers}
-      className="flex flex-col gap-3 pr-[max(0.75rem,env(safe-area-inset-right))] pb-8 pl-[max(0.75rem,env(safe-area-inset-left))] landscape-phone:px-3"
+      className={`flex flex-col gap-3 pr-[max(0.75rem,env(safe-area-inset-right))] pb-8 pl-[max(0.75rem,env(safe-area-inset-left))] landscape-phone:px-3 ${SHEET_COLUMN}`}
     >
       {/* Takes focus when the page pushes in (MobileShell); 44px tall on phone-width screens (the phone layout, whatever the pointer). Inset focus ring: it sits at the top edge of the sheet's scroller */}
       <button type="button" data-view-back onClick={pop} aria-label={depth > 1 ? undefined : 'Terug naar menu'} className="flex h-10 w-fit items-center gap-1 rounded-xl pl-1 pr-2.5 text-body font-semibold text-muted-foreground outline-none transition-colors active:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset max-md:h-11 pointer-coarse:h-11">

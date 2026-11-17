@@ -30,6 +30,7 @@ import useNotificationsDialogStore from '@/stores/notifications-dialog.store';
 import type { MobilePageId } from '@/lib/mobile-nav';
 import { menuRowTourTarget } from '@/components/tour/targets';
 import { CARD_TITLE } from '@/lib/dialog-shell';
+import { SHEET_COLUMN } from './sheet-column';
 
 interface Row {
   key: string;
@@ -128,7 +129,7 @@ export default function MobileMenu({ onSearch }: { onSearch: () => void }) {
   const beheer: Row[] = BEHEER_SECTIONS.map(({ id, title, icon: SectionIcon }) => ({ key: id, icon: <SectionIcon className={icon} />, title, onSelect: () => useAdminStore.getState().openDialog(id), dialog: true }));
 
   return (
-    <div className="flex flex-col gap-3 pr-[max(0.75rem,env(safe-area-inset-right))] pb-8 pl-[max(0.75rem,env(safe-area-inset-left))] landscape-phone:px-3">
+    <div className={`flex flex-col gap-3 pr-[max(0.75rem,env(safe-area-inset-right))] pb-8 pl-[max(0.75rem,env(safe-area-inset-left))] landscape-phone:px-3 ${SHEET_COLUMN}`}>
       <SidebarHeader className="rounded-3xl" />
       <MenuCard title="Spel" rows={spel} />
       <MenuCard title="Jij" rows={jij} />
