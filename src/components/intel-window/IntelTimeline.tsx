@@ -6,7 +6,7 @@ import CookieBadge from '@/components/tracker/CookieBadge';
 import SuccessBadge from '@/components/auth/SuccessBadge';
 import { Tag } from '@/components/beheer/controls/Pill';
 import { formatClock } from '@/lib/format';
-import { type DeadlineTone, type MetaSegment, type MetaTone, assignmentMeta, assignmentStatusLabel, INTEL_TAB_ORDER, isHintDone, KIND_COLOR, KIND_CONTAINER, KIND_LABEL, areaStates, deadlineLabel, deadlineTone, groupByDay, siteSubmission, solvedCount } from '@/lib/intel-window';
+import { type DeadlineTone, type MetaSegment, type MetaTone, assignmentMeta, assignmentStatusLabel, INTEL_TAB_ORDER, isHintDone, KIND_COLOR, KIND_CONTAINER, KIND_LABEL, kindPrefix, areaStates, deadlineLabel, deadlineTone, groupByDay, siteSubmission, solvedCount } from '@/lib/intel-window';
 import { EASE_OUT, REVEAL_TRANSITION, revealTransition } from '@/lib/motion';
 import { useHasMounted } from '@/hooks/has-mounted.hook';
 import { OVERLINE } from '@/lib/menu-styles';
@@ -205,11 +205,14 @@ function Row({ item, now, onSelect }: { item: IntelItem; now: number; onSelect: 
       // IntelDialog puts focus back on this row when the item it opened is closed again
       data-id={item.id}
       onClick={() => onSelect(item.id)}
-      className="flex w-full items-center gap-3 bg-(--row-bg) px-3.5 py-[11px] text-left outline-none transition-colors [--row-bg:var(--card)] hover:[--row-bg:var(--beheer-row)] focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset"
+      // scroll-mt: a row tabbed into view lands below the sticky day header, not under it
+      className="flex w-full scroll-mt-12 items-center gap-3 bg-(--row-bg) px-3.5 py-[11px] text-left outline-none transition-colors [--row-bg:var(--card)] hover:[--row-bg:var(--beheer-row)] focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset"
     >
       <KindTile kind={item.kind} unread={item.unread} done={done} />
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-bold">
+          {/* The kind tile's icon and colour are visual only */}
+          <span className="sr-only">{kindPrefix(item.kind, item.title)}</span>
           {item.title}
           {/* The dot and the check on the tile are visual only */}
           {item.unread && <span className="sr-only">, ongelezen</span>}
