@@ -37,3 +37,16 @@ export function lightboxKey(view: LightboxView, key: string): LightboxView | nul
   if (view.scale <= 1) return view;
   return { ...view, x: view.x + pan[0], y: view.y + pan[1] };
 }
+
+/** Movement (px) under which a press counts as a tap, not a drag */
+export const LIGHTBOX_TAP_SLOP = 6;
+
+/**
+ * A tap on a zoomed photo centres the view on that spot: a single-pointer alternative to dragging. `dx`/`dy` is the tap
+ * relative to the viewport's centre; with the transform `translate(x, y) scale(s)` around the centre, the spot under it
+ * moves to the centre when the pan shifts by the opposite. Not zoomed in: unchanged.
+ */
+export function centerOn(view: LightboxView, dx: number, dy: number): LightboxView {
+  if (view.scale <= 1) return view;
+  return { ...view, x: view.x - dx, y: view.y - dy };
+}

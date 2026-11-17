@@ -3,7 +3,7 @@ import { MinusIcon, PlusIcon, RotateCcwIcon, XIcon } from 'lucide-react';
 import { CLOSE_BUTTON_CLASS } from '@/components/ui/close-button';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
-import { LIGHTBOX_MAX_SCALE, LIGHTBOX_MIN_SCALE, LIGHTBOX_START, LIGHTBOX_STEP, type LightboxView, lightboxKey, zoomView } from '@/lib/lightbox';
+import { centerOn, LIGHTBOX_MAX_SCALE, LIGHTBOX_MIN_SCALE, LIGHTBOX_START, LIGHTBOX_STEP, LIGHTBOX_TAP_SLOP, type LightboxView, lightboxKey, zoomView } from '@/lib/lightbox';
 
 const clampScale = (scale: number) => Math.min(LIGHTBOX_MAX_SCALE, Math.max(LIGHTBOX_MIN_SCALE, scale));
 
@@ -14,8 +14,8 @@ const clampScale = (scale: number) => Math.min(LIGHTBOX_MAX_SCALE, Math.max(LIGH
 const TOOL_BUTTON = cn(CLOSE_BUTTON_CLASS, 'bg-black/50 text-white backdrop-blur hover:bg-black/65 aria-disabled:cursor-default aria-disabled:opacity-40 aria-disabled:hover:bg-black/50');
 
 /**
- * Full-screen photo viewer with zoom: mouse wheel, pinch, double click/tap and +/- buttons; drag to pan when zoomed.
- * Keyboard: the photo takes focus; + / - / 0 zoom and reset, arrows pan when zoomed.
+ * Full-screen photo viewer with zoom: mouse wheel, pinch, double click/tap and +/- buttons; drag to pan when zoomed, or
+ * tap/click a spot to centre it (no drag needed). Keyboard: the photo takes focus; + / - / 0 zoom and reset, arrows pan.
  */
 
 export default function ImageLightbox({ src, alt, open, onOpenChange }: { src: string; alt: string; open: boolean; onOpenChange: (open: boolean) => void }) {
@@ -23,6 +23,8 @@ export default function ImageLightbox({ src, alt, open, onOpenChange }: { src: s
   const [dragging, setDragging] = useState(false);
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const pinchStart = useRef<{ distance: number; scale: number } | null>(null);
+  // Where a single-pointer press started; cleared once it moves past the tap slop or a second finger joins
+  const tapStart = useRef<{ x: number; y: number } | null>(null);
 
   function zoom(factor: number) {
     setView((current) => zoomView(current, factor));
@@ -37,6 +39,7 @@ export default function ImageLightbox({ src, alt, open, onOpenChange }: { src: s
     event.currentTarget.setPointerCapture(event.pointerId);
     pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
     setDragging(true);
+    tapStart.current = pointers.current.size === 1 ? { x: event.clientX, y: event.clientY } : null;
     if (pointers.current.size === 2) pinchStart.current = { distance: pointerDistance(), scale: view.scale };
   }
 
@@ -44,6 +47,8 @@ export default function ImageLightbox({ src, alt, open, onOpenChange }: { src: s
     const previous = pointers.current.get(event.pointerId);
     if (!previous) return;
     pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    const tap = tapStart.current;
+    if (tap && Math.hypot(event.clientX - tap.x, event.clientY - tap.y) > LIGHTBOX_TAP_SLOP) tapStart.current = null;
     const pinch = pinchStart.current;
     if (pinch && pointers.current.size === 2) {
       const scale = clampScale((pinch.scale * pointerDistance()) / pinch.distance);
@@ -57,6 +62,14 @@ export default function ImageLightbox({ src, alt, open, onOpenChange }: { src: s
 
   function onPointerUp(event: React.PointerEvent<HTMLDivElement>) {
     pointers.current.delete(event.pointerId);
+    // A tap (no drag) on a zoomed photo: centre the view on that spot
+    if (event.type === 'pointerup' && tapStart.current && pointers.current.size === 0) {
+      const rect = event.currentTarget.getBoundingClientRect();
+      const dx = event.clientX - (rect.left + rect.width / 2);
+      const dy = event.clientY - (rect.top + rect.height / 2);
+      setView((current) => centerOn(current, dx, dy));
+    }
+    tapStart.current = null;
     if (pointers.current.size < 2) pinchStart.current = null;
     if (pointers.current.size === 0) setDragging(false);
   }
@@ -70,7 +83,7 @@ export default function ImageLightbox({ src, alt, open, onOpenChange }: { src: s
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent showCloseButton={false} className="h-dvh w-screen max-w-none gap-0 rounded-none border-0 bg-black/95 p-0 sm:max-w-none">
         <DialogTitle className="sr-only">Foto</DialogTitle>
-        <DialogDescription className="sr-only">Zoom met scrollen, knijpen of dubbelklikken; sleep om te verschuiven. Toetsen: plus en min zoomen, 0 herstelt, pijltjes verschuiven.</DialogDescription>
+        <DialogDescription className="sr-only">Zoom met scrollen, knijpen of dubbelklikken; sleep of tik op een plek om te verschuiven. Toetsen: plus en min zoomen, 0 herstelt, pijltjes verschuiven.</DialogDescription>
         <div
           tabIndex={0}
           role="img"
@@ -94,7 +107,8 @@ export default function ImageLightbox({ src, alt, open, onOpenChange }: { src: s
             src={src}
             alt=""
             draggable={false}
-            className="h-full w-full select-none object-contain"
+            // The inline transition eases zoom and tap-to-centre steps; motion-reduce turns it off (the class wins with !)
+            className="h-full w-full select-none object-contain motion-reduce:transition-none!"
             style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})`, transition: dragging ? 'none' : 'transform 120ms ease-out' }}
           />
         </div>

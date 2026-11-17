@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { LIGHTBOX_MAX_SCALE, LIGHTBOX_PAN, LIGHTBOX_START, LIGHTBOX_STEP, lightboxKey, zoomView } from './lightbox';
+import { centerOn, LIGHTBOX_MAX_SCALE, LIGHTBOX_PAN, LIGHTBOX_START, LIGHTBOX_STEP, lightboxKey, zoomView } from './lightbox';
 
 describe('zoomView', () => {
   test('clamps to the max scale', () => {
@@ -28,5 +28,15 @@ describe('lightboxKey', () => {
   test('other keys are not handled', () => {
     expect(lightboxKey(LIGHTBOX_START, 'Enter')).toBeNull();
     expect(lightboxKey(LIGHTBOX_START, 'Tab')).toBeNull();
+  });
+});
+
+describe('centerOn', () => {
+  test('shifts the pan by the opposite of the tap offset when zoomed in', () => {
+    expect(centerOn({ scale: 2, x: 10, y: -5 }, 100, -40)).toEqual({ scale: 2, x: -90, y: 35 });
+  });
+
+  test('leaves an unzoomed photo alone', () => {
+    expect(centerOn(LIGHTBOX_START, 100, 40)).toBe(LIGHTBOX_START);
   });
 });
