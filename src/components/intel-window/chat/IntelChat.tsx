@@ -8,7 +8,7 @@ import type { MapRef } from '@/components/Map';
 import { useHasMounted } from '@/hooks/has-mounted.hook';
 import Reveal from '@/components/motion/Reveal';
 import { apiErrorMessage } from '@/lib/api-error';
-import { BUSY_MESSAGE, CONTEXT_LABEL, chatStatusLabel, lastUserMessageId } from '@/lib/intel-chat';
+import { BUSY_MESSAGE, OFFLINE_SEND_MESSAGE, CONTEXT_LABEL, chatStatusLabel, lastUserMessageId } from '@/lib/intel-chat';
 import { CHAT_EMPTY_ENTRANCE_DELAY, CHAT_MESSAGE } from '@/lib/intel-window';
 import { POP, SWAP } from '@/lib/motion';
 import type { IntelItem, IntelKind } from '@/types/Intel';
@@ -103,7 +103,7 @@ function ChatPanel({ item, mapRef, entrance }: IntelChatProps) {
           </motion.div>
         )}
       </AnimatePresence>
-      <ChatFooter chat={chat} kind={item.kind} busy={busy} />
+      <ChatFooter chat={chat} itemId={item.id} kind={item.kind} busy={busy} />
       <ConfirmDialog
         open={confirmReset}
         onOpenChange={setConfirmReset}
@@ -145,16 +145,16 @@ function ChatThread({ chat, mapRef }: { chat: IntelChatState; mapRef: RefObject<
           </AnimatePresence>
         </ChatScrollerContext.Provider>
         <ToolStatus label={chatStatusLabel(chat.messages, chat.status)} />
-        <Reveal>{chat.status === 'error' && !chat.unavailable && <ErrorRow busy={chat.errorKind === 'busy'} onRetry={chat.retry} />}</Reveal>
+        <Reveal>{chat.status === 'error' && !chat.unavailable && <ErrorRow message={chat.errorKind === 'busy' ? BUSY_MESSAGE : chat.errorKind === 'offline' ? 'Geen verbinding, probeer het opnieuw' : 'Er ging iets mis'} onRetry={chat.retry} />}</Reveal>
       </div>
     </div>
   );
 }
 
-function ErrorRow({ busy, onRetry }: { busy: boolean; onRetry: () => void }) {
+function ErrorRow({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
     <div className="mx-1 flex items-center gap-2 rounded-xl bg-destructive/12 py-1.5 pr-1.5 pl-3 text-[12.5px] text-destructive dark:text-red-300">
-      <span className="flex-1">{busy ? BUSY_MESSAGE : 'Er ging iets mis'}</span>
+      <span className="flex-1">{message}</span>
       <Pill variant="danger-soft" onClick={onRetry}>
         <RotateCcwIcon />
         Opnieuw
@@ -164,7 +164,7 @@ function ErrorRow({ busy, onRetry }: { busy: boolean; onRetry: () => void }) {
 }
 
 /** The prompt box, or "AI is niet ingesteld" when the server has no Gemini key (503) */
-function ChatFooter({ chat, kind, busy }: { chat: IntelChatState; kind: IntelKind; busy: boolean }) {
+function ChatFooter({ chat, itemId, kind, busy }: { chat: IntelChatState; itemId: number; kind: IntelKind; busy: boolean }) {
   return (
     <AnimatePresence mode="wait" initial={false}>
       {chat.unavailable ? (
@@ -172,8 +172,15 @@ function ChatFooter({ chat, kind, busy }: { chat: IntelChatState; kind: IntelKin
           AI is niet ingesteld
         </motion.div>
       ) : (
-        <motion.div key="input" {...SWAP}>
-          <ChatInput kind={kind} busy={busy} disabled={chat.loading || chat.loadError} onSend={chat.send} onStop={chat.stop} />
+        <motion.div key="input" className="flex flex-col" {...SWAP}>
+          <Reveal>
+            {chat.sendFailed && (
+              <p role="alert" className="mx-1 mb-2 rounded-xl bg-destructive/12 px-3 py-1.5 text-[12.5px] text-destructive dark:text-red-300">
+                {OFFLINE_SEND_MESSAGE}
+              </p>
+            )}
+          </Reveal>
+          <ChatInput itemId={itemId} kind={kind} busy={busy} disabled={chat.loading || chat.loadError} onSend={chat.send} onStop={chat.stop} />
         </motion.div>
       )}
     </AnimatePresence>

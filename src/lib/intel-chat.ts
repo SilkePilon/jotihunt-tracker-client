@@ -1,4 +1,5 @@
 import { isAxiosError } from 'axios';
+import { isNetworkError } from '@/lib/api-error';
 import type { ChatStatus, ReasoningUIPart, UIMessage } from 'ai';
 import { formatClock } from '@/lib/format';
 import { ASSIGNMENT_STATUS_LABELS, areaStates } from '@/lib/intel-window';
@@ -434,9 +435,12 @@ export const PLACEHOLDER: Record<IntelKind, string> = {
   news: 'Vraag iets over dit bericht…',
 };
 
-export type ChatErrorKind = 'rate_limited' | 'ai_unavailable' | 'not_found' | 'busy' | 'other';
+export type ChatErrorKind = 'rate_limited' | 'ai_unavailable' | 'not_found' | 'busy' | 'offline' | 'other';
 
 export const BUSY_MESSAGE = 'Vorige vraag wordt nog afgerond, probeer het zo opnieuw';
+
+/** A question that couldn't be sent (no connection): it goes back into the prompt box */
+export const OFFLINE_SEND_MESSAGE = 'Geen verbinding: je vraag is niet verstuurd en staat weer in het invoerveld.';
 
 export const RATE_LIMIT_MESSAGE = 'Even rustig aan: te veel vragen, probeer het zo weer';
 
@@ -452,6 +456,8 @@ export function chatErrorKind(error: unknown): ChatErrorKind {
   if (status === 409) return 'busy';
   if (error instanceof Error && error.message === 'ai_unavailable') return 'ai_unavailable';
   if (error instanceof Error && error.message === 'rate_limited') return 'rate_limited';
+  // No answer at all (offline, server unreachable): the question never reached the AI
+  if (status === undefined && isNetworkError(error)) return 'offline';
   return 'other';
 }
 

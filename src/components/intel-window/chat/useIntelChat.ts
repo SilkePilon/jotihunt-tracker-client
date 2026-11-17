@@ -9,6 +9,7 @@ import { fetcherWithMethod, useAuthSWR } from '@/lib/swr';
 import useIntelChatStore, { DEFAULT_CHAT_MODES } from '@/stores/intel-chat.store';
 import type { ChatModes } from '@/types/IntelChat';
 import type { User } from '@/types/User';
+import useChatDraftStore, { type ChatDraft } from '@/stores/chat-draft.store';
 
 /** The prompt box modes of the logged-in user (kept in localStorage per user) */
 export function useChatModes(): [ChatModes, (mode: keyof ChatModes, on: boolean) => void] {
@@ -32,6 +33,10 @@ export function useIntelChat(articleId: number) {
   const history = useAuthSWR<{ messages: UIMessage[]; running?: boolean }>(path, { revalidateOnFocus: false });
   const { mutate } = history;
   const [postUnavailable, setPostUnavailable] = useState(false);
+  /** The last question could not be sent (no connection): it went back into the prompt box */
+  const [sendFailed, setSendFailed] = useState(false);
+  /** What the last send carried, to put back into the prompt box when it never reached the server */
+  const lastSent = useRef<ChatDraft | null>(null);
 
   // useChat reads the transport of the latest render on every send, so a new token or mode applies right away
   const transport = useMemo(
@@ -52,6 +57,19 @@ export function useIntelChat(articleId: number) {
       const kind = chatErrorKind(error);
       if (kind === 'rate_limited') toast.error(RATE_LIMIT_MESSAGE);
       if (kind === 'ai_unavailable') setPostUnavailable(true);
+      // Never reached the server (offline): take the question out of the thread and back into the prompt box,
+      // instead of an error row whose "Opnieuw" would only fail again
+      if (kind === 'offline' && lastSent.current) {
+        const draft = lastSent.current;
+        lastSent.current = null;
+        chatRef.current?.setMessages((current) => {
+          const index = current.map((message) => message.role).lastIndexOf('user');
+          return index === -1 ? current : current.slice(0, index);
+        });
+        chatRef.current?.clearError();
+        useChatDraftStore.getState().restore(articleId, draft);
+        setSendFailed(true);
+      }
     },
     // Keep the cached history in step, so coming back to this item shows the whole conversation at once. An errored
     // turn (429/503) wasn't saved by the server, so it stays out of the cache; an aborted one was (partly) saved.
@@ -60,6 +78,11 @@ export function useIntelChat(articleId: number) {
     },
   });
   const { setMessages, sendMessage, regenerate, resumeStream, stop, clearError } = chat;
+  // onError runs after this render; it reaches the chat through this ref
+  const chatRef = useRef<{ setMessages: typeof setMessages; clearError: typeof clearError } | null>(null);
+  useEffect(() => {
+    chatRef.current = { setMessages, clearError };
+  }, [setMessages, clearError]);
   const busyRef = useRef(false);
   useEffect(() => {
     busyRef.current = chat.status === 'submitted' || chat.status === 'streaming';
@@ -82,8 +105,11 @@ export function useIntelChat(articleId: number) {
     loading: !history.data && !history.error,
     loadError: loadKind !== null && loadKind !== 'ai_unavailable',
     unavailable: postUnavailable || loadKind === 'ai_unavailable',
+    sendFailed,
     send(text: string, image?: FileUIPart) {
       touched.current = true;
+      setSendFailed(false);
+      lastSent.current = { text, image: image ? { url: image.url, name: image.filename ?? 'afbeelding.jpg' } : undefined };
       void sendMessage(image ? { text, files: [image] } : { text });
     },
     retry() {
