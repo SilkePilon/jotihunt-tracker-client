@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { SidebarFox } from './fox-status';
-import { axisTicks, chipSinceText, formatSince, historyModel, historyStatusLine, statusSinceText, type AreaHistory } from './fox-history';
+import { axisTicks, chipSinceText, formatSince, historyModel, historyStatusLine, nearestBlock, statusSinceText, type AreaHistory } from './fox-history';
 
 const MIN = 60_000;
 // 18:40 Amsterdam; the window runs 15:40 – 18:40.
@@ -226,5 +226,21 @@ describe('historyStatusLine', () => {
 describe('axisTicks', () => {
   test('window start, middle and now', () => {
     expect(axisTicks(from)).toEqual(['15:40', '17:10', 'nu']);
+  });
+});
+
+describe('nearestBlock', () => {
+  const blocks = [
+    { id: 'a', left: 10, right: 40, centreY: 15 },
+    { id: 'b', left: 60, right: 62, centreY: 37 },
+  ];
+  test('a tap inside a span picks it; between rows the nearer lane wins', () => {
+    expect(nearestBlock(blocks, 20, 15, 22)).toBe('a');
+    expect(nearestBlock(blocks, 61, 30, 22)).toBe('b');
+  });
+  test('a tap next to a tiny block still reaches it, but not beyond the radius', () => {
+    expect(nearestBlock(blocks, 75, 37, 22)).toBe('b');
+    expect(nearestBlock(blocks, 90, 37, 22)).toBeNull();
+    expect(nearestBlock(blocks, 20, 70, 22)).toBeNull();
   });
 });
