@@ -6,6 +6,7 @@ import { readFileSync } from 'fs';
 import path from 'path';
 import { viteEnvs } from 'vite-envs';
 import { VitePWA, VitePWAOptions } from 'vite-plugin-pwa';
+import { MAP_RUNTIME_CACHING } from './src/lib/map-tile-cache';
 
 const pwaManifest: Partial<VitePWAOptions> = {
   // main.tsx asks before reloading into a new version
@@ -20,6 +21,8 @@ const pwaManifest: Partial<VitePWAOptions> = {
     importScripts: ['push-sw.js'],
     // The API shares the origin under /api (https://jotihunt.silkepilon.dev/api); its URLs (e.g. the APK download) are never app routes
     navigateFallbackDenylist: [/^\/api(\/|$)/],
+    // Base-map tiles, glyphs and sprites (OpenFreeMap, PDOK) stay drawable offline; /api is never cached (map-tile-cache.ts)
+    runtimeCaching: MAP_RUNTIME_CACHING,
     // Would follow build.sourcemap but reference the maps from sw.js; Sentry doesn't run in the service worker
     sourcemap: false,
   },
