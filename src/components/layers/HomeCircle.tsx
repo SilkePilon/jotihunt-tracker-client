@@ -1,3 +1,4 @@
+import { zoomScaled } from '@/lib/zoom-scale';
 import { useMemo } from 'react';
 import { Layer, Source, type FillLayerSpecification, type LineLayerSpecification } from 'react-map-gl/maplibre';
 import { useHomeTeam } from '@/hooks/teams.hook';
@@ -15,7 +16,7 @@ const HOME_PAINT: FillLayerSpecification['paint'] = {
 // Same thicker dashed rim as the other groups' circles (Teams.tsx)
 const HOME_OUTLINE_PAINT: LineLayerSpecification['paint'] = {
   'line-color': 'hsla(256, 90%, 61%, 0.85)',
-  'line-width': ['interpolate', ['linear'], ['zoom'], 9, 1, 13, 2.5, 16, 3.5],
+  'line-width': zoomScaled(3),
   'line-dasharray': [2, 1.5],
 };
 

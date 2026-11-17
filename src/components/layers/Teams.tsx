@@ -1,3 +1,4 @@
+import { zoomScaled } from '@/lib/zoom-scale';
 import { useMemo, useState } from 'react';
 import { Layer, Source, useMap, type FillLayerSpecification, type LineLayerSpecification, type SymbolLayerSpecification } from 'react-map-gl/maplibre';
 import { isTeamWithApiId, useTeams } from '@/hooks/teams.hook';
@@ -19,7 +20,7 @@ const TEAM_CIRCLES_PAINT: FillLayerSpecification['paint'] = { 'fill-color': ['ge
 const TEAM_CIRCLES_OUTLINE_PAINT: LineLayerSpecification['paint'] = {
   'line-color': ['get', 'color'],
   'line-opacity': 0.85,
-  'line-width': ['interpolate', ['linear'], ['zoom'], 9, 1, 13, 2.5, 16, 3.5],
+  'line-width': zoomScaled(3),
   'line-dasharray': [2, 1.5],
 };
 
