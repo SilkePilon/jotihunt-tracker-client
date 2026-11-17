@@ -9,6 +9,7 @@ import { PANE_SLIDE, PANE_SLIDE_TRANSITION } from '@/lib/motion';
 import type { SnapHeights } from '@/lib/sheet-snaps';
 import BottomSheet from './BottomSheet';
 import PeekStrip from './PeekStrip';
+import MyLocationButton from './MyLocationButton';
 import MobileMenu from './MobileMenu';
 import MobilePage from './MobilePage';
 import ViewportDebug from './ViewportDebug';
@@ -77,7 +78,12 @@ export default function MobileShell({ mapRef }: { mapRef: RefObject<MapRef | nul
   return (
     <>
       <ViewportDebug snaps={heights} />
-      <motion.div id={DOCK_ID} className="pointer-events-none fixed inset-x-3 z-[45] flex flex-col gap-2" style={{ bottom: dockBottom }} />
+      <motion.div id={DOCK_ID} className="pointer-events-none fixed inset-x-3 z-[45] flex flex-col gap-2" style={{ bottom: dockBottom }}>
+        {/* Always the dock's first node (display: contents, so it adds no gap): popups portal in after it, under the button */}
+        <div className="contents">
+          <MyLocationButton mapRef={mapRef} />
+        </div>
+      </motion.div>
       <BottomSheet peek={<PeekStrip />} onHeights={setHeights}>
         {/* Effects run in sibling order: the sheet entry first, so Back closes pages before lowering the sheet */}
         <SheetBackEntry />
