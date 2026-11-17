@@ -25,7 +25,6 @@ const HEADER = 'place-items-start gap-1.5 text-left';
 const BUSY = BUSY_CLASSES;
 /** Phones: 44px tall touch targets */
 const COARSE = 'pointer-coarse:h-11';
-const DESTRUCTIVE = 'dark:bg-[color-mix(in_oklab,var(--destructive)_75%,black)] dark:hover:bg-[color-mix(in_oklab,var(--destructive)_65%,black)]';
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -90,7 +89,7 @@ export default function ConfirmDialog({ open, onOpenChange, title, description, 
           <AlertDialogPrimitive.Action asChild>
             <Button
               variant={destructive ? 'destructive' : 'default'}
-              className={cn(DIALOG_ACTION, COARSE, destructive && DESTRUCTIVE, BUSY)}
+              className={cn(DIALOG_ACTION, COARSE, BUSY)}
               aria-disabled={busy || undefined}
               aria-busy={busy || undefined}
               onClick={(event) => {

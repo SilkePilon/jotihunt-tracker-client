@@ -53,6 +53,8 @@
   --destructive-foreground: hsl(60 9.1% 97.8%);
   /* Red as small text (errors, danger rows, penalties): >= 4.5:1 on white, the tonal rows and bg-destructive/15 */
   --destructive-text: hsl(0 72.2% 44%);
+  /* Solid red fill under white text (destructive Button, ConfirmDialog action, danger Pill): 4.8:1 */
+  --destructive-fill: var(--destructive);
   --border: hsl(20 0% 90%);
   /* Text field outlines (border-input): >= 3:1 against white so the field's boundary is visible */
   --input: hsl(20 0% 54%);
@@ -158,6 +160,8 @@
   --destructive-foreground: hsl(60 9.1% 97.8%);
   /* --destructive is 3.3:1 on the dark card; red-300 is >= 6.5:1 on card, rows and bg-destructive/15 */
   --destructive-text: #fca5a5;
+  /* The solid red fill a step darker on the dark window: white text 8.7:1 */
+  --destructive-fill: color-mix(in oklab, var(--destructive) 75%, black);
   --border: hsl(240 4% 22%);
   /* Field outlines: >= 3:1 against the card (22% was 1.3:1); fills use bg-input/10 so they stay dark */
   --input: hsl(240 4% 46%);
@@ -228,6 +232,7 @@
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-destructive-text: var(--destructive-text);
+  --color-destructive-fill: var(--destructive-fill);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
