@@ -5,7 +5,7 @@ import type { LngLat } from '@/lib/hq-director';
 export default function FocusPulse({ center, color }: { center: LngLat; color: string }) {
   return (
     <Marker longitude={center[0]} latitude={center[1]} anchor="center">
-      <span className="pointer-events-none block size-16 rounded-full border-[3px] motion-safe:animate-[hq-pulse_2.4s_ease-out_infinite]" style={{ borderColor: color }} />
+      <span className="pointer-events-none block size-16 rounded-full border-[3px] [scale:var(--map-marker-scale,1)] motion-safe:animate-[hq-pulse_2.4s_ease-out_infinite]" style={{ borderColor: color }} />
     </Marker>
   );
 }

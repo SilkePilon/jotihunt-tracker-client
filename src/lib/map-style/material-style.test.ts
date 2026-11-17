@@ -3,6 +3,9 @@ import type { LayerSpecification, StyleSpecification } from 'maplibre-gl';
 import libertyJson from './liberty.json';
 import {
   ANDROID_SEED,
+  DARK_SHIELD_PREFIX,
+  darkShieldColours,
+  darkShieldSize,
   MAP_PALETTES,
   MAP_SEED,
   argbToCss,
@@ -10,7 +13,11 @@ import {
   lstar,
   mapPalette,
   materialStyle,
+  ROAD_SHIELD_HEIGHT,
+  ROAD_SHIELD_WIDTHS,
   roleOf,
+  SHIELD_TEXT,
+  SHIELD_TEXT_DARK,
   waterColors,
 } from './material-style';
 import { mapPaletteFromSeed } from './palette-from-seed';
@@ -228,6 +235,9 @@ function contrast(a: string, b: string): number {
 const SHIELD_FILL = '#ffffff';
 
 const isShield = (l: LayerSpecification) => roleOf(l.type, l.id) === 'shield';
+const layout = (l: LayerSpecification, key: string) => (l as { layout?: Record<string, unknown> }).layout?.[key];
+/** In dark mode the road_N shields are our own dark images; the US shields keep the white sprites. */
+const isDarkShield = (l: LayerSpecification) => (JSON.stringify(layout(l, 'icon-image')) ?? '').includes(DARK_SHIELD_PREFIX);
 
 function visibleLabels(p: ReturnType<typeof mapPalette>) {
   return materialStyle(liberty, p).layers.filter((l) => {
@@ -246,7 +256,8 @@ describe('label contrast', () => {
       expect(shields.map((l) => l.id)).toEqual(
         expect.arrayContaining(['highway-shield-non-us', 'highway-shield-us-interstate', 'road_shield_us']),
       );
-      for (const l of shields) {
+      for (const l of shields.filter((l) => !isDarkShield(l))) {
+        expect(paint(l, 'text-color')).toBe(SHIELD_TEXT);
         const ratio = contrast(paint(l, 'text-color') as string, SHIELD_FILL);
         expect({ id: l.id, ok: ratio >= 4.5, ratio }).toMatchObject({ ok: true });
         expect(paint(l, 'text-halo-color')).toBeUndefined();
@@ -269,4 +280,48 @@ describe('label contrast', () => {
       }
     });
   }
+});
+
+describe('dark road shields', () => {
+  test('light: the road_N shields keep Liberty\'s sprites', () => {
+    const style = materialStyle(liberty, light);
+    expect(layout(layer(style, 'highway-shield-non-us'), 'icon-image')).toEqual(['concat', 'road_', ['get', 'ref_length']]);
+    expect(style.layers.some(isDarkShield)).toBe(false);
+  });
+
+  test('dark: the road_N shields ask for the dark images, with light text that reads on them', () => {
+    const style = materialStyle(liberty, dark);
+    const shield = layer(style, 'highway-shield-non-us');
+    expect(layout(shield, 'icon-image')).toEqual(['concat', DARK_SHIELD_PREFIX, ['get', 'ref_length']]);
+    expect(paint(shield, 'text-color')).toBe(SHIELD_TEXT_DARK);
+    const colours = darkShieldColours(dark);
+    expect(colours.text).toBe(SHIELD_TEXT_DARK);
+    expect(contrast(colours.text, colours.fill)).toBeGreaterThanOrEqual(7);
+    // The tile stands out from the dark map around it
+    expect(contrast(colours.outline, dark.surface)).toBeGreaterThanOrEqual(3);
+  });
+
+  test('dark: the US shields keep their white sprites and dark text', () => {
+    const style = materialStyle(liberty, dark);
+    for (const id of ['highway-shield-us-interstate', 'road_shield_us']) {
+      const l = layer(style, id);
+      expect(isDarkShield(l)).toBe(false);
+      expect(paint(l, 'text-color')).toBe(SHIELD_TEXT);
+    }
+  });
+
+  test('dark: nothing else changes', () => {
+    const before = materialStyle(liberty, dark).layers;
+    const other = before.filter((l) => l.id !== 'highway-shield-non-us');
+    expect(other.some(isDarkShield)).toBe(false);
+  });
+
+  test('darkShieldSize: Liberty\'s sprite sizes for road_1…road_6, nothing for other ids', () => {
+    expect(ROAD_SHIELD_WIDTHS).toEqual([14, 20, 25, 31, 36, 40]);
+    expect(darkShieldSize(`${DARK_SHIELD_PREFIX}1`)).toEqual({ width: 14, height: ROAD_SHIELD_HEIGHT });
+    expect(darkShieldSize(`${DARK_SHIELD_PREFIX}6`)).toEqual({ width: 40, height: ROAD_SHIELD_HEIGHT });
+    for (const id of [`${DARK_SHIELD_PREFIX}0`, `${DARK_SHIELD_PREFIX}7`, `${DARK_SHIELD_PREFIX}12`, `${DARK_SHIELD_PREFIX}`, 'road_3', 'jh|dark|arrow']) {
+      expect(darkShieldSize(id)).toBeUndefined();
+    }
+  });
 });

@@ -7,6 +7,7 @@ import { useNow } from '@/hooks/now.hook';
 import { useReach } from '@/hooks/reach.hook';
 import { REACH_CONE_LAYER, REACH_FILL_LAYER, REACH_LINE_LAYER, REACH_SOURCE, reachChipText, reachFeatures, type AreaReach } from '@/lib/reach';
 import { getColorFromArea } from '@/lib/utils';
+import { zoomScaled } from '@/lib/zoom-scale';
 
 const AREA_FILTER: FillLayerSpecification['filter'] = ['==', ['get', 'role'], 'area'];
 const CONE_FILTER: FillLayerSpecification['filter'] = ['==', ['get', 'role'], 'cone'];
@@ -45,7 +46,7 @@ export default function Reach({ visible }: { visible: boolean }) {
         <Layer id={REACH_CONE_LAYER} type="fill" filter={CONE_FILTER}
                paint={{ 'fill-color': ['get', 'color'], 'fill-opacity': visible ? 0.22 : 0, 'fill-opacity-transition': FADE }} />
         <Layer id={REACH_LINE_LAYER} type="line" filter={LINE_FILTER}
-               paint={{ 'line-color': ['get', 'color'], 'line-width': 2, 'line-dasharray': [3, 2], 'line-opacity': visible ? 1 : 0, 'line-opacity-transition': FADE }} />
+               paint={{ 'line-color': ['get', 'color'], 'line-width': zoomScaled(2), 'line-dasharray': [3, 2], 'line-opacity': visible ? 1 : 0, 'line-opacity-transition': FADE }} />
       </Source>
       <AnimatePresence>
         {visible && shown.map((reach) => (
@@ -55,7 +56,8 @@ export default function Reach({ visible }: { visible: boolean }) {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
               transition={{ duration: 0.2 }}
-              className="flex origin-left items-center gap-1.5"
+              // Scales around the dot's centre (on the point); text keeps a readable minimum size when zoomed out
+              className="flex origin-[7px_50%] items-center gap-1.5 [scale:var(--map-label-scale,1)]"
             >
               <span className="size-3.5 rounded-full shadow-md ring-[2.5px] ring-card" style={{ backgroundColor: getColorFromArea(reach.area) }} />
               <span className="rounded-full bg-card px-2.5 py-1 text-xs font-semibold whitespace-nowrap text-foreground tabular-nums shadow-md">

@@ -8,6 +8,7 @@ import useLayersStore from '@/stores/layers.store';
 import { TEAM_PINS_LAYER, teamCircles, teamPinFeatures } from '@/lib/map-layers';
 import { featureId, useLayerInteractions, usePopupSelection } from './map-interactions';
 import { themedIconExpression, type MarkerTheme } from '@/lib/marker-style';
+import { HOVER_ICON_SIZE, ICON_SIZE } from '@/lib/zoom-scale';
 import { useMarkerTheme } from './marker-icons';
 import TeamPopup from './teams/TeamPopup';
 import TeamTooltip from './teams/TeamTooltip';
@@ -27,7 +28,7 @@ const TEAM_CIRCLES_OUTLINE_PAINT: LineLayerSpecification['paint'] = {
 const TEAM_PINS_SOURCE = 'team-pins';
 const TEAM_PINS_HOVER_LAYER = 'team-pins-hover';
 function teamPinsLayout(theme: MarkerTheme): SymbolLayerSpecification['layout'] {
-  return { 'icon-image': themedIconExpression(theme), 'icon-allow-overlap': true, 'icon-ignore-placement': true };
+  return { 'icon-image': themedIconExpression(theme), 'icon-size': ICON_SIZE, 'icon-allow-overlap': true, 'icon-ignore-placement': true };
 }
 const TEAM_INTERACTIVE_LAYERS = [TEAM_PINS_LAYER];
 
@@ -37,7 +38,7 @@ export default function Teams() {
   const theme = useMarkerTheme();
   const layout = useMemo(() => teamPinsLayout(theme), [theme]);
   // Hovered: 10% larger
-  const hoverLayout = useMemo<SymbolLayerSpecification['layout']>(() => ({ ...layout, 'icon-size': 1.1 }), [layout]);
+  const hoverLayout = useMemo<SymbolLayerSpecification['layout']>(() => ({ ...layout, 'icon-size': HOVER_ICON_SIZE }), [layout]);
   const { teams, setTeamArea } = useTeams();
   const { isVisible } = useAreas();
   const { visits } = useVisits();

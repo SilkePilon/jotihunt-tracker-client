@@ -13,6 +13,7 @@ import {
 import { spacedHitDiameters } from '@/lib/hit-spacing';
 import { INTEL_CLOSE_MS } from '@/lib/intel-window';
 import { cn } from '@/lib/utils';
+import { zoomScaled } from '@/lib/zoom-scale';
 import useHintGuessStore from '@/stores/hint-guess.store';
 import useSidebarStore, { type SheetSnap } from '@/stores/sidebar.store';
 
@@ -189,11 +190,11 @@ export default function HintGuess() {
     <>
       <Source id={HINT_GUESS_SOURCE} type="geojson" data={data}>
         <Layer id={HINT_GUESS_REACH_LAYER} type="line" filter={REACH_FILTER}
-               paint={{ 'line-color': red, 'line-width': 2, 'line-dasharray': [2, 2], 'line-opacity': reach.visible ? 1 : 0, 'line-opacity-transition': SHAPE_FADE }} />
+               paint={{ 'line-color': red, 'line-width': zoomScaled(2), 'line-dasharray': [2, 2], 'line-opacity': reach.visible ? 1 : 0, 'line-opacity-transition': SHAPE_FADE }} />
         <Layer id={HINT_GUESS_AREA_FILL_LAYER} type="fill" filter={AREA_FILTER}
                paint={{ 'fill-color': purple, 'fill-opacity': area.visible ? 0.15 : 0, 'fill-opacity-transition': SHAPE_FADE }} />
         <Layer id={HINT_GUESS_AREA_LINE_LAYER} type="line" filter={AREA_FILTER}
-               paint={{ 'line-color': purple, 'line-width': 2, 'line-dasharray': [3, 2], 'line-opacity': area.visible ? 1 : 0, 'line-opacity-transition': SHAPE_FADE }} />
+               paint={{ 'line-color': purple, 'line-width': zoomScaled(2), 'line-dasharray': [3, 2], 'line-opacity': area.visible ? 1 : 0, 'line-opacity-transition': SHAPE_FADE }} />
       </Source>
       <AnimatePresence>
         {points.map((point, index) => {
