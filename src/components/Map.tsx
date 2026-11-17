@@ -100,7 +100,10 @@ export interface MapRef {
      */
     openFeature(layer: string, id: string | number, options?: OpenFeatureOptions): boolean;
 
-    /** Move keyboard focus onto the map canvas (the desktop skip link); false while the map isn't created yet. */
+    /**
+     * Move keyboard focus onto the map canvas (the desktop skip link); false (focus untouched) while the map isn't
+     * created yet or can't show (MapUnavailableCard).
+     */
     focusCanvas(): boolean;
 
     /** The map's centre; null while the map isn't created yet. */
@@ -198,7 +201,7 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
             return !!map && !wall && openLayerFeature(map, layer, id, options);
         },
         focusCanvas: () => {
-            const canvas = mapRef.current?.getMap().getCanvas();
+            const canvas = availability.unavailable ? undefined : mapRef.current?.getMap().getCanvas();
             canvas?.focus();
             return !!canvas;
         },

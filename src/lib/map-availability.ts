@@ -54,3 +54,6 @@ export function mapStyleKey(style: string | { sources: Record<string, unknown> }
     .sort()
     .join('|');
 }
+
+/** MapUnavailableCard's heading: the desktop skip link focuses it when the map can't take focus */
+export const MAP_UNAVAILABLE_HEADING_ID = 'map-unavailable-heading';

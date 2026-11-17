@@ -1,6 +1,7 @@
 import { motion } from 'motion/react';
 import { MapIcon, RotateCwIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { MAP_UNAVAILABLE_HEADING_ID } from '@/lib/map-availability';
 import { MAP_TILE } from '@/lib/map-chrome';
 import { SWAP } from '@/lib/motion';
 import { TONAL_BUTTON } from '@/lib/tonal-button';
@@ -21,7 +22,9 @@ export default function MapUnavailableCard({ className }: { className?: string }
         <MapIcon className="size-5" />
       </div>
       <div className="min-w-0">
-        <p className="text-[14px] font-bold leading-tight">Kaart niet beschikbaar</p>
+        <h2 id={MAP_UNAVAILABLE_HEADING_ID} tabIndex={-1} className="text-[14px] font-bold leading-tight outline-none">
+          Kaart niet beschikbaar
+        </h2>
         <p className="text-[12.5px] text-muted-foreground">Controleer je verbinding.</p>
       </div>
       {/* The map can't re-fetch a style (TileJSON) that failed at start; a reload can */}
