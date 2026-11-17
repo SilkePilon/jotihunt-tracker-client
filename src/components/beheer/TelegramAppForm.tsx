@@ -51,7 +51,7 @@ export default function TelegramAppForm({ step, onSaved, onCancel }: { step?: bo
         <div className="mb-2.5 flex items-center gap-2.5">
           <span aria-hidden className="flex gap-1.5">
             {[0, 1, 2, 3].map((i) => (
-              <i key={i} className={`h-[5px] w-6 rounded-full ${i === 0 ? 'bg-primary' : 'bg-beheer-row-high'}`} />
+              <i key={i} className={`h-[5px] w-6 rounded-full ${i === 0 ? 'bg-primary-fill' : 'bg-beheer-row-high'}`} />
             ))}
           </span>
           <span className="text-xs text-muted-foreground">Stap 1 van 4</span>

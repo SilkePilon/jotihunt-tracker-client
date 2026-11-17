@@ -5,7 +5,7 @@ import CookieBadge from '@/components/tracker/CookieBadge';
 import { type HqEvent, type HqTone } from '@/lib/hq-director';
 import { cn } from '@/lib/utils';
 
-const RING_CLASS: Record<HqTone, string> = { ok: 'stroke-green-500', warn: 'stroke-amber-500', danger: 'stroke-red-600', neutral: 'stroke-primary' };
+const RING_CLASS: Record<HqTone, string> = { ok: 'stroke-cookie-ok', warn: 'stroke-cookie-warn', danger: 'stroke-red-600', neutral: 'stroke-primary-fill' };
 
 /** Bottom of the map: the current event, its hold time (`holdMs`, from the director) (tour ring in the event colour) and how many are queued (tour dots). */
 export default function HqEventCard({ event, queued, step, holdMs }: { event: HqEvent | null; queued: number; step: number; holdMs: number }) {

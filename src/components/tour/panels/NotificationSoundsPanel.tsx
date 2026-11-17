@@ -89,7 +89,7 @@ export default function NotificationSoundsPanel() {
                   <span className="block text-sm font-medium leading-tight">{label}</span>
                   <span className={cn('block text-xs transition-colors', active ? 'text-on-primary-container/80' : 'text-muted-foreground')}>{when}</span>
                 </span>
-                <span className={cn('flex size-7 shrink-0 items-center justify-center rounded-full border', active ? 'border-primary-text bg-primary-text text-primary-foreground dark:border-primary dark:bg-primary' : 'border-transparent bg-card text-muted-foreground')}>
+                <span className={cn('flex size-7 shrink-0 items-center justify-center rounded-full border', active ? 'border-primary-fill bg-primary-fill text-primary-foreground' : 'border-transparent bg-card text-muted-foreground')}>
                   {active ? <SquareIcon className="size-3 fill-current" /> : <PlayIcon className="size-3.5 fill-current" />}
                 </span>
               </button>

@@ -22,7 +22,7 @@ export default function AudioUnlock({ onUnlock }: { onUnlock: () => void }) {
     >
       {/* No legacy .card class: its unlayered box-shadow hid both the shadow and the keyboard focus ring */}
       <span className="flex flex-col items-center gap-3 rounded-2xl bg-card px-8 py-6 text-card-foreground shadow-(--shadow-dialog) group-focus-visible:ring-[3px] group-focus-visible:ring-ring">
-        <Volume2Icon className="size-12 text-primary" aria-hidden />
+        <Volume2Icon className="size-12 text-primary-text" aria-hidden />
         <span className="text-2xl font-semibold">Klik om geluid aan te zetten</span>
         <span id={hintId} className="text-muted-foreground">Browsers spelen pas geluid af na één klik</span>
       </span>

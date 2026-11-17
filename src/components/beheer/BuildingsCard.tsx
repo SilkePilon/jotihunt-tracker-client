@@ -117,7 +117,7 @@ export default function BuildingsCard({ mapRef }: { mapRef: RefObject<MapRef | n
   return (
     <BeheerCard>
       <div className="flex items-center gap-3">
-        <span aria-hidden className="grid size-11 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground">
+        <span aria-hidden className="grid size-11 shrink-0 place-items-center rounded-full bg-primary-fill text-primary-foreground">
           <Building2Icon className="size-[22px]" />
         </span>
         <div className="min-w-0 flex-1">
@@ -133,7 +133,7 @@ export default function BuildingsCard({ mapRef }: { mapRef: RefObject<MapRef | n
           <div className="pt-3 pl-14">
             <div className="h-1.5 overflow-hidden rounded-full bg-beheer-row-high">
               <motion.div
-                className="h-full rounded-full bg-primary-text dark:bg-primary"
+                className="h-full rounded-full bg-primary-fill"
                 initial={false}
                 animate={{ width: `${Math.round(progress * 100)}%` }}
                 transition={{ duration: 0.4, ease: EASE_OUT }}

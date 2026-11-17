@@ -24,7 +24,7 @@ interface TimerRingProps {
 }
 
 /** Circular countdown, the website tour's auto-advance ring: fills once over `durationMs` around its children. */
-export default function TimerRing({ durationMs, runKey, paused = false, onDone, progressClassName = 'stroke-primary', className, children }: TimerRingProps) {
+export default function TimerRing({ durationMs, runKey, paused = false, onDone, progressClassName = 'stroke-primary-fill', className, children }: TimerRingProps) {
   // The run that may still finish: an arc fading out (timer stopped, or a step later) must not fire onDone
   const live = useRef<Key | null>(null);
   useEffect(() => {
@@ -33,7 +33,7 @@ export default function TimerRing({ durationMs, runKey, paused = false, onDone, 
   return (
     <div className={cn('relative flex items-center justify-center', className)}>
       <svg aria-hidden className="pointer-events-none absolute inset-0 size-full -rotate-90" viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`}>
-        <circle cx={RING_SIZE / 2} cy={RING_SIZE / 2} r={RING_RADIUS} fill="none" strokeWidth={RING_STROKE} className="stroke-muted" />
+        <circle cx={RING_SIZE / 2} cy={RING_SIZE / 2} r={RING_RADIUS} fill="none" strokeWidth={RING_STROKE} className="stroke-beheer-row-high" />
         {/* The arc fades out when the timer stops (e.g. the user took over the tour) instead of vanishing */}
         <AnimatePresence initial={false}>
           {durationMs !== undefined && (
