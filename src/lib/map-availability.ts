@@ -32,3 +32,25 @@ export function isBaseMapEvent(sourceId: string | undefined, baseSourceIds: Read
   if (sourceId === undefined) return true;
   return baseSourceIds === null || baseSourceIds.has(sourceId);
 }
+
+interface StyleSourceLike {
+  type?: string;
+  url?: string;
+  tiles?: string[];
+}
+
+/**
+ * Identity of a map style's base sources: what has to load before it shows anything. A style URL is its own key;
+ * a style object is keyed on its sources' ids and where their tiles come from, so a theme switch (only paint colours
+ * change) keeps the key while switching to e.g. satellite gives a new one.
+ */
+export function mapStyleKey(style: string | { sources: Record<string, unknown> }): string {
+  if (typeof style === 'string') return style;
+  return Object.entries(style.sources)
+    .map(([id, value]) => {
+      const source = (value ?? {}) as StyleSourceLike;
+      return `${id}=${source.url ?? source.tiles?.join(',') ?? source.type ?? ''}`;
+    })
+    .sort()
+    .join('|');
+}
