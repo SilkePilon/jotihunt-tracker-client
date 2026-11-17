@@ -16,6 +16,8 @@ import FastFoodTooltip from './fastfood/FastFoodTooltip';
 
 const FASTFOOD_SOURCE = 'fastfood';
 const INTERACTIVE_LAYERS = [FASTFOOD_LAYER];
+/** Zoomed out further, the hundreds of tiles bury the groups and foxes: they show from city level on */
+const FASTFOOD_MIN_ZOOM = 10;
 /** Open/closed is re-evaluated every minute */
 const TICK_MS = 60_000;
 
@@ -65,8 +67,8 @@ export default function FastFood() {
   return (
     <>
       <Source id={FASTFOOD_SOURCE} type="geojson" data={features}>
-        <Layer id={FASTFOOD_LAYER} type="symbol" source={FASTFOOD_SOURCE} layout={layout} />
-        <Layer id={FASTFOOD_HOVER_LAYER} type="symbol" source={FASTFOOD_SOURCE} layout={hoverLayout} filter={hoverFilter} />
+        <Layer id={FASTFOOD_LAYER} type="symbol" source={FASTFOOD_SOURCE} layout={layout} minzoom={FASTFOOD_MIN_ZOOM} />
+        <Layer id={FASTFOOD_HOVER_LAYER} type="symbol" source={FASTFOOD_SOURCE} layout={hoverLayout} filter={hoverFilter} minzoom={FASTFOOD_MIN_ZOOM} />
       </Source>
       {hoveredRestaurant && <FastFoodTooltip restaurant={hoveredRestaurant} nowMs={nowMs} />}
       {activeRestaurant && <FastFoodPopup key={active!.opened} restaurant={activeRestaurant} nowMs={nowMs} onClose={closePopup} />}

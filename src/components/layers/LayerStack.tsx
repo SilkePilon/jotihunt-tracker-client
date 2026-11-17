@@ -3,7 +3,7 @@ import { useMap } from 'react-map-gl/maplibre';
 import { layerStackMoves, MAP_LAYER_STACK } from '@/lib/map-layers';
 
 /**
- * Keeps the app's layers stacked as in MAP_LAYER_STACK (foxes, then groups, then hunters on top). Layers are added
+ * Keeps the app's layers stacked as in MAP_LAYER_STACK (fast food, hunters, groups, foxes on top). Layers are added
  * as they mount (toggling a layer, icons that finish loading later, a style switch), so the order is fixed up after
  * every style change.
  */
