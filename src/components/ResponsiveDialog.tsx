@@ -89,7 +89,7 @@ export default function ResponsiveDialog({ open, onClose, title, description, ch
             <Drawer.Handle className="mx-auto mb-1 mt-2" />
             {/* Landscape phones: the sides clear the notch / rounded corners (safe areas), never less than the 16px gutter */}
             <div className={hideHeader ? 'sr-only' : 'pb-3 pl-[max(1rem,env(safe-area-inset-left))] pr-[calc(max(1rem,env(safe-area-inset-right))+2.5rem)] pt-1'}>
-              <Drawer.Title className="text-lg font-semibold">{title}</Drawer.Title>
+              <Drawer.Title className="text-lg font-bold">{title}</Drawer.Title>
               <Drawer.Description className="text-sm text-muted-foreground">{description}</Drawer.Description>
             </div>
             <div className="flex min-h-0 flex-1 flex-col pb-[max(1rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]">{mounted && children}</div>
