@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { isBaseMapEvent, isMapUnavailable, MAP_ERROR_GRACE_MS, MAP_OFFLINE_TIMEOUT_MS, mapStyleKey, startMapLoad } from './map-availability';
+import { isBaseMapEvent, isMapUnavailable, loadedStyleSourceIds, MAP_ERROR_GRACE_MS, MAP_OFFLINE_TIMEOUT_MS, mapStyleKey, startMapLoad } from './map-availability';
 
 describe('isMapUnavailable', () => {
   test('an error counts only after the grace period without tiles', () => {
@@ -28,6 +28,22 @@ describe('isBaseMapEvent', () => {
     expect(isBaseMapEvent('openmaptiles', base)).toBe(true);
     expect(isBaseMapEvent('hunters', base)).toBe(false);
     expect(isBaseMapEvent('hunters', null)).toBe(true);
+  });
+});
+
+describe('loadedStyleSourceIds', () => {
+  test("a style URL's base sources come from the loaded style JSON, not from sources our layers add", () => {
+    const map = { style: { stylesheet: { sources: { openmaptiles: {} } } } };
+    const ids = loadedStyleSourceIds(map);
+    expect(ids && [...ids]).toEqual(['openmaptiles']);
+    expect(isBaseMapEvent('buildings3d', ids)).toBe(false);
+    expect(isBaseMapEvent('openmaptiles', ids)).toBe(true);
+  });
+
+  test('no style loaded yet: unknown, so every source counts', () => {
+    expect(loadedStyleSourceIds({ style: { stylesheet: null } })).toBeNull();
+    expect(loadedStyleSourceIds({})).toBeNull();
+    expect(loadedStyleSourceIds(undefined)).toBeNull();
   });
 });
 

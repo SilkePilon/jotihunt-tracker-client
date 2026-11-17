@@ -32,13 +32,29 @@ self.addEventListener('push', (event) => {
   );
 });
 
+/** The tracker's own pages (Layout's routes in src/Routes.tsx): only these route a tapped notification */
+const TRACKER_PATHS = ['/', '/users'];
+
+/** Whether a window shows the tracker (not the HQ wall, login, an invite or a QR link, which can't open a hint) */
+function isTrackerWindow(client) {
+  try {
+    const { origin, pathname } = new URL(client.url);
+    return origin === self.location.origin && TRACKER_PATHS.includes(pathname.replace(/(.)\/$/, '$1'));
+  } catch {
+    return false;
+  }
+}
+
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const url = new URL((event.notification.data && event.notification.data.url) || '/', self.location.origin).href;
   event.waitUntil(
     (async () => {
       const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-      const existing = windows.find((client) => client.url.startsWith(self.location.origin));
+      // A tracker window (the focused one first); without one a new window opens, rather than focusing e.g. the HQ wall
+      // that can't route the message
+      const trackers = windows.filter(isTrackerWindow);
+      const existing = trackers.find((client) => client.focused) || trackers[0];
       if (existing) {
         // The open app routes it like a toast's "Openen" (Layout.tsx): the Hints page on a phone, the Intel window on a laptop
         existing.postMessage({ type: 'notification-click', data: event.notification.data || {} });

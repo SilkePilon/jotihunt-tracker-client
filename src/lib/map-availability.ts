@@ -33,6 +33,20 @@ export function isBaseMapEvent(sourceId: string | undefined, baseSourceIds: Read
   return baseSourceIds === null || baseSourceIds.has(sourceId);
 }
 
+/** Just the part of a maplibre Map this reads: the style as loaded (`stylesheet`, null before the first load) */
+interface StyledMapLike {
+  style?: { stylesheet?: { sources?: Record<string, unknown> } | null } | null;
+}
+
+/**
+ * The base sources of a style URL, read from the style JSON the map loaded: `stylesheet` is that JSON (sources added
+ * later by our layers don't change it). Null until a style has loaded (then every source counts).
+ */
+export function loadedStyleSourceIds(map: unknown): ReadonlySet<string> | null {
+  const sources = (map as StyledMapLike | null | undefined)?.style?.stylesheet?.sources;
+  return sources ? new Set(Object.keys(sources)) : null;
+}
+
 interface StyleSourceLike {
   type?: string;
   url?: string;

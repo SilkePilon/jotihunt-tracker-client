@@ -107,7 +107,7 @@ export default function LegPopup({ leg, longitude, latitude, onClose, onSetMode 
       </AnimatePresence>
       {/* Under the flip's "Terug naar automatisch", which belongs to it */}
       <PopupActions className="mt-2">
-        <MarkerRegistration lat={latitude} lng={longitude} />
+        <MarkerRegistration lat={latitude} lng={longitude} onRegistered={onClose} />
       </PopupActions>
       {/* The flip and Hunt/Spot are greyed out in an archive edition: say why */}
       <ArchiveReadOnlyNote className="pt-2 text-(--map-muted)" />

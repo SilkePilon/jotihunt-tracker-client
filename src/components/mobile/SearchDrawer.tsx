@@ -15,8 +15,9 @@ export default function SearchDrawer({ mapRef, open, onClose }: { mapRef: RefObj
   };
   return (
     <ResponsiveDialog open={open} onClose={onClose} title="Zoeken" description="Zoek een coördinaat of ga snel naar een groep." compact drawerClassName="bg-card">
-      {/* The coordinate field last, with room under it for its floating error */}
-      <div className="flex flex-col gap-3 pt-1 pb-12">
+      {/* The coordinate field last, with room under it for its floating error. Scrolls when the drawer is short (a
+          landscape phone): the controls stay reachable */}
+      <div className="-mx-1 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain px-1 pt-1 pb-12">
         <ErrorBoundary variant="inline">
           <SearchCard mapRef={mapRef} onDone={done} fluid />
         </ErrorBoundary>

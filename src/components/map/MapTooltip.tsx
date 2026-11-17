@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useCallback, useMemo, useRef, useSyncExternalStore } from 'react';
 import { Marker, useMap } from 'react-map-gl/maplibre';
 import { offsetScaleAt, scaleOffset, type OffsetScale } from '@/lib/zoom-scale';
 import { TOOLTIP_SURFACE } from '@/lib/menu-styles';
@@ -31,8 +31,17 @@ export default function MapTooltip({ longitude, latitude, offset, offsetScale = 
   const { current: map } = useMap();
   const content = useRef<HTMLDivElement>(null);
   useMapElementFade(content, '.maplibregl-marker', ENTER, LEAVE, () => undefined);
-  const zoom = map?.getZoom() ?? Infinity;
-  const factor = offsetScaleAt(offsetScale, zoom);
+  // Follows the zoom while shown (a wheel zoom under a hovered marker resizes its icon): re-renders only when the
+  // factor really changes, and never for offsets that don't scale
+  const subscribe = useCallback(
+    (onChange: () => void) => {
+      if (!map || offsetScale === 'none') return () => {};
+      map.on('zoom', onChange);
+      return () => void map.off('zoom', onChange);
+    },
+    [map, offsetScale],
+  );
+  const factor = useSyncExternalStore(subscribe, () => offsetScaleAt(offsetScale, map?.getZoom() ?? Infinity));
   const scaledOffset = useMemo(() => scaleOffset(offset, factor), [offset, factor]);
   return (
     <Marker longitude={longitude} latitude={latitude} anchor="bottom" offset={scaledOffset} style={TOOLTIP_STYLE}>

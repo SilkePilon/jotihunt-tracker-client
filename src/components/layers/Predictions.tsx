@@ -7,7 +7,7 @@ import { predictionAreaCircles, PREDICTION_PINS_LAYER, predictionPinFeatures } f
 import { themedIconExpression, type MarkerPalette } from '@/lib/marker-style';
 import { buildPredictionMap } from '@/lib/prediction';
 import { getColorFromArea } from '@/lib/utils';
-import { ICON_SIZE, zoomScaled } from '@/lib/zoom-scale';
+import { LABEL_ICON_SIZE, zoomScaled } from '@/lib/zoom-scale';
 import { useMarkerPalette, useMarkerTheme } from './marker-icons';
 
 const LINES_SOURCE = 'prediction-lines';
@@ -37,7 +37,8 @@ export default function Predictions() {
   const data = useMemo(() => buildPredictionMap((predictions ?? []).filter((prediction) => isVisible(prediction.area)), getColorFromArea), [predictions, isVisible]);
   const pins = useMemo(() => predictionPinFeatures(data.pins, isForbidden), [data.pins, isForbidden]);
   const areas = useMemo(() => predictionAreaCircles(data.pins), [data.pins]);
-  const pinLayout = useMemo<SymbolLayerSpecification['layout']>(() => ({ 'icon-image': themedIconExpression(theme), 'icon-size': ICON_SIZE, 'icon-allow-overlap': true, 'icon-ignore-placement': true }), [theme]);
+  // Label-sized like the fox and hunter pins: the area-letter badge stays readable when zoomed out
+  const pinLayout = useMemo<SymbolLayerSpecification['layout']>(() => ({ 'icon-image': themedIconExpression(theme), 'icon-size': LABEL_ICON_SIZE, 'icon-allow-overlap': true, 'icon-ignore-placement': true }), [theme]);
 
   return (
     <>

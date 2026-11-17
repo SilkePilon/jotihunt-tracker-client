@@ -32,11 +32,16 @@ export default function MarkerRegistrationHost({ mapRef }: { mapRef: RefObject<M
 
   useEffect(() => {
     let checking = false;
+    // Unmounted (logout, a 401) while the check was out: its marker list belongs to that session, so it must not settle
+    // the drafts of whoever signs in next
+    let disposed = false;
     const onOnline = async () => {
       if (checking || Object.keys(useMarkerDraftStore.getState().drafts).length === 0) return;
       checking = true;
       try {
-        const confirmed = settleDrafts(await fetchRef.current());
+        const markers = await fetchRef.current();
+        if (disposed) return;
+        const confirmed = settleDrafts(markers);
         for (const draft of confirmed) toast.success(markerSavedToast(draft.type), { description: 'Bevestigd na verbindingsherstel.' });
       } finally {
         checking = false;
@@ -46,7 +51,10 @@ export default function MarkerRegistrationHost({ mapRef }: { mapRef: RefObject<M
     // Drafts kept from before a reload: checked once right away too
     if (typeof navigator === 'undefined' || navigator.onLine) listener();
     window.addEventListener('online', listener);
-    return () => window.removeEventListener('online', listener);
+    return () => {
+      disposed = true;
+      window.removeEventListener('online', listener);
+    };
   }, []);
 
   // The pin comes with each request (openDialog's `at`); the props only fill the fallback

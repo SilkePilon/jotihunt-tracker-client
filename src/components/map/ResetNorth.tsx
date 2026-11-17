@@ -31,10 +31,14 @@ export function MapRotationTracker() {
 class PortalControl implements IControl {
   readonly container = document.createElement('div');
 
-  onAdd() {
+  constructor() {
     this.container.className = 'maplibregl-ctrl maplibregl-ctrl-group';
-    // Empty until the map is turned: no margin gap in the stack
+    // Empty until the map is turned: no margin gap in the stack. Set here, not in onAdd: the layout effect's setShown
+    // runs before the control is added, and onAdd must not undo it (mounted while the map is already turned)
     this.container.style.display = 'none';
+  }
+
+  onAdd() {
     return this.container;
   }
 

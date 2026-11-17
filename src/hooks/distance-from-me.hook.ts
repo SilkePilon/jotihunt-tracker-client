@@ -5,7 +5,7 @@ import { useTrackerStatus } from '@/hooks/tracker.hook';
 import { formatDistanceFromMe } from '@/lib/format';
 import { OWN_POSITION_FRESH_MS, distanceMetres, ownDeviceId, ownTrackerPosition } from '@/lib/own-position';
 
-/** "2,4 km van jou" from the own tracker (fix under a minute old) or an already-granted browser position; undefined otherwise. */
+/** "2,4 km van jou" from the own tracker (fix at most 2.5 minutes old, OWN_POSITION_FRESH_MS) or an already-granted browser position; undefined otherwise. */
 export function useDistanceFromMe(lat: number, lng: number): string | undefined {
   const { status } = useTrackerStatus();
   const { positions, devices } = useDevices();
