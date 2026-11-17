@@ -188,7 +188,7 @@ const META_TONE: Record<MetaTone, string> = {
   muted: '',
   ok: 'text-green-700 dark:text-green-400',
   info: 'text-blue-700 dark:text-blue-400',
-  warn: 'text-amber-700 dark:text-amber-300',
+  warn: 'text-status-warn-text',
   danger: 'text-red-700 dark:text-red-400',
 };
 

@@ -22,7 +22,8 @@ const pill = cva(
           'text-destructive-text shadow-[inset_0_0_0_1.5px_color-mix(in_oklab,var(--destructive)_60%,transparent)] hover:bg-destructive/10',
         danger: 'bg-destructive text-white hover:bg-destructive/90',
         success: 'bg-green-500/20 text-green-800 dark:text-green-300',
-        warn: 'bg-amber-700 text-white hover:bg-amber-700/90',
+        // The warning-text colour as a fill: white on #92400e (7.1:1); dark mode the card colour on #fcd34d (11:1)
+        warn: 'bg-status-warn-text text-card hover:bg-status-warn-text/90',
         // teal-800 / green-800: >= 4.5:1 on their tinted fills in light mode (green-700 and WhatsApp's #128C7E were below)
         whatsapp: 'bg-[#25D366]/15 text-teal-800 hover:bg-[#25D366]/25 dark:text-[#4ade80]',
       },
@@ -118,7 +119,7 @@ const tag = cva('inline-flex items-center gap-1 whitespace-nowrap rounded-full p
       primary: 'bg-primary/20 text-orange-800 dark:text-orange-300',
       neutral: 'bg-beheer-row-high text-muted-foreground',
       ok: 'bg-green-500/15 text-green-800 dark:text-green-300',
-      warn: 'bg-amber-500/20 text-amber-800 dark:text-amber-300',
+      warn: 'bg-amber-500/20 text-status-warn-text',
       info: 'bg-sky-500/15 text-sky-800 dark:text-sky-300',
       danger: 'bg-destructive/15 text-destructive-text',
     },

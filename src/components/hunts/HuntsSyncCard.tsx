@@ -93,7 +93,7 @@ export function HuntsSyncView({ status, events, onSelect, onLoadMore, eventsFail
         <FadeText swapKey={HUNT_SYNC_TITLE[view]} className="mt-2 text-base font-bold">
           {HUNT_SYNC_TITLE[view]}
         </FadeText>
-        <Reveal gap={2}>{view === 'failing' && status.lastError && <p className="text-xs font-medium text-amber-700 dark:text-amber-300">{status.lastError}</p>}</Reveal>
+        <Reveal gap={2}>{view === 'failing' && status.lastError && <p className="text-xs font-medium text-status-warn-text">{status.lastError}</p>}</Reveal>
         {/* Keyed on the view, so the ticking "… geleden" and the counts don't fade on every poll */}
         <FadeText swapKey={view} className="text-xs text-muted-foreground tabular-nums">
           {huntSyncLine(status, now)}

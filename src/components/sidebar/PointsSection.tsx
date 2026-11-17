@@ -89,7 +89,7 @@ export function PointsView({ score }: { score: ScoreStatus }) {
             )}
           </AnimatePresence>
         </p>
-        <Reveal gap={2}>{failing && <p className="text-xs font-medium text-amber-700 dark:text-amber-300">{scoreFailingLine(score, now)}</p>}</Reveal>
+        <Reveal gap={2}>{failing && <p className="text-xs font-medium text-status-warn-text">{scoreFailingLine(score, now)}</p>}</Reveal>
       </div>
       <ScoreBar parts={known ? score.parts : UNKNOWN_PARTS} />
       <ScoreLegend parts={score.parts} known={known} />
