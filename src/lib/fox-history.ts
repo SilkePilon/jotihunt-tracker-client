@@ -244,3 +244,57 @@ export function nearestBlock(blocks: readonly PlacedBlock[], x: number, y: numbe
   }
   return best?.id ?? null;
 }
+
+/** Arrow keys between blocks (roving tabindex): Left/Right along a lane, Up/Down to the nearest block in the next lane with blocks. */
+export type BlockKey = 'ArrowLeft' | 'ArrowRight' | 'ArrowUp' | 'ArrowDown' | 'Home' | 'End';
+
+const BLOCK_KEYS = new Set<string>(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End']);
+export const isBlockKey = (key: string): key is BlockKey => BLOCK_KEYS.has(key);
+
+const blockMiddle = (block: HistoryBlock) => (block.start + Math.min(block.end ?? HISTORY_WINDOW_MIN, HISTORY_WINDOW_MIN)) / 2;
+
+function laneBlocks(blocks: readonly HistoryBlock[], lane: LaneKey): HistoryBlock[] {
+  return blocks.filter((block) => block.lane === lane).sort((a, b) => a.start - b.start);
+}
+
+/**
+ * The timeline's one Tab stop when none was picked yet (or the picked block is gone): the latest block of the first lane
+ * that has any, i.e. normally the current status. null without blocks.
+ */
+export function defaultTabStop(blocks: readonly HistoryBlock[]): string | null {
+  for (const lane of LANES) {
+    const row = laneBlocks(blocks, lane);
+    if (row.length) return row[row.length - 1].id;
+  }
+  return null;
+}
+
+/**
+ * Where an arrow key moves the focus from block `currentId`: Left/Right to the previous/next block on its lane, Home/End
+ * to its lane's first/last block, Up/Down to the block nearest in time on the closest lane above/below that has blocks.
+ * null when there is nowhere to go (the focus stays).
+ */
+export function blockKeyTarget(blocks: readonly HistoryBlock[], currentId: string, key: BlockKey): string | null {
+  const current = blocks.find((block) => block.id === currentId);
+  if (!current) return null;
+  const row = laneBlocks(blocks, current.lane);
+  const index = row.findIndex((block) => block.id === currentId);
+  switch (key) {
+    case 'ArrowLeft':
+      return row[index - 1]?.id ?? null;
+    case 'ArrowRight':
+      return row[index + 1]?.id ?? null;
+    case 'Home':
+      return index > 0 ? row[0].id : null;
+    case 'End':
+      return index < row.length - 1 ? row[row.length - 1].id : null;
+  }
+  const step = key === 'ArrowUp' ? -1 : 1;
+  const middle = blockMiddle(current);
+  for (let lane = LANES.indexOf(current.lane) + step; lane >= 0 && lane < LANES.length; lane += step) {
+    const candidates = laneBlocks(blocks, LANES[lane]);
+    if (!candidates.length) continue;
+    return candidates.reduce((best, block) => (Math.abs(blockMiddle(block) - middle) < Math.abs(blockMiddle(best) - middle) ? block : best)).id;
+  }
+  return null;
+}
