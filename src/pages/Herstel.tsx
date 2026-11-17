@@ -113,7 +113,7 @@ export default function Herstel() {
         <p className="text-sm text-muted-foreground">
           {supported ? 'Je apparaat vraagt om je vingerafdruk, gezicht of schermvergrendeling. Daarna ben je ingelogd.' : 'Deze browser ondersteunt geen passkeys. Je wordt ingelogd zonder passkey.'}
         </p>
-        <Button size="lg" className="w-full rounded-xl" onClick={recovered ? () => navigate('/login') : handleClick} disabled={busy}>
+        <Button size="lg" className="w-full" onClick={recovered ? () => navigate('/login') : handleClick} disabled={busy}>
           <AnimatePresence mode="popLayout" initial={false}>
             <motion.span key={recovered ? 'login' : 'recover'} className="inline-flex items-center gap-2" {...SWAP}>
               {recovered ? (

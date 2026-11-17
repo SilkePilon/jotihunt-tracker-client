@@ -76,7 +76,7 @@ export default function JotiboardCard({ status, isError, onRetry, onLink, onSetS
             {scene === 'unlinked' && (
               <div className="flex flex-col gap-2.5">
                 <p className="text-xs text-muted-foreground">Koppel het Jotiboard-account. Pins en opgeloste hints van Jotiboard komen dan automatisch in de tracker.</p>
-                <Button size="lg" className={cn('h-11 w-full rounded-lg text-sm font-semibold', JOTIBOARD_BUTTON)} disabled={readOnly} onClick={() => setFormOpen(true)}>
+                <Button size="lg" className={cn('h-11 w-full text-sm', JOTIBOARD_BUTTON)} disabled={readOnly} onClick={() => setFormOpen(true)}>
                   <JotiboardLogo className="size-5" />
                   Koppel Jotiboard
                 </Button>

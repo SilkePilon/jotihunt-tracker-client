@@ -167,7 +167,7 @@ export default function TelegramLinkPanel({ status, onLink, onCancel, onSubmitPa
       return (
         <div className="flex flex-col gap-2.5" data-telegram-state="unlinked">
           <p className="text-xs text-muted-foreground">Koppel het Telegram-account dat de berichten van @Jotihunt_bot krijgt. Tegenhunts worden dan automatisch gemeld.</p>
-          <Button size="lg" className={cn('h-11 w-full rounded-lg text-sm font-semibold', TELEGRAM_BUTTON)} disabled={starting || readOnly} onClick={() => void start()}>
+          <Button size="lg" className={cn('h-11 w-full text-sm', TELEGRAM_BUTTON)} disabled={starting || readOnly} onClick={() => void start()}>
             <BusyIcon busy={starting} icon={<TelegramLogo className="size-[18px]" />} />
             Koppel Telegram
           </Button>

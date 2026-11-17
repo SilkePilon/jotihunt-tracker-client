@@ -92,7 +92,7 @@ export default function Login() {
             </div>
           </div>
           <p className="text-sm text-muted-foreground">Gebruik de vingerafdruk, het gezicht of de schermvergrendeling van dit apparaat.</p>
-          <Button size="lg" className="w-full rounded-xl" onClick={handleLogin} disabled={busy || !supported}>
+          <Button size="lg" className="w-full" onClick={handleLogin} disabled={busy || !supported}>
             {busy ? <Loader2Icon className="animate-spin" /> : <KeyRoundIcon />}
             Inloggen met passkey
           </Button>

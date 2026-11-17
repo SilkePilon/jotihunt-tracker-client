@@ -115,7 +115,7 @@ const TourCard = forwardRef<HTMLDivElement, TourCardProps>(function TourCard(pro
       </span>
       {/* One 32px row: Overslaan, the timer button, Vorige and Volgende (isolate: the phone hit areas sit below the buttons) */}
       <div className="isolate flex items-center gap-1 px-4">
-        <Button variant="ghost" size="sm" onClick={onSkip} className="mr-auto rounded-xl">
+        <Button variant="ghost" size="sm" onClick={onSkip} className="mr-auto">
           Overslaan
         </Button>
         <TimerRing className="size-9" durationMs={durationMs} runKey={stepIndex} paused={paused || hovered || keyboardInside} onDone={onTimeUp}>
@@ -147,7 +147,7 @@ const TourCard = forwardRef<HTMLDivElement, TourCardProps>(function TourCard(pro
         <Button variant="outline" size="icon-sm" aria-label="Vorige" onClick={onPrev} disabled={stepIndex === 0}>
           <ChevronLeftIcon />
         </Button>
-        <Button size="sm" onClick={onNext} className={cn('rounded-xl', isLast && 'px-4')}>
+        <Button size="sm" onClick={onNext} className={isLast ? 'px-4' : undefined}>
           {isLast ? 'Klaar' : 'Volgende'}
           {!isLast && <ChevronRightIcon data-icon="inline-end" />}
         </Button>

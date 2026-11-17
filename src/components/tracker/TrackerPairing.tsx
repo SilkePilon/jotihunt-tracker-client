@@ -44,7 +44,7 @@ export default function TrackerPairing({ pairing, creating, failed, onRetry, onC
   if (active && isMobile) {
     body = (
       <>
-        <Button asChild>
+        <Button asChild size="lg">
           <a href={pairingUrl}>
             <SmartphoneIcon />
             Open in de Jotihunt-app
@@ -73,7 +73,7 @@ export default function TrackerPairing({ pairing, creating, failed, onRetry, onC
     body = <Skeleton className={isMobile ? 'h-14 rounded-md' : 'h-24 rounded-md'} />;
   } else {
     body = (
-      <Button variant="outline" disabled={creating} onClick={onRetry}>
+      <Button variant="outline" size="lg" disabled={creating} onClick={onRetry}>
         {creating ? <Loader2Icon className="animate-spin" /> : <RefreshCwIcon />}
         {pairing ? 'Nieuwe code' : 'Opnieuw'}
       </Button>

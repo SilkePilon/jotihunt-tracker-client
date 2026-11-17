@@ -19,7 +19,7 @@ export default function WelcomeCard({ name, withPasskey }: { name: string; withP
         {withPasskey ? 'Je account en passkey zijn klaar. Volgende keer log je in met één tik.' : 'Je account is klaar. Voeg later een passkey toe om sneller in te loggen.'}
       </motion.p>
       <motion.div className="mt-1 w-full" {...fadeUp(0.4)}>
-        <Button className="w-full rounded-xl" onClick={() => navigate('/')}>
+        <Button size="lg" className="w-full" onClick={() => navigate('/')}>
           Naar de kaart
         </Button>
       </motion.div>

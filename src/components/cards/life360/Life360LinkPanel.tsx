@@ -390,7 +390,7 @@ export default function Life360LinkPanel({ view, status, emailPrefill, onOpenEma
       return (
         <div className="flex flex-col gap-2.5" data-life360-state="unlinked">
           <p className="text-xs text-muted-foreground">Koppel het Life360-account dat in de team-cirkel zit. Iedereen in die cirkel verschijnt dan als eigen laag op de kaart.</p>
-          <Button size="lg" className={cn('h-11 w-full rounded-lg text-sm font-semibold', LIFE360_BUTTON)} disabled={readOnly} onClick={onOpenEmail}>
+          <Button size="lg" className={cn('h-11 w-full text-sm', LIFE360_BUTTON)} disabled={readOnly} onClick={onOpenEmail}>
             <Life360Logo className="size-5" />
             Koppel Life360
           </Button>

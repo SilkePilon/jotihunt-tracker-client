@@ -47,7 +47,7 @@ export default function Life360Problem({ status, onSendCode }: Life360ProblemPro
       <CookieBadge tone="warn" size={72} />
       <p className="mt-2 text-base font-bold">Uitgelogd</p>
       <p className="text-xs text-muted-foreground">Life360 heeft de sessie beëindigd. Laatste posities blijven grijs op de kaart.</p>
-      <Button size="lg" className={cn('mt-2.5 h-11 w-full rounded-lg text-sm font-semibold', LIFE360_BUTTON)} disabled={busy || readOnly} onClick={() => void sendCode()}>
+      <Button size="lg" className={cn('mt-2.5 h-11 w-full text-sm', LIFE360_BUTTON)} disabled={busy || readOnly} onClick={() => void sendCode()}>
         {busy ? <Loader2Icon className="animate-spin" /> : <Life360Logo className="size-5" />}
         Stuur nieuwe code
       </Button>

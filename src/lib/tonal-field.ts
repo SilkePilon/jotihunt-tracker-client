@@ -1,5 +1,5 @@
 /**
- * Text field look (Beheer settings, Koppelingen panels, auth pages): tonal row-high fill, 8px corners, a hairline inset ring
+ * Text field look (Beheer settings, Koppelingen panels, auth pages): tonal row-high fill, 12px corners (rounded-lg), a hairline inset ring
  * instead of a border, 16px text on phones (no iOS zoom) and 13px on desktop. ui/input and ui/textarea use it as their
  * default; pass extra classes to Input's className.
  */

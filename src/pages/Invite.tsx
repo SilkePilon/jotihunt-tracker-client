@@ -172,7 +172,7 @@ export default function Invite() {
               }}
             />
           </div>
-          <Button type={signupDone ? 'button' : 'submit'} size="lg" className="w-full rounded-xl" disabled={busy} onClick={signupDone ? () => navigate('/login') : undefined}>
+          <Button type={signupDone ? 'button' : 'submit'} size="lg" className="w-full" disabled={busy} onClick={signupDone ? () => navigate('/login') : undefined}>
             <AnimatePresence mode="popLayout" initial={false}>
               <motion.span key={signupDone ? 'login' : 'signup'} className="inline-flex items-center gap-2" {...SWAP}>
                 {signupDone ? (
