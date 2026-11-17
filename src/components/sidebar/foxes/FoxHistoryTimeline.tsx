@@ -36,17 +36,19 @@ const LANE_COLOR: Record<LaneKey, string> = {
   hunt: 'var(--fox-cooldown)',
 };
 
+// Status colours from the same variables as the blocks (index.css, .fox-history), so the legend follows dark mode too
 const LEGEND: { label: string; style: CSSProperties }[] = [
-  { label: 'groen', style: { background: '#22c55e' } },
-  { label: 'oranje', style: { background: '#f97316' } },
+  { label: 'groen', style: { background: 'var(--fox-history-green)' } },
+  { label: 'oranje', style: { background: 'var(--fox-history-orange)' } },
   {
     label: 'rood',
     style: {
-      background: 'repeating-linear-gradient(-45deg, color-mix(in oklab, #ef4444 75%, transparent) 0 1px, transparent 1px 4px), color-mix(in oklab, #ef4444 10%, var(--card))',
-      boxShadow: 'inset 0 0 0 1px #ef4444',
+      background:
+        'repeating-linear-gradient(-45deg, color-mix(in oklab, var(--fox-history-red) 75%, transparent) 0 1px, transparent 1px 4px), color-mix(in oklab, var(--fox-history-red) 10%, var(--card))',
+      boxShadow: 'inset 0 0 0 1px var(--fox-history-red)',
     },
   },
-  { label: 'OV', style: { background: '#6366f1' } },
+  { label: 'OV', style: { background: 'var(--fox-history-blue)' } },
   { label: 'puzzelen', style: { background: 'color-mix(in oklab, var(--muted-foreground) var(--fox-history-pastel), var(--card))' } },
   {
     label: 'cooldown',
