@@ -104,8 +104,8 @@ export default function TrackerGuideDialog({ open, onOpenChange, status }: Track
             >
               {status.connected ? (
                 <>
-                  <CircleCheckIcon className="size-4 text-green-500" />
-                  <span className="font-medium text-green-600 dark:text-green-500">Verbonden</span>
+                  <CircleCheckIcon className="size-4 text-fox-ok" />
+                  <span className="font-medium text-fox-ok">Verbonden</span>
                 </>
               ) : (
                 <>

@@ -206,7 +206,7 @@ function AreaRow({ cell, area, label, open, onToggle, onSave, onClear, mapRef, h
             <motion.span key={solved ? `ok-${cell.answer}` : none ? 'none' : 'open'} {...SWAP} className="flex min-w-0 items-center gap-2">
               {solved ? (
                 <>
-                  <span className="max-w-56 truncate font-mono text-[12.5px] font-bold text-green-600 dark:text-green-300">{cell.answer}</span>
+                  <span className="max-w-56 truncate font-mono text-[12.5px] font-bold text-fox-ok">{cell.answer}</span>
                   {poppable ? <SuccessBadge size={18} /> : <CookieBadge tone="ok" size={18} />}
                 </>
               ) : (
@@ -400,7 +400,7 @@ function AreaBody({ cell, label, onSave, onClear, mapRef }: { cell: HintCell; la
           </motion.div>
         ) : (
           <motion.div key="done" {...SWAP} className="flex min-w-0 items-center gap-2">
-            <span className="min-w-0 truncate font-mono text-[13px] font-bold text-green-600 dark:text-green-300">{cell.answer}</span>
+            <span className="min-w-0 truncate font-mono text-[13px] font-bold text-fox-ok">{cell.answer}</span>
             {popIn ? <SuccessBadge size={18} /> : <CookieBadge tone="ok" size={18} />}
             {cell.answerLocation && (
               <IconPill aria-label="Op kaart" title="Op kaart" onClick={showOnMap}>
@@ -452,7 +452,7 @@ function PreviewLine({ preview }: { preview: NonNullable<AnswerPreview> }) {
   if (preview.kind === 'outside') return <span className="text-amber-700 dark:text-amber-300">⚠ RD {x} {y} ligt buiten het speelgebied: cijfers omgedraaid?</span>;
   return (
     <span className="text-muted-foreground tabular-nums">
-      <span className="text-green-600 dark:text-green-300">✓</span> RD {x} {y} · {lat.toFixed(4)} N, {lng.toFixed(4)} E
+      <span className="text-fox-ok">✓</span> RD {x} {y} · {lat.toFixed(4)} N, {lng.toFixed(4)} E
     </span>
   );
 }
