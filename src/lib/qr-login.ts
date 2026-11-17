@@ -49,3 +49,16 @@ export function canRetryConfirm(error: unknown): boolean {
   if (isAxiosError<{ code?: unknown }>(error)) return error.response?.data?.code === 'PASSKEY_FAILED';
   return classifyPasskeyError(error) === 'cancelled';
 }
+
+/**
+ * After a failed "Nee, dat ben ik niet": a code that is gone or taken can not log anyone in any more, so show why; any
+ * other failure (offline, server error) keeps the confirm view with a message and lets them try again.
+ */
+export function denyFailure(error: unknown): { retry: string } | { problem: QrProblem } {
+  if (isAxiosError<{ code?: unknown }>(error)) {
+    const code = error.response?.data?.code;
+    if (code === 'QR_GONE' || code === 'QR_TAKEN') return { problem: qrProblem(error) };
+    if (!error.response) return { retry: 'Kan de server niet bereiken, controleer je verbinding.' };
+  }
+  return { retry: 'Weigeren is mislukt, probeer het opnieuw.' };
+}
