@@ -49,6 +49,17 @@ export function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
   return bytes;
 }
 
+/**
+ * Whether this device has a push subscription, as resyncPush / subscribePush / unsubscribePush last found it (false
+ * until resyncPush has looked). Permission alone isn't enough: a granted device without a subscription gets no pushes.
+ */
+let subscribed = false;
+
+/** Whether this device was last seen with a push subscription (see `subscribed`). */
+export function hasPushSubscription(): boolean {
+  return subscribed;
+}
+
 /** Longest Opslaan waits for the service worker; without one (dev, a failed install) `ready` never settles. */
 const SW_READY_TIMEOUT_MS = 8000;
 
@@ -79,6 +90,7 @@ export async function subscribePush(fetch: Fetch, readyTimeoutMs = SW_READY_TIME
     const subscription =
       (await registration.pushManager.getSubscription()) ??
       (await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(publicKey) }));
+    subscribed = true;
     await fetch('/push/subscribe', 'POST', subscription.toJSON());
     return 'subscribed';
   } catch (error) {
@@ -91,15 +103,23 @@ export async function subscribePush(fetch: Fetch, readyTimeoutMs = SW_READY_TIME
  * Permission granted but no subscription (dropped by a logout, the browser or a cleared site) subscribes again, so push
  * doesn't silently stay off on this device. Quiet while an archive edition is shown: the server refuses it with 423 then. */
 export async function resyncPush(fetch: Fetch): Promise<void> {
-  if (!isPushSupported() || Notification.permission !== 'granted') return;
+  if (!isPushSupported() || Notification.permission !== 'granted') {
+    subscribed = false;
+    return;
+  }
   try {
     const registration = await navigator.serviceWorker.getRegistration();
-    if (!registration) return;
+    if (!registration) {
+      subscribed = false;
+      return;
+    }
     let subscription = await registration.pushManager.getSubscription();
+    subscribed = !!subscription;
     if (!subscription) {
       // No permission prompt here: it's already granted, so subscribing needs no click
       const { publicKey } = (await fetch<{ publicKey: string }>('/push/vapid-key')).data;
       subscription = await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(publicKey) });
+      subscribed = true;
     }
     await fetch('/push/subscribe', 'POST', subscription.toJSON());
   } catch (error) {
@@ -122,6 +142,7 @@ export async function unsubscribePush(fetch: Fetch, timeoutMs = UNSUBSCRIBE_TIME
       await withTimeout(fetch('/push/subscribe', 'DELETE', { endpoint: subscription.endpoint }), timeoutMs);
     } finally {
       // Always drop the browser subscription, even when the server couldn't be reached
+      subscribed = false;
       await subscription.unsubscribe();
     }
   } catch (error) {
