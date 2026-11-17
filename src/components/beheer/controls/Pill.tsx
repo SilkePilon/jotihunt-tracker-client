@@ -22,7 +22,7 @@ const pill = cva(
           'text-destructive-text shadow-[inset_0_0_0_1.5px_color-mix(in_oklab,var(--destructive)_60%,transparent)] hover:bg-destructive/10',
         // White: 4.83:1 on the fill; hover darkens (6.4:1) instead of /90, which lightened it to 4.3:1 over the card
         danger: 'bg-destructive text-white hover:bg-[color-mix(in_oklab,var(--destructive)_88%,black)]',
-        success: 'bg-green-500/20 text-green-800 dark:text-green-300',
+        success: 'bg-green-500/20 text-status-ok-text',
         // The warning-text colour as a fill: white on #92400e (7.1:1); dark mode the card colour on #fcd34d (11:1)
         warn: 'bg-status-warn-text text-card hover:bg-status-warn-text/90',
         // teal-800 / green-800: >= 4.5:1 on their tinted fills in light mode (green-700 and WhatsApp's #128C7E were below)
@@ -99,8 +99,9 @@ const iconPill = cva(
       variant: {
         ghost: 'text-muted-foreground hover:bg-beheer-row-high hover:text-foreground',
         soft: 'bg-beheer-row-high text-foreground hover:bg-beheer-row-high/70',
-        success: 'bg-green-500/20 text-green-800 dark:text-green-300',
-        active: 'bg-primary/20 text-orange-800 dark:text-orange-300',
+        success: 'bg-green-500/20 text-status-ok-text',
+        // M3 tonal "on" state: on-primary-container on primary-container (10:1 light, 8.3:1 dark)
+        active: 'bg-primary-container text-on-primary-container',
         'danger-soft': 'bg-destructive/15 text-destructive-text hover:bg-destructive/20',
       },
     },
@@ -116,13 +117,15 @@ export function IconPill({ variant, className, type = 'button', ...props }: Comp
 const tag = cva('inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs leading-4 font-extrabold md:text-[10.5px] transition-colors duration-300 [&_svg]:size-3', {
   variants: {
     tone: {
-      // -800 in light: the small (12px phone, 10.5px desktop) text needs >= 4.5:1 on its tint over the rows (-700 was below)
-      primary: 'bg-primary/20 text-orange-800 dark:text-orange-300',
+      // The small (12px phone, 10.5px desktop) text needs >= 4.5:1 on its tint over card, beheer-row and beheer-row-high
+      primary: 'bg-primary-container text-on-primary-container',
       neutral: 'bg-beheer-row-high text-muted-foreground',
-      ok: 'bg-green-500/15 text-green-800 dark:text-green-300',
+      ok: 'bg-green-500/15 text-status-ok-text',
       warn: 'bg-amber-500/20 text-status-warn-text',
+      // No info token: sky-800 / sky-300 are >= 5:1 / >= 6.2:1 on the tint over every row
       info: 'bg-sky-500/15 text-sky-800 dark:text-sky-300',
-      danger: 'bg-destructive/15 text-destructive-text',
+      // red-800 in light (5.6:1 on row-high; destructive-text was 3.7:1 there); destructive-text in dark (6.4:1)
+      danger: 'bg-destructive/10 text-red-800 dark:text-destructive-text',
     },
   },
   defaultVariants: { tone: 'neutral' },
