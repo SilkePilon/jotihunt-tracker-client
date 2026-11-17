@@ -12,7 +12,8 @@ import InlineError from '@/components/InlineError';
 import Reveal from '@/components/motion/Reveal';
 import Segmented, { type SegmentOption } from '@/components/beheer/controls/Segmented';
 import { useNightAreas } from '@/hooks/night-areas.hook';
-import { useIsMobile } from '@/hooks/media.hook';
+import { useIsMobile, useLandscapePhone } from '@/hooks/media.hook';
+import useViewportStore from '@/stores/viewport.store';
 import { NIGHT_DRAW_LAYERS, NIGHT_FILL, NIGHT_LINE } from '@/lib/map-layers';
 import { SWAP, SWAP_TRANSITION } from '@/lib/motion';
 import { CLOSED_MESSAGE, drawHint, droppedMessage, KEYBOARD_DRAW_HINT, MOVE_FIRST_MESSAGE, NAME_MISSING_MESSAGE, nudgeDelta, UNDO_MESSAGE } from '@/lib/night-draw-keys';
@@ -71,8 +72,13 @@ export default function NightAreaDraw() {
   const leaveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => () => clearTimeout(leaveTimer.current), []);
   const isMobile = useIsMobile();
-  // Phones: the hint sits above the bottom sheet
+  // Phones: the hint sits above the bottom sheet. Held sideways the sheet is a left column: the hint stands on the
+  // bottom edge and, like the toolbar, is centred in the map right of the column
   const sheetHeight = useSidebarStore((state) => state.sheetHeight);
+  const sheetSide = useSidebarStore((state) => state.sheetSide);
+  const safeBottom = useViewportStore((state) => state.safeBottom);
+  const sideways = useLandscapePhone() && sheetSide > 0;
+  const besideSheet = sideways ? { left: `calc(${sheetSide}px + (100vw - ${sheetSide}px) / 2)`, maxWidth: `calc(100vw - ${sheetSide}px - 16px)` } : undefined;
   // The toolbar sits below the status messages (offline badge, happy-hour pill); phone toasts below the toolbar
   const isPresent = useIsPresent();
   const toolbarRef = usePublishTopHeight('toolbar', isPresent);
@@ -286,7 +292,7 @@ export default function NightAreaDraw() {
             ref={toolbarRef}
             role="group"
             aria-label="Nachtgebied tekenen"
-            style={{ '--toolbar-top': belowSafeArea(toolbarTop), '--toolbar-top-md': `${toolbarTopMd}px` } as React.CSSProperties}
+            style={{ '--toolbar-top': belowSafeArea(toolbarTop), '--toolbar-top-md': `${toolbarTopMd}px`, ...besideSheet } as React.CSSProperties}
             className="fixed top-(--toolbar-top) left-1/2 z-40 flex max-w-[calc(100vw-16px)] -translate-x-1/2 flex-wrap items-center justify-center gap-1.5 rounded-2xl bg-card p-1.5 shadow-(--shadow-tile) transition-[top] duration-300 ease-out motion-reduce:transition-none md:top-(--toolbar-top-md) md:left-[calc(50%+164px)] shell-mobile:top-(--toolbar-top) shell-mobile:left-1/2"
             initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0 }}
@@ -307,7 +313,7 @@ export default function NightAreaDraw() {
           </motion.div>
           <motion.div
             className="fixed left-1/2 z-40 -translate-x-1/2 md:left-[calc(50%+164px)] shell-mobile:left-1/2"
-            style={{ bottom: isMobile ? sheetHeight + 12 : 16 }}
+            style={{ bottom: sideways ? safeBottom + 12 : isMobile ? sheetHeight + 12 : 16, ...besideSheet }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

@@ -62,6 +62,17 @@ export function landscapeSheetBox(viewportWidth: number, safeLeft: number): { le
 }
 
 /**
+ * Below this much room above the sheet (its settled height, or the bottom safe area when the sheet is a left column)
+ * the dock is a row: the card beside the tile stack instead of under it, which would leave it only ~100px.
+ */
+export const ROW_DOCK_MIN_ROOM = 420;
+
+/** Phones: whether the popup dock is a row (see {@link ROW_DOCK_MIN_ROOM}); `base` is what the dock stands on. */
+export function rowDock({ visibleH, safeTop, base }: { visibleH: number; safeTop: number; base: number }): boolean {
+  return visibleH - safeTop - base < ROW_DOCK_MIN_ROOM;
+}
+
+/**
  * Phones: the most height the docked card may take: what is left above the sheet, the dock gap, the safe area, an 8px
  * margin and (when the map tiles stack above the card) the tiles. Never negative.
  */
@@ -75,12 +86,20 @@ export function rubberBand(h: number, min: number, max: number): number {
   return h;
 }
 
+/**
+ * A two-stop sheet (short screens: half folded into full) has no real half: 'half' there means 'full', so the map
+ * tiles hide and the grab label says "helemaal open". Every snap the sheet settles on goes through this.
+ */
+export function normalizeSnap(snap: SheetSnap, heights: SnapHeights | null | undefined): SheetSnap {
+  return snap === 'half' && heights && heights.half === heights.full ? 'full' : snap;
+}
+
 export function settleSnap(height: number, velocity: number, heights: SnapHeights): SheetSnap {
   if (Math.abs(velocity) > FLICK_VELOCITY) {
     const target = velocity > 0 ? SNAP_ORDER.find((s) => heights[s] > height + 2) : [...SNAP_ORDER].reverse().find((s) => heights[s] < height - 2);
-    return target ?? (velocity > 0 ? 'full' : 'peek');
+    return normalizeSnap(target ?? (velocity > 0 ? 'full' : 'peek'), heights);
   }
-  return SNAP_ORDER.reduce((best, s) => (Math.abs(heights[s] - height) < Math.abs(heights[best] - height) ? s : best), 'peek' as SheetSnap);
+  return normalizeSnap(SNAP_ORDER.reduce((best, s) => (Math.abs(heights[s] - height) < Math.abs(heights[best] - height) ? s : best), 'peek' as SheetSnap), heights);
 }
 
 /** The snap a grab tap moves to; with `heights`, a stop at the same height as the current one is skipped (two-stop sheet). */
@@ -88,9 +107,9 @@ export function nextSnap(snap: SheetSnap, heights?: SnapHeights): SheetSnap {
   let next = snap;
   for (let i = 0; i < SNAP_ORDER.length - 1; i++) {
     next = SNAP_ORDER[(SNAP_ORDER.indexOf(next) + 1) % SNAP_ORDER.length];
-    if (!heights || heights[next] !== heights[snap]) return next;
+    if (!heights || heights[next] !== heights[snap]) return normalizeSnap(next, heights);
   }
-  return next;
+  return normalizeSnap(next, heights);
 }
 
 const SNAP_STATE: Record<SheetSnap, string> = { peek: 'ingeklapt', half: 'half open', full: 'helemaal open' };

@@ -9,6 +9,7 @@ import type { MapRef } from '@/components/Map';
 import { useEdition } from '@/hooks/edition.hook';
 import { useHintBoard } from '@/hooks/hints.hook';
 import { apiErrorMessage } from '@/lib/api-error';
+import { activatedByKeyboard } from '@/lib/input-modality';
 import { areaLabel, formatDistance, sameAnswer } from '@/lib/intel-chat';
 import { INTEL_CLOSE_MS, hasExistingMarker } from '@/lib/intel-window';
 import { SWAP } from '@/lib/motion';
@@ -64,10 +65,12 @@ export function ShowOnMapPill({ point, mapRef }: { point: Pick<PointResult, 'lat
 
   function showOnMap() {
     const { lng, lat } = point.latLng;
+    // Decided now: the dialog's close animation runs first
+    const focus = activatedByKeyboard();
     close();
     setTimeout(() => {
       mapRef.current?.flyTo({ center: [lng, lat], zoom: 15, duration: 2000 });
-      mapRef.current?.markPoint({ lng, lat } as LngLat);
+      mapRef.current?.markPoint({ lng, lat } as LngLat, { focus });
     }, INTEL_CLOSE_MS);
   }
 

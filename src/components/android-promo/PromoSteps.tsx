@@ -17,7 +17,7 @@ export function Stepper({ step }: { step: PromoStep }) {
   return (
     <div className="flex flex-1 gap-1.5">
       {[0, 1, 2].map((i) => (
-        <i key={i} className={cn('h-1 flex-1 rounded-sm transition-colors duration-300', i <= index ? 'bg-primary' : 'bg-beheer-row-high')} />
+        <i key={i} className={cn('h-1 flex-1 rounded-sm transition-colors duration-300', i <= index ? 'bg-primary-text dark:bg-primary' : 'bg-beheer-row-high')} />
       ))}
     </div>
   );

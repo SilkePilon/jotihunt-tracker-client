@@ -171,7 +171,7 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
 
   /** Opnieuw controleren: look for the unconfirmed marker in a fresh list, without leaving the dialog. */
   async function recheck() {
-    if (!pending || key === null || checking) return;
+    if (!pending || key === null || checking || form.formState.isSubmitting) return;
     setChecking(true);
     const outcome = lostResponseOutcome(await fetchFreshMarkers(), pending.sent);
     setChecking(false);
@@ -270,7 +270,14 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
   const missingId = `${fieldId}-missing`;
 
   const renderForm = () => (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="flex min-h-0 flex-1 flex-col">
+    <form
+      onSubmit={(e) => {
+        // Registreren is aria-disabled (not disabled) while busy, so Enter can still submit: ignore it
+        if (busy) return e.preventDefault();
+        return form.handleSubmit(onSubmit)(e);
+      }}
+      className="flex min-h-0 flex-1 flex-col"
+    >
       {/* Short windows and a phone keyboard: the fields scroll, Annuleren/Registreren stay in view. The 4px inset keeps the
           fields' focus rings inside the scroll clip */}
       <div className="-m-1 min-h-0 flex-1 overflow-y-auto overscroll-contain p-1">
@@ -406,7 +413,9 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
       </Reveal>
       {/* Phones (landscape too): side by side at full width (like Meldingen); desktop: right-aligned */}
       <div className="mt-4 flex shrink-0 gap-2 *:flex-1 desk:justify-end desk:*:flex-none">
-        <Button variant="outline" type="button" className={cn(DIALOG_ACTION_CANCEL, 'pointer-coarse:h-11')} disabled={busy} onClick={close}>
+        {/* aria-disabled, not disabled, while busy: disabling the focused button would drop the focus mid-save (close()
+            ignores the press then, like the primary's handlers) */}
+        <Button variant="outline" type="button" className={cn(DIALOG_ACTION_CANCEL, 'pointer-coarse:h-11')} aria-disabled={busy || undefined} onClick={close}>
           Annuleren
         </Button>
         {/* One button whose action follows the state, so its label swaps instead of a new button popping in */}
@@ -415,7 +424,8 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
           type={primary === 'recheck' ? 'button' : 'submit'}
           onClick={primary === 'recheck' ? recheck : undefined}
           className={cn(DIALOG_ACTION, 'pointer-coarse:h-11')}
-          disabled={busy || (primary !== 'recheck' && (!!missing || !form.formState.isValid || readOnly))}
+          disabled={!busy && primary !== 'recheck' && (!!missing || !form.formState.isValid || readOnly)}
+          aria-disabled={busy || undefined}
           aria-describedby={missing ? missingId : undefined}
           aria-busy={busy}
         >

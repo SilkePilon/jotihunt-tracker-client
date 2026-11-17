@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { computeSnapHeights, dockCardMax, dockedPadding, grabLabel, landscapeSheetBox, nextSnap, phoneMapPadding, rubberBand, settleSnap } from './sheet-snaps';
+import { computeSnapHeights, dockCardMax, dockedPadding, grabLabel, landscapeSheetBox, nextSnap, normalizeSnap, rowDock, phoneMapPadding, rubberBand, settleSnap } from './sheet-snaps';
 
 describe('computeSnapHeights', () => {
   test('iPhone-like viewport', () => {
@@ -58,10 +58,28 @@ test('nextSnap cycles peek → half → full → peek', () => {
 
 test('nextSnap skips a stop at the current height (two-stop sheet)', () => {
   const twoStops = { peek: 157, half: 348, full: 348 };
-  expect(nextSnap('peek', twoStops)).toBe('half');
+  // The folded half is reported as full, so the map tiles hide and the grab label says "helemaal open"
+  expect(nextSnap('peek', twoStops)).toBe('full');
   expect(nextSnap('half', twoStops)).toBe('peek');
   expect(nextSnap('full', twoStops)).toBe('peek');
   expect(nextSnap('half', { peek: 170, half: 380, full: 700 })).toBe('full');
+});
+
+describe('two-stop sheet (half folded into full)', () => {
+  const twoStops = { peek: 157, half: 348, full: 348 };
+  test('normalizeSnap reports half as full only when they are the same height', () => {
+    expect(normalizeSnap('half', twoStops)).toBe('full');
+    expect(normalizeSnap('peek', twoStops)).toBe('peek');
+    expect(normalizeSnap('full', twoStops)).toBe('full');
+    expect(normalizeSnap('half', { peek: 170, half: 380, full: 700 })).toBe('half');
+    expect(normalizeSnap('half', null)).toBe('half');
+  });
+  test('settleSnap never lands on the folded half', () => {
+    expect(settleSnap(340, 0, twoStops)).toBe('full');
+    expect(settleSnap(200, 0.8, twoStops)).toBe('full');
+    expect(settleSnap(330, -0.8, twoStops)).toBe('peek');
+    expect(settleSnap(170, 0, twoStops)).toBe('peek');
+  });
 });
 
 test('grabLabel names the current snap', () => {
@@ -108,4 +126,22 @@ describe('dockCardMax', () => {
     expect(dockCardMax({ visibleH: 760, sheet: 380, safeTop: 47, tiles: 146 })).toBe(161);
   });
   test('never negative', () => expect(dockCardMax({ visibleH: 400, sheet: 388, safeTop: 0, tiles: 0 })).toBe(0));
+});
+
+describe('rowDock', () => {
+  test('portrait at peek keeps the card under the tiles', () => {
+    expect(rowDock({ visibleH: 760, safeTop: 47, base: 170 })).toBe(false);
+  });
+  test('portrait at half has too little room above the sheet: card beside the tiles', () => {
+    expect(rowDock({ visibleH: 760, safeTop: 47, base: 380 })).toBe(true);
+  });
+  test('a short phone is a row even at peek', () => {
+    expect(rowDock({ visibleH: 560, safeTop: 20, base: 140 })).toBe(true);
+  });
+  test('landscape (dock on the bottom safe area) is a row', () => {
+    expect(rowDock({ visibleH: 390, safeTop: 0, base: 21 })).toBe(true);
+  });
+  test('exactly the minimum room keeps the column', () => {
+    expect(rowDock({ visibleH: 520, safeTop: 0, base: 100 })).toBe(false);
+  });
 });

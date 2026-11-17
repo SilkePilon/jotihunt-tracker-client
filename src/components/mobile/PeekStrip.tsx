@@ -118,8 +118,9 @@ export default function PeekStrip() {
   const scene = foxes && foxes.length > 0 ? 'bar' : foxes ? 'empty' : isError ? 'error' : 'loading';
 
   return (
-    // isolate: the buttons' 44px touch areas (COARSE_HIT_AREA) stay above the sheet's background
-    <div {...tourTarget('mobile.peek')} className="isolate flex flex-col gap-2 pr-[max(1rem,env(safe-area-inset-right))] pb-3 pl-[max(1rem,env(safe-area-inset-left))]">
+    // isolate: the buttons' 44px touch areas (COARSE_HIT_AREA) stay above the sheet's background. Held sideways the
+    // sheet is a column already clear of the notch: no safe-area padding inside it
+    <div {...tourTarget('mobile.peek')} className="isolate flex flex-col gap-2 pr-[max(1rem,env(safe-area-inset-right))] pb-3 pl-[max(1rem,env(safe-area-inset-left))] landscape-phone:px-4">
       <TrackerLine onOpen={() => push({ id: 'tracking' })} />
       <div className="relative h-8">
         <AnimatePresence initial={false}>

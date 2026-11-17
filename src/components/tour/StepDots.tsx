@@ -8,10 +8,11 @@ export default function StepDots({ count, index, className }: { count: number; i
         <span
           key={i}
           className={cn(
-            'h-1.5 rounded-full transition-[width] duration-200 motion-reduce:transition-none',
-            i === index ? 'w-4 bg-primary' : 'w-1.5',
-            i < index && 'bg-primary',
-            i > index && 'bg-muted-foreground/30',
+            // Light: the darker orange, so a dot keeps 3:1 against the card (plain orange is 2.8:1 on white)
+            'h-1.5 rounded-full transition-[width,background-color] duration-200 motion-reduce:transition-none',
+            i === index ? 'w-4 bg-primary-text dark:bg-primary' : 'w-1.5',
+            i < index && 'bg-primary-text dark:bg-primary',
+            i > index && 'bg-muted-foreground/60',
           )}
         />
       ))}

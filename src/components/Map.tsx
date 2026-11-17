@@ -73,6 +73,8 @@ import MapUnavailableCard from './map/MapUnavailableCard';
 import BrowserLocationDot from './map/BrowserLocationDot';
 import {featureNear, openLayerFeature, type OpenFeatureOptions} from './layers/map-interactions';
 import {useMapAvailability} from './map/useMapAvailability';
+import KeyboardLocationPick from './map/KeyboardLocationPick';
+import {requestPopupFocus} from '@/lib/popup-focus';
 
 // MapLibre resolves its worker relative to its own module, which bundlers don't emit;
 // let Vite bundle the worker and hand MapLibre the resulting URL. Here, not in main.tsx, so the
@@ -88,7 +90,8 @@ export interface MapRef {
     /** False while the map isn't created yet (react-map-gl fills its ref after the first render). */
     fitBounds(bounds: FitBoundsArgs[0], options?: FitBoundsArgs[1]): boolean;
 
-    markPoint(lngLat: LngLat): void;
+    /** Open the "Gekozen locatie" card at a point. `focus`: the card takes focus (pass it for keyboard activations, see activatedByKeyboard). */
+    markPoint(lngLat: LngLat, options?: {focus?: boolean}): void;
 
     /**
      * Open the popup of a canvas marker layer's feature (by its `id` property), the same popup a click opens: for
@@ -96,6 +99,9 @@ export interface MapRef {
      * takes focus (pass it for keyboard activations, see activatedByKeyboard).
      */
     openFeature(layer: string, id: string | number, options?: OpenFeatureOptions): boolean;
+
+    /** Move keyboard focus onto the map canvas (the desktop skip link); false while the map isn't created yet. */
+    focusCanvas(): boolean;
 
     /** The map's centre; null while the map isn't created yet. */
     getCenter(): LngLat | null;
@@ -180,15 +186,21 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
             mapRef.current.fitBounds(bounds, options);
             return true;
         },
-        markPoint: (lngLat: LngLat) => {
+        markPoint: (lngLat: LngLat, options?: {focus?: boolean}) => {
             // No location popup while a night area is being drawn
             if (mapRef.current && !drawing) {
+                if (options?.focus) requestPopupFocus();
                 setPopupPosition(lngLat);
             }
         },
         openFeature: (layer: string, id: string | number, options?: OpenFeatureOptions) => {
             const map = mapRef.current?.getMap();
             return !!map && !wall && openLayerFeature(map, layer, id, options);
+        },
+        focusCanvas: () => {
+            const canvas = mapRef.current?.getMap().getCanvas();
+            canvas?.focus();
+            return !!canvas;
         },
         getCenter: () => mapRef.current?.getCenter() ?? null,
         getZoom: () => mapRef.current?.getZoom() ?? null,
@@ -332,6 +344,12 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
         setPopupPosition(e.lngLat);
     }
 
+    // Enter on the focused map (KeyboardLocationPick): the keyboard's map tap, its card takes focus
+    const pickWithKeyboard = useCallback((lngLat: LngLat) => {
+        requestPopupFocus();
+        setPopupPosition(lngLat);
+    }, []);
+
     return (
         <div className={cn('relative', className ?? "w-dvw h-dvh")} style={wrapperStyle} {...tourTarget('map')}
              onPointerDownCapture={() => {
@@ -390,6 +408,7 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
                 <OrbitControls enabled={!isMobile && !wall}/>
                 {/* Turned or tilted (touch twist, orbit, 3D tilt): the reset-north tile shows (desktop stack, phone dock) */}
                 {!wall && <MapRotationTracker/>}
+                {!wall && <KeyboardLocationPick enabled={!rulerActive && !drawing} onPick={pickWithKeyboard}/>}
                 {popupPosition && !wall && <PickedLocationPopup key={`${popupPosition.lng},${popupPosition.lat}`} lng={popupPosition.lng} lat={popupPosition.lat}
                                                        onClose={() => setPopupPosition(undefined)}/>}
                 <Buildings3D visible={showBuildings3d}/>
