@@ -23,8 +23,8 @@ const [FILL_LAYER, LINE_LAYER, VERTICES_LAYER] = NIGHT_DRAW_LAYERS;
 const CLOSE_PX = 10;
 
 const KIND_OPTIONS: SegmentOption<NightAreaKind>[] = [
-  { value: 'closed', label: "Dicht 's nachts", selectedClassName: 'bg-[#ffdad6]', selectedTextClassName: 'text-[#93000a]' },
-  { value: 'open', label: "Open 's nachts", selectedClassName: 'bg-[rgb(27_109_47/0.12)]', selectedTextClassName: 'text-[#1b6d2f]' },
+  { value: 'closed', label: "Dicht 's nachts", selectedClassName: 'bg-fox-error-container', selectedTextClassName: 'text-fox-on-error' },
+  { value: 'open', label: "Open 's nachts", selectedClassName: 'bg-fox-ok-container', selectedTextClassName: 'text-fox-on-ok' },
 ];
 
 /** Back to Beheer → Algemeen (the Routes card) */
