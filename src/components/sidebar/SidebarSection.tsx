@@ -56,7 +56,7 @@ export default function SidebarSection({ id, title, summary, open: openProp, onO
             {/* The summary fades out as the section opens and back in as it closes (and when it first arrives with its poll) */}
             <AnimatePresence initial={false}>
               {!open && summary && (
-                <motion.span key="summary" {...SWAP} className="truncate">
+                <motion.span key="summary" {...SWAP} className="truncate tabular-nums">
                   {summary}
                 </motion.span>
               )}
