@@ -101,7 +101,7 @@ export default function TimePicker({ id, value, onChange, days, open, onOpenChan
                     aria-pressed={hour.value === value}
                     title={hour.taken ? 'Al geregistreerd' : undefined}
                     aria-label={hour.taken ? `${hour.label}, al geregistreerd` : undefined}
-                    className={cn(pickerTileClass(hour.value === value, hour.taken), 'h-[38px] tabular-nums')}
+                    className={cn(pickerTileClass(hour.value === value, hour.taken), 'h-[38px] tabular-nums pointer-coarse:h-11')}
                     onClick={() => {
                       picked.current = true;
                       onChange(hour.value);
