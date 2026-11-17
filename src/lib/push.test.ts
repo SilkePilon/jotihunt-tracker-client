@@ -1,6 +1,6 @@
 import { expect, spyOn, test } from 'bun:test';
 import { AxiosError, AxiosHeaders } from 'axios';
-import { isIos, needsIosInstall, resyncPush, unsubscribePush, urlBase64ToUint8Array } from './push';
+import { isIos, needsIosInstall, resyncPush, subscribePush, unsubscribePush, urlBase64ToUint8Array } from './push';
 
 const IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15';
 const ANDROID = 'Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 Chrome/140 Mobile Safari/537.36';
@@ -64,6 +64,24 @@ test('a 423 (archive edition shown) on resync or unsubscribe stays quiet', async
     // other errors still warn
     await resyncPush((async () => { throw new Error('offline'); }) as never);
     expect(warn).toHaveBeenCalledTimes(1);
+  } finally {
+    warn.mockRestore();
+    g.window = original.window;
+    g.Notification = original.Notification;
+    Object.defineProperty(globalThis, 'navigator', { configurable: true, value: original.navigator });
+  }
+});
+
+test('subscribePush gives up with "error" when the service worker never becomes ready', async () => {
+  const g = globalThis as unknown as Record<string, unknown>;
+  const original = { window: g.window, navigator: g.navigator, Notification: g.Notification };
+  g.window = { PushManager: {}, Notification: {} };
+  g.Notification = { requestPermission: async () => 'granted' };
+  Object.defineProperty(globalThis, 'navigator', { configurable: true, value: { serviceWorker: { ready: new Promise(() => {}) } } });
+  const warn = spyOn(console, 'warn').mockImplementation(() => {});
+  try {
+    const fetch = (async () => ({ data: { publicKey: 'AQID' } })) as never;
+    expect(await subscribePush(fetch, 20)).toBe('error');
   } finally {
     warn.mockRestore();
     g.window = original.window;

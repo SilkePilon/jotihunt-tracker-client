@@ -129,10 +129,10 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
     if (!error) {
       setDialogOpen(false);
       form.reset();
-      toast.success('Marker geplaatst!', { description: 'De marker is succesvol geplaatst.' });
+      toast.success('Marker geplaatst');
     } else {
       // The server's message for e.g. a 429 (too many markers in a row)
-      toast.error('Er is iets misgegaan.', { description: apiErrorMessage(error, 'Er is een fout opgetreden bij het plaatsen van de marker, probeer het later opnieuw.') });
+      toast.error('Marker plaatsen is mislukt', { description: apiErrorMessage(error, 'Probeer het opnieuw.') });
     }
   }
 

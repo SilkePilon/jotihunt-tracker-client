@@ -58,6 +58,10 @@ export const useMarkers = () => {
     markers: asList(data),
     isLoading: !error && !data,
     isError: error,
+    /** A list has come in (a later failed poll keeps it); until then it isn't known which hint hours are taken */
+    loaded: data !== undefined,
+    /** Refetch now (LoadError's retry) */
+    retry: () => mutate(),
     createMarker,
     deleteMarker,
   };

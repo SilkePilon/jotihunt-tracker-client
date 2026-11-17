@@ -158,6 +158,10 @@ describe('trackerPeekLine', () => {
   const now = Date.parse('2026-10-17T14:41:00Z');
   const base = { configured: true as const, qrUrl: '', deepLink: '', osmandUrl: '', uniqueId: 'x', vehicle: 'car' as const };
   test('loading', () => expect(trackerPeekLine(undefined, now)).toEqual({ tone: 'muted', text: 'Tracker laden…' }));
+  test('failed first load', () =>
+    expect(trackerPeekLine(undefined, now, true)).toEqual({ tone: 'warn', text: 'Tracker niet geladen — tik om opnieuw te proberen' }));
+  test('a failed poll keeps the last status', () =>
+    expect(trackerPeekLine({ ...base, connected: true, stats: { lastUpdate: '2026-10-17T14:40:56Z' } }, now, true)).toEqual({ tone: 'ok', text: 'Verbonden · in de auto · 4 s' }));
   test('not configured', () => expect(trackerPeekLine({ configured: false, reason: 'api_missing', connected: false }, now)).toEqual({ tone: 'muted', text: 'Tracker niet ingesteld' }));
   test('connected', () =>
     expect(trackerPeekLine({ ...base, connected: true, stats: { lastUpdate: '2026-10-17T14:40:56Z' } }, now)).toEqual({ tone: 'ok', text: 'Verbonden · in de auto · 4 s' }));

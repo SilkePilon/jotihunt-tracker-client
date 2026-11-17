@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { ClockIcon } from 'lucide-react';
+import { ClockIcon, Loader2Icon } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { SWAP } from '@/lib/motion';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -17,13 +17,15 @@ interface TimePickerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   disabled?: boolean;
+  /** The taken hours are still loading: a spinner instead of the clock, and "Laden…" as placeholder */
+  loading?: boolean;
   invalid?: boolean;
   /** Runs once the popover has closed after a pick (focuses X) */
   afterPick?: () => void;
 }
 
 /** Tijdstip picker: day switch and a grid of hours; hours that already have a hint for the area are crossed out. */
-export default function TimePicker({ id, value, onChange, days, open, onOpenChange, disabled, invalid, afterPick }: TimePickerProps) {
+export default function TimePicker({ id, value, onChange, days, open, onOpenChange, disabled, loading, invalid, afterPick }: TimePickerProps) {
   const [day, setDay] = useState<string>();
   const [wasOpen, setWasOpen] = useState(open);
   const picked = useRef(false);
@@ -48,10 +50,21 @@ export default function TimePicker({ id, value, onChange, days, open, onOpenChan
           id={id}
           disabled={disabled}
           invalid={invalid}
-          placeholder="Tijd"
+          placeholder={loading ? 'Laden…' : 'Tijd'}
           label={value ? shortLabel(value) : undefined}
-          aria-label={value ? `Tijd: ${shortLabel(value)}` : 'Tijd kiezen'}
-          lead={<ClockIcon aria-hidden className="size-3.5 shrink-0 text-muted-foreground transition-colors group-data-[state=open]:text-(--map-selected-fg)" />}
+          aria-label={value ? `Tijd: ${shortLabel(value)}` : loading ? 'Tijden laden' : 'Tijd kiezen'}
+          aria-busy={loading || undefined}
+          lead={
+            <AnimatePresence mode="popLayout" initial={false}>
+              <motion.span key={loading ? 'loading' : 'clock'} {...SWAP} className="inline-flex shrink-0">
+                {loading ? (
+                  <Loader2Icon aria-hidden className="size-3.5 animate-spin text-muted-foreground" />
+                ) : (
+                  <ClockIcon aria-hidden className="size-3.5 text-muted-foreground transition-colors group-data-[state=open]:text-(--map-selected-fg)" />
+                )}
+              </motion.span>
+            </AnimatePresence>
+          }
         />
       </PopoverTrigger>
       <PopoverContent
@@ -88,7 +101,7 @@ export default function TimePicker({ id, value, onChange, days, open, onOpenChan
                     aria-pressed={hour.value === value}
                     title={hour.taken ? 'Al geregistreerd' : undefined}
                     aria-label={hour.taken ? `${hour.label}, al geregistreerd` : undefined}
-                    className={cn(pickerTileClass(hour.value === value, hour.taken), 'h-[38px] tabular-nums')}
+                    className={cn(pickerTileClass(hour.value === value, hour.taken), 'h-[38px] tabular-nums pointer-coarse:h-11')}
                     onClick={() => {
                       picked.current = true;
                       onChange(hour.value);

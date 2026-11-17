@@ -33,8 +33,23 @@ export function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
   return bytes;
 }
 
-/** Ask permission (must run from a click) and register this device for push. */
-export async function subscribePush(fetch: Fetch): Promise<PushResult> {
+/** Longest Opslaan waits for the service worker; without one (dev, a failed install) `ready` never settles. */
+const SW_READY_TIMEOUT_MS = 8000;
+
+/** `promise`, or a rejection once `ms` has passed without it settling. */
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error('timeout')), ms);
+    }),
+  ]).finally(() => clearTimeout(timer));
+}
+
+/** Ask permission (must run from a click) and register this device for push. A service worker that never becomes ready
+ * counts as 'error' after `readyTimeoutMs`, so the caller (Meldingen's Opslaan) doesn't hang. */
+export async function subscribePush(fetch: Fetch, readyTimeoutMs = SW_READY_TIMEOUT_MS): Promise<PushResult> {
   if (!isPushSupported()) return 'unsupported';
   let publicKey: string;
   try {
@@ -44,7 +59,7 @@ export async function subscribePush(fetch: Fetch): Promise<PushResult> {
   }
   try {
     if ((await Notification.requestPermission()) !== 'granted') return 'denied';
-    const registration = await navigator.serviceWorker.ready;
+    const registration = await withTimeout(navigator.serviceWorker.ready, readyTimeoutMs);
     const subscription =
       (await registration.pushManager.getSubscription()) ??
       (await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(publicKey) }));
@@ -79,17 +94,10 @@ export async function unsubscribePush(fetch: Fetch, timeoutMs = UNSUBSCRIBE_TIME
     const registration = await navigator.serviceWorker.getRegistration();
     const subscription = await registration?.pushManager.getSubscription();
     if (!subscription) return;
-    let timer: ReturnType<typeof setTimeout> | undefined;
     try {
       // Bounded, so logout never hangs on a bad connection
-      await Promise.race([
-        fetch('/push/subscribe', 'DELETE', { endpoint: subscription.endpoint }),
-        new Promise<never>((_, reject) => {
-          timer = setTimeout(() => reject(new Error('timeout')), timeoutMs);
-        }),
-      ]);
+      await withTimeout(fetch('/push/subscribe', 'DELETE', { endpoint: subscription.endpoint }), timeoutMs);
     } finally {
-      clearTimeout(timer);
       // Always drop the browser subscription, even when the server couldn't be reached
       await subscription.unsubscribe();
     }

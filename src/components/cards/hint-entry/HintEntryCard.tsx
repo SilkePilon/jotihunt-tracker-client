@@ -3,6 +3,7 @@ import {Button} from '../../ui/button.tsx';
 import {EraserIcon, Loader2Icon, Pin} from 'lucide-react';
 import {AnimatePresence, motion} from 'motion/react';
 import InlineError from '@/components/InlineError';
+import LoadError from '@/components/LoadError';
 import Reveal from '@/components/motion/Reveal';
 import {SWAP} from '@/lib/motion';
 import useHintDraftStore, {EMPTY_HINT_DRAFT} from '@/stores/hint-draft.store';
@@ -29,8 +30,13 @@ import {fieldsResolver, nonEmptyString, oneOf, stringOfLength} from '@/lib/form-
 import {COARSE_HIT_AREA} from '@/lib/hit-area';
 import {type GuessStatus, guessStatus, hasWildcard, parseGuess} from '@/lib/hint-guess';
 import useHintGuessStore from '@/stores/hint-guess.store';
+import useSidebarStore from '@/stores/sidebar.store';
+import {useIsMobile} from '@/hooks/media.hook';
 
 type FormValues = {area: string; time: string; x: string; y: string};
+
+/** Whether the form still holds the values that were sent */
+const sameDraft = (a: FormValues, b: FormValues) => a.area === b.area && a.time === b.time && a.x === b.x && a.y === b.y;
 
 const formResolver = fieldsResolver<FormValues>({
     area: oneOf(areaOptions.map((option) => option.value), 'Kies een deelgebied.'),
@@ -42,16 +48,19 @@ const formResolver = fieldsResolver<FormValues>({
 export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef | null> }) {
     const {coords, clear} = useHintFormBridge();
     const fieldId = useId();
+    const isMobile = useIsMobile();
     const submitId = `${fieldId}-submit`;
-    const {markers, createMarker} = useMarkers();
+    const {markers, loaded: markersLoaded, isError: markersError, retry: retryMarkers, createMarker} = useMarkers();
     const [timeOpen, setTimeOpen] = useState(false);
     const {huntStart, huntEnd} = useAppConfig();
     // An archive edition is read-only: the boxes (and wildcard guesses) still work, Registreren doesn't
     const {readOnly} = useEdition();
     const HUNT_START = huntStart ? new Date(huntStart) : null;
     const HUNT_END = huntEnd ? new Date(huntEnd) : null;
-    // Without a configured hunt window there are no hint hours to pick
-    const hintHours = (area: string) => (HUNT_START && HUNT_END ? buildHintHours(HUNT_START, HUNT_END, new Date(), markers, area) : []);
+    // Without a configured hunt window there are no hint hours to pick. Until the markers are in it isn't known which hours
+    // are taken: null, so no hour counts as free (and Registreren waits) instead of every hour looking free.
+    const hintHours = (area: string) => (HUNT_START && HUNT_END ? buildHintHours(HUNT_START, HUNT_END, new Date(), markersLoaded ? markers : undefined, area) : []);
+    const markersFailed = !markersLoaded && !!markersError;
 
     const form = useForm<FormValues>({
         resolver: formResolver,
@@ -76,7 +85,8 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
     const outsideNetherlands = !!typedLocation && !isInNetherlands(typedLocation[0], typedLocation[1]);
     // Hours for the chosen area; hours that already have a hint are kept but marked taken
     const hours = hintHours(selectedArea);
-    const days = groupByDay(hours);
+    const hoursKnown = hours !== null;
+    const days = groupByDay(hours ?? []);
 
     // setValue without validation doesn't update formState.isValid in onSubmit mode, so derive from values.
     // The chosen hour is rechecked: a teammate can register it while this form is open.
@@ -139,7 +149,9 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
     function changeArea(area: string) {
         form.setValue('area', area, {shouldValidate: true, shouldDirty: true});
         const time = form.getValues('time');
-        if (time && !isFreeHour(hintHours(area), time)) {
+        const areaHours = hintHours(area);
+        // Unknown hours (markers still loading) keep the time; it's checked again once they're in
+        if (time && areaHours && !isFreeHour(areaHours, time)) {
             form.setValue('time', '', {shouldDirty: true});
         }
     }
@@ -179,11 +191,14 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
         setSubmitError(null);
         const error = await createMarker(marker);
         if (!error) {
-            form.reset(EMPTY_HINT_DRAFT);
-            useHintDraftStore.getState().clear();
-            toast.success('Hint geregistreerd!', {
-                description: 'De hint is succesvol geregistreerd.'
-            });
+            // Only empty the form when it still holds what was sent: a correction typed while Registreren ran stays
+            if (sameDraft(form.getValues(), data)) {
+                form.reset(EMPTY_HINT_DRAFT);
+                useHintDraftStore.getState().clear();
+            }
+            toast.success('Hint geregistreerd');
+            // On a phone the full sheet would hide the flight: lower it to peek first (like Hunts and Voorspellingen)
+            if (isMobile) useSidebarStore.getState().setSheetSnap('peek');
             mapRef.current?.flyTo({
                 center: [converted[0], converted[1]],
                 duration: 2000,
@@ -195,8 +210,8 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
             // The typed hint stays in the form (and the draft): one tap on Registreren once there is a connection
             setSubmitError('Geen verbinding: de hint is niet geregistreerd. Je invoer blijft staan, probeer het opnieuw zodra je verbinding hebt.');
         } else {
-            toast.error('Fout bij registreren hint.', {
-                description: apiErrorMessage(error, 'Er is een fout opgetreden bij het registreren van de hint.')
+            toast.error('Hint registreren is mislukt', {
+                description: apiErrorMessage(error, 'Probeer het opnieuw.')
             });
         }
     }
@@ -253,8 +268,9 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
                             <div className="min-w-0 flex-1">
                                 <TimePicker id={`${fieldId}-time`} value={field.value} onChange={field.onChange}
                                             days={days} open={timeOpen} onOpenChange={setTimeOpen}
-                                            disabled={!selectedArea}
-                                            invalid={fieldState.invalid || (!!field.value && !isFreeHour(hours, field.value))}
+                                            disabled={!selectedArea || !hoursKnown}
+                                            loading={!hoursKnown && !markersFailed}
+                                            invalid={fieldState.invalid || (hoursKnown && !!field.value && !isFreeHour(hours, field.value))}
                                             afterPick={() => document.getElementById(`${fieldId}-x`)?.focus()}/>
                             </div>
                         )}
@@ -265,6 +281,12 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
                     {coordinateField('x', 'X', () => document.getElementById(`${fieldId}-y`)?.focus())}
                     {coordinateField('y', 'Y', () => setTimeout(() => document.getElementById(submitId)?.focus()))}
                 </div>
+                {/* The first marker load failed: which hours are free is unknown, so time and Registreren wait for a retry */}
+                <Reveal gap={4}>
+                    {markersFailed && (
+                        <LoadError message="Hints konden niet worden geladen, dus de vrije tijden zijn onbekend." onRetry={retryMarkers} className="py-1"/>
+                    )}
+                </Reveal>
                 <div className="isolate mt-0.5 flex items-center justify-between gap-2">
                     <CoordinateStatus state={coordinateState} guess={status}/>
                     <button type="button" onClick={clearCoordinates}
