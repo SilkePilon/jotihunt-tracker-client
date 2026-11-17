@@ -8,6 +8,7 @@ import {
   normalizeHuntLocation,
   normalizeSyncedHunt,
   syncedHuntForMarker,
+  HUNT_SYNC_TITLE,
   huntEventTime, huntEventsPath, huntEventText, huntSyncLine, huntSyncSummary, huntSyncView, resultBarShares } from './hunt-sync';
 
 const NOW = Date.parse('2026-10-17T21:45:00Z');
@@ -48,6 +49,11 @@ describe('huntSyncView', () => {
   test('a stale error older than the last success does not count', () => {
     expect(huntSyncView(status({ lastError: 'x', lastSuccessAt: ago(5_000), lastAttemptAt: ago(5_000) }))).toBe('synced');
   });
+});
+
+test('a failing scrape is titled as failed, not as still syncing', () => {
+  expect(HUNT_SYNC_TITLE.failing).toBe('Sync mislukt');
+  expect(HUNT_SYNC_TITLE.syncing).toBe('Synchroniseert…');
 });
 
 describe('huntSyncLine', () => {
