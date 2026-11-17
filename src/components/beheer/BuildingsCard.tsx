@@ -133,7 +133,7 @@ export default function BuildingsCard({ mapRef }: { mapRef: RefObject<MapRef | n
           <div className="pt-3 pl-14">
             <div className="h-1.5 overflow-hidden rounded-full bg-muted">
               <motion.div
-                className="h-full rounded-full bg-primary"
+                className="h-full rounded-full bg-primary-text dark:bg-primary"
                 initial={false}
                 animate={{ width: `${Math.round(progress * 100)}%` }}
                 transition={{ duration: 0.4, ease: EASE_OUT }}
