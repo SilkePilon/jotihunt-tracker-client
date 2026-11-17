@@ -62,3 +62,22 @@ export function denyFailure(error: unknown): { retry: string } | { problem: QrPr
   }
   return { retry: 'Weigeren is mislukt, probeer het opnieuw.' };
 }
+
+/**
+ * The QR half's polite status line for screen readers: what changed (heading and status line), not the whole panel.
+ * Empty while a code just waits to be scanned (the visible heading and hint say that; a renewed code isn't news).
+ */
+export function qrPanelAnnouncement(state: QrPanelState): string {
+  switch (state.phase) {
+    case 'scanned':
+      return `Gescand door ${state.name}. Bevestig op je telefoon.`;
+    case 'done':
+      return `Ingelogd. Welkom, ${state.name}.`;
+    case 'expired':
+      return 'Code verlopen. Maak een nieuwe code om met je telefoon in te loggen.';
+    case 'error':
+      return 'Kan geen code maken. Kan de server niet bereiken, controleer je verbinding.';
+    default:
+      return '';
+  }
+}

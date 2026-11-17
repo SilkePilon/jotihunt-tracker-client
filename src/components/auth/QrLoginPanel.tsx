@@ -11,7 +11,7 @@ import { useQrLogin } from '@/hooks/qr-login.hook';
 import type { SessionResult } from '@/lib/auth-api';
 import { formatCountdown } from '@/lib/format';
 import { fadeUp, POP, SWAP, SWAP_TRANSITION } from '@/lib/motion';
-import type { QrPanelState } from '@/lib/qr-login';
+import { qrPanelAnnouncement, type QrPanelState } from '@/lib/qr-login';
 
 const QR_SIZE = 176;
 
@@ -30,7 +30,11 @@ export default function QrLoginPanel({ onApproved }: { onApproved: (result: Sess
   const { state, restart } = useQrLogin(onApproved);
 
   return (
-    <div className="flex w-[290px] flex-col justify-center p-8 text-center" aria-live="polite">
+    <div className="flex w-[290px] flex-col justify-center p-8 text-center">
+      {/* Only the heading and status line are announced (not the whole panel, nor each countdown tick) */}
+      <span role="status" className="sr-only">
+        {qrPanelAnnouncement(state)}
+      </span>
       <AutoHeight scene={sceneOf(state)} className="-m-2" innerClassName="p-2">
         <AnimatePresence mode="wait" initial={false}>
           {sceneOf(state) === 'qr' && <QrScene key="qr" state={state} restart={restart} />}
@@ -122,7 +126,14 @@ function QrScene({ state, restart }: { state: QrPanelState; restart: () => void 
             </motion.div>
           )}
           {scanned && (
-            <motion.button key="restart" type="button" onClick={restart} className="text-xs font-medium underline decoration-muted-foreground/50 underline-offset-2" {...SWAP}>
+            <motion.button
+              key="restart"
+              type="button"
+              onClick={restart}
+              // The ::after grows the target to 24px tall without moving the line
+              className="relative text-xs font-medium underline decoration-muted-foreground/50 underline-offset-2 after:absolute after:-inset-x-1 after:-inset-y-1 after:content-['']"
+              {...SWAP}
+            >
               Niet jij? Opnieuw
             </motion.button>
           )}

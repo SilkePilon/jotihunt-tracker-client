@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { AxiosError, AxiosHeaders } from 'axios';
-import { canRetryConfirm, denyFailure, nextAfterLogin, panelAfterPoll, qrProblem, QR_RENEW_FOR_MS } from './qr-login';
+import { canRetryConfirm, denyFailure, nextAfterLogin, panelAfterPoll, qrPanelAnnouncement, qrProblem, QR_RENEW_FOR_MS } from './qr-login';
 
 function httpError(status: number, data: unknown = {}) {
   const error = new AxiosError('fail');
@@ -73,5 +73,16 @@ describe('denyFailure', () => {
     expect(denyFailure(new AxiosError('offline'))).toEqual({ retry: 'Kan de server niet bereiken, controleer je verbinding.' });
     expect(denyFailure(httpError(500))).toEqual({ retry: 'Weigeren is mislukt, probeer het opnieuw.' });
     expect(denyFailure(new Error('x'))).toEqual({ retry: 'Weigeren is mislukt, probeer het opnieuw.' });
+  });
+});
+
+describe('qrPanelAnnouncement', () => {
+  test('announces what changed, nothing while a code waits', () => {
+    expect(qrPanelAnnouncement({ phase: 'loading' })).toBe('');
+    expect(qrPanelAnnouncement({ phase: 'waiting', url: 'u', expiresAt: 0 })).toBe('');
+    expect(qrPanelAnnouncement({ phase: 'scanned', url: 'u', name: 'Silke' })).toBe('Gescand door Silke. Bevestig op je telefoon.');
+    expect(qrPanelAnnouncement({ phase: 'done', name: 'Silke' })).toBe('Ingelogd. Welkom, Silke.');
+    expect(qrPanelAnnouncement({ phase: 'expired' })).toContain('Code verlopen');
+    expect(qrPanelAnnouncement({ phase: 'error' })).toContain('Kan geen code maken');
   });
 });
