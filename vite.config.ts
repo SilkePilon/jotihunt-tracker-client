@@ -134,9 +134,11 @@ export default defineConfig({
     inconsistentCjsInterop: true,
   },
   resolve: {
-    alias: {
-      '@': path.resolve(import.meta.dirname, './src'),
-    },
+    alias: [
+      { find: '@', replacement: path.resolve(import.meta.dirname, './src') },
+      // react-auth-kit only needs a BehaviorSubject; the full CommonJS rxjs build cost ~30 KB gzip in the entry chunk
+      { find: /^rxjs$/, replacement: path.resolve(import.meta.dirname, './src/lib/rxjs-shim.ts') },
+    ],
   },
   preview: {
     port: 80,
