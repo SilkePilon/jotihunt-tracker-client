@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { connectionProblem, connectionSnapshot, feedKey, problemLabel, reportFetchError, reportFetchSuccess, resetConnection, staleAge, staleLabel } from './connection';
+import { connectionProblem, connectionSnapshot, feedKey, problemLabel, reportFetchError, reportFetchSuccess, reportResume, resetConnection, staleAge, staleLabel } from './connection';
 
 const NOW = 1_000_000_000;
 
@@ -124,5 +124,41 @@ describe('per-feed tracking of the sidebar feeds', () => {
     const problem = connectionProblem(snapshot, true, NOW);
     expect(problem).toEqual({ ageMs: 90_000, feeds: ['hints', 'voorspellingen'], offline: false });
     expect(problemLabel(problem!)).toBe('Hints en voorspellingen niet bijgewerkt — 1 min oud');
+  });
+});
+
+describe('back from the background', () => {
+  test('old data shows a neutral "Bijwerken…" until the next success', () => {
+    resetConnection(NOW - 800_000);
+    reportFetchSuccess('/areas', NOW - 720_000);
+    // Nothing failed while the tab slept: no problem by the stale rules alone
+    expect(connectionProblem(connectionSnapshot(), true, NOW)).toBeNull();
+    reportResume(NOW);
+    const problem = connectionProblem(connectionSnapshot(), true, NOW);
+    expect(problem).toEqual({ ageMs: 720_000, feeds: [], offline: false, refreshing: true });
+    expect(problemLabel(problem!)).toBe('Bijwerken… gegevens 12 min oud');
+    reportFetchSuccess('/areas', NOW + 500);
+    expect(connectionProblem(connectionSnapshot(), true, NOW + 500)).toBeNull();
+  });
+
+  test('an error ends it: from there the usual stale rules decide', () => {
+    resetConnection(NOW - 800_000);
+    reportFetchSuccess('/areas', NOW - 720_000);
+    reportResume(NOW);
+    reportFetchError('/areas', NOW + 500, true);
+    const problem = connectionProblem(connectionSnapshot(), true, NOW + 500);
+    expect(problem?.refreshing).toBeUndefined();
+    expect(problemLabel(problem!)).toBe('Geen verbinding — gegevens 12 min oud');
+  });
+
+  test('recent data or offline: no neutral state', () => {
+    resetConnection(NOW - 30_000);
+    reportFetchSuccess('/areas', NOW - 30_000);
+    reportResume(NOW);
+    expect(connectionProblem(connectionSnapshot(), true, NOW)).toBeNull();
+    resetConnection(NOW - 800_000);
+    reportFetchSuccess('/areas', NOW - 720_000);
+    reportResume(NOW);
+    expect(connectionProblem(connectionSnapshot(), false, NOW)?.refreshing).toBeUndefined();
   });
 });

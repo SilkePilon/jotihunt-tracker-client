@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { WifiOffIcon } from 'lucide-react';
+import { RefreshCwIcon, WifiOffIcon } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import { connectionProblem, connectionSnapshot, problemLabel } from '@/lib/connection';
+import { connectionProblem, connectionSnapshot, problemLabel, reportResume } from '@/lib/connection';
 import { problemAnnouncement } from '@/lib/stale-announcement';
 import { SWAP_TRANSITION } from '@/lib/motion';
 import { usePublishTopHeight } from '@/stores/top-stack.store';
+import { cn } from '@/lib/utils';
 
 const CHECK_MS = 5000;
 
@@ -16,6 +17,8 @@ const CHECK_MS = 5000;
  */
 export default function StaleDataBadge() {
   const [label, setLabel] = useState<string | null>(null);
+  // 'neutral': back from the background with old data, catching up (not an error)
+  const [tone, setTone] = useState<'error' | 'neutral'>('error');
   // Strings, so a check that finds the same problem doesn't re-render
   const [announcement, setAnnouncement] = useState('');
   // Phones: the happy-hour pill, the drawing toolbar and toasts stack below the badge (one or two lines, lib/top-stack.ts)
@@ -25,16 +28,32 @@ export default function StaleDataBadge() {
     const check = () => {
       const problem = connectionProblem(connectionSnapshot(), navigator.onLine, Date.now());
       setLabel(problem ? problemLabel(problem) : null);
+      setTone(problem?.refreshing ? 'neutral' : 'error');
       setAnnouncement(problemAnnouncement(problem));
+    };
+    // Back in front (tab switch, phone unlocked, back/forward cache): say the data is catching up right away, and check
+    // more often until it has (SWR refreshes on focus)
+    let followUp: ReturnType<typeof setTimeout> | undefined;
+    const resume = () => {
+      if (document.visibilityState !== 'visible') return;
+      reportResume();
+      check();
+      clearTimeout(followUp);
+      followUp = setTimeout(check, 1000);
     };
     check();
     const interval = setInterval(check, CHECK_MS);
     window.addEventListener('online', check);
     window.addEventListener('offline', check);
+    document.addEventListener('visibilitychange', resume);
+    window.addEventListener('pageshow', resume);
     return () => {
       clearInterval(interval);
+      clearTimeout(followUp);
       window.removeEventListener('online', check);
       window.removeEventListener('offline', check);
+      document.removeEventListener('visibilitychange', resume);
+      window.removeEventListener('pageshow', resume);
     };
   }, []);
 
@@ -59,9 +78,16 @@ export default function StaleDataBadge() {
             style={{ x: '-50%' }}
             className="pointer-events-none fixed left-1/2 top-[calc(env(safe-area-inset-top)+8px)] z-50 flex w-max max-w-[min(calc(100vw-32px),420px)] items-center md:left-[calc(50%+164px)] md:max-w-[min(calc(100vw-360px),420px)] gap-1.5 rounded-badge bg-destructive px-2.5 py-1 text-xs font-semibold text-white shadow-md"
           >
-            <WifiOffIcon className="size-3.5 shrink-0" />
+            {/* Neutral tone: a tonal layer over the error fill (under the content, in the badge's own stacking context),
+                faded in and out, so swapping tone animates and the shell keeps one look */}
+            <AnimatePresence initial={false}>
+              {tone === 'neutral' && (
+                <motion.span key="neutral" aria-hidden className="absolute inset-0 -z-10 rounded-[inherit] bg-beheer-row-high" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={SWAP_TRANSITION} />
+              )}
+            </AnimatePresence>
+            {tone === 'neutral' ? <RefreshCwIcon className="size-3.5 shrink-0 text-foreground motion-safe:animate-spin" /> : <WifiOffIcon className="size-3.5 shrink-0" />}
             {/* Wraps to a second line on narrow phones instead of cutting off the feed or the age */}
-            <span className="min-w-0 text-center leading-snug text-balance">{label}</span>
+            <span className={cn('min-w-0 text-center leading-snug text-balance transition-colors', tone === 'neutral' && 'text-foreground')}>{label}</span>
           </motion.div>
         )}
       </AnimatePresence>

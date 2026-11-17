@@ -6,7 +6,8 @@ import type { ConnectionProblem } from '@/lib/connection';
  */
 export function problemAnnouncement(problem: ConnectionProblem | null): string {
   if (!problem) return '';
-  const { ageMs, feeds, offline } = problem;
+  const { ageMs, feeds, offline, refreshing } = problem;
+  if (refreshing) return 'Gegevens worden bijgewerkt';
   if (feeds.length === 0) {
     if (ageMs === null) return offline ? 'Geen verbinding' : 'Geen actuele gegevens';
     return offline ? 'Geen verbinding, gegevens niet bijgewerkt' : 'Gegevens niet bijgewerkt';
