@@ -27,6 +27,8 @@ import {
   type AdminInvite,
   type SendEvent,
   type SendState,
+  aiRowsStacked,
+  AI_ROW_INLINE_MIN_PX,
 } from './beheer';
 import { AREAS } from './marker-style';
 
@@ -270,5 +272,18 @@ describe('huntable areas card', () => {
     expect(toggleHuntable(AREAS, 'charlie', ['alpha', 'delta'], 'delta')).toEqual(['alpha']);
     // The first toggle of a not-configured setting stores every other area minus the tapped one
     expect(toggleHuntable(AREAS, 'charlie', null, 'oscar')).toEqual(['alpha', 'bravo', 'delta', 'echo', 'foxtrot', 'golf', 'hotel']);
+  });
+});
+
+describe('aiRowsStacked', () => {
+  test('stacked until measured and while narrower than the inline minimum', () => {
+    expect(aiRowsStacked(undefined)).toBe(true);
+    expect(aiRowsStacked(320)).toBe(true);
+    expect(aiRowsStacked(AI_ROW_INLINE_MIN_PX - 1)).toBe(true);
+  });
+
+  test('inline once there is room', () => {
+    expect(aiRowsStacked(AI_ROW_INLINE_MIN_PX)).toBe(false);
+    expect(aiRowsStacked(900)).toBe(false);
   });
 });

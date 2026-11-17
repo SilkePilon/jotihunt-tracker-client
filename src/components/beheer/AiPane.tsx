@@ -7,9 +7,10 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import Reveal from '@/components/motion/Reveal';
 import { Input } from '@/components/ui/input';
 import { testAiSlot, useAdminConfig, useAiModels } from '@/hooks/app-config.hook';
-import { useIsMobile } from '@/hooks/media.hook';
+import { useElementWidth } from '@/hooks/element-width.hook';
 import { AI_SLOTS, type AiSlot } from '@/lib/app-config';
 import { apiErrorMessage } from '@/lib/api-error';
+import { aiRowsStacked } from '@/lib/beheer';
 import { focusDropped } from '@/lib/focus';
 import { POP, SWAP } from '@/lib/motion';
 import { cn } from '@/lib/utils';
@@ -94,7 +95,9 @@ export default function AiPane() {
   const [saving, setSaving] = useState(false);
   const [clearOpen, setClearOpen] = useState(false);
   const [clearing, setClearing] = useState(false);
-  const isMobile = useIsMobile();
+  // The model rows stack their controls by their own width (the Beheer dialog's content area), not the screen's
+  const [rowsElement, setRowsElement] = useState<HTMLDivElement | null>(null);
+  const stacked = aiRowsStacked(useElementWidth(rowsElement));
   const keyPill = useRef<HTMLButtonElement>(null);
   const editor = useRef<HTMLFormElement>(null);
 
@@ -304,7 +307,7 @@ export default function AiPane() {
       >
         <AnimatePresence mode="wait" initial={false}>
           {key?.set ? (
-            <motion.div key="rows" {...SWAP}>
+            <motion.div key="rows" ref={setRowsElement} {...SWAP}>
               <BeheerRows>
                 {AI_SLOTS.map((slot) => {
                   const info = SLOT_INFO[slot];
@@ -320,11 +323,11 @@ export default function AiPane() {
                       listError={list.error}
                       onRefresh={list.refresh}
                       onChange={(id) => void pick(slot, id)}
-                      className={isMobile ? 'w-auto min-w-0 flex-1' : undefined}
+                      className={stacked ? 'w-auto min-w-0 flex-1' : undefined}
                     />
                   );
-                  // Phones: the controls get their own full-width line under the text
-                  return isMobile ? (
+                  // Too narrow for title + Test + picker on one line: the controls get their own line under the text
+                  return stacked ? (
                     <BeheerRow
                       key={slot}
                       leading={<Icon className={ROW_ICON} />}

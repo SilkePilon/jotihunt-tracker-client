@@ -205,3 +205,12 @@ export function sendConfirmAnnouncement(recipients: number | undefined): string 
   if (!recipients) return 'Tik nog eens om naar iedereen te sturen';
   return recipients === 1 ? 'Tik nog eens om naar 1 persoon te sturen' : `Tik nog eens om naar ${recipients} mensen te sturen`;
 }
+
+/**
+ * AI model rows (Beheer → AI): the Test button and the 190px model picker fit beside the title from this row width
+ * (icon, a readable title, both controls and the paddings); narrower, they get their own line under the text.
+ */
+export const AI_ROW_INLINE_MIN_PX = 520;
+
+/** Stack the AI model rows' controls: until the rows have been measured (undefined) and while they're too narrow. */
+export const aiRowsStacked = (width: number | undefined): boolean => width === undefined || width < AI_ROW_INLINE_MIN_PX;
