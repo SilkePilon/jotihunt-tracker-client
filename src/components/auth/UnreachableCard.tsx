@@ -24,7 +24,7 @@ export default function UnreachableCard({ onRetry }: { onRetry: () => Promise<un
       <div className="flex size-10 items-center justify-center rounded-lg bg-muted">
         <WifiOffIcon className="size-5 text-muted-foreground" />
       </div>
-      <h2 className="text-lg font-bold tracking-tight">Server niet bereikbaar</h2>
+      <h1 className="text-lg font-bold tracking-tight">Server niet bereikbaar</h1>
       <p className="text-sm/relaxed text-muted-foreground">Controleer je verbinding en probeer opnieuw. Je link is niet verlopen.</p>
       <Button variant="outline" className="mt-1 w-full" onClick={() => void retry()} {...busyProps(busy)}>
         {busy ? <Loader2Icon className="animate-spin" /> : <RotateCwIcon />}

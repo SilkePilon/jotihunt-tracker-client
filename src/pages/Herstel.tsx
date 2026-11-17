@@ -77,7 +77,7 @@ export default function Herstel() {
   let content: ReactNode;
   if (done) [scene, content] = ['done', <WelcomeCard name={done.name} withPasskey={done.withPasskey} />];
   else if (unreachable && !state) [scene, content] = ['unreachable', <UnreachableCard onRetry={load} />];
-  else if (!state) [scene, content] = ['loading', <Skeleton className="h-60 w-full max-w-sm rounded-[28px]" />];
+  else if (!state) [scene, content] = ['loading', <Skeleton role="status" aria-label="Link controleren" className="h-60 w-full max-w-sm rounded-[28px]" />];
   else if (!state.valid) [scene, content] = ['invalid', renderInvalid()];
   else [scene, content] = ['form', renderForm(state.name)];
 
@@ -93,7 +93,7 @@ export default function Herstel() {
         <div className="flex size-10 items-center justify-center rounded-lg bg-muted">
           <Link2OffIcon className="size-5 text-muted-foreground" />
         </div>
-        <h2 className="text-lg font-bold tracking-tight">Deze herstel-link werkt niet meer</h2>
+        <h1 className="text-lg font-bold tracking-tight">Deze herstel-link werkt niet meer</h1>
         <p className="text-sm/relaxed text-muted-foreground">De link is verlopen of al gebruikt. Vraag de organisatie om een nieuwe.</p>
         <Button variant="outline" className="mt-1 w-full" onClick={() => navigate('/login')}>
           Naar inloggen

@@ -12,9 +12,9 @@ export default function WelcomeCard({ name, withPasskey }: { name: string; withP
   return (
     <div className={cn(AUTH_CARD, 'flex w-full max-w-sm flex-col items-center gap-3 p-7 text-center')}>
       <SuccessBadge size={72} />
-      <motion.h2 className="mt-2 text-lg font-bold" {...fadeUp(0.2)}>
+      <motion.h1 className="mt-2 text-lg font-bold" {...fadeUp(0.2)}>
         Welkom, {name}!
-      </motion.h2>
+      </motion.h1>
       <motion.p className="text-sm text-muted-foreground" {...fadeUp(0.3)}>
         {withPasskey ? 'Je account en passkey zijn klaar. Volgende keer log je in met één tik.' : 'Je account is klaar. Voeg later een passkey toe om sneller in te loggen.'}
       </motion.p>
