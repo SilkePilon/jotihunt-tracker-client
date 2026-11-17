@@ -19,7 +19,7 @@ export function MenuRow(props: ComponentProps<typeof DropdownMenuItem>) {
 export function MenuTile({ className, ...props }: ComponentProps<typeof DropdownMenuItem>) {
   return (
     <DropdownMenuItem
-      className={cn('flex-col justify-center gap-1.5 rounded-2xl px-1 pt-3 pb-2.5 text-[11.5px] first:rounded-2xl last:rounded-2xl duration-200', className)}
+      className={cn('flex-col justify-center gap-1.5 rounded-2xl px-1 pt-3 pb-2.5 text-xs md:text-[11.5px] first:rounded-2xl last:rounded-2xl duration-200', className)}
       {...props}
     />
   );

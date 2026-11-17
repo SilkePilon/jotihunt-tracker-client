@@ -30,7 +30,7 @@ const STYLES: { value: MapStyle | ''; label: string; name?: string; thumb: strin
 /** Radix radio values can't be empty: the automatic style's '' goes through this one */
 const AUTO_VALUE = 'auto';
 
-const GROUP_TITLE = 'mx-1 mt-3 mb-1.5 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase';
+const GROUP_TITLE = 'mx-1 mt-3 mb-1.5 text-xs md:text-[11px] font-semibold tracking-wide text-muted-foreground uppercase';
 
 /** Map style bar + grouped layer rows + fastfood brands (option A); used in the desktop popover and the phone drawer. */
 export default function MapLayersPanel({ fetchLife360 }: { fetchLife360: boolean }) {
@@ -162,7 +162,7 @@ function FoodButton({ toggle }: { toggle: FoodToggle }) {
         {/* 2px smaller than on the 28px marker: the white rim sits inside this tile's box */}
         <img src={BRAND_LOGO_URL[toggle.brand]} alt="" width={FASTFOOD_LOGO_WIDTH[toggle.brand] - 2} draggable={false} />
       </span>
-      <span className="text-[11px] font-semibold">{toggle.label}</span>
+      <span className="text-xs font-semibold md:text-[11px]">{toggle.label}</span>
     </button>
   );
 }

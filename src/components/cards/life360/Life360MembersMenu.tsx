@@ -62,14 +62,14 @@ export default function Life360MembersMenu({ circleName, memberCount, members, n
                 <DropdownMenuItem key={member.id} onSelect={() => onFlyTo(member)} className="group/row py-2 pl-2">
                   <Life360Avatar member={member} size={26} />
                   <span className="min-w-0 flex-1 truncate">{member.name}</span>
-                  <span className="shrink-0 text-[11.5px] font-medium text-muted-foreground tabular-nums">{memberAgeLabel(member, now)}</span>
+                  <span className="shrink-0 text-xs font-medium md:text-[11.5px] text-muted-foreground tabular-nums">{memberAgeLabel(member, now)}</span>
                   <NavigationIcon aria-hidden className="size-3.5 opacity-0 transition-opacity duration-150 group-focus/row:opacity-100" />
                 </DropdownMenuItem>
               ))}
             </DropdownMenuGroup>
           </>
         )}
-        {hiddenCount > 0 && <p className="px-1 pt-2 text-center text-[11.5px] text-muted-foreground">{hiddenMembersText(hiddenCount)}</p>}
+        {hiddenCount > 0 && <p className="px-1 pt-2 text-center text-xs text-muted-foreground md:text-[11.5px]">{hiddenMembersText(hiddenCount)}</p>}
       </DropdownMenuContent>
     </DropdownMenu>
   );
