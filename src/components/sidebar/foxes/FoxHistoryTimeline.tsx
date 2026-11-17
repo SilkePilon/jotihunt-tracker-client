@@ -87,7 +87,7 @@ interface ActiveCard {
 /**
  * One fox's last three hours as four lanes (status, hints, spots, hunts) in uiarc's agent-timeline look: blocks grow
  * from one CSS variable (`--t`, minutes) during a 1.6 s play-in, branch lines draw down from the status lane as the
- * playhead passes them, a running block shines. Hover/tap a block for a card; tap a lane to highlight it.
+ * play-in passes them (no visible playhead line). Hover/tap a block for a card; tap a lane to highlight it.
  * A new `playKey` replays the play-in; a new `model` for the same key only re-lays out. While `play` is false the window
  * waits empty (e.g. until the panel around it has opened); reduced motion shows everything at once regardless.
  */
@@ -400,14 +400,6 @@ export default function FoxHistoryTimeline({ model, playKey, play = true }: { mo
               </div>
             );
           })}
-
-        {/* Playhead + knob, from the same --t */}
-        <div aria-hidden className="pointer-events-none absolute top-0 z-[3] w-px bg-foreground opacity-45" style={{ bottom: AXIS, left: `calc(${PAD}px + var(--t) * ${ppm}px)` }} />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute z-[3] -ml-[3.5px] size-[7px] rounded-full bg-foreground ring-2 ring-card"
-          style={{ bottom: AXIS - 3, left: `calc(${PAD}px + var(--t) * ${ppm}px)` }}
-        />
 
         {/* Axis */}
         <div aria-hidden className="relative text-xs text-muted-foreground desk:text-label tabular-nums" style={{ height: AXIS }}>

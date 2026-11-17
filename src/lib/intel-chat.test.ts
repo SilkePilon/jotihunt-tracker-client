@@ -6,7 +6,6 @@ import { scaledSize } from './image';
 import {
   CHAT_IMAGE_MAX_SIDE,
   answerAnnouncement,
-  CONTEXT_LABEL,
   THINKING_LABEL,
   TOOL_META,
   chatErrorKind,
@@ -371,9 +370,6 @@ describe('suggestionChips and copy', () => {
   test('opdracht and nieuws', () => {
     expect(suggestionChips({ kind: 'assignment', cells: [] })).toEqual(['Wat moeten we inleveren?', 'Ideeën?']);
     expect(suggestionChips({ kind: 'news', cells: [] })).toEqual(['Wat betekent dit voor ons?']);
-  });
-  test('context chip', () => {
-    expect(CONTEXT_LABEL).toEqual({ hint: 'ziet deze hint', assignment: 'ziet deze opdracht', news: 'ziet dit bericht' });
   });
 });
 

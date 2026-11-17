@@ -13,7 +13,7 @@ import { useHasMounted } from '@/hooks/has-mounted.hook';
 import { useIntelAvailable } from '@/hooks/media.hook';
 import { useReadState } from '@/hooks/read-state.hook';
 import { useViewFocus } from '@/hooks/view-focus.hook';
-import { DIALOG_SHELL, CARD_TITLE } from '@/lib/dialog-shell';
+import { DIALOG_SHELL } from '@/lib/dialog-shell';
 import { keepOpenWhileEditing } from '@/lib/inline-edit';
 import { PUSH, buildIntelItems, filterByTab, unreadCount } from '@/lib/intel-window';
 import { loadState, type LoadState } from '@/lib/load-state';
@@ -249,7 +249,6 @@ function TimelineView({ items, allItems, cells, tab, memoryRef, entrance, onSele
 function ChatLoadingShell() {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2.5 rounded-3xl bg-card p-3.5" role="status" aria-label="AI-chat laden">
-      <h3 className={`mx-1 ${CARD_TITLE}`}>Vraag de AI</h3>
       <div className="grid min-h-0 flex-1 place-items-center">
         <Loader2Icon className="size-5 animate-spin text-muted-foreground" />
       </div>

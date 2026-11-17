@@ -27,10 +27,10 @@ const PLAY_DELAY_MS = 300;
 const MINUTE_MS = 60_000;
 const FLY_TO_ZOOM = 16;
 
-/** The fold-out's small tonal buttons: 28px (44px on touch) */
+/** The fold-out's tonal buttons: full width, 36px like "Open Intel" (44px on touch) */
 const SMALL_TONAL = cn(
   TONAL_BUTTON,
-  'inline-flex h-7 cursor-pointer items-center gap-1.5 px-2.5 text-xs font-semibold outline-none pointer-coarse:h-11 focus-visible:ring-[3px] focus-visible:ring-ring [&_svg]:size-3.5',
+  'inline-flex w-full min-w-0 cursor-pointer items-center justify-center gap-2 px-3 text-sm font-semibold outline-none pointer-coarse:h-11 focus-visible:ring-[3px] focus-visible:ring-ring [&_svg]:size-4',
 );
 
 interface FoxHistoryProps {
@@ -159,13 +159,13 @@ export default function FoxHistory({ fox, hidden, forbidden = false, onToggleHid
         <span className="shrink-0 text-xs font-normal text-muted-foreground desk:text-label">laatste 3 uur</span>
       </div>
 
-      {/* Status line: the word shimmers and swaps (fade + blur-up) when the status changes */}
+      {/* Status line: the word swaps (fade + blur-up) when the status changes */}
       <div className="mx-0.5 mt-0.5 flex min-h-4 flex-wrap items-center text-xs text-muted-foreground tabular-nums">
         <span className="relative inline-flex">
           <AnimatePresence mode="popLayout" initial={false}>
             <motion.span
               key={line.status ?? 'none'}
-              className="fox-history-shimmer whitespace-nowrap"
+              className="whitespace-nowrap"
               initial={{ opacity: 0, y: 4, filter: 'blur(4px)' }}
               animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
               exit={{ opacity: 0, filter: 'blur(4px)' }}
@@ -223,7 +223,7 @@ export default function FoxHistory({ fox, hidden, forbidden = false, onToggleHid
         </AnimatePresence>
       </AutoHeight>
 
-      <div className="mt-2 flex flex-wrap justify-end gap-1.5">
+      <div className="mt-2 flex flex-col gap-1.5">
         {mapRef && <LatestMarkerButton area={fox.area.name} mapRef={mapRef} />}
         <HideButton hidden={hidden} onClick={onToggleHidden} />
       </div>
