@@ -62,7 +62,7 @@ function TestButton({ slot, compact }: { slot: AiSlot; compact?: boolean }) {
       variant="ghost"
       morphKey={key}
       // tabular-nums: the latency ("1,4 s") doesn't wobble the pill's width between runs
-      className={cn('tabular-nums', key === 'ok' && 'text-green-700 hover:text-green-700 dark:text-green-300 dark:hover:text-green-300')}
+      className={cn('tabular-nums', key === 'ok' && 'text-green-800 hover:text-green-800 dark:text-green-300 dark:hover:text-green-300')}
       disabled={state === 'busy'}
       onClick={() => void run()}
       aria-label={`Test ${SLOT_INFO[slot].title}`}

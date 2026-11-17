@@ -87,8 +87,8 @@ const iconPill = cva(
       variant: {
         ghost: 'text-muted-foreground hover:bg-beheer-row-high hover:text-foreground',
         soft: 'bg-beheer-row-high text-foreground hover:bg-beheer-row-high/70',
-        success: 'bg-green-500/20 text-green-700 dark:text-green-300',
-        active: 'bg-primary/20 text-orange-700 dark:text-orange-300',
+        success: 'bg-green-500/20 text-green-800 dark:text-green-300',
+        active: 'bg-primary/20 text-orange-800 dark:text-orange-300',
         'danger-soft': 'bg-destructive/15 text-destructive-text hover:bg-destructive/20',
       },
     },
@@ -104,11 +104,12 @@ export function IconPill({ variant, className, type = 'button', ...props }: Comp
 const tag = cva('inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[10.5px] leading-4 font-extrabold transition-colors duration-300 [&_svg]:size-3', {
   variants: {
     tone: {
-      primary: 'bg-primary/20 text-orange-700 dark:text-orange-300',
+      // -800 in light: the 10.5px text needs >= 4.5:1 on its tint over the rows (-700 was below)
+      primary: 'bg-primary/20 text-orange-800 dark:text-orange-300',
       neutral: 'bg-beheer-row-high text-muted-foreground',
-      ok: 'bg-green-500/15 text-green-700 dark:text-green-300',
-      warn: 'bg-amber-500/20 text-amber-700 dark:text-amber-300',
-      info: 'bg-sky-500/15 text-sky-700 dark:text-sky-300',
+      ok: 'bg-green-500/15 text-green-800 dark:text-green-300',
+      warn: 'bg-amber-500/20 text-amber-800 dark:text-amber-300',
+      info: 'bg-sky-500/15 text-sky-800 dark:text-sky-300',
       danger: 'bg-destructive/15 text-destructive-text',
     },
   },
