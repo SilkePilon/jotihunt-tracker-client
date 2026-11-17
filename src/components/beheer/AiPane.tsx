@@ -67,7 +67,7 @@ function TestButton({ slot, compact }: { slot: AiSlot; compact?: boolean }) {
         variant="ghost"
         morphKey={key}
         // tabular-nums: the latency ("1,4 s") doesn't wobble the pill's width between runs
-        className={cn('tabular-nums', key === 'ok' && 'text-green-800 hover:text-green-800 dark:text-green-300 dark:hover:text-green-300')}
+        className={cn('tabular-nums', key === 'ok' && 'text-status-ok-text hover:text-status-ok-text')}
         busy={state === 'busy'}
         onClick={() => void run()}
         // The name carries the result too: the visible "✓ 0,8 s" would otherwise be hidden behind "Test …"

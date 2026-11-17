@@ -8,9 +8,10 @@ const BAR_WIDTH = 150;
 const GAP = 3;
 
 const SEGMENTS = [
-  { key: 'approved', label: 'goedgekeurd', fill: 'bg-green-500' },
-  { key: 'pending', label: 'wacht', fill: 'bg-amber-500' },
-  { key: 'rejected', label: 'afgekeurd', fill: 'bg-red-500' },
+  // The fox status colours (ok / warn / error), like the rest of the app's status fills
+  { key: 'approved', label: 'goedgekeurd', fill: 'bg-fox-ok' },
+  { key: 'pending', label: 'wacht', fill: 'bg-fox-warn' },
+  { key: 'rejected', label: 'afgekeurd', fill: 'bg-fox-error' },
 ] as const;
 
 /**

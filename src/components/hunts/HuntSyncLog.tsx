@@ -82,7 +82,7 @@ export function HuntEventLine({ event }: { event: HuntSyncEvent }) {
       <span className="min-w-0">
         <span className="mr-[5px] inline-block size-2 rounded-full" style={{ background: getColorFromArea(event.area) }} />
         <b className="font-semibold">{area}</b> {text}
-        {points && <span className="font-semibold text-green-700 dark:text-green-400"> {points}</span>}
+        {points && <span className="font-semibold text-status-ok-text"> {points}</span>}
       </span>
     </>
   );

@@ -83,7 +83,7 @@ export function PointsView({ score }: { score: ScoreStatus }) {
           {scoreLine(score, now)}
           <AnimatePresence mode="wait" initial={false}>
             {delta !== null && (
-              <motion.span key={delta} className="ml-1 inline-block font-semibold text-green-700 dark:text-green-400" {...POP}>
+              <motion.span key={delta} className="ml-1 inline-block font-semibold text-status-ok-text" {...POP}>
                 {formatDelta(delta)}
               </motion.span>
             )}
