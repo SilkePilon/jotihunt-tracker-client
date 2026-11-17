@@ -57,7 +57,7 @@ export default function CounterHuntCard({ state, isError, onRetry, link, admin, 
       <Reveal>
         {state && isError && (
           <p className="flex items-center justify-center gap-1.5 pt-2.5 text-center text-xs text-muted-foreground">
-            <TriangleAlertIcon className="size-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+            <TriangleAlertIcon className="size-3.5 shrink-0 text-status-warn-text" />
             Niet bijgewerkt: verbinding met de server mislukt
           </p>
         )}
@@ -100,7 +100,7 @@ function CounterHuntBody({ state, link, admin, now, onShowOnMap }: Omit<CounterH
           )}
         </div>
         {!direction && state.text && (
-          <blockquote className="w-full rounded-lg bg-black/5 p-2 text-left text-xs whitespace-pre-line break-words dark:bg-black/20">{state.text}</blockquote>
+          <blockquote className="w-full rounded-xl bg-beheer-row p-2 text-left text-xs whitespace-pre-line break-words">{state.text}</blockquote>
         )}
       </div>
     );

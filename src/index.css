@@ -96,6 +96,8 @@
   --status-ok-dot: #22c55e;
   --status-warn-dot: #f59e0b;
   --status-warn-text: #92400e;
+  /* Amber notice bar (Beheer problems, Koppelingen): amber-500 over the card, status-warn-text on it is >= 6:1 in both themes */
+  --warn-container: color-mix(in oklab, #f59e0b 16%, var(--card));
   /* Positive small text (points, "werkt"): green-800, >= 5.4:1 on card and the tonal rows (green-700 is 3.8:1 on row-high) */
   --status-ok-text: #166534;
   /* Intel kinds (hint orange, opdracht blue, nieuws purple): the -800 shades as text/icons on their own tonal tile
@@ -168,6 +170,7 @@
   /* --primary is 3.6:1 on beheer-row-high and 3:1 on primary-container; this lighter orange is >= 4.5:1 on card, rows and containers */
   --primary-text: #fb923c;
   --status-warn-text: #fcd34d;
+  --warn-container: color-mix(in oklab, #f59e0b 16%, var(--card));
   /* green-400: >= 7.3:1 on card and the tonal rows */
   --status-ok-text: #4ade80;
   --intel-hint: #fb923c;
@@ -241,6 +244,7 @@
   --color-cookie-warn: var(--cookie-warn);
   --color-on-cookie-warn: var(--on-cookie-warn);
   --color-status-warn-text: var(--status-warn-text);
+  --color-warn-container: var(--warn-container);
   --color-status-ok-text: var(--status-ok-text);
   --color-beheer-window: var(--beheer-window);
   --color-beheer-row: var(--beheer-row);

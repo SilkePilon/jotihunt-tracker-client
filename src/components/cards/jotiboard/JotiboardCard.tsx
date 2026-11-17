@@ -8,6 +8,7 @@ import Reveal from '@/components/motion/Reveal';
 import { Button } from '@/components/ui/button';
 import { useEdition } from '@/hooks/edition.hook';
 import { hasImports, jotiboardView } from '@/lib/jotiboard';
+import { TRIGGER_OPEN } from '@/lib/menu-styles';
 import { SWAP } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import type { JotiboardStatus } from '@/types/Jotiboard';
@@ -116,7 +117,9 @@ export default function JotiboardCard({ status, isError, onRetry, onLink, onSetS
                 type="button"
                 variant="secondary"
                 size="icon"
-                className={cn('size-[26px] rounded-full', actionsOpen && 'bg-zinc-200 dark:bg-zinc-700')}
+                // Not a Radix trigger: data-state drives the shared soft-orange open look
+                data-state={actionsOpen ? 'open' : 'closed'}
+                className={cn('size-[26px] rounded-full', TRIGGER_OPEN)}
                 aria-label={actionsOpen ? 'Acties sluiten' : 'Acties'}
                 aria-expanded={actionsOpen}
                 disabled={readOnly}
