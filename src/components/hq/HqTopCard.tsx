@@ -36,7 +36,7 @@ export default function HqTopCard({ now }: { now: number }) {
             </motion.div>
           ) : view === 'error' ? (
             <motion.div key="error" {...SWAP}>
-              <LoadError message="Punten niet geladen." onRetry={retry} scale className="justify-end text-sm" />
+              <LoadError message="Hunts en punten niet geladen." onRetry={retry} scale className="justify-end text-sm" />
             </motion.div>
           ) : (
             <motion.div key="loading" {...SWAP} className="flex flex-col items-end gap-1.5" role="status" aria-label="Punten laden">
