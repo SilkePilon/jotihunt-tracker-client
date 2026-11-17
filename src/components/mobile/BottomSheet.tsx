@@ -215,7 +215,7 @@ export default function BottomSheet({ peek, children, onHeights }: { peek: React
       ref={sheetRef}
       {...tourTarget('sidebar.root')}
       role="region"
-      aria-label="Zijbalk"
+      aria-label="Paneel"
       {...{ [WORK_AREA_ATTRIBUTE]: '' }}
       className="fixed inset-x-0 bottom-0 z-40 flex flex-col rounded-t-3xl bg-beheer-window shadow-[0_-6px_30px_rgb(0_0_0/.25)] [-webkit-touch-callout:none]"
       style={{ height: heights.full, y, marginBottom: keyboard, paddingBottom: 'env(safe-area-inset-bottom)' }}

@@ -51,7 +51,7 @@ test('nextSnap cycles peek → half → full → peek', () => {
 });
 
 test('grabLabel names the current snap', () => {
-  expect(grabLabel('peek')).toBe('Zijbalk groter of kleiner maken, nu ingeklapt');
+  expect(grabLabel('peek')).toBe('Paneel groter of kleiner maken, nu ingeklapt');
   expect(grabLabel('half')).toContain('half open');
   expect(grabLabel('full')).toContain('helemaal open');
 });

@@ -26,6 +26,8 @@ interface Row {
   title: string;
   meta?: ReactNode;
   onSelect: () => void;
+  /** Opens a dialog/drawer over the menu instead of pushing a page: no chevron, which promises a page push */
+  dialog?: boolean;
 }
 
 /** Beheer D1 card with segmented rows (radii 16/6, 2px gaps). */
@@ -50,7 +52,7 @@ function MenuCard({ title, rows }: { title: string; rows: Row[] }) {
               <span className="block text-sm font-semibold">{row.title}</span>
               {row.meta && <span className="block truncate text-xs text-muted-foreground">{row.meta}</span>}
             </span>
-            <ChevronRightIcon className="size-4 shrink-0 text-muted-foreground" />
+            {!row.dialog && <ChevronRightIcon className="size-4 shrink-0 text-muted-foreground" />}
           </button>
         ))}
       </div>
@@ -97,14 +99,14 @@ export default function MobileMenu() {
     { key: 'tracking', icon: <SmartphoneIcon className={icon} />, title: 'Mijn tracker', meta: trackerSummary(status), onSelect: page('tracking') },
     { key: 'life360', icon: <UsersIcon className={icon} />, title: 'Life360', onSelect: page('life360') },
     ...(user?.admin ? [{ key: 'jotiboard', icon: <LayoutDashboardIcon className={icon} />, title: 'Jotiboard', onSelect: page('jotiboard') }] : []),
-    { key: 'meldingen', icon: <BellIcon className={icon} />, title: 'Meldingen', onSelect: () => useNotificationsDialogStore.getState().setOpen(true) },
-    { key: 'account', icon: <KeyRoundIcon className={icon} />, title: 'Account', onSelect: () => useAccountDialogStore.getState().setOpen(true) },
+    { key: 'meldingen', icon: <BellIcon className={icon} />, title: 'Meldingen', onSelect: () => useNotificationsDialogStore.getState().setOpen(true), dialog: true },
+    { key: 'account', icon: <KeyRoundIcon className={icon} />, title: 'Account', onSelect: () => useAccountDialogStore.getState().setOpen(true), dialog: true },
   ];
-  const beheer: Row[] = BEHEER.map(([id, title]) => ({ key: id, icon: <ShieldIcon className={icon} />, title, onSelect: () => useAdminStore.getState().openDialog(id) }));
+  const beheer: Row[] = BEHEER.map(([id, title]) => ({ key: id, icon: <ShieldIcon className={icon} />, title, onSelect: () => useAdminStore.getState().openDialog(id), dialog: true }));
 
   return (
     <div className="flex flex-col gap-3 pr-[max(0.75rem,env(safe-area-inset-right))] pb-8 pl-[max(0.75rem,env(safe-area-inset-left))]">
-      <SidebarHeader />
+      <SidebarHeader className="rounded-3xl" />
       <MenuCard title="Spel" rows={spel} />
       <MenuCard title="Jij" rows={jij} />
       {user?.admin && <MenuCard title="Beheer" rows={beheer} />}

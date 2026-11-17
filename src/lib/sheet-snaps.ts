@@ -42,5 +42,5 @@ const SNAP_STATE: Record<SheetSnap, string> = { peek: 'ingeklapt', half: 'half o
 
 /** Accessible name of the sheet's grab handle: what a tap does, plus the current snap (screen readers can't see it). */
 export function grabLabel(snap: SheetSnap): string {
-  return `Zijbalk groter of kleiner maken, nu ${SNAP_STATE[snap]}`;
+  return `Paneel groter of kleiner maken, nu ${SNAP_STATE[snap]}`;
 }
