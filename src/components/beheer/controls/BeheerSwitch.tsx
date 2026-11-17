@@ -12,7 +12,7 @@ export default function BeheerSwitch({ className, ...props }: ComponentProps<typ
     <SwitchPrimitive.Root
       className={cn(
         'inline-flex h-[26px] w-11 shrink-0 items-center rounded-full outline-none transition-[background-color,box-shadow] duration-200 focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:opacity-50 motion-reduce:transition-none',
-        'data-[state=checked]:bg-primary-text dark:data-[state=checked]:bg-primary data-[state=unchecked]:bg-beheer-row data-[state=unchecked]:shadow-[inset_0_0_0_2px_color-mix(in_oklab,var(--muted-foreground)_70%,transparent)]',
+        'data-[state=checked]:bg-primary-fill data-[state=unchecked]:bg-beheer-row data-[state=unchecked]:shadow-[inset_0_0_0_2px_color-mix(in_oklab,var(--muted-foreground)_70%,transparent)]',
         className,
       )}
       {...props}

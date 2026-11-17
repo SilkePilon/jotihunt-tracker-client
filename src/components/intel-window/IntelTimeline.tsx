@@ -9,6 +9,7 @@ import { formatClock } from '@/lib/format';
 import { type DeadlineTone, type MetaSegment, type MetaTone, assignmentMeta, assignmentStatusLabel, INTEL_TAB_ORDER, isHintDone, KIND_COLOR, KIND_CONTAINER, KIND_LABEL, areaStates, deadlineLabel, deadlineTone, groupByDay, siteSubmission, solvedCount } from '@/lib/intel-window';
 import { EASE_OUT, REVEAL_TRANSITION, revealTransition } from '@/lib/motion';
 import { useHasMounted } from '@/hooks/has-mounted.hook';
+import { OVERLINE } from '@/lib/menu-styles';
 import { areaOptions, cn, getColorFromArea } from '@/lib/utils';
 import LoadError from '@/components/LoadError';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -134,7 +135,7 @@ export default function IntelTimeline({ items, tab, onSelect, entrance, status =
             {groups.map((group, index) => (
               <Fold key={group.key}>
                 <motion.section custom={groups.slice(0, index).reduce((sum, before) => sum + 1 + before.items.length, 0)} variants={day}>
-                  <motion.h3 variants={entry} className="sticky top-0 z-10 bg-linear-to-b from-beheer-window from-70% to-transparent pt-3.5 pb-2 pl-1 text-[11.5px] font-extrabold tracking-[0.06em] whitespace-nowrap text-muted-foreground uppercase">
+                  <motion.h3 variants={entry} className={cn('sticky top-0 z-10 bg-linear-to-b from-beheer-window from-70% to-transparent pt-3.5 pb-2 pl-1 whitespace-nowrap text-muted-foreground', OVERLINE)}>
                     {group.label}
                   </motion.h3>
                   {/* The window colour shows through the 2px gaps as row separators */}
@@ -183,11 +184,11 @@ function TimelineList({ start, direction, children }: { start: 'hidden' | 'push'
 
 const KIND_ICON: Record<IntelKind, LucideIcon> = { news: MegaphoneIcon, assignment: ClipboardListIcon, hint: LightbulbIcon };
 
-// Small text: the 700 shades (green: the status-ok token) keep >= 4.5:1 on the light rows (600/500 were 3.3-3.7:1)
+// Small text: the status text tokens keep >= 4.5:1 on the light rows (the 600/500 shades were 3.3-3.7:1)
 const META_TONE: Record<MetaTone, string> = {
   muted: '',
   ok: 'text-status-ok-text',
-  info: 'text-blue-700 dark:text-blue-400',
+  info: 'text-status-info-text',
   warn: 'text-status-warn-text',
   danger: 'text-destructive-text',
 };

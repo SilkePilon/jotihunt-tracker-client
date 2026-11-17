@@ -82,10 +82,10 @@ export default function ResponsiveDialog({ open, onClose, title, description, ch
           <Drawer.Content
             // Escape inside an inline editor cancels the edit instead of closing the drawer
             onEscapeKeyDown={keepOpenWhileEditing}
-            // Same surface as the phone's bottom sheet (BottomSheet.tsx): 24px top corners, no border, soft upward shadow,
+            // Same surface as the phone's bottom sheet (BottomSheet.tsx): 24px top corners, no border, --shadow-sheet (a landscape column --shadow-dialog),
             // bg-beheer-window. Dialogs whose rows are tuned for the card (Account, Kaart & lagen, Meldingen) pass bg-card.
             // Landscape phones: a centred column as wide as the sheet column (BottomSheet), not the full width
-            className={cn('fixed inset-x-0 bottom-0 z-50 flex flex-col landscape-phone:mx-auto landscape-phone:max-w-[min(400px,50vw)]', compact ? 'max-h-[92dvh]' : 'h-[92dvh]', 'rounded-t-3xl border-0 bg-beheer-window shadow-[0_-6px_30px_rgb(0_0_0/.25)] outline-none', drawerClassName)}
+            className={cn('fixed inset-x-0 bottom-0 z-50 flex flex-col landscape-phone:mx-auto landscape-phone:max-w-[min(400px,50vw)]', compact ? 'max-h-[92dvh]' : 'h-[92dvh]', 'rounded-t-3xl border-0 bg-beheer-window shadow-(--shadow-sheet) outline-none landscape-phone:shadow-(--shadow-dialog)', drawerClassName)}
           >
             {/* The phone bottom sheet's grab bar (BottomSheet.tsx): vaul's own handle styles need the !important overrides */}
             <Drawer.Handle className="mx-auto mb-1 mt-2 h-[5px]! w-9! rounded-full! bg-muted-foreground/80! opacity-100!" />

@@ -25,7 +25,7 @@ export default function LookCard({ look, mapRef }: { look: LookAtPointResult; ma
     setAttempt((count) => count + 1);
   }
   return (
-    <div className="overflow-hidden rounded-[18px] bg-beheer-row">
+    <div className="overflow-hidden rounded-2xl bg-beheer-row">
       <div className="flex gap-3 px-3 pt-3">
         <div className="size-24 shrink-0 overflow-hidden rounded-xl bg-beheer-row-high">
           <AnimatePresence mode="wait" initial={false}>
@@ -115,7 +115,7 @@ function Description({ text }: { text: string }) {
             type="button"
             aria-expanded={open}
             onClick={() => setOpen(!open)}
-            className="mt-0.5 rounded-md text-[12px] font-semibold text-foreground outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring"
+            className="mt-0.5 rounded-md text-xs font-semibold text-foreground outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring"
             {...SWAP}
           >
             <AnimatePresence mode="wait" initial={false}>

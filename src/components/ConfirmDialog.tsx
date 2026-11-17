@@ -75,7 +75,7 @@ export default function ConfirmDialog({ open, onOpenChange, title, description, 
     >
       <AlertDialogContent className={CONTENT} onCloseAutoFocus={onCloseAutoFocus}>
         <AlertDialogHeader className={HEADER}>
-          <AlertDialogTitle className="text-lg font-bold tracking-tight">{title}</AlertDialogTitle>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription className="leading-relaxed">{description}</AlertDialogDescription>
         </AlertDialogHeader>
         {children && <div className="mt-4">{children}</div>}

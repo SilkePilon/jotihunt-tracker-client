@@ -22,7 +22,7 @@ export default function MapUnavailableCard({ className }: { className?: string }
         <MapIcon className="size-5" />
       </div>
       <div className="min-w-0">
-        <h2 id={MAP_UNAVAILABLE_HEADING_ID} tabIndex={-1} className="text-[14px] font-bold leading-tight outline-none">
+        <h2 id={MAP_UNAVAILABLE_HEADING_ID} tabIndex={-1} className="text-sm font-bold leading-tight outline-none">
           Kaart niet beschikbaar
         </h2>
         <p className="text-[12.5px] text-muted-foreground">Controleer je verbinding.</p>

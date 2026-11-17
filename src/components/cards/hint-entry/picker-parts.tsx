@@ -41,7 +41,7 @@ export function PickerTrigger({ lead, placeholder, label, invalid, className, ..
     >
       {lead}
       <span className={cn('min-w-0 flex-1 truncate', !label && 'text-muted-foreground group-data-[state=open]:text-(--map-selected-fg)')}>{label ?? placeholder}</span>
-      <ChevronDownIcon className="size-3.5 shrink-0 text-muted-foreground transition-[transform,color] duration-200 group-data-[state=open]:rotate-180 group-data-[state=open]:text-(--map-selected-fg)" />
+      <ChevronDownIcon className="size-3.5 shrink-0 text-muted-foreground transition-[transform,color] duration-200 motion-reduce:transition-colors group-data-[state=open]:rotate-180 group-data-[state=open]:text-(--map-selected-fg)" />
     </button>
   );
 }

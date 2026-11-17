@@ -89,7 +89,7 @@ function Timeline({ startMs, endMs, now }: { startMs: number; endMs: number; now
   return (
     <div className="relative mx-2 mt-1.5 mb-0.5 h-11" aria-hidden>
       <div className="absolute inset-x-0 top-[18px] h-2 rounded-md bg-beheer-row" />
-      <motion.div className="absolute top-[18px] h-2 rounded-md bg-primary-text dark:bg-primary" initial={false} animate={{ left: `${geo.left}%`, width: `${geo.width}%` }} transition={SWAP_TRANSITION} />
+      <motion.div className="absolute top-[18px] h-2 rounded-md bg-primary-fill" initial={false} animate={{ left: `${geo.left}%`, width: `${geo.width}%` }} transition={SWAP_TRANSITION} />
       <AnimatePresence initial={false}>
         {geo.now !== null && (
           <motion.div

@@ -102,6 +102,9 @@
   --on-primary-container: #5a1f00;
   /* Orange as text (links, small labels): --primary is only 2.8:1 on white, this darker orange is >= 4.5:1 */
   --primary-text: #c2410c;
+  /* Orange as a small fill (progress, dots, switch track, check badge): --primary is 2.8:1 on white, orange-700 is
+     >= 3:1 against white cards and the tonal rows. Dark mode keeps --primary */
+  --primary-fill: #c2410c;
   /* Happy hour's own amber (pill, toast, tile) and the status dots on the phone's tracker line */
   --happy-hour: #f59e0b;
   --on-happy-hour: #1c1300;
@@ -118,6 +121,8 @@
   --warn-container: color-mix(in oklab, #f59e0b 16%, var(--card));
   /* Positive small text (points, "werkt"): green-800, >= 5.4:1 on card and the tonal rows (green-700 is 3.8:1 on row-high) */
   --status-ok-text: #166534;
+  /* Informational small text (Pill info tone, Intel meta "info"): sky-800, >= 5:1 on the sky tint and the tonal rows */
+  --status-info-text: #075985;
   /* Intel kinds (hint orange, opdracht blue, nieuws purple): the -800 shades as text/icons on their own tonal tile
      (>= 6:1); the tile is the kind's 400 shade over the card, as in dark mode */
   --intel-hint: #9a3412;
@@ -187,10 +192,13 @@
   --on-primary-container: #ffdcc6;
   /* --primary is 3.6:1 on beheer-row-high and 3:1 on primary-container; this lighter orange is >= 4.5:1 on card, rows and containers */
   --primary-text: #fb923c;
+  --primary-fill: var(--primary);
   --status-warn-text: #fcd34d;
   --warn-container: color-mix(in oklab, #f59e0b 16%, var(--card));
   /* green-400: >= 7.3:1 on card and the tonal rows */
   --status-ok-text: #4ade80;
+  /* sky-300: >= 6.2:1 on the sky tint and the tonal rows */
+  --status-info-text: #7dd3fc;
   --intel-hint: #fb923c;
   --intel-assignment: #60a5fa;
   --intel-news: #c084fc;
@@ -255,6 +263,7 @@
   --color-primary-container: var(--primary-container);
   --color-on-primary-container: var(--on-primary-container);
   --color-primary-text: var(--primary-text);
+  --color-primary-fill: var(--primary-fill);
   --color-happy-hour: var(--happy-hour);
   --color-on-happy-hour: var(--on-happy-hour);
   --color-cookie-ok: var(--cookie-ok);
@@ -264,6 +273,7 @@
   --color-status-warn-text: var(--status-warn-text);
   --color-warn-container: var(--warn-container);
   --color-status-ok-text: var(--status-ok-text);
+  --color-status-info-text: var(--status-info-text);
   --color-beheer-window: var(--beheer-window);
   --color-beheer-row: var(--beheer-row);
   --color-beheer-row-high: var(--beheer-row-high);
@@ -377,11 +387,14 @@ body {
      (cn merges that with a caller's shadow-none; a named @theme shadow it can't). On body, not in @theme (emitted on
      :root): the theme's .dark class sits on body, so only here var(--border) resolves to the dark value.
      tile: map tiles/buttons (MAP_TILE); tooltip: tooltips; menu: menus, popovers, toasts (MENU_SURFACE); dialog:
-     dialogs, map popups, HQ event card (DIALOG_SHELL) */
+     dialogs, map popups, HQ event card (DIALOG_SHELL); sheet: phone bottom sheet + drawers (a floating landscape
+     column uses dialog) */
   --shadow-tile: 0 0 0 1px var(--border), 0 4px 14px rgb(0 0 0 / 0.22);
   --shadow-tooltip: 0 0 0 1px var(--border), 0 4px 12px rgb(0 0 0 / 0.25);
   --shadow-menu: 0 0 0 1px var(--border), 0 10px 30px rgb(0 0 0 / 0.28);
   --shadow-dialog: 0 0 0 1px var(--border), 0 18px 50px rgb(0 0 0 / 0.35);
+  /* sheet: the phone's bottom sheet and drawers (BottomSheet, ResponsiveDialog), lit from below the screen edge */
+  --shadow-sheet: 0 0 0 1px var(--border), 0 -6px 30px rgb(0 0 0 / 0.25);
   --beheer-window: color-mix(in oklab, var(--foreground) 5%, var(--background));
   --beheer-row: color-mix(in oklab, var(--foreground) 4%, var(--card));
   --beheer-row-high: color-mix(in oklab, var(--foreground) 9%, var(--card));

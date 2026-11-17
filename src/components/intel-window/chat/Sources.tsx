@@ -39,7 +39,7 @@ export default function Sources({ sources }: { sources: ChatSource[] }) {
         type="button"
         onClick={() => setOpen(!open)}
         aria-expanded={open}
-        className="flex h-8 cursor-pointer items-center gap-2 rounded-xl bg-beheer-row pr-2 pl-2 text-[12px] font-semibold outline-none transition-colors hover:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring"
+        className="flex h-8 cursor-pointer items-center gap-2 rounded-xl bg-beheer-row pr-2 pl-2 text-xs font-semibold outline-none transition-colors hover:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring"
       >
         <span className="flex">
           {groups.slice(0, STACK).map((group, index) => (
@@ -103,7 +103,7 @@ function SiteRow({ group }: { group: SourceGroup }) {
                 href={source.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="truncate py-1 pr-3 pl-[38px] text-[12px] text-muted-foreground outline-none hover:text-foreground focus-visible:text-foreground focus-visible:underline"
+                className="truncate py-1 pr-3 pl-[38px] text-xs text-muted-foreground outline-none hover:text-foreground focus-visible:text-foreground focus-visible:underline"
               >
                 {source.title.toLowerCase() === group.site ? `Bron ${index + 1}` : source.title}
               </a>

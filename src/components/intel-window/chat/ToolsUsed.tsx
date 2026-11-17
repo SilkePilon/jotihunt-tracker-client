@@ -40,7 +40,7 @@ export default function ToolsUsed({ calls }: { calls: ChatToolCall[] }) {
         onClick={() => setOpen(!open)}
         className={cn(
           COARSE_HIT_AREA,
-          'inline-flex items-center gap-1.5 rounded-[10px] bg-beheer-row px-2 py-1 text-xs font-semibold text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring',
+          'inline-flex items-center gap-1.5 rounded-md bg-beheer-row px-2 py-1 text-xs font-semibold text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring',
         )}
       >
         <span className="flex pr-1">
@@ -63,7 +63,7 @@ export default function ToolsUsed({ calls }: { calls: ChatToolCall[] }) {
                 const error = call.state === 'error';
                 return (
                   // An error wraps onto more lines (the reason is the point); a result line stays one truncated line
-                  <li key={call.id} className={cn('flex min-w-0 gap-2 rounded-xl bg-beheer-row px-2 py-1.5 text-[12px]', error ? 'items-start' : 'items-center')}>
+                  <li key={call.id} className={cn('flex min-w-0 gap-2 rounded-xl bg-beheer-row px-2 py-1.5 text-xs', error ? 'items-start' : 'items-center')}>
                     <ToolIcon name={call.name} big />
                     <span className={cn('flex min-w-0 gap-x-2', error ? 'flex-wrap pt-[3px]' : 'items-center')}>
                       <span className="shrink-0 font-semibold">{toolDoneLabel(call.name)}</span>

@@ -352,7 +352,7 @@ export default function NightAreaDraw() {
                   </Reveal>
                 </motion.form>
               ) : (
-                <motion.div key={keyboardFocus ? 'keys' : 'hint'} {...SWAP} className="rounded-[10px] bg-[rgb(12_10_9/0.82)] px-3 py-1.5 text-xs whitespace-nowrap text-white">
+                <motion.div key={keyboardFocus ? 'keys' : 'hint'} {...SWAP} className="rounded-md bg-[rgb(12_10_9/0.82)] px-3 py-1.5 text-xs whitespace-nowrap text-white">
                   {keyboardFocus ? KEYBOARD_DRAW_HINT : drawHint(fine)}
                 </motion.div>
               )}

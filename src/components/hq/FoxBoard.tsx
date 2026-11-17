@@ -14,7 +14,7 @@ function FoxTile({ fox, focused }: { fox: HqFox; focused: boolean }) {
     <div
       className={cn(
         'card flex min-w-0 flex-col gap-0.5 rounded-2xl bg-card px-3 py-2.5 text-card-foreground outline-3 -outline-offset-1 outline-transparent transition-[outline-color,scale] duration-600 motion-reduce:transition-none',
-        focused && 'scale-[1.03] outline-primary',
+        focused && 'scale-[1.03] outline-ring',
       )}
     >
       <div className="flex items-center gap-2 font-semibold">

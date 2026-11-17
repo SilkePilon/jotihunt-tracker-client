@@ -116,7 +116,7 @@ export default function UsersPane() {
         leading={
           <span
             aria-hidden
-            className={cn('size-2 shrink-0 rounded-full transition-colors duration-300', isActiveNow(user, now) ? 'bg-green-500 shadow-[0_0_0_3px_rgb(34_197_94/0.18)]' : 'bg-muted-foreground/50')}
+            className={cn('size-2 shrink-0 rounded-full transition-colors duration-300', isActiveNow(user, now) ? 'bg-(--status-ok-dot) shadow-[0_0_0_3px_color-mix(in_oklab,var(--status-ok-dot)_18%,transparent)]' : 'bg-muted-foreground/50')}
           />
         }
         title={

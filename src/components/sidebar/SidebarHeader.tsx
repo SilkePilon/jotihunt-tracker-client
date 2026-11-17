@@ -26,7 +26,7 @@ export default function SidebarHeader({ className }: { className?: string }) {
       <EditionBadge />
       {/* Joined tonal group: 2px seam, 12px outer and 6px inner corners */}
       <div className="flex shrink-0 gap-0.5">
-        <ThemeToggle className={cn(HEADER_BUTTON_START, 'rounded-l-lg rounded-r-[6px]')} />
+        <ThemeToggle className={cn(HEADER_BUTTON_START, 'rounded-l-lg rounded-r-(--radius-segment)')} />
         <Settings onReplayTour={() => startTour('replay')} />
       </div>
     </div>

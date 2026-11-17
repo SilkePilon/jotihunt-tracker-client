@@ -44,7 +44,7 @@ export default function AssignmentProposalCard({ proposal }: { proposal: Assignm
   }
 
   return (
-    <div className="overflow-hidden rounded-[18px] bg-beheer-row">
+    <div className="overflow-hidden rounded-2xl bg-beheer-row">
       <div className="grid gap-1.5 px-3 py-2.5 text-[12.5px]">
         <div className="truncate text-[13px] font-semibold">{proposal.title}</div>
         {proposal.status && (

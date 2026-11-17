@@ -48,7 +48,7 @@ export default function Reasoning({ text, thinking }: ReasoningProps) {
         onClick={() => setUserOpen(!userOpen)}
         className={cn(
           COARSE_HIT_AREA,
-          'inline-flex items-center gap-1 rounded-[10px] py-0.5 pr-1 text-[12.5px] font-semibold text-muted-foreground outline-none transition-colors enabled:hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring',
+          'inline-flex items-center gap-1 rounded-md py-0.5 pr-1 text-[12.5px] font-semibold text-muted-foreground outline-none transition-colors enabled:hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring',
         )}
       >
         {/* The button's name; the animated labels are hidden (old and new would both be read during the swap) */}
@@ -81,7 +81,7 @@ export default function Reasoning({ text, thinking }: ReasoningProps) {
             <div className="pt-1">
               <Grow>
                 <div ref={box} className="max-h-40 overflow-y-auto border-l-2 border-beheer-row-high pr-1 pl-3 [scrollbar-gutter:stable]">
-                  <ChatMarkdown text={text} className="text-[12px] leading-[1.5] text-muted-foreground" />
+                  <ChatMarkdown text={text} className="text-xs leading-[1.5] text-muted-foreground" />
                 </div>
               </Grow>
             </div>

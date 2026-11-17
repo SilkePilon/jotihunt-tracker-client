@@ -29,7 +29,7 @@ export function MoreToggle({ open, onToggle, more, less = 'Minder' }: { open: bo
       type="button"
       aria-expanded={open}
       onClick={onToggle}
-      className={cn(COARSE_HIT_AREA, 'self-start rounded-md text-[12px] font-semibold text-foreground outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring')}
+      className={cn(COARSE_HIT_AREA, 'self-start rounded-md text-xs font-semibold text-foreground outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring')}
     >
       <AnimatePresence mode="wait" initial={false}>
         <motion.span key={open ? 'less' : 'more'} className="block" {...SWAP}>

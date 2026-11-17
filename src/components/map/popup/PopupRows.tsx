@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { OVERLINE } from '@/lib/menu-styles';
 import { cn } from '@/lib/utils';
 
 export type RowTone = 'default' | 'success' | 'warn' | 'danger';
@@ -35,7 +36,7 @@ export function PopupRow({ icon, label, title, meta, trailing, tone = 'default' 
       {icon && <span className={cn('grid shrink-0 place-items-center [&_svg]:size-4', !toned && 'text-(--map-muted)')}>{icon}</span>}
       <div className="min-w-0 flex-1">
         {/* Label and meta: at least 12px on phones, the compact sizes from md */}
-        {label && <div className="text-xs tracking-wide desk:text-[11px] text-(--map-muted) uppercase">{label}</div>}
+        {label && <div className={cn(OVERLINE, 'text-(--map-muted)')}>{label}</div>}
         <div className="truncate text-[13px] font-semibold tabular-nums">{title}</div>
         {/* Full tone colour in light mode: at 80% the meta drops under 4.5:1 on the tinted rows */}
         {meta && <div className={cn('truncate text-xs tabular-nums desk:text-[11.5px]', toned ? 'dark:opacity-80' : 'text-(--map-muted)')}>{meta}</div>}

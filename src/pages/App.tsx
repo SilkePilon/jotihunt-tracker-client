@@ -34,7 +34,7 @@ function CompactCard({ icon: Icon, label, children }: { icon: LucideIcon; label:
           type="button"
           aria-label={label}
           title={label}
-          className={cn(MAP_TILE, 'grid size-11 cursor-pointer place-items-center rounded-[14px] outline-none transition-colors hover:bg-beheer-row focus-visible:ring-[3px] focus-visible:ring-ring [&_svg]:size-[18px]', TRIGGER_OPEN)}
+          className={cn(MAP_TILE, 'grid size-11 cursor-pointer place-items-center rounded-[14px] outline-none transition-colors hover:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring [&_svg]:size-[18px]', TRIGGER_OPEN)}
         >
           <Icon aria-hidden />
         </button>
