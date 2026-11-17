@@ -29,7 +29,7 @@ const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), selec
  * and floats the card next to it. Mounted once in Layout; renders nothing while the tour is inactive.
  */
 export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
-  const { active, stepIndex, direction, paused, next, prev, togglePause, skip, stop } = useTourStore();
+  const { active, stepIndex, direction, paused, manual, next, prev, togglePause, takeOver, skip, stop } = useTourStore();
   const isMobile = useIsMobile();
   const platform = isMobile ? 'mobile' : 'desktop';
   const steps = stepsForPlatform(TOUR_STEPS, platform);
@@ -124,6 +124,8 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
   useEffect(() => {
     if (!active) return;
     function onKey(event: KeyboardEvent) {
+      // A key on the tour (card, panel, or with focus nowhere) is the user taking over: auto-advance stops
+      if (ownsKey(event, document.body, [panelRef.current, cardRef.current])) takeOver();
       if (event.key === 'Tab' && !event.altKey && !event.ctrlKey && !event.metaKey) {
         const surfaces = [panelRef.current, cardRef.current];
         if (!ownsKey(event, document.body, surfaces)) return;
@@ -147,7 +149,7 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
     }
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
-  }, [active, next, prev, skip]);
+  }, [active, next, prev, skip, takeOver]);
 
   const [cardSize, setCardSize] = useState<Size>({ width: 340, height: 180 });
   const [viewport, setViewport] = useState<Size>(() => ({ width: window.innerWidth, height: window.innerHeight }));
@@ -208,7 +210,8 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
   return createPortal(
     // pointer-events-auto: Radix modals set pointer-events:none on <body> while open. A modal dialog (card + panel)
     // named by the card's title and body; Tab stays inside it (onKey above)
-    <div role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={bodyId} className="pointer-events-auto fixed inset-0 z-[60]">
+    // Any pointer on the tour (card, panel, the dimmed screen) is the user taking over: auto-advance stops for the rest
+    <div role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={bodyId} className="pointer-events-auto fixed inset-0 z-[60]" onPointerDownCapture={takeOver}>
       {/* Click shield: the tour drives the UI, the user only uses the card */}
       <div className="absolute inset-0" />
       <div
@@ -237,7 +240,7 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
         contentVisible={shownIndex === stepIndex}
         stepIndex={stepIndex}
         stepCount={steps.length}
-        durationMs={ready && !isLast && !step.panel && shownIndex === stepIndex ? stepDuration(step) : undefined}
+        durationMs={!manual && ready && !isLast && !step.panel && shownIndex === stepIndex ? stepDuration(step) : undefined}
         paused={paused}
         hidden={hideCard}
         onPrev={prev}
