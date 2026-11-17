@@ -28,6 +28,19 @@ export function nudgeDelta(key: string, shift: boolean): [number, number] | null
 /** The hint pill while the map has keyboard focus */
 export const KEYBOARD_DRAW_HINT = 'Enter: punt in het midden · pijltjes: verschuiven · 2× Enter: sluiten';
 
+/**
+ * The hint pill before the map has keyboard focus: taps on a touch screen; with a mouse also the way to draw by keyboard
+ * (focus the map, then Enter), which otherwise only shows once the map has focus.
+ */
+export function drawHint(finePointer: boolean): string {
+  return finePointer
+    ? 'Klik punten op de kaart · dubbelklik om te sluiten · of focus de kaart en druk Enter'
+    : 'Tik punten op de kaart · dubbeltik om te sluiten';
+}
+
+/** Said under the name field when Opslaan is pressed without a name */
+export const NAME_MISSING_MESSAGE = 'Geef het gebied een naam.';
+
 /** Read out after Enter dropped corner number `count` (1-based) */
 export function droppedMessage(count: number): string {
   const next = count >= 3 ? 'Enter zet het volgende punt, nog eens Enter sluit het gebied.' : 'Enter zet het volgende punt.';
