@@ -10,6 +10,7 @@ import { testAiSlot, useAdminConfig, useAiModels } from '@/hooks/app-config.hook
 import { useIsMobile } from '@/hooks/media.hook';
 import { AI_SLOTS, type AiSlot } from '@/lib/app-config';
 import { apiErrorMessage } from '@/lib/api-error';
+import { focusDropped } from '@/lib/focus';
 import { POP, SWAP } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { BeheerCard, BeheerLoadError, BeheerPane, BeheerRow, BeheerRows, BeheerSkeleton, WarnBar } from './BeheerLayout';
@@ -85,8 +86,12 @@ export default function AiPane() {
   const [clearOpen, setClearOpen] = useState(false);
   const [clearing, setClearing] = useState(false);
   const isMobile = useIsMobile();
+  const keyPill = useRef<HTMLButtonElement>(null);
+  const editor = useRef<HTMLFormElement>(null);
 
   function closeEditor() {
+    // Focus was in the editor (it folds away): back to "Wijzigen", which opened it
+    if (editor.current?.contains(document.activeElement) || focusDropped(document.activeElement, document.body)) keyPill.current?.focus();
     setEditing(false);
     setDraft('');
   }
@@ -191,7 +196,7 @@ export default function AiPane() {
             }
             meta={key?.source === 'env' ? 'Opslaan hier gaat vóór de .env-waarde.' : undefined}
           >
-            <Pill variant={key?.set ? 'secondary' : 'primary'} morphKey={key?.set ? 'edit' : 'add'} disabled={!config.settingsKeyOk} onClick={() => (editing ? closeEditor() : setEditing(true))}>
+            <Pill ref={keyPill} variant={key?.set ? 'secondary' : 'primary'} morphKey={key?.set ? 'edit' : 'add'} disabled={!config.settingsKeyOk} onClick={() => (editing ? closeEditor() : setEditing(true))}>
               {key?.set ? 'Wijzigen' : 'Sleutel toevoegen'}
             </Pill>
             <AnimatePresence initial={false}>
@@ -209,6 +214,7 @@ export default function AiPane() {
         <Reveal>
           {editing && (
             <form
+              ref={editor}
               className="flex flex-wrap gap-2 pt-2.5"
               onSubmit={(event) => {
                 event.preventDefault();

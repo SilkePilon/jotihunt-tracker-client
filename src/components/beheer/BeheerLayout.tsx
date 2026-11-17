@@ -1,10 +1,11 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode, type Ref } from 'react';
+import { AnimatePresence, motion, useIsPresent } from 'motion/react';
 import { ChevronDownIcon, Loader2Icon, TriangleAlertIcon } from 'lucide-react';
 import LoadError from '@/components/LoadError';
 import AutoHeight from '@/components/motion/AutoHeight';
 import Reveal from '@/components/motion/Reveal';
 import { useIsMobile } from '@/hooks/media.hook';
+import { focusDropped, neighbourIndex } from '@/lib/focus';
 import { REVEAL_TRANSITION, SWAP, SWAP_TRANSITION } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { Pill } from './controls/Pill';
@@ -101,6 +102,7 @@ export function BeheerCard({ title, count, description, right, onToggle, open = 
           type="button"
           aria-expanded={open}
           onClick={onToggle}
+          data-card-heading
           className="flex w-full items-center gap-2.5 rounded-2xl px-1 text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring"
         >
           <span className="block min-w-0 flex-1">
@@ -116,7 +118,10 @@ export function BeheerCard({ title, count, description, right, onToggle, open = 
     header = (
       <div className="mx-1 flex items-center gap-2.5">
         <div className="min-w-0 flex-1">
-          <h3 className="text-[15px] font-bold">{heading}</h3>
+          {/* tabIndex -1: focus lands here when the row or question that held it in the card is gone */}
+          <h3 data-card-heading tabIndex={-1} className="text-[15px] font-bold outline-none">
+            {heading}
+          </h3>
           {description && <p className="text-xs text-muted-foreground">{description}</p>}
         </div>
         {right}
@@ -174,7 +179,7 @@ const TONE: Record<RowTone, string> = {
  * The tonal block every row kind sits in: folds in and away (height + opacity). The padding sits inside, so the height
  * animates to zero without a jump. `className` goes on the block (e.g. the new-invite ring).
  */
-export function RowFrame({ tone = 'default', className, children }: { tone?: RowTone; className?: string; children: ReactNode }) {
+export function RowFrame({ tone = 'default', className, children, ref, exiting }: { tone?: RowTone; className?: string; children: ReactNode; ref?: Ref<HTMLDivElement>; exiting?: boolean }) {
   return (
     <motion.div
       // isolate: the pills' 44px touch areas on phones (COARSE_HIT_AREA) stay above the block's background
@@ -183,6 +188,9 @@ export function RowFrame({ tone = 'default', className, children }: { tone?: Row
       animate={{ opacity: 1, height: 'auto' }}
       exit={{ opacity: 0, height: 0 }}
       transition={REVEAL_TRANSITION}
+      ref={ref}
+      // Skipped when focus moves on from a row that goes away (focusNeighbourRow)
+      data-exiting={exiting || undefined}
     >
       {children}
     </motion.div>
@@ -251,6 +259,35 @@ interface BeheerExpandableRowProps {
 /** A row that opens on tap (chevron turns); the open part unfolds under the row content and holds action pills. */
 export function BeheerExpandableRow({ id, leading, title, meta, trailing, children, indentClassName, bodyClassName, headerStatic, confirm, className }: BeheerExpandableRowProps) {
   const rows = useContext(RowsContext);
+  const isPresent = useIsPresent();
+  const frame = useRef<HTMLDivElement>(null);
+  const headerButton = useRef<HTMLButtonElement | null>(null);
+  // Set when a question closed while it held focus: the header takes it once it is back (after the question faded out)
+  const refocusHeader = useRef(false);
+  const was = useRef({ confirm: !!confirm, headerStatic: !!headerStatic });
+
+  // A question (InlineConfirm) or an inline edit (rename) that ends takes focus with it: give it to the row's header
+  useLayoutEffect(() => {
+    const confirmGone = was.current.confirm && !confirm;
+    const editGone = was.current.headerStatic && !headerStatic;
+    was.current = { confirm: !!confirm, headerStatic: !!headerStatic };
+    if ((!confirmGone && !editGone) || !holdsFocus(frame.current)) return;
+    if (headerButton.current && !confirmGone) headerButton.current.focus();
+    else refocusHeader.current = true;
+  }, [confirm, headerStatic]);
+
+  const headerRef = useCallback((button: HTMLButtonElement | null) => {
+    headerButton.current = button;
+    if (!button || !refocusHeader.current) return;
+    refocusHeader.current = false;
+    if (holdsFocus(frame.current)) button.focus();
+  }, []);
+
+  // The row goes away (e.g. deleted) while it holds focus: hand it to the next row, else the previous, else the card heading
+  useLayoutEffect(() => {
+    if (!isPresent && frame.current?.contains(document.activeElement)) focusNeighbourRow(frame.current);
+  }, [isPresent]);
+
   const [ownOpen, setOwnOpen] = useState(false);
   const open = rows ? rows.openId === id : ownOpen;
   const toggle = () => (rows ? rows.setOpenId(open ? null : id) : setOwnOpen(!open));
@@ -263,7 +300,7 @@ export function BeheerExpandableRow({ id, leading, title, meta, trailing, childr
   );
 
   return (
-    <RowFrame tone={confirm ? 'danger' : open ? 'open' : 'default'} className={className}>
+    <RowFrame ref={frame} exiting={!isPresent} tone={confirm ? 'danger' : open ? 'open' : 'default'} className={className}>
       <AutoHeight scene={confirm ? 'confirm' : 'row'}>
         <AnimatePresence mode="wait" initial={false}>
           {confirm ? (
@@ -276,8 +313,10 @@ export function BeheerExpandableRow({ id, leading, title, meta, trailing, childr
                 <div className={headerClass}>{header}</div>
               ) : (
                 <button
+                  ref={headerRef}
                   type="button"
                   aria-expanded={open}
+                  data-row-header
                   onClick={toggle}
                   className={cn(headerClass, 'outline-none focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset')}
                 >
@@ -292,6 +331,31 @@ export function BeheerExpandableRow({ id, leading, title, meta, trailing, childr
       </AutoHeight>
     </RowFrame>
   );
+}
+
+/** Whether the element holds focus, or focus was just dropped (on <body>) by a change inside it */
+function holdsFocus(element: HTMLElement | null): boolean {
+  return !!element && (element.contains(document.activeElement) || focusDropped(document.activeElement, document.body));
+}
+
+/** Focuses a card's heading (its toggle when it has one); false when the card is gone. */
+function focusCardHeading(section: Element | null): boolean {
+  const heading = section?.isConnected ? section.querySelector<HTMLElement>('[data-card-heading]') : null;
+  heading?.focus();
+  return !!heading;
+}
+
+/** A row that holds focus goes away: focus the next row's header (or first control), else the previous one's, else the card heading. */
+function focusNeighbourRow(frame: HTMLElement) {
+  const frames = Array.from(frame.parentElement?.children ?? []);
+  const targets = frames.map((row) =>
+    row instanceof HTMLElement && row !== frame && row.dataset.exiting === undefined
+      ? row.querySelector<HTMLElement>('[data-row-header], button:not(:disabled), a[href], input:not(:disabled)')
+      : null,
+  );
+  const index = neighbourIndex(targets.map(Boolean), frames.indexOf(frame));
+  if (index >= 0) targets[index]?.focus();
+  else focusCardHeading(frame.closest('section'));
 }
 
 interface InlineConfirmProps {
@@ -311,6 +375,20 @@ interface InlineConfirmProps {
 /** A red-tinted question in place of a row or a card section: question, consequence, "Annuleer" + a destructive pill. */
 export function InlineConfirm({ title, description, confirmLabel, confirmIcon, onCancel, onConfirm, className }: InlineConfirmProps) {
   const [busy, setBusy] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+  // The control that asked (focused while the question appears), to give focus back to when the question goes
+  const [opener] = useState(() => (document.activeElement instanceof HTMLElement && document.activeElement !== document.body ? document.activeElement : null));
+
+  // Gone (cancelled, or done) with focus lost along with it: back to the opener, else the card's heading. A row's
+  // question needs neither: BeheerExpandableRow already gave focus to its header (or the next row).
+  useEffect(() => {
+    const section = box.current?.closest('section') ?? null;
+    return () => {
+      if (!focusDropped(document.activeElement, document.body)) return;
+      if (opener?.isConnected && !opener.matches(':disabled')) opener.focus();
+      else focusCardHeading(section);
+    };
+  }, [opener]);
 
   async function confirm() {
     if (busy) return;
@@ -325,6 +403,7 @@ export function InlineConfirm({ title, description, confirmLabel, confirmIcon, o
   return (
     // Escape cancels the question; data-inline-edit on its buttons keeps the window open meanwhile (keepOpenWhileEditing)
     <div
+      ref={box}
       role="alertdialog"
       aria-label={typeof title === 'string' ? title : undefined}
       className={cn('flex flex-wrap items-center gap-3', className)}

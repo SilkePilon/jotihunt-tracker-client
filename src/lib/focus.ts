@@ -49,3 +49,13 @@ export function trapTabIndex(count: number, current: number, backwards: boolean)
   if (current < 0) return backwards ? count - 1 : 0;
   return (current + (backwards ? count - 1 : 1)) % count;
 }
+
+/**
+ * A list item that held focus is going away (a deleted row): the index of the item to move focus to, the nearest
+ * usable one after it, else the nearest before it; -1 when there is none (then e.g. the list's heading takes it).
+ */
+export function neighbourIndex(usable: readonly boolean[], self: number): number {
+  for (let index = self + 1; index < usable.length; index++) if (usable[index]) return index;
+  for (let index = self - 1; index >= 0; index--) if (usable[index]) return index;
+  return -1;
+}
