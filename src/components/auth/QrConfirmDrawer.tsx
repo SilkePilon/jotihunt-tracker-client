@@ -236,7 +236,7 @@ export default function QrConfirmDrawer({ code, onClose }: { code: string; onClo
               <div className="flex items-center gap-3">
                 <ProblemBadge />
                 <div className="min-w-0">
-                  <h2 className="text-[17px] font-bold">Dat lukte niet</h2>
+                  <h2 className="text-lg font-bold">Dat lukte niet</h2>
                   <p className="text-[13px] text-muted-foreground">{view.problem.message}</p>
                 </div>
               </div>
