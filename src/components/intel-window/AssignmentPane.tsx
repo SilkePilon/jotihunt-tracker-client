@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { BeheerCard, BeheerRow, FadeSwap, BeheerRows, RowFrame } from '@/components/beheer/BeheerLayout';
 import { Pill } from '@/components/beheer/controls/Pill';
@@ -20,6 +20,32 @@ const STATUS_OPTIONS = (Object.keys(ASSIGNMENT_STATUS_LABELS) as AssignmentStatu
 const NO_OWNER = 'none';
 
 /**
+ * A control's value while its write runs: shown at once instead of the old value, until the answer is in the cache.
+ * Several quick changes: only the latest write's outcome counts; a failure of that one puts the server value back
+ * (and toasts).
+ */
+function useOptimisticWrite<T>(articleId: number, server: T) {
+  const [optimistic, setOptimistic] = useState<{ articleId: number; value: T } | null>(null);
+  const sequence = useRef(0);
+
+  async function write(next: T, send: () => Promise<unknown>, failure: string) {
+    const ticket = ++sequence.current;
+    setOptimistic({ articleId, value: next });
+    try {
+      await send();
+    } catch (error) {
+      if (ticket === sequence.current) toast.error(apiErrorMessage(error, failure));
+    } finally {
+      if (ticket === sequence.current) setOptimistic(null);
+    }
+  }
+
+  // Another assignment opened while a write ran: its own value, not the pending one
+  const pending = optimistic?.articleId === articleId;
+  return { value: pending ? optimistic.value : server, pending, write };
+}
+
+/**
  * Opdracht (spec O): status and owner next to the notes (stacked when the detail is narrow), the full text below. The
  * cards arrive with the detail view (no stagger of their own).
  */
@@ -29,7 +55,9 @@ export default function AssignmentPane({ item }: { item: IntelItem }) {
   const [saving, setSaving] = useState(false);
   // An archive edition is read-only: status, owner and notes can't change
   const { readOnly } = useEdition();
-  const status = item.assignment?.status ?? 'open';
+  const statusWrite = useOptimisticWrite<AssignmentStatus>(item.id, item.assignment?.status ?? 'open');
+  const ownerWrite = useOptimisticWrite<string>(item.id, item.assignment?.owner?._id ?? NO_OWNER);
+  const status = statusWrite.value;
   const owner = item.assignment?.owner ?? null;
   const notes = item.assignment?.notes ?? [];
   const site = siteSubmission(item.assignment);
@@ -37,7 +65,6 @@ export default function AssignmentPane({ item }: { item: IntelItem }) {
   // An owner who is no longer a member still shows by name
   const owners: UserRef[] = owner && !members.some((member) => member._id === owner._id) ? [...members, owner] : members;
 
-  const run = (write: () => Promise<unknown>, failure: string) => void write().catch((error: unknown) => toast.error(apiErrorMessage(error, failure)));
 
   async function submitNote() {
     const text = note.trim();
@@ -60,13 +87,14 @@ export default function AssignmentPane({ item }: { item: IntelItem }) {
           <BeheerCard>
             <BeheerRows>
               <BeheerRow key="status" title="Status" meta={author && <FadeSwap>{author}</FadeSwap>}>
-                <Segmented label="Status" value={status} options={STATUS_OPTIONS} disabled={readOnly} onChange={(next) => run(() => setStatus(item.id, next), 'Status opslaan mislukt')} />
+                <Segmented label="Status" value={status} options={STATUS_OPTIONS} disabled={readOnly} onChange={(next) => void statusWrite.write(next, () => setStatus(item.id, next), 'Status opslaan mislukt')} />
               </BeheerRow>
               <BeheerRow key="owner" title="Eigenaar">
-                <Select value={owner?._id ?? NO_OWNER} onValueChange={(next) => run(() => setOwner(item.id, next === NO_OWNER ? null : next), 'Eigenaar opslaan mislukt')} disabled={readOnly}>
+                <Select value={ownerWrite.value} onValueChange={(next) => void ownerWrite.write(next, () => setOwner(item.id, next === NO_OWNER ? null : next), 'Eigenaar opslaan mislukt')} disabled={readOnly}>
                   <SelectTrigger
                     size="sm"
                     aria-label="Eigenaar"
+                    aria-busy={ownerWrite.pending || undefined}
                     className="px-3 text-[12.5px] font-semibold"
                   >
                     <SelectValue />
