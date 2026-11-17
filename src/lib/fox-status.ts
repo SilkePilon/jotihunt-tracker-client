@@ -135,3 +135,25 @@ export function groupCounts(foxes: SidebarFox[]): Record<FoxGroup, number> {
   for (const fox of foxes) counts[fox.group] += 1;
   return counts;
 }
+
+/** One legend item with the initials of its foxes ("A D actief"): the phone peek names which fox is in which group. */
+export interface LegendInitials {
+  group: FoxGroup;
+  initials: string[];
+}
+
+/** The groups that have foxes, in {@link FOX_GROUP_ORDER}, each with its foxes' first letters (in list order). */
+export function legendInitials(foxes: Pick<SidebarFox, 'name' | 'group'>[]): LegendInitials[] {
+  return FOX_GROUP_ORDER.flatMap((group) => {
+    const initials = foxes.filter((fox) => fox.group === group).map((fox) => fox.name.charAt(0).toUpperCase());
+    return initials.length > 0 ? [{ group, initials }] : [];
+  });
+}
+
+/**
+ * Rough width in characters of the initials legend ("A D actief  B onderweg"): each item is its swatch (about one
+ * character), initials with spaces, the lowercase label and a gap of about two characters to the next.
+ */
+export function legendInitialsChars(items: LegendInitials[]): number {
+  return items.reduce((sum, item, index) => sum + 1 + item.initials.length * 2 + FOX_GROUP_LABEL[item.group].length + (index > 0 ? 2 : 0), 0);
+}

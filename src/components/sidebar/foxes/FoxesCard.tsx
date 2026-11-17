@@ -9,7 +9,7 @@ import { EASE_OUT, revealTransition, SWAP, SWAP_TRANSITION } from '@/lib/motion'
 import { cn } from '@/lib/utils';
 import FoxChip from './FoxChip';
 import FoxHistory from './FoxHistory';
-import FoxStatusBar from './FoxStatusBar';
+import FoxStatusBar, { GroupSwatch } from './FoxStatusBar';
 import OvBlock from './OvBlock';
 import { GROUP_CLASS } from './styles';
 import { useSidebarFoxes } from './useSidebarFoxes';
@@ -212,9 +212,11 @@ export default function FoxesCard() {
     // Fades in when it takes over from the skeleton (or the empty line)
     <motion.div className="flex flex-col" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={SWAP_TRANSITION}>
       <FoxStatusBar foxes={foxes} size="full" isForbidden={isForbidden} />
-      <div className="mt-1.5 mb-2.5 flex justify-between text-xs text-muted-foreground md:text-[11px]">
+      {/* Wraps instead of overflowing when a fifth group (OV) joins on a narrow sidebar */}
+      <div className="mt-1.5 mb-2.5 flex flex-wrap justify-between gap-x-2 gap-y-0.5 text-xs text-muted-foreground md:text-[11px]">
         {legendGroups(counts).map((group) => (
-          <span key={group} className="inline-flex items-baseline gap-1">
+          <span key={group} className="inline-flex items-center gap-1">
+            <GroupSwatch group={group} />
             <Count value={counts[group]} className="font-semibold text-foreground" />
             {FOX_GROUP_LABEL[group].toLowerCase()}
           </span>
