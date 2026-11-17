@@ -6,15 +6,13 @@ import type { MapRef } from '@/components/Map';
 import { useDevices } from '@/hooks/devices.hook';
 import { useTrackerStatus } from '@/hooks/tracker.hook';
 import { LOCATE_ZOOM, locateMe } from '@/lib/locate';
-import { MAP_TILE } from '@/lib/map-chrome';
+import { MAP_TILE, MAP_LOCATION_COLOR } from '@/lib/map-chrome';
 import { POP, SWAP_TRANSITION } from '@/lib/motion';
 import { ownDeviceId, ownTrackerPosition } from '@/lib/own-position';
 import { cn } from '@/lib/utils';
 import useHuntFocusStore from '@/stores/hunt-focus.store';
 import useSidebarStore from '@/stores/sidebar.store';
 
-/** The pulse ring at the found spot (the browser's blue location dot colour) */
-const LOCATION_COLOR = '#3b82f6';
 
 /**
  * Phones: one 48px "Mijn locatie" map button, right above the sheet (it rides in the popup dock, so an open popup
@@ -35,7 +33,7 @@ export default function MyLocationButton({ mapRef }: { mapRef: RefObject<MapRef 
       const { lat, lng } = await locateMe(tracker);
       // Never zoom out when the hunter is already closer in; reduced motion turns the flight into a jump (no `essential`)
       mapRef.current?.flyTo({ center: [lng, lat], zoom: Math.max(LOCATE_ZOOM, mapRef.current.getZoom() ?? 0), duration: 1200 });
-      useHuntFocusStore.getState().show({ lng, lat, color: LOCATION_COLOR });
+      useHuntFocusStore.getState().show({ lng, lat, color: MAP_LOCATION_COLOR });
     } catch (error) {
       toast.error('Locatie niet gevonden', { description: error instanceof Error ? error.message : undefined });
     } finally {

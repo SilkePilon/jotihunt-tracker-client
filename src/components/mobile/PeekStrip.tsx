@@ -15,7 +15,7 @@ import { SWAP_TRANSITION } from '@/lib/motion';
 import { COARSE_HIT_AREA } from '@/lib/hit-area';
 
 const COOKIE_16 = cookiePath(16, BADGE_COOKIE_DEPTH);
-const TONE_FILL = { ok: '#22c55e', warn: '#f59e0b', muted: 'var(--muted-foreground)' } as const;
+const TONE_FILL = { ok: 'var(--status-ok-dot)', warn: 'var(--status-warn-dot)', muted: 'var(--muted-foreground)' } as const;
 
 /** Own tracker line; ticks every second for the age, on its own so the fox bar does not re-render with it. */
 function TrackerLine({ onOpen }: { onOpen: () => void }) {
@@ -27,7 +27,7 @@ function TrackerLine({ onOpen }: { onOpen: () => void }) {
       <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden className="shrink-0">
         <path d={COOKIE_16} fill={TONE_FILL[line.tone]} />
       </svg>
-      <span className={cn('truncate font-semibold', line.tone === 'warn' && 'text-amber-700 dark:text-amber-300')}>{line.text}</span>
+      <span className={cn('truncate font-semibold', line.tone === 'warn' && 'text-status-warn-text')}>{line.text}</span>
     </button>
   );
 }

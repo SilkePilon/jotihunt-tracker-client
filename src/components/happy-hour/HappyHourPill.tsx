@@ -16,7 +16,7 @@ function HappyHourPillView({ hour, now }: { hour: HappyHourWindow; now: number }
         <button
           type="button"
           aria-label={happyHourPillText(hour, now)}
-          className="pointer-events-auto flex cursor-pointer items-center gap-2 rounded-full bg-[#f59e0b] py-1.5 pr-3.5 pl-2.5 text-[13px] font-bold whitespace-nowrap text-[#1c1300] outline-none focus-visible:ring-[3px] focus-visible:ring-ring"
+          className="pointer-events-auto flex cursor-pointer items-center gap-2 rounded-full bg-happy-hour py-1.5 pr-3.5 pl-2.5 text-[13px] font-bold whitespace-nowrap text-on-happy-hour outline-none focus-visible:ring-[3px] focus-visible:ring-ring"
           data-happy-hour={hour.state}
         >
           <MaterialGlyph name="celebration" size={18} />

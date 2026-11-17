@@ -78,6 +78,12 @@
   --on-primary-container: #5a1f00;
   /* Orange as text (links, small labels): --primary is only 2.8:1 on white, this darker orange is >= 4.5:1 */
   --primary-text: #c2410c;
+  /* Happy hour's own amber (pill, toast, tile) and the status dots on the phone's tracker line */
+  --happy-hour: #f59e0b;
+  --on-happy-hour: #1c1300;
+  --status-ok-dot: #22c55e;
+  --status-warn-dot: #f59e0b;
+  --status-warn-text: #b45309;
 }
 
 .dark {
@@ -138,6 +144,7 @@
   --on-primary-container: #ffdcc6;
   /* --primary is 3.6:1 on beheer-row-high and 3:1 on primary-container; this lighter orange is >= 4.5:1 on card, rows and containers */
   --primary-text: #fb923c;
+  --status-warn-text: #fcd34d;
 }
 
 @theme inline {
@@ -196,6 +203,9 @@
   --color-primary-container: var(--primary-container);
   --color-on-primary-container: var(--on-primary-container);
   --color-primary-text: var(--primary-text);
+  --color-happy-hour: var(--happy-hour);
+  --color-on-happy-hour: var(--on-happy-hour);
+  --color-status-warn-text: var(--status-warn-text);
   --color-beheer-window: var(--beheer-window);
   --color-beheer-row: var(--beheer-row);
   --color-beheer-row-high: var(--beheer-row-high);
