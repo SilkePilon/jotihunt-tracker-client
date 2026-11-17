@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Loader2Icon, RotateCwIcon } from 'lucide-react';
 import { SWAP_TRANSITION } from '@/lib/motion';
+import { COARSE_HIT_AREA } from '@/lib/hit-area';
 import { cn } from '@/lib/utils';
 
 interface LoadErrorProps {
@@ -35,7 +36,7 @@ export default function LoadError({ message, onRetry, centered, className }: Loa
   }
 
   return (
-    <div role="alert" className={cn('flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted-foreground', centered && 'flex-col justify-center text-center', className)}>
+    <div role="alert" className={cn('isolate flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted-foreground', centered && 'flex-col justify-center text-center', className)}>
       <span className="min-w-0">{message}</span>
       <motion.button
         type="button"
@@ -44,7 +45,11 @@ export default function LoadError({ message, onRetry, centered, className }: Loa
         disabled={busy}
         aria-busy={busy}
         onClick={() => void retry()}
-        className="inline-flex h-8 shrink-0 items-center gap-1.5 bg-beheer-row-high px-3 text-[12.5px] font-semibold text-foreground outline-none transition-colors hover:bg-[color-mix(in_oklab,var(--foreground)_14%,var(--card))] focus-visible:ring-[3px] focus-visible:ring-ring disabled:opacity-70 [&_svg]:size-3.5"
+        className={cn(
+          'inline-flex h-8 shrink-0 items-center gap-1.5 bg-beheer-row-high px-3 text-[12.5px] font-semibold text-foreground outline-none transition-colors hover:bg-[color-mix(in_oklab,var(--foreground)_14%,var(--card))] focus-visible:ring-[3px] focus-visible:ring-ring disabled:opacity-70 [&_svg]:size-4',
+          // 44px touch area on phones, same look
+          COARSE_HIT_AREA,
+        )}
       >
         <AnimatePresence mode="popLayout" initial={false}>
           <motion.span key={busy ? 'busy' : 'idle'} className="inline-flex" initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.6 }} transition={SWAP_TRANSITION}>
