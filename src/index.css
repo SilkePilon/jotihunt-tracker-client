@@ -336,8 +336,9 @@ body.dark {
   border-top-color: var(--map-surface) !important;
 }
 
+/* Legacy outline of the sidebar/HQ cards: a 1px ring in the theme's border colour (a 2px black/10% ring vanished in dark mode) */
 .card {
-  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 0 0 1px var(--border);
 }
 
 /*
