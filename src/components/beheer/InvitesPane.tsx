@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { toast } from 'sonner';
 import { CheckIcon, ChevronDownIcon, CopyIcon, Loader2Icon, PlusIcon, QrCodeIcon, SquareIcon } from 'lucide-react';
@@ -27,6 +27,7 @@ import { TRIGGER_OPEN } from '@/lib/menu-styles';
 import { POP, SWAP } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { BeheerCard, BeheerLoadError, BeheerPane, BeheerRow, BeheerRows, BeheerSkeleton, RowFrame } from './BeheerLayout';
+import { focusAwayFromRow } from './row-focus';
 import { IconPill, Pill, Tag } from './controls/Pill';
 import WhatsAppLogo from './WhatsAppLogo';
 import InlineError from '@/components/InlineError';
@@ -103,6 +104,9 @@ export default function InvitesPane() {
   // The confirm dialog keeps its invite while it fades out
   const [revoking, setRevoking] = useState<AdminInvite | null>(null);
   const [revokeOpen, setRevokeOpen] = useState(false);
+  // The stop pill that opened the dialog and its card: after a revoke, focus moves on to the next row (the row folds away)
+  const revokeOpener = useRef<{ button: HTMLElement; card: Element | null } | null>(null);
+  const revoked = useRef(false);
 
   const view = invites ? 'content' : loadError ? 'error' : 'loading';
   const active = (invites ?? []).filter((invite) => invite.state === 'active').sort(newestFirst);
@@ -147,6 +151,7 @@ export default function InvitesPane() {
     try {
       await revoke(revoking._id);
       if (qrId === revoking._id) setQrId(null);
+      revoked.current = true;
       setRevokeOpen(false);
       toast.success('Invite ingetrokken');
     } catch (failure) {
@@ -164,7 +169,7 @@ export default function InvitesPane() {
         meta={inviteMeta(invite, now)}
         className={cn(invite._id === highlightId && 'relative z-10 motion-safe:animate-beheer-ring')}
       >
-        <Pill variant="whatsapp" aria-label={`Invite ${invite.code} delen via WhatsApp`} onClick={() => window.open(whatsAppShareUrl(inviteShareText(invite.url)), '_blank', 'noopener')}>
+        <Pill variant="whatsapp" aria-label={`Invite ${invite.code} delen via WhatsApp (opent in nieuw tabblad)`} onClick={() => window.open(whatsAppShareUrl(inviteShareText(invite.url)), '_blank', 'noopener')}>
           <WhatsAppLogo className="size-4" />
           <span className="hidden sm:inline">WhatsApp</span>
         </Pill>
@@ -180,7 +185,9 @@ export default function InvitesPane() {
         </IconPill>
         <IconPill
           aria-label={`Invite ${invite.code} stoppen`}
-          onClick={() => {
+          onClick={(event) => {
+            revokeOpener.current = { button: event.currentTarget, card: event.currentTarget.closest('section') };
+            revoked.current = false;
             setRevoking(invite);
             setRevokeOpen(true);
           }}
@@ -273,6 +280,12 @@ export default function InvitesPane() {
         confirmLabel="Intrekken"
         destructive
         onConfirm={confirmRevoke}
+        onCloseAutoFocus={(event) => {
+          // Cancelled: back to the stop pill (Radix default). Revoked: that row is going away, so the next one takes focus
+          if (!revoked.current) return;
+          event.preventDefault();
+          focusAwayFromRow(revokeOpener.current?.button ?? null, revokeOpener.current?.card ?? null);
+        }}
       />
     </BeheerPane>
   );
