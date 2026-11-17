@@ -149,7 +149,7 @@ export default function Settings({onReplayTour}: SettingsProps) {
                         {discordUrl && (
                             <MenuRow asChild>
                                 <a href={discordUrl} target="_blank" rel="noopener noreferrer">
-                                    <span className={"fill-muted-foreground [&>svg]:size-4"} dangerouslySetInnerHTML={{__html: siDiscord.svg}}></span>
+                                    <span aria-hidden className={"fill-muted-foreground [&>svg]:size-4"} dangerouslySetInnerHTML={{__html: siDiscord.svg}}></span>
                                     Join de Discord
                                 </a>
                             </MenuRow>

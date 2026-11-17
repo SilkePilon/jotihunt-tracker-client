@@ -26,7 +26,7 @@ export default function AuthScreen({ children }: { children: ReactNode }) {
             </a>{' '}
             ·{' '}
             <a href="https://github.com/SilkePilon" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 underline underline-offset-2">
-              <span className="size-3 fill-white/70" dangerouslySetInnerHTML={{ __html: siGithub.svg }} />
+              <span aria-hidden className="size-3 fill-white/70" dangerouslySetInnerHTML={{ __html: siGithub.svg }} />
               GitHub
             </a>
           </p>
