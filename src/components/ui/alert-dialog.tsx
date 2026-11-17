@@ -3,6 +3,7 @@ import { cn } from "cn"
 import { AlertDialog as AlertDialogPrimitive } from "radix-ui"
 
 import { Button } from "@/components/ui/button"
+import { ModalHold } from "@/stores/prompt-queue.store"
 
 function AlertDialog({
   ...props
@@ -45,6 +46,7 @@ function AlertDialogOverlay({
 function AlertDialogContent({
   className,
   size = "default",
+  children,
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Content> & {
   size?: "default" | "sm"
@@ -60,7 +62,11 @@ function AlertDialogContent({
           className
         )}
         {...props}
-      />
+      >
+        {/* No follow-up prompt (Meldingen, passkey…) opens over a confirm */}
+        <ModalHold />
+        {children}
+      </AlertDialogPrimitive.Content>
     </AlertDialogPortal>
   )
 }

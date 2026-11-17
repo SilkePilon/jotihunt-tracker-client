@@ -6,6 +6,7 @@ import { CloseButton } from '@/components/ui/close-button';
 import { cn } from '@/lib/utils';
 import { keepOpenWhileEditing } from '@/lib/inline-edit';
 import { useBackEntry } from '@/hooks/back-entry.hook';
+import { useModalHold } from '@/stores/prompt-queue.store';
 
 interface ResponsiveDialogProps {
   open: boolean;
@@ -43,6 +44,8 @@ export default function ResponsiveDialog({ open, onClose, title, description, ch
   useEffect(() => {
     openRef.current = open;
   });
+  // No follow-up prompt (Meldingen, passkey, install) opens over it; the phone drawer has no DialogContent to count it
+  useModalHold(open);
   const [backGeneration, setBackGeneration] = useState(0);
   useBackEntry(`dialog:${id}:${backGeneration}`, open && isMobile && backEntry, () => {
     onClose();

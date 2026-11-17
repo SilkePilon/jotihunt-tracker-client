@@ -7,6 +7,7 @@ import { Dialog as DialogPrimitive } from "radix-ui"
 
 import { Button } from "@/components/ui/button"
 import { CLOSE_BUTTON_CLASS } from "./close-button"
+import { ModalHold } from "@/stores/prompt-queue.store"
 
 function Dialog({
   ...props
@@ -67,6 +68,8 @@ function DialogContent({
         )}
         {...props}
       >
+        {/* No follow-up prompt (Meldingen, passkey…) opens over a dialog */}
+        <ModalHold />
         {children}
         {showCloseButton && (
           <DialogPrimitive.Close

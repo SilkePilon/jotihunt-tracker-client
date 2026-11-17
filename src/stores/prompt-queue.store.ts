@@ -5,7 +5,7 @@ import { create } from 'zustand';
  * The follow-up prompts after sign-in / the tour. Each decides on its own whether it is due (eligibility stays in its
  * hook); this queue only decides when it may show, so they never stack: at most one at a time, in this order.
  */
-export const PROMPTS = ['notifications', 'android-promo', 'passkey'] as const;
+export const PROMPTS = ['notifications', 'android-promo', 'pwa-install', 'passkey'] as const;
 export type PromptId = (typeof PROMPTS)[number];
 
 /** Between one prompt closing (or the tour ending, or a prompt being asked for) and the next one showing */
@@ -20,6 +20,8 @@ export interface PromptQueueTimes {
   active: PromptId | null;
   /** Nothing shows while held (the tour is due or running) */
   held: boolean;
+  /** Dialogs and drawers open now (Account, Beheer, a confirm…): nothing shows over them */
+  openModals: number;
   /** No prompt before this (a gap after the last one closed or the tour ended) */
   readyAt: number;
   /** When the hold (tour) last ended; null when there was none */
@@ -33,7 +35,7 @@ export type QueueStep = { show: PromptId } | { waitMs: number } | null;
 
 /** Pure: the next step of the queue at `now`. */
 export function nextPromptStep(times: PromptQueueTimes, now: number): QueueStep {
-  if (times.held || times.active) return null;
+  if (times.held || times.active || times.openModals > 0) return null;
   const id = PROMPTS.find((prompt) => times.waiting[prompt] !== undefined);
   if (!id) return null;
   let at = Math.max(times.readyAt, times.waiting[id]! + PROMPT_GAP_MS);
@@ -52,6 +54,10 @@ interface PromptQueueState extends PromptQueueTimes {
   /** The prompt was closed: the next may follow after the gap */
   done: (id: PromptId, now?: number) => void;
   setHeld: (held: boolean, now?: number) => void;
+  /** A dialog or drawer opened: hold the queue until it closes */
+  modalOpened: () => void;
+  /** A dialog or drawer closed: once none is left, the next prompt follows after the gap */
+  modalClosed: (now?: number) => void;
   mapTouched: (now?: number) => void;
   /** Re-check (timer); tests pass `now` */
   pump: (now?: number) => void;
@@ -59,7 +65,7 @@ interface PromptQueueState extends PromptQueueTimes {
   reset: () => void;
 }
 
-const INITIAL: PromptQueueTimes = { waiting: {}, active: null, held: false, readyAt: 0, tourEndedAt: null, mapTouchedAt: null };
+const INITIAL: PromptQueueTimes = { waiting: {}, active: null, held: false, openModals: 0, readyAt: 0, tourEndedAt: null, mapTouchedAt: null };
 
 let timer: ReturnType<typeof setTimeout> | undefined;
 
@@ -87,6 +93,15 @@ const usePromptQueueStore = create<PromptQueueState>()((set, get) => ({
     const wasHeld = get().held;
     if (held === wasHeld) return;
     set(held ? { held } : { held, tourEndedAt: now, readyAt: Math.max(get().readyAt, now + PROMPT_GAP_MS) });
+    get().pump(now);
+  },
+  modalOpened: () => {
+    set({ openModals: get().openModals + 1 });
+    get().pump();
+  },
+  modalClosed: (now = Date.now()) => {
+    const openModals = Math.max(0, get().openModals - 1);
+    set(openModals === 0 ? { openModals, readyAt: Math.max(get().readyAt, now + PROMPT_GAP_MS) } : { openModals });
     get().pump(now);
   },
   mapTouched: (now = Date.now()) => {
@@ -127,6 +142,24 @@ export function usePromptTurn(id: PromptId, wanted: boolean): boolean {
     else queue.cancel(id);
   }, [id, wanted]);
   return turn;
+}
+
+/**
+ * Hold the prompt queue while `open`: a dialog or drawer the user is in. Used by the shared dialog frames
+ * (DialogContent, AlertDialogContent, ResponsiveDialog), so every modal counts without each one opting in.
+ */
+export function useModalHold(open = true) {
+  useEffect(() => {
+    if (!open) return;
+    usePromptQueueStore.getState().modalOpened();
+    return () => usePromptQueueStore.getState().modalClosed();
+  }, [open]);
+}
+
+/** {@link useModalHold} as an element: put it inside a Radix dialog's Content, which only mounts while it is shown. */
+export function ModalHold() {
+  useModalHold();
+  return null;
 }
 
 /** A pointer or wheel on the map canvas */
