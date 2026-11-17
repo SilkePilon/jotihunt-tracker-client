@@ -1,8 +1,9 @@
-import { GlassesIcon, InfoIcon, LocateFixedIcon, PinIcon, RefreshCwIcon } from 'lucide-react';
+import { CrosshairIcon, GlassesIcon, InfoIcon, RefreshCwIcon } from 'lucide-react';
 import { Button } from '../ui/button';
 import { MarkerType } from '@/types/MarkerType';
 import { type ReactNode, useId, useRef, useState } from 'react';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import AreaPicker from '../cards/hint-entry/AreaPicker';
 import { areaOptions, capitalizeFirstLetter, cn } from '@/lib/utils';
 import { DIALOG_ACTION, DIALOG_ACTION_CANCEL, DIALOG_SHELL } from '@/lib/dialog-shell';
 import { Controller, useForm } from 'react-hook-form';
@@ -242,7 +243,7 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
     }
     useMarkerDraftStore.getState().clear(key);
     const lateNote = confirmedLate ? 'Bevestigd na verbindingsherstel.' : undefined;
-    // A correction or a next marker was typed while Opslaan ran: confirm this one, leave the new values and the dialog
+    // A correction or a next marker was typed while Registreren ran: confirm this one, leave the new values and the dialog
     if (!sameMarkerValues(form.getValues(), data)) {
       toast.success('Vorige marker geplaatst — je nieuwe invoer is nog niet opgeslagen', { description: lateNote, duration: 10000 });
       return;
@@ -259,7 +260,7 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
 
   const renderForm = () => (
     <form onSubmit={form.handleSubmit(onSubmit)} className="flex min-h-0 flex-1 flex-col">
-      {/* Short windows and a phone keyboard: the fields scroll, Annuleren/Opslaan stay in view. The 4px inset keeps the
+      {/* Short windows and a phone keyboard: the fields scroll, Annuleren/Registreren stay in view. The 4px inset keeps the
           fields' focus rings inside the scroll clip */}
       <div className="-m-1 min-h-0 flex-1 overflow-y-auto overscroll-contain p-1">
         <FieldGroup className="gap-4">
@@ -291,21 +292,19 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel htmlFor={`${fieldId}-area`}>Deelgebied</FieldLabel>
-                  <Select name={field.name} onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger id={`${fieldId}-area`} className="w-full pointer-coarse:data-[size=default]:h-11" aria-invalid={fieldState.invalid}>
-                      <SelectValue placeholder="Kies deelgebied…" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        {areaOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  {/* The hint form's 3×3 area tiles in their map colours, so both forms pick an area the same way */}
+                  <AreaPicker
+                    id={`${fieldId}-area`}
+                    value={field.value}
+                    onChange={(area) => {
+                      field.onChange(area);
+                      field.onBlur();
+                    }}
+                    invalid={fieldState.invalid}
+                    placeholder="Kies deelgebied…"
+                    className="h-9 text-sm pointer-coarse:h-11"
+                  />
+                  <Reveal>{fieldState.invalid && <FieldError errors={[fieldState.error]} />}</Reveal>
                 </Field>
               )}
             />
@@ -363,7 +362,7 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
                         // A cleared or half-typed field is no time (not setHours(NaN) on the last one, which stuck): the
                         // next complete value builds from a valid date again
                         field.onChange(withTimeOfDay(field.value, e.target.value, getCurrentOrFirstDate()));
-                        // Said right away, not only after Opslaan
+                        // Said right away, not only after Registreren
                         void form.trigger('time');
                       }}
                       className="w-full pointer-coarse:h-11"
@@ -408,8 +407,8 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
               </>
             ) : (
               <>
-                <BusyIcon busy={isSubmitting} icon={<PinIcon data-icon="inline-start" />} />
-                {isSubmitting ? 'Opslaan…' : primary === 'resave' ? 'Opnieuw opslaan' : 'Opslaan'}
+                <BusyIcon busy={isSubmitting} icon={markerType === MarkerType.Spot ? <GlassesIcon data-icon="inline-start" /> : <CrosshairIcon data-icon="inline-start" />} />
+                {isSubmitting ? 'Registreren…' : primary === 'resave' ? 'Opnieuw registreren' : 'Registreren'}
               </>
             )}
           </PrimaryLabel>
@@ -424,7 +423,7 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
         open={dialogOpen}
         onClose={close}
         title={`${capitalizeFirstLetter(markerType ?? '')} registreren`}
-        description="Plaats een marker op de kaart."
+        description={markerType === MarkerType.Spot ? 'Je hebt de vos hier gezien.' : 'Eigen markering op de kaart. Officiële hunts komen vanzelf binnen van jotihunt.nl.'}
         compact
         className={cn(DIALOG_SHELL, 'bg-card sm:max-w-lg')}
         drawerClassName="bg-card"
@@ -449,7 +448,7 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
         }}
       />
       <button type="button" className={popupActionClass('primary', 'min-w-0 flex-1')} disabled={readOnly} onClick={() => openDialog(MarkerType.Hunt)}>
-        <LocateFixedIcon /> Hunt
+        <CrosshairIcon /> Hunt
       </button>
       {/* Hunt is the main action (soft primary); Spot the neutral tonal one, so the two read apart at a glance */}
       <button type="button" className={popupActionClass('neutral', 'min-w-0 flex-1')} disabled={readOnly} onClick={() => openDialog(MarkerType.Spot)}>
@@ -459,7 +458,7 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
   );
 }
 
-/** The primary footer button's icon and label: swaps with a short fade when the action changes (Opslaan / controleren) */
+/** The primary footer button's icon and label: swaps with a short fade when the action changes (Registreren / controleren) */
 function PrimaryLabel({ id, children }: { id: string; children: ReactNode }) {
   return (
     <AnimatePresence mode="wait" initial={false}>
