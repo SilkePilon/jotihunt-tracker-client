@@ -5,6 +5,7 @@ import type { HintCell } from '@/types/HintCell';
 import { scaledSize } from './image';
 import {
   CHAT_IMAGE_MAX_SIDE,
+  answerAnnouncement,
   CONTEXT_LABEL,
   THINKING_LABEL,
   TOOL_META,
@@ -523,4 +524,16 @@ describe('groupSources', () => {
     ]);
   });
   test('no sources: no groups', () => expect(groupSources([])).toEqual([]));
+});
+
+describe('answerAnnouncement', () => {
+  test('the last answer as plain text', () => {
+    const messages = [user('u1', 'Waar is Alpha?'), assistant({ type: 'reasoning', text: 'hmm' }, { type: 'text', text: '**Alpha** zit bij [Ede](https://x.nl).\n\n- `12:30`' })];
+    expect(answerAnnouncement(messages)).toBe('Antwoord van de AI: Alpha zit bij Ede. - 12:30');
+  });
+  test('silent without an answer', () => {
+    expect(answerAnnouncement([])).toBe('');
+    expect(answerAnnouncement([user('u1')])).toBe('');
+    expect(answerAnnouncement([assistant({ type: 'text', text: '  ' })])).toBe('');
+  });
 });

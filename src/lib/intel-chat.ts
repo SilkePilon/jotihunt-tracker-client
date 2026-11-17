@@ -354,6 +354,23 @@ export function stackedTools(calls: ChatToolCall[]): string[] {
 
 export const THINKING_LABEL = 'Even denken…';
 
+/**
+ * What a screen reader hears once an answer is complete (the transcript's live region stays silent while tokens stream):
+ * the last assistant message's text with the markdown markers stripped. Empty when the last message is not an answer.
+ */
+export function answerAnnouncement(messages: UIMessage[]): string {
+  const last = messages.at(-1);
+  if (!last || last.role !== 'assistant') return '';
+  const text = last.parts
+    .flatMap((part) => (part.type === 'text' ? [part.text] : []))
+    .join(' ')
+    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/[*_`#>|~]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return text ? `Antwoord van de AI: ${text}` : '';
+}
+
 const isReasoning = (part: ChatPart): part is ReasoningUIPart => part.type === 'reasoning';
 /** Text or reasoning without content, and step starts, say nothing about where the turn is */
 const isMeaningful = (part: ChatPart) => part.type !== 'step-start' && !((part.type === 'text' || part.type === 'reasoning') && !part.text.trim());
