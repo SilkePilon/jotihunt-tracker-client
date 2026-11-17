@@ -53,6 +53,13 @@ export function setAllTypes(on: boolean): OptionalNotificationType[] {
   return on ? [] : NOTIFICATION_OPTIONS.flatMap((option) => tileTypes(option.type));
 }
 
+/** Whether two disabled lists switch off the same types (order and duplicates don't matter): the Meldingen dialog's "unsaved changes". */
+export function sameTypes(a: readonly string[], b: readonly string[]): boolean {
+  const left = new Set(a);
+  const right = new Set(b);
+  return left.size === right.size && [...left].every((type) => right.has(type));
+}
+
 export function shouldAlert(type: NotificationType, disabledTypes: readonly string[]): boolean {
   return type === 'broadcast' || !disabledTypes.includes(type);
 }

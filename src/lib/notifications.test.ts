@@ -1,5 +1,5 @@
 import { describe, expect, mock, test } from 'bun:test';
-import { NOTIFICATION_OPTIONS, setAllTypes, toggleType, isSilent, isRecent, mergeFeed, pickPrimary, pickSound, shouldAlert, soundKey, toastAction, toastKind, type AppNotification } from './notifications';
+import { NOTIFICATION_OPTIONS, sameTypes, setAllTypes, toggleType, isSilent, isRecent, mergeFeed, pickPrimary, pickSound, shouldAlert, soundKey, toastAction, toastKind, type AppNotification } from './notifications';
 
 const n = (overrides: Partial<AppNotification>): AppNotification => ({ id: '1', type: 'hint', title: 't', body: '', urgent: false, data: {}, createdAt: '2026-10-17T20:00:00Z', ...overrides });
 
@@ -150,4 +150,12 @@ describe('toastAction', () => {
     expect(toastAction(n({ type: 'article', data: { articleId: 7 } }), { openHints })).toBeUndefined();
     expect(toastAction(n({ type: 'hint' }), {})).toBeUndefined();
   });
+});
+
+test('sameTypes compares disabled lists as sets', () => {
+  expect(sameTypes([], [])).toBe(true);
+  expect(sameTypes(['hint', 'article'], ['article', 'hint'])).toBe(true);
+  expect(sameTypes(['hint', 'hint'], ['hint'])).toBe(true);
+  expect(sameTypes(['hint'], [])).toBe(false);
+  expect(sameTypes(['hint'], ['article'])).toBe(false);
 });
