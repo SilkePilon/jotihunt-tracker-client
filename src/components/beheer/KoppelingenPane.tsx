@@ -21,7 +21,8 @@ import { revalidateTelegramViews, useTelegramAdmin } from '@/hooks/telegram.hook
 import { apiErrorMessage } from '@/lib/api-error';
 import { JOTIBOARD_SLATE } from '@/lib/jotiboard';
 import { jotiboardIntegration, life360Integration, telegramIntegration, type IntegrationTone, type IntegrationView } from '@/lib/koppelingen';
-import { LIFE360_PURPLE, refreshAllowed } from '@/lib/life360';
+import { LIFE360_FILL, refreshAllowed } from '@/lib/life360';
+import { TELEGRAM_FILL } from '@/lib/telegram';
 import { POP } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import type { Life360LinkedStatus } from '@/types/Life360';
@@ -31,8 +32,6 @@ import BuildingsCard from './BuildingsCard';
 import { IconPill, Pill, Tag } from './controls/Pill';
 import TelegramAppForm from './TelegramAppForm';
 
-/** Telegram's brand blue (as TELEGRAM_BUTTON in TelegramLinkPanel) */
-const TELEGRAM_BLUE = '#229ED9';
 /** The inline confirm sits in the card as a red box */
 const CONFIRM_BOX = 'rounded-[18px] bg-destructive/12 px-3.5 py-3';
 
@@ -444,7 +443,7 @@ export default function KoppelingenPane({ mapRef }: { mapRef: RefObject<MapRef |
     <BeheerPane title="Koppelingen" description="Accounts en databronnen van de groep.">
       <IntegrationCard
         name="Telegram"
-        brand={TELEGRAM_BLUE}
+        brand={TELEGRAM_FILL}
         logo={<TelegramLogo className="size-[22px]" />}
         view={telegramView}
         isError={telegram.isError}
@@ -513,7 +512,7 @@ export default function KoppelingenPane({ mapRef }: { mapRef: RefObject<MapRef |
 
       <IntegrationCard
         name="Life360"
-        brand={LIFE360_PURPLE}
+        brand={LIFE360_FILL}
         logo={<Life360Logo className="size-[22px]" />}
         view={life360Card}
         isError={life360.isError}

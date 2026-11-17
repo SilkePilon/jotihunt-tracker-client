@@ -15,8 +15,8 @@ import type { TelegramAdminStatus } from '@/types/Telegram';
 import TelegramLogo from './TelegramLogo';
 import InlineError from '@/components/InlineError';
 
-/** Telegram's brand blue. */
-const TELEGRAM_BUTTON = 'bg-[#229ED9] text-white hover:bg-[#229ED9]/90';
+/** Telegram's blue as a button: TELEGRAM_FILL (#229ED9 darkened to 4.66:1 with white) and a darker hover. Literal values: Tailwind needs static class names. */
+const TELEGRAM_BUTTON = 'bg-[#1b7caa] text-white hover:bg-[#19729d]';
 
 export interface TelegramLinkActions {
   /** Start a QR login */
