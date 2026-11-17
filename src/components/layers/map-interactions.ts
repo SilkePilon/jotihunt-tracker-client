@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Map as MaplibreMap, MapGeoJSONFeature, MapMouseEvent } from 'maplibre-gl';
+import { requestPopupFocus } from '@/lib/popup-focus';
 import { useNightDraw } from '@/stores/night-draw.store';
 
 export interface LayerInteractions {
@@ -84,15 +85,22 @@ function registryFor(map: MaplibreMap): Registry {
   return registry;
 }
 
+export interface OpenFeatureOptions {
+  /** The popup takes focus (a keyboard activation in a list), so Tab and Escape work in it right away */
+  focus?: boolean;
+}
+
 /**
  * Open a feature's popup as if it was clicked (see {@link LayerInteractions.onOpen}). False when the layer isn't
  * mounted (hidden), can't open popups from outside, or has no such feature.
  */
-export function openLayerFeature(map: MaplibreMap, layerId: string, id: string | number): boolean {
+export function openLayerFeature(map: MaplibreMap, layerId: string, id: string | number, options: OpenFeatureOptions = {}): boolean {
   // Drawing a night area: no marker popups (like clicks)
   if (useNightDraw.getState().active) return false;
   const onOpen = registries.get(map)?.layers.get(layerId)?.current.onOpen;
-  return onOpen ? onOpen(id) : false;
+  const opened = onOpen ? onOpen(id) : false;
+  if (opened && options.focus) requestPopupFocus();
+  return opened;
 }
 
 /** Route the map's clicks and hovers on these layers to `handlers`; returns the cleanup (see {@link useLayerInteractions}). */

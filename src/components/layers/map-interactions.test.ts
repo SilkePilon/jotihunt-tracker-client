@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 import type { Map as MaplibreMap } from 'maplibre-gl';
+import { clearPopupFocusRequest, popupFocusRequested } from '@/lib/popup-focus';
 import { useNightDraw } from '@/stores/night-draw.store';
 import { openLayerFeature, registerLayerHandlers, type LayerInteractions } from './map-interactions';
 
@@ -41,6 +42,22 @@ describe('openLayerFeature', () => {
     useNightDraw.setState({ active: true });
     expect(openLayerFeature(map, 'team-pins', 'a')).toBe(false);
     expect(opened).toBe(false);
+    cleanup();
+  });
+});
+
+describe('openLayerFeature focus', () => {
+  afterEach(clearPopupFocusRequest);
+
+  test('requests popup focus only when asked and the popup opened', () => {
+    const map = fakeMap();
+    const cleanup = registerLayerHandlers(map, ['team-pins'], { current: { onOpen: (id) => id === 'a' } });
+    openLayerFeature(map, 'team-pins', 'a');
+    expect(popupFocusRequested()).toBe(false);
+    openLayerFeature(map, 'team-pins', 'b', { focus: true });
+    expect(popupFocusRequested()).toBe(false);
+    openLayerFeature(map, 'team-pins', 'a', { focus: true });
+    expect(popupFocusRequested()).toBe(true);
     cleanup();
   });
 });

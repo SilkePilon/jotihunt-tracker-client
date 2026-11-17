@@ -5,6 +5,7 @@ import Life360Card from '@/components/cards/life360/Life360Card';
 import type { MapRef } from '@/components/Map';
 import { useLife360Admin, useLife360Members } from '@/hooks/life360.hook';
 import { apiErrorMessage } from '@/lib/api-error';
+import { activatedByKeyboard } from '@/lib/input-modality';
 import { life360HeaderSummary } from '@/lib/life360';
 import { LIFE360_LAYER } from '@/lib/map-layers';
 import useSidebarStore from '@/stores/sidebar.store';
@@ -36,8 +37,8 @@ export default function Life360Section({ mapRef }: { mapRef: RefObject<MapRef | 
     if (!member.location) return;
     setSheetSnap('peek');
     mapRef.current?.flyTo({ center: [member.location.lon, member.location.lat], zoom: 15 });
-    // The member's popup, as if the map icon was clicked (nothing when the Life360 layer is off)
-    mapRef.current?.openFeature(LIFE360_LAYER, member.id);
+    // The member's popup, as if the map icon was clicked (nothing when the Life360 layer is off); focused for keyboard users
+    mapRef.current?.openFeature(LIFE360_LAYER, member.id, { focus: activatedByKeyboard() });
   }
 
   const header = life360HeaderSummary(status);

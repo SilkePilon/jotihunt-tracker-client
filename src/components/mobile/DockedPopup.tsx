@@ -2,10 +2,11 @@ import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from 're
 import { createPortal } from 'react-dom';
 import { motion } from 'motion/react';
 import { useMap } from 'react-map-gl/maplibre';
-import { useAnnouncePopup } from '@/components/map/popup/popup-a11y';
+import { useAnnouncePopup, useTakePopupFocus } from '@/components/map/popup/popup-a11y';
 import { CloseButton } from '@/components/ui/close-button';
 import { useBackEntry } from '@/hooks/back-entry.hook';
 import { useRestoreFocus } from '@/hooks/restore-focus.hook';
+import { ownsKey } from '@/lib/focus';
 import { EASE_OUT } from '@/lib/motion';
 
 export const DOCK_ID = 'map-popup-dock';
@@ -48,6 +49,7 @@ function useExitGhost(dock: HTMLElement | null) {
         if (node.isConnected || !dock.isConnected) return;
         const ghost = node.cloneNode(true) as HTMLElement;
         ghost.setAttribute('aria-hidden', 'true');
+        ghost.inert = true;
         // Not a second dialog, nor a second element with the (reused) title id
         ghost.removeAttribute('role');
         for (const element of ghost.querySelectorAll('[id]')) element.removeAttribute('id');
@@ -71,13 +73,14 @@ function useExitGhost(dock: HTMLElement | null) {
 
 /**
  * Phones: a map popup as a card docked just above the sheet instead of floating at the point (where the sheet
- * would hide it). The map eases the point into view; the padding keeps it above the sheet. Back or X closes it.
+ * would hide it). The map eases the point into view; the padding keeps it above the sheet. Back, Escape or X closes it.
  */
 export default function DockedPopup({
   longitude,
   latitude,
   onClose,
   titleId,
+  takeFocus = false,
   children,
 }: {
   longitude: number;
@@ -85,6 +88,8 @@ export default function DockedPopup({
   onClose: () => void;
   /** PopupHeader's title id, which names the card's dialog role */
   titleId?: string;
+  /** Opened from a list with the keyboard: the card takes focus */
+  takeFocus?: boolean;
   children: ReactNode;
 }) {
   const { current: map } = useMap();
@@ -105,7 +110,18 @@ export default function DockedPopup({
     map.easeTo({ center, duration: 500 });
   }, [map, center]);
   // Focus goes back where it came from (else the map) once the card is gone, unless a tap elsewhere already moved it
-  useRestoreFocus(() => map?.getCanvas());
+  const setOpener = useRestoreFocus(() => map?.getCanvas());
+  useTakePopupFocus(ref, dock, takeFocus, setOpener);
+  // Escape closes it like Back (when focus is in the card, on the map or nowhere; not a menu or field elsewhere)
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || !ownsKey(event, document.body, [ref.current, map?.getContainer()])) return;
+      event.preventDefault();
+      setClosing(true);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [map, ref]);
 
   if (!dock) return null;
   return createPortal(
@@ -122,7 +138,8 @@ export default function DockedPopup({
       inert={closing}
       role="dialog"
       aria-labelledby={titleId}
-      className="pointer-events-auto relative rounded-3xl bg-card p-3.5 text-[13px] leading-[1.35] text-card-foreground shadow-[0_0_0_1px_var(--border),0_18px_50px_rgb(0_0_0/.35)]"
+      tabIndex={-1}
+      className="pointer-events-auto relative outline-none rounded-3xl bg-card p-3.5 text-[13px] leading-[1.35] text-card-foreground shadow-[0_0_0_1px_var(--border),0_18px_50px_rgb(0_0_0/.35)]"
     >
       <CloseButton onClick={requestClose} className="absolute top-3 right-3" />
       <div className="flex flex-col">{children}</div>
