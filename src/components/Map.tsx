@@ -80,6 +80,9 @@ export interface MapRef {
 
     /** The map's centre; null while the map isn't created yet. */
     getCenter(): LngLat | null;
+
+    /** The current zoom level; null while the map isn't created yet. */
+    getZoom(): number | null;
 }
 
 interface MapProps {
@@ -152,6 +155,7 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
             }
         },
         getCenter: () => mapRef.current?.getCenter() ?? null,
+        getZoom: () => mapRef.current?.getZoom() ?? null,
     }));
 
     // Store for all layers
@@ -281,7 +285,7 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
                     {/* Credits on the right: bottom-right on desktop; on phones top-right, above the bottom sheet; on the HQ wall top-right, above the event card. */}
                     <AttributionControl position={isMobile || wall ? 'top-right' : 'bottom-right'} customAttribution={groupName ? `Jotihunt Tracker | ${groupName}` : 'Jotihunt Tracker'} compact={true}/>
                 </div>
-                {/* Phones: no map controls, the map is navigated by touch and the bottom sheet needs the room */}
+                {/* Phones: no MapLibre controls (touch navigation, the sheet needs the room); MyLocationButton floats above the sheet */}
                 {!isMobile && !wall && (
                     <>
                         <ScaleControl/>

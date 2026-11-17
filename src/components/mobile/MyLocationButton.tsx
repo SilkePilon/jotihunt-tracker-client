@@ -33,7 +33,8 @@ export default function MyLocationButton({ mapRef }: { mapRef: RefObject<MapRef 
     try {
       const tracker = ownTrackerPosition(positions, ownDeviceId(devices, status?.configured ? status.uniqueId : undefined), Date.now());
       const { lat, lng } = await locateMe(tracker);
-      mapRef.current?.flyTo({ center: [lng, lat], zoom: LOCATE_ZOOM, duration: 1200, essential: true });
+      // Never zoom out when the hunter is already closer in; reduced motion turns the flight into a jump (no `essential`)
+      mapRef.current?.flyTo({ center: [lng, lat], zoom: Math.max(LOCATE_ZOOM, mapRef.current.getZoom() ?? 0), duration: 1200 });
       useHuntFocusStore.getState().show({ lng, lat, color: LOCATION_COLOR });
     } catch (error) {
       toast.error('Locatie niet gevonden', { description: error instanceof Error ? error.message : undefined });
@@ -55,7 +56,7 @@ export default function MyLocationButton({ mapRef }: { mapRef: RefObject<MapRef 
           {...POP}
           className={cn(
             MAP_TILE,
-            'pointer-events-auto mr-[env(safe-area-inset-right)] grid size-12 shrink-0 place-items-center self-end rounded-2xl outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 active:bg-beheer-row-high [&_svg]:size-5',
+            'pointer-events-auto mr-[env(safe-area-inset-right)] grid size-12 shrink-0 place-items-center self-end rounded-2xl outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring active:bg-beheer-row-high [&_svg]:size-5',
           )}
         >
           <AnimatePresence mode="popLayout" initial={false}>
