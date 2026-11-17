@@ -28,7 +28,8 @@ function ArticleHtml({ html, className }: { html: string; className?: string }) 
           className,
         )}
         onClick={(event) => {
-          if (event.target instanceof HTMLImageElement) {
+          // An image inside a link follows the link (like the keyboard: those images get no "Foto vergroten" role)
+          if (event.target instanceof HTMLImageElement && !event.target.closest('a')) {
             event.preventDefault();
             setZoom({ src: event.target.src, alt: event.target.alt });
           }
