@@ -28,7 +28,7 @@ export default function HqHunts({ events, isError, onRetry }: { events: HuntSync
           </motion.div>
         ) : view === 'error' ? (
           <motion.div key="error" {...SWAP} className="py-1">
-            <LoadError message="Hunts konden niet worden geladen." onRetry={onRetry} className="text-base" />
+            <LoadError message="Hunts konden niet worden geladen." onRetry={onRetry} scale className="text-base" />
           </motion.div>
         ) : latest.length === 0 ? (
           <motion.p key="empty" {...SWAP} className="text-muted-foreground">

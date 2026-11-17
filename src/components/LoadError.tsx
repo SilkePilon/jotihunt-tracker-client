@@ -12,6 +12,8 @@ interface LoadErrorProps {
   onRetry: () => Promise<unknown> | unknown;
   /** Centre the line and button (an empty list's spot) instead of left-aligned (a card body) */
   centered?: boolean;
+  /** HQ wall: the button sizes in rem, so it grows with the wall's viewport-scaled root font like the text around it */
+  scale?: boolean;
   className?: string;
 }
 
@@ -20,7 +22,7 @@ interface LoadErrorProps {
  * "Opnieuw proberen" button. Not for a later poll that fails while older data is still on screen (the stale badge
  * covers that).
  */
-export default function LoadError({ message, onRetry, centered, className }: LoadErrorProps) {
+export default function LoadError({ message, onRetry, centered, scale, className }: LoadErrorProps) {
   const [busy, setBusy] = useState(false);
 
   async function retry() {
@@ -44,12 +46,13 @@ export default function LoadError({ message, onRetry, centered, className }: Loa
       <motion.button
         type="button"
         layout
-        style={{ borderRadius: 12 }}
+        style={{ borderRadius: scale ? '0.75rem' : 12 }}
         disabled={busy}
         aria-busy={busy}
         onClick={() => void retry()}
         className={cn(
-          'inline-flex h-8 shrink-0 items-center gap-1.5 bg-beheer-row-high px-3 text-[12.5px] font-semibold text-foreground outline-none transition-colors hover:bg-[color-mix(in_oklab,var(--foreground)_14%,var(--card))] focus-visible:ring-[3px] focus-visible:ring-ring disabled:opacity-70 [&_svg]:size-4',
+          'inline-flex shrink-0 items-center bg-beheer-row-high font-semibold text-foreground outline-none transition-colors hover:bg-[color-mix(in_oklab,var(--foreground)_14%,var(--card))] focus-visible:ring-[3px] focus-visible:ring-ring disabled:opacity-70',
+          scale ? 'h-[2.25rem] gap-[0.4rem] px-[0.85rem] text-[0.875rem] [&_svg]:size-[1.1rem]' : 'h-8 gap-1.5 px-3 text-[12.5px] [&_svg]:size-4',
           // 44px touch area on phones, same look
           COARSE_HIT_AREA,
         )}

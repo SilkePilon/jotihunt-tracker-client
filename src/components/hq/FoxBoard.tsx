@@ -47,7 +47,7 @@ export default function FoxBoard({ foxes, focusArea, state, onRetry }: { foxes: 
         </motion.div>
       ) : view === 'error' ? (
         <motion.div key="error" {...SWAP} className="card rounded-2xl bg-card px-3.5 py-3 text-card-foreground">
-          <LoadError message="Vossen konden niet worden geladen." onRetry={onRetry} className="text-base" />
+          <LoadError message="Vossen konden niet worden geladen." onRetry={onRetry} scale className="text-base" />
         </motion.div>
       ) : view === 'empty' ? (
         <motion.p key="empty" {...SWAP} className="card rounded-2xl bg-card px-3.5 py-3 text-lg text-muted-foreground">
