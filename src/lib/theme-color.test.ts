@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { syncThemeColor, themeColor } from './theme-color';
+import { syncColorScheme, syncThemeColor, themeColor } from './theme-color';
 
 test('themeColor matches the page background per theme', () => {
   expect(themeColor(false)).toBe('#ffffff');
@@ -13,4 +13,12 @@ test('syncThemeColor sets every theme-color meta', () => {
   expect(metas.map((meta) => meta.content)).toEqual(['#1a1a1e', '#1a1a1e']);
   syncThemeColor(false, doc);
   expect(metas.map((meta) => meta.content)).toEqual(['#ffffff', '#ffffff']);
+});
+
+test('syncColorScheme pins native controls to the app theme', () => {
+  const doc = { documentElement: { style: { colorScheme: '' } } } as unknown as Document;
+  syncColorScheme(true, doc);
+  expect(doc.documentElement.style.colorScheme).toBe('dark');
+  syncColorScheme(false, doc);
+  expect(doc.documentElement.style.colorScheme).toBe('light');
 });

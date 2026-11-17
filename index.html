@@ -19,7 +19,7 @@
     <script>
       // Dark users would see a white page until React mounts: apply the persisted theme (settings-storage, zustand's
       // {"state":{"darkMode":true|false|undefined}}) or else the OS one now, same as useTheme (.dark on body, theme-color
-      // metas); keep in sync with src/hooks/theme.hook.ts and src/lib/theme-color.ts
+      // metas, color-scheme on html); keep in sync with src/hooks/theme.hook.ts and src/lib/theme-color.ts
       (function () {
         var dark;
         try {
@@ -28,6 +28,7 @@
         } catch (e) {}
         if (typeof dark !== 'boolean') dark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
         if (dark) document.body.classList.add('dark');
+        document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
         var metas = document.querySelectorAll('meta[name="theme-color"]');
         for (var i = 0; i < metas.length; i++) metas[i].setAttribute('content', dark ? '#1a1a1e' : '#ffffff');
       })();

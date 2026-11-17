@@ -1,6 +1,6 @@
 import useSettingsStore from "@/stores/settings.store.ts";
 import {useEffect} from "react";
-import {syncThemeColor} from "@/lib/theme-color";
+import {syncColorScheme, syncThemeColor} from "@/lib/theme-color";
 
 export const useTheme = () => {
     const {darkMode} = useSettingsStore();
@@ -15,6 +15,7 @@ export const useTheme = () => {
             document.body.classList.toggle('dark', dark);
             // Browser chrome (Android status bar, Safari tab bar) follows the app's theme, not only the OS one
             syncThemeColor(dark);
+            syncColorScheme(dark);
         };
 
         // Update immediately

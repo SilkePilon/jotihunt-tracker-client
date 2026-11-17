@@ -12,3 +12,11 @@ export function themeColor(dark: boolean): string {
 export function syncThemeColor(dark: boolean, doc: Document = document): void {
   for (const meta of doc.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')) meta.content = themeColor(dark);
 }
+
+/**
+ * Native controls (date/time pickers, scrollbars, form widgets) follow `color-scheme`, which otherwise tracks the OS:
+ * pin it to the app theme on <html> so a light app on a dark OS doesn't get dark pickers (and the other way round).
+ */
+export function syncColorScheme(dark: boolean, doc: Document = document): void {
+  doc.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+}
