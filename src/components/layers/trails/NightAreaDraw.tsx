@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Layer, Source, useMap, type CircleLayerSpecification, type FillLayerSpecification, type LineLayerSpecification } from 'react-map-gl/maplibre';
-import type { Map as MaplibreMap, MapMouseEvent } from 'maplibre-gl';
+import type { MapMouseEvent } from 'maplibre-gl';
 import type { Feature, FeatureCollection, LineString, Point, Polygon } from 'geojson';
 import { AnimatePresence, motion, useIsPresent } from 'motion/react';
 import { Loader2Icon, Undo2Icon } from 'lucide-react';
@@ -17,6 +17,7 @@ import { NIGHT_DRAW_LAYERS, NIGHT_FILL, NIGHT_LINE } from '@/lib/map-layers';
 import { SWAP, SWAP_TRANSITION } from '@/lib/motion';
 import { CLOSED_MESSAGE, drawHint, droppedMessage, KEYBOARD_DRAW_HINT, MOVE_FIRST_MESSAGE, NAME_MISSING_MESSAGE, nudgeDelta, UNDO_MESSAGE } from '@/lib/night-draw-keys';
 import { activatedByKeyboard } from '@/lib/input-modality';
+import CenterCrosshair from '@/components/map/CenterCrosshair';
 import { belowSafeArea, desktopToolbarTop, phoneTopStack } from '@/lib/top-stack';
 import useAdminStore from '@/stores/admin.store';
 import { ringFromPoints, useNightDraw } from '@/stores/night-draw.store';
@@ -45,46 +46,6 @@ const FOCUS_WAIT_MS = 2000;
 
 /** A mouse or trackpad: the hint also names the keyboard way in */
 const finePointer = () => typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches;
-
-/**
- * Keyboard drawing: where Enter drops the next corner, the middle of the map (its padded centre, like getCenter()).
- * Follows resizes and padding changes; decorative (the live region says what happens).
- */
-function CenterCrosshair({ map, color }: { map: MaplibreMap; color: string }) {
-  const [at, setAt] = useState(() => map.project(map.getCenter()));
-  useEffect(() => {
-    const update = () => setAt(map.project(map.getCenter()));
-    map.on('move', update);
-    map.on('resize', update);
-    return () => {
-      map.off('move', update);
-      map.off('resize', update);
-    };
-  }, [map]);
-  return (
-    <motion.div
-      aria-hidden
-      className="pointer-events-none absolute z-10 size-7 -translate-x-1/2 -translate-y-1/2"
-      style={{ left: at.x, top: at.y }}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={SWAP_TRANSITION}
-    >
-      <svg viewBox="0 0 28 28" className="size-full overflow-visible" fill="none" strokeLinecap="round">
-        {/* White halo under the line colour, so it reads on light and dark tiles */}
-        <g stroke="#ffffff" strokeWidth={4.5}>
-          <circle cx={14} cy={14} r={6} />
-          <path d="M14 1v6M14 21v6M1 14h6M21 14h6" />
-        </g>
-        <g stroke={color} strokeWidth={2}>
-          <circle cx={14} cy={14} r={6} />
-          <path d="M14 1v6M14 21v6M1 14h6M21 14h6" />
-        </g>
-      </svg>
-    </motion.div>
-  );
-}
 
 /** Back to Beheer → Algemeen (the Routes card) */
 function leave() {
