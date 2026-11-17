@@ -178,7 +178,7 @@ export function RowFrame({ tone = 'default', className, children }: { tone?: Row
   return (
     <motion.div
       // isolate: the pills' 44px touch areas on phones (COARSE_HIT_AREA) stay above the block's background
-      className={cn('isolate overflow-hidden rounded-md transition-colors duration-200 first:rounded-t-2xl last:rounded-b-2xl', TONE[tone], className)}
+      className={cn('isolate overflow-hidden rounded-(--radius-segment) transition-colors duration-200 first:rounded-t-2xl last:rounded-b-2xl', TONE[tone], className)}
       initial={{ opacity: 0, height: 0 }}
       animate={{ opacity: 1, height: 'auto' }}
       exit={{ opacity: 0, height: 0 }}

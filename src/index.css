@@ -39,6 +39,9 @@
      (the orange-600 of dark mode was 2.73:1 on beheer-row-high / primary-container) */
   --ring: #c2410c;
   --radius: 0.75rem;
+  /* Inner corners of segmented rows (Beheer rows, menu rows, phone menu: M3 segmented list, outer ends 16px). Used as
+     rounded-(--radius-segment), which tailwind-merge still lets a caller's rounded-* override */
+  --radius-segment: 6px;
   --chart-1: hsl(12 76% 61%);
   --chart-2: hsl(173 58% 39%);
   --chart-3: hsl(197 37% 24%);
