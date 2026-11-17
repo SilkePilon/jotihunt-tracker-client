@@ -382,8 +382,9 @@ function Group({ title, children }: { title: string; children: ReactNode }) {
       <h3 tabIndex={-1} className="mx-1.5 mb-1.5 text-xs font-semibold text-muted-foreground outline-none">
         {title}
       </h3>
-      {/* The corners sit on each row's inner surface, so they stay right while a neighbour folds away */}
-      <div className="flex flex-col gap-0.5 [&>*:first-child>*]:rounded-t-[18px] [&>*:last-child>*]:rounded-b-[18px]">{children}</div>
+      {/* The corners sit on each row's inner surface, so they stay right while a neighbour folds away: segment corners
+          inside the group and 16px ends, like the Beheer rows and the menus */}
+      <div className="flex flex-col gap-0.5 [&>*:first-child>*]:rounded-t-2xl [&>*:last-child>*]:rounded-b-2xl">{children}</div>
     </section>
   );
 }
@@ -438,7 +439,7 @@ function Row({
       exit={{ opacity: 0, height: 0 }}
       transition={REVEAL_TRANSITION}
     >
-      <div className="overflow-hidden rounded-md bg-beheer-row">
+      <div className="overflow-hidden rounded-(--radius-segment) bg-beheer-row">
         {title === undefined ? (
           children
         ) : (
@@ -449,7 +450,7 @@ function Row({
               <div className="flex min-w-0 items-center gap-1.5">
                 <span className="truncate text-[13.5px] font-semibold">{title}</span>
                 {chip && (
-                  <span className="inline-flex h-[18px] flex-none items-center rounded-full bg-(--map-selected-bg) px-[7px] text-[10.5px] font-bold text-(--map-selected-fg)">
+                  <span className="inline-flex h-[18px] flex-none items-center rounded-full bg-(--map-selected-bg) px-[7px] text-xs font-bold text-(--map-selected-fg) md:text-[10.5px]">
                     {chip}
                   </span>
                 )}
