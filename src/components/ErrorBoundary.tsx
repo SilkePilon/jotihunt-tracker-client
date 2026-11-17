@@ -4,6 +4,7 @@ import { RotateCwIcon, TriangleAlertIcon } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { SWAP } from '@/lib/motion';
+import { MENU_SURFACE } from '@/lib/menu-styles';
 import { cn } from '@/lib/utils';
 
 type Variant = 'page' | 'section' | 'inline' | 'floating';
@@ -85,7 +86,7 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
     if (variant === 'floating') {
       return (
         // Above the home indicator on phones (safe area), never closer than 1rem
-        <motion.div {...FALLBACK_ENTER} role="alert" className={cn('card fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-[60] flex w-[min(24rem,calc(100vw-2rem))] -translate-x-1/2 flex-col gap-2 rounded-xl bg-card p-3 text-sm text-card-foreground', className)}>
+        <motion.div {...FALLBACK_ENTER} role="alert" className={cn(MENU_SURFACE, 'fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-[60] flex w-[min(24rem,calc(100vw-2rem))] -translate-x-1/2 flex-col gap-2 p-3 text-sm', className)}>
           <p className="flex items-center gap-2 font-medium">
             <TriangleAlertIcon className="size-4 shrink-0 text-destructive" />
             {message}
