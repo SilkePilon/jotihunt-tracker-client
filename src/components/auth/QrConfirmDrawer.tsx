@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/auth.hook';
 import { useNow } from '@/hooks/now.hook';
+import { busyProps } from '@/lib/busy';
 import { addPasskey, approveQrLogin, denyQrLogin, scanQrLogin, type QrScan } from '@/lib/auth-api';
 import { TONAL_HOVER } from '@/lib/tonal-button';
 import { BADGE_COOKIE_DEPTH, cookiePath } from '@/lib/cookie-shape';
@@ -42,6 +43,12 @@ const PRIMARY = 'h-12 w-full rounded-xl text-[15px] font-semibold';
 const SECONDARY = `h-12 w-full rounded-xl bg-beheer-row-high text-[15px] font-semibold text-foreground ${TONAL_HOVER}`;
 
 const BADGE = 48;
+
+/**
+ * Ref for each step's title: it takes focus as it comes in (the buttons that held it went away with the old step), and
+ * tells a screen-reader user what happened (Bevestigd, Dat lukte niet). Module-level, so re-renders don't re-run it.
+ */
+const focusTitle = (title: HTMLHeadingElement | null) => title?.focus({ preventScroll: true });
 
 /** "{where} · als {name}", dropping whatever is missing */
 function ReadyMeta({ where, name }: { where: string; name: string | undefined }) {
@@ -196,7 +203,7 @@ export default function QrConfirmDrawer({ code, onClose }: { code: string; onClo
           {view.step === 'ready' && (
             <motion.div key="ready" className="flex flex-col" {...SWAP}>
               <QrLinkIllustration />
-              <h2 className="text-lg leading-[1.25] font-bold">Inloggen op {view.scan.requester.label}?</h2>
+              <h2 ref={focusTitle} tabIndex={-1} className="text-lg leading-[1.25] font-bold outline-none">Inloggen op {view.scan.requester.label}?</h2>
               <ReadyMeta where={joinParts(view.scan.requester.location, formatLastUpdate(view.scan.createdAt, now))} name={user?.name} />
               <Reveal>
                 {view.error && (
@@ -233,7 +240,7 @@ export default function QrConfirmDrawer({ code, onClose }: { code: string; onClo
           {view.step === 'done' && (
             <motion.div key="done" className="flex flex-col items-center gap-3 py-4 text-center" {...SWAP}>
               <SuccessBadge size={72} />
-              <motion.h2 className="text-lg font-bold" {...fadeUp(0.2)}>
+              <motion.h2 ref={focusTitle} tabIndex={-1} className="text-lg font-bold outline-none" {...fadeUp(0.2)}>
                 Bevestigd
               </motion.h2>
               <motion.p className="text-sm text-muted-foreground" {...fadeUp(0.3)}>
@@ -252,7 +259,9 @@ export default function QrConfirmDrawer({ code, onClose }: { code: string; onClo
               <div className="flex items-center gap-3">
                 <ProblemBadge />
                 <div className="min-w-0">
-                  <h2 className="text-lg font-bold">Dat lukte niet</h2>
+                  <h2 ref={focusTitle} tabIndex={-1} className="text-lg font-bold outline-none">
+                    Dat lukte niet
+                  </h2>
                   <p className="text-body text-muted-foreground">{view.problem.message}</p>
                 </div>
               </div>
@@ -264,7 +273,8 @@ export default function QrConfirmDrawer({ code, onClose }: { code: string; onClo
                   </Button>
                 ) : view.problem.retry ? (
                   // No answer: the code may still wait, so trying again leads (back to the confirm view once it answers)
-                  <Button className={cn(PRIMARY, rescanning && 'disabled:opacity-100')} onClick={() => void rescan()} disabled={rescanning} aria-busy={rescanning}>
+                  // Busy: aria-disabled keeps the focus on it (the spinner stays at full strength)
+                  <Button className={cn(PRIMARY, rescanning && 'aria-disabled:opacity-100')} onClick={() => void rescan()} {...busyProps(rescanning)}>
                     <BusyIcon busy={rescanning} icon={<RefreshCwIcon className="size-5" />} />
                     <AnimatePresence mode="popLayout" initial={false}>
                       <motion.span key={rescanning ? 'busy' : 'idle'} {...SWAP}>
