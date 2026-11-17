@@ -6,7 +6,8 @@ import { cn } from '@/lib/utils';
 /** Sanitised article HTML; an image opens in the zoomable lightbox. `className` overrides the text look (merged). */
 function ArticleHtml({ html, className }: { html: string; className?: string }) {
   const sanitized = useMemo(() => sanitizeHintHtml(html), [html]);
-  const [zoom, setZoom] = useState<string | null>(null);
+  // The clicked image (src + alt); the lightbox labels the photo with its alt
+  const [zoom, setZoom] = useState<{ src: string; alt: string } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   // Keyboard and screen readers: every image (outside a link, which has its own action) is a "Foto vergroten" button
   useEffect(() => {
@@ -28,18 +29,18 @@ function ArticleHtml({ html, className }: { html: string; className?: string }) 
         onClick={(event) => {
           if (event.target instanceof HTMLImageElement) {
             event.preventDefault();
-            setZoom(event.target.src);
+            setZoom({ src: event.target.src, alt: event.target.alt });
           }
         }}
         onKeyDown={(event) => {
           if (event.target instanceof HTMLImageElement && event.target.getAttribute('role') === 'button' && (event.key === 'Enter' || event.key === ' ')) {
             event.preventDefault();
-            setZoom(event.target.src);
+            setZoom({ src: event.target.src, alt: event.target.alt });
           }
         }}
         dangerouslySetInnerHTML={{ __html: sanitized }}
       />
-      <ImageLightbox src={zoom ?? ''} alt="" open={zoom !== null} onOpenChange={(open) => !open && setZoom(null)} />
+      <ImageLightbox src={zoom?.src ?? ''} alt={zoom?.alt ?? ''} open={zoom !== null} onOpenChange={(open) => !open && setZoom(null)} />
     </>
   );
 }
