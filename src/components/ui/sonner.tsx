@@ -46,8 +46,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
         {
           "--normal-bg": "var(--popover)",
           "--normal-text": "var(--popover-foreground)",
-          "--normal-border": "var(--border)",
-          "--border-radius": "var(--radius)",
+          // The menu card look (MENU_SURFACE): 24px corners, no border; the hairline + soft shadow come from classNames.toast
+          "--normal-border": "transparent",
+          "--border-radius": "24px",
         } as React.CSSProperties
       }
       // Dutch names for the toast region and the close buttons (sonner's defaults are English); not "Meldingen", that is the notification settings dialog
@@ -56,6 +57,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
         closeButton: true,
         closeButtonAriaLabel: "Sluiten",
         classNames: {
+          // Keeps sonner's own focus ring visible: ring-* composes with this shadow
+          toast: "border-0! shadow-[0_0_0_1px_var(--border),0_10px_30px_rgb(0_0_0/0.28)]! focus-visible:ring-[3px] focus-visible:ring-ring",
           description: "text-muted-foreground!",
           actionButton: "bg-primary-container! text-on-primary-container!",
           cancelButton: "bg-muted! text-muted-foreground!",
