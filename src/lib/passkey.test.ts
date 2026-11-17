@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { AxiosError, AxiosHeaders } from 'axios';
-import { classifyPasskeyError, inviteGoneReason, isLinkGone, PASSKEY_MESSAGES } from './passkey';
+import { classifyPasskeyError, inviteGoneReason, isLinkGone, PASSKEY_MESSAGES, unsupportedLoginText } from './passkey';
 
 function httpError(status: number | undefined, data: unknown = {}) {
   const error = new AxiosError('fail');
@@ -57,5 +57,13 @@ describe('isLinkGone', () => {
     expect(isLinkGone(httpError(500))).toBe(false);
     expect(isLinkGone(httpError(undefined))).toBe(false);
     expect(isLinkGone(new Error('x'))).toBe(false);
+  });
+});
+
+describe('unsupportedLoginText', () => {
+  test('points at the QR code where this device shows it, and at a herstel-link', () => {
+    expect(unsupportedLoginText(true)).toContain('hieronder');
+    expect(unsupportedLoginText(false)).toContain('hiernaast');
+    expect(unsupportedLoginText(true)).toContain('herstel-link');
   });
 });

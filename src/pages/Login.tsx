@@ -9,7 +9,7 @@ import AuthScreen from '@/components/auth/AuthScreen';
 import QrLoginPanel from '@/components/auth/QrLoginPanel';
 import Reveal from '@/components/motion/Reveal';
 import { passkeyLogin, passkeysSupported, type SessionResult } from '@/lib/auth-api';
-import { classifyPasskeyError, PASSKEY_MESSAGES } from '@/lib/passkey';
+import { classifyPasskeyError, PASSKEY_MESSAGES, unsupportedLoginText } from '@/lib/passkey';
 import { CARD_ENTER, EASE_OUT } from '@/lib/motion';
 import { nextAfterLogin } from '@/lib/qr-login';
 import { useStartSession } from '@/hooks/start-session.hook';
@@ -26,7 +26,10 @@ export default function Login() {
   const isMobile = useIsMobile();
   const { isStandalone, isInstallPromptSupported, promptInstall } = usePWA();
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(passkeysSupported() ? null : PASSKEY_MESSAGES.unsupported);
+  const supported = passkeysSupported();
+  const [error, setError] = useState<string | null>(null);
+  // Without passkeys the button can't work: say what does, for this device (shown until another error replaces it)
+  const shownError = error ?? (supported ? null : unsupportedLoginText(isMobile));
   const next = nextAfterLogin(searchParams.get('next'));
   /** Fading the card out after a QR approval, right before the map takes over */
   const [leaving, setLeaving] = useState(false);
@@ -45,7 +48,8 @@ export default function Login() {
       enter(await passkeyLogin());
       if (isInstallPromptSupported && !isStandalone && isMobileDevice) promptInstall();
     } catch (failure) {
-      setError(PASSKEY_MESSAGES[classifyPasskeyError(failure)]);
+      const kind = classifyPasskeyError(failure);
+      setError(kind === 'unsupported' ? unsupportedLoginText(isMobile) : PASSKEY_MESSAGES[kind]);
     } finally {
       setBusy(false);
     }
@@ -83,25 +87,32 @@ export default function Login() {
             </div>
           </div>
           <p className="text-sm text-muted-foreground">Gebruik de vingerafdruk, het gezicht of de schermvergrendeling van dit apparaat.</p>
-          <Button size="lg" className="w-full" onClick={handleLogin} disabled={busy || !passkeysSupported()}>
+          <Button size="lg" className="w-full" onClick={handleLogin} disabled={busy || !supported}>
             {busy ? <Loader2Icon className="animate-spin" /> : <KeyRoundIcon />}
             Inloggen met passkey
           </Button>
           <Reveal gap={20}>
-            {error && (
+            {shownError && (
               <InlineError role="alert">
-                {error}
+                {shownError}
               </InlineError>
             )}
           </Reveal>
           <p className="text-xs text-muted-foreground">Geen account? Vraag de organisatie om een invite-link.</p>
         </div>
-        {/* Phones log in with their own passkey; only laptops and the beamer need the code */}
-        {!isMobile && (
+        {/* Phones log in with their own passkey; only laptops and the beamer need the code, and a phone whose browser
+            has no passkeys (then below the button, for another phone that is logged in to scan) */}
+        {!isMobile ? (
           <>
             <div className="my-8 w-px bg-border" />
             <QrLoginPanel onApproved={handleQrApproved} />
           </>
+        ) : (
+          !supported && (
+            <div className="flex justify-center border-t">
+              <QrLoginPanel onApproved={handleQrApproved} />
+            </div>
+          )
         )}
       </motion.div>
     </AuthScreen>
