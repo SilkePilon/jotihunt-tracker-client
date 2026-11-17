@@ -16,8 +16,11 @@ import useTopStackStore from '@/stores/top-stack.store';
 
 const WIDE_QUERY = '(min-width: 1024px)';
 
-/** md–lg: a 44 px map tile whose popover holds the full card (the card is its own surface, so the popover has none) */
-function CompactCard({ icon: Icon, label, children }: { icon: LucideIcon; label: string; children: (close: () => void) => ReactNode }) {
+/**
+ * md–lg: a 44 px map tile whose popover holds the full card (the card is its own surface, so the popover has none).
+ * groupSearch marks the group search tile for the "/" shortcut (Layout.tsx), so it doesn't depend on the label text.
+ */
+function CompactCard({ icon: Icon, label, groupSearch, children }: { icon: LucideIcon; label: string; groupSearch?: boolean; children: (close: () => void) => ReactNode }) {
   const [open, setOpen] = useState(false);
   // Widening to lg hides this tile and shows the full cards; a popover left open would hang from a hidden trigger
   useEffect(() => {
@@ -34,6 +37,7 @@ function CompactCard({ icon: Icon, label, children }: { icon: LucideIcon; label:
           type="button"
           aria-label={label}
           title={label}
+          data-group-search-tile={groupSearch ? '' : undefined}
           className={cn(MAP_TILE, 'grid size-11 cursor-pointer place-items-center rounded-(--radius-tile) outline-none transition-colors hover:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring [&_svg]:size-[18px]', TRIGGER_OPEN)}
         >
           <Icon aria-hidden />
@@ -73,7 +77,7 @@ function App() {
           <CompactCard icon={CrosshairIcon} label="Zoek op coördinaat">
             {(close) => <CoordinatesCard mapRef={mapRef} onDone={close} />}
           </CompactCard>
-          <CompactCard icon={SearchIcon} label="Snel navigeren naar groep">
+          <CompactCard icon={SearchIcon} label="Snel navigeren naar groep" groupSearch>
             {(close) => <SearchCard mapRef={mapRef} onDone={close} />}
           </CompactCard>
         </div>
