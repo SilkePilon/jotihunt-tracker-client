@@ -3,6 +3,7 @@ import { useCallback } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { BellIcon, CarIcon, LayoutGridIcon, MapPinIcon } from 'lucide-react';
 import { Dialog as DialogPrimitive } from 'radix-ui';
+import { toast } from 'sonner';
 import { useMarkerPalette } from '@/components/layers/marker-icons';
 import { useAppRelease, usePairingCode } from '@/hooks/app-pairing.hook';
 import { useAccount } from '@/hooks/account.hook';
@@ -21,7 +22,7 @@ const apiBase: string = import.meta.env.API_BASE_URL;
 
 /** The one-time Android-app popup (design B + split button), see the android-app-promo spec. */
 export default function AndroidPromoDialog() {
-  const { open, step, setStep, close } = useAndroidPromoStore();
+  const { open, step, setStep, close, neverWithUndo } = useAndroidPromoStore();
   // Phones: Back closes the popup (as "Later", or "paired" once done) instead of leaving the site
   useBackEntry('android-promo', open, () => close(step === 'done' ? 'paired' : 'later'));
   const { release } = useAppRelease();
@@ -59,6 +60,15 @@ export default function AndroidPromoDialog() {
     setStep('pair');
   };
 
+  // "Niet meer tonen" is easy to tap by mistake: an undo, and where the app can still be found
+  const never = () => {
+    const undo = neverWithUndo();
+    toast('Deze popup komt niet meer terug', {
+      description: 'De app download je ook via Mijn tracker in de zijbalk.',
+      action: { label: 'Ongedaan maken', onClick: undo },
+    });
+  };
+
   const shown = open && !!release;
 
   // Radix Dialog for the focus trap, Escape, outside click and focus restore; forceMount + asChild hand the mount and
@@ -91,7 +101,7 @@ export default function AndroidPromoDialog() {
                             <b className="block text-xl leading-tight">De Jotihunt-app voor Android</b>
                             <p className="mb-3 mt-1.5 text-[13.5px] text-muted-foreground">Je telefoon als tracker, ook als het scherm uit is.</p>
                             <FeatureChips />
-                            <DownloadSplitButton version={release.versionName} onDownload={download} onLater={() => close('later')} onNever={() => close('never')} />
+                            <DownloadSplitButton version={release.versionName} onDownload={download} onLater={() => close('later')} onNever={never} />
                           </div>
                         </>
                       ) : (
