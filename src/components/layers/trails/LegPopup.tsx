@@ -3,6 +3,8 @@ import { CarIcon, ClockIcon, FootprintsIcon, RouteIcon } from 'lucide-react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { toast } from 'sonner';
 import MapPopup from '../../map/MapPopup';
+import MarkerRegistration from '../../map/MarkerRegistration';
+import ArchiveReadOnlyNote from '@/components/ArchiveReadOnlyNote';
 import { PopupActions, popupActionClass } from '../../map/popup/PopupActions';
 import PopupHeader, { PopupIcon } from '../../map/popup/PopupHeader';
 import { PopupRow, PopupRows } from '../../map/popup/PopupRows';
@@ -37,7 +39,10 @@ interface LegPopupProps {
   onSetMode: (markerId: string, legMode: 'walk' | 'car' | null) => Promise<void>;
 }
 
-/** Trail leg (popup B): why it is walk or car, its time and route, one flip button and a way back to automatic. */
+/**
+ * Trail leg (popup B): why it is walk or car, its time and route, one flip button and a way back to automatic. Its
+ * wide tap line covers the roads along the trail, so it also offers Hunt/Spot at the tapped point (like DevicePopup).
+ */
 export default function LegPopup({ leg, longitude, latitude, onClose, onSetMode }: LegPopupProps) {
   const reduced = useReducedMotion() ?? false;
   const [saving, setSaving] = useState(false);
@@ -86,6 +91,11 @@ export default function LegPopup({ leg, longitude, latitude, onClose, onSetMode 
           <Swap text={flipLabel(leg)} />
         </button>
       </PopupActions>
+      <PopupActions className="mt-2">
+        <MarkerRegistration lat={latitude} lng={longitude} />
+      </PopupActions>
+      {/* The flip and Hunt/Spot are greyed out in an archive edition: say why */}
+      <ArchiveReadOnlyNote className="pt-2 text-(--map-muted)" />
       <AnimatePresence initial={false}>
         {leg.manual && (
           <motion.div key="reset" className="overflow-hidden" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0, transition: revealTransition(reduced, 'exit') }} transition={revealTransition(reduced, 'enter')}>
