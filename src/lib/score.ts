@@ -96,9 +96,15 @@ export interface LegendEntry {
   tone: 'default' | 'muted' | 'penalty';
 }
 
-export function scoreLegend(parts: ScoreParts): LegendEntry[] {
+/** Whether the server ever read the score: before that the split is unknown, not zero */
+export function scoreKnown(score: ScoreStatus): boolean {
+  return score.lastSuccessAt !== null || score.total !== null;
+}
+
+/** `known` false (never read): every value unknown ("?") instead of zeros */
+export function scoreLegend(parts: ScoreParts, known = true): LegendEntry[] {
   return LEGEND_ORDER.map((key) => {
-    const value = parts[key];
+    const value = known ? parts[key] : null;
     const tone = value === null ? 'muted' : key === 'penalty' && value !== 0 ? 'penalty' : 'default';
     return { key, ...SCORE_CATEGORIES[key], value, tone };
   });

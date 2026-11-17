@@ -11,7 +11,7 @@ import { useAppConfig } from './app-config.hook';
 export function useCounterHunt(enabled = true) {
   // Without our own group there is no clubhouse to hunt, no sector and no card: don't poll.
   const { homeTeamApiId } = useAppConfig();
-  const { data, error } = useAuthSWR<CounterHuntView>(enabled && homeTeamApiId !== null ? '/counter-hunt' : null, { refreshInterval: counterHuntRefreshInterval });
+  const { data, error, mutate } = useAuthSWR<CounterHuntView>(enabled && homeTeamApiId !== null ? '/counter-hunt' : null, { refreshInterval: counterHuntRefreshInterval });
   const now = useNow(!!data?.active);
-  return { view: data, state: counterHuntState(data, now), now, isError: !!error };
+  return { view: data, state: counterHuntState(data, now), now, isError: !!error, retry: () => mutate() };
 }

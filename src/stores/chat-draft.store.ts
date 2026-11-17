@@ -19,8 +19,24 @@ interface ChatDraftState {
   setText: (itemId: number, text: string) => void;
   setImage: (itemId: number, image: ChatDraftImage | null) => void;
   clear: (itemId: number) => void;
-  /** Put a question that couldn't be sent back, unless something new was typed meanwhile */
-  restore: (itemId: number, draft: ChatDraft) => void;
+  /** Put a question that couldn't be sent back; when something new was typed meanwhile, the question goes above it */
+  restore: (itemId: number, draft: ChatDraft) => RestoreResult;
+}
+
+/** How `restore` put a failed question back */
+export interface RestoreResult {
+  /** Something new was typed meanwhile: the question went above it */
+  merged: boolean;
+  /** The question's image could not go back: a newer image is attached */
+  imageDropped: boolean;
+}
+
+/** The failed question in front of what was typed since (no doubling when it is already there); the newer image wins */
+export function mergeDrafts(failed: ChatDraft, current: ChatDraft | undefined): { draft: ChatDraft } & RestoreResult {
+  if (!current?.text && !current?.image) return { draft: failed, merged: false, imageDropped: false };
+  const text = !current.text ? failed.text : !failed.text || current.text.startsWith(failed.text) ? current.text : `${failed.text}\n${current.text}`;
+  const image = current.image ?? failed.image;
+  return { draft: { text, image }, merged: true, imageDropped: !!failed.image && !!current.image && failed.image.url !== current.image.url };
 }
 
 function withDraft(drafts: Record<number, ChatDraft>, itemId: number, draft: ChatDraft): Record<number, ChatDraft> {
@@ -36,17 +52,16 @@ function withDraft(drafts: Record<number, ChatDraft>, itemId: number, draft: Cha
  */
 const useChatDraftStore = create<ChatDraftState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       drafts: {},
       setText: (itemId, text) => set((state) => ({ drafts: withDraft(state.drafts, itemId, { ...state.drafts[itemId], text }) })),
       setImage: (itemId, image) => set((state) => ({ drafts: withDraft(state.drafts, itemId, { text: state.drafts[itemId]?.text ?? '', image: image ?? undefined }) })),
       clear: (itemId) => set((state) => ({ drafts: withDraft(state.drafts, itemId, { text: '' }) })),
-      restore: (itemId, draft) =>
-        set((state) => {
-          const current = state.drafts[itemId];
-          if (current?.text || current?.image) return state;
-          return { drafts: withDraft(state.drafts, itemId, draft) };
-        }),
+      restore: (itemId, draft) => {
+        const { draft: next, ...result } = mergeDrafts(draft, get().drafts[itemId]);
+        set((state) => ({ drafts: withDraft(state.drafts, itemId, next) }));
+        return result;
+      },
     }),
     {
       name: 'intel-chat-drafts',

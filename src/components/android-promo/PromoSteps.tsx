@@ -1,7 +1,7 @@
 // src/components/android-promo/PromoSteps.tsx
 import { useEffect, useEffectEvent, useRef, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { LinkIcon, TriangleAlertIcon } from 'lucide-react';
+import { DownloadIcon, LinkIcon, TriangleAlertIcon } from 'lucide-react';
 import { CloseButton } from '@/components/ui/close-button';
 import { cookiePath, BADGE_COOKIE_DEPTH } from '@/lib/cookie-shape';
 import { appDidNotOpen } from '@/lib/android-promo';
@@ -29,16 +29,31 @@ export function StepClose({ onClose }: { onClose: () => void }) {
   return <CloseButton onClick={onClose} className="bg-beheer-row-high hover:bg-[color-mix(in_oklab,var(--foreground)_14%,var(--card))]" />;
 }
 
-export function DownloadingStep({ onDone }: { onDone: () => void }) {
-  useEffect(() => {
-    const id = window.setTimeout(onDone, 1200);
-    return () => clearTimeout(id);
-  }, [onDone]);
+/**
+ * After the download tap. The browser gives no reliable "download finished" signal, so no fake progress: say it started,
+ * wait for an explicit Verder, and keep a real download link around for when nothing happened.
+ */
+export function DownloadingStep({ href, onNext }: { href: string; onNext: () => void }) {
   return (
-    <div className="flex items-center gap-3 py-2">
-      <span className="size-[22px] animate-spin rounded-full border-[3px] border-beheer-row-high border-t-primary" />
-      <b>Downloaden…</b>
-    </div>
+    <>
+      <div className="flex items-center gap-3 py-1">
+        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-primary-container text-on-primary-container">
+          <DownloadIcon className="size-5" />
+        </span>
+        <div className="min-w-0">
+          <b className="block text-[17px]">Download gestart</b>
+          <span className="text-[13px] text-muted-foreground">Staat hij klaar in je meldingen of Downloads? Ga dan verder.</span>
+        </div>
+      </div>
+      <div className="mt-3.5 flex flex-col gap-2">
+        <button type="button" onClick={onNext} className="h-12 rounded-xl bg-primary-container font-semibold text-on-primary-container">
+          Verder
+        </button>
+        <a href={href} download className="grid h-10 place-items-center rounded-xl text-[13.5px] font-semibold text-muted-foreground">
+          Niets gebeurd? Opnieuw downloaden
+        </a>
+      </div>
+    </>
   );
 }
 
@@ -70,7 +85,7 @@ export function InstallStep({ onPair, onRedownload }: { onPair: () => void; onRe
 /**
  * Shows a pairing attempt (see usePairLaunch in ./pair-launch) and waits for a new app device on the account. Still visible 2.5 s
  * after navigating = the app didn't open. Not the tracker's `connected`: another client (Traccar Client) may
- * already be connected, which would show "Gekoppeld!" straight away.
+ * already be connected, which would show "App gekoppeld" straight away.
  */
 export function PairStep({ phase, startedAt, onPhase, onRetry, deviceCount, refresh, onPaired, onBack }: {
   phase: PairPhase;
@@ -181,8 +196,12 @@ export function DoneStep({ onClose }: { onClose: () => void }) {
           <path d={CHECK} fill="#22c55e" />
           <path d="M22.3 36.7L31.7 46.1L49.7 27.4" fill="none" stroke="#fff" strokeWidth="6.5" strokeLinecap="round" strokeLinejoin="round" />
         </motion.svg>
-        <b className="mt-2 text-lg">Gekoppeld!</b>
-        <span className="text-[13px] text-muted-foreground">Je tracker staat nu in de app · live</span>
+        <b className="mt-2 text-lg">App gekoppeld</b>
+        {/* Pairing only adds the device; the tracker is live once the app has its permissions and tracking is started */}
+        <span className="text-[13px] text-muted-foreground">
+          Rond in de app <b className="text-foreground">Bijna klaar</b> af (locatie: <b className="text-foreground">Altijd toestaan</b>) en tik op{' '}
+          <b className="text-foreground">Start tracking</b>. Dan sta je live op de kaart.
+        </span>
       </div>
       <button type="button" onClick={onClose} className="mt-3.5 h-12 w-full rounded-xl bg-primary-container font-semibold text-on-primary-container">
         Klaar

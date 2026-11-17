@@ -34,7 +34,7 @@ export default function SidebarSections({ mapRef, only }: { mapRef: RefObject<Ma
   const { predictions } = usePredictions();
   const { enabled: predictionEnabled } = usePredictionSetting();
   const progress = board ? hintProgress(board) : undefined;
-  const { score } = useScore();
+  const { score, isError: scoreError, retry: retryScore } = useScore();
 
   return (
     <>
@@ -48,9 +48,9 @@ export default function SidebarSections({ mapRef, only }: { mapRef: RefObject<Ma
           <HintMiniGrid mapRef={mapRef} />
         </SidebarSection>
       )}
-      {/* Unfolds once the jotihunt.nl score is configured (like the tegenhunt section below) */}
+      {/* Unfolds once the jotihunt.nl score is configured (like the tegenhunt section below), or with a retry when the first load failed */}
       <AnimatePresence initial={false}>
-        {show('points') && score?.configured && (
+        {show('points') && (score?.configured || (!score && scoreError)) && (
           <motion.div
             key="points"
             style={{ marginTop: -SECTION_GAP_PX }}
@@ -61,7 +61,7 @@ export default function SidebarSections({ mapRef, only }: { mapRef: RefObject<Ma
           >
             <div style={{ paddingTop: SECTION_GAP_PX }}>
               <ErrorBoundary name="Punten">
-                <PointsSection score={score} />
+                <PointsSection score={score} onRetry={retryScore} />
               </ErrorBoundary>
             </div>
           </motion.div>

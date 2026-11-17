@@ -164,7 +164,15 @@ export default function UsersPane() {
           ))
         }
       >
-        <Pill morphKey={linkDone ? 'done' : linkBusy ? 'busy' : 'idle'} variant={linkDone ? 'success' : 'secondary'} disabled={linkBusy} onClick={() => void recoveryLink(user)}>
+        {/* One herstel-link at a time: every row's pill reads as unavailable while one is made (aria-disabled keeps the focus) */}
+        <Pill
+          morphKey={linkDone ? 'done' : linkBusy ? 'busy' : 'idle'}
+          variant={linkDone ? 'success' : 'secondary'}
+          aria-disabled={linkBusyId !== null || undefined}
+          aria-busy={linkBusy || undefined}
+          className="aria-disabled:cursor-default aria-disabled:opacity-50"
+          onClick={() => void recoveryLink(user)}
+        >
           {linkDone ? (
             <>
               <CheckIcon />

@@ -82,9 +82,9 @@ export function HuntEventLine({ event }: { event: HuntSyncEvent }) {
 
 /**
  * A log line; flies the map to the hunt once its location is known. Without a location (the server places a hunt
- * from our trackers a few minutes after it came in) the row is inert: no hover, default cursor, not focusable. It
- * stays the same element either way, so when the location arrives nothing moves: the hover turns on and the row
- * flashes once.
+ * from our trackers a few minutes after it came in) the row is inert (no hover, default cursor, not focusable) and says
+ * "Locatie volgt…". It stays the same element either way: when the location arrives that line folds away, the hover
+ * turns on and the row flashes once.
  */
 const LogRow = memo(function LogRow({ event, onSelect }: { event: HuntSyncEvent; onSelect: (event: HuntSyncEvent) => void }) {
   const { area, text } = huntEventParts(event);
@@ -101,7 +101,8 @@ const LogRow = memo(function LogRow({ event, onSelect }: { event: HuntSyncEvent;
     <button
       type="button"
       disabled={!located}
-      className="relative isolate grid w-full grid-cols-[36px_1fr] items-center gap-2 rounded-lg p-1 text-left text-[12.5px] transition-colors duration-200 enabled:cursor-pointer enabled:hover:bg-beheer-row focus-visible:bg-beheer-row focus-visible:outline-none disabled:cursor-default"
+      // Touch: at least 44px tall
+      className="relative isolate grid w-full grid-cols-[36px_1fr] items-center gap-x-2 rounded-lg p-1 text-left text-[12.5px] pointer-coarse:min-h-11 transition-colors duration-200 enabled:cursor-pointer enabled:hover:bg-beheer-row focus-visible:bg-beheer-row focus-visible:outline-none disabled:cursor-default"
       onClick={() => onSelect(event)}
       aria-label={located ? `Toon ${area} ${text} op de kaart` : undefined}
     >
@@ -116,6 +117,21 @@ const LogRow = memo(function LogRow({ event, onSelect }: { event: HuntSyncEvent;
         />
       )}
       <HuntEventLine event={event} />
+      {/* Why the row can't be tapped yet; folds away when the location arrives */}
+      <AnimatePresence initial={false}>
+        {!located && (
+          <motion.span
+            key="pending"
+            className="col-start-2 overflow-hidden text-[11.5px] text-muted-foreground pointer-coarse:text-xs"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={REVEAL_TRANSITION}
+          >
+            Locatie volgt…
+          </motion.span>
+        )}
+      </AnimatePresence>
     </button>
   );
 });

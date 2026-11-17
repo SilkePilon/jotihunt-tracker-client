@@ -43,6 +43,7 @@ export default function BeheerWindow({ mapRef }: BeheerWindowProps) {
   const isMobile = useIsMobile();
   const dialog = useAdminStore((state) => state.dialog);
   const openDialog = useAdminStore((state) => state.openDialog);
+  const guardLeave = useAdminStore((state) => state.guardLeave);
 
   // Keeps the last section while the window closes (the store is already null then)
   const [section, setSection] = useState<AdminDialogId>(dialog ?? 'algemeen');
@@ -67,14 +68,20 @@ export default function BeheerWindow({ mapRef }: BeheerWindowProps) {
   }
 
   function select(id: AdminDialogId) {
-    openDialog(id);
-    setDirection(1);
-    setPhoneView('pane');
+    // Asks first when this switches away from unsaved Algemeen changes
+    guardLeave(() => {
+      openDialog(id);
+      setDirection(1);
+      setPhoneView('pane');
+    });
   }
 
   function back() {
-    setDirection(-1);
-    setPhoneView('list');
+    // Phone: the list unmounts the pane, so unsaved Algemeen changes ask first
+    guardLeave(() => {
+      setDirection(-1);
+      setPhoneView('list');
+    });
   }
 
   const mounted = useHasMounted();

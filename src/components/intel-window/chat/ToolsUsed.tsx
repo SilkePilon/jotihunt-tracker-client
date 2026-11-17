@@ -60,16 +60,20 @@ export default function ToolsUsed({ calls }: { calls: ChatToolCall[] }) {
             <ul className="flex flex-col gap-0.5 pt-1.5">
               {calls.map((call) => {
                 const summary = toolSummary(call);
+                const error = call.state === 'error';
                 return (
-                  <li key={call.id} className="flex min-w-0 items-center gap-2 rounded-xl bg-beheer-row px-2 py-1.5 text-[12px]">
+                  // An error wraps onto more lines (the reason is the point); a result line stays one truncated line
+                  <li key={call.id} className={cn('flex min-w-0 gap-2 rounded-xl bg-beheer-row px-2 py-1.5 text-[12px]', error ? 'items-start' : 'items-center')}>
                     <ToolIcon name={call.name} big />
-                    <span className="shrink-0 font-semibold">{toolDoneLabel(call.name)}</span>
-                    {summary && (
-                      <span className={cn('flex min-w-0 items-center gap-1.5', call.state === 'error' ? 'text-destructive-text' : 'text-muted-foreground')}>
-                        {call.state === 'error' && <span className="size-1.5 shrink-0 rounded-full bg-destructive" aria-hidden />}
-                        <span className="truncate">{summary}</span>
-                      </span>
-                    )}
+                    <span className={cn('flex min-w-0 gap-x-2', error ? 'flex-wrap pt-[3px]' : 'items-center')}>
+                      <span className="shrink-0 font-semibold">{toolDoneLabel(call.name)}</span>
+                      {summary && (
+                        <span className={cn('flex min-w-0 gap-1.5', error ? 'text-destructive-text' : 'items-center text-muted-foreground')}>
+                          {error && <span className="mt-[6px] size-1.5 shrink-0 self-start rounded-full bg-destructive" aria-hidden />}
+                          <span className={error ? 'break-words' : 'truncate'}>{summary}</span>
+                        </span>
+                      )}
+                    </span>
                   </li>
                 );
               })}

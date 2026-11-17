@@ -459,6 +459,12 @@ export const BUSY_MESSAGE = 'Vorige vraag wordt nog afgerond, probeer het zo opn
 /** A question that couldn't be sent (no connection): it goes back into the prompt box */
 export const OFFLINE_SEND_MESSAGE = 'Geen verbinding: je vraag is niet verstuurd en staat weer in het invoerveld.';
 
+/** The notice after an offline send, saying where the question went (see chat-draft.store restore) */
+export function offlineSendMessage({ merged, imageDropped }: { merged: boolean; imageDropped: boolean }): string {
+  const base = merged ? 'Geen verbinding: je vraag is niet verstuurd en staat weer bovenaan in het invoerveld.' : OFFLINE_SEND_MESSAGE;
+  return imageDropped ? `${base} Voeg de afbeelding opnieuw toe als je die nog nodig hebt.` : base;
+}
+
 export const RATE_LIMIT_MESSAGE = 'Even rustig aan: te veel vragen, probeer het zo weer';
 
 /**

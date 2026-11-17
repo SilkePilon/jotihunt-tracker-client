@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { ScoreStatus } from '@/types/Score';
-import { formatDelta, formatPenalty, normalizeScore, SCORE_NOT_CONFIGURED, scoreBarSegments, scoreDelta, scoreFailing, scoreFailingLine, scoreLegend, scoreLine, scoreSummary } from './score';
+import { formatDelta, formatPenalty, normalizeScore, SCORE_NOT_CONFIGURED, scoreBarSegments, scoreDelta, scoreFailing, scoreFailingLine, scoreKnown, scoreLegend, scoreLine, scoreSummary } from './score';
 
 const NOW = Date.parse('2026-10-17T21:45:00Z');
 const ago = (ms: number) => new Date(NOW - ms).toISOString();
@@ -106,6 +106,13 @@ describe('scoreLegend', () => {
     const legend = scoreLegend(score().parts);
     expect(legend.find((entry) => entry.key === 'hints')).toMatchObject({ value: null, tone: 'muted' });
     expect(legend.find((entry) => entry.key === 'penalty')).toMatchObject({ value: 10, tone: 'penalty' });
+  });
+
+  test('never read: every value unknown instead of zero', () => {
+    const never = score({ lastSuccessAt: null, lastError: 'Inloggen mislukt', total: null, parts: SCORE_NOT_CONFIGURED.parts });
+    expect(scoreKnown(never)).toBe(false);
+    expect(scoreLegend(never.parts, scoreKnown(never)).every((entry) => entry.value === null && entry.tone === 'muted')).toBe(true);
+    expect(scoreKnown(score())).toBe(true);
   });
 
   test('no penalty is plain', () => {

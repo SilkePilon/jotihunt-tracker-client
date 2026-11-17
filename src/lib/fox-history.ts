@@ -220,3 +220,27 @@ export function historyStatusLine(
 export function axisTicks(from: number): [string, string, string] {
   return [formatClock(from), formatClock(from + (HISTORY_WINDOW_MIN / 2) * MINUTE_MS), 'nu'];
 }
+
+/** A block as laid out in the plot (px): its horizontal span and its lane's centre line */
+export interface PlacedBlock {
+  id: string;
+  left: number;
+  right: number;
+  centreY: number;
+}
+
+/**
+ * Touch: the block nearest to a tap at (x, y), within `radius` px (22 = a 44 px target around the 12 px blocks); null
+ * when nothing is that close. Inside a block's span counts as 0 horizontally, so a tap between rows picks the nearer one.
+ */
+export function nearestBlock(blocks: readonly PlacedBlock[], x: number, y: number, radius: number): string | null {
+  let best: { id: string; distance: number } | null = null;
+  for (const block of blocks) {
+    const dx = x < block.left ? block.left - x : x > block.right ? x - block.right : 0;
+    const dy = Math.abs(y - block.centreY);
+    if (dx > radius || dy > radius) continue;
+    const distance = Math.hypot(dx, dy);
+    if (!best || distance < best.distance) best = { id: block.id, distance };
+  }
+  return best?.id ?? null;
+}

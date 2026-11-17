@@ -20,13 +20,13 @@ describe('layerGroups', () => {
   test('groups, order and labels', () => {
     expect(labels(layerGroups(flags(), { predictions: true, life360: true }))).toEqual([
       ['Spel', ['Groepen', 'Groepscirkels', 'Tegenhunt-cirkel', 'Markers', 'Voorspelling', 'Bereik vossen']],
-      ['Team & kaart', ["Auto's", 'Life360', '3D-gebouwen']],
+      ['Team & kaart', ['Hunters', 'Life360', '3D-gebouwen']],
     ]);
   });
   test('Voorspelling only with predictions, Life360 only when linked', () => {
     expect(labels(layerGroups(flags(), { predictions: false, life360: false }))).toEqual([
       ['Spel', ['Groepen', 'Groepscirkels', 'Tegenhunt-cirkel', 'Markers', 'Bereik vossen']],
-      ['Team & kaart', ["Auto's", '3D-gebouwen']],
+      ['Team & kaart', ['Hunters', '3D-gebouwen']],
     ]);
   });
   test('markers row carries both parts with their own state and toggle', () => {

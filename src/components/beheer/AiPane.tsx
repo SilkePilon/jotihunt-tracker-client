@@ -134,12 +134,27 @@ export default function AiPane() {
     }
   }
 
+  // Per slot: the model being saved. The picker shows it right away (rolled back on failure); the ref refuses a second
+  // pick for the same slot before the re-render
+  const [pendingModels, setPendingModels] = useState<Partial<Record<AiSlot, string>>>({});
+  const savingSlots = useRef(new Set<AiSlot>());
+
   async function pick(slot: AiSlot, id: string) {
+    if (savingSlots.current.has(slot)) return;
+    savingSlots.current.add(slot);
+    setPendingModels((current) => ({ ...current, [slot]: id }));
     try {
       // Picking the fallback stores nothing, so a later change of the server default carries through
       await admin.saveModels({ [slot]: id === DEFAULTS[slot] ? null : id });
     } catch (error) {
       toast.error(apiErrorMessage(error, 'Model opslaan is mislukt.'));
+    } finally {
+      savingSlots.current.delete(slot);
+      setPendingModels((current) => {
+        const next = { ...current };
+        delete next[slot];
+        return next;
+      });
     }
   }
 
@@ -297,7 +312,8 @@ export default function AiPane() {
                   const picker = (
                     <ModelPicker
                       label={info.title}
-                      value={config.ai[slot].value}
+                      value={pendingModels[slot] ?? config.ai[slot].value}
+                      saving={pendingModels[slot] !== undefined}
                       defaultId={DEFAULTS[slot]}
                       models={list.models}
                       fetchedAt={list.fetchedAt}
