@@ -39,3 +39,13 @@ export function focusDropped(active: FocusedNode | null, body: unknown): boolean
   if (!active || active === body || !active.isConnected) return true;
   return active.closest('[inert]') !== null;
 }
+
+/**
+ * Tab inside a trap (the tour's card and panel): the index to focus among `count` focusable elements, from `current`
+ * (-1: focus is not on one of them) going forward or, with Shift, backward; wraps at both ends. null: nothing to focus.
+ */
+export function trapTabIndex(count: number, current: number, backwards: boolean): number | null {
+  if (count === 0) return null;
+  if (current < 0) return backwards ? count - 1 : 0;
+  return (current + (backwards ? count - 1 : 1)) % count;
+}

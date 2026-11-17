@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { focusDropped, focusRestoreTarget, ownsKey } from './focus';
+import { focusDropped, focusRestoreTarget, ownsKey, trapTabIndex } from './focus';
 
 const node = (isConnected = true) => ({ isConnected });
 const box = (...children: unknown[]) => ({ contains: (other: unknown) => children.includes(other) });
@@ -73,5 +73,23 @@ describe('focusDropped', () => {
 
   test('a live, interactive node: kept', () => {
     expect(focusDropped(el(true, false), body)).toBe(false);
+  });
+});
+
+describe('trapTabIndex', () => {
+  test('nothing focusable: null', () => {
+    expect(trapTabIndex(0, -1, false)).toBeNull();
+  });
+
+  test('from outside: first, or last with Shift', () => {
+    expect(trapTabIndex(3, -1, false)).toBe(0);
+    expect(trapTabIndex(3, -1, true)).toBe(2);
+  });
+
+  test('steps and wraps both ways', () => {
+    expect(trapTabIndex(3, 0, false)).toBe(1);
+    expect(trapTabIndex(3, 2, false)).toBe(0);
+    expect(trapTabIndex(3, 0, true)).toBe(2);
+    expect(trapTabIndex(3, 2, true)).toBe(1);
   });
 });

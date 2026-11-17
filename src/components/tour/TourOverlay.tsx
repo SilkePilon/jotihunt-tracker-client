@@ -1,8 +1,8 @@
-import { RefObject, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { RefObject, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { MapRef } from '@/components/Map';
 import { useIsMobile } from '@/hooks/media.hook';
-import { ownsKey } from '@/lib/focus';
+import { ownsKey, trapTabIndex } from '@/lib/focus';
 import type { MobilePage } from '@/lib/mobile-nav';
 import useMobileNavStore from '@/stores/mobile-nav.store';
 import useSidebarStore from '@/stores/sidebar.store';
@@ -21,6 +21,8 @@ import { useTargetRect } from './useTargetRect';
 const SPOTLIGHT_PADDING = 8;
 /** Keep in sync with the content fade duration in TourCard */
 const FADE_MS = 150;
+/** What Tab can land on in the card and the panel */
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /**
  * Runs the onboarding tour: performs each step's actions, finds its target, dims everything except the target,
@@ -96,6 +98,8 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
   useEffect(() => () => stop(), [stop]);
 
   const cardRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+  const bodyId = useId();
   // Focus the card at the start and on every step, so screen readers read it and the arrow keys work. Not when focus is
   // already in it (a keyboard user on "Volgende" stays there).
   useEffect(() => {
@@ -115,9 +119,21 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
 
   // Keyboard: → next, ← previous, Esc skip; only while focus is on the card or nowhere (<body>). Elsewhere these keys
   // belong to what has focus: a menu, a toggle group, the map, a tour panel.
+  // Tab stays inside the card and the step's panel (the overlay is a modal dialog), while focus is in them or nowhere.
+  const panelRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!active) return;
     function onKey(event: KeyboardEvent) {
+      if (event.key === 'Tab' && !event.altKey && !event.ctrlKey && !event.metaKey) {
+        const surfaces = [panelRef.current, cardRef.current];
+        if (!ownsKey(event, document.body, surfaces)) return;
+        const focusables = surfaces.flatMap((surface) => (surface ? [...surface.querySelectorAll<HTMLElement>(FOCUSABLE)] : [])).filter((el) => el.getClientRects().length > 0);
+        const index = trapTabIndex(focusables.length, focusables.indexOf(document.activeElement as HTMLElement), event.shiftKey);
+        if (index === null) return;
+        event.preventDefault();
+        focusables[index].focus();
+        return;
+      }
       if (event.repeat || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
       if (!ownsKey(event, document.body, [cardRef.current])) return;
       const target = event.target as HTMLElement | null;
@@ -190,8 +206,9 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
   const shownStep = (shownIndex !== null && steps[shownIndex]) || step;
 
   return createPortal(
-    // pointer-events-auto: Radix modals set pointer-events:none on <body> while open
-    <div className="pointer-events-auto fixed inset-0 z-[60]">
+    // pointer-events-auto: Radix modals set pointer-events:none on <body> while open. A modal dialog (card + panel)
+    // named by the card's title and body; Tab stays inside it (onKey above)
+    <div role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={bodyId} className="pointer-events-auto fixed inset-0 z-[60]">
       {/* Click shield: the tour drives the UI, the user only uses the card */}
       <div className="absolute inset-0" />
       <div
@@ -204,6 +221,7 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
         // Desktop: shifted left by half a card (340px + gap), so the card fits beside it
         <div
           key={step.id}
+          ref={panelRef}
           {...tourTarget('tour.panel')}
           className="fixed left-1/2 top-[calc(env(safe-area-inset-top)+12px)] w-[min(400px,calc(100vw-24px))] -translate-x-1/2 overflow-y-auto rounded-xl border bg-background shadow-2xl animate-in fade-in duration-300 max-h-[calc(100dvh-24px-env(safe-area-inset-top))] md:left-[calc(50%-376px)] md:top-1/2 md:-translate-y-1/2 md:translate-x-0 motion-reduce:animate-none"
         >
@@ -213,6 +231,8 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
       <TourCard
         ref={cardRef}
         title={shownStep.title}
+        titleId={titleId}
+        bodyId={bodyId}
         body={shownStep.body}
         contentVisible={shownIndex === stepIndex}
         stepIndex={stepIndex}
