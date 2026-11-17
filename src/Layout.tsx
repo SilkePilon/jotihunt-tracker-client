@@ -31,7 +31,8 @@ import type {OutletContextType} from '@/hooks/outlet.hook.ts';
 import TourOverlay from './components/tour/TourOverlay';
 import {useTourAutoStart} from './components/tour/useTour';
 import {usePromptQueueHold} from './stores/prompt-queue.store';
-import {createFetchErrorToastState, fetchErrorToastText} from '@/lib/fetch-error-toast';
+import {createFetchErrorToastState, ERROR_TOAST_DELAY_MS, fetchErrorToastText} from '@/lib/fetch-error-toast';
+import {isNetworkError} from '@/lib/api-error';
 import {isCriticalFeedKey} from '@/lib/connection';
 import AndroidPromoAutoOpen from './components/android-promo/AndroidPromoAutoOpen';
 
@@ -105,11 +106,24 @@ export default function Layout() {
         }
         // The technical details are for the console (Sentry has its own capture); the user gets short Dutch copy
         console.warn(`[SWR] ${key} failed`, error);
-        // One toast per outage, and not again within a minute when the connection flaps
-        if (!errorToast.error(key)) return;
-        errorToastText.current = fetchErrorToastText(error);
-        showErrorToast(false);
+        // Phones: a lost connection is the stale-data badge's job; a toast there would cover the sheet
+        const quiet = isMobile && isNetworkError(error);
+        if (!quiet) errorToastText.current = fetchErrorToastText(error);
+        // One toast per outage, only once a key failed twice or for 15 s, and not again within a minute when the connection flaps
+        if (errorToast.error(key, undefined, {quiet})) {
+            showErrorToast(false);
+            return;
+        }
+        // A first failure: check again once it has been failing for 15 s (its second failure usually comes sooner)
+        if (!quiet) {
+            window.clearTimeout(dueTimer.current);
+            dueTimer.current = window.setTimeout(() => {
+                if (errorToast.due()) showErrorToast(false);
+            }, ERROR_TOAST_DELAY_MS);
+        }
     }
+    const dueTimer = useRef<number | undefined>(undefined);
+    useEffect(() => () => window.clearTimeout(dueTimer.current), []);
 
     // The toast's copy for this outage, kept for the pending state of "Opnieuw"
     const errorToastText = useRef({title: '', description: ''});
