@@ -202,7 +202,7 @@ export default function BottomSheet({ peek, children, onHeights }: { peek: React
       {...tourTarget('sidebar.root')}
       role="region"
       aria-label="Zijbalk"
-      className="fixed inset-x-0 bottom-0 z-40 flex select-none flex-col rounded-t-3xl bg-beheer-window shadow-[0_-6px_30px_rgb(0_0_0/.25)] [-webkit-touch-callout:none] [&_input]:select-text [&_textarea]:select-text"
+      className="fixed inset-x-0 bottom-0 z-40 flex flex-col rounded-t-3xl bg-beheer-window shadow-[0_-6px_30px_rgb(0_0_0/.25)] [-webkit-touch-callout:none]"
       style={{ height: heights.full, y, marginBottom: keyboard, paddingBottom: 'env(safe-area-inset-bottom)' }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
@@ -212,20 +212,22 @@ export default function BottomSheet({ peek, children, onHeights }: { peek: React
       {/* Fills the gap below the sheet when it is rubber-banded above full */}
       <div aria-hidden className="pointer-events-none absolute inset-x-0 top-full h-[50vh] bg-beheer-window" />
       <div className="flex shrink-0 flex-col" style={{ height: columnHeight }}>
-        {/* 24px tall in the layout (GRAB); the ::after grows the hit area around the pill to 44px, upwards over the map edge */}
+        {/* 24px tall in the layout (GRAB). Touch: the ::after reaches 8px up over the map edge (not more, so map taps just
+            above the sheet still reach the map) */}
         <button
           type="button"
           aria-label={grabLabel(snap)}
           onClick={() => setSnap(nextSnap(snap))}
-          className="relative flex h-6 shrink-0 cursor-grab touch-none items-center justify-center rounded-t-3xl outline-none after:absolute after:-top-5 after:bottom-0 after:left-1/2 after:w-28 after:-translate-x-1/2 after:content-[''] focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset"
+          className="relative flex h-6 shrink-0 cursor-grab touch-none select-none items-center justify-center rounded-t-3xl outline-none pointer-coarse:after:absolute pointer-coarse:after:-top-2 pointer-coarse:after:bottom-0 pointer-coarse:after:left-1/2 pointer-coarse:after:w-28 pointer-coarse:after:-translate-x-1/2 pointer-coarse:after:content-[''] focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset"
         >
-          <span className="h-[5px] w-9 rounded-full bg-muted-foreground/50" />
+          <span className="h-[5px] w-9 rounded-full bg-muted-foreground/70" />
         </button>
-        <div ref={peekRef} className="shrink-0 touch-none">
+        {/* Dragging the grab/peek must not select text; the body's text stays selectable (copy a coordinate, a code) */}
+        <div ref={peekRef} className="shrink-0 touch-none select-none [&_input]:select-text [&_textarea]:select-text">
           {peek}
         </div>
         {/* Hidden behind the map edge while peeking: inert keeps Tab and screen readers out of what can't be seen */}
-        <div ref={bodyRef} data-sheet-body inert={snap === 'peek'} className="min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div ref={bodyRef} data-sheet-body inert={snap === 'peek'} className="min-h-0 flex-1 select-text overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {children}
         </div>
       </div>
