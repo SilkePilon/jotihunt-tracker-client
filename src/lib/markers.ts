@@ -78,6 +78,12 @@ export function latestAreaMarker(markers: readonly Marker[] | undefined, area: s
   return latest;
 }
 
+/**
+ * Error toasts of the Hunt/Spot dialog and the hint form stay longer than sonner's default 4 s: the reason (the server's,
+ * e.g. too many markers in a row, or what is wrong with the coordinates) needs reading
+ */
+export const ERROR_TOAST_MS = 8000;
+
 /** The button to {@link latestAreaMarker}: named after what it lands on, so it doesn't promise a hint and open a hunt. */
 export function latestMarkerLabel(marker: Pick<Marker, 'type'>): string {
   return marker.type === MarkerType.Hunt ? 'Naar laatste hunt' : 'Naar laatste hint';

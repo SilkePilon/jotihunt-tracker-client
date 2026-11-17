@@ -31,6 +31,7 @@ import {formatClock} from '@/lib/format';
 import {SOFT_PRIMARY_BUTTON} from '@/lib/tonal-button';
 import {fieldsResolver, nonEmptyString, oneOf, stringOfLength} from '@/lib/form-resolver';
 import {COARSE_HIT_AREA} from '@/lib/hit-area';
+import {ERROR_TOAST_MS} from '@/lib/markers';
 import {type GuessStatus, guessStatus, hasWildcard, parseGuess} from '@/lib/hint-guess';
 import useHintGuessStore from '@/stores/hint-guess.store';
 import useSidebarStore from '@/stores/sidebar.store';
@@ -200,13 +201,13 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
         if (!isPlausibleRD(x, y)) {
             form.setError('x', {message: 'Ongeldige coördinaten'});
             form.setError('y', {message: 'Ongeldige coördinaten'});
-            toast.error('Ongeldige coördinaten', {description: "Deze coördinaten zijn ongeldig. Controleer of de ingevoerde waarden correct zijn."});
+            toast.error('Ongeldige coördinaten', {description: "Deze coördinaten zijn ongeldig. Controleer of de ingevoerde waarden correct zijn.", duration: ERROR_TOAST_MS});
             return;
         }
         const converted = fromRD(x, y);
         if (!isInNetherlands(converted[0], converted[1])) {
             form.setError('y', {message: 'Dit coördinaat ligt buiten Nederland'});
-            toast.error('Coördinaat buiten Nederland', {description: 'Controleer de X- en Y-waarden; een hint ligt altijd in Nederland.'});
+            toast.error('Coördinaat buiten Nederland', {description: 'Controleer de X- en Y-waarden; een hint ligt altijd in Nederland.', duration: ERROR_TOAST_MS});
             return;
         }
 
@@ -239,7 +240,8 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
             return;
         } else if (error) {
             toast.error('Hint registreren is mislukt', {
-                description: apiErrorMessage(error, 'Probeer het opnieuw.')
+                description: apiErrorMessage(error, 'Probeer het opnieuw.'),
+                duration: ERROR_TOAST_MS,
             });
             return;
         }
@@ -317,7 +319,7 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
         setPending({...lost, outcome});
         setSubmitError(lostResponseMessage(outcome));
         // Same answer as before: the line doesn't change, so say it once more
-        if (outcome === 'unknown') toast.error('Nog steeds geen antwoord', {description: 'Controleer je verbinding en probeer het zo nog eens.'});
+        if (outcome === 'unknown') toast.error('Nog steeds geen antwoord', {description: 'Controleer je verbinding en probeer het zo nog eens.', duration: ERROR_TOAST_MS});
     }
 
     const submitting = form.formState.isSubmitting;

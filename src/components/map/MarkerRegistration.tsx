@@ -21,7 +21,7 @@ import InlineError from '../InlineError';
 import Reveal from '../motion/Reveal';
 import { popupActionClass } from './popup/PopupActions';
 import BusyIcon from '../motion/BusyIcon';
-import { huntDays, markerMissingPick, markerNoun } from '@/lib/markers';
+import { ERROR_TOAST_MS, huntDays, markerMissingPick, markerNoun } from '@/lib/markers';
 import useMarkerDraftStore, { draftElsewhere, draftKey, keyOfDraft, sameMarkerValues, type MarkerDraft, type MarkerDraftValues } from '@/stores/marker-draft.store';
 import { AnimatePresence, motion } from 'motion/react';
 import { SWAP } from '@/lib/motion';
@@ -55,9 +55,6 @@ const NOTE = 'flex items-start gap-2 rounded-[14px] border border-dashed px-3 py
 const HUNT_ACTION_LABEL = 'Hunt markeren op kaart';
 
 const AREA_VALUES = areaOptions.map((option) => option.value);
-
-/** Error toasts stay longer than the default 4 s: the server's reason (e.g. too many markers in a row) needs reading */
-const ERROR_TOAST_MS = 8000;
 
 const formResolver = fieldsResolver<FormValues>({
   area: oneOf(AREA_VALUES, 'Geen geldig deelgebied.'),
