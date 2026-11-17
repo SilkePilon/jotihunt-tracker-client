@@ -36,8 +36,11 @@ export default function LoadError({ message, onRetry, centered, className }: Loa
   }
 
   return (
-    <div role="alert" className={cn('isolate flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted-foreground', centered && 'flex-col justify-center text-center', className)}>
-      <span className="min-w-0">{message}</span>
+    // Only the message is the status: the retry button (and its spinner swap) isn't re-read with it
+    <div className={cn('isolate flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted-foreground', centered && 'flex-col justify-center text-center', className)}>
+      <span role="status" className="min-w-0">
+        {message}
+      </span>
       <motion.button
         type="button"
         layout
