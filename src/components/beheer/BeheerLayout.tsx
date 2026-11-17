@@ -1,11 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode, type Ref } from 'react';
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { AnimatePresence, motion, useIsPresent, useReducedMotion } from 'motion/react';
 import { ChevronDownIcon, Loader2Icon, TriangleAlertIcon } from 'lucide-react';
 import LoadError from '@/components/LoadError';
 import AutoHeight from '@/components/motion/AutoHeight';
 import Reveal from '@/components/motion/Reveal';
 import { useIsMobile } from '@/hooks/media.hook';
-import { focusDropped, neighbourIndex } from '@/lib/focus';
+import { focusDropped } from '@/lib/focus';
+import { focusCardHeading, focusNeighbourRow } from './row-focus';
 import { PANE_TITLE } from '@/lib/dialog-shell';
 import { SWAP, SWAP_TRANSITION, revealTransition } from '@/lib/motion';
 import { cn } from '@/lib/utils';
@@ -178,10 +179,19 @@ const TONE: Record<RowTone, string> = {
 
 /**
  * The tonal block every row kind sits in: folds in and away (height + opacity). The padding sits inside, so the height
- * animates to zero without a jump. `className` goes on the block (e.g. the new-invite ring).
+ * animates to zero without a jump. `className` goes on the block (e.g. the new-invite ring). A row that goes away
+ * (deleted, revoked) while it holds focus hands it to the next row, else the previous one, else the card heading.
  */
-export function RowFrame({ tone = 'default', className, children, ref, exiting }: { tone?: RowTone; className?: string; children: ReactNode; ref?: Ref<HTMLDivElement>; exiting?: boolean }) {
+export function RowFrame({ tone = 'default', className, children, ref }: { tone?: RowTone; className?: string; children: ReactNode; ref?: RefObject<HTMLDivElement | null> }) {
   const reduced = useReducedMotion() ?? false;
+  const isPresent = useIsPresent();
+  const ownFrame = useRef<HTMLDivElement>(null);
+  const frame = ref ?? ownFrame;
+
+  useLayoutEffect(() => {
+    if (!isPresent && frame.current?.contains(document.activeElement)) focusNeighbourRow(frame.current);
+  }, [isPresent, frame]);
+
   return (
     <motion.div
       // isolate: the pills' 44px touch areas on phones (COARSE_HIT_AREA) stay above the block's background
@@ -191,9 +201,10 @@ export function RowFrame({ tone = 'default', className, children, ref, exiting }
       exit={{ opacity: 0, height: 0, transition: revealTransition(reduced, 'exit') }}
       // Reduced motion: the row takes and gives back its room at once and only fades
       transition={revealTransition(reduced, 'enter')}
-      ref={ref}
+      ref={frame}
+      data-row-frame
       // Skipped when focus moves on from a row that goes away (focusNeighbourRow)
-      data-exiting={exiting || undefined}
+      data-exiting={!isPresent || undefined}
     >
       {children}
     </motion.div>
@@ -262,7 +273,6 @@ interface BeheerExpandableRowProps {
 /** A row that opens on tap (chevron turns); the open part unfolds under the row content and holds action pills. */
 export function BeheerExpandableRow({ id, leading, title, meta, trailing, children, indentClassName, bodyClassName, headerStatic, confirm, className }: BeheerExpandableRowProps) {
   const rows = useContext(RowsContext);
-  const isPresent = useIsPresent();
   const frame = useRef<HTMLDivElement>(null);
   const headerButton = useRef<HTMLButtonElement | null>(null);
   // Set when a question closed while it held focus: the header takes it once it is back (after the question faded out)
@@ -286,11 +296,6 @@ export function BeheerExpandableRow({ id, leading, title, meta, trailing, childr
     if (holdsFocus(frame.current)) button.focus();
   }, []);
 
-  // The row goes away (e.g. deleted) while it holds focus: hand it to the next row, else the previous, else the card heading
-  useLayoutEffect(() => {
-    if (!isPresent && frame.current?.contains(document.activeElement)) focusNeighbourRow(frame.current);
-  }, [isPresent]);
-
   const [ownOpen, setOwnOpen] = useState(false);
   const open = rows ? rows.openId === id : ownOpen;
   const toggle = () => (rows ? rows.setOpenId(open ? null : id) : setOwnOpen(!open));
@@ -303,7 +308,7 @@ export function BeheerExpandableRow({ id, leading, title, meta, trailing, childr
   );
 
   return (
-    <RowFrame ref={frame} exiting={!isPresent} tone={confirm ? 'danger' : open ? 'open' : 'default'} className={className}>
+    <RowFrame ref={frame} tone={confirm ? 'danger' : open ? 'open' : 'default'} className={className}>
       <AutoHeight scene={confirm ? 'confirm' : 'row'}>
         <AnimatePresence mode="wait" initial={false}>
           {confirm ? (
@@ -339,26 +344,6 @@ export function BeheerExpandableRow({ id, leading, title, meta, trailing, childr
 /** Whether the element holds focus, or focus was just dropped (on <body>) by a change inside it */
 function holdsFocus(element: HTMLElement | null): boolean {
   return !!element && (element.contains(document.activeElement) || focusDropped(document.activeElement, document.body));
-}
-
-/** Focuses a card's heading (its toggle when it has one); false when the card is gone. */
-function focusCardHeading(section: Element | null): boolean {
-  const heading = section?.isConnected ? section.querySelector<HTMLElement>('[data-card-heading]') : null;
-  heading?.focus();
-  return !!heading;
-}
-
-/** A row that holds focus goes away: focus the next row's header (or first control), else the previous one's, else the card heading. */
-function focusNeighbourRow(frame: HTMLElement) {
-  const frames = Array.from(frame.parentElement?.children ?? []);
-  const targets = frames.map((row) =>
-    row instanceof HTMLElement && row !== frame && row.dataset.exiting === undefined
-      ? row.querySelector<HTMLElement>('[data-row-header], button:not(:disabled), a[href], input:not(:disabled)')
-      : null,
-  );
-  const index = neighbourIndex(targets.map(Boolean), frames.indexOf(frame));
-  if (index >= 0) targets[index]?.focus();
-  else focusCardHeading(frame.closest('section'));
 }
 
 interface InlineConfirmProps {
