@@ -1,15 +1,15 @@
 import { describe, expect, test } from 'bun:test';
 import { desktopToolbarTop, desktopTopStack, phoneToastOffset, phoneTopStack } from './top-stack';
 
-const NONE = { badge: 0, pill: 0, toolbar: 0 };
+const NONE = { badge: 0, pill: 0, toolbar: 0, error: 0 };
 
 describe('phoneTopStack', () => {
   test('nothing shown: the resting places', () => {
-    expect(phoneTopStack(NONE)).toEqual({ pillTop: 40, toolbarTop: 12, toastTop: 48 });
+    expect(phoneTopStack(NONE)).toEqual({ pillTop: 40, toolbarTop: 12, errorTop: 48, toastTop: 48 });
   });
 
   test('a one-line badge leaves the pill and toasts where they were', () => {
-    expect(phoneTopStack({ ...NONE, badge: 24 })).toEqual({ pillTop: 40, toolbarTop: 40, toastTop: 48 });
+    expect(phoneTopStack({ ...NONE, badge: 24 })).toEqual({ pillTop: 40, toolbarTop: 40, errorTop: 48, toastTop: 48 });
   });
 
   test('a two-line badge pushes the pill and toasts down', () => {
@@ -23,19 +23,26 @@ describe('phoneTopStack', () => {
   });
 
   test('the drawing toolbar sits below badge and pill, toasts below the toolbar', () => {
-    expect(phoneTopStack({ badge: 24, pill: 32, toolbar: 44 })).toEqual({ pillTop: 40, toolbarTop: 80, toastTop: 132 });
-    expect(phoneTopStack({ ...NONE, toolbar: 44 })).toEqual({ pillTop: 40, toolbarTop: 12, toastTop: 64 });
+    expect(phoneTopStack({ ...NONE, badge: 24, pill: 32, toolbar: 44 })).toEqual({ pillTop: 40, toolbarTop: 80, errorTop: 132, toastTop: 132 });
+    expect(phoneTopStack({ ...NONE, toolbar: 44 })).toEqual({ pillTop: 40, toolbarTop: 12, errorTop: 64, toastTop: 64 });
   });
 
   test('never overlaps: every next item starts at least 8px below the previous one', () => {
     for (const badge of [0, 24, 40]) {
       for (const pill of [0, 32]) {
-        const { pillTop, toolbarTop, toastTop } = phoneTopStack({ badge, pill, toolbar: 44 });
+        const { pillTop, toolbarTop, toastTop } = phoneTopStack({ ...NONE, badge, pill, toolbar: 44 });
         if (badge) expect(pillTop).toBeGreaterThanOrEqual(8 + badge + 8);
         if (pill) expect(toolbarTop).toBeGreaterThanOrEqual(pillTop + pill + 8);
         expect(toastTop).toBeGreaterThanOrEqual(toolbarTop + 44 + 8);
       }
     }
+  });
+
+  test('an error card takes the toasts\' place, under everything else; the toasts move below it', () => {
+    expect(phoneTopStack({ ...NONE, error: 90 })).toEqual({ pillTop: 40, toolbarTop: 12, errorTop: 48, toastTop: 146 });
+    const stack = phoneTopStack({ badge: 40, pill: 32, toolbar: 44, error: 90 });
+    expect(stack.errorTop).toBe(stack.toolbarTop + 44 + 8);
+    expect(stack.toastTop).toBe(stack.errorTop + 90 + 8);
   });
 });
 

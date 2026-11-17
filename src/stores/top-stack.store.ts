@@ -9,7 +9,7 @@ interface TopStackState {
 }
 
 const useTopStackStore = create<TopStackState>()((set) => ({
-  heights: { badge: 0, pill: 0, toolbar: 0 },
+  heights: { badge: 0, pill: 0, toolbar: 0, error: 0 },
   setHeight: (item, height) => set((state) => (state.heights[item] === height ? state : { heights: { ...state.heights, [item]: height } })),
 }));
 

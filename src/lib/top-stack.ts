@@ -1,7 +1,8 @@
 /**
  * Everything that stacks at the top centre of the map, laid out from measured heights so nothing overlaps: on phones the
  * offline badge (fixed under the safe area, one or two lines), the happy-hour pill below it, an admin's night-area
- * drawing toolbar below those status messages, and the toasts below all of them (8px gaps). Desktop keeps toasts at
+ * drawing toolbar below those status messages, a crashed dialog's error card (ErrorBoundary's floating fallback) below
+ * that, and the toasts below all of them (8px gaps). Desktop keeps toasts at
  * the bottom right; there the badge, the pill and the drawing toolbar stack below the search / coordinates row.
  */
 
@@ -13,6 +14,8 @@ export interface TopStackHeights {
   pill: number;
   /** The night-area drawing toolbar */
   toolbar: number;
+  /** Phones: a floating ErrorBoundary card (a dialog crashed) */
+  error: number;
 }
 
 export type TopStackItem = keyof TopStackHeights;
@@ -34,18 +37,22 @@ export const DESKTOP_TOOLBAR_MIN_TOP = 56;
 export interface PhoneTopStack {
   pillTop: number;
   toolbarTop: number;
+  errorTop: number;
   toastTop: number;
 }
 
 /** Phones: each item's top in px below the top safe area. */
-export function phoneTopStack({ badge, pill, toolbar }: TopStackHeights): PhoneTopStack {
+export function phoneTopStack({ badge, pill, toolbar, error }: TopStackHeights): PhoneTopStack {
   // The first free row below what is shown so far
   let next = badge ? BADGE_TOP + badge + GAP : 0;
   const pillTop = Math.max(PILL_MIN_TOP, next);
   if (pill) next = pillTop + pill + GAP;
   const toolbarTop = Math.max(TOOLBAR_MIN_TOP, next);
   if (toolbar) next = toolbarTop + toolbar + GAP;
-  return { pillTop, toolbarTop, toastTop: Math.max(TOAST_MIN_TOP, next) };
+  // Where the toasts would start: the error card takes that place, and the toasts move below it
+  const errorTop = Math.max(TOAST_MIN_TOP, next);
+  if (error) next = errorTop + error + GAP;
+  return { pillTop, toolbarTop, errorTop, toastTop: Math.max(TOAST_MIN_TOP, next) };
 }
 
 export interface DesktopTopStack {
