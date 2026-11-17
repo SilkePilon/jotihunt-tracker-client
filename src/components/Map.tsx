@@ -41,6 +41,8 @@ import {useIsMobile} from '@/hooks/media.hook';
 import PickedLocationPopup from './map/PickedLocationPopup';
 import OrbitControls from './map/OrbitControls';
 import MapLayersControl from './map/MapLayersControl';
+import {MapRotationTracker, ResetNorthControl} from './map/ResetNorth';
+import {keepFocusAfterReset, resetNorth} from '@/lib/reset-north';
 import {ORBIT_MAX_PITCH} from '@/lib/orbit';
 import {FullscreenControl} from "react-map-gl/maplibre";
 import '@mapbox-controls/ruler/src/index.css';
@@ -95,6 +97,12 @@ export interface MapRef {
 
     /** The current zoom level; null while the map isn't created yet. */
     getZoom(): number | null;
+
+    /**
+     * Back to north-up and flat (the phone dock's reset tile). `from`: the pressed button; when it had keyboard focus the
+     * map takes it, as the tile folds away.
+     */
+    resetNorth(from?: HTMLElement): void;
 }
 
 interface MapProps {
@@ -172,6 +180,12 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
         },
         getCenter: () => mapRef.current?.getCenter() ?? null,
         getZoom: () => mapRef.current?.getZoom() ?? null,
+        resetNorth: (from?: HTMLElement) => {
+            const map = mapRef.current?.getMap();
+            if (!map) return;
+            if (from) keepFocusAfterReset(from, map);
+            resetNorth(map);
+        },
     }));
 
     // Store for all layers
@@ -320,6 +334,8 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
                         <FullscreenControl position="bottom-right"/>
                         <GeolocateControl position="bottom-right"/>
                         <NavigationControl position="bottom-right" showCompass={false}/>
+                        {/* Pops in above zoom while the map is turned or tilted */}
+                        <ResetNorthControl position="bottom-right"/>
                         <MapLayersControl position="bottom-right"/>
                     </>
                 )}
@@ -327,6 +343,8 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
                 <MarkerImages/>
                 {/* Desktop mouse: calm rotate/tilt around the pointer (phones keep MapLibre's touch gestures) */}
                 <OrbitControls enabled={!isMobile && !wall}/>
+                {/* Turned or tilted (touch twist, orbit, 3D tilt): the reset-north tile shows (desktop stack, phone dock) */}
+                {!wall && <MapRotationTracker/>}
                 {popupPosition && !wall && <PickedLocationPopup key={`${popupPosition.lng},${popupPosition.lat}`} lng={popupPosition.lng} lat={popupPosition.lat}
                                                        onClose={() => setPopupPosition(undefined)}/>}
                 <Buildings3D visible={showBuildings3d}/>
