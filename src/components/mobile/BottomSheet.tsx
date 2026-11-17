@@ -1,7 +1,7 @@
 import { type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { animate, motion, useTransform } from 'motion/react';
-import { computeSnapHeights, nextSnap, rubberBand, settleSnap, type SnapHeights } from '@/lib/sheet-snaps';
+import { computeSnapHeights, grabLabel, nextSnap, rubberBand, settleSnap, type SnapHeights } from '@/lib/sheet-snaps';
 import useSidebarStore from '@/stores/sidebar.store';
 import useViewportStore from '@/stores/viewport.store';
 import { tourTarget } from '@/components/tour/targets';
@@ -46,9 +46,7 @@ export default function BottomSheet({ peek, children, onHeights }: { peek: React
   const setSnap = useSidebarStore((s) => s.setSheetSnap);
   const setSheetHeight = useSidebarStore((s) => s.setSheetHeight);
   const setSheetSnapHeights = useSidebarStore((s) => s.setSheetSnapHeights);
-  const { visibleH, safeTop, safeBottom, keyboard } = useViewportStore(
-    useShallow((s) => ({ visibleH: s.visibleH, safeTop: s.safeTop, safeBottom: s.safeBottom, keyboard: s.keyboard })),
-  );
+  const { visibleH, safeTop, safeBottom, keyboard } = useViewportStore(useShallow((s) => ({ visibleH: s.visibleH, safeTop: s.safeTop, safeBottom: s.safeBottom, keyboard: s.keyboard })));
   const peekRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -214,18 +212,20 @@ export default function BottomSheet({ peek, children, onHeights }: { peek: React
       {/* Fills the gap below the sheet when it is rubber-banded above full */}
       <div aria-hidden className="pointer-events-none absolute inset-x-0 top-full h-[50vh] bg-beheer-window" />
       <div className="flex shrink-0 flex-col" style={{ height: columnHeight }}>
+        {/* 24px tall in the layout (GRAB); the ::after grows the hit area around the pill to 44px, upwards over the map edge */}
         <button
           type="button"
-          aria-label="Zijbalk groter of kleiner maken"
+          aria-label={grabLabel(snap)}
           onClick={() => setSnap(nextSnap(snap))}
-          className="flex h-6 shrink-0 cursor-grab touch-none items-center justify-center"
+          className="relative flex h-6 shrink-0 cursor-grab touch-none items-center justify-center rounded-t-3xl outline-none after:absolute after:-top-5 after:bottom-0 after:left-1/2 after:w-28 after:-translate-x-1/2 after:content-[''] focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset"
         >
           <span className="h-[5px] w-9 rounded-full bg-muted-foreground/50" />
         </button>
         <div ref={peekRef} className="shrink-0 touch-none">
           {peek}
         </div>
-        <div ref={bodyRef} data-sheet-body className="min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {/* Hidden behind the map edge while peeking: inert keeps Tab and screen readers out of what can't be seen */}
+        <div ref={bodyRef} data-sheet-body inert={snap === 'peek'} className="min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {children}
         </div>
       </div>
