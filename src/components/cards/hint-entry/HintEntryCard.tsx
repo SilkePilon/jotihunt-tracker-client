@@ -25,7 +25,8 @@ import AreaPicker from './AreaPicker';
 import TimePicker from './TimePicker';
 import DigitBoxes from './DigitBoxes';
 import CoordinateStatus, {type CoordinateState} from './CoordinateStatus';
-import {buildHintHours, groupByDay, isFreeHour} from './hint-times';
+import {buildHintHours, groupByDay, isFreeHour, isTakenHour} from './hint-times';
+import {formatClock} from '@/lib/format';
 import {SOFT_PRIMARY_BUTTON} from '@/lib/tonal-button';
 import {fieldsResolver, nonEmptyString, oneOf, stringOfLength} from '@/lib/form-resolver';
 import {COARSE_HIT_AREA} from '@/lib/hit-area';
@@ -90,6 +91,8 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
     // The chosen hour is rechecked: a teammate can register it while this form is open.
     const canSubmit = !!selectedArea && !!timeValue && complete && !wildcard && !outsideNetherlands
         && isFreeHour(hours, timeValue);
+    // Said in words: the taken tile's title tooltip and the red trigger edge alone aren't seen on a phone
+    const hourTaken = isTakenHour(hours, timeValue);
     const coordinateState: CoordinateState = outsideNetherlands ? 'outside' : typedLocation ? 'inside' : 'idle';
     const guess = wildcard && complete ? parseGuess(xValue, yValue) : null;
     // The typed guess, when it should be on the map ('' otherwise)
@@ -293,6 +296,13 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
                         )}
                     />
                 </div>
+                <Reveal gap={4}>
+                    {hourTaken && (
+                        <InlineError role="alert">
+                            {formatClock(timeValue)} is net door iemand anders geregistreerd. Kies een ander uur.
+                        </InlineError>
+                    )}
+                </Reveal>
                 {/* Tapping a box brings a guess that was taken off the map back */}
                 <div className="contents" onFocus={showCardGuess} onPointerDown={showCardGuess}>
                     {coordinateField('x', 'X', () => document.getElementById(`${fieldId}-y`)?.focus())}

@@ -82,3 +82,8 @@ export function shortLabel(iso: string): string {
 export function isFreeHour(hours: HintHour[] | null, value: string): boolean {
   return !!hours && hours.some((hour) => hour.value === value && !hour.taken);
 }
+
+/** Whether the chosen hour is in the list but taken: a teammate registered a hint for it while this form was open. */
+export function isTakenHour(hours: HintHour[] | null, value: string): boolean {
+  return !!value && !!hours && hours.some((hour) => hour.value === value && hour.taken);
+}

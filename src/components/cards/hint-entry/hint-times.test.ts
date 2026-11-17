@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { buildHintHours as buildOrNull, dayKey, defaultDay, groupByDay, isFreeHour, shortLabel } from './hint-times';
+import { buildHintHours as buildOrNull, dayKey, defaultDay, groupByDay, isFreeHour, isTakenHour, shortLabel } from './hint-times';
 import { MarkerType } from '@/types/MarkerType';
 import type { Marker } from '@/types/Marker';
 
@@ -119,5 +119,12 @@ describe('isFreeHour', () => {
 
   test('false for every hour while the hours are unknown', () => {
     expect(isFreeHour(null, hours[0].value)).toBe(false);
+  });
+  test('isTakenHour: only a listed hour that is taken (not unknown, empty or while loading)', () => {
+    expect(isTakenHour(hours, hours[1].value)).toBe(true);
+    expect(isTakenHour(hours, hours[0].value)).toBe(false);
+    expect(isTakenHour(hours, new Date(2026, 9, 19, 10).toISOString())).toBe(false);
+    expect(isTakenHour(hours, '')).toBe(false);
+    expect(isTakenHour(null, hours[1].value)).toBe(false);
   });
 });
