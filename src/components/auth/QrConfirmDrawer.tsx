@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { toast } from 'sonner';
-import { KeyRoundIcon, XIcon } from 'lucide-react';
+import { KeyRoundIcon, RefreshCwIcon, XIcon } from 'lucide-react';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import ResponsiveDialog from '@/components/ResponsiveDialog';
@@ -88,6 +88,8 @@ export default function QrConfirmDrawer({ code, onClose }: { code: string; onClo
   // Also a ref: Esc, swipe and Back read it synchronously while a passkey prompt or the deny request runs
   const busy = useRef(false);
   const [adding, setAdding] = useState(false);
+  // "Opnieuw proberen" after no answer: scanning the code again (the server lets the same account re-scan it)
+  const [rescanning, setRescanning] = useState(false);
 
   function close() {
     // While approving or denying, Esc, the backdrop, swiping down and Back leave the drawer open until it settles
@@ -112,6 +114,19 @@ export default function QrConfirmDrawer({ code, onClose }: { code: string; onClo
       cancelled = true;
     };
   }, [code, authHeader]);
+
+  async function rescan() {
+    if (!authHeader || closing.current || rescanning) return;
+    setRescanning(true);
+    try {
+      const scan = await scanQrLogin(code, authHeader);
+      if (!closing.current) setView({ step: 'ready', scan, busy: false, error: null });
+    } catch (failure) {
+      if (!closing.current) setView({ step: 'problem', problem: qrProblem(failure) });
+    } finally {
+      setRescanning(false);
+    }
+  }
 
   async function confirm(scan: QrScan) {
     if (!authHeader || closing.current || busy.current) return;
@@ -246,8 +261,18 @@ export default function QrConfirmDrawer({ code, onClose }: { code: string; onClo
                     <BusyIcon busy={adding} icon={<KeyRoundIcon className="size-5" />} />
                     Passkey toevoegen
                   </Button>
+                ) : view.problem.retry ? (
+                  // No answer: the code may still wait, so trying again leads (back to the confirm view once it answers)
+                  <Button className={cn(PRIMARY, rescanning && 'disabled:opacity-100')} onClick={() => void rescan()} disabled={rescanning} aria-busy={rescanning}>
+                    <BusyIcon busy={rescanning} icon={<RefreshCwIcon className="size-5" />} />
+                    <AnimatePresence mode="popLayout" initial={false}>
+                      <motion.span key={rescanning ? 'busy' : 'idle'} {...SWAP}>
+                        {rescanning ? 'Opnieuw proberen…' : 'Opnieuw proberen'}
+                      </motion.span>
+                    </AnimatePresence>
+                  </Button>
                 ) : null}
-                <Button variant="secondary" className={SECONDARY} onClick={close} disabled={adding}>
+                <Button variant="secondary" className={SECONDARY} onClick={close} disabled={adding || rescanning}>
                   Sluiten
                 </Button>
               </div>
