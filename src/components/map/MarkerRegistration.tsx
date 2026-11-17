@@ -95,9 +95,11 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
     defaultValues: freshValues(),
   });
 
-  /** An empty form at the current (or first hunt) day and time */
+  /** A fresh form at the current (or first hunt) day and time; Deelgebied starts at the last one sent (still changeable) */
   function freshValues(): FormValues {
-    return { area: '', day: getCurrentOrFirstDate(), time: getCurrentOrFirstDate() };
+    const { lastArea } = useMarkerDraftStore.getState();
+    const area = areaOptions.some((option) => option.value === lastArea) ? lastArea : '';
+    return { area, day: getCurrentOrFirstDate(), time: getCurrentOrFirstDate() };
   }
 
   /**
@@ -135,7 +137,10 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
     // An unconfirmed save of this type at this pin comes back as it was left; otherwise a fresh form (reset on open, not
     // on close, so the closing dialog doesn't flash empty fields)
     const draft = useMarkerDraftStore.getState().drafts[draftKey(markerType, lat, lng)];
-    form.reset(draft ? { area: draft.area, day: draft.day, time: draft.time } : freshValues());
+    const values = draft ? { area: draft.area, day: draft.day, time: draft.time } : freshValues();
+    form.reset(values);
+    // reset() doesn't recompute isValid for a filled form: check the (prefilled) area so Registreren is live right away
+    if (values.area) void form.trigger('area');
     setTarget({ lat, lng });
     setMarkerType(markerType);
     setDialogOpen(true);
@@ -222,6 +227,8 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
       },
     };
 
+    // The next Hunt/Spot (often the same team) starts at this area
+    useMarkerDraftStore.getState().rememberArea(data.area);
     const error = await createMarker(marker);
     let confirmedLate = false;
     if (error && isNetworkError(error)) {

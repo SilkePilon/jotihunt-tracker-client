@@ -16,7 +16,7 @@ const key = draftKey(MarkerType.Hunt, 52.1, 5.9);
 const store = () => useMarkerDraftStore.getState();
 
 describe('marker draft store', () => {
-  afterEach(() => useMarkerDraftStore.setState({ drafts: {} }));
+  afterEach(() => useMarkerDraftStore.setState({ drafts: {}, lastArea: '' }));
 
   test('keeps an unconfirmed save under its type and pin until cleared', () => {
     store().keep(draft);
@@ -66,5 +66,12 @@ describe('marker draft store', () => {
     expect(sameMarkerValues(values, { ...values, area: 'Bravo' })).toBe(false);
     expect(sameMarkerValues(values, { ...values, time: new Date(time.getTime() + 60_000) })).toBe(false);
     expect(sameMarkerValues(values, { ...values, day: new Date(day.getTime() + 86_400_000) })).toBe(false);
+  });
+
+  test('remembers the last area sent this session (empty before any)', () => {
+    expect(store().lastArea).toBe('');
+    store().rememberArea('bravo');
+    store().rememberArea('delta');
+    expect(store().lastArea).toBe('delta');
   });
 });
