@@ -1,4 +1,4 @@
-import { isActive } from './tracker';
+import { ACTIVE_WINDOW_MS } from './tracker';
 import type { Device } from '@/types/Device';
 import type { Position } from '@/types/Position';
 
@@ -18,11 +18,22 @@ export function distanceMetres(a: LatLng, b: LatLng): number {
   return 2 * EARTH_RADIUS_M * Math.asin(Math.sqrt(h));
 }
 
-/** The own tracker's position, unless missing or stale (same 5 min rule as the hunter markers). Device id 0 is valid. */
-export function ownTrackerPosition(positions: Position[] | undefined, deviceId: number | undefined, now: number): LatLng | undefined {
+/**
+ * How old a tracker fix may be to count as "where I am now" (locate, own-position dot, distance from me). A phone that
+ * walked on for minutes would otherwise send you to where you were; older falls through to the browser's position.
+ */
+export const OWN_POSITION_FRESH_MS = 60_000;
+
+/**
+ * The own tracker's position, unless missing or older than `maxAgeMs` (default: the 5 min rule of the hunter markers,
+ * used for greying them). Device id 0 is valid.
+ */
+export function ownTrackerPosition(positions: Position[] | undefined, deviceId: number | undefined, now: number, maxAgeMs = ACTIVE_WINDOW_MS): LatLng | undefined {
   if (deviceId === undefined) return undefined;
   const own = positions?.find((candidate) => candidate.deviceId === deviceId);
-  if (!own || !isActive(own.fixTime, now)) return undefined;
+  if (!own?.fixTime) return undefined;
+  const time = new Date(own.fixTime).getTime();
+  if (!Number.isFinite(time) || now - time > maxAgeMs) return undefined;
   return { lat: own.latitude, lng: own.longitude };
 }
 

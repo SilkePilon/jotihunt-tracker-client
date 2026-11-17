@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { distanceMetres, ownDeviceId, ownTrackerPosition } from './own-position';
+import { OWN_POSITION_FRESH_MS, distanceMetres, ownDeviceId, ownTrackerPosition } from './own-position';
 import type { Device } from '@/types/Device';
 import type { Position } from '@/types/Position';
 
@@ -45,6 +45,18 @@ describe('ownTrackerPosition', () => {
     expect(ownTrackerPosition(undefined, 7, NOW)).toBeUndefined();
     expect(ownTrackerPosition([position(1, '2026-10-17T11:59:00Z')], 7, NOW)).toBeUndefined();
     expect(ownTrackerPosition([position(7, '2026-10-17T11:50:00Z')], 7, NOW)).toBeUndefined();
+  });
+
+  test('maxAgeMs narrows freshness: a 2 min old fix is fine for greying but not for "where I am now"', () => {
+    const positions = [position(7, '2026-10-17T11:58:00Z')];
+    expect(ownTrackerPosition(positions, 7, NOW)).toEqual({ lat: 52.1, lng: 5.8 });
+    expect(ownTrackerPosition(positions, 7, NOW, OWN_POSITION_FRESH_MS)).toBeUndefined();
+    expect(ownTrackerPosition([position(7, '2026-10-17T11:59:30Z')], 7, NOW, OWN_POSITION_FRESH_MS)).toEqual({ lat: 52.1, lng: 5.8 });
+  });
+
+  test('undefined for a missing or unreadable fix time', () => {
+    expect(ownTrackerPosition([position(7, 'not a date')], 7, NOW)).toBeUndefined();
+    expect(ownTrackerPosition([position(7, '')], 7, NOW)).toBeUndefined();
   });
 });
 

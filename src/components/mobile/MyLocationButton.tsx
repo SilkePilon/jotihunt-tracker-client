@@ -8,7 +8,7 @@ import { useTrackerStatus } from '@/hooks/tracker.hook';
 import { LOCATE_ZOOM, locateMe } from '@/lib/locate';
 import { MAP_TILE, MAP_LOCATION_COLOR } from '@/lib/map-chrome';
 import { POP, SWAP_TRANSITION } from '@/lib/motion';
-import { ownDeviceId, ownTrackerPosition } from '@/lib/own-position';
+import { OWN_POSITION_FRESH_MS, ownDeviceId, ownTrackerPosition } from '@/lib/own-position';
 import { cn } from '@/lib/utils';
 import useBrowserLocationStore from '@/stores/browser-location.store';
 import useHuntFocusStore from '@/stores/hunt-focus.store';
@@ -31,7 +31,7 @@ export default function MyLocationButton({ mapRef }: { mapRef: RefObject<MapRef 
     if (busy) return;
     setBusy(true);
     try {
-      const tracker = ownTrackerPosition(positions, ownDeviceId(devices, status?.configured ? status.uniqueId : undefined), Date.now());
+      const tracker = ownTrackerPosition(positions, ownDeviceId(devices, status?.configured ? status.uniqueId : undefined), Date.now(), OWN_POSITION_FRESH_MS);
       const { lat, lng } = await locateMe(tracker);
       // Found by the browser (no live own tracker): a dot stays there and follows you (BrowserLocationDot)
       if (!tracker) useBrowserLocationStore.getState().start({ lat, lng });

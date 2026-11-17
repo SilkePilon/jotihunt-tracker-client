@@ -6,7 +6,7 @@ import { AGE_CLOCK_TICK_MS, useNow } from '@/hooks/now.hook';
 import { useTrackerStatus } from '@/hooks/tracker.hook';
 import { MAP_LOCATION_COLOR } from '@/lib/map-chrome';
 import { POP } from '@/lib/motion';
-import { ownDeviceId, ownTrackerPosition } from '@/lib/own-position';
+import { OWN_POSITION_FRESH_MS, ownDeviceId, ownTrackerPosition } from '@/lib/own-position';
 import useBrowserLocationStore from '@/stores/browser-location.store';
 
 /** The dot itself: pops in, and pops out before its Marker goes (a Marker has no exit phase of its own). */
@@ -41,7 +41,7 @@ export default function BrowserLocationDot() {
   const { status } = useTrackerStatus();
   const { positions, devices } = useDevices();
   const now = useNow(active, AGE_CLOCK_TICK_MS);
-  const trackerLive = !!ownTrackerPosition(positions, ownDeviceId(devices, status?.configured ? status.uniqueId : undefined), now);
+  const trackerLive = !!ownTrackerPosition(positions, ownDeviceId(devices, status?.configured ? status.uniqueId : undefined), now, OWN_POSITION_FRESH_MS);
   const watching = active && !trackerLive;
 
   useEffect(() => {
