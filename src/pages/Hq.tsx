@@ -25,6 +25,7 @@ import { isHomeTeam, useTeams } from '@/hooks/teams.hook';
 import { useAppConfig } from '@/hooks/app-config.hook';
 import { useTheme } from '@/hooks/theme.hook';
 import { buildFoxes, eventFromNotification, type HqEvent } from '@/lib/hq-director';
+import { loadState } from '@/lib/load-state';
 import { isUnauthorized } from '@/lib/session';
 import { getColorFromArea } from '@/lib/utils';
 import useHqDirectorStore from '@/stores/hq-director.store';
@@ -70,7 +71,9 @@ function HqScreen({ onUnauthorized }: { onUnauthorized: () => void }) {
   });
 
   const now = useNow(true);
-  const { areas } = useAreas();
+  const { areas, isError: areasError, retry: retryAreas } = useAreas();
+  // A failed later poll keeps the last areas on screen (the stale badge says so)
+  const areasState = loadState(areas, areasError);
   const { hunts } = useSyncedHunts();
   const { events, isError: eventsError, retry: retryEvents } = useHuntEvents();
   const { predictions } = usePredictions();
@@ -109,7 +112,7 @@ function HqScreen({ onUnauthorized }: { onUnauthorized: () => void }) {
           <HqTopCard now={now} />
         </ErrorBoundary>
         <ErrorBoundary>
-          <FoxBoard foxes={foxes} focusArea={director.focusArea} />
+          <FoxBoard foxes={foxes} focusArea={director.focusArea} state={areasState} onRetry={retryAreas} />
         </ErrorBoundary>
         <ErrorBoundary>
           <HqHunts events={events} isError={eventsError} onRetry={retryEvents} />
