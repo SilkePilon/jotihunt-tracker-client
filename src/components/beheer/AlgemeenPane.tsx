@@ -81,7 +81,7 @@ function HuntableAreasCard() {
           >
             <AnimatePresence mode="popLayout" initial={false}>
               <motion.span key={chip.allowed ? 'check' : 'lock'} className="inline-grid" {...POP}>
-                {chip.allowed ? <CheckIcon className="size-[13px]" strokeWidth={3} /> : <LockIcon className="size-3" strokeWidth={2.6} />}
+                {chip.allowed ? <CheckIcon className="size-3" strokeWidth={3} /> : <LockIcon className="size-3" strokeWidth={2.6} />}
               </motion.span>
             </AnimatePresence>
             <span aria-hidden className={cn('size-2 rounded-full transition-opacity duration-200', !chip.allowed && 'opacity-40')} style={{ background: getColorFromArea(chip.area) }} />
