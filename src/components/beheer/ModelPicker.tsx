@@ -133,7 +133,7 @@ export default function ModelPicker({ value, defaultId, models, fetchedAt, listE
           type="button"
           onClick={() => void refresh()}
           disabled={refreshing}
-          className="mt-2 flex w-full items-center gap-1.5 rounded-[14px] bg-beheer-row px-3 py-2 text-left text-[11.5px] text-muted-foreground transition-colors hover:bg-beheer-row-high hover:text-foreground"
+          className="mt-2 flex w-full items-center gap-1.5 rounded-[14px] bg-beheer-row px-3 py-2 text-left text-[11.5px] text-muted-foreground transition-colors hover:bg-beheer-row-high hover:text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring"
         >
           <RefreshCwIcon className={cn('size-3.5 shrink-0', refreshing && 'animate-spin')} />
           {listError ? 'Lijst niet beschikbaar · opnieuw proberen' : `Lijst van Google${fetchedAt ? ` · ${formatAgo(fetchedAt, now)}` : ''}`}

@@ -46,10 +46,10 @@ export function DownloadingStep({ href, onNext }: { href: string; onNext: () => 
         </div>
       </div>
       <div className="mt-3.5 flex flex-col gap-2">
-        <button type="button" onClick={onNext} className="h-12 rounded-xl bg-primary-container font-semibold text-on-primary-container">
+        <button type="button" onClick={onNext} className="h-12 rounded-xl bg-primary-container font-semibold text-on-primary-container outline-none focus-visible:ring-[3px] focus-visible:ring-ring">
           Verder
         </button>
-        <a href={href} download className="grid h-10 place-items-center rounded-xl text-[13.5px] font-semibold text-muted-foreground">
+        <a href={href} download className="grid h-10 place-items-center rounded-xl text-[13.5px] font-semibold text-muted-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring">
           Niets gebeurd? Opnieuw downloaden
         </a>
       </div>
@@ -71,10 +71,10 @@ export function InstallStep({ onPair, onRedownload }: { onPair: () => void; onRe
         </div>
       </div>
       <div className="mt-3.5 flex flex-col gap-2">
-        <button type="button" onClick={onPair} className="flex h-12 items-center justify-center gap-2 rounded-xl bg-primary-container font-semibold text-on-primary-container">
+        <button type="button" onClick={onPair} className="flex h-12 items-center justify-center gap-2 rounded-xl bg-primary-container font-semibold text-on-primary-container outline-none focus-visible:ring-[3px] focus-visible:ring-ring">
           <LinkIcon className="size-5" /> Geïnstalleerd, koppel nu
         </button>
-        <button type="button" onClick={onRedownload} className="h-10 rounded-xl text-[13.5px] font-semibold text-muted-foreground">
+        <button type="button" onClick={onRedownload} className="h-10 rounded-xl text-[13.5px] font-semibold text-muted-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring">
           Opnieuw downloaden
         </button>
       </div>
@@ -148,9 +148,9 @@ export function PairStep({ phase, startedAt, onPhase, onRetry, deviceCount, refr
             <span className="text-[13px] text-muted-foreground">{phase === 'failed' ? 'Installeer hem eerst.' : 'Controleer je verbinding.'}</span>
             <div className="mt-2 flex gap-2">
               {phase === 'failed' && (
-                <button type="button" onClick={onBack} className="h-11 flex-1 rounded-xl bg-beheer-row-high font-semibold">Terug</button>
+                <button type="button" onClick={onBack} className="h-11 flex-1 rounded-xl bg-beheer-row-high font-semibold outline-none focus-visible:ring-[3px] focus-visible:ring-ring">Terug</button>
               )}
-              <button type="button" onClick={onRetry} className="h-11 flex-1 rounded-xl bg-primary-container font-semibold text-on-primary-container">Opnieuw proberen</button>
+              <button type="button" onClick={onRetry} className="h-11 flex-1 rounded-xl bg-primary-container font-semibold text-on-primary-container outline-none focus-visible:ring-[3px] focus-visible:ring-ring">Opnieuw proberen</button>
             </div>
           </div>
         ) : (
@@ -159,7 +159,7 @@ export function PairStep({ phase, startedAt, onPhase, onRetry, deviceCount, refr
             <b>{phase === 'opening' ? 'App openen…' : 'Wachten op de app…'}</b>
             <span className="text-[12.5px] text-muted-foreground">De app opent vanzelf</span>
             {phase === 'waiting' && (
-              <button type="button" onClick={onRetry} className="h-10 rounded-xl px-4 text-[13.5px] font-semibold text-muted-foreground">
+              <button type="button" onClick={onRetry} className="h-10 rounded-xl px-4 text-[13.5px] font-semibold text-muted-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring">
                 Opnieuw proberen
               </button>
             )}
@@ -210,7 +210,7 @@ export function DoneStep({ onClose }: { onClose: () => void }) {
           <b className="text-foreground">Start tracking</b>. Dan sta je live op de kaart.
         </span>
       </div>
-      <button type="button" onClick={onClose} className="mt-3.5 h-12 w-full rounded-xl bg-primary-container font-semibold text-on-primary-container">
+      <button type="button" onClick={onClose} className="mt-3.5 h-12 w-full rounded-xl bg-primary-container font-semibold text-on-primary-container outline-none focus-visible:ring-[3px] focus-visible:ring-ring">
         Klaar
       </button>
     </>
