@@ -26,7 +26,7 @@ export default function FoxStatusBar({ foxes, size, isForbidden }: { foxes: Side
             className={cn(
               'relative flex-1 overflow-hidden rounded-[3px] transition-[background-color,opacity] duration-300 first:rounded-l-md last:rounded-r-md motion-reduce:transition-none',
               GROUP_CLASS[fox.group].bar,
-              forbidden && 'opacity-45',
+              forbidden && 'opacity-60',
             )}
           >
             <AnimatePresence initial={false}>

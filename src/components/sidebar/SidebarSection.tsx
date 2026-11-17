@@ -1,5 +1,7 @@
 import { ReactNode, useContext } from 'react';
 import { ChevronDownIcon } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
+import { SWAP } from '@/lib/motion';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import useSidebarStore, { SidebarSectionId } from '@/stores/sidebar.store';
 import { cn } from '@/lib/utils';
@@ -51,7 +53,14 @@ export default function SidebarSection({ id, title, summary, open: openProp, onO
         <CollapsibleTrigger className="relative -mx-3 flex w-[calc(100%+1.5rem)] cursor-pointer items-center justify-between gap-2 rounded-xl px-3 pt-2 pb-1 text-left outline-none pointer-coarse:min-h-11 focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset after:absolute after:inset-x-0 after:top-full after:h-1 after:content-['']">
           <span className="text-sm font-semibold">{title}</span>
           <span className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
-            {!open && summary && <span className="truncate">{summary}</span>}
+            {/* The summary fades out as the section opens and back in as it closes (and when it first arrives with its poll) */}
+            <AnimatePresence initial={false}>
+              {!open && summary && (
+                <motion.span key="summary" {...SWAP} className="truncate">
+                  {summary}
+                </motion.span>
+              )}
+            </AnimatePresence>
             <ChevronDownIcon className={cn('size-4 shrink-0 transition-transform', open && 'rotate-180')} />
           </span>
         </CollapsibleTrigger>
