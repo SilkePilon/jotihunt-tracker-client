@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import LoadError from '@/components/LoadError';
 import { loadState } from '@/lib/load-state';
 import { SWAP } from '@/lib/motion';
+import { COARSE_HIT_AREA } from '@/lib/hit-area';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { usePredictions } from '@/hooks/predictions.hook';
 import { AGE_CLOCK_TICK_MS, useNow } from '@/hooks/now.hook';
@@ -70,7 +71,8 @@ export default function PredictionList({ mapRef }: { mapRef: RefObject<MapRef | 
           Nog geen voorspellingen.
         </motion.p>
       ) : (
-        <motion.div key="list" {...SWAP} className="flex flex-wrap gap-1.5">
+        // isolate: the chips' 44px touch areas on phones (COARSE_HIT_AREA) stay above the card's background
+        <motion.div key="list" {...SWAP} className="isolate flex flex-wrap gap-1.5">
           {predictions.map((prediction) => {
             const color = getColorFromArea(prediction.area);
             const status = predictionStatusText(prediction);
@@ -92,12 +94,14 @@ export default function PredictionList({ mapRef }: { mapRef: RefObject<MapRef | 
                       if (!wasOpen.current) flyTo(prediction);
                     }}
                     className={cn(
-                      'inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-badge px-2.5 text-xs font-semibold transition-[transform,box-shadow,opacity] active:scale-95',
+                      // Keyboard focus: an outline in --ring, so it shows over the open state's area-coloured ring too
+                      'inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-badge px-2.5 text-xs font-semibold transition-[transform,box-shadow,opacity] outline-none active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+                      COARSE_HIT_AREA,
                       !active && 'bg-muted text-muted-foreground',
                       prediction.stale && 'opacity-60',
                       openArea === prediction.area && 'ring-2 ring-offset-2 ring-offset-background',
                     )}
-                    style={active ? { backgroundColor: color, color: textColorOn(color), ['--tw-ring-color' as string]: color } : { ['--tw-ring-color' as string]: color }}
+                    style={{ ...(active && { backgroundColor: color, color: textColorOn(color) }), ...(openArea === prediction.area && { ['--tw-ring-color' as string]: color }) }}
                   >
                     {prediction.paused && <PauseIcon className="size-3" aria-label="Gepauzeerd" />}
                     {capitalizeFirstLetter(prediction.area)}
