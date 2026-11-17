@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { hintPrimaryAction, holdsUnconfirmedHint, isSameMarker, sameDraft, lostResponseMessage, lostResponseOutcome, markerLostResponseMessage, isKnownOffline, OFFLINE_NOT_SENT_MESSAGE, type UnconfirmedHint } from './hint-submit';
+import { LOST_RESPONSE_SETTLE_MS, checkJustLost, recheckLost, hintPrimaryAction, holdsUnconfirmedHint, isSameMarker, sameDraft, lostResponseMessage, lostResponseOutcome, markerLostResponseMessage, isKnownOffline, OFFLINE_NOT_SENT_MESSAGE, type UnconfirmedHint } from './hint-submit';
 import { MarkerType } from '@/types/MarkerType';
 import type { Marker } from '@/types/Marker';
 
@@ -44,6 +44,24 @@ describe('lostResponseOutcome', () => {
 
   test('no fresh list (still offline): unknown', () => {
     expect(lostResponseOutcome(undefined, sent)).toBe('unknown');
+  });
+
+  test('the check right after the timeout never says absent: the POST may still land', () => {
+    const lostAt = 1_000_000;
+    expect(lostResponseOutcome([], sent, lostAt, lostAt)).toBe('unknown');
+    expect(lostResponseOutcome([], sent, lostAt, lostAt + LOST_RESPONSE_SETTLE_MS - 1)).toBe('unknown');
+    // Found is found, however soon
+    expect(lostResponseOutcome([fromServer()], sent, lostAt, lostAt)).toBe('registered');
+  });
+
+  test('a later check (>= 5 s after the timeout) may say absent', () => {
+    const lostAt = 1_000_000;
+    expect(lostResponseOutcome([], sent, lostAt, lostAt + LOST_RESPONSE_SETTLE_MS)).toBe('absent');
+    expect(lostResponseOutcome(undefined, sent, lostAt, lostAt + 60_000)).toBe('unknown');
+  });
+
+  test('nothing sent (offline at submit) or an old draft without a timeout time: absent as before', () => {
+    expect(lostResponseOutcome([], sent, undefined, 5)).toBe('absent');
   });
 });
 
@@ -127,5 +145,23 @@ describe('offline at submit', () => {
 
   test('the message says nothing went out and the input stays', () => {
     expect(OFFLINE_NOT_SENT_MESSAGE).toBe('Je bent offline — niet verstuurd. Je invoer blijft staan.');
+  });
+});
+
+describe('checkJustLost / recheckLost', () => {
+  test('the first check after the timeout gives registered or unknown, with the time to keep', async () => {
+    expect(await checkJustLost(async () => [], sent, () => 42)).toEqual({ outcome: 'unknown', lostAt: 42 });
+    expect(await checkJustLost(async () => [fromServer()], sent, () => 42)).toEqual({ outcome: 'registered', lostAt: 42 });
+  });
+
+  test('a recheck times its list from before the fetch', async () => {
+    let clock = 1000;
+    // The fetch itself takes 10 s: the list still dates from 1 s after the timeout
+    const slowFetch = async () => {
+      clock += 10_000;
+      return [] as Marker[];
+    };
+    expect(await recheckLost(slowFetch, sent, 0, () => clock)).toBe('unknown');
+    expect(await recheckLost(async () => [], sent, 0, () => 6000)).toBe('absent');
   });
 });

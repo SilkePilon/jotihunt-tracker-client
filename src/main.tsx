@@ -24,12 +24,15 @@ captureLaunchShortcut();
 
 // Service worker registration. A new version waits for the user: an automatic reload mid-hunt
 // would throw away a half-entered hunt photo or hint answer. The HQ wall has no one at it to tap "Herladen" (and nothing
-// to lose): it updates straight away.
+// to lose): it updates by itself, once no event card is on screen (the director store is loaded on the wall anyway).
 const updateSW = registerSW({
     immediate: true,
     onNeedRefresh() {
         if (isHqWall(window.location.pathname)) {
-            void updateSW(true);
+            void Promise.all([import('@/stores/hq-director.store'), import('@/lib/hq-unlock')])
+                .then(([{default: store}, {updateWhenNoEventCard}]) => updateWhenNoEventCard(store, () => void updateSW(true)))
+                // The chunk didn't load (offline, an old deploy's file gone): update straight away
+                .catch(() => void updateSW(true));
             return;
         }
         toast.info('Nieuwe versie beschikbaar', {

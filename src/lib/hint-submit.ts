@@ -26,13 +26,39 @@ export function isSameMarker(candidate: Marker, sent: Marker): boolean {
 }
 
 /**
+ * A list fetched sooner than this after the save timed out can't say 'absent': the POST may still be on its way and land
+ * after the list was read. Only a check started at least this long after the timeout may conclude it isn't there.
+ */
+export const LOST_RESPONSE_SETTLE_MS = 5000;
+
+/**
  * Check a marker whose save got no answer against a freshly fetched marker list.
  * @param fresh The list fetched after the failure; undefined when that fetch failed too
  * @param sent The marker that was sent
+ * @param lostAt When the save gave up (ms); undefined when that isn't known (nothing was sent, or an old draft)
+ * @param checkedAt When the fetch of `fresh` started (ms); before LOST_RESPONSE_SETTLE_MS after `lostAt` a missing
+ *   marker is 'unknown', not 'absent'
  */
-export function lostResponseOutcome(fresh: Marker[] | undefined, sent: Marker): LostResponseOutcome {
+export function lostResponseOutcome(fresh: Marker[] | undefined, sent: Marker, lostAt?: number, checkedAt?: number): LostResponseOutcome {
   if (!fresh) return 'unknown';
-  return fresh.some((marker) => isSameMarker(marker, sent)) ? 'registered' : 'absent';
+  if (fresh.some((marker) => isSameMarker(marker, sent))) return 'registered';
+  if (lostAt !== undefined && checkedAt !== undefined && checkedAt - lostAt < LOST_RESPONSE_SETTLE_MS) return 'unknown';
+  return 'absent';
+}
+
+/**
+ * The check right after a save timed out: fetch a fresh list and classify it, with `lostAt` (now) to keep for later
+ * checks. Never 'absent' (see LOST_RESPONSE_SETTLE_MS).
+ */
+export async function checkJustLost(fetchFresh: () => Promise<Marker[] | undefined>, sent: Marker, now: () => number = Date.now): Promise<{ outcome: LostResponseOutcome; lostAt: number }> {
+  const lostAt = now();
+  return { outcome: lostResponseOutcome(await fetchFresh(), sent, lostAt, lostAt), lostAt };
+}
+
+/** A later check ("Opnieuw controleren"): fetch a fresh list and classify it against when the save timed out. */
+export async function recheckLost(fetchFresh: () => Promise<Marker[] | undefined>, sent: Marker, lostAt: number | undefined, now: () => number = Date.now): Promise<LostResponseOutcome> {
+  const checkedAt = now();
+  return lostResponseOutcome(await fetchFresh(), sent, lostAt, checkedAt);
 }
 
 /** The inline error under Registreren for a hint that got no answer and wasn't confirmed ('registered' shows a toast). */
@@ -80,6 +106,8 @@ export interface UnconfirmedHint {
   sent: Marker;
   values: HintDraftValues;
   outcome: Exclude<LostResponseOutcome, 'registered'>;
+  /** When Registreren gave up waiting (ms): a check sooner than LOST_RESPONSE_SETTLE_MS after it can't say 'absent' */
+  lostAt?: number;
 }
 
 /**

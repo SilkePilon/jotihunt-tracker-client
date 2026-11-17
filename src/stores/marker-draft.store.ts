@@ -20,6 +20,29 @@ export interface MarkerDraft {
   outcome: Exclude<LostResponseOutcome, 'registered'>;
   /** Offline at Registreren: nothing went out (outcome 'absent'); the dialog says so instead of "geen antwoord" */
   notSent?: boolean;
+  /** When the save gave up waiting (ms): a check sooner than LOST_RESPONSE_SETTLE_MS after it can't say 'absent' */
+  lostAt?: number;
+  /** When the draft was kept (ms); `keep` stamps it. Drafts older than DRAFT_MAX_AGE_MS are dropped on load. */
+  savedAt?: number;
+}
+
+/** A kept draft older than this is dropped when the app loads: by then it is about another evening (or edition) */
+export const DRAFT_MAX_AGE_MS = 48 * 60 * 60 * 1000;
+
+/** When a draft was kept: its stamp, else (kept before stamps existed) the time the marker was sent; NaN when unknown */
+function draftAge(draft: MarkerDraft, now: number): number {
+  const at = typeof draft.savedAt === 'number' ? draft.savedAt : new Date(draft.sent?.time ?? NaN).getTime();
+  return now - at;
+}
+
+/** Pure: the kept drafts that are at most DRAFT_MAX_AGE_MS old at `now` (an unreadable age counts as too old). */
+export function freshDrafts(drafts: Record<string, MarkerDraft> | undefined, now: number): Record<string, MarkerDraft> {
+  const fresh: Record<string, MarkerDraft> = {};
+  for (const [key, draft] of Object.entries(drafts ?? {})) {
+    const age = draftAge(draft, now);
+    if (Number.isFinite(age) && age <= DRAFT_MAX_AGE_MS) fresh[key] = draft;
+  }
+  return fresh;
 }
 
 /** The form values a draft keeps */
@@ -54,6 +77,8 @@ interface MarkerDraftState {
   /** Update a kept draft's form values or outcome (no-op without one) */
   update: (key: string, patch: Partial<Omit<MarkerDraft, 'type' | 'sent' | 'notSent'>>) => void;
   clear: (key: string) => void;
+  /** Drop every kept draft (logout, another edition) */
+  clearAll: () => void;
   /** The Deelgebied of the last Hunt/Spot sent this session ('' before any): a fresh dialog starts at it */
   lastArea: string;
   rememberArea: (area: string) => void;
@@ -105,7 +130,7 @@ const useMarkerDraftStore = create<MarkerDraftState>()(persist((set, get) => ({
   rememberArea: (area) => set({ lastArea: area }),
   request: null,
   requestOpen: (type, lat, lng) => set({ request: { type, lat, lng, id: (get().request?.id ?? 0) + 1 } }),
-  keep: (draft) => set({ drafts: { ...get().drafts, [keyOfDraft(draft)]: draft } }),
+  keep: (draft) => set({ drafts: { ...get().drafts, [keyOfDraft(draft)]: draft.savedAt === undefined ? { ...draft, savedAt: Date.now() } : draft } }),
   update: (key, patch) => {
     const draft = get().drafts[key];
     if (draft) set({ drafts: { ...get().drafts, [key]: { ...draft, ...patch } } });
@@ -116,10 +141,13 @@ const useMarkerDraftStore = create<MarkerDraftState>()(persist((set, get) => ({
     delete drafts[key];
     set({ drafts });
   },
+  clearAll: () => set({ drafts: {} }),
 }), {
   name: MARKER_DRAFT_STORAGE_KEY,
   storage: createJSONStorage(() => safeLocalStorage, { reviver: reviveDraftDates }),
   partialize: (state) => ({ drafts: state.drafts }),
+  // Stale drafts (another evening) don't come back
+  merge: (persisted, current) => ({ ...current, drafts: freshDrafts((persisted as Partial<MarkerDraftState> | undefined)?.drafts, Date.now()) }),
 }));
 
 /** An unconfirmed draft of this type kept for another pin (the latest one), for the "nog niet bevestigd" note; else null. */
@@ -164,15 +192,16 @@ export function latestDraft(drafts: Record<string, MarkerDraft>): MarkerDraft | 
 
 /**
  * Check every kept draft against a fresh marker list (back online): the ones that did go through are cleared and
- * returned (for a toast); the rest keep their values with the new outcome ('absent'). Without a list nothing changes. Only checks, never sends anything again.
+ * returned (for a toast); the rest keep their values with the new outcome ('absent', or 'unknown' while a list read
+ * within LOST_RESPONSE_SETTLE_MS of the timeout can't rule out a late save; `checkedAt`: when the list was fetched). Without a list nothing changes. Only checks, never sends anything again.
  */
-export function settleDrafts(fresh: Marker[] | undefined): MarkerDraft[] {
+export function settleDrafts(fresh: Marker[] | undefined, checkedAt = Date.now()): MarkerDraft[] {
   // No list either: nothing learned, every draft stays as it was
   if (!fresh) return [];
   const store = useMarkerDraftStore.getState();
   const confirmed: MarkerDraft[] = [];
   for (const [key, draft] of Object.entries(store.drafts)) {
-    const outcome = lostResponseOutcome(fresh, draft.sent);
+    const outcome = lostResponseOutcome(fresh, draft.sent, draft.lostAt, checkedAt);
     if (outcome === 'registered') {
       store.clear(key);
       confirmed.push(draft);

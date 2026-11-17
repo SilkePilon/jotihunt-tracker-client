@@ -16,7 +16,7 @@ import { useAppConfig } from '@/hooks/app-config.hook';
 import { useEdition } from '@/hooks/edition.hook';
 import {toast} from "sonner";
 import { apiErrorMessage, isNetworkError } from '@/lib/api-error';
-import { isKnownOffline, lostResponseOutcome, markerLostResponseMessage, OFFLINE_NOT_SENT_MESSAGE } from '@/lib/hint-submit';
+import { checkJustLost, isKnownOffline, markerLostResponseMessage, OFFLINE_NOT_SENT_MESSAGE, recheckLost } from '@/lib/hint-submit';
 import InlineError from '../InlineError';
 import Reveal from '../motion/Reveal';
 import { popupActionClass } from './popup/PopupActions';
@@ -213,7 +213,7 @@ export default function MarkerRegistration({ lat, lng, onRegistered, hosted = fa
   async function recheck() {
     if (!pending || key === null || checking || form.formState.isSubmitting) return;
     setChecking(true);
-    const outcome = lostResponseOutcome(await fetchFreshMarkers(), pending.sent);
+    const outcome = await recheckLost(fetchFreshMarkers, pending.sent, pending.lostAt);
     setChecking(false);
     if (outcome === 'registered') {
       useMarkerDraftStore.getState().clear(key);
@@ -283,13 +283,14 @@ export default function MarkerRegistration({ lat, lng, onRegistered, hosted = fa
     let confirmedLate = false;
     if (error && isNetworkError(error)) {
       // No answer (offline, timeout) doesn't mean it failed: the server may have saved it. A fresh list tells (the
-      // button says "Controleren…" meanwhile)
+      // button says "Controleren…" meanwhile). Right after the timeout a missing marker is 'unknown', not 'absent': the
+      // POST may still land, so "Opnieuw controleren" leads instead of a second save
       setChecking(true);
-      const outcome = lostResponseOutcome(await fetchFreshMarkers(), marker);
+      const { outcome, lostAt } = await checkJustLost(fetchFreshMarkers, marker);
       setChecking(false);
       if (outcome !== 'registered') {
         const typed = form.getValues();
-        const draft: MarkerDraft = { type: markerType, area: data.area, day, time, sent: marker, outcome };
+        const draft: MarkerDraft = { type: markerType, area: data.area, day, time, sent: marker, outcome, lostAt };
         useMarkerDraftStore.getState().keep(draft);
         // Values typed while it ran stay in the form and in the kept draft
         useMarkerDraftStore.getState().update(keyOfDraft(draft), { area: typed.area, day: typed.day, time: typed.time });

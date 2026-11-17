@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { followTarget, geolocationGranted, HUNT_HERE_GRACE_MS, huntHereFix, huntHereVisible, locateMe, olderTrackerFixNote } from './locate';
+import { browserDotWatchOptions, followTarget, geolocationGranted, HUNT_HERE_GRACE_MS, huntHereFix, huntHereVisible, locateMe, olderTrackerFixNote } from './locate';
 
 function fakeGeolocation(result: { lat: number; lng: number; accuracy?: number } | { code: number }): Geolocation {
   return {
@@ -101,5 +101,13 @@ describe('olderTrackerFixNote', () => {
     expect(olderTrackerFixNote('browser', undefined, new Date(now - 60_000), now)).toBeNull();
     expect(olderTrackerFixNote('tracker', undefined, undefined, now)).toBeNull();
     expect(olderTrackerFixNote('tracker', undefined, 'nope', now)).toBeNull();
+  });
+});
+
+describe('browserDotWatchOptions', () => {
+  test('high accuracy only while following', () => {
+    expect(browserDotWatchOptions(true).enableHighAccuracy).toBe(true);
+    expect(browserDotWatchOptions(false).enableHighAccuracy).toBe(false);
+    expect(browserDotWatchOptions(false).maximumAge).toBe(10_000);
   });
 });

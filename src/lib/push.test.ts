@@ -1,6 +1,6 @@
 import { expect, spyOn, test } from 'bun:test';
 import { AxiosError, AxiosHeaders } from 'axios';
-import { isIos, needsIosInstall, resyncPush, subscribePush, unsubscribePush, urlBase64ToUint8Array } from './push';
+import { hasPushSubscription, isIos, needsIosInstall, resyncPush, subscribePush, unsubscribePush, urlBase64ToUint8Array } from './push';
 
 const IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15';
 const ANDROID = 'Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 Chrome/140 Mobile Safari/537.36';
@@ -112,12 +112,46 @@ test('resyncPush subscribes again when permission is granted but the subscriptio
     }) as never;
     await resyncPush(fetch);
     expect(calls).toEqual(['GET /push/vapid-key', 'subscribe true', 'POST /push/subscribe {"endpoint":"https://push.example/2"}']);
-    // not granted: nothing happens
+    expect(hasPushSubscription()).toBe(true);
+    // not granted: nothing happens, and no subscription counts
     calls.length = 0;
     g.Notification = { permission: 'default' };
     await resyncPush(fetch);
     expect(calls).toEqual([]);
+    expect(hasPushSubscription()).toBe(false);
   } finally {
+    g.window = original.window;
+    g.Notification = original.Notification;
+    Object.defineProperty(globalThis, 'navigator', { configurable: true, value: original.navigator });
+  }
+});
+
+test('hasPushSubscription: granted but subscribing fails is no subscription; unsubscribe clears it', async () => {
+  const g = globalThis as unknown as Record<string, unknown>;
+  const original = { window: g.window, navigator: g.navigator, Notification: g.Notification };
+  g.window = { PushManager: {}, Notification: {} };
+  g.Notification = { permission: 'granted' };
+  const existing = { endpoint: 'https://push.example/3', toJSON: () => ({}), unsubscribe: async () => true };
+  let current: typeof existing | null = null;
+  const pushManager = {
+    getSubscription: async () => current,
+    subscribe: async () => {
+      throw new Error('push service down');
+    },
+  };
+  Object.defineProperty(globalThis, 'navigator', { configurable: true, value: { serviceWorker: { getRegistration: async () => ({ pushManager }) } } });
+  const warn = spyOn(console, 'warn').mockImplementation(() => {});
+  try {
+    const fetch = (async () => ({ data: { publicKey: 'AQID' } })) as never;
+    await resyncPush(fetch);
+    expect(hasPushSubscription()).toBe(false);
+    current = existing;
+    await resyncPush(fetch);
+    expect(hasPushSubscription()).toBe(true);
+    await unsubscribePush(fetch);
+    expect(hasPushSubscription()).toBe(false);
+  } finally {
+    warn.mockRestore();
     g.window = original.window;
     g.Notification = original.Notification;
     Object.defineProperty(globalThis, 'navigator', { configurable: true, value: original.navigator });

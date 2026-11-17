@@ -5,7 +5,7 @@ import { isUnauthorized } from '@/lib/session';
 import { fetcherWithMethod } from '@/lib/swr';
 import { isRecent, mergeFeed, missedSummary, pickSound, shouldAlert, toastAction, toastDuration, toastKind, type AppNotification } from '@/lib/notifications';
 import { playNotificationSound } from '@/lib/notification-sounds';
-import { currentDevicePush } from '@/lib/push';
+import { hasPushSubscription } from '@/lib/push';
 import { showHighlightToast } from '@/components/notifications/HighlightToast';
 import { useNotificationPrefs } from '@/hooks/notification-prefs.hook';
 import { MOBILE_QUERY } from '@/hooks/media.hook';
@@ -16,7 +16,7 @@ const POLL_MS = 5000;
 /** Re-ask this far back each poll: a notification can be stored just after a poll read the server time. */
 const OVERLAP_MS = 20_000;
 /** Older notifications were already pushed to the phone (e.g. a backgrounded tab resuming): mark them seen without alerting
- * (without push on this device: one "gemist" summary toast instead). */
+ * (without a push subscription on this device: one "gemist" summary toast instead). */
 const MAX_ALERT_AGE_MS = 60_000;
 
 interface FeedOptions {
@@ -78,8 +78,9 @@ export function useNotificationFeed({ respectPreferences = true, toasts = true, 
         const options = latest.current;
         const wanted = fresh.filter((n) => !options.respectPreferences || shouldAlert(n.type, options.disabledTypes));
         const alertable = wanted.filter((n) => isRecent(n, response.serverTime, MAX_ALERT_AGE_MS));
-        // No push here, so nothing reached this device while the tab slept: say what was missed, quietly and once
-        if (options.toasts && currentDevicePush() !== 'on') {
+        // No push subscription here (permission alone isn't one), so nothing reached this device while the tab slept:
+        // say what was missed, quietly and once
+        if (options.toasts && !hasPushSubscription()) {
           const missed = missedSummary(wanted.filter((n) => !alertable.includes(n)), options);
           if (missed) toast.info(missed.title, { id: 'missed-notifications', duration: 15_000, action: missed.action });
         }

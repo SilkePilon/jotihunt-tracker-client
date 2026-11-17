@@ -11,11 +11,13 @@ import { usePopupSelection } from '../layers/map-interactions';
 import { useDevices } from '@/hooks/devices.hook';
 import { AGE_CLOCK_TICK_MS, useNow } from '@/hooks/now.hook';
 import { useTrackerStatus } from '@/hooks/tracker.hook';
+import { browserDotWatchOptions, HUNT_HERE_GRACE_MS } from '@/lib/locate';
 import { MAP_LOCATION_COLOR } from '@/lib/map-chrome';
 import { OWN_ACCURACY_MIN_M, ownAccuracyCircle } from '@/lib/map-layers';
 import { POP } from '@/lib/motion';
 import { OWN_POSITION_FRESH_MS, ownDeviceId, ownTrackerPosition } from '@/lib/own-position';
 import useBrowserLocationStore from '@/stores/browser-location.store';
+import useFollowMeStore from '@/stores/follow-me.store';
 
 /** Opacity of a dot whose last fix is from before the page was hidden, until a fresh one comes in */
 const STALE_DOT_OPACITY = 0.5;
@@ -118,7 +120,8 @@ function usePageVisible(): boolean {
  * Phones: after "Mijn locatie" found the browser's position, a small own-position dot that follows it
  * (watchPosition) until the own tracker is live (its hunter marker shows where we are then). While the page is hidden
  * the watch pauses; the dot stays, faded, until the first fix after coming back. A rough fix (> 30 m) also draws its
- * accuracy circle.
+ * accuracy circle. Battery: the watch only asks for GPS precision while the map follows you; once following has ended
+ * the dot keeps coming for the "Hunt hier" grace time (HUNT_HERE_GRACE_MS) on cheaper fixes, then goes (pops out).
  */
 export default function BrowserLocationDot() {
   const { active, position, accuracy, fresh, setPosition, markStale, stop } = useBrowserLocationStore();
@@ -128,11 +131,19 @@ export default function BrowserLocationDot() {
   const trackerLive = !!ownTrackerPosition(positions, ownDeviceId(devices, status?.configured ? status.uniqueId : undefined), now, OWN_POSITION_FRESH_MS);
   const watching = active && !trackerLive;
   const visible = usePageVisible();
+  const following = useFollowMeStore((state) => state.following);
   const { active: popup, open: openPopup, close: closePopup } = usePopupSelection<{ lng: number; lat: number; accuracy: number | null }>();
 
   useEffect(() => {
     if (active && trackerLive) stop();
   }, [active, trackerLive, stop]);
+
+  // Following ended (button, gesture, idle stop): the dot stays for the grace time, then the watch ends with it
+  useEffect(() => {
+    if (!active || following) return;
+    const timer = setTimeout(stop, HUNT_HERE_GRACE_MS);
+    return () => clearTimeout(timer);
+  }, [active, following, stop]);
 
   // Hidden: no fixes come in, so the dot no longer shows where we are now
   useEffect(() => {
@@ -147,10 +158,10 @@ export default function BrowserLocationDot() {
       (error) => {
         if (error.code === error.PERMISSION_DENIED) stop();
       },
-      { enableHighAccuracy: true, maximumAge: 10_000 },
+      browserDotWatchOptions(following),
     );
     return () => navigator.geolocation.clearWatch(id);
-  }, [watching, visible, setPosition, stop]);
+  }, [watching, visible, following, setPosition, stop]);
 
   // The last circle stays as the data while it fades out (the dot going, or the fix getting accurate)
   const circle = useMemo(() => (watching ? ownAccuracyCircle(position, accuracy) : null), [watching, position, accuracy]);

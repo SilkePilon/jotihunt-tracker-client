@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useEdition } from '@/hooks/edition.hook';
 import { editionReloadWait } from '@/lib/editions';
+import { clearSessionDrafts } from '@/lib/session-drafts';
 import useHiddenAreasStore from '@/stores/hiddenareas.store';
 import usePromptQueueStore from '@/stores/prompt-queue.store';
 
@@ -11,7 +12,8 @@ const EDITION_TOAST_MS = 30_000;
 
 /**
  * Reloads the page when another edition is shown (e.g. an admin switched it) while the app is open: first a toast says
- * so, the reload follows 2 s later, or once the user has closed the form page or dialog they are in.
+ * so, the reload follows 2 s later, or once the user has closed the form page or dialog they are in. Kept drafts
+ * (Hunt/Spot, hint) and the phone page to reopen are dropped first: they belong to the other edition.
  */
 export default function EditionReloader() {
   const { state } = useEdition();
@@ -41,7 +43,11 @@ export default function EditionReloader() {
     });
     const wait = editionReloadWait(changedAt, Date.now(), busy);
     if (wait === null) return;
-    const timer = window.setTimeout(() => window.location.reload(), wait);
+    const timer = window.setTimeout(() => {
+      // Drafts and the reopened phone page belong to the edition that is left
+      clearSessionDrafts();
+      window.location.reload();
+    }, wait);
     return () => window.clearTimeout(timer);
   }, [changedAt, busy]);
 

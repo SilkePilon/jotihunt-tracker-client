@@ -21,7 +21,7 @@ import {useEdition} from '@/hooks/edition.hook';
 import {isInNetherlands} from '@/lib/netherlands';
 import {fromRD, isPlausibleRD} from '@/lib/rd';
 import {apiErrorMessage, isNetworkError} from '@/lib/api-error';
-import {hintPrimaryAction, holdsUnconfirmedHint, isKnownOffline, lostResponseMessage, lostResponseOutcome, OFFLINE_NOT_SENT_MESSAGE, sameDraft, type UnconfirmedHint} from '@/lib/hint-submit';
+import {checkJustLost, hintPrimaryAction, holdsUnconfirmedHint, isKnownOffline, lostResponseMessage, OFFLINE_NOT_SENT_MESSAGE, recheckLost, sameDraft, type UnconfirmedHint} from '@/lib/hint-submit';
 import AreaPicker from './AreaPicker';
 import TimePicker from './TimePicker';
 import DigitBoxes from './DigitBoxes';
@@ -232,12 +232,14 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
         if (error && isNetworkError(error)) {
             // No answer (offline, timeout) doesn't mean it failed: the server may have saved it. A fresh list tells (the
             // button says "Controleren…" meanwhile)
+            // Right after the timeout a missing hint is 'unknown', not 'absent': the POST may still land, so
+            // "Opnieuw controleren" leads instead of a second Registreren
             setChecking(true);
-            const outcome = lostResponseOutcome(await fetchFreshMarkers(), marker);
+            const {outcome, lostAt} = await checkJustLost(fetchFreshMarkers, marker);
             setChecking(false);
             if (outcome !== 'registered') {
                 // The typed hint stays in the form (and the draft); a later poll that finds it still confirms it
-                setPending({sent: marker, values: data, outcome});
+                setPending({sent: marker, values: data, outcome, lostAt});
                 setSubmitError(lostResponseMessage(outcome));
                 return;
             }
@@ -313,7 +315,7 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
         const lost = pendingRef.current;
         if (!lost || checking) return;
         setChecking(true);
-        const outcome = lostResponseOutcome(await fetchFreshMarkers(), lost.sent);
+        const outcome = await recheckLost(fetchFreshMarkers, lost.sent, lost.lostAt);
         setChecking(false);
         if (outcome === 'registered') {
             confirmPending(true);

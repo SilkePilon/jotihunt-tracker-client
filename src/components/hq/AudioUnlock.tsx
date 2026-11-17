@@ -34,23 +34,29 @@ export default function AudioUnlock({ onUnlock }: { onUnlock: () => void }) {
 }
 
 /**
- * After a reload the click from before still counts for the wall (wake lock, cursor), but this browser blocks sound
- * again: a small corner tile instead of the full overlay, so the wall stays readable. Pops in and out.
+ * After a reload (an automatic update, the edition reloader) the click from before still counts for the wall (wake
+ * lock, cursor), but this browser blocks sound again: a banner at the top of the map column instead of the full
+ * overlay, so the wall stays readable but nobody misses that sound is off. Below the tour chip / stale badge row, so it
+ * covers neither. Sized in rem like the rest of the wall; pops in and out.
  */
-export function AudioUnlockTile({ onUnlock }: { onUnlock: () => void }) {
+export function AudioUnlockBanner({ onUnlock }: { onUnlock: () => void }) {
   return (
     <motion.button
       type="button"
       onClick={onUnlock}
       className={cn(
         MAP_TILE,
-        'absolute right-4 top-4 z-20 flex items-center gap-2 rounded-2xl py-2 pl-3 pr-4 outline-none focus-visible:ring-[3px] focus-visible:ring-ring',
+        'absolute left-1/2 top-20 z-20 flex max-w-[calc(100%-2rem)] items-center gap-3 rounded-2xl py-2 pl-2 pr-5 text-lg outline-none focus-visible:ring-[3px] focus-visible:ring-ring',
       )}
+      // Centred through motion's x: motion owns the transform (POP scales it)
+      style={{ x: '-50%' }}
       {...POP}
     >
-      <VolumeXIcon className="size-5 text-primary-text" aria-hidden />
+      <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary-container text-on-primary-container">
+        <VolumeXIcon className="size-6" aria-hidden />
+      </span>
       {/* The visible text is the button's name (no aria-label that says something else) */}
-      <span className="font-semibold">Geluid aanzetten</span>
+      <span className="font-semibold">Geluid staat uit — klik om aan te zetten</span>
     </motion.button>
   );
 }
