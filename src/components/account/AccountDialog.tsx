@@ -24,6 +24,7 @@ import { TRIGGER_OPEN } from '@/lib/menu-styles';
 import { revealTransition, SWAP } from '@/lib/motion';
 import { classifyPasskeyError, PASSKEY_MESSAGES } from '@/lib/passkey';
 import { cn } from '@/lib/utils';
+import { busyProps } from '@/lib/busy';
 import useAccountDialogStore from '@/stores/account-dialog.store';
 
 interface Confirm {
@@ -179,7 +180,7 @@ export default function AccountDialog() {
                     <Row key="add">
                       <ActionRow
                         onClick={() => void handleAddPasskey()}
-                        disabled={adding}
+                        {...busyProps(adding)}
                         // Orange text on the hovered / focused row-high background is too faint (3.96:1) in the light
                         // theme: there it turns the darker on-primary-container brown; dark keeps its orange
                         className="group text-primary-text hover:text-on-primary-container focus-visible:text-on-primary-container dark:hover:text-primary-text dark:focus-visible:text-primary-text"
@@ -506,7 +507,7 @@ function ActionRow({ icon, iconClassName, className, children, ...props }: Compo
       type="button"
       className={cn(
         'flex w-full items-center gap-3 px-3 py-2.5 text-left text-[13.5px] font-semibold transition-colors outline-none',
-        'hover:bg-beheer-row-high focus-visible:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset disabled:pointer-events-none disabled:opacity-60',
+        'hover:bg-beheer-row-high focus-visible:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset disabled:pointer-events-none disabled:opacity-60 aria-disabled:pointer-events-none aria-disabled:opacity-60',
         className,
       )}
       {...props}

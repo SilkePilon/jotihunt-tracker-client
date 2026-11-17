@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import BusyIcon from '@/components/motion/BusyIcon';
 import { DIALOG_ACTION, DIALOG_ACTION_CANCEL } from '@/lib/dialog-shell';
 import { cn } from '@/lib/utils';
+import { BUSY_CLASSES } from '@/lib/busy';
 
 // Option A: same shell as DIALOG_SHELL (28px, window surface), tonal 12px buttons, pop-in with a slight overshoot.
 // Overrides keep the stock variant prefixes, because cn only replaces classes with the same prefix. The buttons are
@@ -21,7 +22,7 @@ const CONTENT =
   'gap-0 rounded-[28px] border-0 bg-beheer-window p-6 shadow-(--shadow-dialog) data-[size=default]:sm:max-w-[400px] data-[state=open]:duration-[320ms] data-[state=open]:ease-[cubic-bezier(0.2,0.9,0.3,1.2)] data-[state=open]:zoom-in-[0.92] data-[state=open]:slide-in-from-bottom-2 data-[state=closed]:duration-150 data-[state=closed]:ease-[cubic-bezier(0.3,0,0.8,0.15)] data-[state=closed]:zoom-out-[0.92] data-[state=closed]:slide-out-to-bottom-2';
 const HEADER = 'place-items-start gap-1.5 text-left';
 /** Looks like disabled (aria-disabled keeps the focus) */
-const BUSY = 'aria-disabled:pointer-events-none aria-disabled:opacity-50';
+const BUSY = BUSY_CLASSES;
 /** Phones: 44px tall touch targets */
 const COARSE = 'pointer-coarse:h-11';
 const DESTRUCTIVE = 'dark:bg-[color-mix(in_oklab,var(--destructive)_75%,black)] dark:hover:bg-[color-mix(in_oklab,var(--destructive)_65%,black)]';

@@ -59,7 +59,7 @@ export default function AssignmentProposalCard({ proposal }: { proposal: Assignm
           </div>
         )}
         <div className="mt-1 flex flex-wrap gap-1.5">
-          <Pill variant={saved ? 'success' : 'primary'} disabled={saving || (readOnly && !saved)} aria-disabled={saved} onClick={save} morphKey={saved ? 'saved' : saving ? 'saving' : 'idle'}>
+          <Pill variant={saved ? 'success' : 'primary'} busy={saving} disabled={readOnly && !saved} aria-disabled={saved} onClick={save} morphKey={saved ? 'saved' : saving ? 'saving' : 'idle'}>
             {saved ? (
               <>
                 Opgeslagen

@@ -3,12 +3,14 @@ import { Loader2Icon, RotateCwIcon, WifiOffIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AUTH_CARD } from '@/components/auth/auth-card';
 import { cn } from '@/lib/utils';
+import { busyProps } from '@/lib/busy';
 
 /** Invite / herstel page when the link couldn't be checked (no answer, server error): not "expired", but try again. */
 export default function UnreachableCard({ onRetry }: { onRetry: () => Promise<unknown> }) {
   const [busy, setBusy] = useState(false);
 
   async function retry() {
+    if (busy) return;
     setBusy(true);
     try {
       await onRetry();
@@ -24,7 +26,7 @@ export default function UnreachableCard({ onRetry }: { onRetry: () => Promise<un
       </div>
       <h2 className="text-lg font-bold tracking-tight">Server niet bereikbaar</h2>
       <p className="text-sm/relaxed text-muted-foreground">Controleer je verbinding en probeer opnieuw. Je link is niet verlopen.</p>
-      <Button variant="outline" className="mt-1 w-full" onClick={() => void retry()} disabled={busy} aria-busy={busy}>
+      <Button variant="outline" className="mt-1 w-full" onClick={() => void retry()} {...busyProps(busy)}>
         {busy ? <Loader2Icon className="animate-spin" /> : <RotateCwIcon />}
         Opnieuw proberen
       </Button>

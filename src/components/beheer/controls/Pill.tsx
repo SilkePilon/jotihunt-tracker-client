@@ -92,7 +92,7 @@ export function Pill({ variant, size, className, children, morphKey, style, busy
 const iconPill = cva(
   [
     COARSE_HIT_AREA,
-    "inline-grid size-[34px] shrink-0 place-items-center rounded-lg outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4",
+    "inline-grid size-[34px] shrink-0 place-items-center rounded-lg outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4",
   ],
   {
     variants: {

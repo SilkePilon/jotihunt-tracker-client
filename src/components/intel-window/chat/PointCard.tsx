@@ -138,7 +138,7 @@ function SaveAnswerButton({ proposal }: { proposal: HintAnswerProposal }) {
 
   return (
     <>
-      <Pill variant={saved ? 'success' : 'primary'} disabled={saving || (readOnly && !saved)} aria-disabled={saved} onClick={click} morphKey={saved ? 'saved' : saving ? 'saving' : 'idle'}>
+      <Pill variant={saved ? 'success' : 'primary'} busy={saving} disabled={readOnly && !saved} aria-disabled={saved} onClick={click} morphKey={saved ? 'saved' : saving ? 'saving' : 'idle'}>
         {saved ? (
           <>
             Opgeslagen
