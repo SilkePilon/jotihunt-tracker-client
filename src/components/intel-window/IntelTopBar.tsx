@@ -33,7 +33,7 @@ export default function IntelTopBar({ unread, detail, onBack }: { unread: Partia
       >
         <ArrowLeftIcon className="size-4" />
       </motion.button>
-      <h2 className="text-[17px] font-bold">Intel</h2>
+      <h2 className="text-lg font-bold">Intel</h2>
       {/* A filter over one timeline (no separate panels): toggle buttons, not a tablist. Looks like beheer/controls/Segmented
           (track, SEGMENT_THUMB, spring); isolate keeps the 44px touch areas above the track */}
       <div role="group" aria-label="Soort" className="isolate flex gap-0.5 rounded-lg bg-beheer-row p-[3px]">

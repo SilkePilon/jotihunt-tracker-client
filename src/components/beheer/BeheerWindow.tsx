@@ -127,7 +127,7 @@ export default function BeheerWindow({ mapRef }: BeheerWindowProps) {
   return (
     <div className="grid min-h-0 flex-1 grid-cols-[220px_1fr] grid-rows-[minmax(0,1fr)]">
       <nav className="flex flex-col gap-0.5 px-3 py-[18px]" aria-label="Beheer">
-        <h2 className="px-3 pt-0.5 pb-3.5 text-[17px] font-bold">Beheer</h2>
+        <h2 className="px-3 pt-0.5 pb-3.5 text-lg font-bold">Beheer</h2>
         {BEHEER_SECTIONS.map(({ id, title, icon }) => (
           <NavItem key={id} icon={icon} title={title} active={id === section} indicatorId="beheer-nav-active" onClick={() => openDialog(id)} />
         ))}
