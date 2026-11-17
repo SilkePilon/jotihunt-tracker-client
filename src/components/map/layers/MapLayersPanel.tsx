@@ -16,6 +16,7 @@ import { OVERLINE } from '@/lib/menu-styles';
 import { cn } from '@/lib/utils';
 import useSettingsStore from '@/stores/settings.store';
 import { MapStyle } from '@/types/MapStyle';
+import { CARD_TITLE } from '@/lib/dialog-shell';
 
 /**
  * '' = automatic: the Material map, light or dark with the theme. Thumbnails show Wageningen at z13. `name` (when set)
@@ -68,7 +69,7 @@ function StyleBar() {
   const isDarkMode = useDarkMode();
   return (
     <section>
-      <h3 className="mx-1 mb-2 text-[15px] font-bold">Kaartstijl</h3>
+      <h3 className={`mx-1 mb-2 ${CARD_TITLE}`}>Kaartstijl</h3>
       <RadioGroupPrimitive.Root
         aria-label="Kaartstijl"
         value={mapStyle || AUTO_VALUE}

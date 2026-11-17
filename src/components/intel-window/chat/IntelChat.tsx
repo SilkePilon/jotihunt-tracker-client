@@ -18,6 +18,7 @@ import ChatMessage from './ChatMessage';
 import ToolStatus from './ToolStatus';
 import { ChatScrollerContext, useStickToBottom } from './stick-to-bottom';
 import { type IntelChatState, useIntelChat } from './useIntelChat';
+import { CARD_TITLE } from '@/lib/dialog-shell';
 
 interface IntelChatProps {
   item: IntelItem;
@@ -120,7 +121,7 @@ function ChatPanel({ item, mapRef, entrance }: IntelChatProps) {
 function ChatHeader({ kind, action }: { kind: IntelKind; action?: ReactNode }) {
   return (
     <div className="mx-1 flex items-center gap-2">
-      <h3 className="text-[15px] font-bold">Vraag de AI</h3>
+      <h3 className={CARD_TITLE}>Vraag de AI</h3>
       <span className="ml-auto rounded-lg bg-beheer-row-high px-2 py-0.5 text-label font-semibold text-muted-foreground">{CONTEXT_LABEL[kind]}</span>
       {action}
     </div>

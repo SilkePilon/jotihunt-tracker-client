@@ -6,7 +6,7 @@ import AutoHeight from '@/components/motion/AutoHeight';
 import Reveal from '@/components/motion/Reveal';
 import { useIsMobile } from '@/hooks/media.hook';
 import { focusDropped, neighbourIndex } from '@/lib/focus';
-import { PANE_TITLE } from '@/lib/dialog-shell';
+import { PANE_TITLE, CARD_TITLE } from '@/lib/dialog-shell';
 import { SWAP, SWAP_TRANSITION, revealTransition } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { Pill } from './controls/Pill';
@@ -98,7 +98,7 @@ export function BeheerCard({ title, count, description, right, onToggle, open = 
   if (heading && onToggle) {
     // The toggle sits inside the heading (a heading inside a button isn't valid HTML); spans only, as a button holds phrasing content
     header = (
-      <h3 className="text-[15px] font-bold">
+      <h3 className={CARD_TITLE}>
         <button
           type="button"
           aria-expanded={open}
@@ -120,7 +120,7 @@ export function BeheerCard({ title, count, description, right, onToggle, open = 
       <div className="mx-1 flex items-center gap-2.5">
         <div className="min-w-0 flex-1">
           {/* tabIndex -1: focus lands here when the row or question that held it in the card is gone */}
-          <h3 data-card-heading tabIndex={-1} className="text-[15px] font-bold outline-none">
+          <h3 data-card-heading tabIndex={-1} className={`${CARD_TITLE} outline-none`}>
             {heading}
           </h3>
           {description && <p className="text-xs text-muted-foreground">{description}</p>}

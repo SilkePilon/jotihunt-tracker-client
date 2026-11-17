@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { tourTarget } from '@/components/tour/targets';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { SidebarSectionVariantContext } from './section-variant';
+import { CARD_TITLE } from '@/lib/dialog-shell';
 
 interface SidebarSectionProps {
   id: SidebarSectionId;
@@ -34,7 +35,7 @@ export default function SidebarSection({ id, title, summary, open: openProp, onO
   if (variant === 'page') {
     return (
       <section {...tourTarget(`sidebar.${id}`)} className={cn('rounded-3xl bg-card p-2 text-card-foreground', className)}>
-        <h2 className="px-3 pt-1.5 pb-2 text-[15px] font-bold">{title}</h2>
+        <h2 className={`px-3 pt-1.5 pb-2 ${CARD_TITLE}`}>{title}</h2>
         {/* px-1: the content keeps the card's 12px inset, like in the sidebar */}
         <div className="px-1 pb-1">
           <ErrorBoundary variant="inline">{children}</ErrorBoundary>

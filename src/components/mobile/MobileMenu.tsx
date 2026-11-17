@@ -30,6 +30,7 @@ import useAccountDialogStore from '@/stores/account-dialog.store';
 import useNotificationsDialogStore from '@/stores/notifications-dialog.store';
 import type { MobilePageId } from '@/lib/mobile-nav';
 import { menuRowTourTarget } from '@/components/tour/targets';
+import { CARD_TITLE } from '@/lib/dialog-shell';
 
 interface Row {
   key: string;
@@ -45,7 +46,7 @@ interface Row {
 function MenuCard({ title, rows }: { title: string; rows: Row[] }) {
   return (
     <section className="rounded-3xl bg-card p-2">
-      <h2 className="px-3 pb-2 pt-1.5 text-[15px] font-bold">{title}</h2>
+      <h2 className={`px-3 pb-2 pt-1.5 ${CARD_TITLE}`}>{title}</h2>
       <div className="flex flex-col gap-0.5">
         {rows.map((row) => (
           <button

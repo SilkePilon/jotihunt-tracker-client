@@ -282,12 +282,14 @@
   --color-score-hints: var(--score-hints);
   --color-score-penalty: var(--score-penalty);
 
-  /* Named type scale for the off-Tailwind sizes (text-label / text-caption / text-body; text-xs 12px, text-sm 14px and
-     up stay Tailwind's). label: overlines, meta and tags on the desktop shell; caption: secondary lines; body: the
-     desktop body text of rows, dialogs and cards. Sizes only: callers add leading. */
-  --text-label: 11px;
-  --text-caption: 12.5px;
-  --text-body: 13px;
+  /* Named type scale for the off-Tailwind sizes (text-label / text-caption / text-body / text-title; text-xs 12px,
+     text-sm 14px and up stay Tailwind's). label: overlines, meta and tags on the desktop shell; caption: secondary
+     lines; body: the desktop body text of rows, dialogs and cards; title: card titles (CARD_TITLE) and big CTA labels.
+     In rem like Tailwind's own sizes, so they follow the root size (the HQ wall). Sizes only: callers add leading. */
+  --text-label: 0.6875rem; /* 11px */
+  --text-caption: 0.78125rem; /* 12.5px */
+  --text-body: 0.8125rem; /* 13px */
+  --text-title: 0.9375rem; /* 15px */
 
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);

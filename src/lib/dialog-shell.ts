@@ -18,3 +18,6 @@ export const DIALOG_ACTION_CANCEL = `${DIALOG_ACTION} border-0 bg-beheer-row-hig
 
 /** Title of a window's open pane (Beheer pane, Intel item header): 22px bold, tight leading. */
 export const PANE_TITLE = 'text-[22px] leading-tight font-bold';
+
+/** Title of a card or panel section (Beheer cards, map layers, popups, sidebar sections): 15px bold. */
+export const CARD_TITLE = 'text-title font-bold';
