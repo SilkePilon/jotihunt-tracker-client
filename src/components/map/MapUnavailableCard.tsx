@@ -1,6 +1,7 @@
 import { motion } from 'motion/react';
 import { MapIcon, RotateCwIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { MAP_TILE } from '@/lib/map-chrome';
 import { SWAP } from '@/lib/motion';
 import { TONAL_BUTTON } from '@/lib/tonal-button';
 import { cn } from '@/lib/utils';
@@ -13,7 +14,7 @@ export default function MapUnavailableCard({ className }: { className?: string }
   return (
     <motion.div
       role="alert"
-      className={cn('card pointer-events-auto flex items-center gap-3 rounded-2xl bg-card py-2.5 pl-2.5 pr-3 text-card-foreground shadow-lg', className)}
+      className={cn(MAP_TILE, 'pointer-events-auto flex items-center gap-3 rounded-2xl py-2.5 pl-2.5 pr-3', className)}
       {...SWAP}
     >
       <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-beheer-row-high text-muted-foreground">

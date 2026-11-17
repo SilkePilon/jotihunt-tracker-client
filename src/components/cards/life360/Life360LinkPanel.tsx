@@ -274,7 +274,13 @@ function CodeStep({
           onClick={() => void resend()}
         >
           <BusyIcon busy={pending === 'resend'} />
-          {countdown ? `Stuur nieuwe code (${countdown})` : 'Stuur nieuwe code'}
+          {countdown ? (
+            <>
+              Stuur nieuwe code (<span className="tabular-nums">{countdown}</span>)
+            </>
+          ) : (
+            'Stuur nieuwe code'
+          )}
         </Button>
       ) : (
         <Button
