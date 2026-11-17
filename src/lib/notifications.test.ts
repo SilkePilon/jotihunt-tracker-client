@@ -1,5 +1,5 @@
 import { describe, expect, mock, test } from 'bun:test';
-import { NOTIFICATION_OPTIONS, sameTypes, setAllTypes, toggleType, isSilent, isRecent, mergeFeed, missedSummary, pickPrimary, pickSound, shouldAlert, soundKey, toastAction, toastDuration, toastKind, type AppNotification } from './notifications';
+import { NOTIFICATION_OPTIONS, sameTypes, setAllTypes, toggleType, isSilent, isRecent, mergeFeed, missedSummary, pickPrimary, pickSound, routePushClick, shouldAlert, soundKey, toastAction, toastDuration, toastKind, type AppNotification } from './notifications';
 
 const n = (overrides: Partial<AppNotification>): AppNotification => ({ id: '1', type: 'hint', title: 't', body: '', urgent: false, data: {}, createdAt: '2026-10-17T20:00:00Z', ...overrides });
 
@@ -193,5 +193,33 @@ describe('toastDuration', () => {
   test('the rest: 30 s when urgent, else 8 s', () => {
     expect(toastDuration({ type: 'fox-status', urgent: true })).toBe(30_000);
     expect(toastDuration({ type: 'hint', urgent: false })).toBe(8000);
+  });
+});
+
+describe('routePushClick', () => {
+  const message = (data: unknown) => ({ type: 'notification-click', data });
+
+  test('laptop: a hint or news push opens the Intel window, on the article when known', () => {
+    const openIntel = mock((articleId?: number) => articleId);
+    expect(routePushClick(message({ type: 'hint', articleId: 12 }), { openIntel })).toBe(true);
+    expect(openIntel).toHaveBeenLastCalledWith(12);
+    expect(routePushClick(message({ type: 'article' }), { openIntel })).toBe(true);
+    expect(openIntel).toHaveBeenLastCalledWith(undefined);
+  });
+
+  test('phone: a hint push opens the Hints page; news has nothing to open there', () => {
+    const openHints = mock(() => {});
+    expect(routePushClick(message({ type: 'hint' }), { openHints })).toBe(true);
+    expect(openHints).toHaveBeenCalledTimes(1);
+    expect(routePushClick(message({ type: 'article' }), { openHints })).toBe(false);
+  });
+
+  test('other pushes and other messages only bring the app to the front', () => {
+    const openIntel = mock(() => {});
+    expect(routePushClick(message({ type: 'fox-status' }), { openIntel })).toBe(false);
+    expect(routePushClick({ type: 'SKIP_WAITING' }, { openIntel })).toBe(false);
+    expect(routePushClick(null, { openIntel })).toBe(false);
+    expect(routePushClick(message(null), { openIntel })).toBe(false);
+    expect(openIntel).not.toHaveBeenCalled();
   });
 });

@@ -25,7 +25,8 @@ self.addEventListener('push', (event) => {
         requireInteraction: !!payload.urgent,
         // "Happy hour voorbij" (non-urgent) and "weer huntbaar" are quiet
         silent: payload.type === 'hunt-cooldown' || (payload.type === 'happy-hour' && payload.urgent === false),
-        data: { url: payload.url || '/' },
+        // type (and articleId once the server sends it) let the app open what was tapped (notificationclick below)
+        data: { url: payload.url || '/', type: payload.type, articleId: payload.data && payload.data.articleId },
       });
     })(),
   );
@@ -38,7 +39,11 @@ self.addEventListener('notificationclick', (event) => {
     (async () => {
       const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
       const existing = windows.find((client) => client.url.startsWith(self.location.origin));
-      if (existing) return existing.focus();
+      if (existing) {
+        // The open app routes it like a toast's "Openen" (Layout.tsx): the Hints page on a phone, the Intel window on a laptop
+        existing.postMessage({ type: 'notification-click', data: event.notification.data || {} });
+        return existing.focus();
+      }
       return self.clients.openWindow(url);
     })(),
   );
