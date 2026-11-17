@@ -14,9 +14,10 @@ const STATES = {
 
 /**
  * Live check under the digit boxes: typing hint, inside the Netherlands, outside, or (with a '?') the guess line.
- * `missing` (coordinates fine, area or time not chosen yet) replaces "Ligt in Nederland" with what Registreren waits for.
+ * `missing` (coordinates fine, area or time not chosen yet) replaces "Ligt in Nederland" with what Registreren waits for;
+ * `inside` (e.g. "3,2 km van vorige Alpha-hint") replaces it with something to check the typed digits against.
  */
-export default function CoordinateStatus({ state, guess, missing }: { state: CoordinateState; guess?: GuessStatus | null; missing?: string | null }) {
+export default function CoordinateStatus({ state, guess, missing, inside }: { state: CoordinateState; guess?: GuessStatus | null; missing?: string | null; inside?: string | null }) {
   // The card shows the map instruction too (" · tik er een op de kaart")
   const guessText = guess ? guess.text + (guess.action ?? '') : '';
   const view = guess
@@ -25,7 +26,9 @@ export default function CoordinateStatus({ state, guess, missing }: { state: Coo
       : { Icon: CircleHelpIcon, text: guessText, className: 'text-on-guess-container' }
     : state === 'inside' && missing
       ? { Icon: ListChecksIcon, text: missing, className: 'text-primary-text' }
-      : STATES[state];
+      : state === 'inside' && inside
+        ? { ...STATES.inside, text: inside }
+        : STATES[state];
   const { Icon, text, className } = view;
   return (
     <p role="status" aria-live="polite" className="min-w-0 flex-1 text-xs font-medium desk:text-[11px]">

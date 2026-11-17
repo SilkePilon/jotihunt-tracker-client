@@ -1,7 +1,7 @@
 import {Controller, useForm, useWatch} from 'react-hook-form';
 import {Button} from '../../ui/button.tsx';
 import {EraserIcon, Loader2Icon, Pin, RefreshCwIcon} from 'lucide-react';
-import {AnimatePresence, motion} from 'motion/react';
+import {AnimatePresence, motion, useReducedMotion} from 'motion/react';
 import InlineError from '@/components/InlineError';
 import LoadError from '@/components/LoadError';
 import Reveal from '@/components/motion/Reveal';
@@ -26,7 +26,7 @@ import AreaPicker from './AreaPicker';
 import TimePicker from './TimePicker';
 import DigitBoxes from './DigitBoxes';
 import CoordinateStatus, {type CoordinateState} from './CoordinateStatus';
-import {buildHintHours, groupByDay, isFreeHour, isTakenHour, missingPickText} from './hint-times';
+import {buildHintHours, groupByDay, isFreeHour, isTakenHour, missingPickText, previousHintText} from './hint-times';
 import {formatClock} from '@/lib/format';
 import {SOFT_PRIMARY_BUTTON} from '@/lib/tonal-button';
 import {fieldsResolver, nonEmptyString, oneOf, stringOfLength} from '@/lib/form-resolver';
@@ -37,6 +37,9 @@ import useSidebarStore from '@/stores/sidebar.store';
 import {useIsMobile} from '@/hooks/media.hook';
 
 type FormValues = {area: string; time: string; x: string; y: string};
+
+/** The sidebar section's unfold (--animate-collapsible-down, 0.2 s) plus a frame: scroll once it has its full height */
+const SECTION_UNFOLD_MS = 220;
 
 const formResolver = fieldsResolver<FormValues>({
     area: oneOf(areaOptions.map((option) => option.value), 'Kies een deelgebied.'),
@@ -49,6 +52,8 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
     const {coords, clear} = useHintFormBridge();
     const fieldId = useId();
     const isMobile = useIsMobile();
+    const reducedMotion = useReducedMotion() ?? false;
+    const formRef = useRef<HTMLFormElement>(null);
     const submitId = `${fieldId}-submit`;
     const {markers, loaded: markersLoaded, isError: markersError, retry: retryMarkers, createMarker, fetchFreshMarkers} = useMarkers();
     const [timeOpen, setTimeOpen] = useState(false);
@@ -122,9 +127,13 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
             ? {tone: 'guess', text: 'Tik op een vakje om de kandidaten weer te tonen'}
             : guessStatus(guess);
 
-    /** Put the typed guess on the map (an equal one already there stays as it is) */
+    // A complete coordinate in the Netherlands goes on the map as a preview pin (the store's input without a '?'), so it
+    // can be checked against the map before Registreren
+    const previewable = !!typedLocation && !outsideNetherlands;
+
+    /** Put the typed guess (or the preview of a complete coordinate) on the map; an equal one already there stays */
     function showCardGuess() {
-        if (!wildcard || !complete) return;
+        if (!complete || (!wildcard && !previewable)) return;
         useHintGuessStore.getState().show({
             source: 'card', x: xValue, y: yValue, area: selectedArea || null,
             at: (timeValue ? Date.parse(timeValue) : NaN) || null, articleId: null, format: 'split',
@@ -143,20 +152,28 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
 
     // Show (or take away) the candidates on the map as the boxes change; picking one fills the boxes via the bridge
     useEffect(() => {
-        if (wildcard && complete) showCardGuess();
+        if (complete && (wildcard || previewable)) showCardGuess();
         else useHintGuessStore.getState().clear('card');
         // eslint-disable-next-line react-hooks/exhaustive-deps -- showCardGuess reads exactly these values
-    }, [wildcard, complete, xValue, yValue, selectedArea, timeValue]);
+    }, [wildcard, complete, previewable, xValue, yValue, selectedArea, timeValue]);
     useEffect(() => () => useHintGuessStore.getState().clear('card'), []);
 
-    // Handle hint bridge
+    // Handle hint bridge. The reveal timer outlives the clear() below (which re-runs this effect), so it sits in a ref.
+    const revealTimer = useRef<number | undefined>(undefined);
+    useEffect(() => () => window.clearTimeout(revealTimer.current), []);
     useEffect(() => {
-        if (coords) {
-            form.setValue("x", coords.x, { shouldValidate: true, shouldDirty: true });
-            form.setValue("y", coords.y, { shouldValidate: true, shouldDirty: true });
-            clear();
-        }
-    }, [coords, clear, form]);
+        if (!coords) return;
+        form.setValue("x", coords.x, { shouldValidate: true, shouldDirty: true });
+        form.setValue("y", coords.y, { shouldValidate: true, shouldDirty: true });
+        clear();
+        if (!coords.reveal) return;
+        // Laptop "In hint": once the section has unfolded, bring the form into view and start at Deelgebied
+        window.clearTimeout(revealTimer.current);
+        revealTimer.current = window.setTimeout(() => {
+            formRef.current?.scrollIntoView({block: 'nearest', behavior: reducedMotion ? 'auto' : 'smooth'});
+            document.getElementById(`${fieldId}-area`)?.focus({preventScroll: true});
+        }, SECTION_UNFOLD_MS);
+    }, [coords, clear, form, fieldId, reducedMotion]);
 
     /**
      * Choose an area; the chosen time stays only while it's still free for the new area.
@@ -314,6 +331,13 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
         document.getElementById(`${fieldId}-x`)?.focus();
     }
 
+    /** Both coordinates pasted into one row: fill X and Y, then on to Registreren (like typing the last digit of Y) */
+    function pastePair(x: string, y: string) {
+        form.setValue('x', x, {shouldValidate: true, shouldDirty: true});
+        form.setValue('y', y, {shouldValidate: true, shouldDirty: true});
+        setTimeout(() => document.getElementById(submitId)?.focus());
+    }
+
     /**
      * One RD coordinate row: axis label and 6 digit boxes.
      * Calls onComplete once all 6 digits are entered, so focus can move on.
@@ -323,14 +347,14 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
             control={form.control}
             name={name}
             render={({field, fieldState}) => (
-                <DigitBoxes id={`${fieldId}-${name}`} label={label} onComplete={onComplete}
+                <DigitBoxes id={`${fieldId}-${name}`} label={label} onComplete={onComplete} onPastePair={pastePair}
                             bad={outsideNetherlands || fieldState.invalid} {...field}/>
             )}
         />
     );
 
     return (
-        <form onSubmit={(e) => {
+        <form ref={formRef} onSubmit={(e) => {
             // Registreren is aria-disabled (not disabled) while busy, so Enter can still submit: ignore it
             if (busy) return e.preventDefault();
             if (primary === 'recheck') {
@@ -387,7 +411,8 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
                     )}
                 </Reveal>
                 <div className="isolate mt-0.5 flex items-center justify-between gap-2">
-                    <CoordinateStatus state={coordinateState} guess={status} missing={missingPickText(selectedArea, timeValue)}/>
+                    <CoordinateStatus state={coordinateState} guess={status} missing={missingPickText(selectedArea, timeValue)}
+                                      inside={typedLocation && !outsideNetherlands ? previousHintText(markersLoaded ? markers : undefined, selectedArea, timeValue, [typedLocation[0], typedLocation[1]]) : null}/>
                     <button type="button" onClick={clearCoordinates}
                             className={`${COARSE_HIT_AREA} inline-flex items-center gap-1.5 rounded-lg px-1 text-xs font-semibold text-primary-text desk:text-[11px] outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring`}>
                         <EraserIcon aria-hidden className="size-3"/> Wissen

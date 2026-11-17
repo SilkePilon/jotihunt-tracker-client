@@ -56,6 +56,9 @@ const HUNT_ACTION_LABEL = 'Hunt markeren op kaart';
 
 const AREA_VALUES = areaOptions.map((option) => option.value);
 
+/** Error toasts stay longer than the default 4 s: the server's reason (e.g. too many markers in a row) needs reading */
+const ERROR_TOAST_MS = 8000;
+
 const formResolver = fieldsResolver<FormValues>({
   area: oneOf(AREA_VALUES, 'Geen geldig deelgebied.'),
   day: validDate('Geen geldige dag.'),
@@ -188,7 +191,7 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
     }
     useMarkerDraftStore.getState().update(key, { outcome });
     // Same answer as before: the line doesn't change, so say it once more
-    if (outcome === 'unknown') toast.error('Nog steeds geen antwoord', { description: 'Controleer je verbinding en probeer het zo nog eens.' });
+    if (outcome === 'unknown') toast.error('Nog steeds geen antwoord', { description: 'Controleer je verbinding en probeer het zo nog eens.', duration: ERROR_TOAST_MS });
   }
 
   /** Verwerpen (after ConfirmDialog): forget the unconfirmed save and start from an empty form. */
@@ -245,7 +248,7 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
       confirmedLate = true;
     } else if (error) {
       // The server's message for e.g. a 429 (too many markers in a row)
-      toast.error(`${noun} registreren is mislukt`, { description: apiErrorMessage(error, 'Probeer het opnieuw.') });
+      toast.error(`${noun} registreren is mislukt`, { description: apiErrorMessage(error, 'Probeer het opnieuw.'), duration: ERROR_TOAST_MS });
       return;
     }
     useMarkerDraftStore.getState().clear(key);
@@ -268,6 +271,9 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
   const [areaValue, dayValue, timeValue] = useWatch({ control: form.control, name: ['area', 'day', 'time'] });
   const missing = primary === 'recheck' || readOnly ? null : markerMissingPick({ area: areaValue, day: dayValue, time: timeValue }, AREA_VALUES);
   const missingId = `${fieldId}-missing`;
+  // The form starts at the last area ("(vorige)"): the button names it, so a wrong team is seen at the moment of saving
+  const prefilledArea = primary !== 'recheck' && areaValue && areaValue === lastArea ? areaOptions.find((option) => option.value === areaValue)?.label : undefined;
+  const saveLabel = primary === 'resave' ? 'Opnieuw registreren' : prefilledArea ? `${noun} ${prefilledArea} registreren` : 'Registreren';
 
   const renderForm = () => (
     <form
@@ -411,11 +417,12 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
           </p>
         )}
       </Reveal>
-      {/* Phones (landscape too): side by side at full width (like Meldingen); desktop: right-aligned */}
-      <div className="mt-4 flex shrink-0 gap-2 *:flex-1 desk:justify-end desk:*:flex-none">
+      {/* Phones (landscape too): side by side at full width (like Meldingen), Registreren with two thirds for its area
+          name; desktop: right-aligned */}
+      <div className="mt-4 flex shrink-0 gap-2 desk:justify-end desk:*:flex-none">
         {/* aria-disabled, not disabled, while busy: disabling the focused button would drop the focus mid-save (close()
             ignores the press then, like the primary's handlers) */}
-        <Button variant="outline" type="button" className={cn(DIALOG_ACTION_CANCEL, 'pointer-coarse:h-11')} aria-disabled={busy || undefined} onClick={close}>
+        <Button variant="outline" type="button" className={cn(DIALOG_ACTION_CANCEL, 'flex-1 pointer-coarse:h-11')} aria-disabled={busy || undefined} onClick={close}>
           Annuleren
         </Button>
         {/* One button whose action follows the state, so its label swaps instead of a new button popping in */}
@@ -423,13 +430,13 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
           variant="default"
           type={primary === 'recheck' ? 'button' : 'submit'}
           onClick={primary === 'recheck' ? recheck : undefined}
-          className={cn(DIALOG_ACTION, 'pointer-coarse:h-11')}
+          className={cn(DIALOG_ACTION, 'min-w-0 flex-[2_1_0%] pointer-coarse:h-11')}
           disabled={!busy && primary !== 'recheck' && (!!missing || !form.formState.isValid || readOnly)}
           aria-disabled={busy || undefined}
           aria-describedby={missing ? missingId : undefined}
           aria-busy={busy}
         >
-          <PrimaryLabel id={primary}>
+          <PrimaryLabel id={`${primary}-${prefilledArea ?? ''}`}>
             {primary === 'recheck' ? (
               <>
                 <BusyIcon busy={checking} icon={<RefreshCwIcon data-icon="inline-start" />} />
@@ -438,7 +445,8 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
             ) : (
               <>
                 <BusyIcon busy={isSubmitting} icon={markerType === MarkerType.Spot ? <GlassesIcon data-icon="inline-start" /> : <CrosshairIcon data-icon="inline-start" />} />
-                {isSubmitting ? 'Registreren…' : primary === 'resave' ? 'Opnieuw registreren' : 'Registreren'}
+                {/* Truncates rather than spilling out on the narrowest phones */}
+                <span className="min-w-0 truncate">{isSubmitting ? 'Registreren…' : saveLabel}</span>
               </>
             )}
           </PrimaryLabel>
@@ -493,7 +501,7 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
 function PrimaryLabel({ id, children }: { id: string; children: ReactNode }) {
   return (
     <AnimatePresence mode="wait" initial={false}>
-      <motion.span key={id} {...SWAP} className="inline-flex items-center gap-1.5">
+      <motion.span key={id} {...SWAP} className="inline-flex min-w-0 items-center gap-1.5">
         {children}
       </motion.span>
     </AnimatePresence>

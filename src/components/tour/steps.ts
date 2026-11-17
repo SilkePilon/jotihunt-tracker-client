@@ -75,7 +75,7 @@ export const TOUR_STEPS: TourStep[] = [
     id: 'hints',
     target: 'sidebar.hints',
     title: 'Hints',
-    body: 'De laatste hints per deelgebied in één oogopslag: groen is opgelost, grijs staat nog open. Met "Open hints" open je het venster met alle hints, opdrachten en nieuws.',
+    body: 'De laatste hints per deelgebied in één oogopslag: groen is opgelost, grijs staat nog open. Met "Open Intel" open je het venster met alle hints, opdrachten en nieuws.',
     actions: [pointAtSection('hints')],
     only: 'desktop',
   },
