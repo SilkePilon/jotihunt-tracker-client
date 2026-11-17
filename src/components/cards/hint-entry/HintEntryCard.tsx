@@ -26,7 +26,7 @@ import AreaPicker from './AreaPicker';
 import TimePicker from './TimePicker';
 import DigitBoxes from './DigitBoxes';
 import CoordinateStatus, {type CoordinateState} from './CoordinateStatus';
-import {buildHintHours, groupByDay, isFreeHour, isTakenHour, missingPickText} from './hint-times';
+import {buildHintHours, groupByDay, isFreeHour, isTakenHour, missingPickText, previousHintText} from './hint-times';
 import {formatClock} from '@/lib/format';
 import {SOFT_PRIMARY_BUTTON} from '@/lib/tonal-button';
 import {fieldsResolver, nonEmptyString, oneOf, stringOfLength} from '@/lib/form-resolver';
@@ -127,9 +127,13 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
             ? {tone: 'guess', text: 'Tik op een vakje om de kandidaten weer te tonen'}
             : guessStatus(guess);
 
-    /** Put the typed guess on the map (an equal one already there stays as it is) */
+    // A complete coordinate in the Netherlands goes on the map as a preview pin (the store's input without a '?'), so it
+    // can be checked against the map before Registreren
+    const previewable = !!typedLocation && !outsideNetherlands;
+
+    /** Put the typed guess (or the preview of a complete coordinate) on the map; an equal one already there stays */
     function showCardGuess() {
-        if (!wildcard || !complete) return;
+        if (!complete || (!wildcard && !previewable)) return;
         useHintGuessStore.getState().show({
             source: 'card', x: xValue, y: yValue, area: selectedArea || null,
             at: (timeValue ? Date.parse(timeValue) : NaN) || null, articleId: null, format: 'split',
@@ -148,10 +152,10 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
 
     // Show (or take away) the candidates on the map as the boxes change; picking one fills the boxes via the bridge
     useEffect(() => {
-        if (wildcard && complete) showCardGuess();
+        if (complete && (wildcard || previewable)) showCardGuess();
         else useHintGuessStore.getState().clear('card');
         // eslint-disable-next-line react-hooks/exhaustive-deps -- showCardGuess reads exactly these values
-    }, [wildcard, complete, xValue, yValue, selectedArea, timeValue]);
+    }, [wildcard, complete, previewable, xValue, yValue, selectedArea, timeValue]);
     useEffect(() => () => useHintGuessStore.getState().clear('card'), []);
 
     // Handle hint bridge. The reveal timer outlives the clear() below (which re-runs this effect), so it sits in a ref.
@@ -407,7 +411,8 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
                     )}
                 </Reveal>
                 <div className="isolate mt-0.5 flex items-center justify-between gap-2">
-                    <CoordinateStatus state={coordinateState} guess={status} missing={missingPickText(selectedArea, timeValue)}/>
+                    <CoordinateStatus state={coordinateState} guess={status} missing={missingPickText(selectedArea, timeValue)}
+                                      inside={typedLocation && !outsideNetherlands ? previousHintText(markersLoaded ? markers : undefined, selectedArea, timeValue, [typedLocation[0], typedLocation[1]]) : null}/>
                     <button type="button" onClick={clearCoordinates}
                             className={`${COARSE_HIT_AREA} inline-flex items-center gap-1.5 rounded-lg px-1 text-xs font-semibold text-primary-text desk:text-[11px] outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring`}>
                         <EraserIcon aria-hidden className="size-3"/> Wissen

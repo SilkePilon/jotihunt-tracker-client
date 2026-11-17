@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import {
   fillPattern, guessAnswerText, guessBounds, guessShapes, guessStatus, hasWildcard, lastFoxFix, normalizeWildcard,
-  parseGuess, parseGuessAnswer, rankGuess, sanitizeDigits, splitPastedCoordinates, stripPasted, type Guess,
+  parseGuess, parseGuessAnswer, previewPoint, rankGuess, sanitizeDigits, splitPastedCoordinates, stripPasted, type Guess,
 } from './hint-guess';
 import { fromRD, isPlausibleRD } from './rd';
 import { isInNetherlands } from './netherlands';
@@ -41,6 +41,18 @@ describe('wildcard input', () => {
     expect(hasWildcard('155000', '46?000')).toBe(true);
     expect(hasWildcard('155000', '463000')).toBe(false);
     expect(fillPattern('15?000', 4)).toBe('154000');
+  });
+});
+
+describe('previewPoint', () => {
+  test('a complete pair in the Netherlands is a point', () => {
+    const [lng, lat] = fromRD(155000, 463000);
+    expect(previewPoint('155000', '463000')).toEqual({ lng, lat });
+  });
+  test('a wildcard, a short pattern or a point outside the Netherlands is not', () => {
+    expect(previewPoint('15?000', '463000')).toBeNull();
+    expect(previewPoint('15500', '463000')).toBeNull();
+    expect(previewPoint('000000', '000000')).toBeNull();
   });
 });
 

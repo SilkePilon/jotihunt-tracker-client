@@ -1,15 +1,16 @@
 import { type CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import type { Feature, FeatureCollection, Polygon } from 'geojson';
-import { CheckIcon } from 'lucide-react';
+import { CheckIcon, LightbulbIcon } from 'lucide-react';
 import { Layer, Marker, Source, useMap, type FillLayerSpecification, type LineLayerSpecification } from 'react-map-gl/maplibre';
 import { useIsMobile } from '@/hooks/media.hook';
 import { useMarkers } from '@/hooks/markers.hook';
 import { useDarkMode } from '@/hooks/utils/darkmode.hook';
 import {
   guessBounds, guessShapes, type GuessShapeProps, HINT_GUESS_AREA_FILL_LAYER, HINT_GUESS_AREA_LINE_LAYER, HINT_GUESS_REACH_LAYER,
-  HINT_GUESS_SOURCE, lastFoxFix, parseGuess, rankGuess,
+  HINT_GUESS_SOURCE, lastFoxFix, parseGuess, previewPoint, rankGuess,
 } from '@/lib/hint-guess';
+import { POP } from '@/lib/motion';
 import { spacedHitDiameters } from '@/lib/hit-spacing';
 import { INTEL_CLOSE_MS } from '@/lib/intel-window';
 import { cn } from '@/lib/utils';
@@ -74,6 +75,7 @@ function useFadingShape(shape: Shape | null): { data: Shape | null; visible: boo
 /**
  * The partly solved hint being typed (hint card or Intel row): numbered candidate dots (tap = fill in that digit), or
  * the rectangle of everything that could match, plus the red dashed reach of the fox since its last known spot.
+ * A complete coordinate typed in the hint card shows as one preview pin.
  */
 export default function HintGuess() {
   const input = useHintGuessStore((state) => state.input);
@@ -85,6 +87,8 @@ export default function HintGuess() {
   const isMobile = useIsMobile();
 
   const guess = useMemo(() => (input ? parseGuess(input.x, input.y) : null), [input]);
+  // The hint card's complete coordinate (no '?'): one preview pin to check it against the map before Registreren
+  const preview = useMemo(() => (input?.source === 'card' ? previewPoint(input.x, input.y) : null), [input]);
   const fix = useMemo(() => (input?.area && input.at !== null ? lastFoxFix(markers ?? [], input.area, input.at) : null), [input, markers]);
   const rank = useMemo(() => (guess ? rankGuess(guess, fix, input?.at ?? null) : null), [guess, fix, input]);
   const shapes = useMemo(() => guessShapes(guess, rank), [guess, rank]);
@@ -137,6 +141,16 @@ export default function HintGuess() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- refit only when the guess changes, not on every marker poll
   }, [map, fitKey]);
+
+  // Laptop: a preview pin outside the visible map is brought into view (same zoom); phones keep the map where it is, the
+  // sheet would cover the pin anyway while typing
+  const previewKey = preview ? `${preview.lng}|${preview.lat}` : '';
+  useEffect(() => {
+    if (!map || !preview || isMobile) return;
+    if (map.getBounds().contains([preview.lng, preview.lat])) return;
+    map.easeTo({ center: [preview.lng, preview.lat], duration: 800 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per typed coordinate, not on every marker poll
+  }, [map, previewKey]);
 
   // The guess is gone (a dot picked, Escape, the card cleared it) while the focus handed to the map is still there or
   // lost: raise the sheet back to where it was and, once it is no longer inert, focus the hint form again
@@ -196,6 +210,22 @@ export default function HintGuess() {
         <Layer id={HINT_GUESS_AREA_LINE_LAYER} type="line" filter={AREA_FILTER}
                paint={{ 'line-color': purple, 'line-width': zoomScaled(2), 'line-dasharray': [3, 2], 'line-opacity': area.visible ? 1 : 0, 'line-opacity-transition': SHAPE_FADE }} />
       </Source>
+      <AnimatePresence>
+        {preview && (
+          <Marker key={previewKey} longitude={preview.lng} latitude={preview.lat} anchor="center">
+            {/* Not a button: nothing to pick, only to look at. Coloured like the filled digit boxes */}
+            <motion.span
+              role="img"
+              aria-label="Getypte hint (nog niet geregistreerd)"
+              title="Getypte hint (nog niet geregistreerd)"
+              {...POP}
+              className="pointer-events-none grid size-6 place-items-center rounded-full bg-primary-container text-on-primary-container shadow-md ring-2 ring-card"
+            >
+              <LightbulbIcon aria-hidden className="size-3.5" />
+            </motion.span>
+          </Marker>
+        )}
+      </AnimatePresence>
       <AnimatePresence>
         {points.map((point, index) => {
           const role = rank?.roles[index] ?? 'in';

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { buildHintHours as buildOrNull, dayKey, defaultDay, groupByDay, isFreeHour, isTakenHour, missingPickText, shortLabel } from './hint-times';
+import { buildHintHours as buildOrNull, dayKey, defaultDay, groupByDay, isFreeHour, isTakenHour, missingPickText, previousHintText, shortLabel } from './hint-times';
 import { MarkerType } from '@/types/MarkerType';
 import type { Marker } from '@/types/Marker';
 
@@ -139,5 +139,40 @@ describe('missingPickText', () => {
 
   test('nothing missing: null', () => {
     expect(missingPickText('alpha', '2026-10-17T10:00:00.000Z')).toBeNull();
+  });
+});
+
+describe('previousHintText', () => {
+  const at = (hour: number) => new Date(2026, 9, 17, hour).toISOString();
+  const placed = (area: string, hour: number, coordinates: [number, number], type = MarkerType.Hint): Marker => ({
+    area, time: new Date(2026, 9, 17, hour), type, location: { type: 'Point', coordinates },
+  });
+  // 0.01° of latitude is about 1.1 km
+  const markers = [
+    placed('alpha', 10, [5.9, 52.0]),
+    placed('alpha', 11, [5.9, 52.03]),
+    placed('alpha', 12, [5.9, 52.2]),
+    placed('bravo', 11, [6.5, 52.5]),
+    placed('alpha', 11.5, [7, 53], MarkerType.Hunt),
+  ];
+
+  test('distance to the newest earlier hint of the area, in Dutch notation', () => {
+    expect(previousHintText(markers, 'alpha', at(12), [5.9, 52.0])).toBe('3,3 km van vorige Alpha-hint');
+  });
+  test('under a kilometre in metres', () => {
+    expect(previousHintText(markers, 'alpha', at(11), [5.9, 52.002])).toBe('222 m van vorige Alpha-hint');
+  });
+  test('hunts and other areas do not count; the hint of the chosen hour itself neither', () => {
+    expect(previousHintText(markers, 'bravo', at(12), [6.5, 52.5])).toBe('0 m van vorige Bravo-hint');
+    expect(previousHintText(markers, 'bravo', at(11), [6.5, 52.5])).toBeNull();
+  });
+  test('no hour chosen: the newest hint of the area', () => {
+    expect(previousHintText(markers, 'alpha', '', [5.9, 52.2])).toBe('0 m van vorige Alpha-hint');
+  });
+  test('no area, no markers or no earlier hint: null (the old text)', () => {
+    expect(previousHintText(markers, '', at(12), [5.9, 52])).toBeNull();
+    expect(previousHintText(undefined, 'alpha', at(12), [5.9, 52])).toBeNull();
+    expect(previousHintText(markers, 'alpha', at(10), [5.9, 52])).toBeNull();
+    expect(previousHintText(markers, 'charlie', at(12), [5.9, 52])).toBeNull();
   });
 });

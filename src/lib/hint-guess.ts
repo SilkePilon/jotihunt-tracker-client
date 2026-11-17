@@ -65,6 +65,19 @@ export function fillPattern(pattern: string, digit: number): string {
   return pattern.replaceAll('?', String(digit));
 }
 
+/**
+ * The map point of a complete coordinate pair (6 digits each, no '?'), for the hint card's preview pin.
+ * @returns null for a pattern with a '?', the wrong length or a point outside the Netherlands
+ */
+export function previewPoint(x: string, y: string): { lng: number; lat: number } | null {
+  if (!/^\d{6}$/.test(x) || !/^\d{6}$/.test(y)) return null;
+  const rx = Number(x);
+  const ry = Number(y);
+  if (!isPlausibleRD(rx, ry)) return null;
+  const [lng, lat] = fromRD(rx, ry);
+  return isInNetherlands(lng, lat) ? { lng, lat } : null;
+}
+
 export interface GuessPoint {
   /** The digit the '?' stands for */
   digit: number;
