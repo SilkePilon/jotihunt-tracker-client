@@ -41,7 +41,7 @@ export default function MapLayersControl({ position = 'bottom-right' }: { positi
         side="left"
         align="end"
         sideOffset={8}
-        className="flex max-h-(--radix-popover-content-available-height) w-[330px] flex-col overflow-y-auto"
+        className="flex max-h-(--radix-popover-content-available-height) w-[272px] flex-col overflow-y-auto p-2.5"
       >
         <MapLayersPanel fetchLife360={open} />
       </PopoverContent>

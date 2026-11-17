@@ -7,17 +7,25 @@ import { cn } from '@/lib/utils';
  * track reads at 3:1+ against the card; dark: the primary); the thumb grows from 12 to 20 px as it
  * slides over. CSS transitions (off for reduced motion). The focus ring sits 2px off the track, so it reads on the orange.
  */
-export default function BeheerSwitch({ className, ...props }: ComponentProps<typeof SwitchPrimitive.Root>) {
+export default function BeheerSwitch({ className, size = 'md', ...props }: ComponentProps<typeof SwitchPrimitive.Root> & { size?: 'md' | 'sm' }) {
+  const sm = size === 'sm';
   return (
     <SwitchPrimitive.Root
       className={cn(
-        'inline-flex h-[26px] w-11 shrink-0 items-center rounded-full outline-none transition-[background-color,box-shadow] duration-200 focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:opacity-50 motion-reduce:transition-none',
+        sm ? 'h-5 w-[34px]' : 'h-[26px] w-11',
+        'inline-flex shrink-0 items-center rounded-full outline-none transition-[background-color,box-shadow] duration-200 focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:opacity-50 motion-reduce:transition-none',
         'data-[state=checked]:bg-primary-fill data-[state=unchecked]:bg-beheer-row data-[state=unchecked]:shadow-[inset_0_0_0_2px_color-mix(in_oklab,var(--muted-foreground)_70%,transparent)]',
         className,
       )}
       {...props}
     >
-      <SwitchPrimitive.Thumb className="pointer-events-none block size-3 translate-x-[7px] rounded-full bg-muted-foreground transition-[translate,width,height,background-color] duration-200 ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none data-[state=checked]:size-5 data-[state=checked]:translate-x-[21px] data-[state=checked]:bg-white" />
+      <SwitchPrimitive.Thumb
+        className={cn(
+          'pointer-events-none block rounded-full bg-muted-foreground transition-[translate,width,height,background-color] duration-200 ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none data-[state=checked]:bg-white',
+          // sm (34×20, compact lists): thumb 8 → 14 px
+          sm ? 'size-2 translate-x-[6px] data-[state=checked]:size-3.5 data-[state=checked]:translate-x-[17px]' : 'size-3 translate-x-[7px] data-[state=checked]:size-5 data-[state=checked]:translate-x-[21px]',
+        )}
+      />
     </SwitchPrimitive.Root>
   );
 }

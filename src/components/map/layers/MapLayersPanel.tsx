@@ -16,7 +16,6 @@ import { OVERLINE } from '@/lib/menu-styles';
 import { cn } from '@/lib/utils';
 import useSettingsStore from '@/stores/settings.store';
 import { MapStyle } from '@/types/MapStyle';
-import { CARD_TITLE } from '@/lib/dialog-shell';
 
 /**
  * '' = automatic: the Material map, light or dark with the theme. Thumbnails show Wageningen at z13. `name` (when set)
@@ -32,7 +31,7 @@ const STYLES: { value: MapStyle | ''; label: string; name?: string; thumb: strin
 /** Radix radio values can't be empty: the automatic style's '' goes through this one */
 const AUTO_VALUE = 'auto';
 
-const GROUP_TITLE = `mx-1 mt-3 mb-1.5 ${OVERLINE} text-muted-foreground`;
+const GROUP_TITLE = `mx-1 mt-2.5 mb-1 ${OVERLINE} text-muted-foreground`;
 
 /** Map style bar + grouped layer rows + fastfood brands (option A); used in the desktop popover and the phone drawer. */
 export default function MapLayersPanel({ fetchLife360 }: { fetchLife360: boolean }) {
@@ -69,12 +68,12 @@ function StyleBar() {
   const isDarkMode = useDarkMode();
   return (
     <section>
-      <h3 className={`mx-1 mb-2 ${CARD_TITLE}`}>Kaartstijl</h3>
+      <h3 className={`mx-1 mb-1 ${OVERLINE} text-muted-foreground`}>Kaartstijl</h3>
       <RadioGroupPrimitive.Root
         aria-label="Kaartstijl"
         value={mapStyle || AUTO_VALUE}
         onValueChange={(value) => setMapStyle((value === AUTO_VALUE ? '' : value) as MapStyle)}
-        className="grid grid-cols-4 gap-1 rounded-2xl bg-beheer-row p-1"
+        className="grid grid-cols-4 gap-0.5 rounded-xl bg-beheer-row p-0.5"
       >
         {STYLES.map((style) => {
           const selected = mapStyle === style.value;
@@ -83,14 +82,14 @@ function StyleBar() {
               key={style.value || AUTO_VALUE}
               value={style.value || AUTO_VALUE}
               aria-label={style.name}
-              className="group relative flex flex-col items-center gap-1 rounded-xl p-1 outline-none focus-visible:ring-[3px] focus-visible:ring-ring"
+              className="group relative flex flex-col items-center gap-0.5 rounded-[10px] p-1 outline-none focus-visible:ring-[3px] focus-visible:ring-ring"
             >
-              {selected && <motion.span layoutId="map-style-pick" aria-hidden className="absolute inset-0 rounded-xl bg-primary-container" transition={POP_SPRING} />}
+              {selected && <motion.span layoutId="map-style-pick" aria-hidden className="absolute inset-0 rounded-[10px] bg-primary-container" transition={POP_SPRING} />}
               <img
                 src={isDarkMode && style.darkThumb ? style.darkThumb : style.thumb}
                 alt=""
                 draggable={false}
-                className="relative aspect-[1.3] w-full rounded-(--radius-inner) object-cover transition-transform duration-200 motion-safe:group-hover:scale-[1.04]"
+                className="relative aspect-[1.8] w-full rounded-md object-cover transition-transform duration-200 motion-safe:group-hover:scale-[1.04]"
               />
               <span className={cn('relative text-xs transition-colors desk:text-label', selected ? 'font-semibold text-on-primary-container' : 'text-muted-foreground')}>{style.label}</span>
             </RadioGroupPrimitive.Item>
@@ -107,19 +106,19 @@ function LayerRowView({ row }: { row: LayerRow }) {
   if (row.kind === 'switch') {
     return (
       <RowFrame className="hover:bg-beheer-row-high">
-        <label className="flex cursor-pointer items-center gap-2.5 px-3 py-2">
-          <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-          <span className="flex-1 text-body font-semibold">{row.label}</span>
-          <BeheerSwitch checked={row.checked} onCheckedChange={row.toggle} />
+        <label className="flex cursor-pointer items-center gap-2 px-2.5 py-1.5">
+          <Icon className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+          <span className="flex-1 text-xs font-semibold desk:text-caption">{row.label}</span>
+          <BeheerSwitch size="sm" checked={row.checked} onCheckedChange={row.toggle} />
         </label>
       </RowFrame>
     );
   }
   return (
     <RowFrame>
-      <div className="flex items-center gap-2.5 px-3 py-2">
-        <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-        <span className="flex-1 text-body font-semibold">{row.label}</span>
+      <div className="flex items-center gap-2 px-2.5 py-1">
+        <Icon className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+        <span className="flex-1 text-xs font-semibold desk:text-caption">{row.label}</span>
         <div className="flex gap-0.5 rounded-(--radius-inner) bg-card p-0.5">
           {row.parts.map((part) => (
             <button
@@ -129,7 +128,7 @@ function LayerRowView({ row }: { row: LayerRow }) {
               aria-label={part.ariaLabel}
               onClick={part.toggle}
               className={cn(
-                'h-6 w-7 rounded-[7px] text-xs font-semibold outline-none transition-colors duration-200 focus-visible:ring-[3px] focus-visible:ring-ring',
+                'h-5 w-6 rounded-[6px] text-xs font-semibold outline-none transition-colors duration-200 focus-visible:ring-[3px] focus-visible:ring-ring',
                 // Phones: 44×32 halves, and the invisible ::after reaches into the row's padding for a 44px tall touch area
                 // (side by side they can't grow sideways without overlapping); desktop keeps the compact 28×24
                 'relative pointer-coarse:h-8 pointer-coarse:w-11 pointer-coarse:after:absolute pointer-coarse:after:inset-x-0 pointer-coarse:after:-inset-y-1.5 pointer-coarse:after:content-[\'\']',
@@ -145,7 +144,7 @@ function LayerRowView({ row }: { row: LayerRow }) {
   );
 }
 
-/** A brand tile (same look as its map marker) over the name; greyed out while off. */
+/** A brand tile (same look as its map marker) beside the name; greyed out while off. */
 function FoodButton({ toggle }: { toggle: FoodToggle }) {
   return (
     <button
@@ -153,18 +152,18 @@ function FoodButton({ toggle }: { toggle: FoodToggle }) {
       aria-pressed={toggle.checked}
       onClick={toggle.toggle}
       className={cn(
-        'flex flex-col items-center gap-1.5 rounded-xl px-1 py-2 outline-none transition-colors duration-200 focus-visible:ring-[3px] focus-visible:ring-ring',
+        'flex items-center justify-center gap-1.5 rounded-lg px-1.5 py-1.5 outline-none transition-colors duration-200 focus-visible:ring-[3px] focus-visible:ring-ring',
         toggle.checked ? 'bg-primary-container text-on-primary-container' : 'bg-beheer-row text-muted-foreground hover:bg-beheer-row-high',
       )}
     >
       <span
-        className={cn('grid size-7 place-items-center rounded-(--radius-inner) border-2 border-white shadow-[0_1px_3px_rgb(0_0_0/0.25)] transition-[filter,opacity] duration-200', !toggle.checked && 'opacity-45 grayscale')}
+        className={cn('grid size-5 shrink-0 place-items-center rounded-[5px] border-[1.5px] border-white shadow-[0_1px_3px_rgb(0_0_0/0.25)] transition-[filter,opacity] duration-200', !toggle.checked && 'opacity-45 grayscale')}
         style={{ background: BRAND_COLOR[toggle.brand] }}
       >
-        {/* 2px smaller than on the 28px marker: the white rim sits inside this tile's box */}
-        <img src={BRAND_LOGO_URL[toggle.brand]} alt="" width={FASTFOOD_LOGO_WIDTH[toggle.brand] - 2} draggable={false} />
+        {/* Scaled to the 20px tile (the 28px marker's logo at 70%) */}
+        <img src={BRAND_LOGO_URL[toggle.brand]} alt="" width={Math.round(FASTFOOD_LOGO_WIDTH[toggle.brand] * 0.7)} draggable={false} />
       </span>
-      <span className="text-xs font-semibold desk:text-label">{toggle.label}</span>
+      <span className="truncate text-xs font-semibold desk:text-label">{toggle.label}</span>
     </button>
   );
 }
