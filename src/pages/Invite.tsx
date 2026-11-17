@@ -30,7 +30,7 @@ function InvalidCard({ text }: { text: string }) {
   const navigate = useNavigate();
   return (
     <div className={cn(AUTH_CARD, 'flex w-full max-w-sm flex-col items-center gap-3 p-7 text-center')}>
-      <div className="flex size-10 items-center justify-center rounded-lg bg-muted">
+      <div className="flex size-10 items-center justify-center rounded-lg bg-beheer-row-high">
         <Link2OffIcon className="size-5 text-muted-foreground" />
       </div>
       <h1 className="text-lg font-bold tracking-tight">Deze uitnodiging werkt niet meer</h1>
