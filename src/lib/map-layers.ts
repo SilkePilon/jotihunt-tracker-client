@@ -79,7 +79,7 @@ export function huntAccuracyCircles(hunts: SyncedHunt[] | undefined): FeatureCol
 export const MAP_LAYER_STACK: string[][] = [
   // 3D buildings under every app layer (below the style labels through beforeId; on raster styles this keeps them under the markers)
   [BUILDINGS_LAYER],
-  ['device-accuracy-fill', LIFE360_ACCURACY_LAYER, HUNT_ACCURACY_FILL_LAYER, HUNT_ACCURACY_LINE_LAYER, HUNT_ACCURACY_ESTIMATE_LINE_LAYER, 'prediction-areas-fill', 'prediction-areas-line', REACH_FILL_LAYER, REACH_CONE_LAYER, REACH_LINE_LAYER, 'prediction-pin-lines', 'circle-layer-home', 'team-circles-fill', 'marker-trails-line', ...ROUTED_TRAIL_LAYERS],
+  ['device-accuracy-fill', LIFE360_ACCURACY_LAYER, HUNT_ACCURACY_FILL_LAYER, HUNT_ACCURACY_LINE_LAYER, HUNT_ACCURACY_ESTIMATE_LINE_LAYER, 'prediction-areas-fill', 'prediction-areas-line', REACH_FILL_LAYER, REACH_CONE_LAYER, REACH_LINE_LAYER, 'prediction-pin-lines', 'circle-layer-home', 'circle-layer-home-outline', 'team-circles-fill', 'team-circles-outline', 'marker-trails-line', ...ROUTED_TRAIL_LAYERS],
   [TRAIL_BADGE_LAYER],
   // Above the trails, below the markers: the night areas, the one being drawn on top
   [...NIGHT_AREA_LAYERS, ...NIGHT_DRAW_LAYERS],

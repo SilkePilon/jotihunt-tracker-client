@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Layer, Source, useMap, type FillLayerSpecification, type SymbolLayerSpecification } from 'react-map-gl/maplibre';
+import { Layer, Source, useMap, type FillLayerSpecification, type LineLayerSpecification, type SymbolLayerSpecification } from 'react-map-gl/maplibre';
 import { isTeamWithApiId, useTeams } from '@/hooks/teams.hook';
 import { useAppConfig } from '@/hooks/app-config.hook';
 import { useAreas } from '@/hooks/areas.hook';
@@ -14,6 +14,13 @@ import TeamTooltip from './teams/TeamTooltip';
 
 const TEAM_CIRCLES_SOURCE = 'team-circles';
 const TEAM_CIRCLES_PAINT: FillLayerSpecification['paint'] = { 'fill-color': ['get', 'color'], 'fill-opacity': 0.2 };
+// Thicker dashed rim in the area colour, so the edge of a group's circle reads at a glance (thinner when zoomed out)
+const TEAM_CIRCLES_OUTLINE_PAINT: LineLayerSpecification['paint'] = {
+  'line-color': ['get', 'color'],
+  'line-opacity': 0.85,
+  'line-width': ['interpolate', ['linear'], ['zoom'], 9, 1, 13, 2.5, 16, 3.5],
+  'line-dasharray': [2, 1.5],
+};
 
 // All groups are one GeoJSON source + symbol layer instead of an HTML marker each: a circle in the area colour with a
 // home glyph, centred on the group
@@ -86,6 +93,7 @@ export default function Teams() {
       {showGroupCircles && (
         <Source id={TEAM_CIRCLES_SOURCE} type="geojson" data={circles}>
           <Layer id="team-circles-fill" type="fill" source={TEAM_CIRCLES_SOURCE} paint={TEAM_CIRCLES_PAINT} />
+          <Layer id="team-circles-outline" type="line" source={TEAM_CIRCLES_SOURCE} paint={TEAM_CIRCLES_OUTLINE_PAINT} />
         </Source>
       )}
       <Source id={TEAM_PINS_SOURCE} type="geojson" data={pins}>
