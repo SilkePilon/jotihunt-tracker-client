@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { AxiosError, AxiosHeaders, type AxiosResponse } from 'axios';
-import { apiErrorMessage } from './api-error';
+import { apiErrorMessage, isNetworkError } from './api-error';
 
 function axiosError(data: unknown, status = 400): AxiosError {
   const response = { data, status, statusText: 'Bad Request', headers: {}, config: { headers: new AxiosHeaders() } } as AxiosResponse;
@@ -33,5 +33,20 @@ describe('apiErrorMessage', () => {
     expect(apiErrorMessage(new AxiosError('Network Error'), 'fallback')).toBe('fallback');
     expect(apiErrorMessage(new Error('boom'), 'fallback')).toBe('fallback');
     expect(apiErrorMessage(undefined, 'fallback')).toBe('fallback');
+  });
+});
+
+describe('isNetworkError', () => {
+  test('an axios error without an answer is a network error, one with an answer is not', () => {
+    expect(isNetworkError(new AxiosError('Network Error', 'ERR_NETWORK'))).toBe(true);
+    expect(isNetworkError(new AxiosError('timeout', 'ECONNABORTED'))).toBe(true);
+    expect(isNetworkError(axiosError({ message: 'x' }, 500))).toBe(false);
+  });
+
+  test('fetch failures count, other errors do not', () => {
+    expect(isNetworkError(new TypeError('Failed to fetch'))).toBe(true);
+    expect(isNetworkError(new TypeError('Load failed'))).toBe(true);
+    expect(isNetworkError(new Error('Something else'))).toBe(false);
+    expect(isNetworkError(undefined)).toBe(false);
   });
 });
