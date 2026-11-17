@@ -51,6 +51,7 @@ import {MAP_LOCALE_NL} from "@/lib/map-locale";
 import type {SymbolLayerSpecification} from '@maplibre/maplibre-gl-style-spec';
 import {DEFAULT_VIEW} from '@/lib/map-view';
 import {dockedPadding} from '@/lib/sheet-snaps';
+import {isMapPopupOpen} from '@/lib/open-popups';
 import {FASTFOOD_LAYER, FOX_MARKERS_LAYER, HUNTER_ARROWS_LAYER, HUNTERS_LAYER, LIFE360_LAYER, TEAM_PINS_LAYER, TRAILS_HIT_LAYER} from '@/lib/map-layers';
 import LayerStack from './layers/LayerStack';
 import MarkerImages from './layers/MarkerImages';
@@ -299,18 +300,27 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
         };
     }, [mapStyle]);
 
+    // Whether a map popup (marker, hunter, ... card) was open when this tap started: that tap only closes it
+    const popupOpenAtPress = useRef(false);
+
     /**
      * Open the current location popup when the map is clicked.
      */
     function openPopup(e: MapLayerMouseEvent) {
+        // A tap that closes an open card doesn't pick a location as well; the next one does
+        const closingPopup = popupOpenAtPress.current || isMapPopupOpen();
+        popupOpenAtPress.current = false;
         // A tap next to a marker (within the hit tolerance) opens that marker's popup, not this one
-        if (popupPosition || rulerActive || drawing || e.features?.length || featureNear(e.target, e.point, INTERACTIVE_LAYER_IDS)) return;
+        if (popupPosition || closingPopup || rulerActive || drawing || e.features?.length || featureNear(e.target, e.point, INTERACTIVE_LAYER_IDS)) return;
 
         setPopupPosition(e.lngLat);
     }
 
     return (
-        <div className={cn('relative', className ?? "w-dvw h-dvh")} style={wrapperStyle} {...tourTarget('map')}>
+        <div className={cn('relative', className ?? "w-dvw h-dvh")} style={wrapperStyle} {...tourTarget('map')}
+             onPointerDownCapture={() => {
+                 popupOpenAtPress.current = isMapPopupOpen();
+             }}>
             <Maplibre
                 ref={mapRef}
                 reuseMaps
