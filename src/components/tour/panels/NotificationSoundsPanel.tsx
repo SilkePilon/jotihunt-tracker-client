@@ -75,7 +75,7 @@ export default function NotificationSoundsPanel() {
                 onClick={() => play(key)}
                 aria-pressed={active}
                 className={cn(
-                  'flex w-full items-center gap-3 rounded-lg border border-transparent px-2 py-1.5 text-left transition-colors hover:bg-muted/60',
+                  'flex w-full items-center gap-3 rounded-lg border border-transparent px-2 py-1.5 text-left outline-none transition-colors hover:bg-muted/60 focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset',
                   active && 'border-primary/40 bg-primary/10 hover:bg-primary/10',
                 )}
               >
