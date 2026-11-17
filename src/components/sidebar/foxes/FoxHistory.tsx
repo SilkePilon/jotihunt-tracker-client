@@ -159,13 +159,13 @@ export default function FoxHistory({ fox, hidden, forbidden = false, onToggleHid
         <span className="shrink-0 text-xs font-normal text-muted-foreground desk:text-label">laatste 3 uur</span>
       </div>
 
-      {/* Status line: the word shimmers and swaps (fade + blur-up) when the status changes */}
+      {/* Status line: the word swaps (fade + blur-up) when the status changes */}
       <div className="mx-0.5 mt-0.5 flex min-h-4 flex-wrap items-center text-xs text-muted-foreground tabular-nums">
         <span className="relative inline-flex">
           <AnimatePresence mode="popLayout" initial={false}>
             <motion.span
               key={line.status ?? 'none'}
-              className="fox-history-shimmer whitespace-nowrap"
+              className="whitespace-nowrap"
               initial={{ opacity: 0, y: 4, filter: 'blur(4px)' }}
               animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
               exit={{ opacity: 0, filter: 'blur(4px)' }}

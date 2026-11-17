@@ -921,7 +921,7 @@ html.flashbang::view-transition-new(root) {
 }
 
 /* Vossen card fox history (components/sidebar/foxes/FoxHistoryTimeline.tsx): blocks per kind (`--c` = lane colour),
-   the running block's cap + shine sweep, and the shimmering status word in the panel. Status colours (P4) are shared
+   and the running block's cap. Status colours (P4) are shared
    with the legend (--fox-history-*); dark mode mixes them 20% into the card so they don't glare. Hint "puzzelen"
    blocks are a pastel of the lane colour. */
 .fox-history {
@@ -998,54 +998,6 @@ html.flashbang::view-transition-new(root) {
   width: 2px;
   background: var(--c);
   filter: brightness(1.25);
-}
-.fox-history-live::before {
-  content: '';
-  position: absolute;
-  inset-block: 0;
-  left: 0;
-  /* The block's width, with the 22px shine band at its left edge, so translateX(100%) carries the band just past the end */
-  width: 100%;
-  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.4), transparent) 0 0 / 22px 100% no-repeat;
-  transform: translateX(-22px);
-  animation: fox-history-shine 1.5s ease-in-out infinite;
-}
-@keyframes fox-history-shine {
-  0% {
-    transform: translateX(-22px);
-  }
-  70%,
-  100% {
-    transform: translateX(100%);
-  }
-}
-/* Status word: 1.8 s sweep, then a 0.576 s pause (75.7 % of 2.376 s) */
-.fox-history-shimmer {
-  background: linear-gradient(90deg, var(--muted-foreground) 0%, var(--muted-foreground) 40%, var(--foreground) 50%, var(--muted-foreground) 60%, var(--muted-foreground) 100%);
-  background-size: 250% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  animation: fox-history-shimmer 2.376s linear infinite;
-}
-@keyframes fox-history-shimmer {
-  0% {
-    background-position: 100% 0;
-  }
-  75.7%,
-  100% {
-    background-position: 0 0;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .fox-history-live::before {
-    display: none;
-  }
-  .fox-history-shimmer {
-    animation: none;
-    background: none;
-    color: var(--muted-foreground);
-  }
 }
 
 /* Reduced motion: tw-animate-css (Radix menus, popovers, dialogs, map popups) has no reduced-motion handling of its

@@ -401,14 +401,6 @@ export default function FoxHistoryTimeline({ model, playKey, play = true }: { mo
             );
           })}
 
-        {/* Playhead + knob, from the same --t */}
-        <div aria-hidden className="pointer-events-none absolute top-0 z-[3] w-px bg-foreground opacity-45" style={{ bottom: AXIS, left: `calc(${PAD}px + var(--t) * ${ppm}px)` }} />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute z-[3] -ml-[3.5px] size-[7px] rounded-full bg-foreground ring-2 ring-card"
-          style={{ bottom: AXIS - 3, left: `calc(${PAD}px + var(--t) * ${ppm}px)` }}
-        />
-
         {/* Axis */}
         <div aria-hidden className="relative text-xs text-muted-foreground desk:text-label tabular-nums" style={{ height: AXIS }}>
           <span className="absolute top-1 whitespace-nowrap" style={{ left: x(0) }}>
