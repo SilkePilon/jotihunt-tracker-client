@@ -1,6 +1,6 @@
 import type { ExpressionSpecification } from 'maplibre-gl';
 import { describe, expect, test } from 'bun:test';
-import { LABEL_MIN_SCALE, labelScale, ZOOM_SCALE_STOPS, zoomScale, zoomScaled } from './zoom-scale';
+import { LABEL_MIN_SCALE, labelScale, labelScaled, offsetScaleAt, scaleOffset, ZOOM_SCALE_STOPS, zoomScale, zoomScaled } from './zoom-scale';
 
 describe('zoomScale', () => {
   test('flat below the first and above the last stop', () => {
@@ -62,5 +62,34 @@ describe('zoomScaled', () => {
       const index = expression.indexOf(zoom, 3);
       expect(expression[index + 1]).toBeCloseTo(6 * zoomScale(zoom), 3);
     }
+  });
+});
+
+describe('labelScaled', () => {
+  test('follows the curve but never below the readable minimum', () => {
+    expect(labelScaled(1)).toEqual(['interpolate', ['linear'], ['zoom'], 8, 0.8, 10, 0.8, 13, 1]);
+    expect(labelScaled(1.1)).toEqual(['interpolate', ['linear'], ['zoom'], 8, 0.88, 10, 0.88, 13, 1.1]);
+  });
+});
+
+describe('offsetScaleAt', () => {
+  test('icon follows zoomScale, label labelScale, none stays 1', () => {
+    expect(offsetScaleAt('icon', 8)).toBe(0.55);
+    expect(offsetScaleAt('label', 8)).toBe(LABEL_MIN_SCALE);
+    expect(offsetScaleAt('none', 8)).toBe(1);
+    expect(offsetScaleAt('icon', 15)).toBe(1);
+  });
+});
+
+describe('scaleOffset', () => {
+  test('scales numbers, points and points per anchor to whole pixels', () => {
+    expect(scaleOffset(10, 0.55)).toBe(6);
+    expect(scaleOffset([0, -20] as [number, number], 0.55)).toEqual([0, -11]);
+    expect(scaleOffset({ bottom: [0, -45] as [number, number] }, 0.8)).toEqual({ bottom: [0, -36] });
+  });
+
+  test('factor 1 leaves the offset as is (no negative zero)', () => {
+    expect(scaleOffset([0, -20] as [number, number], 1)).toEqual([0, -20]);
+    expect(Object.is(scaleOffset([0, -20] as [number, number], 0.55)[0], 0)).toBe(true);
   });
 });

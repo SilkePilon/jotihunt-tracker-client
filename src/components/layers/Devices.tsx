@@ -6,7 +6,7 @@ import { vehicleGroupIds } from '@/lib/app-config';
 import { vehicleForGroupId, type VehicleGroupIds } from '@/lib/hunters';
 import { accuracyCircles, HUNTER_ARROWS_LAYER, hunterFeatures, HUNTERS_LAYER, type HunterIcon } from '@/lib/map-layers';
 import { isActive } from '@/lib/tracker';
-import { HOVER_ICON_SIZE, ICON_SIZE } from '@/lib/zoom-scale';
+import { LABEL_HOVER_ICON_SIZE, LABEL_ICON_SIZE } from '@/lib/zoom-scale';
 import { markerIconId, themedIconExpression, themedImageId, type MarkerPalette, type MarkerTheme } from '@/lib/marker-style';
 import { featureId, useLayerInteractions, usePopupSelection } from './map-interactions';
 import { useMarkerPalette, useMarkerTheme } from './marker-icons';
@@ -24,18 +24,19 @@ function accuracyPaint(palette: MarkerPalette): FillLayerSpecification['paint'] 
   return { 'fill-color': palette.secondary, 'fill-opacity': 0.12, 'fill-outline-color': palette.secondary };
 }
 
-// All hunters are one GeoJSON source (updated every poll) with symbol layers instead of an HTML marker each
+// All hunters are one GeoJSON source (updated every poll) with symbol layers instead of an HTML marker each.
+// Like the foxes they stop shrinking at a readable size (the vehicle glyph), the arrow with them.
 const HUNTERS_SOURCE = 'hunters';
 const HUNTERS_HOVER_LAYER = 'hunters-hover';
 function huntersLayout(theme: MarkerTheme): SymbolLayerSpecification['layout'] {
-  return { 'icon-image': themedIconExpression(theme), 'icon-size': ICON_SIZE, 'icon-allow-overlap': true, 'icon-ignore-placement': true };
+  return { 'icon-image': themedIconExpression(theme), 'icon-size': LABEL_ICON_SIZE, 'icon-allow-overlap': true, 'icon-ignore-placement': true };
 }
 // Heading arrow 30px (times the icon size, like the offset of every symbol) from the hunter towards its course,
 // pointing along it (screen-aligned, like the Android app)
 function arrowsLayout(theme: MarkerTheme): SymbolLayerSpecification['layout'] {
   return {
     'icon-image': themedImageId(theme, markerIconId({ kind: 'arrow' })),
-    'icon-size': ICON_SIZE,
+    'icon-size': LABEL_ICON_SIZE,
     'icon-rotate': ['get', 'course'],
     'icon-offset': [0, -30],
     'icon-rotation-alignment': 'viewport',
@@ -57,7 +58,7 @@ export default function Devices() {
   const groups = useMemo(() => vehicleGroupIds({ vehicleGroups }), [vehicleGroups]);
   const layout = useMemo(() => huntersLayout(theme), [theme]);
   // Hovered: 10% larger
-  const hoverLayout = useMemo<SymbolLayerSpecification['layout']>(() => ({ ...layout, 'icon-size': HOVER_ICON_SIZE }), [layout]);
+  const hoverLayout = useMemo<SymbolLayerSpecification['layout']>(() => ({ ...layout, 'icon-size': LABEL_HOVER_ICON_SIZE }), [layout]);
   const arrows = useMemo(() => arrowsLayout(theme), [theme]);
   const accuracy = useMemo(() => accuracyPaint(palette), [palette]);
 
