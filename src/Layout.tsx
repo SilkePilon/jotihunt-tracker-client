@@ -32,6 +32,7 @@ import TourOverlay from './components/tour/TourOverlay';
 import {useTourAutoStart} from './components/tour/useTour';
 import {usePromptQueueHold} from './stores/prompt-queue.store';
 import {createFetchErrorToastState, fetchErrorToastText} from '@/lib/fetch-error-toast';
+import {isCriticalFeedKey} from '@/lib/connection';
 import AndroidPromoAutoOpen from './components/android-promo/AndroidPromoAutoOpen';
 
 const QrConfirmDrawer = lazy(() => import('./components/auth/QrConfirmDrawer'));
@@ -59,6 +60,14 @@ export default function Layout() {
         void resyncPush(fetch);
         // Once per page load
         // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // Back online: refetch the critical feeds now (mutate skips SWR's dedupe and error-retry backoff), so the stale
+    // notice clears with the first answers instead of after each feed's next poll
+    useEffect(() => {
+        const refetchCritical = () => void mutate(isCriticalFeedKey);
+        window.addEventListener('online', refetchCritical);
+        return () => window.removeEventListener('online', refetchCritical);
     }, []);
 
     const location = useLocation();

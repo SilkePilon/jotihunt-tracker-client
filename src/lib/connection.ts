@@ -59,6 +59,14 @@ export function feedKey(url: string): string {
   return query === -1 ? url : url.slice(0, query);
 }
 
+/**
+ * SWR key filter for the critical feeds (keys are `[url, authHeader]`): the connection coming back refetches these at
+ * once, so the stale notice clears without waiting for each poll (and SWR's reconnect dedupe).
+ */
+export function isCriticalFeedKey(key: unknown): boolean {
+  return Array.isArray(key) && typeof key[0] === 'string' && feedKey(key[0]) in CRITICAL_FEEDS;
+}
+
 function feed(url: string | undefined): FeedState | null {
   if (url === undefined) return null;
   const key = feedKey(url);
