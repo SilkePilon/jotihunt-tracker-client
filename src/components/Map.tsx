@@ -67,6 +67,7 @@ import {useNightDraw} from '@/stores/night-draw.store';
 import NightAreaDraw from './layers/trails/NightAreaDraw';
 import NightAreasLayer from './layers/trails/NightAreasLayer';
 import MapUnavailableCard from './map/MapUnavailableCard';
+import BrowserLocationDot from './map/BrowserLocationDot';
 import {featureNear, openLayerFeature, type OpenFeatureOptions} from './layers/map-interactions';
 import {useMapAvailability} from './map/useMapAvailability';
 
@@ -377,6 +378,8 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
                 <HomeCircle showCircle={showHomeCircle}/>
                 {!wall && <HuntFocus/>}
                 {!wall && <HintGuess/>}
+                {/* Phones: own position from the browser after a "Mijn locatie" tap (the desktop has MapLibre's geolocate) */}
+                {isMobile && !wall && <BrowserLocationDot/>}
                 {isAdmin && <NightAreasLayer/>}
                 <AnimatePresence>{drawing && <NightAreaDraw key="draw"/>}</AnimatePresence>
                 <LayerStack/>

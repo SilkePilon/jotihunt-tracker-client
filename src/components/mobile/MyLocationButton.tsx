@@ -10,13 +10,15 @@ import { MAP_TILE, MAP_LOCATION_COLOR } from '@/lib/map-chrome';
 import { POP, SWAP_TRANSITION } from '@/lib/motion';
 import { ownDeviceId, ownTrackerPosition } from '@/lib/own-position';
 import { cn } from '@/lib/utils';
+import useBrowserLocationStore from '@/stores/browser-location.store';
 import useHuntFocusStore from '@/stores/hunt-focus.store';
 import useSidebarStore from '@/stores/sidebar.store';
 
 
 /**
  * Phones: one 48px "Mijn locatie" map button, right above the sheet (it rides in the popup dock, so an open popup
- * pushes it up). Recentres on the own tracker when fresh, else on the browser's position, and pulses a ring there.
+ * pushes it up). Recentres on the own tracker when fresh, else on the browser's position, and pulses a ring there; a
+ * browser position also leaves a small own-position dot that follows you (BrowserLocationDot).
  * Hidden while the sheet is full height.
  */
 export default function MyLocationButton({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
@@ -31,6 +33,8 @@ export default function MyLocationButton({ mapRef }: { mapRef: RefObject<MapRef 
     try {
       const tracker = ownTrackerPosition(positions, ownDeviceId(devices, status?.configured ? status.uniqueId : undefined), Date.now());
       const { lat, lng } = await locateMe(tracker);
+      // Found by the browser (no live own tracker): a dot stays there and follows you (BrowserLocationDot)
+      if (!tracker) useBrowserLocationStore.getState().start({ lat, lng });
       // Never zoom out when the hunter is already closer in; reduced motion turns the flight into a jump (no `essential`)
       mapRef.current?.flyTo({ center: [lng, lat], zoom: Math.max(LOCATE_ZOOM, mapRef.current.getZoom() ?? 0), duration: 1200 });
       useHuntFocusStore.getState().show({ lng, lat, color: MAP_LOCATION_COLOR });
