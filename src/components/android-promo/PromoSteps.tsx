@@ -1,11 +1,11 @@
 // src/components/android-promo/PromoSteps.tsx
 import { useEffect, useEffectEvent, useRef, useState, type ReactNode } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { DownloadIcon, LinkIcon, TriangleAlertIcon } from 'lucide-react';
 import { CloseButton } from '@/components/ui/close-button';
 import { cookiePath, BADGE_COOKIE_DEPTH } from '@/lib/cookie-shape';
 import { appDidNotOpen } from '@/lib/android-promo';
-import { POP_SPRING, SWAP, SWAP_TRANSITION } from '@/lib/motion';
+import { POP_SPRING, SWAP, revealTransition } from '@/lib/motion';
 import type { PromoStep } from '@/stores/android-promo.store';
 import type { PairPhase } from './pair-launch';
 import { cn } from '@/lib/utils';
@@ -170,10 +170,15 @@ export function PairStep({ phase, startedAt, onPhase, onRetry, deviceCount, refr
   );
 }
 
-/** Animates its height to follow the content (measured), so the dialog grows and shrinks smoothly between steps */
-export function AutoHeight({ children }: { children: ReactNode }) {
+/**
+ * Animates its height to follow the content (measured), so the dialog grows and shrinks smoothly between steps. Reduced
+ * motion: the height settles at once and only the step's fade remains. `scrollClassName` caps the measured box (it
+ * scrolls inside), so the animated wrapper never flashes a scrollbar mid-resize.
+ */
+export function AutoHeight({ children, scrollClassName }: { children: ReactNode; scrollClassName?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState<number | 'auto'>('auto');
+  const reduced = useReducedMotion() ?? false;
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -182,8 +187,10 @@ export function AutoHeight({ children }: { children: ReactNode }) {
     return () => observer.disconnect();
   }, []);
   return (
-    <motion.div className="overflow-hidden" initial={false} animate={{ height }} transition={SWAP_TRANSITION}>
-      <div ref={ref}>{children}</div>
+    <motion.div className="overflow-hidden" initial={false} animate={{ height }} transition={revealTransition(reduced, 'enter')}>
+      <div ref={ref} className={scrollClassName}>
+        {children}
+      </div>
     </motion.div>
   );
 }

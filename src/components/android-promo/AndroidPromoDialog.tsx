@@ -20,6 +20,9 @@ import { AutoHeight, DoneStep, DownloadingStep, InstallStep, PairStep, StepClose
 
 const apiBase: string = import.meta.env.API_BASE_URL;
 
+/** The dialog's cap: the dynamic viewport minus the safe areas and a 16px margin on both ends */
+const PROMO_SCROLL = 'max-h-[calc(100dvh-32px-env(safe-area-inset-top)-env(safe-area-inset-bottom))] overflow-y-auto overscroll-contain';
+
 /** The one-time Android-app popup (design B + split button), see the android-app-promo spec. */
 export default function AndroidPromoDialog() {
   const { open, step, setStep, close, neverWithUndo } = useAndroidPromoStore();
@@ -91,7 +94,8 @@ export default function AndroidPromoDialog() {
                 transition={{ type: 'spring', stiffness: 380, damping: 30 }}
               >
                 <DialogPrimitive.Title className="sr-only">Android-app</DialogPrimitive.Title>
-                <AutoHeight>
+                {/* Short screens (landscape phone): the dialog stops 16px from the safe area and its content scrolls inside */}
+                <AutoHeight scrollClassName={PROMO_SCROLL}>
                   <AnimatePresence mode="wait" initial={false}>
                     <motion.div key={step} {...SWAP}>
                       {step === 'intro' ? (
@@ -106,7 +110,8 @@ export default function AndroidPromoDialog() {
                         </>
                       ) : (
                         <div className="p-5">
-                          <div className="mb-3.5 flex items-center gap-3">
+                          {/* Sticks while the step scrolls, so its close button stays in reach */}
+                          <div className="sticky top-0 z-10 -mx-5 -mt-5 flex items-center gap-3 bg-beheer-window px-5 pb-3.5 pt-5">
                             {step === 'done' ? <span className="flex-1" /> : <Stepper step={step} />}
                             <StepClose onClose={dismiss} />
                           </div>
