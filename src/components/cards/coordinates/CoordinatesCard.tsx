@@ -10,6 +10,7 @@ import {isInNetherlands} from "@/lib/netherlands.ts";
 import {MAP_CHIP, MAP_TILE} from "@/lib/map-chrome.ts";
 import {SWAP_TRANSITION} from "@/lib/motion.ts";
 import {COARSE_HIT_AREA} from "@/lib/hit-area.ts";
+import {activatedByKeyboard} from "@/lib/input-modality.ts";
 
 /** `onDone`: after showing a valid coordinate, e.g. to close the md popover that holds this card; `fluid`: fill the parent (phone drawer) instead of 300 px */
 export default function CoordinatesCard({ mapRef, onDone, fluid }: { mapRef: React.RefObject<MapRef | null>; onDone?: () => void; fluid?: boolean }) {
@@ -40,7 +41,7 @@ export default function CoordinatesCard({ mapRef, onDone, fluid }: { mapRef: Rea
             zoom: 14,
         });
 
-        mapRef.current?.markPoint({ lng, lat } as LngLat);
+        mapRef.current?.markPoint({ lng, lat } as LngLat, { focus: activatedByKeyboard() });
         setError(null);
         onDone?.();
     }
