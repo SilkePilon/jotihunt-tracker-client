@@ -37,8 +37,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
           "--border-radius": "var(--radius)",
         } as React.CSSProperties
       }
-      // Dutch names for the toast region and the close buttons (sonner's defaults are English)
-      containerAriaLabel="Meldingen"
+      // Dutch names for the toast region and the close buttons (sonner's defaults are English); not "Meldingen", that is the notification settings dialog
+      containerAriaLabel="Pop-upberichten"
       toastOptions={{
         closeButton: true,
         closeButtonAriaLabel: "Sluiten",
