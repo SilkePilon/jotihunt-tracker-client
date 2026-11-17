@@ -411,13 +411,15 @@ body.dark {
 /* Beheer window: in light mode the window is a step darker than its (white) cards; rows are a tonal step above the
    card (M3 surface containers). Declared on body because the theme's `.dark` class sits on body. */
 body {
-  /* Elevation of the shared surfaces: a 1px hairline in the border colour + a soft drop shadow. Use as shadow-(--shadow-…)
+  /* Elevation of the shared surfaces: a ring (border-colour hairline; a faint dark ring for map cards and tiles) + a soft drop shadow. Use as shadow-(--shadow-…)
      (cn merges that with a caller's shadow-none; a named @theme shadow it can't). On body, not in @theme (emitted on
      :root): the theme's .dark class sits on body, so only here var(--border) resolves to the dark value.
      tile: map tiles/buttons (MAP_TILE); tooltip: tooltips; menu: menus, popovers, toasts (MENU_SURFACE); dialog:
      dialogs, map popups, HQ event card (DIALOG_SHELL); sheet: phone bottom sheet + drawers (a floating landscape
      column uses dialog) */
-  --shadow-tile: 0 0 0 1px var(--border), 0 4px 14px rgb(0 0 0 / 0.22);
+  /* Cards on the map (sidebar .card and MAP_TILE): a faint dark ring like the sidebar cards, no grey border line */
+  --shadow-card-ring: 0 0 0 2px rgb(0 0 0 / 0.1);
+  --shadow-tile: var(--shadow-card-ring), 0 4px 14px rgb(0 0 0 / 0.22);
   --shadow-tooltip: 0 0 0 1px var(--border), 0 4px 12px rgb(0 0 0 / 0.25);
   --shadow-menu: 0 0 0 1px var(--border), 0 10px 30px rgb(0 0 0 / 0.28);
   --shadow-dialog: 0 0 0 1px var(--border), 0 18px 50px rgb(0 0 0 / 0.35);
@@ -455,7 +457,7 @@ body.dark {
 
 /* Legacy outline of the sidebar/HQ cards: a 1px ring in the theme's border colour (a 2px black/10% ring vanished in dark mode) */
 .card {
-  box-shadow: 0 0 0 1px var(--border);
+  box-shadow: var(--shadow-card-ring);
 }
 
 /*
