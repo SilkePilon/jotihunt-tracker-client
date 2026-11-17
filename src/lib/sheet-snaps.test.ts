@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { computeSnapHeights, dockCardMax, dockedPadding, grabLabel, nextSnap, rubberBand, settleSnap } from './sheet-snaps';
+import { computeSnapHeights, dockCardMax, dockedPadding, grabLabel, nextSnap, phoneMapPadding, rubberBand, settleSnap } from './sheet-snaps';
 
 describe('computeSnapHeights', () => {
   test('iPhone-like viewport', () => {
@@ -68,6 +68,13 @@ test('grabLabel names the current snap', () => {
   expect(grabLabel('peek')).toBe('Paneel groter of kleiner maken, nu ingeklapt');
   expect(grabLabel('half')).toContain('half open');
   expect(grabLabel('full')).toContain('helemaal open');
+});
+
+describe('phoneMapPadding', () => {
+  test('pads the bottom for the sheet and a docked card', () => {
+    expect(phoneMapPadding({ sheet: 380, card: 0, mapHeight: 800 })).toEqual({ top: 0, right: 0, bottom: 380, left: 0 });
+    expect(phoneMapPadding({ sheet: 380, card: 100, mapHeight: 800 })).toEqual({ top: 0, right: 0, bottom: dockedPadding(380, 100, 800), left: 0 });
+  });
 });
 
 describe('dockedPadding', () => {

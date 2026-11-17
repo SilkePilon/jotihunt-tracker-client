@@ -50,7 +50,8 @@ import Ruler from "@/components/map/RulerControl.tsx";
 import {MAP_LOCALE_NL} from "@/lib/map-locale";
 import type {SymbolLayerSpecification} from '@maplibre/maplibre-gl-style-spec';
 import {DEFAULT_VIEW} from '@/lib/map-view';
-import {dockedPadding} from '@/lib/sheet-snaps';
+import {phoneMapPadding} from '@/lib/sheet-snaps';
+import {currentPhonePadding, setPaddingInPlace} from '@/lib/dock-camera';
 import {isMapPopupOpen} from '@/lib/open-popups';
 import {FASTFOOD_LAYER, FOX_MARKERS_LAYER, HUNTER_ARROWS_LAYER, HUNTERS_LAYER, LIFE360_LAYER, TEAM_PINS_LAYER, TRAILS_HIT_LAYER} from '@/lib/map-layers';
 import LayerStack from './layers/LayerStack';
@@ -145,13 +146,14 @@ const RULER_LABEL_PAINT = {'text-color': '#fff', 'text-halo-color': RULER_COLOR,
 const INTERACTIVE_LAYER_IDS = [FOX_MARKERS_LAYER, TEAM_PINS_LAYER, HUNTERS_LAYER, HUNTER_ARROWS_LAYER, LIFE360_LAYER, FASTFOOD_LAYER, TRAILS_HIT_LAYER];
 
 /**
- * Bottom map padding for the phone sheet's current snap and a docked card (undefined on desktop, the HQ wall, or
- * before the sheet measured)
+ * Map padding for the phone sheet's current snap and a docked card (undefined on desktop, the HQ wall, or before the
+ * sheet measured)
  */
-function phonePaddingFor(wall: boolean): number | undefined {
-    const {sheetSnapHeights, sheetSnap, dockCardHeight} = useSidebarStore.getState();
-    return wall || !sheetSnapHeights ? undefined : dockedPadding(sheetSnapHeights[sheetSnap], dockCardHeight, window.innerHeight);
+function phonePaddingFor(wall: boolean) {
+    return wall ? undefined : currentPhonePadding();
 }
+
+const NO_PADDING = {top: 0, right: 0, bottom: 0, left: 0};
 
 // Memoized: Layout re-renders often and the map's props (ref, the HQ wall's memoized overlay) rarely change
 const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay}, ref) => {
@@ -168,8 +170,8 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
             if (mapRef.current) {
                 // Phones: fly with the padding of the snap the sheet is heading to (a caller lowering the sheet sets the
                 // snap first), so the point lands above the sheet and the padding effect has nothing left to ease
-                const bottom = phonePaddingFor(wall);
-                mapRef.current.flyTo(bottom === undefined || options.padding !== undefined ? options : {...options, padding: {top: 0, left: 0, right: 0, bottom}});
+                const padding = phonePaddingFor(wall);
+                mapRef.current.flyTo(padding === undefined || options.padding !== undefined ? options : {...options, padding});
             }
         },
         fitBounds: (bounds, options) => {
@@ -245,14 +247,23 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
     // above the card docked on the sheet while one is open (so the point it belongs to isn't under it)
     const sheetHeight = useSidebarStore((state) => state.sheetHeight);
     const dockCardHeight = useSidebarStore((state) => state.dockCardHeight);
-    const bottomPadding = isMobile && !wall ? dockedPadding(sheetHeight, dockCardHeight, window.innerHeight) : 0;
+    const {bottom: bottomPadding, left: leftPadding} = isMobile && !wall ? phoneMapPadding({sheet: sheetHeight, card: dockCardHeight, mapHeight: window.innerHeight}) : NO_PADDING;
+    // The sheet height the padding was last applied for: a sheet move eases, a docked card coming or going doesn't move the view
+    const paddedSheet = useRef(sheetHeight);
     useEffect(() => {
         const map = mapRef.current?.getMap();
         if (!map) return;
+        const sheetMoved = paddedSheet.current !== sheetHeight;
+        paddedSheet.current = sheetHeight;
+        const padding = {top: 0, right: 0, bottom: bottomPadding, left: leftPadding};
         const apply = () => {
-            // Nothing to do (desktop/HQ on mount, or a flyTo that already carried this padding)
-            if (map.getPadding().bottom === bottomPadding) return;
-            map.easeTo({padding: {top: 0, left: 0, right: 0, bottom: bottomPadding}, duration: 300});
+            // Nothing to do (desktop/HQ on mount, or a camera move that already carried this padding)
+            const current = map.getPadding();
+            if (current.bottom === bottomPadding && current.left === leftPadding) return;
+            // The sheet moved: ease, so the centre stays in view above it. A docked card opened, closed or resized:
+            // pad for it without shifting what is on screen
+            if (sheetMoved) map.easeTo({padding, duration: 300});
+            else setPaddingInPlace(map, padding);
         };
         // easeTo stops a running camera move: a "show on map" that lowers the sheet would be cancelled. Pad once it lands.
         if (map.isMoving()) {
@@ -262,7 +273,7 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
             };
         }
         apply();
-    }, [bottomPadding]);
+    }, [bottomPadding, leftPadding, sheetHeight]);
     // Own position like the Android app's: the vehicle of our own tracker (a person without one)
     const {status: tracker} = useTrackerStatus();
     const markerPalette = useMarkerPalette();
@@ -343,7 +354,7 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
                 // Phones and the HQ wall: start with the credits collapsed to the (i) button; MapLibre opens them on load
                 onLoad={(event) => {
                     if (isMobile || wall) event.target.getContainer().querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show');
-                    event.target.setPadding({top: 0, left: 0, right: 0, bottom: bottomPadding});
+                    event.target.setPadding({top: 0, right: 0, bottom: bottomPadding, left: leftPadding});
                 }}
             >
                 <div className="bg-background">

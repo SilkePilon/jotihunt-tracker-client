@@ -36,6 +36,18 @@ export function dockedPadding(sheet: number, card: number, mapHeight: number): n
   return Math.max(0, Math.min(padding, Math.max(sheet, mapHeight - MIN_MAP_ROOM)));
 }
 
+export interface CameraPadding {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
+/** Phones: the map's camera padding for the sheet and a docked card (see {@link dockedPadding}). */
+export function phoneMapPadding({ sheet, card, mapHeight }: { sheet: number; card: number; mapHeight: number }): CameraPadding {
+  return { top: 0, right: 0, left: 0, bottom: dockedPadding(sheet, card, mapHeight) };
+}
+
 /**
  * Phones: the most height the docked card may take: what is left above the sheet, the dock gap, the safe area, an 8px
  * margin and (when the map tiles stack above the card) the tiles. Never negative.
