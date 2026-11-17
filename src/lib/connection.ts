@@ -14,6 +14,8 @@ export const NEVER_LOADED_GRACE_MS = 10_000;
 export interface ConnectionState {
   lastSuccessAt: number;
   lastErrorAt: number | null;
+  /** The last failure got no answer at all (offline, server unreachable, timeout) rather than an HTTP error */
+  networkError?: boolean;
 }
 
 /** One feed's record; `lastSuccessAt` null until its first successful fetch. */
@@ -42,7 +44,7 @@ export interface ConnectionSnapshot {
 }
 
 function freshState(now = Date.now()): ConnectionSnapshot {
-  return { startedAt: now, overall: { lastSuccessAt: now, lastErrorAt: null }, feeds: {} };
+  return { startedAt: now, overall: { lastSuccessAt: now, lastErrorAt: null, networkError: false }, feeds: {} };
 }
 
 let state: ConnectionSnapshot = freshState();
@@ -69,8 +71,10 @@ export function reportFetchSuccess(url?: string, now = Date.now()) {
   if (record) record.lastSuccessAt = now;
 }
 
-export function reportFetchError(url?: string, now = Date.now()) {
+/** `network`: no answer came (see isNetworkError); false for an HTTP error, so the badge doesn't say "Geen verbinding" */
+export function reportFetchError(url?: string, now = Date.now(), network = true) {
   state.overall.lastErrorAt = now;
+  state.overall.networkError = network;
   const record = feed(url);
   if (record) record.lastErrorAt = now;
 }
@@ -105,6 +109,8 @@ export interface ConnectionProblem {
   ageMs: number | null;
   /** Empty: the connection as a whole; else only these critical feeds are behind */
   feeds: string[];
+  /** No connection (the browser is offline or requests get no answer), rather than the server answering with errors */
+  offline: boolean;
 }
 
 /**
@@ -115,9 +121,10 @@ export interface ConnectionProblem {
  * - else, critical feeds that are stale on their own while others still refresh: named, with the oldest age.
  */
 export function connectionProblem(snapshot: ConnectionSnapshot & { anySuccess: boolean }, online: boolean, now: number, staleAfterMs = STALE_AFTER_MS): ConnectionProblem | null {
-  if (!online && !snapshot.anySuccess) return { ageMs: null, feeds: [] };
+  if (!online && !snapshot.anySuccess) return { ageMs: null, feeds: [], offline: true };
+  const offline = !online || snapshot.overall.networkError !== false;
   const overall = staleAge(snapshot.overall, online, now, staleAfterMs);
-  if (overall !== null) return { ageMs: overall, feeds: [] };
+  if (overall !== null) return { ageMs: overall, feeds: [], offline };
 
   const neverLoaded: string[] = [];
   const stale: { name: string; age: number }[] = [];
@@ -131,9 +138,9 @@ export function connectionProblem(snapshot: ConnectionSnapshot & { anySuccess: b
     const age = staleAge({ lastSuccessAt: record.lastSuccessAt, lastErrorAt: record.lastErrorAt }, online, now, staleAfterMs);
     if (age !== null) stale.push({ name, age });
   }
-  if (neverLoaded.length > 0 && !snapshot.anySuccess) return { ageMs: null, feeds: [] };
-  if (neverLoaded.length > 0) return { ageMs: null, feeds: neverLoaded };
-  if (stale.length > 0) return { ageMs: Math.max(...stale.map((entry) => entry.age)), feeds: stale.map((entry) => entry.name) };
+  if (neverLoaded.length > 0 && !snapshot.anySuccess) return { ageMs: null, feeds: [], offline };
+  if (neverLoaded.length > 0) return { ageMs: null, feeds: neverLoaded, offline };
+  if (stale.length > 0) return { ageMs: Math.max(...stale.map((entry) => entry.age)), feeds: stale.map((entry) => entry.name), offline };
   return null;
 }
 
@@ -142,15 +149,21 @@ function ageText(ageMs: number): string {
   return minutes < 60 ? `${minutes} min` : `${Math.floor(minutes / 60)} u ${minutes % 60} min`;
 }
 
-/** "Geen verbinding — gegevens 3 min oud" */
-export function staleLabel(ageMs: number): string {
-  return `Geen verbinding — gegevens ${ageText(ageMs)} oud`;
+/** "Geen verbinding — gegevens 3 min oud"; reachable but failing: "Geen actuele gegevens — 3 min oud" */
+export function staleLabel(ageMs: number, offline = true): string {
+  return offline ? `Geen verbinding — gegevens ${ageText(ageMs)} oud` : `Geen actuele gegevens — ${ageText(ageMs)} oud`;
 }
 
-/** The badge text for a {@link ConnectionProblem}: "Geen verbinding", "… gegevens 3 min oud", "Vossen niet bijgewerkt — 3 min oud". */
-export function problemLabel({ ageMs, feeds }: ConnectionProblem): string {
-  if (feeds.length === 0) return ageMs === null ? 'Geen verbinding' : staleLabel(ageMs);
-  const names = feeds.length === 1 ? feeds[0] : `${feeds.slice(0, -1).join(', ')} en ${feeds[feeds.length - 1]}`;
+/** More feeds than this are summarised ("Meerdere gegevens …"), so the badge fits a phone */
+const MAX_NAMED_FEEDS = 2;
+
+/**
+ * The badge text for a {@link ConnectionProblem}: "Geen verbinding" (offline) or "Geen actuele gegevens" (the server
+ * answers with errors), "… 3 min oud", "Vossen niet bijgewerkt — 3 min oud", "Meerdere gegevens niet geladen".
+ */
+export function problemLabel({ ageMs, feeds, offline }: ConnectionProblem): string {
+  if (feeds.length === 0) return ageMs === null ? (offline ? 'Geen verbinding' : 'Geen actuele gegevens') : staleLabel(ageMs, offline);
+  const names = feeds.length > MAX_NAMED_FEEDS ? 'meerdere gegevens' : feeds.length === 1 ? feeds[0] : `${feeds[0]} en ${feeds[1]}`;
   const subject = names.charAt(0).toUpperCase() + names.slice(1);
   return ageMs === null ? `${subject} niet geladen` : `${subject} niet bijgewerkt — ${ageText(ageMs)} oud`;
 }

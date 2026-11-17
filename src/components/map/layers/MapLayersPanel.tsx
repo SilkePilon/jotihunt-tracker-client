@@ -119,6 +119,9 @@ function LayerRowView({ row }: { row: LayerRow }) {
               onClick={part.toggle}
               className={cn(
                 'h-6 w-7 rounded-[7px] text-xs font-semibold outline-none transition-colors duration-200 focus-visible:ring-[3px] focus-visible:ring-ring',
+                // Phones: 44×32 halves, and the invisible ::after reaches into the row's padding for a 44px tall touch area
+                // (side by side they can't grow sideways without overlapping); desktop keeps the compact 28×24
+                'relative pointer-coarse:h-8 pointer-coarse:w-11 pointer-coarse:after:absolute pointer-coarse:after:inset-x-0 pointer-coarse:after:-inset-y-1.5 pointer-coarse:after:content-[\'\']',
                 part.checked ? 'bg-primary-container text-on-primary-container' : 'text-muted-foreground hover:bg-beheer-row-high',
               )}
             >

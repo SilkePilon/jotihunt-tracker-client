@@ -54,8 +54,11 @@ export default function NotificationsDialog() {
   const total = NOTIFICATION_OPTIONS.length;
   const onCount = NOTIFICATION_OPTIONS.filter((option) => !current.includes(option.type)).length;
   const blocked = !iosInstall && pushPermission() === 'denied';
+  // A save sends the choice as it was when Opslaan was tapped, so nothing may change until it settles
+  const locked = saving || readOnly;
 
   function toggle(type: OptionalNotificationType, on: boolean) {
+    if (locked) return;
     setDisabled(toggleType(current, type, on));
   }
 
@@ -92,18 +95,18 @@ export default function NotificationsDialog() {
   return (
     <ResponsiveDialog open={open} onClose={() => void close()} title="Meldingen" description="Tik aan waarvoor je een melding en geluid wilt." className={cn(DIALOG_SHELL, 'bg-card p-5 sm:max-w-sm')} drawerClassName="bg-card" compact onClosed={() => setDisabled(null)}>
       <div className="flex flex-col">
-        <label className="flex cursor-pointer items-center gap-3 rounded-2xl bg-beheer-row px-3.5 py-3">
+        <label className={cn('flex items-center gap-3 rounded-2xl bg-beheer-row px-3.5 py-3 transition-opacity duration-200 motion-reduce:transition-none', locked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer')}>
           <span className="flex-1 text-sm font-semibold">Alles</span>
           <span className="text-xs font-semibold text-muted-foreground tabular-nums">
             {onCount} van {total}
           </span>
-          <BeheerSwitch checked={onCount === total} onCheckedChange={(on) => setDisabled(setAllTypes(on))} aria-label="Alle meldingen" />
+          <BeheerSwitch checked={onCount === total} onCheckedChange={(on) => setDisabled(setAllTypes(on))} disabled={locked} aria-label="Alle meldingen" className="disabled:opacity-100" />
         </label>
 
         <div className="mt-2 grid grid-cols-2 gap-1.5">
           {NOTIFICATION_OPTIONS.map((option) => {
             const on = !current.includes(option.type);
-            return <NotificationTile key={option.type} icon={ICONS[option.type]} label={option.label} short={option.short} description={option.description} on={on} onToggle={() => toggle(option.type, !on)} />;
+            return <NotificationTile key={option.type} icon={ICONS[option.type]} label={option.label} short={option.short} description={option.description} on={on} onToggle={() => toggle(option.type, !on)} disabled={locked} />;
           })}
         </div>
 

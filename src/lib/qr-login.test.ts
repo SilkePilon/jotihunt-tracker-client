@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { AxiosError, AxiosHeaders } from 'axios';
-import { canRetryConfirm, nextAfterLogin, panelAfterPoll, qrProblem, QR_RENEW_FOR_MS } from './qr-login';
+import { canRetryConfirm, denyFailure, nextAfterLogin, panelAfterPoll, qrProblem, QR_RENEW_FOR_MS } from './qr-login';
 
 function httpError(status: number, data: unknown = {}) {
   const error = new AxiosError('fail');
@@ -60,5 +60,18 @@ describe('canRetryConfirm', () => {
     expect(canRetryConfirm(httpError(404, { code: 'QR_GONE' }))).toBe(false);
     expect(canRetryConfirm(httpError(401))).toBe(false);
     expect(canRetryConfirm(new AxiosError('offline'))).toBe(false);
+  });
+});
+
+describe('denyFailure', () => {
+  test('a gone or taken code shows the problem', () => {
+    expect(denyFailure(httpError(404, { code: 'QR_GONE' }))).toEqual({ problem: qrProblem(httpError(404, { code: 'QR_GONE' })) });
+    expect(denyFailure(httpError(409, { code: 'QR_TAKEN' }))).toEqual({ problem: qrProblem(httpError(409, { code: 'QR_TAKEN' })) });
+  });
+
+  test('offline and server errors stay retryable', () => {
+    expect(denyFailure(new AxiosError('offline'))).toEqual({ retry: 'Kan de server niet bereiken, controleer je verbinding.' });
+    expect(denyFailure(httpError(500))).toEqual({ retry: 'Weigeren is mislukt, probeer het opnieuw.' });
+    expect(denyFailure(new Error('x'))).toEqual({ retry: 'Weigeren is mislukt, probeer het opnieuw.' });
   });
 });

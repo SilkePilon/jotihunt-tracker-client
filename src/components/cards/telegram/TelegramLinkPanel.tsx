@@ -1,10 +1,13 @@
 import { FormEvent, useId, useState } from 'react';
 import { Loader2Icon, XIcon } from 'lucide-react';
+import BusyIcon from '@/components/motion/BusyIcon';
+import Reveal from '@/components/motion/Reveal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import TrackerQrCode from '@/components/tracker/TrackerQrCode';
 import { useEdition } from '@/hooks/edition.hook';
 import { useNow } from '@/hooks/now.hook';
+import { usePending } from '@/hooks/pending.hook';
 import { secondsLeft } from '@/lib/app-pairing';
 import { formatCountdown } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -12,8 +15,8 @@ import type { TelegramAdminStatus } from '@/types/Telegram';
 import TelegramLogo from './TelegramLogo';
 import InlineError from '@/components/InlineError';
 
-/** Telegram's brand blue. */
-const TELEGRAM_BUTTON = 'bg-[#229ED9] text-white hover:bg-[#229ED9]/90';
+/** Telegram's blue as a button: TELEGRAM_FILL (#229ED9 darkened to 4.66:1 with white) and a darker hover. Literal values: Tailwind needs static class names. */
+const TELEGRAM_BUTTON = 'bg-[#1b7caa] text-white hover:bg-[#19729d]';
 
 export interface TelegramLinkActions {
   /** Start a QR login */
@@ -24,24 +27,35 @@ export interface TelegramLinkActions {
   onSubmitPassword: (password: string) => Promise<string | null>;
 }
 
-function Header({ title, onCancel }: { title: string; onCancel: () => void }) {
+function Header({ title, onCancel, disabled, cancelling }: { title: string; onCancel: () => void; disabled?: boolean; cancelling?: boolean }) {
   return (
     <div className="flex items-center justify-between">
       <span className="text-xs font-semibold">{title}</span>
-      <Button variant="ghost" size="icon" className="relative size-6 text-muted-foreground after:absolute after:-inset-2.5" aria-label="Koppelen annuleren" onClick={onCancel}>
-        <XIcon />
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="relative size-6 text-muted-foreground after:absolute after:-inset-2.5"
+        aria-label="Koppelen annuleren"
+        aria-busy={cancelling}
+        disabled={disabled || cancelling}
+        onClick={onCancel}
+      >
+        <BusyIcon busy={!!cancelling} icon={<XIcon />} />
       </Button>
     </div>
   );
 }
 
-function QrStep({ url, expiresAt, onCancel }: { url?: string; expiresAt?: string; onCancel: () => void }) {
+function QrStep({ url, expiresAt, onCancel }: { url?: string; expiresAt?: string; onCancel: () => Promise<unknown> }) {
   const now = useNow(true);
+  const { pending, run } = usePending<'cancel'>();
+  const header = <Header title="Scan in Telegram" onCancel={() => void run('cancel', onCancel)} cancelling={pending === 'cancel'} />;
   if (!url) {
     // The server is still asking Telegram for the first token
     return (
       <div className="flex flex-col gap-2" data-telegram-state="qr">
-        <Header title="Scan in Telegram" onCancel={onCancel} />
+        {header}
         <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <Loader2Icon className="size-3.5 animate-spin text-[#229ED9]" />
           QR-code laden…
@@ -51,7 +65,7 @@ function QrStep({ url, expiresAt, onCancel }: { url?: string; expiresAt?: string
   }
   return (
     <div className="flex flex-col gap-2" data-telegram-state="qr">
-      <Header title="Scan in Telegram" onCancel={onCancel} />
+      {header}
       <div className="flex items-start gap-3">
         <TrackerQrCode value={url} size={96} label="QR-code om Telegram te koppelen" />
         <div className="flex flex-col gap-1.5 text-xs leading-normal text-muted-foreground">
@@ -72,40 +86,43 @@ function QrStep({ url, expiresAt, onCancel }: { url?: string; expiresAt?: string
   );
 }
 
-function PasswordStep({ hint, onSubmit, onCancel }: { hint?: string; onSubmit: TelegramLinkActions['onSubmitPassword']; onCancel: () => void }) {
+function PasswordStep({ hint, onSubmit, onCancel }: { hint?: string; onSubmit: TelegramLinkActions['onSubmitPassword']; onCancel: () => Promise<unknown> }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  // Sending the password and ✕ change the same login: one at a time
+  const { pending, run } = usePending<'submit' | 'cancel'>();
   const errorId = useId();
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (!password || busy) return;
-    setBusy(true);
-    setError(await onSubmit(password));
-    setBusy(false);
+    if (!password) return;
+    const message = await run('submit', async () => {
+      try {
+        return await onSubmit(password);
+      } catch {
+        return 'Er ging iets mis, probeer het opnieuw.';
+      }
+    });
+    if (message !== undefined) setError(message);
   }
 
   return (
     <form className="flex flex-col gap-2" onSubmit={submit} data-telegram-state="password">
-      <Header title="Cloud-wachtwoord van Telegram" onCancel={onCancel} />
+      <Header title="Cloud-wachtwoord van Telegram" onCancel={() => void run('cancel', onCancel)} disabled={!!pending} cancelling={pending === 'cancel'} />
       <Input
         type="password"
         autoComplete="current-password"
         aria-label="Cloud-wachtwoord van Telegram"
         placeholder={hint}
+        readOnly={!!pending}
         value={password}
         aria-invalid={!!error}
         aria-describedby={error ? errorId : undefined}
         onChange={(event) => setPassword(event.target.value)}
       />
-      {error && (
-        <InlineError id={errorId}>
-          {error}
-        </InlineError>
-      )}
-      <Button type="submit" className={TELEGRAM_BUTTON} disabled={!password || busy}>
-        {busy && <Loader2Icon className="animate-spin" />}
+      <Reveal gap={8}>{error && <InlineError id={errorId}>{error}</InlineError>}</Reveal>
+      <Button type="submit" className={TELEGRAM_BUTTON} disabled={!password || !!pending} aria-busy={pending === 'submit'}>
+        <BusyIcon busy={pending === 'submit'} />
         Koppelen
       </Button>
     </form>
@@ -119,6 +136,7 @@ export default function TelegramLinkPanel({ status, onLink, onCancel, onSubmitPa
   const { readOnly } = useEdition();
 
   async function start() {
+    if (starting) return;
     setStarting(true);
     try {
       await onLink();
@@ -127,7 +145,7 @@ export default function TelegramLinkPanel({ status, onLink, onCancel, onSubmitPa
     }
   }
 
-  const cancel = () => void onCancel();
+  const cancel = () => onCancel();
 
   switch (status.state) {
     case 'unavailable':
@@ -141,7 +159,7 @@ export default function TelegramLinkPanel({ status, onLink, onCancel, onSubmitPa
         <div className="flex flex-col gap-2.5" data-telegram-state="unlinked">
           <p className="text-xs text-muted-foreground">Koppel het Telegram-account dat de berichten van @Jotihunt_bot krijgt. Tegenhunts worden dan automatisch gemeld.</p>
           <Button size="lg" className={cn('h-11 w-full rounded-lg text-sm font-semibold', TELEGRAM_BUTTON)} disabled={starting || readOnly} onClick={() => void start()}>
-            {starting ? <Loader2Icon className="animate-spin" /> : <TelegramLogo className="size-[18px]" />}
+            <BusyIcon busy={starting} icon={<TelegramLogo className="size-[18px]" />} />
             Koppel Telegram
           </Button>
         </div>

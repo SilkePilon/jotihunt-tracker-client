@@ -1,33 +1,35 @@
 import {SearchIcon} from "lucide-react";
 import * as React from "react";
 import {MapRef} from "@/components/Map.tsx";
-import {useState} from "react";
-import {toast} from "sonner";
+import {useId, useState} from "react";
 import type {LngLat} from "maplibre-gl";
+import {AnimatePresence, motion} from "motion/react";
 import {cn} from "@/lib/utils.ts";
 import {parseToWGS84} from "@/lib/coordinates.ts";
 import {isInNetherlands} from "@/lib/netherlands.ts";
 import {MAP_CHIP, MAP_TILE} from "@/lib/map-chrome.ts";
+import {SWAP_TRANSITION} from "@/lib/motion.ts";
 
 export default function CoordinatesCard({ mapRef }: { mapRef: React.RefObject<MapRef | null> }) {
 
     const [inputValue, setInputValue] = useState("");
-    const [hasError, setHasError] = useState(false);
+    // Shown under the field until the next edit (no toast: it belongs to this field)
+    const [error, setError] = useState<string | null>(null);
+    const errorId = useId();
+    const empty = inputValue.trim() === "";
 
     function goToInput(raw: string) {
-        if (raw == "") return;
+        if (raw.trim() === "") return;
 
         const result = parseToWGS84(raw);
         if (!result) {
-            toast.error("Kon de coördinaat niet herkennen. Probeer een ander formaat.");
-            setHasError(true);
+            setError("Kon de coördinaat niet herkennen. Probeer een ander formaat.");
             return;
         }
 
         const { lng, lat } = result;
         if (!isInNetherlands(lng, lat)) {
-            toast.error("De opgegeven coördinaat ligt buiten Nederland.");
-            setHasError(true);
+            setError("De opgegeven coördinaat ligt buiten Nederland.");
             return;
         }
 
@@ -37,13 +39,12 @@ export default function CoordinatesCard({ mapRef }: { mapRef: React.RefObject<Ma
         });
 
         mapRef.current?.markPoint({ lng, lat } as LngLat);
-        setHasError(false);
+        setError(null);
     }
 
     function onChange(event: React.ChangeEvent<HTMLInputElement>) {
-        const value = event.currentTarget.value;
-        if (value == "") setHasError(false);
-        setInputValue(value);
+        setInputValue(event.currentTarget.value);
+        setError(null);
     }
 
     function onSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -52,29 +53,50 @@ export default function CoordinatesCard({ mapRef }: { mapRef: React.RefObject<Ma
     }
 
     return (
-        <form
-            onSubmit={onSubmit}
-            className={cn(
-                MAP_TILE,
-                "flex h-11 w-[300px] items-center gap-2.5 rounded-[14px] px-1.5 outline-2 outline-transparent transition-[outline-color] duration-150 focus-within:outline-ring",
-                hasError && "outline-destructive focus-within:outline-destructive",
-            )}
-        >
-            <span className={cn(MAP_CHIP, "text-muted-foreground")}><SearchIcon/></span>
-            <input
-                aria-label="Coördinaat"
-                aria-invalid={hasError || undefined}
-                placeholder="Zoek op coördinaat..."
-                onChange={onChange}
-                value={inputValue}
-                className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-            />
-            <button
-                type="submit"
-                className="h-8 shrink-0 rounded-[9px] bg-primary-container px-3 text-[13px] font-semibold text-on-primary-container transition-colors hover:bg-[color-mix(in_oklab,var(--on-primary-container)_10%,var(--primary-container))] focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:outline-none"
+        <div className="relative w-[300px]">
+            <form
+                onSubmit={onSubmit}
+                className={cn(
+                    MAP_TILE,
+                    "flex h-11 w-full items-center gap-2.5 rounded-[14px] px-1.5 outline-2 outline-transparent transition-[outline-color] duration-150 focus-within:outline-ring",
+                    error && "outline-destructive focus-within:outline-destructive",
+                )}
             >
-                Bekijk
-            </button>
-        </form>
+                <span className={cn(MAP_CHIP, "text-muted-foreground")}><SearchIcon/></span>
+                <input
+                    aria-label="Coördinaat"
+                    aria-invalid={!!error || undefined}
+                    aria-describedby={error ? errorId : undefined}
+                    placeholder="Zoek op coördinaat..."
+                    onChange={onChange}
+                    value={inputValue}
+                    className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                />
+                <button
+                    type="submit"
+                    disabled={empty}
+                    className="h-8 shrink-0 rounded-[9px] bg-primary-container px-3 text-[13px] font-semibold text-on-primary-container transition-[background-color,opacity] hover:bg-[color-mix(in_oklab,var(--on-primary-container)_10%,var(--primary-container))] focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-primary-container"
+                >
+                    Bekijk
+                </button>
+            </form>
+            {/* Floats under the field (doesn't push the top row) with the tiles' shadow, which a height reveal would clip */}
+            <AnimatePresence>
+                {error && (
+                    <motion.p
+                        key={error}
+                        id={errorId}
+                        role="alert"
+                        initial={{opacity: 0, y: -4}}
+                        animate={{opacity: 1, y: 0}}
+                        exit={{opacity: 0, y: -4}}
+                        transition={SWAP_TRANSITION}
+                        className={cn(MAP_TILE, "absolute inset-x-0 top-full mt-2 rounded-xl px-3 py-2 text-xs font-medium text-destructive-text")}
+                    >
+                        {error}
+                    </motion.p>
+                )}
+            </AnimatePresence>
+        </div>
     );
 }

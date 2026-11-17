@@ -14,8 +14,10 @@ export const LIFE360_MEMBERS_POLL_MS = 15_000;
 export const LIFE360_MEMBERS_IDLE_POLL_MS = 60_000;
 /** A position older than this is grey and not live (the server's liveCount uses the same 15 min). */
 export const LIFE360_STALE_MS = 15 * 60_000;
-/** Life360's brand colour (buttons, marker rim). */
+/** Life360's brand colour (marker rim, focus rings). */
 export const LIFE360_PURPLE = '#7875ea';
+/** The brand purple darkened (same hue) for fills under white text and icons: 4.65:1 with white, where #7875ea is 3.8:1 */
+export const LIFE360_FILL = '#6763e7';
 
 /**
  * SWR refresh interval of the admin status: 2 s while linking (code / circle, and linked until the server's first poll

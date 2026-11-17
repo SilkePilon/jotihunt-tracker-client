@@ -25,7 +25,7 @@ async function errorText(action: () => Promise<unknown>, fallback: string): Prom
 export default function Life360Section({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
   const user = useAuthUser<User>();
   const isAdmin = !!user?.admin;
-  const { status, isError, sendCode, verifyCode, chooseCircle, submitToken, requestFreshLocations, unlink } = useLife360Admin(isAdmin);
+  const { status, isError, retry, sendCode, verifyCode, chooseCircle, submitToken, requestFreshLocations, unlink } = useLife360Admin(isAdmin);
   const { data: members } = useLife360Members(isAdmin && status?.state === 'linked');
   const setSheetSnap = useSidebarStore((state) => state.setSheetSnap);
 
@@ -46,6 +46,7 @@ export default function Life360Section({ mapRef }: { mapRef: RefObject<MapRef | 
       <Life360Card
         status={status}
         isError={isError}
+        onRetry={retry}
         members={members?.members}
         onSendCode={(email) => errorText(() => sendCode(email), 'Code versturen is mislukt, probeer het opnieuw.')}
         onVerifyCode={(code) => errorText(() => verifyCode(code), 'Koppelen is mislukt, probeer het opnieuw.')}

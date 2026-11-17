@@ -1,10 +1,12 @@
 import { describe, expect, test } from 'bun:test';
 import type { Life360LinkedStatus } from '@/types/Life360';
 import { life360Fixture } from './life360-fixtures';
+import { contrastRatio } from './marker-style';
 import {
   formatAgeShort,
   formatAgo,
   isLocationStale,
+  LIFE360_FILL,
   LIFE360_STALE_MS,
   firstPollLanded,
   life360AdminRefreshInterval,
@@ -122,4 +124,10 @@ test('the linked fixture counts its live members like the server (≤ 15 min)', 
   expect(status.state === 'linked' && status.liveCount).toBe(live);
   expect(life360Fixture('paused', NOW).members.stale).toBe(true);
   expect(life360Fixture('unlinked', NOW).members).toEqual({ linked: false, stale: false, members: [] });
+});
+
+describe('LIFE360_FILL', () => {
+  test('white text on it meets WCAG AA (4.5:1)', () => {
+    expect(contrastRatio(LIFE360_FILL, '#ffffff')).toBeGreaterThanOrEqual(4.5);
+  });
 });

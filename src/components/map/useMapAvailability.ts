@@ -6,21 +6,28 @@ const TICK_MS = 1000;
 
 /**
  * Whether the base map failed to load (style/tiles errored, or offline and nothing drew), for the "Kaart niet
- * beschikbaar" card. Pass the handlers to <Maplibre onError onSourceData>. Once a base tile has rendered (also from the
- * cache) the map counts as available for the rest of the session.
+ * beschikbaar" card. Pass the handlers to <Maplibre onError onSourceData>. Once a base tile of the current style has
+ * rendered (also from the cache) the map counts as available, until the style's base sources change (`styleKey`, see
+ * mapStyleKey): e.g. switching to satellite while offline starts over and watches the new style's sources.
  */
-export function useMapAvailability(baseSourceIds: ReadonlySet<string> | null) {
+export function useMapAvailability(baseSourceIds: ReadonlySet<string> | null, styleKey: string) {
   const progress = useRef<MapLoadProgress>(startMapLoad(0));
-  // The clock starts when the map mounts
+  // The clock starts when the map mounts, and again for every new set of base sources
   useEffect(() => {
     progress.current = startMapLoad(Date.now());
-  }, []);
+  }, [styleKey]);
   const baseIds = useRef(baseSourceIds);
   useEffect(() => {
     baseIds.current = baseSourceIds;
   });
   const [unavailable, setUnavailable] = useState(false);
   const [hasContent, setHasContent] = useState(false);
+  const [watchedKey, setWatchedKey] = useState(styleKey);
+  if (styleKey !== watchedKey) {
+    setWatchedKey(styleKey);
+    setHasContent(false);
+    setUnavailable(false);
+  }
 
   const check = useCallback(() => {
     setUnavailable(isMapUnavailable(progress.current, Date.now(), navigator.onLine));

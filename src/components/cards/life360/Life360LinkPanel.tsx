@@ -1,7 +1,9 @@
 import { FormEvent, useId, useState } from 'react';
 import InlineError from '@/components/InlineError';
 import { REGEXP_ONLY_DIGITS } from 'input-otp';
-import { Loader2Icon, XIcon } from 'lucide-react';
+import { XIcon } from 'lucide-react';
+import BusyIcon from '@/components/motion/BusyIcon';
+import Reveal from '@/components/motion/Reveal';
 import { inlineLinkClass } from '@/components/tracker/styles';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -9,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { useEdition } from '@/hooks/edition.hook';
 import { useNow } from '@/hooks/now.hook';
+import { usePending } from '@/hooks/pending.hook';
 import { isSixDigits, resendCountdown } from '@/lib/life360';
 import { cn } from '@/lib/utils';
 import type { Life360AdminStatus, Life360Circle } from '@/types/Life360';
@@ -35,31 +38,52 @@ export type Life360LinkView = 'unavailable' | 'unlinked' | 'email' | 'code' | 'c
 const OTP_SLOT =
   'h-[42px] flex-1 font-mono text-lg font-bold first:rounded-l-lg last:rounded-r-lg data-[active=true]:border-[#7875ea] data-[active=true]:ring-2 data-[active=true]:ring-inset data-[active=true]:ring-[#7875ea]/40';
 
-function Header({ title, onCancel }: { title: string; onCancel: () => void }) {
+/** Inline links ("Opnieuw sturen", "ander adres") while another request runs */
+const LINK_DISABLED = 'disabled:cursor-default disabled:text-muted-foreground disabled:no-underline disabled:opacity-60';
+
+const SEND_ERROR = 'Er ging iets mis, probeer het opnieuw.';
+
+/** Turns a throwing action into its error text, so a step never stays busy */
+async function settle(action: () => Promise<string | null>): Promise<string | null> {
+  try {
+    return await action();
+  } catch {
+    return SEND_ERROR;
+  }
+}
+
+function Header({ title, onCancel, disabled, cancelling }: { title: string; onCancel: () => void; disabled?: boolean; cancelling?: boolean }) {
   return (
     <div className="flex items-center justify-between">
       <span className="text-xs font-semibold">{title}</span>
-      <Button type="button" variant="ghost" size="icon" className="relative size-6 text-muted-foreground after:absolute after:-inset-2.5" aria-label="Koppelen annuleren" onClick={onCancel}>
-        <XIcon />
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="relative size-6 text-muted-foreground after:absolute after:-inset-2.5"
+        aria-label="Koppelen annuleren"
+        aria-busy={cancelling}
+        disabled={disabled || cancelling}
+        onClick={onCancel}
+      >
+        <BusyIcon busy={!!cancelling} icon={<XIcon />} />
       </Button>
     </div>
   );
 }
 
 /** "Lukt het niet? Plak token": hidden until clicked; for when the code never arrives. */
-function TokenFallback({ onSubmitToken }: { onSubmitToken: Life360LinkActions['onSubmitToken'] }) {
+function TokenFallback({ busy, blocked, onSubmit }: { busy: boolean; blocked: boolean; onSubmit: (token: string) => Promise<string | null | undefined> }) {
   const [token, setToken] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
   const errorId = useId();
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     const value = token.trim();
-    if (!value || busy) return;
-    setBusy(true);
-    setError(await onSubmitToken(value));
-    setBusy(false);
+    if (!value) return;
+    const message = await onSubmit(value);
+    if (message !== undefined) setError(message);
   }
 
   return (
@@ -75,6 +99,7 @@ function TokenFallback({ onSubmitToken }: { onSubmitToken: Life360LinkActions['o
             autoComplete="off"
             spellCheck={false}
             value={token}
+            readOnly={busy}
             aria-invalid={!!error}
             aria-describedby={error ? errorId : undefined}
             onChange={(event) => {
@@ -82,9 +107,9 @@ function TokenFallback({ onSubmitToken }: { onSubmitToken: Life360LinkActions['o
               setError(null);
             }}
           />
-          {error && <InlineError id={errorId}>{error}</InlineError>}
-          <Button type="submit" variant="outline" size="sm" disabled={!token.trim() || busy}>
-            {busy && <Loader2Icon className="animate-spin" />}
+          <Reveal gap={8}>{error && <InlineError id={errorId}>{error}</InlineError>}</Reveal>
+          <Button type="submit" variant="outline" size="sm" disabled={!token.trim() || busy || blocked} aria-busy={busy}>
+            <BusyIcon busy={busy} />
             Koppel met token
           </Button>
         </form>
@@ -106,22 +131,22 @@ function EmailStep({
 }) {
   const [email, setEmail] = useState(initialEmail);
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  // Sending a code and pasting a token both link: one at a time, and ✕ waits until it settled
+  const { pending, run } = usePending<'code' | 'token'>();
   const errorId = useId();
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     const value = email.trim();
-    if (!value || busy) return;
-    setBusy(true);
-    setError(await onSendCode(value));
-    setBusy(false);
+    if (!value) return;
+    const message = await run('code', () => settle(() => onSendCode(value)));
+    if (message !== undefined) setError(message);
   }
 
   return (
     <div className="flex flex-col gap-2" data-life360-state="email">
       <form className="flex flex-col gap-2" onSubmit={submit}>
-        <Header title="Inloggen bij Life360" onCancel={onClose} />
+        <Header title="Inloggen bij Life360" onCancel={onClose} disabled={!!pending} />
         <Input
           type="email"
           inputMode="email"
@@ -130,6 +155,7 @@ function EmailStep({
           aria-label="E-mailadres van het Life360-account"
           placeholder="naam@voorbeeld.nl"
           value={email}
+          readOnly={!!pending}
           aria-invalid={!!error}
           aria-describedby={error ? errorId : undefined}
           onChange={(event) => {
@@ -137,14 +163,14 @@ function EmailStep({
             setError(null);
           }}
         />
-        {error && <InlineError id={errorId}>{error}</InlineError>}
-        <Button type="submit" className={LIFE360_BUTTON} disabled={!email.trim() || busy}>
-          {busy && <Loader2Icon className="animate-spin" />}
+        <Reveal gap={8}>{error && <InlineError id={errorId}>{error}</InlineError>}</Reveal>
+        <Button type="submit" className={LIFE360_BUTTON} disabled={!email.trim() || !!pending} aria-busy={pending === 'code'}>
+          <BusyIcon busy={pending === 'code'} />
           Stuur code
         </Button>
         <p className="text-[11px] leading-snug text-muted-foreground">Life360 mailt een code van 6 cijfers. Gebruik een apart account, niet je eigen.</p>
       </form>
-      <TokenFallback onSubmitToken={onSubmitToken} />
+      <TokenFallback busy={pending === 'token'} blocked={!!pending} onSubmit={(token) => run('token', () => settle(() => onSubmitToken(token)))} />
     </div>
   );
 }
@@ -161,30 +187,27 @@ function CodeStep({
   resendAt: string;
   onVerifyCode: Life360LinkActions['onVerifyCode'];
   onSendCode: Life360LinkActions['onSendCode'];
-  onCancel: () => void;
-  onOtherAddress: () => void;
+  onCancel: () => Promise<unknown>;
+  onOtherAddress: () => Promise<unknown>;
 }) {
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [resendError, setResendError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [resending, setResending] = useState(false);
+  // Verify, resend, ✕ and "ander adres" all change the same login: one at a time
+  const { pending, run } = usePending<'verify' | 'resend' | 'cancel'>();
   const errorId = useId();
   const now = useNow(true);
   const countdown = resendCountdown(resendAt, now);
 
   async function verify(value: string) {
-    if (!isSixDigits(value) || busy) return;
-    setBusy(true);
-    setError(await onVerifyCode(value));
-    setBusy(false);
+    if (!isSixDigits(value)) return;
+    const message = await run('verify', () => settle(() => onVerifyCode(value)));
+    if (message !== undefined) setError(message);
   }
 
   async function resend() {
-    if (resending) return;
-    setResending(true);
-    const message = await onSendCode(email);
-    setResending(false);
+    const message = await run('resend', () => settle(() => onSendCode(email)));
+    if (message === undefined) return;
     setResendError(message);
     if (!message) {
       setCode('');
@@ -201,7 +224,7 @@ function CodeStep({
         void verify(code);
       }}
     >
-      <Header title="Code uit je mail" onCancel={onCancel} />
+      <Header title="Code uit je mail" onCancel={() => void run('cancel', onCancel)} disabled={!!pending} cancelling={pending === 'cancel'} />
       <p className="text-xs text-muted-foreground">
         Gestuurd naar <b className="font-semibold break-all text-foreground">{email}</b>
       </p>
@@ -214,7 +237,7 @@ function CodeStep({
         aria-label="Code van 6 cijfers"
         aria-invalid={!!error}
         aria-describedby={error ? errorId : undefined}
-        disabled={busy}
+        disabled={!!pending}
         value={code}
         onChange={(value: string) => {
           setCode(value);
@@ -230,19 +253,19 @@ function CodeStep({
           ))}
         </InputOTPGroup>
       </InputOTP>
-      {error && <InlineError id={errorId}>{error}</InlineError>}
+      <Reveal gap={8}>{error && <InlineError id={errorId}>{error}</InlineError>}</Reveal>
       {error ? (
-        <Button type="button" variant="outline" disabled={!!countdown || resending} onClick={() => void resend()}>
-          {resending && <Loader2Icon className="animate-spin" />}
+        <Button type="button" variant="outline" disabled={!!countdown || !!pending} aria-busy={pending === 'resend'} onClick={() => void resend()}>
+          <BusyIcon busy={pending === 'resend'} />
           {countdown ? `Stuur nieuwe code (${countdown})` : 'Stuur nieuwe code'}
         </Button>
       ) : (
-        <Button type="submit" className={LIFE360_BUTTON} disabled={!isSixDigits(code) || busy}>
-          {busy && <Loader2Icon className="animate-spin" />}
+        <Button type="submit" className={LIFE360_BUTTON} disabled={!isSixDigits(code) || !!pending} aria-busy={pending === 'verify'}>
+          <BusyIcon busy={pending === 'verify'} />
           Koppelen
         </Button>
       )}
-      {resendError && <InlineError>{resendError}</InlineError>}
+      <Reveal gap={8}>{resendError && <InlineError>{resendError}</InlineError>}</Reveal>
       <p className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
         {/* After a wrong code the "Stuur nieuwe code" button already carries the countdown */}
         {error ? (
@@ -250,11 +273,11 @@ function CodeStep({
         ) : countdown ? (
           <span className="tabular-nums">Opnieuw sturen over {countdown}</span>
         ) : (
-          <button type="button" className={inlineLinkClass} disabled={resending} onClick={() => void resend()}>
-            Opnieuw sturen
+          <button type="button" className={cn(inlineLinkClass, LINK_DISABLED)} disabled={!!pending} onClick={() => void resend()}>
+            {pending === 'resend' ? 'Sturen…' : 'Opnieuw sturen'}
           </button>
         )}
-        <button type="button" className={inlineLinkClass} onClick={onOtherAddress}>
+        <button type="button" className={cn(inlineLinkClass, LINK_DISABLED)} disabled={!!pending} onClick={() => void run('cancel', onOtherAddress)}>
           ander adres
         </button>
       </p>
@@ -262,22 +285,21 @@ function CodeStep({
   );
 }
 
-function CircleStep({ circles, onChooseCircle, onCancel }: { circles: Life360Circle[]; onChooseCircle: Life360LinkActions['onChooseCircle']; onCancel: () => void }) {
+function CircleStep({ circles, onChooseCircle, onCancel }: { circles: Life360Circle[]; onChooseCircle: Life360LinkActions['onChooseCircle']; onCancel: () => Promise<unknown> }) {
   const [selected, setSelected] = useState(circles[0]?.id ?? '');
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const { pending, run } = usePending<'choose' | 'cancel'>();
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (!selected || busy) return;
-    setBusy(true);
-    setError(await onChooseCircle(selected));
-    setBusy(false);
+    if (!selected) return;
+    const message = await run('choose', () => settle(() => onChooseCircle(selected)));
+    if (message !== undefined) setError(message);
   }
 
   return (
     <form className="flex flex-col gap-2" data-life360-state="circle" onSubmit={submit}>
-      <Header title="Welke cirkel?" onCancel={onCancel} />
+      <Header title="Welke cirkel?" onCancel={() => void run('cancel', onCancel)} disabled={!!pending} cancelling={pending === 'cancel'} />
       <div role="radiogroup" aria-label="Life360-cirkel" className="flex flex-col gap-1.5">
         {circles.map((circle) => {
           const checked = circle.id === selected;
@@ -287,8 +309,9 @@ function CircleStep({ circles, onChooseCircle, onCancel }: { circles: Life360Cir
               type="button"
               role="radio"
               aria-checked={checked}
+              disabled={!!pending}
               onClick={() => setSelected(circle.id)}
-              className={cn('flex cursor-pointer items-center gap-2.5 rounded-lg border px-2.5 py-2 text-left text-[13px] transition-colors', checked && 'border-[#7875ea]')}
+              className={cn('flex cursor-pointer items-center gap-2.5 rounded-lg border px-2.5 py-2 text-left text-[13px] transition-[border-color,opacity] disabled:cursor-not-allowed disabled:opacity-60', checked && 'border-[#7875ea]')}
             >
               <span aria-hidden className={cn('size-4 shrink-0 rounded-full border-[1.5px] border-zinc-400', checked && 'border-[5px] border-[#7875ea]')} />
               <span className="min-w-0 flex-1 truncate">{circle.name}</span>
@@ -296,9 +319,9 @@ function CircleStep({ circles, onChooseCircle, onCancel }: { circles: Life360Cir
           );
         })}
       </div>
-      {error && <InlineError>{error}</InlineError>}
-      <Button type="submit" className={LIFE360_BUTTON} disabled={!selected || busy}>
-        {busy && <Loader2Icon className="animate-spin" />}
+      <Reveal gap={8}>{error && <InlineError>{error}</InlineError>}</Reveal>
+      <Button type="submit" className={LIFE360_BUTTON} disabled={!selected || !!pending} aria-busy={pending === 'choose'}>
+        <BusyIcon busy={pending === 'choose'} />
         Gebruik deze cirkel
       </Button>
     </form>
@@ -316,12 +339,12 @@ export interface Life360LinkPanelProps extends Life360LinkActions {
   /** ✕ on the e-mail step */
   onCloseEmail: () => void;
   /** "ander adres" on the code step: cancel the login and go back to the e-mail step */
-  onOtherAddress: () => void;
+  onOtherAddress: () => Promise<unknown>;
 }
 
 /** Admins: link the team's Life360 account (inside the Life360 card) — every step before "linked". */
 export default function Life360LinkPanel({ view, status, emailPrefill, onOpenEmail, onCloseEmail, onOtherAddress, ...actions }: Life360LinkPanelProps) {
-  const cancel = () => void actions.onCancel();
+  const cancel = () => actions.onCancel();
   // Linking is refused while an archive edition is shown (423)
   const { readOnly } = useEdition();
 

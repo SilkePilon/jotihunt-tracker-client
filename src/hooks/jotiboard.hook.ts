@@ -42,5 +42,5 @@ export function useJotiboardAdmin(enabled: boolean) {
     }
   }
 
-  return { status: enabled ? data : undefined, isError: !!error, link, unlink, setSyncEnabled, purge };
+  return { status: enabled ? data : undefined, isError: !!error, retry: () => mutate(), link, unlink, setSyncEnabled, purge };
 }

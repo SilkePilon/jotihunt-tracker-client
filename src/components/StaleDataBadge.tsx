@@ -52,10 +52,10 @@ export default function StaleDataBadge() {
             transition={SWAP_TRANSITION}
             // Centred through motion's x, since motion owns the transform
             style={{ x: '-50%' }}
-            className="pointer-events-none fixed left-1/2 top-[calc(env(safe-area-inset-top)+8px)] z-50 flex items-center gap-1.5 whitespace-nowrap rounded-badge bg-destructive px-2.5 py-1 text-xs font-semibold text-white shadow-md"
+            className="pointer-events-none fixed left-1/2 top-[calc(env(safe-area-inset-top)+8px)] z-50 flex max-w-[calc(100vw-32px)] items-center gap-1.5 whitespace-nowrap rounded-badge bg-destructive px-2.5 py-1 text-xs font-semibold text-white shadow-md"
           >
             <WifiOffIcon className="size-3.5 shrink-0" />
-            {label}
+            <span className="min-w-0 truncate">{label}</span>
           </motion.div>
         )}
       </AnimatePresence>

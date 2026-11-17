@@ -74,5 +74,5 @@ export function useLife360Admin(enabled: boolean) {
     }
   }
 
-  return { status: enabled ? (fixture?.status ?? data) : undefined, isError: !!error, sendCode, verifyCode, chooseCircle, submitToken, requestFreshLocations, unlink };
+  return { status: enabled ? (fixture?.status ?? data) : undefined, isError: !!error, retry: () => mutate(), sendCode, verifyCode, chooseCircle, submitToken, requestFreshLocations, unlink };
 }

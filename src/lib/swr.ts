@@ -6,6 +6,7 @@ import useSWRInfinite, { type SWRInfiniteConfiguration } from 'swr/infinite';
 import { REQUEST_TIMEOUT_MS, SLOW_REQUEST_TIMEOUT_MS } from '@/lib/http';
 import { hasExpectedShape, UnexpectedResponseError } from '@/lib/response-shape';
 import { reportFetchError, reportFetchSuccess } from '@/lib/connection';
+import { isNetworkError } from '@/lib/api-error';
 
 const baseUrl = import.meta.env.API_BASE_URL;
 
@@ -53,7 +54,7 @@ async function swrFetcher([url, authHeader]: [string, string]) {
     reportFetchSuccess(url);
     return data;
   } catch (error) {
-    reportFetchError(url);
+    reportFetchError(url, Date.now(), isNetworkError(error));
     throw error;
   }
 }

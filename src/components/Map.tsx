@@ -35,6 +35,7 @@ import useSidebarStore from '@/stores/sidebar.store';
 import {MapStyle} from '@/types/MapStyle';
 import {getHybridSatelliteStyle, resolveStaticMapStyle} from '@/lib/map-styles';
 import {materialMapStyle} from '@/lib/map-style';
+import {mapStyleKey} from '@/lib/map-availability';
 import {useDarkMode} from '@/hooks/utils/darkmode.hook';
 import {useIsMobile} from '@/hooks/media.hook';
 import PickedLocationPopup from './map/PickedLocationPopup';
@@ -240,7 +241,8 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
     const resolvedMapStyle = mapStyle === MapStyle.Satellite && hybridSatellite ? hybridSatellite : staticStyle;
     // The style's own sources, to tell a base-map failure from an overlay's (null for a style URL: any source counts)
     const baseSourceIds = useMemo(() => (typeof resolvedMapStyle === 'string' ? null : new Set(Object.keys(resolvedMapStyle.sources))), [resolvedMapStyle]);
-    const availability = useMapAvailability(baseSourceIds);
+    const styleKey = useMemo(() => mapStyleKey(resolvedMapStyle), [resolvedMapStyle]);
+    const availability = useMapAvailability(baseSourceIds, styleKey);
 
     useEffect(() => {
         if (mapStyle !== MapStyle.Satellite) return;

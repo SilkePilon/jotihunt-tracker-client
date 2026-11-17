@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { EllipsisIcon, XIcon } from 'lucide-react';
+import IntegrationCardSkeleton from '@/components/cards/IntegrationCardSkeleton';
+import LoadError from '@/components/LoadError';
 import AutoHeight from '@/components/motion/AutoHeight';
 import Reveal from '@/components/motion/Reveal';
 import { Button } from '@/components/ui/button';
@@ -18,6 +20,8 @@ import { JOTIBOARD_BUTTON } from './styles';
 export interface JotiboardCardProps {
   status: JotiboardStatus | undefined;
   isError: boolean;
+  /** Refetch the status after a failed first load */
+  onRetry: () => Promise<unknown> | unknown;
   /** Resolve to an error text, or null when it worked */
   onLink: (username: string, password: string) => Promise<string | null>;
   onSetSync: (enabled: boolean) => Promise<void>;
@@ -27,7 +31,7 @@ export interface JotiboardCardProps {
 }
 
 /** Admins: link Jotiboard, toggle auto-sync, unlink / delete imported data (mockups linked A, link-flow A, B3). */
-export default function JotiboardCard({ status, isError, onLink, onSetSync, onUnlink, onPurge }: JotiboardCardProps) {
+export default function JotiboardCard({ status, isError, onRetry, onLink, onSetSync, onUnlink, onPurge }: JotiboardCardProps) {
   const [formOpen, setFormOpen] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
   // Linking, the sync switch, unlink and delete are refused while an archive edition is shown (423)
@@ -57,10 +61,6 @@ export default function JotiboardCard({ status, isError, onLink, onSetSync, onUn
   }
   if (actionsOpen && (!showMenu || readOnly)) setActionsOpen(false);
 
-  if (view === 'loading') return null;
-  if (view === 'error') return <p className="text-xs text-muted-foreground">Jotiboard-status ophalen is mislukt.</p>;
-  if (view === 'unavailable') return <p className="text-xs text-muted-foreground">Jotiboard is niet ingesteld op de server (JOTIBOARD_SESSION_KEY).</p>;
-
   const linkedView = view === 'syncing' || view === 'failing' || view === 'paused' ? view : null;
   // One scene for every linked state: JotiboardLinked stays mounted, so its badge pops and its switch's thumb slides
   const scene = view === 'unlinked' ? (formOpen ? 'form' : 'unlinked') : linkedView ? 'linked' : view;
@@ -70,6 +70,9 @@ export default function JotiboardCard({ status, isError, onLink, onSetSync, onUn
       <AutoHeight scene={scene} className="-m-1" innerClassName="p-1">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div key={scene} {...SWAP}>
+            {scene === 'loading' && <IntegrationCardSkeleton label="Jotiboard laden" />}
+            {scene === 'error' && <LoadError message="Jotiboard-status ophalen is mislukt." onRetry={onRetry} />}
+            {scene === 'unavailable' && <p className="text-xs text-muted-foreground">Jotiboard is niet ingesteld op de server (JOTIBOARD_SESSION_KEY).</p>}
             {scene === 'unlinked' && (
               <div className="flex flex-col gap-2.5">
                 <p className="text-xs text-muted-foreground">Koppel het Jotiboard-account. Pins en opgeloste hints van Jotiboard komen dan automatisch in de tracker.</p>

@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
-import { swrKeyFor, telegramAdminRefreshInterval, telegramLink, TELEGRAM_VIEW_PATHS } from './telegram';
+import { swrKeyFor, telegramAdminRefreshInterval, telegramLink, TELEGRAM_FILL, TELEGRAM_VIEW_PATHS } from './telegram';
+import { contrastRatio } from './marker-style';
 
 test('telegramLink: connected, disconnected (reconnecting) or unlinked', () => {
   expect(telegramLink({ linked: true, connected: true })).toBe('connected');
@@ -29,5 +30,11 @@ describe('swrKeyFor', () => {
     expect(matches(['/markers', 'Bearer x'])).toBe(false);
     expect(matches('/counter-hunt')).toBe(false);
     expect(matches(undefined)).toBe(false);
+  });
+});
+
+describe('TELEGRAM_FILL', () => {
+  test('white text on it meets WCAG AA (4.5:1)', () => {
+    expect(contrastRatio(TELEGRAM_FILL, '#ffffff')).toBeGreaterThanOrEqual(4.5);
   });
 });

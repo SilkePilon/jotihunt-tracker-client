@@ -40,12 +40,12 @@ describe('connectionProblem', () => {
   });
 
   test('offline before anything loaded: at once, without an age', () => {
-    expect(connectionProblem({ startedAt: NOW, overall: { lastSuccessAt: NOW, lastErrorAt: null }, feeds: {}, anySuccess: false }, false, NOW)).toEqual({ ageMs: null, feeds: [] });
+    expect(connectionProblem({ startedAt: NOW, overall: { lastSuccessAt: NOW, lastErrorAt: null }, feeds: {}, anySuccess: false }, false, NOW)).toEqual({ ageMs: null, feeds: [], offline: true });
   });
 
   test('a failing /areas poll shows even while /hunts keeps succeeding', () => {
     const problem = connectionProblem(snapshot({ '/areas': { lastSuccessAt: NOW - 90_000, lastErrorAt: NOW - 2000 }, '/hunts': { lastSuccessAt: NOW - 1000, lastErrorAt: null } }), true, NOW);
-    expect(problem).toEqual({ ageMs: 90_000, feeds: ['vossen'] });
+    expect(problem).toEqual({ ageMs: 90_000, feeds: ['vossen'], offline: true });
     expect(problemLabel(problem!)).toBe('Vossen niet bijgewerkt — 1 min oud');
   });
 
@@ -67,7 +67,21 @@ describe('connectionProblem', () => {
   });
 
   test('several stale feeds are named together', () => {
-    expect(problemLabel({ ageMs: 120_000, feeds: ['vossen', 'hunts'] })).toBe('Vossen en hunts niet bijgewerkt — 2 min oud');
+    expect(problemLabel({ ageMs: 120_000, feeds: ['vossen', 'hunts'], offline: true })).toBe('Vossen en hunts niet bijgewerkt — 2 min oud');
+  });
+
+  test('more than two feeds are summarised, so the badge fits a phone', () => {
+    expect(problemLabel({ ageMs: 120_000, feeds: ['vossen', 'hunts', 'markers'], offline: false })).toBe('Meerdere gegevens niet bijgewerkt — 2 min oud');
+    expect(problemLabel({ ageMs: null, feeds: ['vossen', 'hunts', 'markers', 'hints'], offline: false })).toBe('Meerdere gegevens niet geladen');
+  });
+
+  test('HTTP errors while online are not "Geen verbinding"', () => {
+    const overall = { lastSuccessAt: NOW - 3 * 60_000, lastErrorAt: NOW - 1000, networkError: false };
+    expect(problemLabel(connectionProblem(snapshot({}, true, overall), true, NOW)!)).toBe('Geen actuele gegevens — 3 min oud');
+    // The same while the browser is offline, or when requests got no answer
+    expect(problemLabel(connectionProblem(snapshot({}, true, overall), false, NOW)!)).toBe('Geen verbinding — gegevens 3 min oud');
+    expect(problemLabel(connectionProblem(snapshot({}, true, { ...overall, networkError: true }), true, NOW)!)).toBe('Geen verbinding — gegevens 3 min oud');
+    expect(problemLabel({ ageMs: null, feeds: [], offline: false })).toBe('Geen actuele gegevens');
   });
 });
 
@@ -78,6 +92,8 @@ describe('reporting', () => {
     reportFetchError('/areas?x=1', NOW - 2000);
     reportFetchSuccess('/hunts', NOW - 1000);
     expect(connectionProblem(connectionSnapshot(), true, NOW)?.feeds).toEqual(['vossen']);
+    reportFetchError('/areas', NOW - 500, false);
+    expect(connectionSnapshot().overall.networkError).toBe(false);
     expect(feedKey('/hunts?since=1')).toBe('/hunts');
   });
 });
@@ -94,7 +110,7 @@ describe('per-feed tracking of the sidebar feeds', () => {
     const snapshot = connectionSnapshot();
     expect(Object.keys(snapshot.feeds).sort()).toEqual(['/areas', '/hints/board', '/predictions', '/telegram/messages']);
     const problem = connectionProblem(snapshot, true, NOW);
-    expect(problem).toEqual({ ageMs: 90_000, feeds: ['hints', 'voorspellingen'] });
+    expect(problem).toEqual({ ageMs: 90_000, feeds: ['hints', 'voorspellingen'], offline: true });
     expect(problemLabel(problem!)).toBe('Hints en voorspellingen niet bijgewerkt — 1 min oud');
   });
 });
