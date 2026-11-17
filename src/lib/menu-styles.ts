@@ -25,7 +25,7 @@ export const MENU_ROW_DISABLED = 'data-[disabled]:pointer-events-none data-[disa
 export const MENU_ROW_CHECKED = 'data-[state=checked]:bg-(--map-selected-bg) data-[state=checked]:text-(--map-selected-fg) data-[state=checked]:[&_svg]:text-(--map-selected-fg)! data-[state=checked]:focus:bg-[color-mix(in_oklab,var(--map-selected-bg)_85%,var(--map-selected-fg))]';
 
 /** Small header above a group of rows. */
-export const MENU_LABEL = 'px-1 pt-1 pb-1.5 text-[11px] font-bold tracking-wide text-muted-foreground uppercase';
+export const MENU_LABEL = 'px-1 pt-1 pb-1.5 text-xs md:text-[11px] font-bold tracking-wide text-muted-foreground uppercase';
 
 /** Any button that opens a dropdown or popover: soft orange while open, its `data-chevron` icon turns. */
 export const TRIGGER_OPEN =

@@ -88,7 +88,7 @@ export default function ModelPicker({ value, defaultId, models, fetchedAt, listE
           <CommandList className="max-h-72">
             {loading ? (
               <div role="status" aria-label="Modellen laden…" className="flex flex-col gap-1 p-1">
-                <span className="px-1 pb-1 text-[11.5px] text-muted-foreground">Modellen laden…</span>
+                <span className="px-1 pb-1 text-xs md:text-[11.5px] text-muted-foreground">Modellen laden…</span>
                 {Array.from({ length: 4 }, (_, index) => (
                   <div key={index} className="flex items-center gap-2 px-1 py-1.5">
                     <Skeleton className="size-4 rounded" />
@@ -119,9 +119,9 @@ export default function ModelPicker({ value, defaultId, models, fetchedAt, listE
                       <CheckIcon className={cn('size-4 text-primary-text transition-opacity', model.id !== value && 'opacity-0')} />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-[13px] font-semibold">{model.displayName}</span>
-                        <span className="block truncate font-mono text-[11px] text-muted-foreground">{model.id}</span>
+                        <span className="block truncate font-mono text-xs md:text-[11px] text-muted-foreground">{model.id}</span>
                       </span>
-                      {model.id === defaultId && <span className="rounded-md bg-primary-container px-1.5 text-[10px] font-extrabold text-on-primary-container">standaard</span>}
+                      {model.id === defaultId && <span className="rounded-md bg-primary-container px-1.5 text-xs md:text-[10px] font-extrabold text-on-primary-container">standaard</span>}
                     </CommandItem>
                   ))}
                 </CommandGroup>
@@ -133,7 +133,7 @@ export default function ModelPicker({ value, defaultId, models, fetchedAt, listE
           type="button"
           onClick={() => void refresh()}
           disabled={refreshing}
-          className="mt-2 flex w-full items-center gap-1.5 rounded-[14px] bg-beheer-row px-3 py-2 text-left text-[11.5px] text-muted-foreground transition-colors hover:bg-beheer-row-high hover:text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring"
+          className="mt-2 flex w-full items-center gap-1.5 rounded-[14px] bg-beheer-row px-3 py-2 text-left text-xs md:text-[11.5px] text-muted-foreground transition-colors hover:bg-beheer-row-high hover:text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring"
         >
           <RefreshCwIcon className={cn('size-3.5 shrink-0', refreshing && 'animate-spin')} />
           {listError ? 'Lijst niet beschikbaar · opnieuw proberen' : `Lijst van Google${fetchedAt ? ` · ${formatAgo(fetchedAt, now)}` : ''}`}
