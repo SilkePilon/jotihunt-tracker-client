@@ -14,9 +14,13 @@ import {MotionConfig} from 'motion/react';
 import {AppConfigSync} from '@/hooks/app-config.hook';
 import {syncShellAttribute} from '@/hooks/media.hook';
 import {isHqWall} from '@/lib/hq';
+import {captureLaunchShortcut} from '@/lib/launch-shortcut';
 
 // data-shell on <html> before the first paint: CSS follows the mobile shell on landscape phones too (shell-mobile:)
 syncShellAttribute();
+
+// A PWA shortcut's ?open=: kept for the sidebar (useLaunchShortcut) and taken out of the URL before the router reads it
+captureLaunchShortcut();
 
 // Service worker registration. A new version waits for the user: an automatic reload mid-hunt
 // would throw away a half-entered hunt photo or hint answer. The HQ wall has no one at it to tap "Herladen" (and nothing

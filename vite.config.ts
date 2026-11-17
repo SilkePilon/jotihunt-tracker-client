@@ -63,6 +63,20 @@ const pwaManifest: Partial<VitePWAOptions> = {
         purpose: 'maskable',
       },
     ],
+    // Long-press menu on the home-screen icon: straight to a section (lib/launch-shortcut.ts reads ?open=)
+    shortcuts: [
+      {
+        name: 'Hint registreren',
+        short_name: 'Hint',
+        url: '/?open=hintEntry',
+        icons: [{ src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' }],
+      },
+      {
+        name: 'Vossen',
+        url: '/?open=foxes',
+        icons: [{ src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' }],
+      },
+    ],
     // Demo-mode data, light and dark (the install dialog shows them as a carousel)
     screenshots: [
       {
