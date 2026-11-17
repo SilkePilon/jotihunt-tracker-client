@@ -180,8 +180,10 @@ export default function AccountDialog() {
                       <ActionRow
                         onClick={() => void handleAddPasskey()}
                         disabled={adding}
-                        className="text-primary-text"
-                        iconClassName="bg-transparent text-primary-text shadow-[inset_0_0_0_1.5px_var(--border)]"
+                        // Orange text on the hovered / focused row-high background is too faint (3.96:1) in the light
+                        // theme: there it turns the darker on-primary-container brown; dark keeps its orange
+                        className="group text-primary-text hover:text-on-primary-container focus-visible:text-on-primary-container dark:hover:text-primary-text dark:focus-visible:text-primary-text"
+                        iconClassName="bg-transparent text-primary-text shadow-[inset_0_0_0_1.5px_var(--border)] group-hover:text-on-primary-container group-focus-visible:text-on-primary-container dark:group-hover:text-primary-text dark:group-focus-visible:text-primary-text"
                         icon={
                           <AnimatePresence mode="popLayout" initial={false}>
                             <motion.span
