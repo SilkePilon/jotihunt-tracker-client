@@ -31,18 +31,18 @@ export default function AndroidPromoDialog() {
   // Closing before the end = remind later; after pairing = never again
   const dismiss = () => close(step === 'done' ? 'paired' : 'later');
 
-  // Stable callbacks: the steps use them as effect deps (a new arrow per render would restart their timer/effect)
-  const onDownloaded = useCallback(() => setStep('install'), [setStep]);
+  // Stable callback: PairStep uses it as an effect dep (a new arrow per render would restart its effect)
   const onPaired = useCallback(() => setStep('done'), [setStep]);
 
+  const releaseHref = release ? absoluteUrl(apiBase, release.url, window.location.origin) : '';
   const download = useCallback(() => {
-    if (!release) return;
+    if (!releaseHref) return;
     const a = document.createElement('a');
-    a.href = absoluteUrl(apiBase, release.url, window.location.origin);
+    a.href = releaseHref;
     a.download = '';
     a.click();
     setStep('download');
-  }, [release, setStep]);
+  }, [releaseHref, setStep]);
 
   const pair = usePairLaunch(
     async () => {
@@ -100,7 +100,7 @@ export default function AndroidPromoDialog() {
                             {step === 'done' ? <span className="flex-1" /> : <Stepper step={step} />}
                             <StepClose onClose={dismiss} />
                           </div>
-                          {step === 'download' && <DownloadingStep onDone={onDownloaded} />}
+                          {step === 'download' && <DownloadingStep href={releaseHref} onNext={() => setStep('install')} />}
                           {step === 'install' && <InstallStep onPair={startPair} onRedownload={download} />}
                           {step === 'pair' && (
                             <PairStep
