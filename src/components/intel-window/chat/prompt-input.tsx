@@ -149,16 +149,16 @@ export function SendButton({ state, onSend, onStop }: { state: 'idle' | 'ready' 
       <motion.button
         type="button"
         aria-label={stopping ? 'Stoppen…' : busy ? 'Stoppen' : 'Versturen'}
-        disabled={state === 'idle'}
-        // Not `disabled` while stopping: that would drop the focus
-        aria-disabled={stopping || undefined}
+        // Not `disabled` (idle, stopping): that would drop the focus, e.g. when the answer ends with the field empty
+        aria-disabled={state === 'idle' || stopping || undefined}
         aria-busy={stopping || undefined}
-        onClick={stopping ? undefined : busy ? onStop : onSend}
+        onClick={state === 'idle' || stopping ? undefined : busy ? onStop : onSend}
         animate={{ scale: state === 'ready' ? 1.04 : 1 }}
         transition={POP_SPRING}
         className={cn(
-          'ml-auto grid size-[34px] place-items-center rounded-xl outline-none transition-colors duration-200 focus-visible:ring-[3px] focus-visible:ring-ring disabled:pointer-events-none aria-disabled:opacity-70',
-          state === 'idle' ? 'text-muted-foreground' : 'bg-primary-container text-on-primary-container hover:bg-[color-mix(in_oklab,var(--on-primary-container)_10%,var(--primary-container))]',
+          'ml-auto grid size-[34px] place-items-center rounded-xl outline-none transition-colors duration-200 focus-visible:ring-[3px] focus-visible:ring-ring',
+          stopping && 'opacity-70',
+          state === 'idle' ? 'pointer-events-none text-muted-foreground' : 'bg-primary-container text-on-primary-container hover:bg-[color-mix(in_oklab,var(--on-primary-container)_10%,var(--primary-container))]',
         )}
       >
         <AnimatePresence mode="popLayout" initial={false}>
