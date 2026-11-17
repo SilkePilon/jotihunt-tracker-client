@@ -36,8 +36,20 @@ const DIALOG_CLOSE_MS = 250;
 /** Frame shared by the large dialogs: a large dialog on desktop, a bottom drawer on phones. */
 export default function ResponsiveDialog({ open, onClose, title, description, children, className, drawerClassName, hideHeader, compact, onClosed, onEscapeKeyDown, backEntry = true }: ResponsiveDialogProps) {
   const isMobile = useIsMobile();
-  // Phones: Back closes the drawer instead of lowering the sheet behind it
-  useBackEntry(`dialog:${useId()}`, open && isMobile && backEntry, onClose);
+  // Phones: Back closes the drawer instead of lowering the sheet behind it. A dialog may refuse to close (e.g. while it
+  // saves); Back has used up its history entry by then, so a fresh one is opened for the next Back press
+  const id = useId();
+  const openRef = useRef(open);
+  useEffect(() => {
+    openRef.current = open;
+  });
+  const [backGeneration, setBackGeneration] = useState(0);
+  useBackEntry(`dialog:${id}:${backGeneration}`, open && isMobile && backEntry, () => {
+    onClose();
+    setTimeout(() => {
+      if (openRef.current) setBackGeneration((generation) => generation + 1);
+    });
+  });
   // Keep the content while the drawer slides out / the dialog fades out, instead of an empty frame leaving
   const [mounted, setMounted] = useState(open);
   if (open && !mounted) setMounted(true);
