@@ -36,6 +36,8 @@ const TourCard = forwardRef<HTMLDivElement, TourCardProps>(function TourCard(pro
     setPrevStepIndex(stepIndex);
     setHovered(false);
   }
+  // A keyboard user on one of the card's buttons pauses auto-advance (focus on the card itself, as each step gives it, doesn't)
+  const [keyboardInside, setKeyboardInside] = useState(false);
   const isLast = stepIndex === stepCount - 1;
 
   return (
@@ -43,8 +45,14 @@ const TourCard = forwardRef<HTMLDivElement, TourCardProps>(function TourCard(pro
       ref={ref}
       role="dialog"
       aria-label={title}
+      // Focused per step by the overlay (programmatic only, so no ring)
+      tabIndex={-1}
+      onFocus={(event) => setKeyboardInside(event.target !== event.currentTarget && event.target.matches(':focus-visible'))}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setKeyboardInside(false);
+      }}
       className={cn(
-        'pointer-events-auto fixed left-0 top-0 z-[70] w-[min(340px,calc(100vw-24px))] gap-3 overflow-hidden py-4 shadow-2xl will-change-transform',
+        'pointer-events-auto fixed left-0 top-0 z-[70] w-[min(340px,calc(100vw-24px))] gap-3 overflow-hidden py-4 shadow-2xl outline-none will-change-transform',
         hidden && 'invisible',
       )}
       // Hover counts only after real movement: a card gliding under a parked cursor fires synthetic
@@ -76,7 +84,7 @@ const TourCard = forwardRef<HTMLDivElement, TourCardProps>(function TourCard(pro
         <Button variant="ghost" size="sm" onClick={onSkip} className="mr-auto">
           Overslaan
         </Button>
-        <TimerRing className="size-9" durationMs={durationMs} runKey={stepIndex} paused={paused || hovered} onDone={onTimeUp}>
+        <TimerRing className="size-9" durationMs={durationMs} runKey={stepIndex} paused={paused || hovered || keyboardInside} onDone={onTimeUp}>
           <Button
             variant="ghost"
             size="icon-sm"

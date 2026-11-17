@@ -2,6 +2,7 @@ import { RefObject, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { MapRef } from '@/components/Map';
 import { useIsMobile } from '@/hooks/media.hook';
+import { ownsKey } from '@/lib/focus';
 import type { MobilePage } from '@/lib/mobile-nav';
 import useMobileNavStore from '@/stores/mobile-nav.store';
 import useSidebarStore from '@/stores/sidebar.store';
@@ -94,6 +95,15 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
   // Leaving the layout (logout, expired session) ends the tour without marking it as seen
   useEffect(() => () => stop(), [stop]);
 
+  const cardRef = useRef<HTMLDivElement>(null);
+  // Focus the card at the start and on every step, so screen readers read it and the arrow keys work. Not when focus is
+  // already in it (a keyboard user on "Volgende" stays there).
+  useEffect(() => {
+    const card = cardRef.current;
+    if (!active || !card || card.contains(document.activeElement)) return;
+    card.focus({ preventScroll: true });
+  }, [active, stepIndex]);
+
   // Optional step whose feature is off: skip it in the direction the user was going
   useEffect(() => {
     if (step?.optional && targetStatus === 'missing') {
@@ -103,11 +113,13 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
     }
   }, [step, targetStatus, direction, stepIndex, next, prev]);
 
-  // Keyboard: → next, ← previous, Esc skip. Capture phase so menus and dialogs don't act on these keys.
+  // Keyboard: → next, ← previous, Esc skip; only while focus is on the card or nowhere (<body>). Elsewhere these keys
+  // belong to what has focus: a menu, a toggle group, the map, a tour panel.
   useEffect(() => {
     if (!active) return;
     function onKey(event: KeyboardEvent) {
       if (event.repeat || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      if (!ownsKey(event, document.body, [cardRef.current])) return;
       const target = event.target as HTMLElement | null;
       const editing = !!target && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
       if (editing && event.key !== 'Escape') return;
@@ -121,11 +133,9 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
     return () => window.removeEventListener('keydown', onKey, true);
   }, [active, next, prev, skip]);
 
-  // Measure the card and viewport for placement
-  const cardRef = useRef<HTMLDivElement>(null);
   const [cardSize, setCardSize] = useState<Size>({ width: 340, height: 180 });
   const [viewport, setViewport] = useState<Size>(() => ({ width: window.innerWidth, height: window.innerHeight }));
-  // No deps on purpose: re-measure after every render (the card's text changes per step); the size check stops the loop
+  // Measure the card and viewport for placement. No deps on purpose: re-measure after every render (the card's text changes per step); the size check stops the loop
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useLayoutEffect(() => {
     const el = cardRef.current;
