@@ -484,10 +484,20 @@ body.dark {
     0 4px 14px rgb(0 0 0 / 0.22) !important;
 }
 
-/* Keyboard focus on the map itself (Tab onto the canvas, then arrows/+/−): a ring inside the map's edge */
+/* Keyboard focus on the map itself (Tab onto the canvas, then arrows/+/−/Enter): a two-tone ring inside the map's
+   edge, orange with a white inner line, so it reads on light tiles and on dark satellite photos alike. Drawn by the
+   map element (a canvas has no ::after), above the tiles and below the controls. */
 .maplibregl-canvas:focus-visible {
-  outline: 3px solid var(--ring);
-  outline-offset: -3px;
+  outline: none;
+}
+.maplibregl-map:has(.maplibregl-canvas:focus-visible)::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow:
+    inset 0 0 0 3px var(--ring),
+    inset 0 0 0 4.5px #ffffff;
 }
 
 /* Layers: on its own, soft orange */
