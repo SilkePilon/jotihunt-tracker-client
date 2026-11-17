@@ -346,6 +346,12 @@ export default function AiPane() {
         confirmLabel="Wissen"
         destructive
         onConfirm={clearKey}
+        // Cleared: the Wissen pill that opened the dialog folds away, so focus goes to the key's main pill
+        onCloseAutoFocus={(event) => {
+          if (key?.source === 'db') return;
+          event.preventDefault();
+          keyPill.current?.focus();
+        }}
       />
     </BeheerPane>
   );

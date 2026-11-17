@@ -41,10 +41,15 @@ interface ConfirmDialogProps {
   onConfirm: () => Promise<unknown> | unknown;
   /** Extra content between the description and the buttons */
   children?: React.ReactNode;
+  /**
+   * Where focus goes after closing (Radix returns it to the opener by default): preventDefault and focus something
+   * else when the opener went away with the confirmed action (e.g. the row of a removed session).
+   */
+  onCloseAutoFocus?: (event: Event) => void;
 }
 
 /** Confirmation dialog (shadcn AlertDialog) that stays open and busy while the confirmed action runs. */
-export default function ConfirmDialog({ open, onOpenChange, title, description, confirmLabel, cancelLabel = 'Annuleren', destructive, onConfirm, children }: ConfirmDialogProps) {
+export default function ConfirmDialog({ open, onOpenChange, title, description, confirmLabel, cancelLabel = 'Annuleren', destructive, onConfirm, children, onCloseAutoFocus }: ConfirmDialogProps) {
   const [busy, setBusy] = useState(false);
 
   async function confirm() {
@@ -66,7 +71,7 @@ export default function ConfirmDialog({ open, onOpenChange, title, description, 
         if (!busy) onOpenChange(next);
       }}
     >
-      <AlertDialogContent className={CONTENT}>
+      <AlertDialogContent className={CONTENT} onCloseAutoFocus={onCloseAutoFocus}>
         <AlertDialogHeader className={HEADER}>
           <AlertDialogTitle className="text-lg font-bold tracking-tight">{title}</AlertDialogTitle>
           <AlertDialogDescription className="leading-relaxed">{description}</AlertDialogDescription>
