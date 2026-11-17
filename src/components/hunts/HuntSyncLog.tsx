@@ -102,7 +102,7 @@ const LogRow = memo(function LogRow({ event, onSelect }: { event: HuntSyncEvent;
       type="button"
       disabled={!located}
       // Touch: at least 44px tall
-      className="relative isolate grid w-full grid-cols-[36px_1fr] items-center gap-x-2 rounded-lg p-1 text-left text-[12.5px] pointer-coarse:min-h-11 transition-colors duration-200 enabled:cursor-pointer enabled:hover:bg-beheer-row focus-visible:bg-beheer-row focus-visible:outline-none disabled:cursor-default"
+      className="relative isolate grid w-full grid-cols-[36px_1fr] items-center gap-x-2 rounded-lg p-1 text-left text-[12.5px] pointer-coarse:min-h-11 transition-colors duration-200 enabled:cursor-pointer enabled:hover:bg-beheer-row focus-visible:bg-beheer-row focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset disabled:cursor-default"
       onClick={() => onSelect(event)}
       aria-label={located ? `Toon ${area} ${text} op de kaart` : undefined}
     >
