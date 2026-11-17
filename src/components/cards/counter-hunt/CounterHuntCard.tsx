@@ -80,7 +80,7 @@ function CounterHuntBody({ state, link, admin, now, onShowOnMap }: Omit<CounterH
           <span className="text-base font-semibold">{counterHuntTitle(state.direction)}</span>
           {direction ? (
             <>
-              <span className="text-xs text-muted-foreground">
+              <span className="text-xs text-muted-foreground tabular-nums">
                 Gestart {formatClock(state.startedAt)} · <b className="text-red-600 dark:text-red-400">nog {minutesLeft(state.endsAt, now)} min</b>
               </span>
               <span className="mt-0.5 text-xs text-muted-foreground">
