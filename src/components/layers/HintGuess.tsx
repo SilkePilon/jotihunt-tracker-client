@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { type CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import type { Feature, FeatureCollection, Polygon } from 'geojson';
 import { CheckIcon } from 'lucide-react';
@@ -10,6 +10,7 @@ import {
   guessBounds, guessShapes, type GuessShapeProps, HINT_GUESS_AREA_FILL_LAYER, HINT_GUESS_AREA_LINE_LAYER, HINT_GUESS_REACH_LAYER,
   HINT_GUESS_SOURCE, lastFoxFix, parseGuess, rankGuess,
 } from '@/lib/hint-guess';
+import { spacedHitDiameters } from '@/lib/hit-spacing';
 import { INTEL_CLOSE_MS } from '@/lib/intel-window';
 import { cn } from '@/lib/utils';
 import useHintGuessStore from '@/stores/hint-guess.store';
@@ -22,6 +23,11 @@ const REACH_FILTER: LineLayerSpecification['filter'] = ['==', ['get', 'role'], '
 /** Fade of the rectangle and the reach circle (paint *-opacity-transition) */
 const SHAPE_FADE_MS = 200;
 const SHAPE_FADE = { duration: SHAPE_FADE_MS, delay: 0 };
+/** Dot tap targets: 44px on touch, 32px with a mouse; both shrink so neighbouring dots' targets never overlap */
+const COARSE_HIT_PX = 44;
+/** The dot's own size: a hit area is never smaller than the dot */
+const DOT_PX = 22;
+const ROLE_SCALE = { best: 1.25, out: 0.9, in: 1 } as const;
 
 type Shape = Feature<Polygon, GuessShapeProps>;
 
@@ -162,6 +168,22 @@ export default function HintGuess() {
   const purple = dark ? '#b9a6ff' : '#7b61d1';
   const red = dark ? '#ffb4ab' : '#ba1a1a';
   const points = guess?.kind === 'points' ? guess.points : [];
+  // Re-render when zoom, pitch or bearing changes the dots' screen spacing (a pan doesn't); same key, no re-render
+  const [, setView] = useState('');
+  const spaced = points.length > 1;
+  useEffect(() => {
+    if (!map || !spaced) return;
+    const onView = () => setView(`${Math.round(map.getZoom() * 8)}|${Math.round(map.getPitch())}|${Math.round(map.getBearing())}`);
+    map.on('zoom', onView);
+    map.on('pitch', onView);
+    map.on('rotate', onView);
+    return () => {
+      map.off('zoom', onView);
+      map.off('pitch', onView);
+      map.off('rotate', onView);
+    };
+  }, [map, spaced]);
+  const hitSizes = map && spaced ? spacedHitDiameters(points.map((point) => map.project([point.lng, point.lat])), COARSE_HIT_PX) : null;
 
   return (
     <>
@@ -176,6 +198,8 @@ export default function HintGuess() {
       <AnimatePresence>
         {points.map((point, index) => {
           const role = rank?.roles[index] ?? 'in';
+          // In the dot's own (scaled) px, so the hit area on screen is the spaced size
+          const hit = Math.max(DOT_PX, (hitSizes?.[index] ?? COARSE_HIT_PX) / ROLE_SCALE[role]);
           return (
             <Marker key={point.digit} longitude={point.lng} latitude={point.lat} anchor="center"
                     onClick={(event) => {
@@ -192,9 +216,11 @@ export default function HintGuess() {
                 // digit keeps full contrast, only the ring and shadow step back
                 animate={{ opacity: 1, scale: role === 'best' ? 1.25 : role === 'out' ? 0.9 : 1, transition: { duration: 0.2, delay: index * 0.02 } }}
                 exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.2 } }}
-                // before: an invisible ~32 px tap target around the 22 px dot
+                // before: an invisible round tap target around the 22 px dot, 32 px (mouse) or 44 px (touch), smaller where
+                // dots crowd together so a tap always goes to the nearest dot
+                style={{ '--hit': `${hit}px` } as CSSProperties}
                 className={cn(
-                  "relative flex size-[22px] cursor-pointer items-center justify-center rounded-full text-[11px] font-bold tabular-nums shadow-md outline-none transition-[background-color,color,box-shadow] duration-200 before:absolute before:-inset-[5px] before:rounded-full before:content-[''] focus-visible:ring-[3px] focus-visible:ring-ring",
+                  "relative flex size-[22px] cursor-pointer items-center justify-center rounded-full text-[11px] font-bold tabular-nums shadow-md outline-none transition-[background-color,color,box-shadow] duration-200 before:absolute before:top-1/2 before:left-1/2 before:size-[min(32px,var(--hit))] before:-translate-x-1/2 before:-translate-y-1/2 before:rounded-full before:content-[''] pointer-coarse:before:size-(--hit) focus-visible:ring-[3px] focus-visible:ring-ring",
                   role === 'best'
                     ? 'bg-guess text-card ring-4 ring-guess/30'
                     : role === 'out'
