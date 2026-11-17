@@ -20,6 +20,7 @@ import {useEdition} from '@/hooks/edition.hook';
 import {isInNetherlands} from '@/lib/netherlands';
 import {fromRD, isPlausibleRD} from '@/lib/rd';
 import {apiErrorMessage, isNetworkError} from '@/lib/api-error';
+import {lostResponseMessage, lostResponseOutcome, sameDraft} from '@/lib/hint-submit';
 import AreaPicker from './AreaPicker';
 import TimePicker from './TimePicker';
 import DigitBoxes from './DigitBoxes';
@@ -35,9 +36,6 @@ import {useIsMobile} from '@/hooks/media.hook';
 
 type FormValues = {area: string; time: string; x: string; y: string};
 
-/** Whether the form still holds the values that were sent */
-const sameDraft = (a: FormValues, b: FormValues) => a.area === b.area && a.time === b.time && a.x === b.x && a.y === b.y;
-
 const formResolver = fieldsResolver<FormValues>({
     area: oneOf(areaOptions.map((option) => option.value), 'Kies een deelgebied.'),
     time: nonEmptyString('Kies een tijd.'),
@@ -50,7 +48,7 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
     const fieldId = useId();
     const isMobile = useIsMobile();
     const submitId = `${fieldId}-submit`;
-    const {markers, loaded: markersLoaded, isError: markersError, retry: retryMarkers, createMarker} = useMarkers();
+    const {markers, loaded: markersLoaded, isError: markersError, retry: retryMarkers, createMarker, fetchFreshMarkers} = useMarkers();
     const [timeOpen, setTimeOpen] = useState(false);
     const {huntStart, huntEnd} = useAppConfig();
     // An archive edition is read-only: the boxes (and wildcard guesses) still work, Registreren doesn't
@@ -190,13 +188,24 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
 
         setSubmitError(null);
         const error = await createMarker(marker);
-        if (!error) {
-            // Only empty the form when it still holds what was sent: a correction typed while Registreren ran stays
-            if (sameDraft(form.getValues(), data)) {
-                form.reset(EMPTY_HINT_DRAFT);
-                useHintDraftStore.getState().clear();
+        let confirmedLate = false;
+        if (error && isNetworkError(error)) {
+            // No answer (offline, timeout) doesn't mean it failed: the server may have saved it. A fresh list tells.
+            const outcome = lostResponseOutcome(await fetchFreshMarkers(), marker);
+            if (outcome !== 'registered') {
+                // The typed hint stays in the form (and the draft)
+                setSubmitError(lostResponseMessage(outcome));
+                return;
             }
-            toast.success('Hint geregistreerd');
+            confirmedLate = true;
+        } else if (error) {
+            toast.error('Hint registreren is mislukt', {
+                description: apiErrorMessage(error, 'Probeer het opnieuw.')
+            });
+            return;
+        }
+
+        const flyToHint = () => {
             // On a phone the full sheet would hide the flight: lower it to peek first (like Hunts and Voorspellingen)
             if (isMobile) useSidebarStore.getState().setSheetSnap('peek');
             mapRef.current?.flyTo({
@@ -204,16 +213,22 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
                 duration: 2000,
                 zoom: 12,
             });
-            // The button stays focused while it registers; afterwards the next hint starts at the area
-            document.getElementById(`${fieldId}-area`)?.focus();
-        } else if (isNetworkError(error)) {
-            // The typed hint stays in the form (and the draft): one tap on Registreren once there is a connection
-            setSubmitError('Geen verbinding: de hint is niet geregistreerd. Je invoer blijft staan, probeer het opnieuw zodra je verbinding hebt.');
-        } else {
-            toast.error('Hint registreren is mislukt', {
-                description: apiErrorMessage(error, 'Probeer het opnieuw.')
+        };
+        const lateNote = confirmedLate ? 'Bevestigd na verbindingsherstel.' : undefined;
+        // A next hint (or a correction) was typed while Registreren ran: leave it, the sheet and the focus alone
+        if (!sameDraft(form.getValues(), data)) {
+            toast.success('Vorige hint geregistreerd — je nieuwe invoer is nog niet verzonden', {
+                description: lateNote,
+                action: {label: 'Toon', onClick: flyToHint},
             });
+            return;
         }
+        form.reset(EMPTY_HINT_DRAFT);
+        useHintDraftStore.getState().clear();
+        toast.success(confirmedLate ? 'Hint geregistreerd (bevestigd na verbindingsherstel)' : 'Hint geregistreerd');
+        flyToHint();
+        // The button stays focused while it registers; afterwards the next hint starts at the area
+        document.getElementById(`${fieldId}-area`)?.focus();
     }
 
     const submitting = form.formState.isSubmitting;

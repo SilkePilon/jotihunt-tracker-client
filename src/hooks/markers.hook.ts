@@ -1,7 +1,7 @@
 import { Marker } from '@/types/Marker';
 import { fetcherWithMethod, useAuthSWR } from '../lib/swr';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
-import { asList } from '@/lib/response-shape';
+import { asList, hasExpectedShape } from '@/lib/response-shape';
 
 export const useMarkers = () => {
   const authHeader = useAuthHeader() || '';
@@ -36,6 +36,21 @@ export const useMarkers = () => {
   }
 
   /**
+   * Fetch the marker list now, bypassing SWR's dedupe (a poll may have just failed too), and put it in the cache.
+   * @returns The fresh list, or undefined when the fetch failed (never throws)
+   */
+  async function fetchFreshMarkers(): Promise<Marker[] | undefined> {
+    try {
+      const fresh: unknown = await fetcherWithMethod('/markers', authHeader);
+      if (!hasExpectedShape('/markers', fresh)) return undefined;
+      await mutate(fresh as Marker[], { revalidate: false });
+      return fresh as Marker[];
+    } catch {
+      return undefined;
+    }
+  }
+
+  /**
    * Delete a marker via the API.
    * @param markerId The ID of the marker to delete
    * @returns True if the marker was deleted successfully, false otherwise (never throws)
@@ -63,6 +78,7 @@ export const useMarkers = () => {
     /** Refetch now (LoadError's retry) */
     retry: () => mutate(),
     createMarker,
+    fetchFreshMarkers,
     deleteMarker,
   };
 };
