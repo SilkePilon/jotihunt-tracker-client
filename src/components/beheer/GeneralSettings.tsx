@@ -12,7 +12,7 @@ import { useNow } from '@/hooks/now.hook';
 import { useTeams } from '@/hooks/teams.hook';
 import { apiErrorMessage } from '@/lib/api-error';
 import { apiAssetUrl, draftFrom, fromLocalInput, generalPatch, isDirty, timelineGeometry, type AdminConfig, type GeneralDraft } from '@/lib/app-config';
-import { POP, REVEAL_TRANSITION, revealTransition, SWAP_TRANSITION } from '@/lib/motion';
+import { POP, revealTransition, SWAP_TRANSITION } from '@/lib/motion';
 import { VEHICLE_ICONS, VEHICLE_OPTIONS } from '@/lib/tracker';
 import { cn, getColorFromArea } from '@/lib/utils';
 import useAdminStore from '@/stores/admin.store';
@@ -32,6 +32,7 @@ const LOGO_TYPES = 'image/png,image/jpeg,image/webp,image/svg+xml';
 
 /** Label above a field, and an error line that folds in under it. */
 function Field({ label, htmlFor, error, className, children }: { label: ReactNode; htmlFor?: string; error?: string; className?: string; children: ReactNode }) {
+  const reduced = useReducedMotion() ?? false;
   return (
     <div className={cn('min-w-0', className)}>
       <label htmlFor={htmlFor} className="mb-1 ml-0.5 flex items-center gap-1.5 text-[11.5px] font-semibold text-muted-foreground">
@@ -40,7 +41,7 @@ function Field({ label, htmlFor, error, className, children }: { label: ReactNod
       {children}
       <AnimatePresence initial={false}>
         {error && (
-          <motion.span key="error" className="block overflow-hidden" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={REVEAL_TRANSITION}>
+          <motion.span key="error" className="block overflow-hidden" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0, transition: revealTransition(reduced, 'exit') }} transition={revealTransition(reduced, 'enter')}>
             <span className="mt-1 ml-0.5 block text-xs text-destructive-text">{error}</span>
           </motion.span>
         )}
@@ -68,6 +69,7 @@ const formatDayTime = (ms: number) => dayTime.format(ms);
 
 /** Track with the hunt as an orange stretch, a white "nu" tick and labels; the stretch slides when the times change. */
 function HuntTimeline({ start, end }: { start: string | null; end: string | null }) {
+  const reduced = useReducedMotion() ?? false;
   const now = useNow(true, TIMELINE_TICK_MS);
   const startMs = start ? Date.parse(start) : NaN;
   const endMs = end ? Date.parse(end) : NaN;
@@ -75,7 +77,7 @@ function HuntTimeline({ start, end }: { start: string | null; end: string | null
   return (
     <AnimatePresence initial={false}>
       {ready && (
-        <motion.div key="timeline" className="overflow-hidden" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={REVEAL_TRANSITION}>
+        <motion.div key="timeline" className="overflow-hidden" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0, transition: revealTransition(reduced, 'exit') }} transition={revealTransition(reduced, 'enter')}>
           <Timeline startMs={startMs} endMs={endMs} now={now} />
         </motion.div>
       )}
@@ -205,6 +207,7 @@ function LoginTag({ state }: { state: LoginState | 'none' | null }) {
 
 /** Beheer → Algemeen (B3): Hunt, Ons team, Voertuiggroepen and Jotihunt-site as always-open forms with one save bar. */
 export default function GeneralSettings() {
+  const reduced = useReducedMotion() ?? false;
   const admin = useAdminConfig();
   const { teams } = useTeams();
   const traccar = useTraccarGroups(true);
@@ -413,7 +416,7 @@ export default function GeneralSettings() {
         </div>
         <AnimatePresence initial={false}>
           {traccar.isError && (
-            <motion.p key="traccar" className="overflow-hidden" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={REVEAL_TRANSITION}>
+            <motion.p key="traccar" className="overflow-hidden" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0, transition: revealTransition(reduced, 'exit') }} transition={revealTransition(reduced, 'enter')}>
               <span className="mx-1 block pt-2 text-xs text-muted-foreground">Traccar niet bereikbaar</span>
             </motion.p>
           )}
