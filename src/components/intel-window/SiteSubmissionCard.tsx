@@ -22,7 +22,8 @@ export default function SiteSubmissionCard({ site }: { site: AssignmentSite }) {
         <FadeSwap className={site.judged ? 'font-semibold' : 'text-muted-foreground'}>{site.judgement ?? 'Nog niet beoordeeld'}</FadeSwap>
         {site.judged && site.points !== null && <span className="font-semibold text-green-700 tabular-nums dark:text-green-300">{site.points} pt</span>}
         {site.rating !== null && (
-          <span className="ml-auto text-amber-500" title={`Jullie waardering: ${site.rating} / 5`} aria-label={`Jullie waardering: ${site.rating} van 5`}>
+          // role=img: a plain span's aria-label is ignored. amber-700 / -400: >= 3:1 for the star glyphs (amber-500 was 2.1:1 on white)
+          <span role="img" className="ml-auto text-amber-700 dark:text-amber-400" title={`Jullie waardering: ${site.rating} / 5`} aria-label={`Jullie waardering: ${site.rating} van 5`}>
             {ratingStars(site.rating)}
           </span>
         )}
