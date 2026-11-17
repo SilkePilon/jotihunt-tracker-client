@@ -41,10 +41,15 @@ interface MarkerDraftState {
   /** Update a kept draft's form values or outcome (no-op without one) */
   update: (key: string, patch: Partial<Omit<MarkerDraft, 'type' | 'sent'>>) => void;
   clear: (key: string) => void;
+  /** The Deelgebied of the last Hunt/Spot sent this session ('' before any): a fresh dialog starts at it */
+  lastArea: string;
+  rememberArea: (area: string) => void;
 }
 
 const useMarkerDraftStore = create<MarkerDraftState>()((set, get) => ({
   drafts: {},
+  lastArea: '',
+  rememberArea: (area) => set({ lastArea: area }),
   keep: (draft) => set({ drafts: { ...get().drafts, [keyOfDraft(draft)]: draft } }),
   update: (key, patch) => {
     const draft = get().drafts[key];

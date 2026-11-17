@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
+import { SWAP } from '@/lib/motion';
 import { BellIcon, ChevronRightIcon, CrosshairIcon, FlagIcon, Grid3x3Icon, KeyRoundIcon, LayoutDashboardIcon, MapPinIcon, MessageSquareIcon, PawPrintIcon, PenLineIcon, ShieldIcon, SmartphoneIcon, TrophyIcon, UsersIcon } from 'lucide-react';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import type { User } from '@/types/User';
@@ -14,6 +16,12 @@ import { predictionSummary } from '@/lib/prediction';
 import { useTrackerStatus } from '@/hooks/tracker.hook';
 import { trackerSummary } from '@/lib/tracker';
 import { currentDevicePush } from '@/lib/push';
+import { useHuntSync } from '@/hooks/hunt-sync.hook';
+import { huntSyncSummary } from '@/lib/hunt-sync';
+import { useTelegramMessages } from '@/hooks/telegram.hook';
+import { telegramHeaderSummary } from '@/lib/bot-messages';
+import { useCounterHunt } from '@/hooks/counter-hunt.hook';
+import { counterHuntSummary } from '@/lib/counter-hunt';
 import useMobileNavStore from '@/stores/mobile-nav.store';
 import useAdminStore, { type AdminDialogId } from '@/stores/admin.store';
 import useAccountDialogStore from '@/stores/account-dialog.store';
@@ -51,7 +59,14 @@ function MenuCard({ title, rows }: { title: string; rows: Row[] }) {
             <span className="grid size-[18px] shrink-0 place-items-center text-muted-foreground">{row.icon}</span>
             <span className="min-w-0 flex-1">
               <span className="block text-sm font-semibold">{row.title}</span>
-              {row.meta && <span className="block truncate text-xs text-muted-foreground">{row.meta}</span>}
+              {/* The summaries come in with their polls: fade in instead of popping (the row keeps its 56px height) */}
+              <AnimatePresence initial={false}>
+                {row.meta && (
+                  <motion.span key="meta" {...SWAP} className="block truncate text-xs text-muted-foreground">
+                    {row.meta}
+                  </motion.span>
+                )}
+              </AnimatePresence>
             </span>
             {!row.dialog && <ChevronRightIcon className="size-4 shrink-0 text-muted-foreground" />}
           </button>
@@ -82,6 +97,11 @@ export default function MobileMenu() {
   const { enabled: predictionEnabled } = usePredictionSetting();
   const { status } = useTrackerStatus();
   const { score } = useScore();
+  // The same summaries as the desktop sections' collapsed headers (SWR shares the polls with them)
+  const { status: huntSync } = useHuntSync();
+  const { messages, link } = useTelegramMessages();
+  const { state: counterHunt, now } = useCounterHunt();
+  const counterHuntMeta = counterHuntSummary(counterHunt, link, now);
   const page = (id: MobilePageId) => () => push({ id });
   // Read again when the Meldingen dialog closes (saving there can switch push on)
   useNotificationsDialogStore((s) => s.open);
@@ -93,16 +113,20 @@ export default function MobileMenu() {
     { key: 'foxes', icon: <PawPrintIcon className={icon} />, title: 'Vossen', meta: <FoxesSummary />, onSelect: page('foxes') },
     // A hunter's main action: right under Vossen instead of at the end of the list
     { key: 'hintEntry', icon: <PenLineIcon className={icon} />, title: 'Hint registreren', onSelect: page('hintEntry') },
-    { key: 'hunts', icon: <CrosshairIcon className={icon} />, title: 'Hunts', onSelect: page('hunts') },
-    { key: 'telegram', icon: <MessageSquareIcon className={icon} />, title: 'Jotihunt-berichten', onSelect: page('telegram') },
+    { key: 'hunts', icon: <CrosshairIcon className={icon} />, title: 'Hunts', meta: huntSyncSummary(huntSync), onSelect: page('hunts') },
+    { key: 'telegram', icon: <MessageSquareIcon className={icon} />, title: 'Jotihunt-berichten', meta: telegramHeaderSummary(messages, link)?.text, onSelect: page('telegram') },
     ...(predictionEnabled !== false ? [{ key: 'predictions', icon: <MapPinIcon className={icon} />, title: 'Voorspelling', meta: predictionSummary(predictions), onSelect: page('predictions') }] : []),
     { key: 'hints', icon: <Grid3x3Icon className={icon} />, title: 'Hints', meta: progress ? `${progress.solved}/${progress.total} opgelost` : undefined, onSelect: page('hints') },
     ...(score?.configured ? [{ key: 'points', icon: <TrophyIcon className={icon} />, title: 'Punten', meta: scoreSummary(score), onSelect: page('points') }] : []),
-    ...(homeTeamApiId !== null ? [{ key: 'counterHunt', icon: <FlagIcon className={icon} />, title: 'Tegenhunt', onSelect: page('counterHunt') }] : []),
+    ...(homeTeamApiId !== null ? [{ key: 'counterHunt', icon: <FlagIcon className={icon} />, title: 'Tegenhunt',
+        // A running tegenhunt reads red (fox-on-error: ≥ 9:1 on the row in light and dark); the rest stays muted
+        meta: counterHuntMeta && (counterHuntMeta.tone === 'danger' ? <span className="font-semibold text-fox-on-error">{counterHuntMeta.text}</span> : counterHuntMeta.text),
+        onSelect: page('counterHunt') }] : []),
   ];
   const jij: Row[] = [
     { key: 'tracking', icon: <SmartphoneIcon className={icon} />, title: 'Mijn tracker', meta: trackerSummary(status), onSelect: page('tracking') },
-    { key: 'life360', icon: <UsersIcon className={icon} />, title: 'Life360', onSelect: page('life360') },
+    // Admins only, like the desktop section (it links the team's account)
+    ...(user?.admin ? [{ key: 'life360', icon: <UsersIcon className={icon} />, title: 'Life360', onSelect: page('life360') }] : []),
     ...(user?.admin ? [{ key: 'jotiboard', icon: <LayoutDashboardIcon className={icon} />, title: 'Jotiboard', onSelect: page('jotiboard') }] : []),
     { key: 'meldingen', icon: <BellIcon className={icon} />, title: 'Meldingen', meta: pushMeta, onSelect: () => useNotificationsDialogStore.getState().setOpen(true), dialog: true },
     { key: 'account', icon: <KeyRoundIcon className={icon} />, title: 'Account', onSelect: () => useAccountDialogStore.getState().setOpen(true), dialog: true },

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { connectionProblem, connectionSnapshot, feedKey, problemLabel, reportFetchError, reportFetchSuccess, reportResume, resetConnection, staleAge, staleLabel } from './connection';
+import { connectionProblem, connectionSnapshot, feedKey, problemLabel, reportFetchError, reportFetchSuccess, reportResume, resetConnection, staleAge, staleLabel, isCriticalFeedKey } from './connection';
 
 const NOW = 1_000_000_000;
 
@@ -160,5 +160,18 @@ describe('back from the background', () => {
     reportFetchSuccess('/areas', NOW - 720_000);
     reportResume(NOW);
     expect(connectionProblem(connectionSnapshot(), false, NOW)?.refreshing).toBeUndefined();
+  });
+});
+
+describe('isCriticalFeedKey', () => {
+  test('matches SWR keys of the critical feeds, query or not', () => {
+    expect(isCriticalFeedKey(['/markers', 'Bearer x'])).toBe(true);
+    expect(isCriticalFeedKey(['/hunts?since=2026', 'Bearer x'])).toBe(true);
+  });
+
+  test('other feeds and other key shapes are not', () => {
+    expect(isCriticalFeedKey(['/score', 'Bearer x'])).toBe(false);
+    expect(isCriticalFeedKey('/markers')).toBe(false);
+    expect(isCriticalFeedKey(null)).toBe(false);
   });
 });

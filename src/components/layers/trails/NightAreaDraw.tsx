@@ -1,19 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Layer, Source, useMap, type CircleLayerSpecification, type FillLayerSpecification, type LineLayerSpecification } from 'react-map-gl/maplibre';
-import type { MapMouseEvent } from 'maplibre-gl';
+import type { Map as MaplibreMap, MapMouseEvent } from 'maplibre-gl';
 import type { Feature, FeatureCollection, LineString, Point, Polygon } from 'geojson';
 import { AnimatePresence, motion, useIsPresent } from 'motion/react';
 import { Loader2Icon, Undo2Icon } from 'lucide-react';
 import { toast } from 'sonner';
 import { Pill, IconPill } from '@/components/beheer/controls/Pill';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import InlineError from '@/components/InlineError';
+import Reveal from '@/components/motion/Reveal';
 import Segmented, { type SegmentOption } from '@/components/beheer/controls/Segmented';
 import { useNightAreas } from '@/hooks/night-areas.hook';
 import { useIsMobile } from '@/hooks/media.hook';
 import { NIGHT_DRAW_LAYERS, NIGHT_FILL, NIGHT_LINE } from '@/lib/map-layers';
 import { SWAP, SWAP_TRANSITION } from '@/lib/motion';
-import { CLOSED_MESSAGE, droppedMessage, KEYBOARD_DRAW_HINT, MOVE_FIRST_MESSAGE, nudgeDelta, UNDO_MESSAGE } from '@/lib/night-draw-keys';
+import { CLOSED_MESSAGE, drawHint, droppedMessage, KEYBOARD_DRAW_HINT, MOVE_FIRST_MESSAGE, NAME_MISSING_MESSAGE, nudgeDelta, UNDO_MESSAGE } from '@/lib/night-draw-keys';
+import { activatedByKeyboard } from '@/lib/input-modality';
 import { belowSafeArea, desktopToolbarTop, phoneTopStack } from '@/lib/top-stack';
 import useAdminStore from '@/stores/admin.store';
 import { ringFromPoints, useNightDraw } from '@/stores/night-draw.store';
@@ -37,6 +40,52 @@ const NUDGE_EDGE_PX = 40;
 /** ConfirmDialog's close animation (data-[state=closed]:duration-150) plus a margin, before draw mode unmounts it */
 const CONFIRM_CLOSE_MS = 180;
 
+/** Give up waiting for Beheer to close (keyboard start) after this long */
+const FOCUS_WAIT_MS = 2000;
+
+/** A mouse or trackpad: the hint also names the keyboard way in */
+const finePointer = () => typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches;
+
+/**
+ * Keyboard drawing: where Enter drops the next corner, the middle of the map (its padded centre, like getCenter()).
+ * Follows resizes and padding changes; decorative (the live region says what happens).
+ */
+function CenterCrosshair({ map, color }: { map: MaplibreMap; color: string }) {
+  const [at, setAt] = useState(() => map.project(map.getCenter()));
+  useEffect(() => {
+    const update = () => setAt(map.project(map.getCenter()));
+    map.on('move', update);
+    map.on('resize', update);
+    return () => {
+      map.off('move', update);
+      map.off('resize', update);
+    };
+  }, [map]);
+  return (
+    <motion.div
+      aria-hidden
+      className="pointer-events-none absolute z-10 size-7 -translate-x-1/2 -translate-y-1/2"
+      style={{ left: at.x, top: at.y }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={SWAP_TRANSITION}
+    >
+      <svg viewBox="0 0 28 28" className="size-full overflow-visible" fill="none" strokeLinecap="round">
+        {/* White halo under the line colour, so it reads on light and dark tiles */}
+        <g stroke="#ffffff" strokeWidth={4.5}>
+          <circle cx={14} cy={14} r={6} />
+          <path d="M14 1v6M14 21v6M1 14h6M21 14h6" />
+        </g>
+        <g stroke={color} strokeWidth={2}>
+          <circle cx={14} cy={14} r={6} />
+          <path d="M14 1v6M14 21v6M1 14h6M21 14h6" />
+        </g>
+      </svg>
+    </motion.div>
+  );
+}
+
 /** Back to Beheer → Algemeen (the Routes card) */
 function leave() {
   useNightDraw.getState().cancel();
@@ -53,6 +102,8 @@ export default function NightAreaDraw() {
   const { kind, points, closed, setKind, undo } = useNightDraw();
   const { setting, save } = useNightAreas();
   const [name, setName] = useState('');
+  // Opslaan was pressed without a name: said under the field (and the field marked) until a name is typed
+  const [nameMissing, setNameMissing] = useState(false);
   const [saving, setSaving] = useState(false);
   // Annuleren / Escape with corners drawn asks first: they can't be brought back
   const [confirmLeave, setConfirmLeave] = useState(false);
@@ -65,11 +116,30 @@ export default function NightAreaDraw() {
   const isPresent = useIsPresent();
   const toolbarRef = usePublishTopHeight('toolbar', isPresent);
   const toolbarTop = useTopStackStore((state) => phoneTopStack(state.heights).toolbarTop);
-  const toolbarTopMd = useTopStackStore((state) => desktopToolbarTop(state.heights.pill));
+  const toolbarTopMd = useTopStackStore((state) => desktopToolbarTop(state.heights.pill, state.heights.badge));
   // Keyboard drawing (lib/night-draw-keys.ts): the map has keyboard focus, and what the live region last said. `n` makes
   // the same sentence twice still a change, so it is read out again
   const [keyboardFocus, setKeyboardFocus] = useState(false);
   const [said, setSaid] = useState({ text: '', n: 0 });
+  const [fine] = useState(finePointer);
+
+  // Started from the keyboard (Gebied tekenen with Enter): the map takes focus once Beheer has closed and given focus
+  // back, so Enter drops corners right away instead of the focus being lost on the page
+  useEffect(() => {
+    if (!map || !activatedByKeyboard()) return;
+    const startedAt = performance.now();
+    let frame = 0;
+    const tryFocus = () => {
+      if (useAdminStore.getState().dialog === null && !document.querySelector('[role="dialog"]')) {
+        map.getCanvas().focus();
+        setKeyboardFocus(true);
+        return;
+      }
+      if (performance.now() - startedAt < FOCUS_WAIT_MS) frame = requestAnimationFrame(tryFocus);
+    };
+    frame = requestAnimationFrame(tryFocus);
+    return () => cancelAnimationFrame(frame);
+  }, [map]);
 
   useEffect(() => {
     if (!map) return;
@@ -219,7 +289,7 @@ export default function NightAreaDraw() {
     if (!closed || !ring || saving) return;
     const trimmed = name.trim();
     if (!trimmed) {
-      toast.error('Geef het gebied een naam');
+      setNameMissing(true);
       return;
     }
     if (!setting) {
@@ -253,7 +323,7 @@ export default function NightAreaDraw() {
         <>
           <motion.div
             ref={toolbarRef}
-            role="toolbar"
+            role="group"
             aria-label="Nachtgebied tekenen"
             style={{ '--toolbar-top': belowSafeArea(toolbarTop), '--toolbar-top-md': `${toolbarTopMd}px` } as React.CSSProperties}
             className="fixed top-(--toolbar-top) left-1/2 z-40 flex max-w-[calc(100vw-16px)] -translate-x-1/2 flex-wrap items-center justify-center gap-1.5 rounded-2xl bg-card p-1.5 shadow-[0_0_0_1px_var(--border),0_8px_24px_rgb(0_0_0/0.18)] transition-[top] duration-300 ease-out motion-reduce:transition-none md:top-(--toolbar-top-md) md:left-[calc(50%+164px)]"
@@ -294,17 +364,29 @@ export default function NightAreaDraw() {
                 >
                   <input
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    onChange={(e) => {
+                      setName(e.target.value);
+                      if (e.target.value.trim()) setNameMissing(false);
+                    }}
                     placeholder="Naam, bv. Posbank noord"
                     aria-label="Naam van het gebied"
+                    aria-invalid={nameMissing || undefined}
+                    aria-describedby={nameMissing ? 'night-area-name-error' : undefined}
                     maxLength={60}
                     autoFocus
-                    className="h-10 w-[min(280px,calc(100vw-32px))] rounded-xl bg-card px-3.5 text-base shadow-[0_0_0_1px_var(--input),0_8px_24px_rgb(0_0_0/0.18)] md:text-[13px] outline-none placeholder:text-muted-foreground focus-visible:ring-[3px] focus-visible:ring-ring"
+                    className="h-10 w-[min(280px,calc(100vw-32px))] rounded-xl bg-card px-3.5 text-base shadow-[0_0_0_1px_var(--input),0_8px_24px_rgb(0_0_0/0.18)] md:text-[13px] outline-none placeholder:text-muted-foreground focus-visible:ring-[3px] focus-visible:ring-ring aria-invalid:shadow-[0_0_0_1px_var(--destructive),0_8px_24px_rgb(0_0_0/0.18)] aria-invalid:focus-visible:ring-destructive/40"
                   />
+                  <Reveal>
+                    {nameMissing && (
+                      <div id="night-area-name-error" className="mt-1.5 w-fit rounded-lg bg-card px-2.5 py-1 shadow-[0_0_0_1px_var(--border)]">
+                        <InlineError role="alert">{NAME_MISSING_MESSAGE}</InlineError>
+                      </div>
+                    )}
+                  </Reveal>
                 </motion.form>
               ) : (
                 <motion.div key={keyboardFocus ? 'keys' : 'hint'} {...SWAP} className="rounded-[10px] bg-[rgb(12_10_9/0.82)] px-3 py-1.5 text-xs whitespace-nowrap text-white">
-                  {keyboardFocus ? KEYBOARD_DRAW_HINT : 'Tik punten op de kaart · dubbeltik om te sluiten'}
+                  {keyboardFocus ? KEYBOARD_DRAW_HINT : drawHint(fine)}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -317,6 +399,12 @@ export default function NightAreaDraw() {
         </>,
         document.body,
       )}
+      {/* Keyboard drawing: where Enter puts the next corner. In the map container, under the map's own controls */}
+      {map &&
+        createPortal(
+          <AnimatePresence>{keyboardFocus && !closed && <CenterCrosshair key="crosshair" map={map} color={NIGHT_LINE[kind]} />}</AnimatePresence>,
+          map.getContainer(),
+        )}
       <ConfirmDialog
         open={confirmLeave}
         onOpenChange={setConfirmLeave}

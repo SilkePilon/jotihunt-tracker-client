@@ -61,3 +61,27 @@ export interface HintDraftValues {
 
 /** Whether the form still holds the values that were sent (else a next hint or a correction was typed meanwhile). */
 export const sameDraft = (a: HintDraftValues, b: HintDraftValues) => a.area === b.area && a.time === b.time && a.x === b.x && a.y === b.y;
+
+/** A hint whose Registreren got no answer and wasn't confirmed: what was sent, the form values then, and the outcome. */
+export interface UnconfirmedHint {
+  sent: Marker;
+  values: HintDraftValues;
+  outcome: Exclude<LostResponseOutcome, 'registered'>;
+}
+
+/**
+ * Whether a marker list (a later poll) holds our own unconfirmed hint: its hour then shows taken, but by us, so it is
+ * the late success and not "net door iemand anders geregistreerd".
+ */
+export function holdsUnconfirmedHint(markers: Marker[] | undefined, pending: UnconfirmedHint | null): boolean {
+  return !!pending && !!markers && markers.some((marker) => isSameMarker(marker, pending.sent));
+}
+
+/**
+ * The hint form's main action: with no answer and no fresh list ('unknown') registering again could place it twice, so
+ * "Opnieuw controleren" leads while the form still holds those values; once a fresh list says it isn't there ('absent'),
+ * or a different hint is typed, Registreren is back.
+ */
+export function hintPrimaryAction(pending: UnconfirmedHint | null, current: HintDraftValues): 'recheck' | 'register' {
+  return pending?.outcome === 'unknown' && sameDraft(current, pending.values) ? 'recheck' : 'register';
+}

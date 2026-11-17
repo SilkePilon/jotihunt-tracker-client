@@ -2,6 +2,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import { BatteryIcon, GaugeIcon } from 'lucide-react';
 import MapPopup from '../../map/MapPopup';
+import ArchiveReadOnlyNote from '@/components/ArchiveReadOnlyNote';
 import MarkerRegistration from '../../map/MarkerRegistration';
 import MarkerGlyph from '../../map/popup/MarkerGlyph';
 import { PopupActions, RouteAction } from '../../map/popup/PopupActions';
@@ -55,6 +56,8 @@ export default function DevicePopup({ position, icon, onClose }: DevicePopupProp
         <RouteAction lat={lat} lng={lng} compact />
         <MarkerRegistration lat={lat} lng={lng} />
       </PopupActions>
+      {/* Hunt/Spot are greyed out in an archive edition: say why */}
+      <ArchiveReadOnlyNote className="pt-2 text-(--map-muted)" />
     </MapPopup>
   );
 }

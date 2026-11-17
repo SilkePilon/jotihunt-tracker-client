@@ -12,6 +12,7 @@ import type { SnapHeights } from '@/lib/sheet-snaps';
 import BottomSheet from './BottomSheet';
 import PeekStrip from './PeekStrip';
 import MyLocationButton from './MyLocationButton';
+import ResetNorthButton from './ResetNorthButton';
 import MobileMenu from './MobileMenu';
 import MobilePage from './MobilePage';
 import ViewportDebug from './ViewportDebug';
@@ -90,6 +91,8 @@ export default function MobileShell({ mapRef }: { mapRef: RefObject<MapRef | nul
       <motion.div id={DOCK_ID} className="pointer-events-none fixed right-[max(0.75rem,env(safe-area-inset-right))] left-[max(0.75rem,env(safe-area-inset-left))] z-[45] flex flex-col gap-2" style={{ bottom: dockBottom }}>
         {/* Always the dock's first node (display: contents, so it adds no gap): popups portal in after it, under the button */}
         <div className="contents">
+          {/* Above Mijn locatie while the map is turned or tilted */}
+          <ResetNorthButton mapRef={mapRef} />
           <MyLocationButton mapRef={mapRef} />
         </div>
       </motion.div>

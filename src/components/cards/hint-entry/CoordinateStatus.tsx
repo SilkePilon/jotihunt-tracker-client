@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'motion/react';
-import { CircleCheckIcon, CircleHelpIcon, KeyboardIcon, TriangleAlertIcon } from 'lucide-react';
+import { CircleCheckIcon, CircleHelpIcon, KeyboardIcon, ListChecksIcon, TriangleAlertIcon } from 'lucide-react';
 import type { GuessStatus } from '@/lib/hint-guess';
 import { SWAP } from '@/lib/motion';
 import { cn } from '@/lib/utils';
@@ -12,15 +12,20 @@ const STATES = {
   outside: { Icon: TriangleAlertIcon, text: 'Buiten Nederland', className: 'text-fox-error' },
 } as const;
 
-/** Live check under the digit boxes: typing hint, inside the Netherlands, outside, or (with a '?') the guess line. */
-export default function CoordinateStatus({ state, guess }: { state: CoordinateState; guess?: GuessStatus | null }) {
+/**
+ * Live check under the digit boxes: typing hint, inside the Netherlands, outside, or (with a '?') the guess line.
+ * `missing` (coordinates fine, area or time not chosen yet) replaces "Ligt in Nederland" with what Registreren waits for.
+ */
+export default function CoordinateStatus({ state, guess, missing }: { state: CoordinateState; guess?: GuessStatus | null; missing?: string | null }) {
   // The card shows the map instruction too (" · tik er een op de kaart")
   const guessText = guess ? guess.text + (guess.action ?? '') : '';
   const view = guess
     ? guess.tone === 'warn'
       ? { Icon: TriangleAlertIcon, text: guessText, className: 'text-fox-error' }
       : { Icon: CircleHelpIcon, text: guessText, className: 'text-on-guess-container' }
-    : STATES[state];
+    : state === 'inside' && missing
+      ? { Icon: ListChecksIcon, text: missing, className: 'text-primary-text' }
+      : STATES[state];
   const { Icon, text, className } = view;
   return (
     <p role="status" aria-live="polite" className="min-w-0 flex-1 text-xs font-medium md:text-[11px]">

@@ -7,6 +7,7 @@ import useSidebarStore from '@/stores/sidebar.store';
 import useMobileNavStore from '@/stores/mobile-nav.store';
 import { useIsMobile } from '@/hooks/media.hook';
 import MapPopup from './MapPopup';
+import ArchiveReadOnlyNote from '@/components/ArchiveReadOnlyNote';
 import MarkerRegistration from './MarkerRegistration';
 import { rdText } from '@/lib/rd';
 import CoordRows from './popup/CoordRows';
@@ -79,6 +80,8 @@ export default function PickedLocationPopup({ lat, lng, onClose }: { lat: number
             <RouteAction lat={lat} lng={lng} compact />
             <MarkerRegistration lat={lat} lng={lng} />
           </PopupActions>
+          {/* Hunt/Spot are greyed out in an archive edition: say why */}
+          <ArchiveReadOnlyNote className="pt-2 text-(--map-muted)" />
           <PopupActions className="mt-2">
             <button type="button" className={popupActionClass('neutral', 'min-w-0 flex-1')} onClick={toHint}>
               <LightbulbIcon /> In hint

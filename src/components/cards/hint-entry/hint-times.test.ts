@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { buildHintHours as buildOrNull, dayKey, defaultDay, groupByDay, isFreeHour, isTakenHour, shortLabel } from './hint-times';
+import { buildHintHours as buildOrNull, dayKey, defaultDay, groupByDay, isFreeHour, isTakenHour, missingPickText, shortLabel } from './hint-times';
 import { MarkerType } from '@/types/MarkerType';
 import type { Marker } from '@/types/Marker';
 
@@ -126,5 +126,18 @@ describe('isFreeHour', () => {
     expect(isTakenHour(hours, new Date(2026, 9, 19, 10).toISOString())).toBe(false);
     expect(isTakenHour(hours, '')).toBe(false);
     expect(isTakenHour(null, hours[1].value)).toBe(false);
+  });
+});
+
+describe('missingPickText', () => {
+  test('names what is still missing', () => {
+    expect(missingPickText('', '')).toBe('Kies nog een gebied en tijd');
+    expect(missingPickText(undefined, undefined)).toBe('Kies nog een gebied en tijd');
+    expect(missingPickText('alpha', '')).toBe('Kies nog een tijd');
+    expect(missingPickText('', '2026-10-17T10:00:00.000Z')).toBe('Kies nog een gebied');
+  });
+
+  test('nothing missing: null', () => {
+    expect(missingPickText('alpha', '2026-10-17T10:00:00.000Z')).toBeNull();
   });
 });

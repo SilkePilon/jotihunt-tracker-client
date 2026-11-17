@@ -169,6 +169,8 @@ describe('trackerPeekLine', () => {
   test('signal lost', () =>
     expect(trackerPeekLine({ ...base, connected: false, stats: { lastUpdate: '2026-10-17T14:20:00Z' } }, now)).toEqual({ tone: 'warn', text: 'Geen signaal · 21 min' }));
   test('never paired', () => expect(trackerPeekLine({ ...base, connected: false, stats: {} }, now)).toEqual({ tone: 'warn', text: 'Koppel je telefoon' }));
+  test('never paired on an iPhone: Traccar', () =>
+    expect(trackerPeekLine({ ...base, connected: false, stats: {} }, now, false, true)).toEqual({ tone: 'warn', text: 'Koppel je iPhone (Traccar)' }));
   test('invalid lastUpdate omits the age', () =>
     expect(trackerPeekLine({ ...base, connected: true, stats: { lastUpdate: 'not-a-date' } }, now)).toEqual({ tone: 'ok', text: 'Verbonden · in de auto' }));
 });

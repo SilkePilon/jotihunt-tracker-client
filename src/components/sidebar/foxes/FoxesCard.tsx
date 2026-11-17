@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion, useReducedMotion, type Transition } from 'motion/react';
+import { LockIcon } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAreas } from '@/hooks/areas.hook';
 import { useHuntableAreas } from '@/hooks/huntable-areas.hook';
 import { FOX_GROUP_LABEL, FOX_GROUP_ORDER, groupCounts, legendGroups, type FoxGroup, type SidebarFox } from '@/lib/fox-status';
 import LoadError from '@/components/LoadError';
-import { EASE_OUT, revealTransition, SWAP, SWAP_TRANSITION } from '@/lib/motion';
+import { EASE_OUT, POP, revealTransition, SWAP, SWAP_TRANSITION } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import FoxChip from './FoxChip';
 import FoxHistory from './FoxHistory';
@@ -132,7 +133,7 @@ function GroupBlock({ group, foxes, count, popIn, openKey, panelFox, onOpen }: G
       <AnimatePresence mode="wait">
         {panelFox && (
           <HistoryPanel key={panelFox.key} id={`fox-history-${panelFox.key}`} reduced={reduced}>
-            <FoxHistory fox={panelFox} hidden={isHidden(panelFox.area.name)} onToggleHidden={() => toggleHidden(panelFox.area.name)} />
+            <FoxHistory fox={panelFox} hidden={isHidden(panelFox.area.name)} forbidden={isForbidden(panelFox.area.name)} onToggleHidden={() => toggleHidden(panelFox.area.name)} />
           </HistoryPanel>
         )}
       </AnimatePresence>
@@ -207,6 +208,8 @@ export default function FoxesCard() {
   }
 
   const counts = groupCounts(foxes);
+  // The chips' lock gets a legend entry while any fox is outside our huntable areas
+  const anyForbidden = foxes.some((fox) => isForbidden(fox.area.name));
   const panelFox = panelKey === null ? undefined : foxes.find((fox) => fox.key === panelKey);
   return (
     // Fades in when it takes over from the skeleton (or the empty line)
@@ -214,13 +217,22 @@ export default function FoxesCard() {
       <FoxStatusBar foxes={foxes} size="full" isForbidden={isForbidden} />
       {/* Wraps instead of overflowing when a fifth group (OV) joins on a narrow sidebar */}
       <div className="mt-1.5 mb-2.5 flex flex-wrap justify-between gap-x-2 gap-y-0.5 text-xs text-muted-foreground md:text-[11px]">
-        {legendGroups(counts).map((group) => (
-          <span key={group} className="inline-flex items-center gap-1">
-            <GroupSwatch group={group} />
-            <Count value={counts[group]} className="font-semibold text-foreground" />
-            {FOX_GROUP_LABEL[group].toLowerCase()}
-          </span>
-        ))}
+        {/* layout: the entries slide aside when the lock entry pops in or out */}
+        <AnimatePresence initial={false} mode="popLayout">
+          {legendGroups(counts).map((group) => (
+            <motion.span key={group} layout="position" transition={{ layout: SWAP_TRANSITION }} className="inline-flex items-center gap-1">
+              <GroupSwatch group={group} />
+              <Count value={counts[group]} className="font-semibold text-foreground" />
+              {FOX_GROUP_LABEL[group].toLowerCase()}
+            </motion.span>
+          ))}
+          {anyForbidden && (
+            <motion.span key="forbidden" layout="position" {...POP} className="inline-flex items-center gap-1">
+              <LockIcon aria-hidden className="size-3" strokeWidth={2.75} />
+              niet toegestaan
+            </motion.span>
+          )}
+        </AnimatePresence>
       </div>
 
       <AnimatePresence initial={false}>
