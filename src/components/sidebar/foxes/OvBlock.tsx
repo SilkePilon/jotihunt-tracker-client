@@ -59,7 +59,7 @@ function OvRow({ fox, hidden, forbidden, popIn, now, open, onOpen }: OvRowProps)
         open ? 'ring-[1.5px]' : 'ring-0',
       )}
     >
-      <span className={cn('block px-0.5 transition-opacity duration-200 motion-reduce:transition-none', hidden ? 'opacity-40' : forbidden && 'opacity-45')}>
+      <span className={cn('block px-0.5 transition-opacity duration-200 motion-reduce:transition-none', hidden ? 'opacity-65' : forbidden && 'opacity-75')}>
         <span className="flex items-center justify-between gap-2 text-xs font-bold">
           <span className="inline-flex min-w-0 items-center gap-1.5">
             <span className="relative grid size-2.5 shrink-0 place-items-center">
@@ -83,7 +83,8 @@ function OvRow({ fox, hidden, forbidden, popIn, now, open, onOpen }: OvRowProps)
             </span>
             <span className="truncate">{fox.name} · in het OV</span>
           </span>
-          <span className="shrink-0 font-semibold tabular-nums opacity-80">{duration}</span>
+          {/* Not dimmed again when the row is already dimmed (like FoxChip): stacked opacity drops the text below 4.5:1 */}
+          <span className={cn('shrink-0 font-semibold tabular-nums', !hidden && !forbidden && 'opacity-80')}>{duration}</span>
         </span>
         {/* Rail: dashed track between two stations, the train glides back and forth (still with reduced motion) */}
         <span aria-hidden className="relative mt-1.5 block h-[18px]">
