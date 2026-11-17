@@ -9,6 +9,12 @@ describe('computeSnapHeights', () => {
     expect(computeSnapHeights({ visibleH: 800, safeTop: 0, safeBottom: 0, peekContent: 60 }).peek).toBe(120);
     expect(computeSnapHeights({ visibleH: 800, safeTop: 0, safeBottom: 0, peekContent: 400 }).peek).toBe(176);
   });
+  test('half closer than 140px to peek folds into full (two stops)', () => {
+    // 360 tall landscape phone: half would be 180, peek 141
+    expect(computeSnapHeights({ visibleH: 360, safeTop: 0, safeBottom: 21, peekContent: 136 })).toEqual({ peek: 141, half: 348, full: 348 });
+    // Exactly 140 apart keeps the middle stop
+    expect(computeSnapHeights({ visibleH: 520, safeTop: 0, safeBottom: 0, peekContent: 120 })).toEqual({ peek: 120, half: 260, full: 508 });
+  });
   test('landscape: half never below peek, nothing above full', () => {
     const h = computeSnapHeights({ visibleH: 360, safeTop: 0, safeBottom: 21, peekContent: 136 });
     expect(h.half).toBeGreaterThanOrEqual(h.peek);
@@ -48,6 +54,14 @@ test('nextSnap cycles peek → half → full → peek', () => {
   expect(nextSnap('peek')).toBe('half');
   expect(nextSnap('half')).toBe('full');
   expect(nextSnap('full')).toBe('peek');
+});
+
+test('nextSnap skips a stop at the current height (two-stop sheet)', () => {
+  const twoStops = { peek: 157, half: 348, full: 348 };
+  expect(nextSnap('peek', twoStops)).toBe('half');
+  expect(nextSnap('half', twoStops)).toBe('peek');
+  expect(nextSnap('full', twoStops)).toBe('peek');
+  expect(nextSnap('half', { peek: 170, half: 380, full: 700 })).toBe('full');
 });
 
 test('grabLabel names the current snap', () => {

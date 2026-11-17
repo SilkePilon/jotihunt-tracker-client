@@ -9,6 +9,8 @@ export type SnapHeights = Record<SheetSnap, number>;
 export const PEEK_MIN = 120;
 export const PEEK_MAX_FRACTION = 0.22;
 export const FULL_TOP_GAP = 12;
+/** A half stop closer than this to peek is no real middle step (landscape phones): the sheet keeps two stops */
+export const HALF_MIN_STEP = 140;
 /** px/ms; a faster release moves one snap in the drag direction */
 export const FLICK_VELOCITY = 0.45;
 
@@ -17,7 +19,7 @@ export function computeSnapHeights({ visibleH, safeTop, safeBottom, peekContent 
   const peekMax = Math.max(PEEK_MIN, PEEK_MAX_FRACTION * visibleH);
   const peek = Math.min(full, Math.round(Math.min(Math.max(peekContent, PEEK_MIN), peekMax) + safeBottom));
   const half = Math.min(full, Math.max(peek, Math.round(visibleH * 0.5)));
-  return { peek, half, full };
+  return { peek, half: half - peek < HALF_MIN_STEP ? full : half, full };
 }
 
 export function rubberBand(h: number, min: number, max: number): number {
@@ -34,8 +36,14 @@ export function settleSnap(height: number, velocity: number, heights: SnapHeight
   return SNAP_ORDER.reduce((best, s) => (Math.abs(heights[s] - height) < Math.abs(heights[best] - height) ? s : best), 'peek' as SheetSnap);
 }
 
-export function nextSnap(snap: SheetSnap): SheetSnap {
-  return SNAP_ORDER[(SNAP_ORDER.indexOf(snap) + 1) % SNAP_ORDER.length];
+/** The snap a grab tap moves to; with `heights`, a stop at the same height as the current one is skipped (two-stop sheet). */
+export function nextSnap(snap: SheetSnap, heights?: SnapHeights): SheetSnap {
+  let next = snap;
+  for (let i = 0; i < SNAP_ORDER.length - 1; i++) {
+    next = SNAP_ORDER[(SNAP_ORDER.indexOf(next) + 1) % SNAP_ORDER.length];
+    if (!heights || heights[next] !== heights[snap]) return next;
+  }
+  return next;
 }
 
 const SNAP_STATE: Record<SheetSnap, string> = { peek: 'ingeklapt', half: 'half open', full: 'helemaal open' };

@@ -232,7 +232,7 @@ export default function BottomSheet({ peek, children, onHeights }: { peek: React
         <button
           type="button"
           aria-label={grabLabel(snap)}
-          onClick={() => setSnap(nextSnap(snap))}
+          onClick={() => setSnap(nextSnap(snap, heights))}
           className="relative flex h-6 shrink-0 cursor-grab touch-none select-none items-center justify-center rounded-t-3xl outline-none pointer-coarse:after:absolute pointer-coarse:after:-top-2 pointer-coarse:after:bottom-0 pointer-coarse:after:left-1/2 pointer-coarse:after:w-28 pointer-coarse:after:-translate-x-1/2 pointer-coarse:after:content-[''] focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset"
         >
           {/* /80: at least 3:1 on the light beheer-window background (/70 was borderline) */}
