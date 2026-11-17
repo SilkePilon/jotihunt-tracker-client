@@ -20,11 +20,40 @@ export function swapPreset(reduced: boolean) {
   } satisfies { initial: TargetAndTransition; animate: TargetAndTransition; exit: TargetAndTransition; transition: Transition };
 }
 
-/** The OS setting when the app loads (no window in tests) */
-const prefersReducedMotion = typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+/**
+ * A swap preset whose targets follow `isReduced()` each time they are read. Spreading it (`{...SWAP}`) calls the getters,
+ * so every render picks the full or the reduced targets as the OS setting is now, not as it was when the app loaded.
+ */
+export function liveSwapPreset(isReduced: () => boolean) {
+  const full = swapPreset(false);
+  const reduced = swapPreset(true);
+  const current = () => (isReduced() ? reduced : full);
+  return {
+    get initial() {
+      return current().initial;
+    },
+    get animate() {
+      return current().animate;
+    },
+    get exit() {
+      return current().exit;
+    },
+    transition: SWAP_TRANSITION,
+  };
+}
 
-/** One state's content replaced by another; use inside `<AnimatePresence mode="wait" initial={false}>`, keyed by the state */
-export const SWAP = swapPreset(prefersReducedMotion);
+/** The OS reduced-motion setting, kept current by its media query's change event (no window in tests: off) */
+const reducedQuery = typeof window !== 'undefined' && typeof window.matchMedia === 'function' ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+let prefersReducedMotion = reducedQuery?.matches ?? false;
+reducedQuery?.addEventListener?.('change', (event) => {
+  prefersReducedMotion = event.matches;
+});
+
+/**
+ * One state's content replaced by another; use inside `<AnimatePresence mode="wait" initial={false}>`, keyed by the state.
+ * Spread it in render (`{...SWAP}`): the blur follows the OS setting live (swapPreset).
+ */
+export const SWAP = liveSwapPreset(() => prefersReducedMotion);
 
 export const POP_SPRING: Transition = { type: 'spring', stiffness: 420, damping: 24 };
 

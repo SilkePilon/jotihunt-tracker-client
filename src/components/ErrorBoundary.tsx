@@ -30,7 +30,16 @@ interface ErrorBoundaryState {
  * The fallback fades in (SWAP's enter) instead of popping. Only the enter: the crashed children can't stay on screen
  * for an exit, and "Opnieuw proberen" brings them straight back.
  */
-const FALLBACK_ENTER = { initial: SWAP.initial, animate: SWAP.animate, transition: SWAP.transition };
+const FALLBACK_ENTER = {
+  // Getters, so a spread reads SWAP's targets for the reduced-motion setting of now (no blur when reduced)
+  get initial() {
+    return SWAP.initial;
+  },
+  get animate() {
+    return SWAP.animate;
+  },
+  transition: SWAP.transition,
+};
 
 /** Catches a render crash in its children, so one broken part shows a message instead of white-screening the whole app. */
 export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {

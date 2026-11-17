@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { REVEAL_TRANSITION, SWAP, revealTransition, swapPreset } from './motion';
+import { REVEAL_TRANSITION, SWAP, liveSwapPreset, revealTransition, swapPreset } from './motion';
 
 describe('swapPreset', () => {
   test('full motion: slide + blur', () => {
@@ -14,7 +14,20 @@ describe('swapPreset', () => {
     expect(preset.animate.opacity).toBe(1);
   });
   test('SWAP without a window is the full-motion preset', () => {
-    expect(SWAP).toEqual(swapPreset(false));
+    expect({ ...SWAP }).toEqual(swapPreset(false));
+  });
+});
+
+describe('liveSwapPreset', () => {
+  test('a spread reads the setting as it is now, not when the preset was made', () => {
+    let reduced = false;
+    const preset = liveSwapPreset(() => reduced);
+    expect({ ...preset }).toEqual(swapPreset(false));
+    reduced = true;
+    expect({ ...preset }).toEqual(swapPreset(true));
+    expect('filter' in preset.initial).toBe(false);
+    reduced = false;
+    expect(preset.exit).toEqual(swapPreset(false).exit);
   });
 });
 
