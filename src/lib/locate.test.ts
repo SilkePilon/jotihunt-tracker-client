@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { locateMe } from './locate';
+import { followTarget, geolocationGranted, locateMe } from './locate';
 
 function fakeGeolocation(result: { lat: number; lng: number; accuracy?: number } | { code: number }): Geolocation {
   return {
@@ -10,22 +10,60 @@ function fakeGeolocation(result: { lat: number; lng: number; accuracy?: number }
   } as Geolocation;
 }
 
+const TRACKER = { lat: 52, lng: 5 };
+const BROWSER = { lat: 51.9, lng: 6.1 };
+
 describe('locateMe', () => {
-  test('a fresh tracker position wins without asking the browser', async () => {
-    expect(await locateMe({ lat: 52, lng: 5 }, fakeGeolocation({ code: 1 }))).toEqual({ lat: 52, lng: 5 });
+  test('a live tracker fix wins without asking the browser', async () => {
+    expect(await locateMe({ live: TRACKER, recent: TRACKER, granted: true }, fakeGeolocation({ code: 1 }))).toEqual({ ...TRACKER, source: 'tracker' });
   });
 
-  test('falls back to the browser position', async () => {
-    expect(await locateMe(undefined, fakeGeolocation({ lat: 51.9, lng: 6.1 }))).toEqual({ lat: 51.9, lng: 6.1 });
+  test('an older tracker fix gives way to an already-granted browser position', async () => {
+    expect(await locateMe({ recent: TRACKER, granted: true }, fakeGeolocation({ ...BROWSER, accuracy: 12 }))).toEqual({ ...BROWSER, accuracy: 12, source: 'browser' });
   });
 
-  test('a browser position carries its accuracy', async () => {
-    expect(await locateMe(undefined, fakeGeolocation({ lat: 51.9, lng: 6.1, accuracy: 45 }))).toEqual({ lat: 51.9, lng: 6.1, accuracy: 45 });
+  test('without access an older tracker fix beats a permission prompt', async () => {
+    let asked = false;
+    const geolocation = { getCurrentPosition: () => void (asked = true) } as unknown as Geolocation;
+    expect(await locateMe({ recent: TRACKER, granted: false }, geolocation)).toEqual({ ...TRACKER, source: 'tracker' });
+    expect(asked).toBe(false);
+  });
+
+  test('a failing browser falls back to the older tracker fix', async () => {
+    expect(await locateMe({ recent: TRACKER, granted: true }, fakeGeolocation({ code: 3 }))).toEqual({ ...TRACKER, source: 'tracker' });
+  });
+
+  test('no tracker at all: the browser, prompting if needed', async () => {
+    expect(await locateMe({ granted: false }, fakeGeolocation(BROWSER))).toEqual({ ...BROWSER, source: 'browser' });
   });
 
   test('denied or unavailable: a Dutch message', async () => {
-    expect(locateMe(undefined, fakeGeolocation({ code: 1 }))).rejects.toThrow('Geen toegang tot je locatie');
-    expect(locateMe(undefined, fakeGeolocation({ code: 3 }))).rejects.toThrow('kon niet worden bepaald');
-    expect(locateMe(undefined, undefined)).rejects.toThrow('kan je locatie niet bepalen');
+    expect(locateMe({ granted: false }, fakeGeolocation({ code: 1 }))).rejects.toThrow('Geen toegang tot je locatie');
+    expect(locateMe({ granted: true }, fakeGeolocation({ code: 3 }))).rejects.toThrow('kon niet worden bepaald');
+    expect(locateMe({ granted: false }, undefined)).rejects.toThrow('kan je locatie niet bepalen');
+  });
+});
+
+describe('followTarget', () => {
+  const recent = { lat: 1, lng: 1 };
+  test('live tracker, then browser, then recent tracker', () => {
+    expect(followTarget(TRACKER, BROWSER, recent)).toEqual(TRACKER);
+    expect(followTarget(undefined, BROWSER, recent)).toEqual(BROWSER);
+    expect(followTarget(undefined, null, recent)).toEqual(recent);
+    expect(followTarget(undefined, undefined, undefined)).toBeUndefined();
+  });
+});
+
+describe('geolocationGranted', () => {
+  const permissions = (state: PermissionState) => ({ query: () => Promise.resolve({ state }) });
+  test('only a granted permission counts', async () => {
+    expect(await geolocationGranted(permissions('granted'))).toBe(true);
+    expect(await geolocationGranted(permissions('prompt'))).toBe(false);
+    expect(await geolocationGranted(permissions('denied'))).toBe(false);
+  });
+
+  test('no Permissions API or a failing query: not granted', async () => {
+    expect(await geolocationGranted(undefined)).toBe(false);
+    expect(await geolocationGranted({ query: () => Promise.reject(new TypeError('unsupported')) })).toBe(false);
   });
 });

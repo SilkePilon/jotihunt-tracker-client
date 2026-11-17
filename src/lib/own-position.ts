@@ -27,6 +27,13 @@ export function distanceMetres(a: LatLng, b: LatLng): number {
 export const OWN_POSITION_FRESH_MS = 150_000;
 
 /**
+ * How old a tracker fix may be for "Mijn locatie" and follow mode to trust it over the browser's own position. Between
+ * two heartbeats (up to 120 s) the phone moves on; an already-granted browser fix is then newer. The dot-vs-marker
+ * rule above keeps its 150 s, so the own marker doesn't flicker.
+ */
+export const OWN_POSITION_LIVE_MS = 20_000;
+
+/**
  * The own tracker's position, unless missing or older than `maxAgeMs` (default: the 5 min rule of the hunter markers,
  * used for greying them). Device id 0 is valid.
  */

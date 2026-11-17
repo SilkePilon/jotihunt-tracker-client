@@ -5,10 +5,10 @@ import { toast } from 'sonner';
 import type { MapRef } from '@/components/Map';
 import { useDevices } from '@/hooks/devices.hook';
 import { useTrackerStatus } from '@/hooks/tracker.hook';
-import { LOCATE_ZOOM, locateMe } from '@/lib/locate';
+import { LOCATE_ZOOM, geolocationGranted, locateMe } from '@/lib/locate';
 import { MAP_TILE, MAP_LOCATION_COLOR } from '@/lib/map-chrome';
 import { POP, SWAP_TRANSITION } from '@/lib/motion';
-import { OWN_POSITION_FRESH_MS, ownDeviceId, ownTrackerPosition } from '@/lib/own-position';
+import { OWN_POSITION_FRESH_MS, OWN_POSITION_LIVE_MS, ownDeviceId, ownTrackerPosition } from '@/lib/own-position';
 import { cn } from '@/lib/utils';
 import useBrowserLocationStore from '@/stores/browser-location.store';
 import useFollowMeStore from '@/stores/follow-me.store';
@@ -18,7 +18,8 @@ import useSidebarStore from '@/stores/sidebar.store';
 
 /**
  * Phones: one 48px "Mijn locatie" map button, right above the sheet (it rides in the popup dock, so an open popup
- * pushes it up). A tap centres on the own tracker when fresh, else on the browser's position, pulses a ring there and
+ * pushes it up). A tap centres on the own tracker when its fix is under 20 s old, else on the browser's position
+ * (already granted; a tracker fix under 150 s beats a permission prompt), pulses a ring there and
  * then follows you (FollowMe) until the map is moved by hand or the button is tapped again; a browser position also
  * leaves a small own-position dot that follows you (BrowserLocationDot). Hidden while the sheet is full height.
  */
@@ -39,10 +40,15 @@ export default function MyLocationButton({ mapRef }: { mapRef: RefObject<MapRef 
     }
     setBusy(true);
     try {
-      const tracker = ownTrackerPosition(positions, ownDeviceId(devices, status?.configured ? status.uniqueId : undefined), Date.now(), OWN_POSITION_FRESH_MS);
-      const { lat, lng, accuracy } = await locateMe(tracker);
-      // Found by the browser (no live own tracker): a dot stays there and follows you (BrowserLocationDot)
-      if (!tracker) useBrowserLocationStore.getState().start({ lat, lng }, accuracy);
+      const deviceId = ownDeviceId(devices, status?.configured ? status.uniqueId : undefined);
+      const now = Date.now();
+      const { lat, lng, accuracy, source } = await locateMe({
+        live: ownTrackerPosition(positions, deviceId, now, OWN_POSITION_LIVE_MS),
+        recent: ownTrackerPosition(positions, deviceId, now, OWN_POSITION_FRESH_MS),
+        granted: await geolocationGranted(),
+      });
+      // Found by the browser: a dot stays there and follows you (BrowserLocationDot; it gives way to a live own marker)
+      if (source === 'browser') useBrowserLocationStore.getState().start({ lat, lng }, accuracy);
       // Never zoom out when the hunter is already closer in; reduced motion turns the flight into a jump (no `essential`)
       mapRef.current?.flyTo({ center: [lng, lat], zoom: Math.max(LOCATE_ZOOM, mapRef.current.getZoom() ?? 0), duration: 1200 });
       // After the flight call: any other camera move through the map ref ends following

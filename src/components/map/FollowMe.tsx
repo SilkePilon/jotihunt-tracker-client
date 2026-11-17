@@ -2,24 +2,29 @@ import { useEffect, useMemo } from 'react';
 import { useMap } from 'react-map-gl/maplibre';
 import type { MapLibreEvent } from 'maplibre-gl';
 import { useDevices } from '@/hooks/devices.hook';
-import { AGE_CLOCK_TICK_MS, useNow } from '@/hooks/now.hook';
+import { useGrantedBrowserPosition } from '@/hooks/granted-position.hook';
+import { useNow } from '@/hooks/now.hook';
 import { useTrackerStatus } from '@/hooks/tracker.hook';
 import { useWakeLock } from '@/hooks/wake-lock.hook';
-import { OWN_POSITION_FRESH_MS, ownDeviceId, ownTrackerPosition } from '@/lib/own-position';
+import { followTarget } from '@/lib/locate';
+import { OWN_POSITION_FRESH_MS, OWN_POSITION_LIVE_MS, ownDeviceId, ownTrackerPosition } from '@/lib/own-position';
 import useBrowserLocationStore from '@/stores/browser-location.store';
 import useFollowMeStore from '@/stores/follow-me.store';
 
 /** Closer than this (px) to the centre counts as centred: no ease for float noise or a fix that didn't move */
 const CENTRED_PX = 3;
 const FOLLOW_EASE_MS = 800;
+const FRESHNESS_TICK_MS = 5000;
+const FOLLOW_WATCH: PositionOptions = { enableHighAccuracy: true, maximumAge: 10_000 };
 
 // User gestures that end following (MapLibre only sets originalEvent for those, never for our own camera moves).
 // Zooming is not one: a pinch (like the ± tiles) keeps following, the next fix re-centres at the new zoom.
 const GESTURE_EVENTS = ['dragstart', 'rotatestart', 'pitchstart'] as const;
 
 /**
- * Phones: while "Mijn locatie" follows (MyLocationButton), the map eases to every new own fix, the own tracker when it
- * is live, else the browser's position (BrowserLocationDot). Dragging or twisting the map stops following; pinch zoom
+ * Phones: while "Mijn locatie" follows (MyLocationButton), the map eases to every new own fix: the own tracker when its
+ * fix is under 20 s old, else the browser's position (when access is already granted, or BrowserLocationDot's), else a
+ * tracker fix under 150 s. Dragging or twisting the map stops following; pinch zoom
  * keeps it.
  * The screen stays on meanwhile, like a navigation app.
  */
@@ -29,10 +34,16 @@ export default function FollowMe() {
   const { status } = useTrackerStatus();
   const { positions, devices } = useDevices();
   const browser = useBrowserLocationStore((state) => (state.active ? state.position : null));
-  const now = useNow(following, AGE_CLOCK_TICK_MS);
-  const tracker = ownTrackerPosition(positions, ownDeviceId(devices, status?.configured ? status.uniqueId : undefined), now, OWN_POSITION_FRESH_MS);
-  const lat = tracker?.lat ?? browser?.lat;
-  const lng = tracker?.lng ?? browser?.lng;
+  // Ticks often enough for the 20 s live rule
+  const now = useNow(following, FRESHNESS_TICK_MS);
+  const deviceId = ownDeviceId(devices, status?.configured ? status.uniqueId : undefined);
+  const live = ownTrackerPosition(positions, deviceId, now, OWN_POSITION_LIVE_MS);
+  const recent = ownTrackerPosition(positions, deviceId, now, OWN_POSITION_FRESH_MS);
+  // Between two tracker fixes the browser (already granted, so no prompt) knows better where we are now
+  const granted = useGrantedBrowserPosition(following, FOLLOW_WATCH);
+  const at = followTarget(live, granted ?? browser, recent);
+  const lat = at?.lat;
+  const lng = at?.lng;
   const target = useMemo(() => (lat === undefined || lng === undefined ? undefined : { lat, lng }), [lat, lng]);
 
   useWakeLock(following);
