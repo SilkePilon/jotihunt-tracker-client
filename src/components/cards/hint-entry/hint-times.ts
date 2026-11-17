@@ -36,12 +36,14 @@ const hourKey = (date: Date) => `${dayKey(date)}T${pad(date.getHours())}`;
 
 /**
  * Every hour from the hunt start up to now (or the hunt end, whichever is first), marking the hours that already have
- * a hint for the area.
+ * a hint for the area. Without the markers (still loading, or the first load failed) it isn't known which hours are
+ * taken: null, so nothing counts as free.
  */
-export function buildHintHours(start: Date, end: Date, now: Date, markers: Marker[] | undefined, area: string): HintHour[] {
+export function buildHintHours(start: Date, end: Date, now: Date, markers: Marker[] | undefined, area: string): HintHour[] | null {
+  if (!markers) return null;
   const last = now < end ? now : end;
   const taken = new Set(
-    (markers ?? [])
+    markers
       .filter((marker) => marker.type === MarkerType.Hint && marker.area === area)
       .map((marker) => hourKey(new Date(marker.time))),
   );
@@ -76,7 +78,7 @@ export function shortLabel(iso: string): string {
   return `${SHORT_WEEKDAYS[date.getDay()]} ${pad(date.getHours())}:00`;
 }
 
-/** Whether a chosen hour is still listed and free (used when the area changes) */
-export function isFreeHour(hours: HintHour[], value: string): boolean {
-  return hours.some((hour) => hour.value === value && !hour.taken);
+/** Whether a chosen hour is still listed and free (used when the area changes); never while the hours are unknown */
+export function isFreeHour(hours: HintHour[] | null, value: string): boolean {
+  return !!hours && hours.some((hour) => hour.value === value && !hour.taken);
 }

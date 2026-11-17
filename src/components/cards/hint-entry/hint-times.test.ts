@@ -1,10 +1,17 @@
 import { describe, expect, test } from 'bun:test';
-import { buildHintHours, dayKey, defaultDay, groupByDay, isFreeHour, shortLabel } from './hint-times';
+import { buildHintHours as buildOrNull, dayKey, defaultDay, groupByDay, isFreeHour, shortLabel } from './hint-times';
 import { MarkerType } from '@/types/MarkerType';
 import type { Marker } from '@/types/Marker';
 
 const START = new Date(2026, 9, 17, 10);
 const END = new Date(2026, 9, 18, 12);
+
+/** The hours with markers given (never null then) */
+const buildHintHours = (...args: Parameters<typeof buildOrNull>) => {
+  const hours = buildOrNull(...args);
+  if (!hours) throw new Error('expected hours');
+  return hours;
+};
 
 function hint(area: string, time: Date, type = MarkerType.Hint): Marker {
   return { area, time, type, location: { type: 'Point', coordinates: [5, 52] } };
@@ -44,8 +51,8 @@ describe('buildHintHours', () => {
     expect(hours[0].taken).toBe(false);
   });
 
-  test('accepts missing markers', () => {
-    expect(buildHintHours(START, END, new Date(2026, 9, 17, 10, 30), undefined, 'alpha')).toHaveLength(1);
+  test('is unknown (null) without markers: still loading or the first load failed', () => {
+    expect(buildOrNull(START, END, new Date(2026, 9, 17, 10, 30), undefined, 'alpha')).toBeNull();
   });
 });
 
@@ -108,5 +115,9 @@ describe('isFreeHour', () => {
     expect(isFreeHour(hours, hours[1].value)).toBe(false);
     expect(isFreeHour(hours, new Date(2026, 9, 19, 10).toISOString())).toBe(false);
     expect(isFreeHour(hours, '')).toBe(false);
+  });
+
+  test('false for every hour while the hours are unknown', () => {
+    expect(isFreeHour(null, hours[0].value)).toBe(false);
   });
 });
