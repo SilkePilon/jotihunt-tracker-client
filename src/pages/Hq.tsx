@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate } from 'react-router';
 import { SWRConfig } from 'swr';
 import { AnimatePresence } from 'motion/react';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import Map, { type MapRef } from '@/components/Map';
-import AudioUnlock from '@/components/hq/AudioUnlock';
+import AudioUnlock, { AudioUnlockTile } from '@/components/hq/AudioUnlock';
 import FocusPulse from '@/components/hq/FocusPulse';
 import FoxBoard from '@/components/hq/FoxBoard';
 import HqEventCard from '@/components/hq/HqEventCard';
@@ -17,6 +17,7 @@ import StaleDataBadge from '@/components/StaleDataBadge';
 import { useAreas } from '@/hooks/areas.hook';
 import { useHqDirector } from '@/hooks/hq-director.hook';
 import { useHqEventSources } from '@/hooks/hq-events.hook';
+import { useIdleCursor } from '@/hooks/idle-cursor.hook';
 import { useHuntEvents, useSyncedHunts } from '@/hooks/hunt-sync.hook';
 import { useNotificationFeed } from '@/hooks/notification-feed.hook';
 import { useNow } from '@/hooks/now.hook';
@@ -25,10 +26,11 @@ import { useSessionExpired } from '@/hooks/session.hook';
 import { isHomeTeam, useTeams } from '@/hooks/teams.hook';
 import { useAppConfig } from '@/hooks/app-config.hook';
 import { useTheme } from '@/hooks/theme.hook';
+import { type AudioPermission, hqUnlockMode, probeAudio, readUnlockFlag, writeUnlockFlag } from '@/lib/hq-unlock';
 import { buildFoxes, eventFromNotification, type HqEvent } from '@/lib/hq-director';
 import { loadState } from '@/lib/load-state';
 import { isUnauthorized } from '@/lib/session';
-import { cn, getColorFromArea } from '@/lib/utils';
+import { getColorFromArea } from '@/lib/utils';
 import { createWakeLock } from '@/lib/wake-lock';
 import useHqDirectorStore from '@/stores/hq-director.store';
 import type { User } from '@/types/User';
@@ -39,6 +41,9 @@ import type { User } from '@/types/User';
  * working; pure vw ignored both. 1920 px wide: 19.2 + 4.8 = 24 px (was 1.3vw = 25 px).
  */
 const WALL_FONT_SIZE = 'calc(1vw + 0.3rem)';
+
+/** The cursor hides after this long without a mouse move */
+const CURSOR_IDLE_MS = 3000;
 
 /** Admin-only wall display for the HQ beamer: a map that tours the active foxes and flies to events, plus the fox board. */
 export default function Hq() {
@@ -55,15 +60,40 @@ export default function Hq() {
 
 function HqScreen({ onUnauthorized }: { onUnauthorized: () => void }) {
   const user = useAuthUser<User>();
-  const [audioUnlocked, setAudioUnlocked] = useState(false);
+  // Sound needs one click per page load. The click is remembered for this tab (sessionStorage), so after a reload
+  // (an automatic update, an edition switch) the wall carries on: only when the browser blocks sound again does a small
+  // corner tile ask for a new click; the full overlay is for the very first visit.
+  const [unlockFlag, setUnlockFlag] = useState(readUnlockFlag);
+  // Checked once on load (synchronous): only matters when the tab was unlocked before
+  const [audio, setAudio] = useState<AudioPermission>(() => (unlockFlag ? probeAudio() : 'unknown'));
+  const mode = hqUnlockMode(unlockFlag, audio);
   // The beamer must never dim or sleep: a screen wake lock from the unlock click on (a user activation, which some
-  // browsers want), requested again whenever the page is shown again (createWakeLock), let go when leaving the wall
+  // browsers want), or at once after a reload in a tab that was unlocked before (no gesture needed while visible);
+  // requested again whenever the page is shown again (createWakeLock), let go when leaving the wall
   const [wakeLock] = useState(createWakeLock);
   useEffect(() => () => wakeLock.stop(), [wakeLock]);
-  const unlock = () => {
+  useEffect(() => {
+    if (unlockFlag) wakeLock.start();
+  }, [unlockFlag, wakeLock]);
+  const unlock = useCallback(() => {
+    writeUnlockFlag();
     wakeLock.start();
-    setAudioUnlocked(true);
-  };
+    setUnlockFlag(true);
+    setAudio('allowed');
+  }, [wakeLock]);
+  // Tile shown: any click or key on the wall turns sound on too (it is a user activation all the same)
+  useEffect(() => {
+    if (mode !== 'tile') return;
+    window.addEventListener('pointerdown', unlock);
+    window.addEventListener('keydown', unlock);
+    return () => {
+      window.removeEventListener('pointerdown', unlock);
+      window.removeEventListener('keydown', unlock);
+    };
+  }, [mode, unlock]);
+  // Video-player cursor: shown while the mouse moves, hidden after 3 s without (data-idle), so nobody's pointer stays
+  // parked on top of the map or the board
+  const idle = useIdleCursor(CURSOR_IDLE_MS);
   const mapRef = useRef<MapRef>(null);
   const push = useHqDirectorStore((state) => state.push);
   useTheme();
@@ -109,8 +139,10 @@ function HqScreen({ onUnauthorized }: { onUnauthorized: () => void }) {
   if (!user?.admin) return <Navigate to="/" replace />;
 
   return (
-    // After the unlock click nobody points at the wall: no cursor parked on top of the map or the board
-    <main className={cn('grid h-dvh w-dvw grid-cols-[58fr_42fr] overflow-hidden bg-beheer-window text-foreground', audioUnlocked && 'cursor-none [&_*]:cursor-none')}>
+    <main
+      data-idle={(idle && mode !== 'overlay') || undefined}
+      className="grid h-dvh w-dvw grid-cols-[58fr_42fr] overflow-hidden bg-beheer-window text-foreground data-idle:cursor-none data-idle:[&_*]:cursor-none"
+    >
       {/* sr-only (absolutely positioned): not a grid item */}
       <h1 className="sr-only">HQ-scherm</h1>
       <div className="relative min-h-0 overflow-hidden rounded-r-2xl">
@@ -123,6 +155,7 @@ function HqScreen({ onUnauthorized }: { onUnauthorized: () => void }) {
         <ErrorBoundary name="De melding" className="absolute inset-x-4 bottom-4 z-10">
           <HqEventCard event={director.current} queued={director.queued} step={director.step} holdMs={director.holdMs} />
         </ErrorBoundary>
+        <AnimatePresence>{mode === 'tile' && <AudioUnlockTile key="audio-tile" onUnlock={unlock} />}</AnimatePresence>
       </div>
       <aside className="flex min-h-0 flex-col gap-2 p-3">
         <ErrorBoundary>
@@ -135,7 +168,7 @@ function HqScreen({ onUnauthorized }: { onUnauthorized: () => void }) {
           <HqHunts events={events} isError={eventsError} onRetry={retryEvents} />
         </ErrorBoundary>
       </aside>
-      <AnimatePresence>{!audioUnlocked && <AudioUnlock key="audio" onUnlock={unlock} />}</AnimatePresence>
+      <AnimatePresence>{mode === 'overlay' && <AudioUnlock key="audio" onUnlock={unlock} />}</AnimatePresence>
     </main>
   );
 }
