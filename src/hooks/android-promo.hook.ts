@@ -7,10 +7,10 @@ import useTourStore from '@/components/tour/tour.store';
 import useNotificationsDialogStore from '@/stores/notifications-dialog.store';
 import useAccountDialogStore from '@/stores/account-dialog.store';
 import useAndroidPromoStore from '@/stores/android-promo.store';
+import usePromptQueueStore from '@/stores/prompt-queue.store';
 import { isAndroidUserAgent, readPromoState, shouldShowAndroidPromo } from '@/lib/android-promo';
 
 const APP_ID = 'nl.jotihunt.tracker';
-const OPEN_DELAY_MS = 1500;
 
 type RelatedApp = { id?: string };
 type NavigatorWithRelated = Navigator & { getInstalledRelatedApps?: () => Promise<RelatedApp[]> };
@@ -24,7 +24,10 @@ function safeStorage(): Storage | null {
   }
 }
 
-/** Opens the Android-app popup once per session when every condition in the spec holds. */
+/**
+ * Opens the Android-app popup once per session when every condition in the spec holds, on its turn in the prompt queue
+ * (one follow-up prompt at a time, after a short gap).
+ */
 export function useAndroidPromoAutoOpen() {
   const isMobile = useIsMobile();
   const isAndroid = isAndroidUserAgent(navigator.userAgent);
@@ -50,26 +53,43 @@ export function useAndroidPromoAutoOpen() {
   const ready = release !== undefined && overview !== undefined && installed !== undefined;
   const busy = tourActive || meldingenOpen || accountOpen;
 
+  // Wait in the prompt queue while the popup should show
   useEffect(() => {
-    if (shown || !ready || busy) return;
-    // Spec: only when storage allows (otherwise "later"/"never" can't be remembered)
-    const storage = safeStorage();
-    if (!storage) return;
-    const state = readPromoState(storage);
-    const show = shouldShowAndroidPromo({
-      isMobile,
-      isAndroid,
-      hasRelease: !!release,
-      paired: (overview?.devices.length ?? 0) > 0,
-      installed: !!installed,
-      state,
-      now: Date.now(),
-    });
-    if (!show) return;
-    const id = window.setTimeout(() => {
-      setShown(true);
-      useAndroidPromoStore.getState().show();
-    }, OPEN_DELAY_MS);
-    return () => clearTimeout(id);
+    const queue = usePromptQueueStore.getState();
+    const wanted = !shown && ready && !busy && eligible();
+    if (wanted) queue.request('android-promo');
+    else queue.cancel('android-promo');
+
+    function eligible() {
+      // Spec: only when storage allows (otherwise "later"/"never" can't be remembered)
+      const storage = safeStorage();
+      if (!storage) return false;
+      return shouldShowAndroidPromo({
+        isMobile,
+        isAndroid,
+        hasRelease: !!release,
+        paired: (overview?.devices.length ?? 0) > 0,
+        installed: !!installed,
+        state: readPromoState(storage),
+        now: Date.now(),
+      });
+    }
   }, [shown, ready, busy, isMobile, isAndroid, release, overview, installed]);
+
+  // Its turn: show it; closing it lets the next prompt follow
+  useEffect(() => {
+    const offQueue = usePromptQueueStore.subscribe((state, prev) => {
+      if (state.active === 'android-promo' && prev.active !== 'android-promo') {
+        setShown(true);
+        useAndroidPromoStore.getState().show();
+      }
+    });
+    const offPopup = useAndroidPromoStore.subscribe((state, prev) => {
+      if (prev.open && !state.open) usePromptQueueStore.getState().done('android-promo');
+    });
+    return () => {
+      offQueue();
+      offPopup();
+    };
+  }, []);
 }

@@ -1,7 +1,7 @@
 import { Marker } from '@/types/Marker';
 import { fetcherWithMethod, useAuthSWR } from '../lib/swr';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
-import { asList } from '@/lib/response-shape';
+import { asList, hasExpectedShape } from '@/lib/response-shape';
 
 export const useMarkers = () => {
   const authHeader = useAuthHeader() || '';
@@ -36,22 +36,40 @@ export const useMarkers = () => {
   }
 
   /**
+   * Fetch the marker list now, bypassing SWR's dedupe (a poll may have just failed too), and put it in the cache.
+   * @returns The fresh list, or undefined when the fetch failed (never throws)
+   */
+  async function fetchFreshMarkers(): Promise<Marker[] | undefined> {
+    try {
+      const fresh: unknown = await fetcherWithMethod('/markers', authHeader);
+      if (!hasExpectedShape('/markers', fresh)) return undefined;
+      await mutate(fresh as Marker[], { revalidate: false });
+      return fresh as Marker[];
+    } catch {
+      return undefined;
+    }
+  }
+
+  /**
    * Delete a marker via the API.
    * @param markerId The ID of the marker to delete
-   * @returns True if the marker was deleted successfully, false otherwise (never throws)
+   * @returns null if the marker was deleted, else the error (never throws; show it with apiErrorMessage)
    */
-  async function deleteMarker(markerId: string): Promise<boolean> {
-    const result = await fetcherWithMethod(`/markers/${markerId}`, authHeader, 'DELETE').catch(() => null);
-    if (result) {
-      mutate((data) => {
-        if (data) {
-          return data.filter((marker) => marker._id !== markerId);
-        }
-        return [];
-      });
-      return true;
+  async function deleteMarker(markerId: string): Promise<unknown> {
+    let result;
+    try {
+      result = await fetcherWithMethod(`/markers/${markerId}`, authHeader, 'DELETE');
+    } catch (error) {
+      return error ?? new Error('Request failed');
     }
-    return false;
+    if (!result) return new Error('Unexpected response');
+    mutate((data) => {
+      if (data) {
+        return data.filter((marker) => marker._id !== markerId);
+      }
+      return [];
+    });
+    return null;
   }
 
   return {
@@ -63,6 +81,7 @@ export const useMarkers = () => {
     /** Refetch now (LoadError's retry) */
     retry: () => mutate(),
     createMarker,
+    fetchFreshMarkers,
     deleteMarker,
   };
 };

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { TOUR_STEPS, TOUR_VERSION } from './steps';
-import { TOUR_TARGET_IDS } from './targets';
+import { PHONE_MENU_SECTIONS, SIDEBAR_SECTIONS, TOUR_TARGET_IDS } from './targets';
 import { stepsForPlatform, targetFor } from './resolve';
 
 describe('TOUR_STEPS', () => {
@@ -54,5 +54,18 @@ describe('TOUR_STEPS', () => {
   test('first and last steps are not optional', () => {
     expect(TOUR_STEPS[0].optional).toBeFalsy();
     expect(TOUR_STEPS[TOUR_STEPS.length - 1].optional).toBeFalsy();
+  });
+
+  test('section steps follow the visible order: laptop sidebar, phone menu', () => {
+    const orders = { desktop: SIDEBAR_SECTIONS, mobile: PHONE_MENU_SECTIONS } as const;
+    for (const platform of ['mobile', 'desktop'] as const) {
+      const order: readonly string[] = orders[platform];
+      const positions = stepsForPlatform(TOUR_STEPS, platform)
+        .map((step) => targetFor(step, platform))
+        .filter((target): target is NonNullable<typeof target> => !!target?.startsWith('sidebar.') && target !== 'sidebar.root')
+        .map((target) => order.indexOf(target.slice('sidebar.'.length)));
+      expect(positions).not.toContain(-1);
+      expect(positions).toEqual([...positions].sort((a, b) => a - b));
+    }
   });
 });

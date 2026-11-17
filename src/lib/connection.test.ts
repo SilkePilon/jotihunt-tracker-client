@@ -98,6 +98,18 @@ describe('reporting', () => {
   });
 });
 
+describe('network error flag', () => {
+  test('a success clears an earlier "no answer"; a later HTTP error reads "Geen actuele gegevens"', () => {
+    resetConnection(NOW - 300_000);
+    reportFetchError('/areas', NOW - 250_000, true);
+    expect(connectionSnapshot().overall.networkError).toBe(true);
+    reportFetchSuccess('/areas', NOW - 200_000);
+    expect(connectionSnapshot().overall.networkError).toBe(false);
+    reportFetchError('/areas', NOW - 1000, false);
+    expect(problemLabel(connectionProblem(connectionSnapshot(), true, NOW)!)).toBe('Geen actuele gegevens — 3 min oud');
+  });
+});
+
 describe('per-feed tracking of the sidebar feeds', () => {
   test('hints, predictions and bot messages (query left off) are tracked and named', () => {
     resetConnection(NOW - 120_000);
@@ -110,7 +122,7 @@ describe('per-feed tracking of the sidebar feeds', () => {
     const snapshot = connectionSnapshot();
     expect(Object.keys(snapshot.feeds).sort()).toEqual(['/areas', '/hints/board', '/predictions', '/telegram/messages']);
     const problem = connectionProblem(snapshot, true, NOW);
-    expect(problem).toEqual({ ageMs: 90_000, feeds: ['hints', 'voorspellingen'], offline: true });
+    expect(problem).toEqual({ ageMs: 90_000, feeds: ['hints', 'voorspellingen'], offline: false });
     expect(problemLabel(problem!)).toBe('Hints en voorspellingen niet bijgewerkt — 1 min oud');
   });
 });

@@ -1,6 +1,10 @@
 import type { SidebarSectionId } from '@/stores/sidebar.store';
 
-const SIDEBAR_SECTIONS = ['foxes', 'hints', 'points', 'hunts', 'predictions', 'hintEntry', 'counterHunt', 'telegram', 'tracking', 'life360', 'jotiboard'] as const satisfies readonly SidebarSectionId[];
+/** The laptop sidebar's sections, in the order SidebarSections renders them */
+export const SIDEBAR_SECTIONS = ['foxes', 'hints', 'points', 'hunts', 'predictions', 'hintEntry', 'counterHunt', 'telegram', 'tracking', 'life360', 'jotiboard'] as const satisfies readonly SidebarSectionId[];
+
+/** The same sections in the phone menu's order (MobileMenu: "Spel", then "Jij") */
+export const PHONE_MENU_SECTIONS = ['foxes', 'hintEntry', 'hunts', 'telegram', 'predictions', 'hints', 'points', 'counterHunt', 'tracking', 'life360', 'jotiboard'] as const satisfies readonly SidebarSectionId[];
 
 /**
  * Every element the tour can point at. Components mark themselves with {...tourTarget(id)};
