@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { followTarget, geolocationGranted, HUNT_HERE_GRACE_MS, huntHereFix, huntHereVisible, locateMe } from './locate';
+import { followTarget, geolocationGranted, HUNT_HERE_GRACE_MS, huntHereFix, huntHereVisible, locateMe, olderTrackerFixNote } from './locate';
 
 function fakeGeolocation(result: { lat: number; lng: number; accuracy?: number } | { code: number }): Geolocation {
   return {
@@ -86,5 +86,20 @@ describe('Hunt hier', () => {
     expect(huntHereFix(undefined, null, recent, located)).toBe(recent);
     expect(huntHereFix(undefined, null, undefined, located)).toBe(located);
     expect(huntHereFix(undefined, null, undefined, null)).toBeUndefined();
+  });
+});
+
+describe('olderTrackerFixNote', () => {
+  const now = Date.parse('2026-10-18T12:00:00Z');
+  test('names the age of an older tracker fix', () => {
+    expect(olderTrackerFixNote('tracker', undefined, new Date(now - 2 * 60_000), now)).toBe('Laatste trackerpositie · 2 min geleden');
+    expect(olderTrackerFixNote('tracker', undefined, '2026-10-18T11:59:30Z', now)).toBe('Laatste trackerpositie · zojuist');
+  });
+
+  test('nothing for a live fix, a browser position or no time', () => {
+    expect(olderTrackerFixNote('tracker', { lat: 1, lng: 1 }, new Date(now - 60_000), now)).toBeNull();
+    expect(olderTrackerFixNote('browser', undefined, new Date(now - 60_000), now)).toBeNull();
+    expect(olderTrackerFixNote('tracker', undefined, undefined, now)).toBeNull();
+    expect(olderTrackerFixNote('tracker', undefined, 'nope', now)).toBeNull();
   });
 });
