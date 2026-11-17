@@ -229,7 +229,7 @@ export default function BottomSheet({ peek, children, onHeights }: { peek: React
       role="region"
       aria-label="Paneel"
       {...{ [WORK_AREA_ATTRIBUTE]: '' }}
-      className={cn('fixed bottom-0 z-40 flex flex-col rounded-t-3xl bg-beheer-window shadow-[0_-6px_30px_rgb(0_0_0/.25)] [-webkit-touch-callout:none]', !box && 'inset-x-0')}
+      className={cn('fixed bottom-0 z-40 flex flex-col rounded-t-3xl bg-beheer-window [-webkit-touch-callout:none]', box ? 'shadow-(--shadow-dialog)' : 'inset-x-0 shadow-(--shadow-sheet)')}
       style={{ height: heights.full, y, marginBottom: keyboard, paddingBottom: 'env(safe-area-inset-bottom)', ...(box && { left: box.left, width: box.width }) }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
