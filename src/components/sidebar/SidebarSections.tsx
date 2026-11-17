@@ -43,7 +43,7 @@ export default function SidebarSections({ mapRef, only }: { mapRef: RefObject<Ma
     <SidebarSectionVariantContext value={only ? 'page' : 'card'}>
       {show('foxes') && (
         <SidebarSection id="foxes" title="Vossen" summary={<FoxesSummary />}>
-          <FoxesCard />
+          <FoxesCard mapRef={mapRef} />
         </SidebarSection>
       )}
       {show('hints') && (

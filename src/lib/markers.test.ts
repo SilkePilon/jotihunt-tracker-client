@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import type { Marker } from '@/types/Marker';
 import { MarkerType } from '@/types/MarkerType';
-import { filterMarkers, groupMarkersByArea, markerDeleteDescription, markerSplitTime, markerTimeLabel } from './markers';
+import { filterMarkers, groupMarkersByArea, latestAreaMarker, markerDeleteDescription, markerSplitTime, markerTimeLabel } from './markers';
 
 function marker(id: string, area: string, time: string, type = MarkerType.Hint): Marker {
   return { _id: id, area, time: time as unknown as Date, type, location: { type: 'Point', coordinates: [5.9, 52] } };
@@ -94,4 +94,18 @@ describe('markerTimeLabel', () => {
   test('in the future: the clock time', () => {
     expect(markerTimeLabel('2026-10-17T12:30:00Z', now)).toBe('14:30');
   });
+});
+
+describe('latestAreaMarker', () => {
+  test('the newest hint or hunt marker of the area', () => {
+    expect(latestAreaMarker(markers, 'Alpha')?._id).toBe('a');
+    const withHunt = [...markers, marker('d', 'Alpha', new Date(2026, 9, 17, 23, 0).toISOString(), MarkerType.Hunt)];
+    expect(latestAreaMarker(withHunt, 'Alpha')?._id).toBe('d');
+  });
+  test('spots and other areas do not count', () => {
+    const withSpot = [...markers, marker('s', 'Alpha', new Date(2026, 9, 18, 1, 0).toISOString(), MarkerType.Spot)];
+    expect(latestAreaMarker(withSpot, 'Alpha')?._id).toBe('a');
+    expect(latestAreaMarker(markers, 'Delta')).toBeUndefined();
+  });
+  test('no markers yet', () => expect(latestAreaMarker(undefined, 'Alpha')).toBeUndefined());
 });

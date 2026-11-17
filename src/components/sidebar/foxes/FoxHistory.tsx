@@ -1,22 +1,37 @@
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Fragment, type RefObject, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
-import { EyeIcon, EyeOffIcon, LockIcon } from 'lucide-react';
+import { EyeIcon, EyeOffIcon, LockIcon, MapPinIcon } from 'lucide-react';
+import type { MapRef } from '@/components/Map';
 import AutoHeight from '@/components/motion/AutoHeight';
 import LoadError from '@/components/LoadError';
 import Reveal from '@/components/motion/Reveal';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAreaHistory } from '@/hooks/area-history.hook';
 import { useEdition } from '@/hooks/edition.hook';
+import { useMarkers } from '@/hooks/markers.hook';
 import { useNow } from '@/hooks/now.hook';
 import { historyModel, historyStatusLine } from '@/lib/fox-history';
 import type { SidebarFox } from '@/lib/fox-status';
-import { EASE_OUT, SWAP } from '@/lib/motion';
+import { activatedByKeyboard } from '@/lib/input-modality';
+import { FOX_MARKERS_LAYER } from '@/lib/map-layers';
+import { latestAreaMarker } from '@/lib/markers';
+import { EASE_OUT, POP, SWAP } from '@/lib/motion';
+import { TONAL_BUTTON } from '@/lib/tonal-button';
 import { cn, getColorFromArea } from '@/lib/utils';
+import useHuntFocusStore from '@/stores/hunt-focus.store';
+import useSidebarStore from '@/stores/sidebar.store';
 import FoxHistoryTimeline from './FoxHistoryTimeline';
 
 /** The window plays in once the panel's open spring has (mostly) settled. */
 const PLAY_DELAY_MS = 300;
 const MINUTE_MS = 60_000;
+const FLY_TO_ZOOM = 16;
+
+/** The fold-out's small tonal buttons: 28px (44px on touch) */
+const SMALL_TONAL = cn(
+  TONAL_BUTTON,
+  'inline-flex h-7 cursor-pointer items-center gap-1.5 px-2.5 text-xs font-semibold outline-none pointer-coarse:h-11 focus-visible:ring-[3px] focus-visible:ring-ring [&_svg]:size-3.5',
+);
 
 interface FoxHistoryProps {
   fox: SidebarFox;
@@ -24,21 +39,18 @@ interface FoxHistoryProps {
   /** Outside the areas our group may hunt (huntable areas): said in words under the status line, not only by the chip's lock */
   forbidden?: boolean;
   onToggleHidden: () => void;
+  /** For "Naar laatste hint" (flies there and opens the marker's popup); without it the button doesn't show */
+  mapRef?: RefObject<MapRef | null>;
 }
 
-/** "Verberg op kaart" / "Toon op kaart": both labels share one grid cell, so the button keeps its width and only fades. */
+/** "Verberg op kaart" / "Weer tonen": both labels share one grid cell, so the button keeps its width and only fades. */
 function HideButton({ hidden, onClick }: { hidden: boolean; onClick: () => void }) {
   const options = [
     { on: !hidden, icon: EyeOffIcon, label: 'Verberg op kaart' },
-    { on: hidden, icon: EyeIcon, label: 'Toon op kaart' },
+    { on: hidden, icon: EyeIcon, label: 'Weer tonen' },
   ];
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={hidden ? 'Toon op kaart' : 'Verberg op kaart'}
-      className="inline-grid h-7 cursor-pointer rounded-[10px] bg-secondary pointer-coarse:h-11 px-2.5 text-xs font-semibold text-secondary-foreground transition-colors duration-150 outline-none hover:bg-[color-mix(in_oklab,var(--foreground)_12%,var(--card))] focus-visible:ring-[3px] focus-visible:ring-ring"
-    >
+    <button type="button" onClick={onClick} aria-label={hidden ? 'Weer tonen op kaart' : 'Verberg op kaart'} className={cn(SMALL_TONAL, 'inline-grid')}>
       {options.map(({ on, icon: Icon, label }) => (
         <span
           key={label}
@@ -48,7 +60,7 @@ function HideButton({ hidden, onClick }: { hidden: boolean; onClick: () => void 
             on ? 'opacity-100 blur-0' : 'opacity-0 blur-[2px]',
           )}
         >
-          <Icon className="size-3.5" />
+          <Icon />
           {label}
         </span>
       ))}
@@ -78,7 +90,34 @@ function TimelineSkeleton() {
  * The fold-out under a fox's chip: name, status line, the last three hours as a timeline and the hide-on-map button.
  * Fetches only while mounted; the window moves on every minute.
  */
-export default function FoxHistory({ fox, hidden, forbidden = false, onToggleHidden }: FoxHistoryProps) {
+/**
+ * "Naar laatste hint": the area's newest hint or hunt marker. Lowers the phone sheet, flies there, pulses the spot and
+ * opens the marker's popup (like a hunt log row); hidden while the area has no such marker.
+ */
+function LatestMarkerButton({ area, mapRef }: { area: string; mapRef: RefObject<MapRef | null> }) {
+  const { markers } = useMarkers();
+  const latest = useMemo(() => latestAreaMarker(markers, area), [markers, area]);
+  const go = () => {
+    if (!latest?._id) return;
+    const [lng, lat] = latest.location.coordinates;
+    useSidebarStore.getState().setSheetSnap('peek');
+    mapRef.current?.flyTo({ center: [lng, lat], zoom: FLY_TO_ZOOM, duration: 1500 });
+    useHuntFocusStore.getState().show({ lng, lat, color: getColorFromArea(area) });
+    mapRef.current?.openFeature(FOX_MARKERS_LAYER, latest._id, { focus: activatedByKeyboard() });
+  };
+  return (
+    <AnimatePresence initial={false}>
+      {latest && (
+        <motion.button key="latest" type="button" onClick={go} {...POP} className={SMALL_TONAL}>
+          <MapPinIcon aria-hidden />
+          Naar laatste hint
+        </motion.button>
+      )}
+    </AnimatePresence>
+  );
+}
+
+export default function FoxHistory({ fox, hidden, forbidden = false, onToggleHidden, mapRef }: FoxHistoryProps) {
   const reduced = useReducedMotion() ?? false;
   const { history, error, mutate } = useAreaHistory(fox.area.name);
   const now = useNow(true, MINUTE_MS);
@@ -179,7 +218,8 @@ export default function FoxHistory({ fox, hidden, forbidden = false, onToggleHid
         </AnimatePresence>
       </AutoHeight>
 
-      <div className="mt-2 flex justify-end">
+      <div className="mt-2 flex flex-wrap justify-end gap-1.5">
+        {mapRef && <LatestMarkerButton area={fox.area.name} mapRef={mapRef} />}
         <HideButton hidden={hidden} onClick={onToggleHidden} />
       </div>
     </div>

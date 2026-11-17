@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { type RefObject, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import type { MapRef } from '@/components/Map';
 import { AnimatePresence, motion, useReducedMotion, type Transition } from 'motion/react';
 import { EyeOffIcon, LockIcon } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -101,10 +102,11 @@ interface GroupBlockProps {
   /** Fox whose panel is shown in this group, if it's in this group */
   panelFox: SidebarFox | undefined;
   onOpen: (key: string) => void;
+  mapRef?: RefObject<MapRef | null>;
 }
 
 /** One tonal group: header + chips (or the OV rows), and the history panel of the open fox when it's in this group. */
-function GroupBlock({ group, foxes, count, popIn, openKey, panelFox, onOpen }: GroupBlockProps) {
+function GroupBlock({ group, foxes, count, popIn, openKey, panelFox, onOpen, mapRef }: GroupBlockProps) {
   const { toggleHidden, isHidden } = useAreas();
   const { isForbidden } = useHuntableAreas();
   const reduced = useReducedMotion() ?? false;
@@ -133,7 +135,7 @@ function GroupBlock({ group, foxes, count, popIn, openKey, panelFox, onOpen }: G
       <AnimatePresence mode="wait">
         {panelFox && (
           <HistoryPanel key={panelFox.key} id={`fox-history-${panelFox.key}`} reduced={reduced}>
-            <FoxHistory fox={panelFox} hidden={isHidden(panelFox.area.name)} forbidden={isForbidden(panelFox.area.name)} onToggleHidden={() => toggleHidden(panelFox.area.name)} />
+            <FoxHistory fox={panelFox} hidden={isHidden(panelFox.area.name)} forbidden={isForbidden(panelFox.area.name)} onToggleHidden={() => toggleHidden(panelFox.area.name)} mapRef={mapRef} />
           </HistoryPanel>
         )}
       </AnimatePresence>
@@ -142,7 +144,7 @@ function GroupBlock({ group, foxes, count, popIn, openKey, panelFox, onOpen }: G
 }
 
 /** "Vossen" card (mockup C2): status bar, count legend, one tonal block per non-empty group with area chips. */
-export default function FoxesCard() {
+export default function FoxesCard({ mapRef }: { mapRef?: RefObject<MapRef | null> }) {
   const foxes = useSidebarFoxes();
   const { isError: areasError, retry: retryAreas, isHidden } = useAreas();
   const { isForbidden } = useHuntableAreas();
@@ -267,6 +269,7 @@ export default function FoxesCard() {
                 openKey={openKey}
                 panelFox={panelFox?.group === group ? panelFox : undefined}
                 onOpen={onOpen}
+                mapRef={mapRef}
               />
             </div>
           </motion.div>

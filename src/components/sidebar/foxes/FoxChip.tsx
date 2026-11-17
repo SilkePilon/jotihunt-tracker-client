@@ -70,7 +70,7 @@ function FoxChip({ fox, hidden, forbidden, popIn, open, onOpen }: FoxChipProps) 
       {/* Hidden / forbidden dim this inner layer, so the pop's own opacity on the button stays independent; the stronger dim (hidden) wins */}
       <span
         className={cn(
-          'inline-flex h-[26px] items-center gap-1.5 rounded-full bg-fox-chip px-2.5 text-xs font-semibold transition-opacity duration-200 hover:brightness-110 motion-reduce:transition-none',
+          'inline-flex h-[26px] items-center gap-1.5 rounded-full bg-fox-chip px-2.5 text-xs font-semibold transition-opacity duration-200 hover:brightness-110 motion-reduce:transition-none pointer-coarse:h-8 pointer-coarse:text-[13.5px]',
           hidden ? 'opacity-70' : forbidden && 'opacity-75',
         )}
       >
@@ -98,6 +98,14 @@ function FoxChip({ fox, hidden, forbidden, popIn, open, onOpen }: FoxChipProps) 
             )}
           </AnimatePresence>
         </span>
+        {/* Hidden and forbidden: the eye takes the slot, the lock stays beside it as a small badge (both still true) */}
+        <AnimatePresence initial={false}>
+          {hidden && forbidden && (
+            <motion.span key="lock-badge" aria-hidden className="-ml-0.5 grid size-2.5 shrink-0 place-items-center" initial={POP.initial} animate={POP.animate} exit={POP.exit} transition={POP.transition}>
+              <LockIcon className="size-2.5" strokeWidth={2.75} />
+            </motion.span>
+          )}
+        </AnimatePresence>
         {fox.name}
         {/* Dimmed chips (hidden / forbidden) are dim enough already: a second dim would drop the time under 4.5:1 */}
         {since !== null && <span className={cn('tabular-nums', !hidden && !forbidden && 'opacity-80')}>{since}</span>}

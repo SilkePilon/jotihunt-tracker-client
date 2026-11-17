@@ -1,3 +1,4 @@
+import { MarkerType } from '@/types/MarkerType';
 import type { Marker } from '@/types/Marker';
 import { formatClock } from '@/lib/format';
 
@@ -65,6 +66,16 @@ export function groupMarkersByArea(markers: Marker[]): Record<string, Marker[]> 
     groups[area].sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
   }
   return groups;
+}
+
+/** The newest hint or hunt marker of an area (spots don't count), for "Naar laatste hint"; undefined when it has none. */
+export function latestAreaMarker(markers: readonly Marker[] | undefined, area: string): Marker | undefined {
+  let latest: Marker | undefined;
+  for (const marker of markers ?? []) {
+    if (marker.area !== area || !marker._id || (marker.type !== MarkerType.Hint && marker.type !== MarkerType.Hunt)) continue;
+    if (!latest || new Date(marker.time).getTime() > new Date(latest.time).getTime()) latest = marker;
+  }
+  return latest;
 }
 
 /** The delete confirmation's consequence line: which marker goes, for everyone, for good. */
