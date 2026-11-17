@@ -62,8 +62,10 @@ function Header({ title, onCancel, disabled, cancelling }: { title: string; onCa
         size="icon"
         className="relative size-6 text-muted-foreground after:absolute after:-inset-2.5"
         aria-label="Koppelen annuleren"
-        aria-busy={cancelling}
-        disabled={disabled || cancelling}
+        // The running ✕ keeps the focus (aria-disabled); a second tap is refused by usePending
+        aria-disabled={cancelling || undefined}
+        aria-busy={cancelling || undefined}
+        disabled={disabled && !cancelling}
         onClick={onCancel}
       >
         <BusyIcon busy={!!cancelling} icon={<XIcon />} />
@@ -108,7 +110,7 @@ function TokenFallback({ busy, blocked, onSubmit }: { busy: boolean; blocked: bo
             }}
           />
           <Reveal gap={8}>{error && <InlineError id={errorId}>{error}</InlineError>}</Reveal>
-          <Button type="submit" variant="outline" size="sm" disabled={!token.trim() || busy || blocked} aria-busy={busy}>
+          <Button type="submit" variant="outline" size="sm" disabled={!token.trim() || (blocked && !busy)} aria-disabled={busy || undefined} aria-busy={busy || undefined}>
             <BusyIcon busy={busy} />
             Koppel met token
           </Button>
@@ -164,7 +166,14 @@ function EmailStep({
           }}
         />
         <Reveal gap={8}>{error && <InlineError id={errorId}>{error}</InlineError>}</Reveal>
-        <Button type="submit" className={LIFE360_BUTTON} disabled={!email.trim() || !!pending} aria-busy={pending === 'code'}>
+        <Button
+          type="submit"
+          className={LIFE360_BUTTON}
+          // The running button stays focusable (aria-disabled); usePending refuses a second submit
+          disabled={!email.trim() || (!!pending && pending !== 'code')}
+          aria-disabled={pending === 'code' || undefined}
+          aria-busy={pending === 'code' || undefined}
+        >
           <BusyIcon busy={pending === 'code'} />
           Stuur code
         </Button>
@@ -255,12 +264,25 @@ function CodeStep({
       </InputOTP>
       <Reveal gap={8}>{error && <InlineError id={errorId}>{error}</InlineError>}</Reveal>
       {error ? (
-        <Button type="button" variant="outline" disabled={!!countdown || !!pending} aria-busy={pending === 'resend'} onClick={() => void resend()}>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={!!countdown || (!!pending && pending !== 'resend')}
+          aria-disabled={pending === 'resend' || undefined}
+          aria-busy={pending === 'resend' || undefined}
+          onClick={() => void resend()}
+        >
           <BusyIcon busy={pending === 'resend'} />
           {countdown ? `Stuur nieuwe code (${countdown})` : 'Stuur nieuwe code'}
         </Button>
       ) : (
-        <Button type="submit" className={LIFE360_BUTTON} disabled={!isSixDigits(code) || !!pending} aria-busy={pending === 'verify'}>
+        <Button
+          type="submit"
+          className={LIFE360_BUTTON}
+          disabled={!isSixDigits(code) || (!!pending && pending !== 'verify')}
+          aria-disabled={pending === 'verify' || undefined}
+          aria-busy={pending === 'verify' || undefined}
+        >
           <BusyIcon busy={pending === 'verify'} />
           Koppelen
         </Button>
@@ -320,7 +342,13 @@ function CircleStep({ circles, onChooseCircle, onCancel }: { circles: Life360Cir
         })}
       </div>
       <Reveal gap={8}>{error && <InlineError>{error}</InlineError>}</Reveal>
-      <Button type="submit" className={LIFE360_BUTTON} disabled={!selected || !!pending} aria-busy={pending === 'choose'}>
+      <Button
+        type="submit"
+        className={LIFE360_BUTTON}
+        disabled={!selected || (!!pending && pending !== 'choose')}
+        aria-disabled={pending === 'choose' || undefined}
+        aria-busy={pending === 'choose' || undefined}
+      >
         <BusyIcon busy={pending === 'choose'} />
         Gebruik deze cirkel
       </Button>

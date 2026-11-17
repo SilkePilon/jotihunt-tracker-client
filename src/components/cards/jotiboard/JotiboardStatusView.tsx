@@ -25,6 +25,8 @@ export function JotiboardLinked({ status, view, disabled, onSetSync }: { status:
   const [busy, setBusy] = useState(false);
 
   async function toggle(enabled: boolean) {
+    // aria-disabled (not disabled) while saving, so the switch keeps the focus: ignore taps until then
+    if (busy) return;
     setBusy(true);
     try {
       await onSetSync(enabled);
@@ -52,7 +54,7 @@ export function JotiboardLinked({ status, view, disabled, onSetSync }: { status:
       </FadeText>
       <label className={cn('mt-3 flex w-full cursor-pointer items-center justify-between gap-3 px-2.5 py-2', JOTIBOARD_BLOCK)}>
         <span className="text-[13px] font-medium">Automatisch synchroniseren</span>
-        <BeheerSwitch checked={status.syncEnabled} disabled={busy || disabled} onCheckedChange={(checked) => void toggle(checked)} className="data-[state=checked]:bg-green-600" />
+        <BeheerSwitch checked={status.syncEnabled} disabled={disabled} aria-disabled={busy || undefined} aria-busy={busy || undefined} onCheckedChange={(checked) => void toggle(checked)} className="data-[state=checked]:bg-green-600" />
       </label>
     </div>
   );
