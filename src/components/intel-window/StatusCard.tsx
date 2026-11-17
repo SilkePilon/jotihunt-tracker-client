@@ -1,4 +1,4 @@
-import { type ReactNode, useMemo } from 'react';
+import { memo, type ReactNode, useMemo } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import CountUp from '@/components/motion/CountUp';
 import { useAppConfig } from '@/hooks/app-config.hook';
@@ -27,6 +27,9 @@ export default function StatusCard({ items, cells, entrance }: { items: IntelIte
   const setTab = useIntelStore((state) => state.setTab);
   const from = entrance ? 0 : undefined;
   const { hints, assignments, unread } = stats;
+  // One countdown (and one interval) for the tile and the chart
+  const next = useNextHint();
+  const nextMs = next.nextAt?.getTime() ?? null;
   return (
     <motion.aside
       initial={entrance ? { opacity: 0, x: 14 } : false}
@@ -36,7 +39,7 @@ export default function StatusCard({ items, cells, entrance }: { items: IntelIte
       className="flex w-[340px] shrink-0 flex-col gap-2.5 overflow-y-auto rounded-[24px] bg-card p-4"
     >
       <div className="grid grid-cols-2 gap-2">
-        <NextHintTile />
+        <NextHintTile next={next} />
         <Tile label="Hints" onClick={() => setTab('hint')} sub={hints.total ? `${hints.solved} van ${hints.total} opgelost` : 'nog geen hints'}>
           {hints.percent === null ? (
             '—'
@@ -57,7 +60,7 @@ export default function StatusCard({ items, cells, entrance }: { items: IntelIte
           <CountUp value={unread.news + unread.assignment} from={from} />
         </Tile>
       </div>
-      <SolveChart slots={stats.slots} avgSolveMs={stats.avgSolveMs} entrance={entrance} />
+      <SolveChart slots={stats.slots} avgSolveMs={stats.avgSolveMs} nextMs={nextMs} entrance={entrance} />
     </motion.aside>
   );
 }
@@ -78,8 +81,7 @@ function Tile({ label, sub, onClick, children }: { label: string; sub: string; o
 }
 
 /** Countdown to the next hint (orange tonal, red-ish under 5 minutes); its message swaps when the state changes */
-function NextHintTile() {
-  const next = useNextHint();
+function NextHintTile({ next }: { next: ReturnType<typeof useNextHint> }) {
   const urgent = next.isUrgent || next.isNewHint;
   const mode = next.isCountdown ? 'countdown' : next.label;
   return (
@@ -129,9 +131,8 @@ const AREA_COUNT = areaOptions.length;
  * so one hint is never one big block). Expected slots fill the rest as dashed outlines; the next one in orange. Bars
  * grow in on entrance and ease to new heights.
  */
-function SolveChart({ slots, avgSolveMs, entrance }: { slots: SlotBar[]; avgSolveMs: number | null; entrance: boolean }) {
-  const { nextAt } = useNextHint();
-  const nextMs = nextAt?.getTime() ?? null;
+// Memoised: the countdown above re-renders the card every second, the chart only changes with its props
+const SolveChart = memo(function SolveChart({ slots, avgSolveMs, nextMs, entrance }: { slots: SlotBar[]; avgSolveMs: number | null; nextMs: number | null; entrance: boolean }) {
   const { huntEnd } = useAppConfig();
   // The last hint slot of the hunt (as in useNextHint): nothing is expected after it (no limit while the end is unset)
   const lastSlotMs = huntEnd ? new Date(huntEnd).getTime() - 60 * 60 * 1000 : Infinity;
@@ -232,4 +233,4 @@ function SolveChart({ slots, avgSolveMs, entrance }: { slots: SlotBar[]; avgSolv
       </div>
     </div>
   );
-}
+});
