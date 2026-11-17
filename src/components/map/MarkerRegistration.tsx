@@ -213,7 +213,7 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
 
     // Check if within the hunt time
     if (huntStart && huntEnd && (newDate < HUNT_START_TIME || newDate > HUNT_END_TIME)) {
-      form.setError('time', { message: 'Tijd valt buiten de hunt periode.' });
+      form.setError('time', { message: 'Tijd valt buiten de huntperiode.' });
       return;
     }
 
@@ -347,7 +347,7 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
                         </SelectGroup>
                       </SelectContent>
                     </Select>
-                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                    <Reveal>{fieldState.invalid && <FieldError errors={[fieldState.error]} />}</Reveal>
                   </Field>
                 );
               }}
