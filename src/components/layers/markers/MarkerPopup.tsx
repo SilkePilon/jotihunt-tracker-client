@@ -12,6 +12,7 @@ import { useEdition } from '@/hooks/edition.hook';
 import { useSyncedHunts } from '@/hooks/hunt-sync.hook';
 import { formatClock, joinParts } from '@/lib/format';
 import { huntLocationNote, syncedHuntForMarker } from '@/lib/hunt-sync';
+import { markerDeleteDescription } from '@/lib/markers';
 import { REVEAL_TRANSITION } from '@/lib/motion';
 import { areaKey, areaLetter } from '@/lib/marker-style';
 import { capitalizeFirstLetter, getColorFromArea } from '@/lib/utils';
@@ -86,9 +87,9 @@ export default function MarkerPopup({ marker, onClose, deleteMarker }: MarkerPop
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
-        title="Weet je het zeker?"
-        description="Deze actie kan niet ongedaan gemaakt worden. Dit zal alle informatie van deze marker permanent verwijderen."
-        confirmLabel="Doorgaan"
+        title="Marker verwijderen?"
+        description={markerDeleteDescription(marker, formatClock(marker.time))}
+        confirmLabel="Verwijderen"
         destructive
         onConfirm={handleDelete}
       />
