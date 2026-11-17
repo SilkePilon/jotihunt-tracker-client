@@ -121,6 +121,12 @@ export function toRD(lng: number, lat: number): { x: number; y: number } {
   };
 }
 
+/** RD coordinates in whole metres as text, as shown in popups and taken by the hint registration. */
+export function rdText(lng: number, lat: number): { x: string; y: string } {
+  const { x, y } = toRD(lng, lat);
+  return { x: x.toFixed(0), y: y.toFixed(0) };
+}
+
 /** RD metres to WGS84 [longitude, latitude]. */
 export function fromRD(x: number, y: number): [number, number] {
   const { C, K, R2, sinc0, cosc0, phic0 } = GAUSS;

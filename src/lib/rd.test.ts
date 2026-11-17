@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import proj4 from 'proj4';
-import { fromRD, isPlausibleRD, RD_BOUNDS, toRD } from './rd';
+import { fromRD, isPlausibleRD, RD_BOUNDS, rdText, toRD } from './rd';
 
 // The definition rd.ts used to register with proj4; the closed-form port must agree with it
 proj4.defs(
@@ -68,5 +68,13 @@ describe('RD conversion', () => {
     const p = toRD(5.9699, 52.2112);
     expect(Math.abs(p.x - 194_878)).toBeLessThan(100);
     expect(Math.abs(p.y - 469_485)).toBeLessThan(100);
+  });
+});
+
+describe('rdText', () => {
+  test('whole metres of toRD as text', () => {
+    const { x, y } = toRD(5.387206, 52.155174);
+    expect(rdText(5.387206, 52.155174)).toEqual({ x: x.toFixed(0), y: y.toFixed(0) });
+    expect(rdText(5.387206, 52.155174).x).toMatch(/^\d+$/);
   });
 });

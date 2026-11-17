@@ -21,9 +21,9 @@ export function popupActionClass(variant: keyof typeof VARIANTS, className?: str
 /** Add to popupActionClass for a 44px icon-only button. */
 export const ICON_ACTION = 'w-11 flex-none px-0';
 
-/** The bottom row of buttons. */
-export function PopupActions({ children }: { children: ReactNode }) {
-  return <div className="mt-3 flex gap-2">{children}</div>;
+/** The bottom row of buttons; `className` e.g. for a second row closer to the first. */
+export function PopupActions({ children, className }: { children: ReactNode; className?: string }) {
+  return <div className={cn('mt-3 flex gap-2', className)}>{children}</div>;
 }
 
 /**
