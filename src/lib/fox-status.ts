@@ -30,6 +30,21 @@ export function huntCooldownMs(lastHuntTime: Date | string | undefined, now: num
   return Math.max(0, new Date(lastHuntTime).getTime() + HUNT_COOLDOWN_MS - now);
 }
 
+/**
+ * When the last running hunt cooldown ends (ms since epoch; may lie in the past), or undefined without any hunt.
+ * The sidebar only needs a per-second clock until then.
+ */
+export function lastCooldownEnd(areas: Area[], hunts: SyncedHunt[] | undefined): number | undefined {
+  let end: number | undefined;
+  for (const area of areas) {
+    const lastHunt = lastHuntTimeFor(hunts, area.name);
+    if (!lastHunt) continue;
+    const areaEnd = new Date(lastHunt).getTime() + HUNT_COOLDOWN_MS;
+    if (end === undefined || areaEnd > end) end = areaEnd;
+  }
+  return end;
+}
+
 /** Pill colours per fox status (and for a fox still in its hunt cooldown), light and dark mode. */
 export const COOLDOWN_PILL_CLASS = 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/15 dark:text-blue-300';
 
@@ -106,6 +121,11 @@ export function sidebarFoxes({ areas, hunts, now }: { areas: Area[]; hunts?: Syn
         (a.group === 'cooldown' ? a.cooldownMs - b.cooldownMs : 0) ||
         a.key.localeCompare(b.key),
     );
+}
+
+/** Same fox as far as its chip shows (the list is rebuilt every tick, so the objects themselves are always new). */
+export function sameSidebarFox(a: SidebarFox, b: SidebarFox): boolean {
+  return a === b || (a.area === b.area && a.key === b.key && a.name === b.name && a.group === b.group && a.cooldownMs === b.cooldownMs && a.lastHunt === b.lastHunt);
 }
 
 export function groupCounts(foxes: SidebarFox[]): Record<FoxGroup, number> {

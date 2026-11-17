@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import type { Area } from '@/types/Area';
 import type { SyncedHunt } from '@/types/HuntSync';
-import { formatOvDuration, FOX_GROUP_ORDER, foxGroup, groupCounts, huntCooldownMs, HUNT_COOLDOWN_MS, lastHuntTimeFor, legendGroups, sidebarFoxes, statusPillClass } from './fox-status';
+import { formatOvDuration, FOX_GROUP_ORDER, foxGroup, groupCounts, huntCooldownMs, HUNT_COOLDOWN_MS, lastCooldownEnd, lastHuntTimeFor, legendGroups, sameSidebarFox, sidebarFoxes, statusPillClass } from './fox-status';
 
 function hunt(area: string, statusText: string, huntTime: string | null): SyncedHunt {
   return { _id: area + huntTime, siteKey: area + huntTime, area, huntTime, status: 'approved', statusText, points: 1, location: null, firstSeenAt: '2026-10-17T10:00:00Z', statusChangedAt: null };
@@ -115,5 +115,45 @@ describe('ov (blue)', () => {
     expect(formatOvDuration(12 * 60_000 + 30_000)).toBe('12 min');
     expect(formatOvDuration(65 * 60_000)).toBe('1 u 5 min');
     expect(formatOvDuration(120 * 60_000)).toBe('2 u');
+  });
+});
+
+describe('lastCooldownEnd', () => {
+  const now = new Date('2026-10-17T14:00:00Z').getTime();
+  const minutesAgo = (m: number) => new Date(now - m * 60_000).toISOString();
+
+  test('the end of the latest cooldown; undefined without hunts', () => {
+    const areas = [area('Alpha', 'green'), area('Bravo', 'green'), area('Charlie', 'red')];
+    expect(lastCooldownEnd(areas, undefined)).toBeUndefined();
+    expect(lastCooldownEnd(areas, [hunt('delta', 'Goedgekeurd', minutesAgo(5))])).toBeUndefined();
+    const hunts = [hunt('alpha', 'Goedgekeurd', minutesAgo(50)), hunt('bravo', 'Goedgekeurd', minutesAgo(10)), hunt('charlie', 'Tegenhunt', minutesAgo(1))];
+    expect(lastCooldownEnd(areas, hunts)).toBe(now - 10 * 60_000 + HUNT_COOLDOWN_MS);
+  });
+
+  test('a cooldown runs exactly while now is before the end (the sidebar ticks only then)', () => {
+    const areas = [area('Alpha', 'green')];
+    const hunts = [hunt('alpha', 'Goedgekeurd', minutesAgo(30))];
+    const end = lastCooldownEnd(areas, hunts)!;
+    expect(sidebarFoxes({ areas, hunts, now: end - 1 })[0].group).toBe('cooldown');
+    expect(sidebarFoxes({ areas, hunts, now: end })[0].group).toBe('green');
+    // An old hunt: the end lies in the past, nothing ticks
+    expect(lastCooldownEnd(areas, [hunt('alpha', 'Goedgekeurd', minutesAgo(90))])! < now).toBe(true);
+  });
+});
+
+describe('sameSidebarFox', () => {
+  const now = new Date('2026-10-17T14:00:00Z').getTime();
+  const areas = [area('Alpha', 'green'), area('Bravo', 'green')];
+  const hunts = [hunt('bravo', 'Goedgekeurd', new Date(now - 10 * 60_000).toISOString())];
+
+  test('rebuilt foxes outside a cooldown are the same; a ticking cooldown is not', () => {
+    const before = sidebarFoxes({ areas, hunts, now });
+    const after = sidebarFoxes({ areas, hunts, now: now + 1000 });
+    const alpha = (list: typeof before) => list.find((fox) => fox.key === 'alpha')!;
+    const bravo = (list: typeof before) => list.find((fox) => fox.key === 'bravo')!;
+    expect(alpha(after)).not.toBe(alpha(before));
+    expect(sameSidebarFox(alpha(before), alpha(after))).toBe(true);
+    expect(sameSidebarFox(bravo(before), bravo(after))).toBe(false);
+    expect(sameSidebarFox(alpha(before), { ...alpha(before), area: { ...areas[0], status: 'red' } })).toBe(false);
   });
 });

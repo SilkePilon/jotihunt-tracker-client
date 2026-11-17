@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion, useReducedMotion, type Transition } from 'motion/react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAreas } from '@/hooks/areas.hook';
@@ -120,7 +120,7 @@ function GroupBlock({ group, foxes, count, popIn, openKey, panelFox, onOpen }: G
             {/* popLayout: a chip popping out leaves the flow at once, so its neighbours close the gap */}
             <AnimatePresence mode="popLayout" initial={false}>
               {foxes.map((fox) => (
-                <FoxChip key={fox.key} fox={fox} hidden={isHidden(fox.area.name)} forbidden={isForbidden(fox.area.name)} popIn={popIn} open={openKey === fox.key} onOpen={() => onOpen(fox.key)} />
+                <FoxChip key={fox.key} fox={fox} hidden={isHidden(fox.area.name)} forbidden={isForbidden(fox.area.name)} popIn={popIn} open={openKey === fox.key} onOpen={onOpen} />
               ))}
             </AnimatePresence>
           </div>
@@ -150,7 +150,7 @@ export default function FoxesCard() {
   const panelKey = laggingPanelKey === openKey ? laggingPanelKey : null;
   const switchTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => () => clearTimeout(switchTimer.current), []);
-  const onOpen = (key: string) => {
+  const toggle = (key: string) => {
     const next = openKey === key ? null : key;
     setOpenKey(next);
     clearTimeout(switchTimer.current);
@@ -161,6 +161,12 @@ export default function FoxesCard() {
     setPanelKey(null);
     switchTimer.current = setTimeout(() => setPanelKey(next), PANEL_SWITCH_MS);
   };
+  // Stable for the memoised chips; it calls the toggle of the latest render
+  const toggleRef = useRef(toggle);
+  useLayoutEffect(() => {
+    toggleRef.current = toggle;
+  });
+  const onOpen = useCallback((key: string) => toggleRef.current(key), []);
   // The open fox left the list (area removed or renamed): forget it during render, so the next tap opens at once
   // and the panel doesn't come back by itself when the area returns
   if (foxes && openKey !== null && !foxes.some((fox) => fox.key === openKey)) setOpenKey(null);

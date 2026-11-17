@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { LockIcon } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -6,7 +7,7 @@ import { useEdition } from '@/hooks/edition.hook';
 import { useNow } from '@/hooks/now.hook';
 import { formatCountdown } from '@/lib/format';
 import { chipSinceText } from '@/lib/fox-history';
-import { FOX_STATUS_TEXT, type SidebarFox } from '@/lib/fox-status';
+import { FOX_STATUS_TEXT, sameSidebarFox, type SidebarFox } from '@/lib/fox-status';
 import { FORBIDDEN_AREA_NOTE } from '@/lib/huntable-areas';
 import { LAYOUT_SPRING, POP, POP_SPRING } from '@/lib/motion';
 import { cn, getColorFromArea } from '@/lib/utils';
@@ -22,7 +23,8 @@ interface FoxChipProps {
   popIn: boolean;
   /** Its history panel is open (or about to open): ring in the group's text colour */
   open: boolean;
-  onOpen: () => void;
+  /** Called with the fox's key; keep it stable so unchanged chips skip re-rendering */
+  onOpen: (key: string) => void;
 }
 
 /** Pop in only after the old chip has popped out of its previous group. */
@@ -32,7 +34,7 @@ const POP_IN = { ...POP_SPRING, delay: 0.15 };
  * Area dot (a lock when we may not hunt it) + name + time since its last status change (the countdown in cooldown); a
  * click opens/closes its history panel. On a status change it pops out of its old group and pops into the new one.
  */
-export default function FoxChip({ fox, hidden, forbidden, popIn, open, onOpen }: FoxChipProps) {
+function FoxChip({ fox, hidden, forbidden, popIn, open, onOpen }: FoxChipProps) {
   const { area, lastHunt, cooldownMs } = fox;
   const now = useNow(true, 60_000);
   // Archive editions: the time since the last change is meaningless (EditionReloader reloads the page on a switch)
@@ -56,7 +58,7 @@ export default function FoxChip({ fox, hidden, forbidden, popIn, open, onOpen }:
       aria-label={title}
       aria-expanded={open}
       aria-controls={open ? `fox-history-${fox.key}` : undefined}
-      onClick={onOpen}
+      onClick={() => onOpen(fox.key)}
       className={cn(
         'cursor-pointer rounded-full ring-current transition-shadow duration-200 focus-visible:outline-2 focus-visible:outline-ring motion-reduce:transition-none',
         open ? 'ring-[1.5px]' : 'ring-0',
@@ -95,3 +97,15 @@ export default function FoxChip({ fox, hidden, forbidden, popIn, open, onOpen }:
     </motion.button>
   );
 }
+
+/** The fox list is rebuilt on every cooldown tick: only chips whose fox (or other props) changed re-render. */
+export default memo(
+  FoxChip,
+  (prev, next) =>
+    sameSidebarFox(prev.fox, next.fox) &&
+    prev.hidden === next.hidden &&
+    prev.forbidden === next.forbidden &&
+    prev.popIn === next.popIn &&
+    prev.open === next.open &&
+    prev.onOpen === next.onOpen,
+);
