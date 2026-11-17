@@ -1,9 +1,9 @@
 import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { ChevronRightIcon } from 'lucide-react';
 import Reveal from '@/components/motion/Reveal';
 import { COARSE_HIT_AREA } from '@/lib/hit-area';
-import { REVEAL_TRANSITION, SWAP_TRANSITION } from '@/lib/motion';
+import { revealTransition, SWAP_TRANSITION } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import ChatMarkdown from './ChatMarkdown';
 
@@ -96,6 +96,8 @@ export default function Reasoning({ text, thinking }: ReasoningProps) {
 function Grow({ children }: { children: ReactNode }) {
   const inner = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState<number | 'auto'>('auto');
+  // Reduced motion: the height follows at once (no sliding), as in revealTransition
+  const reduced = useReducedMotion() ?? false;
   useLayoutEffect(() => {
     const element = inner.current;
     if (!element) return;
@@ -104,7 +106,7 @@ function Grow({ children }: { children: ReactNode }) {
     return () => observer.disconnect();
   }, []);
   return (
-    <motion.div className="overflow-hidden" initial={false} animate={{ height }} transition={REVEAL_TRANSITION}>
+    <motion.div className="overflow-hidden" initial={false} animate={{ height }} transition={revealTransition(reduced, 'enter')}>
       <div ref={inner}>{children}</div>
     </motion.div>
   );

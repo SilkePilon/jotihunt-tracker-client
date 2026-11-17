@@ -1,10 +1,10 @@
 import { memo, useState, type UIEvent } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { formatClock } from '@/lib/format';
 import { huntEventParts, huntEventTime } from '@/lib/hunt-sync';
 import { Loader2Icon } from 'lucide-react';
 import LoadError from '@/components/LoadError';
-import { REVEAL_TRANSITION, SWAP } from '@/lib/motion';
+import { REVEAL_TRANSITION, revealTransition, SWAP } from '@/lib/motion';
 import { getColorFromArea } from '@/lib/utils';
 import type { HuntSyncEvent } from '@/types/HuntSync';
 
@@ -24,6 +24,14 @@ interface HuntSyncLogProps {
 
 /** The sync log (mockup C v3): time, area dot, bold area + what happened; newest first, scrolls for older lines. */
 export default function HuntSyncLog({ events, onSelect, onLoadMore, loadingMore = false, pageFailed = false, onRetryPage }: HuntSyncLogProps) {
+  const reduced = useReducedMotion() ?? false;
+  // Reduced motion: a line takes and gives back its room at once and only fades
+  const fold = {
+    initial: { height: 0, opacity: 0 },
+    animate: { height: 'auto', opacity: 1 },
+    exit: { height: 0, opacity: 0, transition: revealTransition(reduced, 'exit') },
+    transition: revealTransition(reduced, 'enter'),
+  };
   function onScroll(event: UIEvent<HTMLDivElement>) {
     const element = event.currentTarget;
     if (element.scrollHeight - element.scrollTop - element.clientHeight < LOAD_MORE_PX) onLoadMore();
@@ -36,7 +44,7 @@ export default function HuntSyncLog({ events, onSelect, onLoadMore, loadingMore 
       <ul className="flex flex-col">
         <AnimatePresence initial={false}>
           {events.map((event) => (
-            <motion.li key={event._id} className="overflow-hidden" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={REVEAL_TRANSITION}>
+            <motion.li key={event._id} className="overflow-hidden" {...fold}>
               {/* pb-0.5: the 2 px gap between rows, inside the folding height */}
               <div className="pb-0.5">
                 <LogRow event={event} onSelect={onSelect} />
@@ -44,7 +52,7 @@ export default function HuntSyncLog({ events, onSelect, onLoadMore, loadingMore 
             </motion.li>
           ))}
           {(loadingMore || pageFailed) && (
-            <motion.li key="more" className="overflow-hidden" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={REVEAL_TRANSITION}>
+            <motion.li key="more" className="overflow-hidden" {...fold}>
               <AnimatePresence mode="wait" initial={false}>
                 {pageFailed ? (
                   <motion.div key="failed" className="p-1" {...SWAP}>

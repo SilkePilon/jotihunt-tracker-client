@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ComponentProps, type ReactNode } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { toast } from 'sonner';
 import { EllipsisIcon, KeyRoundIcon, LaptopIcon, Loader2Icon, LogOutIcon, PencilIcon, PlusIcon, SmartphoneIcon, TabletIcon, Trash2Icon, type LucideIcon } from 'lucide-react';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
@@ -21,7 +21,7 @@ import { DIALOG_SHELL } from '@/lib/dialog-shell';
 import { neighbourIndex } from '@/lib/focus';
 import { COARSE_HIT_AREA } from '@/lib/hit-area';
 import { TRIGGER_OPEN } from '@/lib/menu-styles';
-import { REVEAL_TRANSITION, SWAP } from '@/lib/motion';
+import { revealTransition, SWAP } from '@/lib/motion';
 import { classifyPasskeyError, PASSKEY_MESSAGES } from '@/lib/passkey';
 import { cn } from '@/lib/utils';
 import useAccountDialogStore from '@/stores/account-dialog.store';
@@ -430,14 +430,16 @@ function Row({
   meta?: string;
   children: ReactNode;
 }) {
+  const reduced = useReducedMotion() ?? false;
   return (
     <motion.div
       data-account-row={rowKey}
       className="overflow-hidden"
       initial={{ opacity: 0, height: 0 }}
       animate={{ opacity: 1, height: 'auto' }}
-      exit={{ opacity: 0, height: 0 }}
-      transition={REVEAL_TRANSITION}
+      exit={{ opacity: 0, height: 0, transition: revealTransition(reduced, 'exit') }}
+      // Reduced motion: the row takes and gives back its room at once and only fades
+      transition={revealTransition(reduced, 'enter')}
     >
       <div className="overflow-hidden rounded-(--radius-segment) bg-beheer-row">
         {title === undefined ? (
