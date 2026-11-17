@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { computeSnapHeights, dockCardMax, dockedPadding, grabLabel, landscapeSheetBox, nextSnap, normalizeSnap, phoneMapPadding, rubberBand, settleSnap } from './sheet-snaps';
+import { computeSnapHeights, dockCardMax, dockedPadding, grabLabel, landscapeSheetBox, nextSnap, normalizeSnap, rowDock, phoneMapPadding, rubberBand, settleSnap } from './sheet-snaps';
 
 describe('computeSnapHeights', () => {
   test('iPhone-like viewport', () => {
@@ -126,4 +126,22 @@ describe('dockCardMax', () => {
     expect(dockCardMax({ visibleH: 760, sheet: 380, safeTop: 47, tiles: 146 })).toBe(161);
   });
   test('never negative', () => expect(dockCardMax({ visibleH: 400, sheet: 388, safeTop: 0, tiles: 0 })).toBe(0));
+});
+
+describe('rowDock', () => {
+  test('portrait at peek keeps the card under the tiles', () => {
+    expect(rowDock({ visibleH: 760, safeTop: 47, base: 170 })).toBe(false);
+  });
+  test('portrait at half has too little room above the sheet: card beside the tiles', () => {
+    expect(rowDock({ visibleH: 760, safeTop: 47, base: 380 })).toBe(true);
+  });
+  test('a short phone is a row even at peek', () => {
+    expect(rowDock({ visibleH: 560, safeTop: 20, base: 140 })).toBe(true);
+  });
+  test('landscape (dock on the bottom safe area) is a row', () => {
+    expect(rowDock({ visibleH: 390, safeTop: 0, base: 21 })).toBe(true);
+  });
+  test('exactly the minimum room keeps the column', () => {
+    expect(rowDock({ visibleH: 520, safeTop: 0, base: 100 })).toBe(false);
+  });
 });

@@ -9,9 +9,10 @@ import { useLandscapePhone } from '@/hooks/media.hook';
 import ViewFocus from '@/components/motion/ViewFocus';
 import useSidebarStore from '@/stores/sidebar.store';
 import useMobileNavStore from '@/stores/mobile-nav.store';
-import { PANE_SLIDE, PANE_SLIDE_TRANSITION } from '@/lib/motion';
+import { LAYOUT_SPRING, PANE_SLIDE, PANE_SLIDE_TRANSITION } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { DOCK_GAP, dockCardMax, type SnapHeights } from '@/lib/sheet-snaps';
+import { useDockRow } from '@/hooks/dock-row.hook';
 import useViewportStore from '@/stores/viewport.store';
 import BottomSheet from './BottomSheet';
 import PeekStrip from './PeekStrip';
@@ -71,17 +72,14 @@ function useViewScroll(containerRef: RefObject<HTMLDivElement | null>, depth: nu
   }, [containerRef, depth, viewKey]);
 }
 
-/** Below this visible height (landscape phones) the dock is a row: the card left of the tile stack instead of under it */
-const ROW_DOCK_BELOW = 500;
-
 /**
- * The popup dock just above the sheet: the map tiles and a docked card. Tall screens stack the tiles above the card;
- * short ones put the card beside them. The card never grows past the room left above the sheet (it scrolls inside).
+ * The popup dock just above the sheet: the map tiles and a docked card. With room above the sheet the tiles stack
+ * above the card; with little room (half snap, short or sideways phones) the card stands beside them (useDockRow). The card never grows past the room left above the sheet (it scrolls inside).
  * A phone held sideways has the sheet as a left column: the dock then stands on the bottom edge, right of it.
  */
 function useDockLayout(tilesRef: RefObject<HTMLDivElement | null>) {
   const { visibleH, safeTop, safeBottom } = useViewportStore(useShallow((s) => ({ visibleH: s.visibleH, safeTop: s.safeTop, safeBottom: s.safeBottom })));
-  const row = visibleH < ROW_DOCK_BELOW;
+  const row = useDockRow();
   const sideways = useLandscapePhone();
   const sheetSide = useSidebarStore((s) => s.sheetSide);
   // What the dock stands on: the sheet (-1: follow its live height), or the safe area at the bottom edge when sideways
@@ -139,12 +137,13 @@ export default function MobileShell({ mapRef }: { mapRef: RefObject<MapRef | nul
         style={dock.style}
       >
         {/* Always the dock's first node: popups portal in after it, under the tiles (column) or left of them (row) */}
-        <div ref={tilesRef} className="flex shrink-0 flex-col gap-2">
+        {/* Slides to its new place when the dock turns between row and column (only then: layoutDependency) */}
+        <motion.div ref={tilesRef} layout="position" layoutDependency={dock.row} transition={{ layout: LAYOUT_SPRING }} className="flex shrink-0 flex-col gap-2">
           {/* Bottom to top: Mijn locatie, zoom + and −, and the reset tile while the map is turned or tilted (like the desktop stack) */}
           <ResetNorthButton mapRef={mapRef} />
           <ZoomButtons mapRef={mapRef} />
           <MyLocationButton mapRef={mapRef} />
-        </div>
+        </motion.div>
       </motion.div>
       <BottomSheet peek={<PeekStrip />} onHeights={setHeights}>
         {/* Effects run in sibling order: the sheet entry first, so Back closes pages before lowering the sheet */}

@@ -7,7 +7,8 @@ import { CloseButton } from '@/components/ui/close-button';
 import { useBackEntry } from '@/hooks/back-entry.hook';
 import { useRestoreFocus } from '@/hooks/restore-focus.hook';
 import { ownsKey } from '@/lib/focus';
-import { EASE_OUT } from '@/lib/motion';
+import { EASE_OUT, LAYOUT_SPRING } from '@/lib/motion';
+import { useDockRow } from '@/hooks/dock-row.hook';
 import { currentPhonePadding, pointHiddenByDock, setPaddingInPlace } from '@/lib/dock-camera';
 import useSidebarStore from '@/stores/sidebar.store';
 import useViewportStore from '@/stores/viewport.store';
@@ -114,6 +115,7 @@ export default function DockedPopup({
   const dock = useDock();
   // X and Back animate the card away first, then close for real
   const [closing, setClosing] = useState(false);
+  const row = useDockRow();
   const exited = useRef(false);
   const requestClose = () => setClosing(true);
   useBackEntry('popup', true, requestClose);
@@ -187,9 +189,12 @@ export default function DockedPopup({
   return createPortal(
     <motion.div
       ref={ref}
+      // Slides to its new place when the dock turns between row and column (only then: layoutDependency)
+      layout="position"
+      layoutDependency={row}
       initial={{ opacity: 0, y: 16 }}
       animate={closing ? EXIT : { opacity: 1, y: 0 }}
-      transition={closing ? EXIT_TRANSITION : { duration: 0.25, ease: EASE_OUT }}
+      transition={closing ? { ...EXIT_TRANSITION, layout: LAYOUT_SPRING } : { duration: 0.25, ease: EASE_OUT, layout: LAYOUT_SPRING }}
       onAnimationComplete={() => {
         if (!closing || exited.current) return;
         exited.current = true;
