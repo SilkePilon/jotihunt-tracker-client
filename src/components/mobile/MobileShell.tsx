@@ -1,4 +1,4 @@
-import { type RefObject, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { lazy, type RefObject, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useMotionValue, useTransform } from 'motion/react';
 import { useShallow } from 'zustand/react/shallow';
 import type { MapRef } from '@/components/Map';
@@ -23,11 +23,14 @@ import ZoomButtons from './ZoomButtons';
 import MobileMenu from './MobileMenu';
 import SearchDrawer from './SearchDrawer';
 import MobilePage from './MobilePage';
-import ViewportDebug from './ViewportDebug';
 import { DOCK_CARD_MAX_VAR, DOCK_ID } from './DockedPopup';
 import { sheetVisibleHeight } from './sheet-motion';
 import { loadSavedPage, restoredSnap, savePage } from '@/lib/continuity';
 import type { MobilePageId } from '@/lib/mobile-nav';
+
+/** `?viewport-debug` only: a lazy chunk, so the debug overlay isn't in the main bundle */
+const ViewportDebug = lazy(() => import('./ViewportDebug'));
+const VIEWPORT_DEBUG = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('viewport-debug');
 
 /** Once per page load: leaving phone width and coming back still starts at the menu (see MobileShell) */
 let pageRestored = false;
@@ -155,7 +158,11 @@ export default function MobileShell({ mapRef }: { mapRef: RefObject<MapRef | nul
 
   return (
     <>
-      <ViewportDebug snaps={heights} />
+      {VIEWPORT_DEBUG && (
+        <Suspense fallback={null}>
+          <ViewportDebug snaps={heights} />
+        </Suspense>
+      )}
       <motion.div
         id={DOCK_ID}
         data-dock={dock.row ? 'row' : 'column'}
