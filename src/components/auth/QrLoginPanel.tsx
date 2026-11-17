@@ -55,7 +55,7 @@ export default function QrLoginPanel({ onApproved }: { onApproved: (result: Sess
               <div className="flex items-center justify-center rounded-lg border border-dashed" style={{ width: QR_SIZE, height: QR_SIZE }}>
                 <RefreshCwIcon className="size-8 text-muted-foreground" />
               </div>
-              <h2 className="text-base font-semibold">{state.phase === 'expired' ? 'Code verlopen' : 'Kan geen code maken'}</h2>
+              <h2 className="text-base font-bold">{state.phase === 'expired' ? 'Code verlopen' : 'Kan geen code maken'}</h2>
               <p className="text-xs text-balance text-muted-foreground">
                 {state.phase === 'expired' ? 'Maak een nieuwe code om met je telefoon in te loggen.' : 'Kan de server niet bereiken, controleer je verbinding.'}
               </p>
@@ -103,7 +103,7 @@ function QrScene({ state, restart }: { state: QrPanelState; restart: () => void 
         </AnimatePresence>
       </div>
       <AnimatePresence mode="wait" initial={false}>
-        <motion.h2 key={scanned ? 'confirm' : 'scan'} className="text-base font-semibold" {...SWAP}>
+        <motion.h2 key={scanned ? 'confirm' : 'scan'} className="text-base font-bold" {...SWAP}>
           {scanned ? 'Bevestig op je telefoon' : 'Inloggen met QR-code'}
         </motion.h2>
       </AnimatePresence>
