@@ -103,6 +103,9 @@ export interface MapRef {
      * map takes it, as the tile folds away.
      */
     resetNorth(from?: HTMLElement): void;
+
+    /** One zoom level in (+1) or out (-1), eased; MapLibre jumps instead under reduced motion (the phone zoom tiles). */
+    zoomBy(delta: number): void;
 }
 
 interface MapProps {
@@ -185,6 +188,12 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
             if (!map) return;
             if (from) keepFocusAfterReset(from, map);
             resetNorth(map);
+        },
+        zoomBy: (delta: number) => {
+            const map = mapRef.current?.getMap();
+            if (!map) return;
+            if (delta > 0) map.zoomIn({duration: 250});
+            else map.zoomOut({duration: 250});
         },
     }));
 
