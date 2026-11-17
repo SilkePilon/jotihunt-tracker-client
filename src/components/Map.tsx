@@ -66,7 +66,7 @@ import {useNightDraw} from '@/stores/night-draw.store';
 import NightAreaDraw from './layers/trails/NightAreaDraw';
 import NightAreasLayer from './layers/trails/NightAreasLayer';
 import MapUnavailableCard from './map/MapUnavailableCard';
-import {openLayerFeature, type OpenFeatureOptions} from './layers/map-interactions';
+import {featureNear, openLayerFeature, type OpenFeatureOptions} from './layers/map-interactions';
 import {useMapAvailability} from './map/useMapAvailability';
 
 // MapLibre resolves its worker relative to its own module, which bundlers don't emit;
@@ -285,7 +285,8 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
      * Open the current location popup when the map is clicked.
      */
     function openPopup(e: MapLayerMouseEvent) {
-        if (popupPosition || rulerActive || drawing || e.features?.length) return;
+        // A tap next to a marker (within the hit tolerance) opens that marker's popup, not this one
+        if (popupPosition || rulerActive || drawing || e.features?.length || featureNear(e.target, e.point, INTERACTIVE_LAYER_IDS)) return;
 
         setPopupPosition(e.lngLat);
     }
