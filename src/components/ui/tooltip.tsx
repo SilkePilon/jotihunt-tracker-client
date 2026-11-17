@@ -1,6 +1,7 @@
 import * as React from "react"
 import { cn } from "@/lib/cn"
 import { Tooltip as TooltipPrimitive } from "radix-ui"
+import { TOOLTIP_SURFACE } from "@/lib/menu-styles"
 
 function TooltipProvider({
   delayDuration = 0,
@@ -40,7 +41,8 @@ function TooltipContent({
         data-slot="tooltip-content"
         sideOffset={sideOffset}
         className={cn(
-          "z-[60] w-fit origin-(--radix-tooltip-content-transform-origin) animate-in rounded-md border-0 bg-popover px-3 py-1.5 text-xs text-balance text-popover-foreground shadow-(--shadow-tooltip) fade-in-0 zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
+          "z-[60] w-fit origin-(--radix-tooltip-content-transform-origin) animate-in border-0 bg-popover text-balance text-popover-foreground fade-in-0 zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
+          TOOLTIP_SURFACE,
           className
         )}
         {...props}

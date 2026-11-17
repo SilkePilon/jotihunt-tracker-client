@@ -10,6 +10,10 @@ export const MENU_SURFACE = 'rounded-3xl border-0 bg-card text-card-foreground s
 export const MENU_MOTION =
   'duration-200 ease-out data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95';
 
+/** Tooltip card (ui tooltip, map hover tooltip, fox history hover card): 10px corners, 10×6px padding, 12px text, the
+ * tooltip hairline + shadow. Callers add the surface colour (bg-popover, or --map-surface on the map). */
+export const TOOLTIP_SURFACE = 'rounded-md px-2.5 py-1.5 text-xs shadow-(--shadow-tooltip)';
+
 /** Rows sit in a column with 2px seams; first/last rows round to 16px. */
 export const MENU_GROUP = 'flex flex-col gap-0.5';
 
