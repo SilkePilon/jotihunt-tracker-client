@@ -1,14 +1,21 @@
+import { AnimatePresence, motion } from 'motion/react';
+import LoadError from '@/components/LoadError';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useArticles } from '@/hooks/articles.hook';
 import { useHuntSync } from '@/hooks/hunt-sync.hook';
 import { useNextHint } from '@/hooks/next-hint.hook';
 import { formatClock, formatCountdown } from '@/lib/format';
 import { openAssignment } from '@/lib/hq';
+import { loadState } from '@/lib/load-state';
+import { SWAP } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 
 /** Clock, next hint, hunts and points; plus the open assignment and its deadline while one runs. */
 export default function HqTopCard({ now }: { now: number }) {
   const { label, isNewHint } = useNextHint();
-  const { status } = useHuntSync();
+  const { status, isError, retry } = useHuntSync();
+  // Unknown is not "0 hunts / 0 pt": a skeleton while it loads, a retry when the first load failed
+  const view = loadState(status, isError);
   const { articles } = useArticles();
   const assignment = openAssignment(articles, now);
   const left = assignment ? new Date(assignment.endTime).getTime() - now : 0;
@@ -21,10 +28,23 @@ export default function HqTopCard({ now }: { now: number }) {
           <div className="text-sm text-muted-foreground">Volgende hint</div>
           <div className={cn('text-[1.6rem] font-bold leading-tight tabular-nums text-primary-text', isNewHint && 'text-fox-ok')}>{label}</div>
         </div>
-        <div className="text-right">
-          <div className="text-sm text-muted-foreground tabular-nums">{status?.counts.total ?? 0} hunts</div>
-          <div className="text-[1.6rem] font-bold leading-tight tabular-nums">{status?.points ?? 0} pt</div>
-        </div>
+        <AnimatePresence mode="wait" initial={false}>
+          {view === 'ready' && status ? (
+            <motion.div key="ready" {...SWAP} className="text-right">
+              <div className="text-sm text-muted-foreground tabular-nums">{status.counts.total} hunts</div>
+              <div className="text-[1.6rem] font-bold leading-tight tabular-nums">{status.points} pt</div>
+            </motion.div>
+          ) : view === 'error' ? (
+            <motion.div key="error" {...SWAP}>
+              <LoadError message="Punten niet geladen." onRetry={retry} className="justify-end text-sm" />
+            </motion.div>
+          ) : (
+            <motion.div key="loading" {...SWAP} className="flex flex-col items-end gap-1.5" role="status" aria-label="Punten laden">
+              <Skeleton className="h-[1.1rem] w-16" />
+              <Skeleton className="h-[1.6rem] w-24" />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
       {assignment && (
         <div className="flex items-baseline gap-2 border-t pt-2">
