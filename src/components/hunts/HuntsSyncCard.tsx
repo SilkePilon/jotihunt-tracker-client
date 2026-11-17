@@ -153,7 +153,7 @@ export default function HuntsSyncCard({ mapRef }: { mapRef: RefObject<MapRef | n
       if (!event.location) return;
       const { lng, lat } = event.location;
       setSheetSnap('peek');
-      mapRef.current?.flyTo({ center: [lng, lat], zoom: FLY_TO_ZOOM, duration: 1500, essential: true });
+      mapRef.current?.flyTo({ center: [lng, lat], zoom: FLY_TO_ZOOM, duration: 1500 });
       showFocus({ lng, lat, color: getColorFromArea(event.area) });
     },
     [mapRef, setSheetSnap, showFocus],

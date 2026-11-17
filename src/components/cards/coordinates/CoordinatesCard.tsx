@@ -34,7 +34,6 @@ export default function CoordinatesCard({ mapRef }: { mapRef: React.RefObject<Ma
         mapRef.current?.flyTo({
             center: [lng, lat],
             zoom: 14,
-            essential: true,
         });
 
         mapRef.current?.markPoint({ lng, lat } as LngLat);

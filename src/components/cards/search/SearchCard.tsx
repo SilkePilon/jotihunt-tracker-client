@@ -30,7 +30,6 @@ export default function SearchCard({ mapRef }: { mapRef: React.RefObject<MapRef 
         mapRef.current?.flyTo({
             center: [team.location.coordinates[0], team.location.coordinates[1]],
             zoom: 14,
-            essential: true
         });
     }
 
