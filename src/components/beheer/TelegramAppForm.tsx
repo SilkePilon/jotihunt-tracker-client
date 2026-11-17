@@ -69,6 +69,8 @@ export default function TelegramAppForm({ step, onSaved, onCancel }: { step?: bo
             onChange={(event) => setApiHash(event.target.value)}
             placeholder={hashUsable ? `${hash.hint ?? '••••'} (laat leeg om te houden)` : '32 tekens'}
             autoComplete="off"
+            autoCapitalize="off"
+            autoCorrect="off"
             spellCheck={false}
           />
         </label>

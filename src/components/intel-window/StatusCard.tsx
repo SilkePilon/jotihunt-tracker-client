@@ -71,7 +71,7 @@ function Tile({ label, sub, onClick, children }: { label: string; sub: string; o
     <button
       type="button"
       onClick={onClick}
-      className="flex cursor-pointer flex-col items-start gap-1.5 rounded-[18px] bg-beheer-row p-3 text-left outline-none transition-colors hover:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring/50"
+      className="flex cursor-pointer flex-col items-start gap-1.5 rounded-[18px] bg-beheer-row p-3 text-left outline-none transition-colors hover:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring"
     >
       <span className={cn(LABEL, 'text-muted-foreground')}>{label}</span>
       <span className={BIG}>{children}</span>
@@ -205,7 +205,7 @@ const SolveChart = memo(function SolveChart({ slots, avgSolveMs, nextMs, entranc
                     <span
                       className={cn(
                         'mt-1.5 text-center text-[11px] tabular-nums transition-colors duration-300',
-                        column.kind === 'next' ? 'font-bold text-primary' : slotTime === newestPast ? 'font-bold text-foreground' : 'text-muted-foreground',
+                        column.kind === 'next' ? 'font-bold text-primary-text' : slotTime === newestPast ? 'font-bold text-foreground' : 'text-muted-foreground',
                       )}
                     >
                       {hour}

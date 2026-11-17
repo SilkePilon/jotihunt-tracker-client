@@ -68,7 +68,7 @@ function FoxChip({ fox, hidden, forbidden, popIn, open, onOpen }: FoxChipProps) 
       <span
         className={cn(
           'inline-flex h-[26px] items-center gap-1.5 rounded-full bg-fox-chip px-2.5 text-xs font-semibold transition-opacity duration-200 hover:brightness-110 motion-reduce:transition-none',
-          hidden ? 'opacity-40' : forbidden && 'opacity-45',
+          hidden ? 'opacity-65' : forbidden && 'opacity-75',
         )}
       >
         {/* Fixed box so the swap doesn't shift the name; dot and lock pop out/in in place */}

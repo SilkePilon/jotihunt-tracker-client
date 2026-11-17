@@ -61,7 +61,7 @@ function Picker({ label, value, options, onChange, disabled }: { label: string; 
           type="button"
           aria-label={`${label}: ${current}`}
           className={cn(
-            'group inline-flex h-[38px] items-center gap-1.5 rounded-lg bg-beheer-row pr-2.5 pl-3.5 text-[13px] font-semibold outline-none transition-colors hover:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-50',
+            'group inline-flex h-[38px] items-center gap-1.5 rounded-lg bg-beheer-row pr-2.5 pl-3.5 text-[13px] font-semibold outline-none transition-colors hover:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring disabled:opacity-50',
             TRIGGER_OPEN,
           )}
         >

@@ -36,7 +36,7 @@ export default function ToolsUsed({ calls }: { calls: ChatToolCall[] }) {
         type="button"
         aria-expanded={open}
         onClick={() => setOpen(!open)}
-        className="inline-flex items-center gap-1.5 rounded-[10px] bg-beheer-row px-2 py-1 text-xs font-semibold text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        className="inline-flex items-center gap-1.5 rounded-[10px] bg-beheer-row px-2 py-1 text-xs font-semibold text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring"
       >
         <span className="flex pr-1">
           {stackedTools(calls).map((name) => (

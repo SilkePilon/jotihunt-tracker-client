@@ -24,7 +24,7 @@ type ConfiguredTracker = Extract<TrackerMe, { configured: true }>;
 function Step({ number, icon: Icon, title, children }: { number: number; icon: LucideIcon; title: string; children?: ReactNode }) {
   return (
     <li className="flex gap-3">
-      <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
+      <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary-container text-xs font-semibold text-on-primary-container">
         {number}
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-2 pt-0.5">

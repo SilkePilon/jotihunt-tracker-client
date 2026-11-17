@@ -45,19 +45,21 @@ export function lastCooldownEnd(areas: Area[], hunts: SyncedHunt[] | undefined):
   return end;
 }
 
-/** Pill colours per fox status (and for a fox still in its hunt cooldown), light and dark mode. */
-export const COOLDOWN_PILL_CLASS = 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/15 dark:text-blue-300';
+/** Pill colours per fox status (and for a fox still in its hunt cooldown): the fox-* tonal tokens, light and dark. */
+export const COOLDOWN_PILL_CLASS = 'border-fox-cooldown/30 bg-fox-cooldown-container text-fox-on-cooldown';
 
 export function statusPillClass(status: string): string {
   switch (status) {
     case 'green':
-      return 'border-green-200 bg-green-50 text-green-700 dark:border-green-500/30 dark:bg-green-500/15 dark:text-green-400';
+      return 'border-fox-ok/30 bg-fox-ok-container text-fox-on-ok';
     case 'orange':
-      return 'border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-500/30 dark:bg-orange-500/15 dark:text-orange-300';
+      return 'border-fox-warn/30 bg-fox-warn-container text-fox-on-warn';
     case 'red':
-      return 'border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/15 dark:text-red-300';
+      return 'border-fox-error/30 bg-fox-error-container text-fox-on-error';
+    case 'blue':
+      return 'border-fox-ov/30 bg-fox-ov-container text-fox-on-ov';
     default:
-      return 'border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-500/30 dark:bg-gray-500/15 dark:text-gray-300';
+      return 'border-border bg-muted text-muted-foreground';
   }
 }
 

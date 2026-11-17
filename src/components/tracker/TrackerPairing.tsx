@@ -84,7 +84,7 @@ export default function TrackerPairing({ pairing, creating, failed, onRetry, onC
     <div className="flex flex-col gap-2" data-tracker-state="pairing">
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold">{isMobile ? 'Koppel deze telefoon' : 'Scan met de Jotihunt-app'}</span>
-        <Button variant="ghost" size="icon" className="size-6 text-muted-foreground" aria-label="Koppelen annuleren" onClick={onClose}>
+        <Button variant="ghost" size="icon" className="relative size-6 text-muted-foreground after:absolute after:-inset-2.5" aria-label="Koppelen annuleren" onClick={onClose}>
           <XIcon />
         </Button>
       </div>

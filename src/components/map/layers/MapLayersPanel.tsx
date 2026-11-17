@@ -72,7 +72,7 @@ function StyleBar() {
               aria-checked={selected}
               aria-label={style.name}
               onClick={() => setMapStyle(style.value as MapStyle)}
-              className="group relative flex flex-col items-center gap-1 rounded-xl p-1 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              className="group relative flex flex-col items-center gap-1 rounded-xl p-1 outline-none focus-visible:ring-[3px] focus-visible:ring-ring"
             >
               {selected && <motion.span layoutId="map-style-pick" aria-hidden className="absolute inset-0 rounded-xl bg-primary-container" transition={POP_SPRING} />}
               <img
@@ -118,7 +118,7 @@ function LayerRowView({ row }: { row: LayerRow }) {
               aria-label={part.ariaLabel}
               onClick={part.toggle}
               className={cn(
-                'h-6 w-7 rounded-[7px] text-xs font-semibold outline-none transition-colors duration-200 focus-visible:ring-[3px] focus-visible:ring-ring/50',
+                'h-6 w-7 rounded-[7px] text-xs font-semibold outline-none transition-colors duration-200 focus-visible:ring-[3px] focus-visible:ring-ring',
                 part.checked ? 'bg-primary-container text-on-primary-container' : 'text-muted-foreground hover:bg-beheer-row-high',
               )}
             >
@@ -139,7 +139,7 @@ function FoodButton({ toggle }: { toggle: FoodToggle }) {
       aria-pressed={toggle.checked}
       onClick={toggle.toggle}
       className={cn(
-        'flex flex-col items-center gap-1.5 rounded-xl px-1 py-2 outline-none transition-colors duration-200 focus-visible:ring-[3px] focus-visible:ring-ring/50',
+        'flex flex-col items-center gap-1.5 rounded-xl px-1 py-2 outline-none transition-colors duration-200 focus-visible:ring-[3px] focus-visible:ring-ring',
         toggle.checked ? 'bg-primary-container text-on-primary-container' : 'bg-beheer-row text-muted-foreground hover:bg-beheer-row-high',
       )}
     >

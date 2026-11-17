@@ -27,7 +27,7 @@ export default function PopupHeader({ icon, title, subtitle, stale }: { icon: Re
       <div className={cn('shrink-0 transition-[filter,opacity] duration-200', stale && 'opacity-70 grayscale')}>{icon}</div>
       <div className="min-w-0">
         <h2 className="truncate text-[15px] leading-tight font-bold">{title}</h2>
-        {subtitle && <p className={cn('truncate text-xs leading-snug transition-colors duration-200', stale ? 'text-(--map-warn)' : 'text-(--map-muted)')}>{subtitle}</p>}
+        {subtitle && <p className={cn('truncate text-xs leading-snug tabular-nums transition-colors duration-200', stale ? 'text-(--map-warn)' : 'text-(--map-muted)')}>{subtitle}</p>}
       </div>
     </div>
   );

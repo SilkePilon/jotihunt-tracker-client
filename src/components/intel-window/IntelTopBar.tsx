@@ -27,26 +27,32 @@ export default function IntelTopBar({ unread, detail, onBack }: { unread: Partia
         initial={false}
         animate={detail ? { width: 34, marginRight: 0, opacity: 1 } : { width: 0, marginRight: -12, opacity: 0 }}
         transition={SWAP_TRANSITION}
-        className="grid h-8 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-xl bg-beheer-row-high text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        className="grid h-8 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-xl bg-beheer-row-high text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring"
       >
         <ArrowLeftIcon className="size-4" />
       </motion.button>
       <h2 className="text-[17px] font-bold">Intel</h2>
-      <div role="tablist" aria-label="Soort" className="flex gap-0.5 rounded-xl bg-beheer-row-high p-[3px]">
+      {/* A filter over one timeline (no separate panels): toggle buttons, not a tablist */}
+      <div role="group" aria-label="Soort" className="flex gap-0.5 rounded-xl bg-beheer-row-high p-[3px]">
         {INTEL_TAB_ORDER.map((value) => {
           const active = value === tab;
           return (
             <button
               key={value}
-              role="tab"
               type="button"
-              aria-selected={active}
+              aria-pressed={active}
               onClick={() => setTab(value)}
-              className={cn('relative flex h-8 items-center gap-1.5 rounded-[9px] px-3 text-[13px] font-semibold outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50', active ? 'text-foreground' : 'text-muted-foreground hover:text-foreground')}
+              className={cn(
+                'relative flex h-8 items-center gap-1.5 rounded-[9px] px-3 text-[13px] font-semibold outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring',
+                active ? 'text-foreground' : 'text-muted-foreground hover:text-foreground',
+              )}
             >
-              {active && <motion.span layoutId="intel-tab" className="absolute inset-0 rounded-[9px] bg-card shadow-[0_1px_2px_rgb(0_0_0/0.06)]" transition={{ type: 'spring', stiffness: 500, damping: 38 }} />}
+              {active && (
+                <motion.span layoutId="intel-tab" className="absolute inset-0 rounded-[9px] bg-card shadow-[0_1px_2px_rgb(0_0_0/0.06)]" transition={{ type: 'spring', stiffness: 500, damping: 38 }} />
+              )}
               <span className="relative">{LABELS[value]}</span>
-              <AnimatePresence>{unread[value] && <motion.span key="dot" {...POP} className="relative size-[7px] rounded-full bg-primary" aria-label="ongelezen" />}</AnimatePresence>
+              <AnimatePresence>{unread[value] && <motion.span key="dot" {...POP} aria-hidden className="relative size-[7px] rounded-full bg-primary" />}</AnimatePresence>
+              {unread[value] && <span className="sr-only">, ongelezen</span>}
             </button>
           );
         })}

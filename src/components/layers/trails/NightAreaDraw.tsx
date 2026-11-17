@@ -23,8 +23,8 @@ const [FILL_LAYER, LINE_LAYER, VERTICES_LAYER] = NIGHT_DRAW_LAYERS;
 const CLOSE_PX = 10;
 
 const KIND_OPTIONS: SegmentOption<NightAreaKind>[] = [
-  { value: 'closed', label: "Dicht 's nachts", selectedClassName: 'bg-[#ffdad6]', selectedTextClassName: 'text-[#93000a]' },
-  { value: 'open', label: "Open 's nachts", selectedClassName: 'bg-[rgb(27_109_47/0.12)]', selectedTextClassName: 'text-[#1b6d2f]' },
+  { value: 'closed', label: "Dicht 's nachts", selectedClassName: 'bg-fox-error-container', selectedTextClassName: 'text-fox-on-error' },
+  { value: 'open', label: "Open 's nachts", selectedClassName: 'bg-fox-ok-container', selectedTextClassName: 'text-fox-on-ok' },
 ];
 
 /** Back to Beheer → Algemeen (the Routes card) */
@@ -191,7 +191,7 @@ export default function NightAreaDraw() {
                     aria-label="Naam van het gebied"
                     maxLength={60}
                     autoFocus
-                    className="h-10 w-[min(280px,calc(100vw-32px))] rounded-xl bg-card px-3.5 text-[13px] shadow-[0_0_0_1px_var(--border),0_8px_24px_rgb(0_0_0/0.18)] outline-none placeholder:text-muted-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                    className="h-10 w-[min(280px,calc(100vw-32px))] rounded-xl bg-card px-3.5 text-[13px] shadow-[0_0_0_1px_var(--border),0_8px_24px_rgb(0_0_0/0.18)] outline-none placeholder:text-muted-foreground focus-visible:ring-[3px] focus-visible:ring-ring"
                   />
                 </motion.form>
               ) : (

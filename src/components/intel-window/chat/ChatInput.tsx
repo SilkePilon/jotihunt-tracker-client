@@ -77,7 +77,7 @@ export default function ChatInput({ kind, busy, disabled, onSend, onStop }: Chat
       onValueChange={setValue}
       onSubmit={submit}
       disabled={disabled}
-      className={cn(dragging && 'ring-[3px] ring-ring/50')}
+      className={cn(dragging && 'ring-[3px] ring-ring')}
       onDragOver={(event) => {
         if (!event.dataTransfer.types.includes('Files')) return;
         event.preventDefault();
@@ -117,7 +117,7 @@ export default function ChatInput({ kind, busy, disabled, onSend, onStop }: Chat
                   type="button"
                   aria-label="Afbeelding weghalen"
                   onClick={clearImage}
-                  className="absolute top-1 right-1 grid size-5 place-items-center rounded-full bg-black/60 text-white outline-none focus-visible:ring-2 focus-visible:ring-white [&_svg]:size-3"
+                  className="absolute top-1 right-1 grid size-5 place-items-center rounded-full bg-black/60 text-white outline-none after:absolute after:-inset-3 focus-visible:ring-2 focus-visible:ring-white [&_svg]:size-3"
                 >
                   <XIcon />
                 </button>
@@ -153,7 +153,7 @@ export default function ChatInput({ kind, busy, disabled, onSend, onStop }: Chat
             aria-label="Afbeelding toevoegen"
             disabled={disabled}
             onClick={() => fileInput.current?.click()}
-            className="grid size-8 place-items-center rounded-xl text-muted-foreground outline-none transition-colors hover:bg-foreground/5 hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4"
+            className="grid size-8 place-items-center rounded-xl text-muted-foreground outline-none transition-colors hover:bg-foreground/5 hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4"
           >
             <PaperclipIcon />
           </button>

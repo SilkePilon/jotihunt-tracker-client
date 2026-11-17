@@ -41,7 +41,7 @@ export default function ChatEmpty({ item, disabled, onPick, delay = 0, stagger =
               disabled={disabled}
               onClick={() => onPick(chip)}
               style={{ borderRadius: 12 }}
-              className="bg-beheer-row-high px-2.5 py-1.5 text-xs font-semibold outline-none transition-colors hover:bg-beheer-row-high/70 focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
+              className="bg-beheer-row-high px-2.5 py-1.5 text-xs font-semibold outline-none transition-colors hover:bg-beheer-row-high/70 focus-visible:ring-[3px] focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
             >
               {chip}
             </motion.button>

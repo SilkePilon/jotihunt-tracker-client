@@ -37,3 +37,10 @@ export function settleSnap(height: number, velocity: number, heights: SnapHeight
 export function nextSnap(snap: SheetSnap): SheetSnap {
   return SNAP_ORDER[(SNAP_ORDER.indexOf(snap) + 1) % SNAP_ORDER.length];
 }
+
+const SNAP_STATE: Record<SheetSnap, string> = { peek: 'ingeklapt', half: 'half open', full: 'helemaal open' };
+
+/** Accessible name of the sheet's grab handle: what a tap does, plus the current snap (screen readers can't see it). */
+export function grabLabel(snap: SheetSnap): string {
+  return `Zijbalk groter of kleiner maken, nu ${SNAP_STATE[snap]}`;
+}

@@ -175,8 +175,8 @@ export default function AccountDialog() {
                       <ActionRow
                         onClick={() => void handleAddPasskey()}
                         disabled={adding}
-                        className="text-primary"
-                        iconClassName="bg-transparent text-primary shadow-[inset_0_0_0_1.5px_var(--border)]"
+                        className="text-primary-text"
+                        iconClassName="bg-transparent text-primary-text shadow-[inset_0_0_0_1.5px_var(--border)]"
                         icon={
                           <AnimatePresence mode="popLayout" initial={false}>
                             <motion.span
@@ -436,7 +436,7 @@ function SmallButton({ icon, className, ...props }: ComponentProps<'button'> & {
       type="button"
       className={cn(
         'inline-flex h-8 flex-none items-center justify-center gap-1.5 rounded-xl bg-beheer-row-high text-[12.5px] font-semibold transition-colors outline-none',
-        'hover:bg-[color-mix(in_oklab,var(--foreground)_14%,var(--card))] focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4',
+        'hover:bg-[color-mix(in_oklab,var(--foreground)_14%,var(--card))] focus-visible:ring-[3px] focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4',
         icon ? 'w-[34px]' : 'px-3',
         className,
       )}
@@ -452,7 +452,7 @@ function ActionRow({ icon, iconClassName, className, children, ...props }: Compo
       type="button"
       className={cn(
         'flex w-full items-center gap-3 px-3 py-2.5 text-left text-[13.5px] font-semibold transition-colors outline-none',
-        'hover:bg-beheer-row-high focus-visible:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset disabled:pointer-events-none disabled:opacity-60',
+        'hover:bg-beheer-row-high focus-visible:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset disabled:pointer-events-none disabled:opacity-60',
         className,
       )}
       {...props}

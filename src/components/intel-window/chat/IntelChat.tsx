@@ -8,7 +8,7 @@ import type { MapRef } from '@/components/Map';
 import { useHasMounted } from '@/hooks/has-mounted.hook';
 import Reveal from '@/components/motion/Reveal';
 import { apiErrorMessage } from '@/lib/api-error';
-import { BUSY_MESSAGE, CONTEXT_LABEL, chatStatusLabel, lastUserMessageId } from '@/lib/intel-chat';
+import { BUSY_MESSAGE, CONTEXT_LABEL, answerAnnouncement, chatStatusLabel, lastUserMessageId } from '@/lib/intel-chat';
 import { CHAT_EMPTY_ENTRANCE_DELAY, CHAT_MESSAGE } from '@/lib/intel-window';
 import { POP, SWAP } from '@/lib/motion';
 import type { IntelItem, IntelKind } from '@/types/Intel';
@@ -132,8 +132,18 @@ function ChatThread({ chat, mapRef }: { chat: IntelChatState; mapRef: RefObject<
   const { scrollerRef, contentRef, onScroll } = useStickToBottom(lastUserMessageId(chat.messages));
   const busy = chat.status === 'submitted' || chat.status === 'streaming';
   const last = chat.messages.at(-1);
+  // Screen readers: one announcement when a turn finishes, not one per streamed token (adjusted during render)
+  const [announcement, setAnnouncement] = useState('');
+  const [wasBusy, setWasBusy] = useState(busy);
+  if (busy !== wasBusy) {
+    setWasBusy(busy);
+    setAnnouncement(!busy && chat.status === 'ready' ? answerAnnouncement(chat.messages) : '');
+  }
   return (
     <div ref={scrollerRef} onScroll={onScroll} className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1 [scrollbar-gutter:stable]">
+      <div role="status" className="sr-only">
+        {announcement}
+      </div>
       <div ref={contentRef} className="flex min-h-full flex-col justify-end gap-3 py-1">
         <ChatScrollerContext.Provider value={scrollerRef}>
           <AnimatePresence initial={false}>

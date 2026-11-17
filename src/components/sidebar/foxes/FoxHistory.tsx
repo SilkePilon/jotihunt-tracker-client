@@ -33,7 +33,7 @@ function HideButton({ hidden, onClick }: { hidden: boolean; onClick: () => void 
       type="button"
       onClick={onClick}
       aria-label={hidden ? 'Toon op kaart' : 'Verberg op kaart'}
-      className="inline-grid h-7 cursor-pointer rounded-[10px] bg-secondary px-2.5 text-xs font-semibold text-secondary-foreground transition-colors duration-150 outline-none hover:bg-[color-mix(in_oklab,var(--foreground)_12%,var(--card))] focus-visible:ring-[3px] focus-visible:ring-ring/50"
+      className="inline-grid h-7 cursor-pointer rounded-[10px] bg-secondary px-2.5 text-xs font-semibold text-secondary-foreground transition-colors duration-150 outline-none hover:bg-[color-mix(in_oklab,var(--foreground)_12%,var(--card))] focus-visible:ring-[3px] focus-visible:ring-ring"
     >
       {options.map(({ on, icon: Icon, label }) => (
         <span

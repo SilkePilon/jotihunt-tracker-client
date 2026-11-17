@@ -17,11 +17,13 @@ import { useAuth } from '@/hooks/auth.hook';
 import { useNow } from '@/hooks/now.hook';
 import { addPasskey, approveQrLogin, denyQrLogin, scanQrLogin, type QrScan } from '@/lib/auth-api';
 import { BADGE_COOKIE_DEPTH, cookiePath } from '@/lib/cookie-shape';
+import { DIALOG_SHELL } from '@/lib/dialog-shell';
 import { joinParts } from '@/lib/format';
 import { classifyPasskeyError, PASSKEY_MESSAGES } from '@/lib/passkey';
 import { canRetryConfirm, qrProblem, type QrProblem } from '@/lib/qr-login';
 import { fadeUp, POP, SWAP } from '@/lib/motion';
 import { formatLastUpdate } from '@/lib/tracker';
+import { cn } from '@/lib/utils';
 import type { User } from '@/types/User';
 
 type View =
@@ -138,7 +140,7 @@ export default function QrConfirmDrawer({ code, onClose }: { code: string; onClo
   }
 
   return (
-    <ResponsiveDialog backEntry={false} open={open} onClose={close} onClosed={onClose} title="Inloggen op een ander apparaat?" description="Bevestig met je passkey." hideHeader compact className="sm:max-w-md">
+    <ResponsiveDialog backEntry={false} open={open} onClose={close} onClosed={onClose} title="Inloggen op een ander apparaat?" description="Bevestig met je passkey." hideHeader compact className={cn(DIALOG_SHELL, 'bg-card p-5 sm:max-w-md')} drawerClassName="bg-card">
       {/* The drawer grows/shrinks with the step; the padding keeps focus rings out of the clip */}
       <AutoHeight scene={view.step} className="-mx-1 -mt-1" innerClassName="px-1 pt-1 pb-2">
         <AnimatePresence mode="wait" initial={false}>

@@ -23,14 +23,18 @@
   --secondary: hsl(60 0% 95.9%);
   --secondary-foreground: hsl(24 9.8% 10%);
   --muted: hsl(60 0% 95.9%);
-  --muted-foreground: hsl(25 5.3% 44.7%);
+  /* 38% (not shadcn's 44.7%): keeps >= 4.5:1 on the tonal rows (beheer-row-high, fox groups) */
+  --muted-foreground: hsl(25 5.3% 38%);
   --accent: hsl(60 0% 95.9%);
   --accent-foreground: hsl(24 9.8% 10%);
-  --destructive: hsl(0 84.2% 60.2%);
+  /* Same red as dark mode: white button text needs >= 4.5:1 */
+  --destructive: hsl(0 72.2% 50.6%);
   --destructive-foreground: hsl(60 9.1% 97.8%);
   --border: hsl(20 0% 90%);
-  --input: hsl(20 0% 90%);
-  --ring: hsl(24.6 95% 53.1%);
+  /* Text field outlines (border-input): >= 3:1 against white so the field's boundary is visible */
+  --input: hsl(20 0% 54%);
+  /* Focus ring: the darker orange of dark mode, so a solid ring is >= 3:1 against white cards */
+  --ring: hsl(20.5 90.2% 48.2%);
   --radius: 0.75rem;
   --chart-1: hsl(12 76% 61%);
   --chart-2: hsl(173 58% 39%);
@@ -69,6 +73,8 @@
   /* Orange tonal pair (M3 primary container): picked tiles, filled digit boxes */
   --primary-container: #ffdcc6;
   --on-primary-container: #5a1f00;
+  /* Orange as text (links, small labels): --primary is only 2.8:1 on white, this darker orange is >= 4.5:1 */
+  --primary-text: #c2410c;
 }
 
 .dark {
@@ -124,6 +130,7 @@
   --ai-on-think-container: #f0dbff;
   --primary-container: #6b2b05;
   --on-primary-container: #ffdcc6;
+  --primary-text: var(--primary);
 }
 
 @theme inline {
@@ -180,6 +187,7 @@
   --color-ai-on-think: var(--ai-on-think-container);
   --color-primary-container: var(--primary-container);
   --color-on-primary-container: var(--on-primary-container);
+  --color-primary-text: var(--primary-text);
   --color-beheer-window: var(--beheer-window);
   --color-beheer-row: var(--beheer-row);
   --color-beheer-row-high: var(--beheer-row-high);
@@ -355,6 +363,18 @@ body.dark {
   > button.-active {
     @apply bg-primary-container! hover:bg-[color-mix(in_oklab,var(--on-primary-container)_10%,var(--primary-container))]!;
   }
+}
+
+/* Keyboard focus on map controls: the app's solid focus ring. The tile shadow above (with !important) would
+   otherwise hide MapLibre's own focus box-shadow, leaving no visible focus at all. */
+.maplibregl-ctrl-group > button:focus-visible,
+.maplibregl-ctrl button:focus-visible,
+.maplibregl-ctrl-attrib-button:focus-visible,
+.maplibregl-ctrl-attrib a:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 3px var(--ring),
+    0 4px 14px rgb(0 0 0 / 0.22) !important;
 }
 
 /* Layers: on its own, soft orange */
@@ -800,5 +820,25 @@ html.flashbang::view-transition-new(root) {
     animation: none;
     background: none;
     color: var(--muted-foreground);
+  }
+}
+
+/* Reduced motion: tw-animate-css (Radix menus, popovers, dialogs, map popups) has no reduced-motion handling of its
+   own. Keep its fades, drop the zoom / slide / spin / blur, so things still appear and disappear smoothly but don't
+   move. Unlayered + !important to beat the utility layer's zoom-in-95, slide-in-from-*, etc. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    --tw-enter-scale: 1 !important;
+    --tw-enter-translate-x: 0 !important;
+    --tw-enter-translate-y: 0 !important;
+    --tw-enter-rotate: 0 !important;
+    --tw-enter-blur: 0 !important;
+    --tw-exit-scale: 1 !important;
+    --tw-exit-translate-x: 0 !important;
+    --tw-exit-translate-y: 0 !important;
+    --tw-exit-rotate: 0 !important;
+    --tw-exit-blur: 0 !important;
   }
 }

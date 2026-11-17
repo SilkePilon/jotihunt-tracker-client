@@ -40,10 +40,13 @@ describe('huntCooldownMs', () => {
 
 describe('statusPillClass', () => {
   test('maps statuses', () => {
-    expect(statusPillClass('green')).toContain('green');
-    expect(statusPillClass('orange')).toContain('orange');
-    expect(statusPillClass('red')).toContain('red');
-    expect(statusPillClass('unknown')).toContain('gray');
+    expect(statusPillClass('green')).toContain('bg-fox-ok-container');
+    expect(statusPillClass('orange')).toContain('bg-fox-warn-container');
+    expect(statusPillClass('red')).toContain('bg-fox-error-container');
+    expect(statusPillClass('blue')).toContain('bg-fox-ov-container');
+    expect(statusPillClass('unknown')).toContain('bg-muted');
+    // Semantic tokens only, no raw Tailwind palettes (dark-mode parity comes from index.css)
+    for (const status of ['green', 'orange', 'red', 'blue', 'unknown']) expect(statusPillClass(status)).not.toMatch(/-(green|orange|red|blue|gray)-\d/);
   });
 });
 

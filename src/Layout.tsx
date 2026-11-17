@@ -114,9 +114,13 @@ export default function Layout() {
             </ErrorBoundary>
             {/* After the outlet: at the same z-index the later element is on top */}
             <StaleDataBadge/>
-            <ErrorBoundary name="De kaart" className="mx-auto mt-[40dvh] w-fit">
-                <Map ref={mapRef}/>
-            </ErrorBoundary>
+            {/* Landmark + page heading for screen readers; <main> is unstyled, so the map's layout is unchanged */}
+            <main>
+                <h1 className="sr-only">Jotihunt Tracker</h1>
+                <ErrorBoundary name="De kaart" className="mx-auto mt-[40dvh] w-fit">
+                    <Map ref={mapRef}/>
+                </ErrorBoundary>
+            </main>
             <ErrorBoundary name="Dit venster" variant="floating">
                 <BeheerDialog mapRef={mapRef}/>
                 <IntelDialog mapRef={mapRef}/>

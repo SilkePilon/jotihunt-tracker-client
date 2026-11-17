@@ -22,7 +22,7 @@ export default function LookCard({ look, mapRef }: { look: LookAtPointResult; ma
           type="button"
           aria-label="Luchtfoto vergroten"
           onClick={() => setZoom(true)}
-          className="size-24 shrink-0 cursor-zoom-in overflow-hidden rounded-xl bg-beheer-row-high outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          className="size-24 shrink-0 cursor-zoom-in overflow-hidden rounded-xl bg-beheer-row-high outline-none focus-visible:ring-[3px] focus-visible:ring-ring"
         >
           <AnimatePresence mode="wait" initial={false}>
             {failed ? (
@@ -98,7 +98,7 @@ function Description({ text }: { text: string }) {
             type="button"
             aria-expanded={open}
             onClick={() => setOpen(!open)}
-            className="mt-0.5 rounded-md text-[12px] font-semibold text-foreground outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            className="mt-0.5 rounded-md text-[12px] font-semibold text-foreground outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring"
             {...SWAP}
           >
             <AnimatePresence mode="wait" initial={false}>

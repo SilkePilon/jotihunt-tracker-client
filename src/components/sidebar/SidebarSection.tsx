@@ -27,13 +27,16 @@ export default function SidebarSection({ id, title, summary, open: openProp, onO
 
   return (
     <Collapsible {...tourTarget(`sidebar.${id}`)} open={open} onOpenChange={onOpenChange ?? (() => toggleSection(id))} className={cn('card rounded-xl bg-card px-3 py-2 text-card-foreground', className)}>
-      <CollapsibleTrigger className="flex w-full cursor-pointer items-center justify-between gap-2 text-left">
-        <span className="text-sm font-semibold">{title}</span>
-        <span className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
-          {!open && summary && <span className="truncate">{summary}</span>}
-          <ChevronDownIcon className={cn('size-4 shrink-0 transition-transform', open && 'rotate-180')} />
-        </span>
-      </CollapsibleTrigger>
+      {/* A heading for screen-reader navigation (accordion pattern: the toggle inside the h2); no visual change */}
+      <h2>
+        <CollapsibleTrigger className="flex w-full cursor-pointer items-center justify-between gap-2 text-left">
+          <span className="text-sm font-semibold">{title}</span>
+          <span className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+            {!open && summary && <span className="truncate">{summary}</span>}
+            <ChevronDownIcon className={cn('size-4 shrink-0 transition-transform', open && 'rotate-180')} />
+          </span>
+        </CollapsibleTrigger>
+      </h2>
       {/* Vertical padding on the inner div so the animated height reaches 0; -mx-1 px-1 keeps focus rings unclipped */}
       <CollapsibleContent className="-mx-1 overflow-hidden px-1 data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down motion-reduce:animate-none">
         <div className="pt-2">

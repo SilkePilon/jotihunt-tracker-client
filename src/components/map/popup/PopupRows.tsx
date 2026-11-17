@@ -36,7 +36,7 @@ export function PopupRow({ icon, label, title, meta, trailing, tone = 'default' 
       <div className="min-w-0 flex-1">
         {label && <div className="text-[10px] tracking-wide text-(--map-muted) uppercase">{label}</div>}
         <div className="truncate text-[13px] font-semibold tabular-nums">{title}</div>
-        {meta && <div className={cn('truncate text-[11.5px]', toned ? 'opacity-80' : 'text-(--map-muted)')}>{meta}</div>}
+        {meta && <div className={cn('truncate text-[11.5px] tabular-nums', toned ? 'opacity-80' : 'text-(--map-muted)')}>{meta}</div>}
       </div>
       {trailing && <div className="-mr-1.5 flex shrink-0 items-center text-(--map-on-surface-variant)">{trailing}</div>}
     </div>

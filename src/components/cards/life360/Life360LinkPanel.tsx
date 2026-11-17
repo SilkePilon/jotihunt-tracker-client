@@ -39,7 +39,7 @@ function Header({ title, onCancel }: { title: string; onCancel: () => void }) {
   return (
     <div className="flex items-center justify-between">
       <span className="text-xs font-semibold">{title}</span>
-      <Button type="button" variant="ghost" size="icon" className="size-6 text-muted-foreground" aria-label="Koppelen annuleren" onClick={onCancel}>
+      <Button type="button" variant="ghost" size="icon" className="relative size-6 text-muted-foreground after:absolute after:-inset-2.5" aria-label="Koppelen annuleren" onClick={onCancel}>
         <XIcon />
       </Button>
     </div>

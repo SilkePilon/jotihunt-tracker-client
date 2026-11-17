@@ -25,7 +25,7 @@ export default function StaleDataBadge() {
   return (
     <div
       role="status"
-      className="pointer-events-none fixed left-1/2 top-2 z-50 flex -translate-x-1/2 items-center gap-1.5 whitespace-nowrap rounded-badge bg-destructive px-2.5 py-1 text-xs font-semibold text-white shadow-md"
+      className="pointer-events-none fixed left-1/2 top-[calc(env(safe-area-inset-top)+8px)] z-50 flex -translate-x-1/2 items-center gap-1.5 whitespace-nowrap rounded-badge bg-destructive px-2.5 py-1 text-xs font-semibold text-white shadow-md"
     >
       <WifiOffIcon className="size-3.5 shrink-0" />
       {staleLabel(age)}

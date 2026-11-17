@@ -96,7 +96,7 @@ export default function PredictionList({ mapRef }: { mapRef: RefObject<MapRef | 
             </TooltipTrigger>
             <TooltipContent side="bottom" sideOffset={6} className="max-w-60">
               <p className="font-semibold">
-                {capitalizeFirstLetter(prediction.area)} <span className="font-normal text-muted-foreground">· {ageLabel(prediction.updatedAt, now)}</span>
+                {capitalizeFirstLetter(prediction.area)} <span className="font-normal text-muted-foreground tabular-nums">· {ageLabel(prediction.updatedAt, now)}</span>
               </p>
               <p>{text}</p>
               {prediction.stale && prediction.error && <p className="text-muted-foreground">{prediction.error}</p>}

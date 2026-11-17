@@ -28,8 +28,8 @@ function routerState(status: RouterStatus | undefined): { meta: string; tag?: { 
 }
 
 const KIND_TAG: Record<NightArea['kind'], { label: string; className: string; meta: string }> = {
-  closed: { label: "Dicht 's nachts", className: 'bg-[#ffdad6] text-[#93000a]', meta: 'Paden dicht, wegen open' },
-  open: { label: "Open 's nachts", className: 'bg-[rgb(27_109_47/0.12)] text-[#1b6d2f] dark:text-green-300', meta: 'Telt niet als gesloten bos' },
+  closed: { label: "Dicht 's nachts", className: 'bg-fox-error-container text-fox-on-error', meta: 'Paden dicht, wegen open' },
+  open: { label: "Open 's nachts", className: 'bg-fox-ok-container text-fox-on-ok', meta: 'Telt niet als gesloten bos' },
 };
 
 interface AreaRowProps {

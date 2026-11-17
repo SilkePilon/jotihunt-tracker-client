@@ -39,7 +39,7 @@ export default function Sources({ sources }: { sources: ChatSource[] }) {
         type="button"
         onClick={() => setOpen(!open)}
         aria-expanded={open}
-        className="flex h-8 cursor-pointer items-center gap-2 rounded-xl bg-beheer-row pr-2 pl-2 text-[12px] font-semibold outline-none transition-colors hover:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        className="flex h-8 cursor-pointer items-center gap-2 rounded-xl bg-beheer-row pr-2 pl-2 text-[12px] font-semibold outline-none transition-colors hover:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring"
       >
         <span className="flex">
           {groups.slice(0, STACK).map((group, index) => (

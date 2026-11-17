@@ -38,9 +38,11 @@ export default function PeekStrip() {
     <div className="flex flex-col gap-2 px-4 pb-3">
       <TrackerLine onOpen={() => push({ id: 'tracking' })} />
       {foxes && foxes.length > 0 && counts && (
-        <button type="button" onClick={() => push({ id: 'foxes' })} className="flex flex-col gap-1.5 text-left" aria-label="Vossen openen">
+        <button type="button" onClick={() => push({ id: 'foxes' })} className="flex flex-col gap-1.5 text-left">
           <FoxStatusBar foxes={foxes} size="full" isForbidden={isForbidden} />
-          <span className="flex justify-between text-[11px] text-muted-foreground">
+          {/* The visible counts are part of the button's name; the sr-only prefix says what a tap does */}
+          <span className="sr-only">Vossen openen: </span>
+          <span className="flex justify-between text-[11px] text-muted-foreground tabular-nums">
             {legendGroups(counts).map((group) => (
               <span key={group}>
                 <b className="font-semibold text-foreground">{counts[group]}</b> {FOX_GROUP_LABEL[group].toLowerCase()}

@@ -24,7 +24,7 @@ export default function TrackerLive({ status, savingVehicle, onVehicleChange, on
     <div className="flex flex-col items-center gap-0.5 pt-1 pb-0.5 text-center" data-tracker-state={live ? 'connected' : 'no-signal'}>
       <CookieBadge tone={live ? 'ok' : 'warn'} size={72} />
       <p className="mt-2 text-base font-bold">{live ? 'Verbonden' : 'Geen signaal'}</p>
-      <p className="text-xs text-muted-foreground">
+      <p className="text-xs text-muted-foreground tabular-nums">
         {live ? `Live · ${ago}` : `Laatste locatie ${ago}`} ·{' '}
         <button type="button" className={inlineLinkClass} onClick={onRepair}>
           wijzig

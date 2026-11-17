@@ -1,7 +1,8 @@
 // src/components/android-promo/PromoSteps.tsx
 import { useEffect, useEffectEvent, useRef, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { LinkIcon, TriangleAlertIcon, XIcon } from 'lucide-react';
+import { LinkIcon, TriangleAlertIcon } from 'lucide-react';
+import { CloseButton } from '@/components/ui/close-button';
 import { cookiePath, BADGE_COOKIE_DEPTH } from '@/lib/cookie-shape';
 import { appDidNotOpen } from '@/lib/android-promo';
 import { POP_SPRING, SWAP, SWAP_TRANSITION } from '@/lib/motion';
@@ -23,13 +24,9 @@ export function Stepper({ step }: { step: PromoStep }) {
   );
 }
 
-/** The way out of every step after the intro: the hero's round X, on the plain step background */
+/** The way out of every step after the intro: the shared close button, a tonal step up from the window background */
 export function StepClose({ onClose }: { onClose: () => void }) {
-  return (
-    <button type="button" aria-label="Sluiten" onClick={onClose} className="grid size-[34px] shrink-0 place-items-center rounded-full bg-beheer-row-high text-muted-foreground transition-colors hover:text-foreground">
-      <XIcon className="size-5" />
-    </button>
-  );
+  return <CloseButton onClick={onClose} className="bg-beheer-row-high hover:bg-[color-mix(in_oklab,var(--foreground)_14%,var(--card))]" />;
 }
 
 export function DownloadingStep({ onDone }: { onDone: () => void }) {

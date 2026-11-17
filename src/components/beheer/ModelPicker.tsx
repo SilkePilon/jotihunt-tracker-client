@@ -55,7 +55,7 @@ export default function ModelPicker({ value, defaultId, models, fetchedAt, listE
           type="button"
           aria-label={`Model voor ${label}`}
           className={cn(
-            'inline-flex h-[34px] w-[190px] shrink-0 items-center justify-between gap-2 rounded-xl bg-beheer-row-high pr-2.5 pl-3 text-[12.5px] font-semibold outline-none transition-colors hover:bg-beheer-row-high/70 focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50',
+            'inline-flex h-[34px] w-[190px] shrink-0 items-center justify-between gap-2 rounded-xl bg-beheer-row-high pr-2.5 pl-3 text-[12.5px] font-semibold outline-none transition-colors hover:bg-beheer-row-high/70 focus-visible:ring-[3px] focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50',
             TRIGGER_OPEN,
             className,
           )}
@@ -83,7 +83,7 @@ export default function ModelPicker({ value, defaultId, models, fetchedAt, listE
                         setOpen(false);
                       }}
                     >
-                      <CheckIcon className={cn('size-4 text-primary transition-opacity', model.id !== value && 'opacity-0')} />
+                      <CheckIcon className={cn('size-4 text-primary-text transition-opacity', model.id !== value && 'opacity-0')} />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-[13px] font-semibold">{model.displayName}</span>
                         <span className="block truncate font-mono text-[11px] text-muted-foreground">{model.id}</span>

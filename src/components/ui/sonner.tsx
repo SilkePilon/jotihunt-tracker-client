@@ -37,8 +37,11 @@ const Toaster = ({ ...props }: ToasterProps) => {
           "--border-radius": "var(--radius)",
         } as React.CSSProperties
       }
+      // Dutch names for the toast region and the close buttons (sonner's defaults are English)
+      containerAriaLabel="Meldingen"
       toastOptions={{
         closeButton: true,
+        closeButtonAriaLabel: "Sluiten",
         classNames: {
           description: "text-muted-foreground!",
           actionButton: "bg-primary-container! text-on-primary-container!",

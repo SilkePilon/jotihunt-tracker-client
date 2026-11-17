@@ -5,9 +5,9 @@ import { copyToClipboard } from '@/lib/clipboard';
 /** How long the check mark stays after copying */
 const COPIED_MS = 2000;
 
-/** Our icon-button sizes on animate-ui's copy button sizes; icon-xs keeps the smaller size-6 of shadcn's icon-xs. */
+/** Our icon-button sizes on animate-ui's copy button sizes; icon-xs keeps the smaller size-6 of shadcn's icon-xs (with Button's 44px-tall hit area). */
 const SIZES = {
-  'icon-xs': { size: 'xs', className: 'size-6' },
+  'icon-xs': { size: 'xs', className: 'relative size-6 after:absolute after:-inset-x-1 after:-inset-y-2.5' },
   'icon-sm': { size: 'sm', className: undefined },
   icon: { size: 'default', className: undefined },
 } as const;

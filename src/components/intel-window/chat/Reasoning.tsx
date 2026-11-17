@@ -44,7 +44,7 @@ export default function Reasoning({ text, thinking }: ReasoningProps) {
         aria-expanded={open}
         disabled={autoOpen}
         onClick={() => setUserOpen(!userOpen)}
-        className="inline-flex items-center gap-1 rounded-[10px] py-0.5 pr-1 text-[12.5px] font-semibold text-muted-foreground outline-none transition-colors enabled:hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        className="inline-flex items-center gap-1 rounded-[10px] py-0.5 pr-1 text-[12.5px] font-semibold text-muted-foreground outline-none transition-colors enabled:hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring"
       >
         <span className="relative">
           <AnimatePresence mode="popLayout" initial={false}>

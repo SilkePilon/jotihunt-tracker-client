@@ -95,7 +95,7 @@ function UserMessage({ message, text }: { message: UIMessage; text: string }) {
             type="button"
             aria-label="Afbeelding vergroten"
             onClick={() => setZoom(true)}
-            className="cursor-zoom-in overflow-hidden rounded-2xl outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            className="cursor-zoom-in overflow-hidden rounded-2xl outline-none focus-visible:ring-[3px] focus-visible:ring-ring"
           >
             <img src={image.url} alt="" className="max-h-40 max-w-[220px] object-cover" />
           </button>

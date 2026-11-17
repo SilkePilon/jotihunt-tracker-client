@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { computeSnapHeights, nextSnap, rubberBand, settleSnap } from './sheet-snaps';
+import { computeSnapHeights, grabLabel, nextSnap, rubberBand, settleSnap } from './sheet-snaps';
 
 describe('computeSnapHeights', () => {
   test('iPhone-like viewport', () => {
@@ -48,4 +48,10 @@ test('nextSnap cycles peek → half → full → peek', () => {
   expect(nextSnap('peek')).toBe('half');
   expect(nextSnap('half')).toBe('full');
   expect(nextSnap('full')).toBe('peek');
+});
+
+test('grabLabel names the current snap', () => {
+  expect(grabLabel('peek')).toBe('Zijbalk groter of kleiner maken, nu ingeklapt');
+  expect(grabLabel('half')).toContain('half open');
+  expect(grabLabel('full')).toContain('helemaal open');
 });
