@@ -4,7 +4,7 @@ import { AxiosError, AxiosHeaders } from 'axios';
 import type { Article } from '@/types/Article';
 import type { HintCell } from '@/types/HintCell';
 import type { Assignment, IntelItem } from '@/types/Intel';
-import { KIND_COLOR, KIND_CONTAINER, answerPreview, areaStates, assignmentMeta, assignmentStatusLabel, earnedPoints, chartColumns, initialOpenArea, buildIntelItems, deadlineLabel, deadlineTone, filterByTab, formatSolveTime, groupByDay, hasExistingMarker, intelStats, isDeadlineUrgent, isHintDone, kindPrefix, nextOpenArea, ratingStars, siteSubmission, solvedCount, statusAuthor, unreadCount, unreadLabel, unreadTab } from './intel-window';
+import { KIND_COLOR, KIND_CONTAINER, answerPreview, areaStates, assignmentMeta, assignmentStatusLabel, earnedPoints, chartColumns, initialOpenArea, buildIntelItems, deadlineLabel, deadlineTone, filterByTab, formatSolveTime, groupByDay, hasExistingMarker, hasUnreadIntel, intelStats, isDeadlineUrgent, isHintDone, kindPrefix, nextOpenArea, ratingStars, siteSubmission, solvedCount, statusAuthor, unreadCount, unreadLabel, unreadTab } from './intel-window';
 
 const article = (id: number, type: string, publishAt: string, extra: Partial<Article> = {}) =>
   ({ id, title: `A${id}`, type, publishAt: new Date(publishAt), content: '<p>x</p>', messageType: '', maxPoints: 0, endTime: new Date(publishAt), ...extra }) as Article;
@@ -368,4 +368,12 @@ describe('kindPrefix', () => {
     expect(kindPrefix('assignment', 'opdracht 4: vlot')).toBe('');
     expect(kindPrefix('news', '  Nieuws van de organisatie')).toBe('');
   });
+});
+
+describe('hasUnreadIntel', () => {
+  const articles = [article(1, 'news', '2026-10-04T10:00:00Z'), article(2, 'hint', '2026-10-04T11:00:00Z')];
+  test('read state not loaded (or failed): no dot, not every item unread', () => expect(hasUnreadIntel(articles, undefined)).toBe(false));
+  test('an unread news item', () => expect(hasUnreadIntel(articles, { read: [], readBy: {} })).toBe(true));
+  test('all read (hints never count)', () => expect(hasUnreadIntel(articles, { read: [1], readBy: {} })).toBe(false));
+  test('no articles', () => expect(hasUnreadIntel(undefined, { read: [], readBy: {} })).toBe(false));
 });
