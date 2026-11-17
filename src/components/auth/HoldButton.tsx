@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type MouseEvent, type PointerEvent, type ReactNode } from 'react';
 import { animate, AnimatePresence, motion, useMotionValue, useTransform, type AnimationPlaybackControls } from 'motion/react';
 import { Loader2Icon } from 'lucide-react';
+import { confirmHaptic } from '@/lib/haptics';
 import { holdProgressAfter, isHoldComplete, isHoldNearlyDone } from '@/lib/hold';
 import { SWAP } from '@/lib/motion';
 import { cn } from '@/lib/utils';
@@ -108,7 +109,7 @@ export default function HoldButton({
           setArmed(true);
           return;
         }
-        onConfirm();
+        confirm();
         // The busy label takes over; the fill drains underneath it, ready for another try
         drain();
         return;
@@ -116,6 +117,12 @@ export default function HoldButton({
       frame.current = requestAnimationFrame(tick);
     };
     frame.current = requestAnimationFrame(tick);
+  }
+
+  /** The hold went through: a short tick on phones that can vibrate, then the action */
+  function confirm() {
+    confirmHaptic();
+    onConfirm();
   }
 
   /** Let go early, slid off, cancelled by the browser or lost focus: drain and never confirm */
@@ -135,7 +142,7 @@ export default function HoldButton({
       return;
     }
     disarm();
-    onConfirm();
+    confirm();
     drain();
   }
 
@@ -192,7 +199,7 @@ export default function HoldButton({
   // Screen readers (VoiceOver/TalkBack double tap, switch access) activate with a synthetic click (detail 0) and can't
   // hold: let that confirm. Pointer clicks have detail >= 1, and Enter/Space never click (their keydown is prevented).
   function onClick(event: MouseEvent<HTMLButtonElement>) {
-    if (event.detail === 0 && !blocked) onConfirm();
+    if (event.detail === 0 && !blocked) confirm();
   }
 
   return (

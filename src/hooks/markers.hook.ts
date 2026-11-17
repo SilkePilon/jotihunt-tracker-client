@@ -2,6 +2,7 @@ import { Marker } from '@/types/Marker';
 import { fetcherWithMethod, useAuthSWR } from '../lib/swr';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
 import { asList, hasExpectedShape } from '@/lib/response-shape';
+import { confirmHaptic } from '@/lib/haptics';
 
 export const useMarkers = () => {
   const authHeader = useAuthHeader() || '';
@@ -26,6 +27,8 @@ export const useMarkers = () => {
       return error ?? new Error('Request failed');
     }
     if (!result?._id) return new Error('Unexpected response');
+    // Registered: a short tick on phones that can vibrate (no visual change, the toast confirms on screen)
+    confirmHaptic();
     mutate((data) => {
       if (data) {
         return [...data, result];
