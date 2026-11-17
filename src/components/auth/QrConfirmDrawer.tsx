@@ -17,6 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/auth.hook';
 import { useNow } from '@/hooks/now.hook';
 import { addPasskey, approveQrLogin, denyQrLogin, scanQrLogin, type QrScan } from '@/lib/auth-api';
+import { TONAL_HOVER } from '@/lib/tonal-button';
 import { BADGE_COOKIE_DEPTH, cookiePath } from '@/lib/cookie-shape';
 import { DIALOG_SHELL } from '@/lib/dialog-shell';
 import { joinParts } from '@/lib/format';
@@ -38,7 +39,7 @@ const AUTO_CLOSE_MS = 1800;
 
 /** 48 px, rounded-xl like Beheer */
 const PRIMARY = 'h-12 w-full rounded-xl text-[15px] font-semibold';
-const SECONDARY = 'h-12 w-full rounded-xl bg-beheer-row-high text-[15px] font-semibold text-foreground hover:bg-beheer-row-high/70';
+const SECONDARY = `h-12 w-full rounded-xl bg-beheer-row-high text-[15px] font-semibold text-foreground ${TONAL_HOVER}`;
 
 const BADGE = 48;
 

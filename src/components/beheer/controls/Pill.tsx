@@ -3,6 +3,7 @@ import { AnimatePresence, motion, type HTMLMotionProps } from 'motion/react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { SWAP_TRANSITION } from '@/lib/motion';
 import { COARSE_HIT_AREA } from '@/lib/hit-area';
+import { TONAL_HOVER } from '@/lib/tonal-button';
 import { cn } from '@/lib/utils';
 
 // Both sizes are under 44px: COARSE_HIT_AREA grows the touch area on phones (give the row/card `isolate`)
@@ -15,7 +16,7 @@ const pill = cva(
     variants: {
       variant: {
         primary: 'bg-primary-container text-on-primary-container hover:bg-[color-mix(in_oklab,var(--on-primary-container)_10%,var(--primary-container))]',
-        secondary: 'bg-beheer-row-high text-foreground hover:bg-beheer-row-high/70',
+        secondary: `bg-beheer-row-high text-foreground ${TONAL_HOVER}`,
         ghost: 'text-muted-foreground hover:bg-beheer-row-high hover:text-foreground',
         'danger-soft': 'bg-destructive/15 text-destructive-text hover:bg-destructive/20',
         'danger-outline':
@@ -98,7 +99,7 @@ const iconPill = cva(
     variants: {
       variant: {
         ghost: 'text-muted-foreground hover:bg-beheer-row-high hover:text-foreground',
-        soft: 'bg-beheer-row-high text-foreground hover:bg-beheer-row-high/70',
+        soft: `bg-beheer-row-high text-foreground ${TONAL_HOVER}`,
         success: 'bg-green-500/20 text-status-ok-text',
         // M3 tonal "on" state: on-primary-container on primary-container (10:1 light, 8.3:1 dark)
         active: 'bg-primary-container text-on-primary-container',

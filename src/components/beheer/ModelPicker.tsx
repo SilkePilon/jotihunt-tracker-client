@@ -11,6 +11,7 @@ import { apiErrorMessage } from '@/lib/api-error';
 import type { GeminiModelInfo } from '@/lib/app-config';
 import { TRIGGER_OPEN } from '@/lib/menu-styles';
 import { SWAP_TRANSITION } from '@/lib/motion';
+import { TONAL_HOVER } from '@/lib/tonal-button';
 import { cn } from '@/lib/utils';
 
 const GROUP_TITLE: Record<GeminiModelInfo['group'], string> = { alias: 'Aliassen', latest: 'Nieuwste versie', older: 'Ouder' };
@@ -63,7 +64,8 @@ export default function ModelPicker({ value, defaultId, models, fetchedAt, listE
           aria-label={`Model voor ${label}`}
           aria-busy={saving || undefined}
           className={cn(
-            'inline-flex h-[34px] w-[190px] shrink-0 items-center justify-between gap-2 rounded-xl bg-beheer-row-high pr-2.5 pl-3 text-caption font-semibold outline-none transition-colors hover:bg-beheer-row-high/70 focus-visible:ring-[3px] focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50',
+            'inline-flex h-[34px] w-[190px] shrink-0 items-center justify-between gap-2 rounded-xl bg-beheer-row-high pr-2.5 pl-3 text-caption font-semibold outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50',
+            TONAL_HOVER,
             TRIGGER_OPEN,
             className,
           )}
