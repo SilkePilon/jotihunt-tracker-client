@@ -39,7 +39,7 @@ export function PopupRow({ icon, label, title, meta, trailing, tone = 'default' 
         {/* Full tone colour in light mode: at 80% the meta drops under 4.5:1 on the tinted rows */}
         {meta && <div className={cn('truncate text-[11.5px] tabular-nums', toned ? 'dark:opacity-80' : 'text-(--map-muted)')}>{meta}</div>}
       </div>
-      {trailing && <div className="-mr-1.5 flex shrink-0 items-center text-(--map-on-surface-variant)">{trailing}</div>}
+      {trailing && <div className="-mr-1.5 flex shrink-0 items-center gap-1 text-(--map-on-surface-variant)">{trailing}</div>}
     </div>
   );
 }
