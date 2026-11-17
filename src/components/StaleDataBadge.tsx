@@ -54,9 +54,10 @@ export default function StaleDataBadge() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={SWAP_TRANSITION}
-            // Centred through motion's x, since motion owns the transform
+            // Centred through motion's x, since motion owns the transform. md+: centred over the map area right of the
+            // 320px sidebar (left 8px + 320px, like the happy-hour pill in App.tsx), so it never covers the sidebar
             style={{ x: '-50%' }}
-            className="pointer-events-none fixed left-1/2 top-[calc(env(safe-area-inset-top)+8px)] z-50 flex w-max max-w-[min(calc(100vw-32px),420px)] items-center gap-1.5 rounded-badge bg-destructive px-2.5 py-1 text-xs font-semibold text-white shadow-md"
+            className="pointer-events-none fixed left-1/2 top-[calc(env(safe-area-inset-top)+8px)] z-50 flex w-max max-w-[min(calc(100vw-32px),420px)] items-center md:left-[calc(50%+164px)] md:max-w-[min(calc(100vw-360px),420px)] gap-1.5 rounded-badge bg-destructive px-2.5 py-1 text-xs font-semibold text-white shadow-md"
           >
             <WifiOffIcon className="size-3.5 shrink-0" />
             {/* Wraps to a second line on narrow phones instead of cutting off the feed or the age */}
