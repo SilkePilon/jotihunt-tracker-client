@@ -25,7 +25,7 @@ function TrackerLine({ onOpen }: { onOpen: () => void }) {
   // A failed first load says so; the tap opens the tracker page, whose LoadError retries
   const line = trackerPeekLine(status, now, isError);
   return (
-    <button type="button" onClick={onOpen} className={cn('flex min-h-9 items-center gap-2 text-left text-[13.5px]', COARSE_HIT_AREA)}>
+    <button type="button" onClick={onOpen} className={cn('flex min-h-9 items-center gap-2 text-left text-[13.5px] outline-none focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset rounded-md', COARSE_HIT_AREA)}>
       <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden className="shrink-0">
         <path d={COOKIE_16} fill={TONE_FILL[line.tone]} />
       </svg>
@@ -55,7 +55,7 @@ export default function PeekStrip() {
         <AnimatePresence initial={false}>
           <motion.div key={scene} className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={SWAP_TRANSITION}>
             {scene === 'bar' && foxes && counts ? (
-              <button type="button" onClick={() => push({ id: 'foxes' })} className={cn('flex w-full flex-col gap-1.5 text-left', COARSE_HIT_AREA)}>
+              <button type="button" onClick={() => push({ id: 'foxes' })} className={cn('flex w-full flex-col gap-1.5 text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset rounded-md', COARSE_HIT_AREA)}>
                 <FoxStatusBar foxes={foxes} size="full" isForbidden={isForbidden} />
                 {/* The visible counts are part of the button's name; the sr-only prefix says what a tap does */}
                 <span className="sr-only">Vossen openen: </span>
@@ -73,7 +73,7 @@ export default function PeekStrip() {
                 <Skeleton className="h-4 w-full" />
               </div>
             ) : (
-              <button type="button" onClick={() => push({ id: 'foxes' })} className={cn('flex h-full w-full items-center text-left text-xs text-muted-foreground', COARSE_HIT_AREA)}>
+              <button type="button" onClick={() => push({ id: 'foxes' })} className={cn('flex h-full w-full items-center text-left text-xs text-muted-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset rounded-md', COARSE_HIT_AREA)}>
                 {scene === 'error' ? 'Vossen niet geladen — tik om te openen' : 'Nog geen vossen'}
               </button>
             )}

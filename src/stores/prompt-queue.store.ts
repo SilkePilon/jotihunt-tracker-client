@@ -219,8 +219,12 @@ export function useWorkHold(active = true) {
 
 /** Marks the sheet / sidebar: pointer, wheel, key and focus in it count as work, like on the map */
 export const WORK_AREA_ATTRIBUTE = 'data-work-area';
-/** The map canvas, its popups (also docked on a phone: DOCK_ID in DockedPopup) and the sheet / sidebar */
-const WORK_AREAS = `.maplibregl-canvas-container, .maplibregl-popup, #map-popup-dock, [${WORK_AREA_ATTRIBUTE}]`;
+/**
+ * The map canvas, its controls (zoom, compass, layers button), its popups (also docked on a phone: DOCK_ID in
+ * DockedPopup), the sheet / sidebar, and non-modal popovers (the layers panel and other ui/popover content, portalled
+ * to <body>, so outside every other work area)
+ */
+export const WORK_AREAS = `.maplibregl-canvas-container, .maplibregl-ctrl, .maplibregl-popup, #map-popup-dock, [data-slot="popover-content"], [${WORK_AREA_ATTRIBUTE}]`;
 const isInWorkArea = (target: EventTarget | null) => target instanceof Element && !!target.closest(WORK_AREAS);
 
 /** Input types that take typing (not buttons, checkboxes, sliders…) */

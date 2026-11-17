@@ -7,6 +7,8 @@ import { cn } from '@/lib/utils';
 import type { MobilePage } from '@/lib/mobile-nav';
 import useMobileNavStore from '@/stores/mobile-nav.store';
 import useSidebarStore from '@/stores/sidebar.store';
+import useViewportStore from '@/stores/viewport.store';
+import { useShallow } from 'zustand/react/shallow';
 import { autoAdvances, stepDuration } from './duration';
 import { phonePanelMaxHeight, placeCard, type Size } from './placement';
 import { stepsForPlatform, targetFor } from './resolve';
@@ -22,9 +24,12 @@ import { useTargetRect } from './useTargetRect';
 const SPOTLIGHT_PADDING = 8;
 /** Keep in sync with the content fade duration in TourCard */
 const FADE_MS = 150;
-/** The card's pause/play control: using it is not a takeover (it pauses, or turns auto-advance back on) */
-const TIMER_CONTROL = '[data-tour-timer]';
-const onTimerControl = (target: EventTarget | null) => target instanceof Element && !!target.closest(TIMER_CONTROL);
+/**
+ * Not a takeover: the card's pause/play control (it pauses, or turns auto-advance back on) and the spotlight (a tap
+ * there is the same as Volgende, and the tour keeps running by itself afterwards)
+ */
+const NOT_TAKEOVER = '[data-tour-timer], [data-tour-spotlight]';
+const onTimerControl = (target: EventTarget | null) => target instanceof Element && !!target.closest(NOT_TAKEOVER);
 /** What Tab can land on in the card and the panel */
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
@@ -162,7 +167,12 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
   }, [active, next, prev, skip, takeOver]);
 
   const [cardSize, setCardSize] = useState<Size>({ width: 340, height: 180 });
-  const [viewport, setViewport] = useState<Size>(() => ({ width: window.innerWidth, height: window.innerHeight }));
+  const [windowSize, setWindowSize] = useState<Size>(() => ({ width: window.innerWidth, height: window.innerHeight }));
+  // Phones: the visual viewport (without browser toolbars or an open keyboard) and the safe areas, measured by the
+  // mobile shell, so the docked card never hides under the notch or the home indicator
+  const phone = useViewportStore(useShallow((s) => ({ visibleH: s.visibleH, safeTop: s.safeTop, safeBottom: s.safeBottom })));
+  const viewport: Size = isMobile ? { width: windowSize.width, height: phone.visibleH } : windowSize;
+  const safe = isMobile ? { top: phone.safeTop, bottom: phone.safeBottom } : undefined;
   // Measure the card and viewport for placement. No deps on purpose: re-measure after every render (the card's text changes per step); the size check stops the loop
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useLayoutEffect(() => {
@@ -172,7 +182,7 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
     }
   });
   useEffect(() => {
-    const onResize = () => setViewport({ width: window.innerWidth, height: window.innerHeight });
+    const onResize = () => setWindowSize({ width: window.innerWidth, height: window.innerHeight });
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
@@ -198,7 +208,7 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
   }, [canShow, shownIndex, stepIndex]);
 
   const rect = targetStatus === 'found' ? target.rect : null;
-  const position = placeCard({ target: rect, card: cardSize, viewport, placement: step?.placement, isMobile });
+  const position = placeCard({ target: rect, card: cardSize, viewport, placement: step?.placement, isMobile, safe });
   // No target: the hole closes in place, so the whole screen is dimmed
   const hole = rect && {
     x: rect.x - SPOTLIGHT_PADDING,
@@ -225,7 +235,7 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
     // pointer-events-auto: Radix modals set pointer-events:none on <body> while open. A modal dialog (card + panel)
     // named by the card's title and body; Tab stays inside it (onKey above)
     // Any pointer on the tour (card, panel, the dimmed screen) is the user taking over: auto-advance stops for the rest
-    // (except the pause/play control, which toggles pause or resumes auto-advance)
+    // (except the pause/play control, which toggles pause or resumes auto-advance, and the spotlight, which is Volgende)
     <div
       role="dialog"
       aria-modal="true"
@@ -239,9 +249,11 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
       {/* Click shield: the tour drives the UI, the user only uses the card */}
       <div className="absolute inset-0" />
       {/* The spotlight. Only its box takes pointers (the dimming shadow doesn't): a tap on the highlighted target goes
-          to the next step, like Volgende (the card's button stays the keyboard way) */}
+          to the next step, like Volgende (the card's button stays the keyboard way). Not a takeover: auto-advance
+          carries on */}
       <div
         aria-hidden
+        data-tour-spotlight
         ref={holeRef}
         onClick={holeClickable ? next : undefined}
         className={cn(
@@ -258,7 +270,7 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
           ref={panelRef}
           {...tourTarget('tour.panel')}
           className="fixed left-1/2 top-[calc(env(safe-area-inset-top)+12px)] w-[min(400px,calc(100vw-24px))] -translate-x-1/2 overflow-y-auto rounded-xl border bg-background shadow-2xl animate-in fade-in duration-300 max-h-[calc(100dvh-24px-env(safe-area-inset-top))] md:left-[calc(50%-376px)] md:top-1/2 md:-translate-y-1/2 md:translate-x-0 motion-reduce:animate-none"
-          style={isMobile ? { maxHeight: `calc(${phonePanelMaxHeight(viewport.height, cardSize.height, SPOTLIGHT_PADDING)}px - env(safe-area-inset-top))` } : undefined}
+          style={isMobile ? { maxHeight: `calc(${phonePanelMaxHeight(viewport.height, cardSize.height, SPOTLIGHT_PADDING, phone.safeBottom)}px - env(safe-area-inset-top))` } : undefined}
         >
           <Panel />
         </div>

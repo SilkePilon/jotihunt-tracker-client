@@ -2,6 +2,9 @@ import type { Placement } from './types';
 
 export interface Rect { x: number; y: number; width: number; height: number }
 export interface Size { width: number; height: number }
+/** Safe-area insets (env(safe-area-inset-*)) in px: the notch / status bar and the home indicator */
+export interface SafeInsets { top: number; bottom: number }
+const NO_INSETS: SafeInsets = { top: 0, bottom: 0 };
 
 export const CARD_MARGIN = 12;
 export const CARD_GAP = 12;
@@ -27,23 +30,29 @@ function fits(side: Side, room: Record<Side, number>, card: Size) {
   return room[side] >= needed + CARD_GAP + CARD_MARGIN;
 }
 
-/** Top-left corner for the tour card, kept inside the viewport. */
-export function placeCard({ target, card, viewport, placement = 'auto', isMobile }: {
+/**
+ * Top-left corner for the tour card, kept inside the viewport. On phones `viewport.height` is the visual viewport
+ * height and the card stays inside the safe-area rectangle (12px gutter inside it).
+ */
+export function placeCard({ target, card, viewport, placement = 'auto', isMobile, safe = NO_INSETS }: {
   target: Rect | null;
   card: Size;
   viewport: Size;
   placement?: Placement;
   isMobile: boolean;
+  safe?: SafeInsets;
 }): { x: number; y: number } {
   const maxX = viewport.width - card.width - CARD_MARGIN;
   const maxY = viewport.height - card.height - CARD_MARGIN;
   const centered = { x: Math.round((viewport.width - card.width) / 2), y: Math.round((viewport.height - card.height) / 2) };
   if (!target) return centered;
 
-  // Phones: card centered horizontally, docked at the edge away from the target
+  // Phones: card centered horizontally, docked at the edge away from the target, inside the safe areas
   if (isMobile) {
     const targetCenter = target.y + target.height / 2;
-    return { x: Math.max(CARD_MARGIN, centered.x), y: targetCenter > viewport.height / 2 ? CARD_MARGIN : maxY };
+    const top = safe.top + CARD_MARGIN;
+    const bottom = Math.max(top, viewport.height - safe.bottom - card.height - CARD_MARGIN);
+    return { x: Math.max(CARD_MARGIN, centered.x), y: Math.round(targetCenter > viewport.height / 2 ? top : bottom) };
   }
 
   const room = space(target, viewport);
@@ -72,7 +81,7 @@ export const PANEL_TOP = 12;
  * the card (plus the spotlight padding around the panel and the usual gap). Pixels, without the top safe area, which
  * the overlay subtracts in CSS.
  */
-export function phonePanelMaxHeight(viewportHeight: number, cardHeight: number, spotlightPadding: number): number {
-  const cardTop = viewportHeight - cardHeight - CARD_MARGIN;
+export function phonePanelMaxHeight(viewportHeight: number, cardHeight: number, spotlightPadding: number, safeBottom = 0): number {
+  const cardTop = viewportHeight - safeBottom - cardHeight - CARD_MARGIN;
   return Math.max(0, Math.round(cardTop - CARD_GAP - spotlightPadding - PANEL_TOP));
 }

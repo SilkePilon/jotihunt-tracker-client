@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
-import usePromptQueueStore, { isTypingField, nextPromptStep, PROMPT_GAP_MS, QUIET_MS, type PromptQueueTimes } from './prompt-queue.store';
+import usePromptQueueStore, { isTypingField, WORK_AREA_ATTRIBUTE, WORK_AREAS, nextPromptStep, PROMPT_GAP_MS, QUIET_MS, type PromptQueueTimes } from './prompt-queue.store';
 
 const T = 1_000_000;
 const idle: PromptQueueTimes = {
@@ -224,5 +224,15 @@ describe('isTypingField', () => {
     for (const type of ['button', 'checkbox', 'radio', 'range', 'submit']) expect(isTypingField('INPUT', type, false)).toBe(false);
     expect(isTypingField('BUTTON', null, false)).toBe(false);
     expect(isTypingField('DIV', null, false)).toBe(false);
+  });
+});
+
+describe('WORK_AREAS', () => {
+  test('counts map controls and portalled popovers, not only the canvas, popups and sheet', () => {
+    const selectors = WORK_AREAS.split(',').map((part) => part.trim());
+    expect(selectors).toContain('.maplibregl-ctrl');
+    expect(selectors).toContain('[data-slot="popover-content"]');
+    expect(selectors).toContain('.maplibregl-canvas-container');
+    expect(selectors).toContain(`[${WORK_AREA_ATTRIBUTE}]`);
   });
 });

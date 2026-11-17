@@ -17,8 +17,8 @@ export default function MobilePage({ page, depth, mapRef }: { page: Page; depth:
   useWorkHold(isFormPage(page.id));
   return (
     <div className="flex flex-col gap-3 pr-[max(0.75rem,env(safe-area-inset-right))] pb-8 pl-[max(0.75rem,env(safe-area-inset-left))]">
-      {/* Takes focus when the page pushes in (MobileShell); 44px tall on touch screens. Inset focus ring: it sits at the top edge of the sheet's scroller */}
-      <button type="button" data-view-back onClick={pop} aria-label={depth > 1 ? undefined : 'Terug naar menu'} className="flex h-10 w-fit items-center gap-1 rounded-xl pl-1 pr-2.5 text-[13.5px] font-semibold text-muted-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset pointer-coarse:h-11">
+      {/* Takes focus when the page pushes in (MobileShell); 44px tall on phone-width screens (the phone layout, whatever the pointer). Inset focus ring: it sits at the top edge of the sheet's scroller */}
+      <button type="button" data-view-back onClick={pop} aria-label={depth > 1 ? undefined : 'Terug naar menu'} className="flex h-10 w-fit items-center gap-1 rounded-xl pl-1 pr-2.5 text-[13.5px] font-semibold text-muted-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset max-md:h-11">
         <ChevronLeftIcon className="size-5" /> {depth > 1 ? 'Terug' : 'Menu'}
       </button>
       <PageBody>

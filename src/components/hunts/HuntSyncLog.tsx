@@ -1,7 +1,7 @@
 import { memo, useState, type UIEvent } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { formatClock } from '@/lib/format';
-import { huntEventParts, huntEventTime } from '@/lib/hunt-sync';
+import { huntEventParts, huntEventRowLabel, huntEventTime } from '@/lib/hunt-sync';
 import { Loader2Icon } from 'lucide-react';
 import LoadError from '@/components/LoadError';
 import { REVEAL_TRANSITION, revealTransition, SWAP } from '@/lib/motion';
@@ -95,7 +95,6 @@ export function HuntEventLine({ event }: { event: HuntSyncEvent }) {
  * turns on and the row flashes once.
  */
 const LogRow = memo(function LogRow({ event, onSelect }: { event: HuntSyncEvent; onSelect: (event: HuntSyncEvent) => void }) {
-  const { area, text } = huntEventParts(event);
   const located = event.location !== null;
   // Count the moments the location arrived while this row was on screen (state adjusted during render, not in an effect)
   const [seenLocated, setSeenLocated] = useState(located);
@@ -113,7 +112,7 @@ const LogRow = memo(function LogRow({ event, onSelect }: { event: HuntSyncEvent;
       // time column a little wider for its larger tabular digits
       className="relative isolate grid min-h-11 w-full grid-cols-[40px_1fr] items-center gap-x-2 rounded-lg p-1 text-left text-sm transition-colors duration-200 enabled:cursor-pointer enabled:hover:bg-beheer-row focus-visible:bg-beheer-row focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset disabled:cursor-default"
       onClick={() => onSelect(event)}
-      aria-label={located ? `Toon ${area} ${text} op de kaart` : `${area} ${text}, locatie volgt`}
+      aria-label={huntEventRowLabel(event, formatClock(huntEventTime(event)), located)}
     >
       {arrivals > 0 && (
         <motion.span

@@ -193,7 +193,10 @@ export default function HoldButton({
       <button
         type="button"
         aria-label={busy ? undefined : ariaLabel}
-        disabled={blocked}
+        // Busy keeps the button focusable (disabled would drop focus to <body> mid-flow): aria-disabled, and start()
+        // and onClick refuse while blocked
+        disabled={disabled}
+        aria-disabled={busy || undefined}
         aria-busy={busy || undefined}
         aria-describedby={hintId}
         // vaul would otherwise start dragging the drawer when a held finger wobbles
@@ -209,7 +212,7 @@ export default function HoldButton({
         // A long press must not open the context menu or select the label
         onContextMenu={(event) => event.preventDefault()}
         className={cn(
-          'relative flex h-12 w-full items-center justify-center overflow-hidden rounded-xl bg-primary-container px-4 text-[14.5px] font-semibold text-on-primary-container outline-none select-none [-webkit-touch-callout:none] transition-[transform,opacity] focus-visible:ring-[3px] focus-visible:ring-ring active:scale-[0.97] disabled:pointer-events-none disabled:opacity-70',
+          'relative flex h-12 w-full items-center justify-center overflow-hidden rounded-xl bg-primary-container px-4 text-[14.5px] font-semibold text-on-primary-container outline-none select-none [-webkit-touch-callout:none] transition-[transform,opacity] focus-visible:ring-[3px] focus-visible:ring-ring active:scale-[0.97] disabled:pointer-events-none disabled:opacity-70 aria-disabled:pointer-events-none aria-disabled:opacity-70',
           className,
         )}
       >

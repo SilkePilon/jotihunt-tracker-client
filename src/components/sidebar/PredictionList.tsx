@@ -23,6 +23,15 @@ function textColorOn(hex: string): string {
   return 0.299 * r + 0.587 * g + 0.114 * b > 150 ? '#18181b' : '#ffffff';
 }
 
+/**
+ * A coloured (active) chip's background and text. Stale: the area colour fades into the card behind it, and the text
+ * switches to the theme's foreground, which stays readable on that lighter (light theme) or darker (dark theme) tint.
+ */
+function chipColors(color: string, stale: boolean): { backgroundColor: string; color: string } {
+  if (stale) return { backgroundColor: `color-mix(in oklab, ${color} 45%, transparent)`, color: 'var(--foreground)' };
+  return { backgroundColor: color, color: textColorOn(color) };
+}
+
 /** Neutral 3-bar signal icon (no traffic-light colours, those mean fox status). */
 function ConfidenceBars({ confidence }: { confidence: Confidence }) {
   const level = CONFIDENCE_LEVEL[confidence];
@@ -95,13 +104,13 @@ export default function PredictionList({ mapRef }: { mapRef: RefObject<MapRef | 
                     }}
                     className={cn(
                       // Keyboard focus: an outline in --ring, so it shows over the open state's area-coloured ring too
-                      'inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-badge px-2.5 text-xs font-semibold transition-[transform,box-shadow,opacity] outline-none active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+                      'inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-badge px-2.5 text-xs font-semibold transition-[transform,box-shadow,background-color] outline-none active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
                       COARSE_HIT_AREA,
-                      !active && 'bg-muted text-muted-foreground',
-                      prediction.stale && 'opacity-60',
+                      // Stale: only the background softens; text and icons keep full contrast
+                      !active && (prediction.stale ? 'bg-muted/60 text-muted-foreground' : 'bg-muted text-muted-foreground'),
                       openArea === prediction.area && 'ring-2 ring-offset-2 ring-offset-background',
                     )}
-                    style={{ ...(active && { backgroundColor: color, color: textColorOn(color) }), ...(openArea === prediction.area && { ['--tw-ring-color' as string]: color }) }}
+                    style={{ ...(active && chipColors(color, !!prediction.stale)), ...(openArea === prediction.area && { ['--tw-ring-color' as string]: color }) }}
                   >
                     {prediction.paused && <PauseIcon className="size-3" aria-label="Gepauzeerd" />}
                     {capitalizeFirstLetter(prediction.area)}

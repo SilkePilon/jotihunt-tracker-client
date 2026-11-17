@@ -29,9 +29,10 @@ export default function SidebarSection({ id, title, summary, open: openProp, onO
     <Collapsible {...tourTarget(`sidebar.${id}`)} open={open} onOpenChange={onOpenChange ?? (() => toggleSection(id))} className={cn('card rounded-xl bg-card px-3 pb-1 text-card-foreground', className)}>
       {/* A heading for screen-reader navigation (accordion pattern: the toggle inside the h2); no visual change */}
       {/* The header padding sits in the trigger (-mx-3 px-3 its sides, pt-2/pb-1, the ::after the card's last 4px or the
-          content's 4px top): the whole 36px header row is the target, the card looks the same */}
+          content's 4px top): the whole 36px header row is the target, the card looks the same. Touch screens: at least
+          44px tall */}
       <h2>
-        <CollapsibleTrigger className="relative -mx-3 flex w-[calc(100%+1.5rem)] cursor-pointer items-center justify-between gap-2 rounded-xl px-3 pt-2 pb-1 text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset after:absolute after:inset-x-0 after:top-full after:h-1 after:content-['']">
+        <CollapsibleTrigger className="relative -mx-3 flex w-[calc(100%+1.5rem)] cursor-pointer items-center justify-between gap-2 rounded-xl px-3 pt-2 pb-1 text-left outline-none pointer-coarse:min-h-11 focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset after:absolute after:inset-x-0 after:top-full after:h-1 after:content-['']">
           <span className="text-sm font-semibold">{title}</span>
           <span className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
             {!open && summary && <span className="truncate">{summary}</span>}

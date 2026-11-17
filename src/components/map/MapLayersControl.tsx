@@ -6,6 +6,7 @@ import { LayersIcon } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { tourTarget } from '@/components/tour/targets';
 import MapLayersPanel from '@/components/map/layers/MapLayersPanel';
+import { WORK_AREA_ATTRIBUTE } from '@/stores/prompt-queue.store';
 
 /** An empty control-group box in MapLibre's control corner; the button is portalled into it. */
 class PortalControl implements IControl {
@@ -33,7 +34,9 @@ export default function MapLayersControl({ position = 'bottom-right' }: { positi
           <LayersIcon className="size-[18px]" />
         </button>
       </PopoverTrigger>
+      {/* A work area for the prompt queue's quiet window (also covered by the shared popover-content selector) */}
       <PopoverContent
+        {...{ [WORK_AREA_ATTRIBUTE]: '' }}
         side="left"
         align="end"
         sideOffset={8}
