@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import type { Marker } from '@/types/Marker';
 import { MarkerType } from '@/types/MarkerType';
-import { filterMarkers, groupMarkersByArea, latestAreaMarker, markerDeleteDescription, markerSplitTime, markerTimeLabel } from './markers';
+import { filterMarkers, groupMarkersByArea, huntDays, latestAreaMarker, markerNoun, markerDeleteDescription, markerSplitTime, markerTimeLabel } from './markers';
 
 function marker(id: string, area: string, time: string, type = MarkerType.Hint): Marker {
   return { _id: id, area, time: time as unknown as Date, type, location: { type: 'Point', coordinates: [5.9, 52] } };
@@ -108,4 +108,27 @@ describe('latestAreaMarker', () => {
     expect(latestAreaMarker(markers, 'Delta')).toBeUndefined();
   });
   test('no markers yet', () => expect(latestAreaMarker(undefined, 'Alpha')).toBeUndefined());
+});
+
+describe('huntDays', () => {
+  test('keeps the last day when the hunt ends earlier in the day than it started', () => {
+    const days = huntDays(new Date(2026, 9, 17, 9, 0), new Date(2026, 9, 18, 8, 0));
+    expect(days.map((day) => day.getDate())).toEqual([17, 18]);
+  });
+  test('one day per calendar day, at the start time', () => {
+    const days = huntDays(new Date(2026, 9, 17, 9, 0), new Date(2026, 9, 18, 17, 0));
+    expect(days.map((day) => [day.getDate(), day.getHours()])).toEqual([
+      [17, 9],
+      [18, 9],
+    ]);
+  });
+  test('a start and end on the same day give that day', () => {
+    expect(huntDays(new Date(2026, 9, 17, 9, 0), new Date(2026, 9, 17, 18, 0))).toHaveLength(1);
+  });
+});
+
+test('markerNoun', () => {
+  expect(markerNoun(MarkerType.Hunt)).toBe('Hunt');
+  expect(markerNoun(MarkerType.Spot)).toBe('Spot');
+  expect(markerNoun(MarkerType.Hint)).toBe('Hint');
 });

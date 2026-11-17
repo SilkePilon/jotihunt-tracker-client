@@ -14,10 +14,12 @@ interface AreaPickerProps {
   placeholder?: string;
   /** Trigger size for other forms (the Hunt / Spot dialog's 36px fields) */
   className?: string;
+  /** Muted word after the picked value, e.g. "(vorige)" for an area prefilled from the last marker */
+  note?: string;
 }
 
 /** Deelgebied picker: trigger with the area's map colour, popover with a 3×3 grid of area tiles. */
-export default function AreaPicker({ id, value, onChange, invalid, afterPick, placeholder = 'Gebied', className }: AreaPickerProps) {
+export default function AreaPicker({ id, value, onChange, invalid, afterPick, placeholder = 'Gebied', className, note }: AreaPickerProps) {
   const [open, setOpen] = useState(false);
   const picked = useRef(false);
   const current = areaOptions.find((option) => option.value === value);
@@ -30,8 +32,15 @@ export default function AreaPicker({ id, value, onChange, invalid, afterPick, pl
           invalid={invalid}
           placeholder={placeholder}
           className={className}
-          label={current?.label}
-          aria-label={current ? `Gebied: ${current.label}` : 'Gebied kiezen'}
+          label={
+            current && (
+              <>
+                {current.label}
+                {note && <span className="ml-1 text-muted-foreground group-data-[state=open]:text-(--map-selected-fg)">{note}</span>}
+              </>
+            )
+          }
+          aria-label={current ? `Gebied: ${current.label}${note ? ` ${note}` : ''}` : 'Gebied kiezen'}
           lead={<span aria-hidden className="size-2.5 shrink-0 rounded-full transition-colors duration-200" style={{ background: current ? getColorFromArea(current.value) : 'var(--border)' }} />}
         />
       </PopoverTrigger>

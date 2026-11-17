@@ -21,6 +21,7 @@ import InlineError from '../InlineError';
 import Reveal from '../motion/Reveal';
 import { popupActionClass } from './popup/PopupActions';
 import BusyIcon from '../motion/BusyIcon';
+import { huntDays, markerNoun } from '@/lib/markers';
 import useMarkerDraftStore, { draftElsewhere, draftKey, keyOfDraft, sameMarkerValues, type MarkerDraft, type MarkerDraftValues } from '@/stores/marker-draft.store';
 import { AnimatePresence, motion } from 'motion/react';
 import { SWAP } from '@/lib/motion';
@@ -66,6 +67,10 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
   // A save that got no answer and couldn't be confirmed: kept (store, per type and pin) until confirmed or discarded, so
   // closing the dialog (or the popup) to look at the map doesn't lose it; shown above the buttons
   const drafts = useMarkerDraftStore((state) => state.drafts);
+  // The area the last Hunt/Spot went to: the form starts there, marked "(vorige)" while it still shows
+  const lastArea = useMarkerDraftStore((state) => state.lastArea);
+  // "Hunt" / "Spot" in the toasts
+  const noun = markerNoun(markerType ?? MarkerType.Hunt);
   const key = markerType === undefined ? null : draftKey(markerType, target.lat, target.lng);
   const pending = key === null ? null : (drafts[key] ?? null);
   // An unconfirmed save of this type at another pin: named (not restored here), so it isn't silently forgotten
@@ -102,19 +107,9 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
     return { area, day: getCurrentOrFirstDate(), time: getCurrentOrFirstDate() };
   }
 
-  /**
-   * Get a list of all dates between the hunt start and end time.
-   * Yes, you can also assume that the hunt starts on saterday and ends on sunday, but that'd be impractical for testing.
-   * @returns A list of all dates between the hunt start and end time.
-   */
+  /** Every hunt day for the day picker (the last day too when the hunt ends earlier in the day than it started) */
   function getDays() {
-    const days = [];
-    const currentDate = new Date(HUNT_START_TIME);
-    while (currentDate <= HUNT_END_TIME) {
-      days.push(new Date(currentDate));
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-    return days;
+    return huntDays(HUNT_START_TIME, HUNT_END_TIME);
   }
 
   /**
@@ -179,11 +174,11 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
       useMarkerDraftStore.getState().clear(key);
       // Values changed since that save (a correction or a next marker): confirm the old one, keep the new values open
       if (!sameMarkerValues(form.getValues(), sentValues(pending))) {
-        toast.success('Vorige marker geplaatst — je nieuwe invoer is nog niet opgeslagen', { description: 'Bevestigd na verbindingsherstel.', duration: 10000 });
+        toast.success(`Vorige ${noun.toLowerCase()} geregistreerd — je nieuwe invoer is nog niet opgeslagen`, { description: 'Bevestigd na verbindingsherstel.', duration: 10000 });
         return;
       }
       setDialogOpen(false);
-      toast.success('Marker geplaatst', { description: 'Bevestigd na verbindingsherstel.' });
+      toast.success(`${noun} geregistreerd`, { description: 'Bevestigd na verbindingsherstel.' });
       return;
     }
     useMarkerDraftStore.getState().update(key, { outcome });
@@ -245,18 +240,18 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
       confirmedLate = true;
     } else if (error) {
       // The server's message for e.g. a 429 (too many markers in a row)
-      toast.error('Marker plaatsen is mislukt', { description: apiErrorMessage(error, 'Probeer het opnieuw.') });
+      toast.error(`${noun} registreren is mislukt`, { description: apiErrorMessage(error, 'Probeer het opnieuw.') });
       return;
     }
     useMarkerDraftStore.getState().clear(key);
     const lateNote = confirmedLate ? 'Bevestigd na verbindingsherstel.' : undefined;
     // A correction or a next marker was typed while Registreren ran: confirm this one, leave the new values and the dialog
     if (!sameMarkerValues(form.getValues(), data)) {
-      toast.success('Vorige marker geplaatst — je nieuwe invoer is nog niet opgeslagen', { description: lateNote, duration: 10000 });
+      toast.success(`Vorige ${noun.toLowerCase()} geregistreerd — je nieuwe invoer is nog niet opgeslagen`, { description: lateNote, duration: 10000 });
       return;
     }
     setDialogOpen(false);
-    toast.success('Marker geplaatst', { description: lateNote });
+    toast.success(`${noun} geregistreerd`, { description: lateNote });
   }
 
   const { isSubmitting } = form.formState;
@@ -309,6 +304,7 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
                     }}
                     invalid={fieldState.invalid}
                     placeholder="Kies deelgebied…"
+                    note={field.value && field.value === lastArea ? '(vorige)' : undefined}
                     className="h-9 text-sm pointer-coarse:h-11"
                   />
                   <Reveal>{fieldState.invalid && <FieldError errors={[fieldState.error]} />}</Reveal>

@@ -23,12 +23,16 @@ const TONE_FILL = { ok: 'var(--status-ok-dot)', warn: 'var(--status-warn-dot)', 
 
 /** Own tracker line; ticks every second for the age, on its own so the fox bar does not re-render with it. */
 function TrackerLine({ onOpen }: { onOpen: () => void }) {
-  const { status, isError } = useTrackerStatus();
+  const { status, isError, retry } = useTrackerStatus();
   const now = useNow(true);
-  // A failed first load says so; the tap opens the tracker page, whose LoadError retries
+  // A failed first load says so ("tik om opnieuw te proberen"): the tap fetches again and opens the tracker page
   const line = trackerPeekLine(status, now, isError, isIOSDevice());
+  const open = () => {
+    if (!status && isError) void retry();
+    onOpen();
+  };
   return (
-    <button type="button" onClick={onOpen} className={cn('flex min-h-9 items-center gap-2 text-left text-[13.5px] outline-none focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset rounded-md', COARSE_HIT_AREA)}>
+    <button type="button" onClick={open} className={cn('flex min-h-9 items-center gap-2 text-left text-[13.5px] outline-none focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset rounded-md', COARSE_HIT_AREA)}>
       <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden className="shrink-0">
         <path d={COOKIE_16} fill={TONE_FILL[line.tone]} />
       </svg>

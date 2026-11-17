@@ -78,6 +78,26 @@ export function latestAreaMarker(markers: readonly Marker[] | undefined, area: s
   return latest;
 }
 
+/** "Hunt" / "Spot" / "Hint": the marker type as a word for toasts ("Hunt geregistreerd"). */
+export function markerNoun(type: MarkerType): string {
+  return type === MarkerType.Spot ? 'Spot' : type === MarkerType.Hint ? 'Hint' : 'Hunt';
+}
+
+/**
+ * Every day from the hunt start to its end, as dates at the start's time of day. Compared by calendar day, so the last
+ * day counts even when the hunt ends earlier in the day than it started (start Sat 09:00, end Sun 08:00).
+ */
+export function huntDays(start: Date, end: Date): Date[] {
+  const days: Date[] = [];
+  const last = new Date(end.getFullYear(), end.getMonth(), end.getDate()).getTime();
+  const current = new Date(start);
+  while (new Date(current.getFullYear(), current.getMonth(), current.getDate()).getTime() <= last) {
+    days.push(new Date(current));
+    current.setDate(current.getDate() + 1);
+  }
+  return days;
+}
+
 /** The delete confirmation's consequence line: which marker goes, for everyone, for good. */
 export function markerDeleteDescription(marker: Pick<Marker, 'area' | 'type' | 'time'>, clock: string): string {
   const area = marker.area.charAt(0).toUpperCase() + marker.area.slice(1);

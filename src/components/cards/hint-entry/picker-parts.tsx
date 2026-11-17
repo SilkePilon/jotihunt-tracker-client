@@ -19,7 +19,7 @@ interface PickerTriggerProps extends ComponentProps<'button'> {
   lead: ReactNode;
   placeholder: string;
   /** Chosen value; the muted placeholder shows when empty */
-  label?: string;
+  label?: ReactNode;
   invalid?: boolean;
 }
 
