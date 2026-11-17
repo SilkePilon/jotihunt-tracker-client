@@ -22,12 +22,14 @@ interface ChatInputProps {
   disabled: boolean;
   onSend: (text: string, image?: FileUIPart) => void;
   onStop: () => void;
+  /** Stop was tapped and waits for the server */
+  stopping?: boolean;
 }
 
 type ChatImage = { status: 'loading' } | { status: 'ready'; url: string; name: string };
 
 /** T1 prompt box: one image (paperclip, paste while focused, drop), textarea, Web and Denk diep (kept per user), send ↔ stop */
-export default function ChatInput({ itemId, kind, busy, disabled, onSend, onStop }: ChatInputProps) {
+export default function ChatInput({ itemId, kind, busy, disabled, onSend, onStop, stopping }: ChatInputProps) {
   const draft = useChatDraftStore((state) => state.drafts[itemId]);
   const value = draft?.text ?? '';
   const setValue = (text: string) => useChatDraftStore.getState().setText(itemId, text);
@@ -183,7 +185,7 @@ export default function ChatInput({ itemId, kind, busy, disabled, onSend, onStop
         <ModeToggle tone="web" on={modes.web} onToggle={(on) => setMode('web', on)} icon={<GlobeIcon />} label="Web" tooltip="Web: mag op internet zoeken" />
         <span aria-hidden className="mx-0.5 h-4 w-px bg-foreground/10" />
         <ModeToggle tone="think" on={modes.deep} onToggle={(on) => setMode('deep', on)} icon={<BrainIcon />} label="Denk diep" tooltip="Denk diep: sterker model, duurt langer" />
-        <SendButton state={busy ? 'busy' : ready ? 'ready' : 'idle'} onSend={submit} onStop={onStop} />
+        <SendButton state={busy ? (stopping ? 'stopping' : 'busy') : ready ? 'ready' : 'idle'} onSend={submit} onStop={onStop} />
       </PromptInputActions>
     </PromptInput>
   );

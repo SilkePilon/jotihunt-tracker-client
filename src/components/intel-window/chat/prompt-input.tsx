@@ -1,6 +1,6 @@
 import { createContext, useContext, useLayoutEffect, useRef, type ComponentProps, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { ArrowUpIcon, SquareIcon } from 'lucide-react';
+import { ArrowUpIcon, Loader2Icon, SquareIcon } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { TOGGLE_SPRING } from '@/lib/intel-window';
 import { POP_SPRING } from '@/lib/motion';
@@ -140,33 +140,37 @@ export function ModeToggle({ on, onToggle, icon, label, tone, tooltip }: ModeTog
   );
 }
 
-/** Idle: muted arrow (disabled); ready: orange arrow; busy: stop square. The icon swaps with a turn. */
-export function SendButton({ state, onSend, onStop }: { state: 'idle' | 'ready' | 'busy'; onSend: () => void; onStop: () => void }) {
-  const busy = state === 'busy';
+/** Idle: muted arrow (disabled); ready: orange arrow; busy: stop square; stopping: spinner until the server stopped. The icon swaps with a turn. */
+export function SendButton({ state, onSend, onStop }: { state: 'idle' | 'ready' | 'busy' | 'stopping'; onSend: () => void; onStop: () => void }) {
+  const stopping = state === 'stopping';
+  const busy = state === 'busy' || stopping;
   return (
-    <PromptInputAction tooltip={busy ? 'Stoppen' : 'Versturen (Enter)'}>
+    <PromptInputAction tooltip={stopping ? 'Stoppen…' : busy ? 'Stoppen' : 'Versturen (Enter)'}>
       <motion.button
         type="button"
-        aria-label={busy ? 'Stoppen' : 'Versturen'}
+        aria-label={stopping ? 'Stoppen…' : busy ? 'Stoppen' : 'Versturen'}
         disabled={state === 'idle'}
-        onClick={busy ? onStop : onSend}
+        // Not `disabled` while stopping: that would drop the focus
+        aria-disabled={stopping || undefined}
+        aria-busy={stopping || undefined}
+        onClick={stopping ? undefined : busy ? onStop : onSend}
         animate={{ scale: state === 'ready' ? 1.04 : 1 }}
         transition={POP_SPRING}
         className={cn(
-          'ml-auto grid size-[34px] place-items-center rounded-xl outline-none transition-colors duration-200 focus-visible:ring-[3px] focus-visible:ring-ring disabled:pointer-events-none',
+          'ml-auto grid size-[34px] place-items-center rounded-xl outline-none transition-colors duration-200 focus-visible:ring-[3px] focus-visible:ring-ring disabled:pointer-events-none aria-disabled:opacity-70',
           state === 'idle' ? 'text-muted-foreground' : 'bg-primary-container text-on-primary-container hover:bg-[color-mix(in_oklab,var(--on-primary-container)_10%,var(--primary-container))]',
         )}
       >
         <AnimatePresence mode="popLayout" initial={false}>
           <motion.span
-            key={busy ? 'stop' : 'send'}
+            key={stopping ? 'stopping' : busy ? 'stop' : 'send'}
             className="grid place-items-center"
             initial={{ opacity: 0, scale: 0.5, rotate: -90 }}
             animate={{ opacity: 1, scale: 1, rotate: 0 }}
             exit={{ opacity: 0, scale: 0.5, rotate: 90 }}
             transition={{ duration: 0.18 }}
           >
-            {busy ? <SquareIcon className="size-3.5 fill-current" /> : <ArrowUpIcon className="size-4" />}
+            {stopping ? <Loader2Icon className="size-4 animate-spin" /> : busy ? <SquareIcon className="size-3.5 fill-current" /> : <ArrowUpIcon className="size-4" />}
           </motion.span>
         </AnimatePresence>
       </motion.button>

@@ -37,6 +37,9 @@ export function useIntelChat(articleId: number) {
   const [sendFailed, setSendFailed] = useState<string | null>(null);
   /** What the last send carried, to put back into the prompt box when it never reached the server */
   const lastSent = useRef<ChatDraft | null>(null);
+  /** Stop was tapped and the server hasn't confirmed yet; the ref refuses a second tap within one render */
+  const [stopping, setStopping] = useState(false);
+  const stoppingRef = useRef(false);
 
   // useChat reads the transport of the latest render on every send, so a new token or mode applies right away
   const transport = useMemo(
@@ -105,6 +108,7 @@ export function useIntelChat(articleId: number) {
     loadError: loadKind !== null && loadKind !== 'ai_unavailable',
     unavailable: postUnavailable || loadKind === 'ai_unavailable',
     sendFailed,
+    stopping,
     send(text: string, image?: FileUIPart) {
       touched.current = true;
       setSendFailed(null);
@@ -115,10 +119,25 @@ export function useIntelChat(articleId: number) {
       touched.current = true;
       void regenerate();
     },
-    /** Stop the turn on the server too (it runs on without a client); it saves what was produced */
-    stop() {
-      void stop();
-      fetcherWithMethod(`${path}/stop`, authHeader, 'POST').catch(() => undefined);
+    /**
+     * Stop the turn on the server (it runs on without a client; it saves what was produced), then locally. The answer
+     * keeps streaming until the server confirmed; when that fails it says so and keeps following the turn.
+     */
+    async stop() {
+      if (stoppingRef.current) return;
+      stoppingRef.current = true;
+      setStopping(true);
+      try {
+        await fetcherWithMethod(`${path}/stop`, authHeader, 'POST');
+        await stop();
+      } catch {
+        toast.error('Stoppen is mislukt: het antwoord loopt nog door. Probeer het opnieuw.');
+        // The turn runs on on the server: follow it again when the local stream ended meanwhile
+        if (!busyRef.current) void resumeStream();
+      } finally {
+        stoppingRef.current = false;
+        setStopping(false);
+      }
     },
     reload() {
       void mutate();

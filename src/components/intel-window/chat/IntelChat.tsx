@@ -190,7 +190,7 @@ function ChatFooter({ chat, itemId, kind, busy }: { chat: IntelChatState; itemId
               </p>
             )}
           </Reveal>
-          <ChatInput itemId={itemId} kind={kind} busy={busy} disabled={chat.loading || chat.loadError} onSend={chat.send} onStop={chat.stop} />
+          <ChatInput itemId={itemId} kind={kind} busy={busy} disabled={chat.loading || chat.loadError} onSend={chat.send} onStop={() => void chat.stop()} stopping={chat.stopping} />
         </motion.div>
       )}
     </AnimatePresence>
