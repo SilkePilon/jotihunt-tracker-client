@@ -99,7 +99,7 @@ export default function TeamPopup({ team, onClose, setTeamArea }: TeamPopupProps
       {TEAMS_AREA_EDITING && (
         <Select onValueChange={handleAreaChange} value={area ?? 'onbekend'} disabled={readOnly}>
           <SelectTrigger autoFocus={false} size="sm" className="mt-2 w-full">
-            <SelectValue placeholder="Kies deelgebied..." />
+            <SelectValue placeholder="Kies deelgebied…" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="onbekend">Onbekend deelgebied</SelectItem>
