@@ -4,6 +4,7 @@ import { FoxIcon } from '@/components/MaterialGlyph';
 import { NOTIFICATION_ICON } from '@/components/notifications/notification-icons';
 import { playNotificationSound } from '@/lib/notification-sounds';
 import type { SoundKey } from '@/lib/notifications';
+import { MENU_GROUP } from '@/lib/menu-styles';
 import { cn } from '@/lib/utils';
 import useSettingsStore from '@/stores/settings.store';
 
@@ -58,26 +59,27 @@ export default function NotificationSoundsPanel() {
   return (
     <div className="flex flex-col gap-3 p-4">
       <div className="flex items-center gap-3">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary-container text-on-primary-container">
           <Volume2Icon className="size-5" />
         </div>
         <div className="min-w-0">
-          <p className="font-semibold leading-tight">Leer de geluiden</p>
+          <p className="text-[15px] font-bold leading-tight">Leer de geluiden</p>
           <p className="text-xs text-muted-foreground">Tik op een melding om te horen hoe hij klinkt.</p>
         </div>
       </div>
-      <ul className="flex flex-col gap-1">
+      <ul className={MENU_GROUP}>
         {SOUNDS.map(({ key, label, when, icon: Icon, tone }) => {
           const active = playing === key;
           return (
-            <li key={key}>
+            <li key={key} className="group/row">
               <button
                 type="button"
                 onClick={() => play(key)}
                 aria-pressed={active}
                 className={cn(
-                  'flex w-full items-center gap-3 rounded-lg border border-transparent px-2 py-1.5 text-left outline-none transition-colors hover:bg-muted/60 focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset',
-                  active && 'border-primary/40 bg-primary/10 hover:bg-primary/10',
+                  // The row is the <li>'s only child, so the group's 16px outer ends come from the <li> position
+                  'flex w-full items-center gap-3 rounded-(--radius-segment) bg-beheer-row px-3 py-2 text-left outline-none transition-colors duration-150 group-first/row:rounded-t-2xl group-last/row:rounded-b-2xl hover:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset',
+                  active && 'bg-primary-container text-on-primary-container hover:bg-primary-container',
                 )}
               >
                 <span className={cn('flex size-8 shrink-0 items-center justify-center rounded-full', tone, active && 'motion-safe:animate-pulse')}>
@@ -85,9 +87,9 @@ export default function NotificationSoundsPanel() {
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-sm font-medium leading-tight">{label}</span>
-                  <span className="block text-xs text-muted-foreground">{when}</span>
+                  <span className={cn('block text-xs transition-colors', active ? 'text-on-primary-container/80' : 'text-muted-foreground')}>{when}</span>
                 </span>
-                <span className={cn('flex size-7 shrink-0 items-center justify-center rounded-full border', active ? 'border-primary-text bg-primary-text text-primary-foreground dark:border-primary dark:bg-primary' : 'text-muted-foreground')}>
+                <span className={cn('flex size-7 shrink-0 items-center justify-center rounded-full border', active ? 'border-primary-text bg-primary-text text-primary-foreground dark:border-primary dark:bg-primary' : 'border-transparent bg-card text-muted-foreground')}>
                   {active ? <SquareIcon className="size-3 fill-current" /> : <PlayIcon className="size-3.5 fill-current" />}
                 </span>
               </button>
@@ -95,7 +97,7 @@ export default function NotificationSoundsPanel() {
           );
         })}
       </ul>
-      <p className="rounded-md bg-muted/60 px-2.5 py-1.5 text-xs text-muted-foreground">
+      <p className="rounded-xl bg-beheer-row px-3 py-2 text-xs text-muted-foreground">
         {soundMuted ? 'Geluid staat nu uit. Zet het aan via Instellingen → Geluid, anders hoor je deze meldingen niet.' : 'Tip: zet je telefoon tijdens de hunt niet op stil, en het volume omhoog.'}
       </p>
     </div>
