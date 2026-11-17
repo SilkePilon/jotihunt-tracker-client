@@ -326,7 +326,7 @@ export default function NightAreaDraw() {
             role="group"
             aria-label="Nachtgebied tekenen"
             style={{ '--toolbar-top': belowSafeArea(toolbarTop), '--toolbar-top-md': `${toolbarTopMd}px` } as React.CSSProperties}
-            className="fixed top-(--toolbar-top) left-1/2 z-40 flex max-w-[calc(100vw-16px)] -translate-x-1/2 flex-wrap items-center justify-center gap-1.5 rounded-2xl bg-card p-1.5 shadow-[0_0_0_1px_var(--border),0_8px_24px_rgb(0_0_0/0.18)] transition-[top] duration-300 ease-out motion-reduce:transition-none md:top-(--toolbar-top-md) md:left-[calc(50%+164px)]"
+            className="fixed top-(--toolbar-top) left-1/2 z-40 flex max-w-[calc(100vw-16px)] -translate-x-1/2 flex-wrap items-center justify-center gap-1.5 rounded-2xl bg-card p-1.5 shadow-[0_0_0_1px_var(--border),0_8px_24px_rgb(0_0_0/0.18)] transition-[top] duration-300 ease-out motion-reduce:transition-none md:top-(--toolbar-top-md) md:left-[calc(50%+164px)] shell-mobile:top-(--toolbar-top) shell-mobile:left-1/2"
             initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
@@ -345,7 +345,7 @@ export default function NightAreaDraw() {
             </Pill>
           </motion.div>
           <motion.div
-            className="fixed left-1/2 z-40 -translate-x-1/2 md:left-[calc(50%+164px)]"
+            className="fixed left-1/2 z-40 -translate-x-1/2 md:left-[calc(50%+164px)] shell-mobile:left-1/2"
             style={{ bottom: isMobile ? sheetHeight + 12 : 16 }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

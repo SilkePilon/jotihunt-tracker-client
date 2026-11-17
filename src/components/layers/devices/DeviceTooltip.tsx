@@ -18,6 +18,7 @@ export default function DeviceTooltip({ position }: { position: Position }) {
       longitude={position.longitude}
       latitude={position.latitude}
       offset={TOOLTIP_OFFSET}
+      offsetScale="label"
       color={stale ? 'var(--map-muted)' : palette.onSecondaryContainer}
       title={position.deviceName}
       meta={formatAgeShort(position.fixTime, now)}

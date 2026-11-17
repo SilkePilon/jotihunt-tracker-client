@@ -1,4 +1,4 @@
-import type { StyleSpecification } from 'maplibre-gl';
+import type { RasterLayerSpecification, StyleSpecification } from 'maplibre-gl';
 import { MapStyle } from '@/types/MapStyle';
 
 // Free, token-less map sources. See docs in the migration report for why
@@ -11,11 +11,33 @@ const PDOK_LUCHTFOTO_TILES_URL =
   'https://service.pdok.nl/hwh/luchtfotorgb/wmts/v1_0/Actueel_orthoHR/EPSG:3857/{z}/{x}/{y}.jpeg';
 
 const SATELLITE_RASTER_SOURCE_ID = 'pdok-luchtfoto';
+const OUTDOORS_RASTER_ID = 'pdok-brt';
+
+/**
+ * Raster paint in the dark theme: the bright PDOK topo map (mostly white paper) is toned down and slightly muted so it
+ * doesn't glare next to the dark UI; the aerial photos only lose their brightest highlights. Light theme: unchanged.
+ */
+export const DARK_RASTER_PAINT: Record<string, RasterLayerSpecification['paint']> = {
+  [OUTDOORS_RASTER_ID]: { 'raster-brightness-max': 0.75, 'raster-saturation': -0.2, 'raster-contrast': 0.05 },
+  [SATELLITE_RASTER_SOURCE_ID]: { 'raster-brightness-max': 0.85 },
+};
+
+/** `style` with the dark raster paint ({@link DARK_RASTER_PAINT}) on its raster layers; `style` itself when light. */
+export function themeRasters(style: StyleSpecification, dark: boolean): StyleSpecification {
+  if (!dark) return style;
+  return {
+    ...style,
+    layers: style.layers.map((layer) => {
+      const paint = layer.type === 'raster' ? DARK_RASTER_PAINT[layer.id] : undefined;
+      return paint && layer.type === 'raster' ? { ...layer, paint: { ...layer.paint, ...paint } } : layer;
+    }),
+  };
+}
 
 const OUTDOORS_STYLE: StyleSpecification = {
   version: 8,
   sources: {
-    'pdok-brt': {
+    [OUTDOORS_RASTER_ID]: {
       type: 'raster',
       tiles: [PDOK_BRT_TILES_URL],
       tileSize: 256,
@@ -25,9 +47,9 @@ const OUTDOORS_STYLE: StyleSpecification = {
   },
   layers: [
     {
-      id: 'pdok-brt',
+      id: OUTDOORS_RASTER_ID,
       type: 'raster',
-      source: 'pdok-brt',
+      source: OUTDOORS_RASTER_ID,
     },
   ],
 };
@@ -113,16 +135,17 @@ export function getHybridSatelliteStyle(): Promise<StyleSpecification> {
  * Resolves a map style id to a style URL or inline style object that can be
  * rendered immediately (synchronously, no network round-trip on the critical
  * path). For 'satellite' this is the raster-only fallback; call
- * {@link getHybridSatelliteStyle} to upgrade to the hybrid style with labels.
+ * {@link getHybridSatelliteStyle} to upgrade to the hybrid style with labels (pass that through {@link themeRasters}).
+ * @param dark Dark theme: the raster styles get {@link DARK_RASTER_PAINT}
  */
-export function resolveStaticMapStyle(id: MapStyle): string | StyleSpecification {
+export function resolveStaticMapStyle(id: MapStyle, dark = false): string | StyleSpecification {
   switch (id) {
     case MapStyle.Streets:
       return OPENFREEMAP_LIBERTY_URL;
     case MapStyle.Outdoors:
-      return OUTDOORS_STYLE;
+      return themeRasters(OUTDOORS_STYLE, dark);
     case MapStyle.Satellite:
-      return SATELLITE_RASTER_ONLY_STYLE;
+      return themeRasters(SATELLITE_RASTER_ONLY_STYLE, dark);
   }
 }
 

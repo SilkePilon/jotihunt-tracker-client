@@ -13,6 +13,7 @@ export default function Life360Tooltip({ member, location, linkStale, now }: { m
       longitude={location.lon}
       latitude={location.lat}
       offset={TOOLTIP_OFFSET}
+      offsetScale="icon"
       color={life360AccuracyColor(life360Tone(location, linkStale, now))}
       title={member.name}
       meta={formatAgeShort(location.at, now)}

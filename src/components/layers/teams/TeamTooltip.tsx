@@ -12,6 +12,7 @@ export default function TeamTooltip({ team }: { team: Team }) {
       longitude={team.location.coordinates[0]}
       latitude={team.location.coordinates[1]}
       offset={TOOLTIP_OFFSET}
+      offsetScale="icon"
       color={team.area ? getColorFromArea(team.area) : 'var(--map-muted)'}
       title={team.name}
       meta={team.area ? capitalizeFirstLetter(team.area) : undefined}

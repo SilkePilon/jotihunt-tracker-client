@@ -1,4 +1,4 @@
-import {SearchIcon} from "lucide-react";
+import {CrosshairIcon} from "lucide-react";
 import * as React from "react";
 import {MapRef} from "@/components/Map.tsx";
 import {useId, useState} from "react";
@@ -66,7 +66,7 @@ export default function CoordinatesCard({ mapRef, onDone }: { mapRef: React.RefO
                     error && "outline-destructive focus-within:outline-destructive",
                 )}
             >
-                <span className={cn(MAP_CHIP, "text-muted-foreground")}><SearchIcon/></span>
+                <span className={cn(MAP_CHIP, "text-muted-foreground")}><CrosshairIcon/></span>
                 <input
                     aria-label="Coördinaat"
                     aria-invalid={!!error || undefined}

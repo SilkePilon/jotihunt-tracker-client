@@ -33,7 +33,7 @@ import useLayersStore from '../stores/layers.store';
 import useSettingsStore from '../stores/settings.store';
 import useSidebarStore from '@/stores/sidebar.store';
 import {MapStyle} from '@/types/MapStyle';
-import {getHybridSatelliteStyle, resolveStaticMapStyle} from '@/lib/map-styles';
+import {getHybridSatelliteStyle, resolveStaticMapStyle, themeRasters} from '@/lib/map-styles';
 import {materialMapStyle} from '@/lib/map-style';
 import {mapStyleKey} from '@/lib/map-availability';
 import {useDarkMode} from '@/hooks/utils/darkmode.hook';
@@ -66,7 +66,7 @@ import {useNightDraw} from '@/stores/night-draw.store';
 import NightAreaDraw from './layers/trails/NightAreaDraw';
 import NightAreasLayer from './layers/trails/NightAreasLayer';
 import MapUnavailableCard from './map/MapUnavailableCard';
-import {openLayerFeature, type OpenFeatureOptions} from './layers/map-interactions';
+import {featureNear, openLayerFeature, type OpenFeatureOptions} from './layers/map-interactions';
 import {useMapAvailability} from './map/useMapAvailability';
 
 // MapLibre resolves its worker relative to its own module, which bundlers don't emit;
@@ -103,6 +103,9 @@ export interface MapRef {
      * map takes it, as the tile folds away.
      */
     resetNorth(from?: HTMLElement): void;
+
+    /** One zoom level in (+1) or out (-1), eased; MapLibre jumps instead under reduced motion (the phone zoom tiles). */
+    zoomBy(delta: number): void;
 }
 
 interface MapProps {
@@ -186,6 +189,12 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
             if (from) keepFocusAfterReset(from, map);
             resetNorth(map);
         },
+        zoomBy: (delta: number) => {
+            const map = mapRef.current?.getMap();
+            if (!map) return;
+            if (delta > 0) map.zoomIn({duration: 250});
+            else map.zoomOut({duration: 250});
+        },
     }));
 
     // Store for all layers
@@ -260,11 +269,13 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
     // The satellite style starts out raster-only, then upgrades to the hybrid (labels on top) style once the
     // OpenFreeMap liberty style JSON has been fetched.
     const staticStyle = useMemo(
-        () => (mapStyle ? resolveStaticMapStyle(mapStyle) : materialMapStyle(isDarkMode)),
+        () => (mapStyle ? resolveStaticMapStyle(mapStyle, isDarkMode) : materialMapStyle(isDarkMode)),
         [mapStyle, isDarkMode],
     );
     const [hybridSatellite, setHybridSatellite] = useState<StyleSpecification>();
-    const resolvedMapStyle = mapStyle === MapStyle.Satellite && hybridSatellite ? hybridSatellite : staticStyle;
+    // Dark theme: the aerial photos toned down a little (a paint-only diff on a theme switch)
+    const themedHybrid = useMemo(() => hybridSatellite && themeRasters(hybridSatellite, isDarkMode), [hybridSatellite, isDarkMode]);
+    const resolvedMapStyle = mapStyle === MapStyle.Satellite && themedHybrid ? themedHybrid : staticStyle;
     // The style's own sources, to tell a base-map failure from an overlay's (null for a style URL: any source counts)
     const baseSourceIds = useMemo(() => (typeof resolvedMapStyle === 'string' ? null : new Set(Object.keys(resolvedMapStyle.sources))), [resolvedMapStyle]);
     const styleKey = useMemo(() => mapStyleKey(resolvedMapStyle), [resolvedMapStyle]);
@@ -285,7 +296,8 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
      * Open the current location popup when the map is clicked.
      */
     function openPopup(e: MapLayerMouseEvent) {
-        if (popupPosition || rulerActive || drawing || e.features?.length) return;
+        // A tap next to a marker (within the hit tolerance) opens that marker's popup, not this one
+        if (popupPosition || rulerActive || drawing || e.features?.length || featureNear(e.target, e.point, INTERACTIVE_LAYER_IDS)) return;
 
         setPopupPosition(e.lngLat);
     }

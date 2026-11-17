@@ -272,7 +272,7 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
           key={step.id}
           ref={panelRef}
           {...tourTarget('tour.panel')}
-          className="fixed left-1/2 top-[calc(env(safe-area-inset-top)+12px)] w-[min(400px,calc(100vw-24px))] -translate-x-1/2 overflow-y-auto rounded-xl border bg-background shadow-2xl animate-in fade-in duration-300 max-h-[calc(100dvh-24px-env(safe-area-inset-top))] md:left-[calc(50%-376px)] md:top-1/2 md:-translate-y-1/2 md:translate-x-0 motion-reduce:animate-none"
+          className="fixed left-1/2 top-[calc(env(safe-area-inset-top)+12px)] w-[min(400px,calc(100vw-24px))] -translate-x-1/2 overflow-y-auto rounded-xl border bg-background shadow-2xl animate-in fade-in duration-300 max-h-[calc(100dvh-24px-env(safe-area-inset-top))] md:left-[calc(50%-376px)] md:top-1/2 md:-translate-y-1/2 md:translate-x-0 shell-mobile:left-1/2 shell-mobile:top-[calc(env(safe-area-inset-top)+12px)] shell-mobile:translate-y-0 shell-mobile:-translate-x-1/2 motion-reduce:animate-none"
           style={isMobile ? { maxHeight: `calc(${phonePanelMaxHeight(viewport.height, cardSize.height, SPOTLIGHT_PADDING, phone.safeBottom)}px - env(safe-area-inset-top))` } : undefined}
         >
           <Panel />

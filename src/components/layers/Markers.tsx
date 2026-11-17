@@ -11,7 +11,7 @@ import { allFallback } from '@/lib/trails';
 import { FOX_MARKERS_LAYER, markerFeatures, trailLines } from '@/lib/map-layers';
 import { filterMarkers, groupMarkersByArea, markerSplitTime } from '@/lib/markers';
 import { areaKey, HINT_LABEL_MS, hintNumbering, themedIconExpression, type MarkerTheme } from '@/lib/marker-style';
-import { zoomScaled } from '@/lib/zoom-scale';
+import { LABEL_HOVER_ICON_SIZE, LABEL_ICON_SIZE, zoomScaled } from '@/lib/zoom-scale';
 import { MarkerType } from '@/types/MarkerType';
 import { HINT_ANCHOR_OFFSET, useMarkerTheme } from './marker-icons';
 import { featureId, useLayerInteractions, usePopupSelection } from './map-interactions';
@@ -32,9 +32,10 @@ const FOX_SOURCE = 'fox-markers';
 const FOX_HOVER_LAYER = 'fox-markers-hover';
 // Null-safe: features without the property count as no hint
 const IS_HINT: ExpressionSpecification = ['==', ['get', 'hint'], true];
-// Smaller when zoomed out; hint labels carry text, so they stop shrinking at a readable size
-const FOX_ICON_SIZE = zoomScaled(1, IS_HINT);
-const FOX_HOVER_ICON_SIZE = zoomScaled(1.1, IS_HINT);
+// Smaller when zoomed out, but every fox carries text (its area letter, a hint's label), so they stop shrinking at a
+// readable size
+const FOX_ICON_SIZE = LABEL_ICON_SIZE;
+const FOX_HOVER_ICON_SIZE = LABEL_HOVER_ICON_SIZE;
 function foxLayout(theme: MarkerTheme): SymbolLayerSpecification['layout'] {
   return {
     'icon-image': themedIconExpression(theme),

@@ -12,6 +12,10 @@ import {toast} from 'sonner';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import {MotionConfig} from 'motion/react';
 import {AppConfigSync} from '@/hooks/app-config.hook';
+import {syncShellAttribute} from '@/hooks/media.hook';
+
+// data-shell on <html> before the first paint: CSS follows the mobile shell on landscape phones too (shell-mobile:)
+syncShellAttribute();
 
 // Service worker registration. A new version waits for the user: an automatic reload mid-hunt
 // would throw away a half-entered hunt photo or hint answer.
