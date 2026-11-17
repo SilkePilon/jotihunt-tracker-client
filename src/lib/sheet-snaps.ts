@@ -56,6 +56,9 @@ export function phoneMapPadding({ sheet, card, mapHeight, sheetSide = 0, safeBot
 /** Landscape phones: the widest the sheet column gets (and never more than half the screen) */
 export const LANDSCAPE_SHEET_MAX_W = 400;
 
+/** CSS custom property on <html>: the sideways sheet column's right edge in px (left gap + width), 0px upright */
+export const SHEET_SIDE_VAR = '--sheet-side';
+
 /** Landscape phones: the sheet column's left edge (8px, or clear of the notch) and width, in px. */
 export function landscapeSheetBox(viewportWidth: number, safeLeft: number): { left: number; width: number } {
   return { left: Math.max(8, Math.round(safeLeft)), width: Math.round(Math.min(LANDSCAPE_SHEET_MAX_W, viewportWidth / 2)) };

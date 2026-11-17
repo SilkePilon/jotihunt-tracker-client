@@ -21,8 +21,10 @@ export function distanceMetres(a: LatLng, b: LatLng): number {
 /**
  * How old a tracker fix may be to count as "where I am now" (locate, own-position dot, distance from me). A phone that
  * walked on for minutes would otherwise send you to where you were; older falls through to the browser's position.
+ * Longer than the Android app's slowest heartbeat (120 s in Zuinig) plus the 30 s positions poll, so a live tracker never
+ * flickers between tracker and browser position in between two fixes.
  */
-export const OWN_POSITION_FRESH_MS = 60_000;
+export const OWN_POSITION_FRESH_MS = 150_000;
 
 /**
  * The own tracker's position, unless missing or older than `maxAgeMs` (default: the 5 min rule of the hunter markers,

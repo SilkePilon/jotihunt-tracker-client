@@ -51,6 +51,7 @@ import Ruler from "@/components/map/RulerControl.tsx";
 import {MAP_LOCALE_NL} from "@/lib/map-locale";
 import type {SymbolLayerSpecification} from '@maplibre/maplibre-gl-style-spec';
 import {DEFAULT_VIEW} from '@/lib/map-view';
+import {loadSavedView, saveView} from '@/lib/continuity';
 import {phoneMapPadding} from '@/lib/sheet-snaps';
 import {currentPhonePadding, setPaddingInPlace} from '@/lib/dock-camera';
 import {isMapPopupOpen} from '@/lib/open-popups';
@@ -71,6 +72,8 @@ import NightAreaDraw from './layers/trails/NightAreaDraw';
 import NightAreasLayer from './layers/trails/NightAreasLayer';
 import MapUnavailableCard from './map/MapUnavailableCard';
 import BrowserLocationDot from './map/BrowserLocationDot';
+import FollowMe from './map/FollowMe';
+import useFollowMeStore from '@/stores/follow-me.store';
 import {featureNear, openLayerFeature, type OpenFeatureOptions} from './layers/map-interactions';
 import {useMapAvailability} from './map/useMapAvailability';
 import KeyboardLocationPick from './map/KeyboardLocationPick';
@@ -175,8 +178,12 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
 
     // Make map fly available to other components
     const mapRef = useRef<MaplibreRef>(null);
+    // Another part of the app moving the camera ("show on map", a list row) ends "Mijn locatie" following, or the next
+    // own fix would pull the map straight back (MyLocationButton starts following after its own flight)
+    const stopFollowing = () => useFollowMeStore.getState().stop();
     useImperativeHandle(ref, () => ({
         flyTo: (options: FlyToOpts) => {
+            stopFollowing();
             if (mapRef.current) {
                 // Phones: fly with the padding of the snap the sheet is heading to (a caller lowering the sheet sets the
                 // snap first), so the point lands above the sheet and the padding effect has nothing left to ease
@@ -186,6 +193,7 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
         },
         fitBounds: (bounds, options) => {
             if (!mapRef.current) return false;
+            stopFollowing();
             mapRef.current.fitBounds(bounds, options);
             return true;
         },
@@ -331,6 +339,21 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
         };
     }, [mapStyle]);
 
+    // Session continuity: a reload within 2 h comes back to the last view (never on the HQ wall, which directs itself)
+    const [initialView] = useState(() => (wall ? DEFAULT_VIEW : (loadSavedView() ?? DEFAULT_VIEW)));
+    const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+    const rememberView = useCallback((event: {target: MaplibreMap}) => {
+        if (wall) return;
+        clearTimeout(saveTimer.current);
+        // Debounced: a fling or a flyTo chain ends in several moveends
+        saveTimer.current = setTimeout(() => {
+            const map = event.target;
+            const {lng, lat} = map.getCenter();
+            saveView({longitude: lng, latitude: lat, zoom: map.getZoom(), bearing: map.getBearing(), pitch: map.getPitch()});
+        }, 800);
+    }, [wall]);
+    useEffect(() => () => clearTimeout(saveTimer.current), []);
+
     // Whether a map popup (marker, hunter, ... card) was open when this tap started: that tap only closes it
     const popupOpenAtPress = useRef(false);
 
@@ -361,7 +384,8 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
             <Maplibre
                 ref={mapRef}
                 reuseMaps
-                initialViewState={DEFAULT_VIEW}
+                initialViewState={initialView}
+                onMoveEnd={wall ? undefined : rememberView}
                 style={{width: '100%', height: '100%'}}
                 attributionControl={false}
                 // Dutch labels for MapLibre's own control buttons (screen readers read their names)
@@ -428,6 +452,8 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
                 {!wall && <HintGuess/>}
                 {/* Phones: own position from the browser after a "Mijn locatie" tap (the desktop has MapLibre's geolocate) */}
                 {isMobile && !wall && <BrowserLocationDot/>}
+                {/* Phones: "Mijn locatie" keeps the map on the own position until the map is moved by hand */}
+                {isMobile && !wall && <FollowMe/>}
                 {isAdmin && <NightAreasLayer/>}
                 <AnimatePresence>{drawing && <NightAreaDraw key="draw"/>}</AnimatePresence>
                 <LayerStack/>

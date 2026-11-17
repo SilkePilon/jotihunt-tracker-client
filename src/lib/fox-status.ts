@@ -157,3 +157,18 @@ export function legendInitials(foxes: Pick<SidebarFox, 'name' | 'group'>[]): Leg
 export function legendInitialsChars(items: LegendInitials[]): number {
   return items.reduce((sum, item, index) => sum + 1 + item.initials.length * 2 + FOX_GROUP_LABEL[item.group].length + (index > 0 ? 2 : 0), 0);
 }
+
+/** The fox whose hunt cooldown ends first ("B" + its remaining ms), for the phone peek; undefined when none runs. */
+export function soonestCooldown(foxes: Pick<SidebarFox, 'name' | 'group' | 'cooldownMs'>[]): { initial: string; ms: number } | undefined {
+  let soonest: { initial: string; ms: number } | undefined;
+  for (const fox of foxes) {
+    if (fox.group !== 'cooldown' || fox.cooldownMs <= 0) continue;
+    if (!soonest || fox.cooldownMs < soonest.ms) soonest = { initial: fox.name.charAt(0).toUpperCase(), ms: fox.cooldownMs };
+  }
+  return soonest;
+}
+
+/** Rough width in characters of the peek's cooldown entry ("⏱ B 12:34"): icon, initial, countdown and a gap before it. */
+export function cooldownLegendChars(countdown: string): number {
+  return 2 + 1 + 1 + countdown.length + 2;
+}

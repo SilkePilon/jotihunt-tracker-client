@@ -1,6 +1,6 @@
 import { type RefObject, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { Loader2Icon, LocateFixedIcon } from 'lucide-react';
+import { Loader2Icon, LocateFixedIcon, NavigationIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import type { MapRef } from '@/components/Map';
 import { useDevices } from '@/hooks/devices.hook';
@@ -11,26 +11,32 @@ import { POP, SWAP_TRANSITION } from '@/lib/motion';
 import { OWN_POSITION_FRESH_MS, ownDeviceId, ownTrackerPosition } from '@/lib/own-position';
 import { cn } from '@/lib/utils';
 import useBrowserLocationStore from '@/stores/browser-location.store';
+import useFollowMeStore from '@/stores/follow-me.store';
 import useHuntFocusStore from '@/stores/hunt-focus.store';
 import useSidebarStore from '@/stores/sidebar.store';
 
 
 /**
  * Phones: one 48px "Mijn locatie" map button, right above the sheet (it rides in the popup dock, so an open popup
- * pushes it up). Recentres on the own tracker when fresh, else on the browser's position, and pulses a ring there; a
- * browser position also leaves a small own-position dot that follows you (BrowserLocationDot).
- * Hidden while the sheet is full height.
+ * pushes it up). A tap centres on the own tracker when fresh, else on the browser's position, pulses a ring there and
+ * then follows you (FollowMe) until the map is moved by hand or the button is tapped again; a browser position also
+ * leaves a small own-position dot that follows you (BrowserLocationDot). Hidden while the sheet is full height.
  */
 export default function MyLocationButton({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
   const sheetSnap = useSidebarStore((state) => state.sheetSnap);
   const { status } = useTrackerStatus();
   const { positions, devices } = useDevices();
   const [busy, setBusy] = useState(false);
-  // On while the own-position dot follows the browser's location (like the desktop geolocate tile)
-  const following = useBrowserLocationStore((state) => state.active);
+  // On while the map follows the own position (like the desktop geolocate tile's tracking mode)
+  const following = useFollowMeStore((state) => state.following);
 
   async function locate() {
     if (busy) return;
+    // Second tap: stop following, the map stays where it is
+    if (following) {
+      useFollowMeStore.getState().stop();
+      return;
+    }
     setBusy(true);
     try {
       const tracker = ownTrackerPosition(positions, ownDeviceId(devices, status?.configured ? status.uniqueId : undefined), Date.now(), OWN_POSITION_FRESH_MS);
@@ -39,6 +45,8 @@ export default function MyLocationButton({ mapRef }: { mapRef: RefObject<MapRef 
       if (!tracker) useBrowserLocationStore.getState().start({ lat, lng }, accuracy);
       // Never zoom out when the hunter is already closer in; reduced motion turns the flight into a jump (no `essential`)
       mapRef.current?.flyTo({ center: [lng, lat], zoom: Math.max(LOCATE_ZOOM, mapRef.current.getZoom() ?? 0), duration: 1200 });
+      // After the flight call: any other camera move through the map ref ends following
+      useFollowMeStore.getState().start();
       useHuntFocusStore.getState().show({ lng, lat, color: MAP_LOCATION_COLOR });
     } catch (error) {
       toast.error('Locatie niet gevonden', { description: error instanceof Error ? error.message : undefined });
@@ -54,7 +62,7 @@ export default function MyLocationButton({ mapRef }: { mapRef: RefObject<MapRef 
           key="locate"
           type="button"
           aria-label="Mijn locatie"
-          title="Mijn locatie"
+          title={following ? 'Mijn locatie volgen stoppen' : 'Mijn locatie'}
           aria-busy={busy}
           aria-pressed={following}
           onClick={() => void locate()}
@@ -68,8 +76,9 @@ export default function MyLocationButton({ mapRef }: { mapRef: RefObject<MapRef 
           )}
         >
           <AnimatePresence mode="popLayout" initial={false}>
-            <motion.span key={busy ? 'busy' : 'idle'} className="grid" initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.6 }} transition={SWAP_TRANSITION}>
-              {busy ? <Loader2Icon className="animate-spin" /> : <LocateFixedIcon />}
+            <motion.span key={busy ? 'busy' : following ? 'follow' : 'idle'} className="grid" initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.6 }} transition={SWAP_TRANSITION}>
+              {/* Following: the filled arrow of a navigation app */}
+              {busy ? <Loader2Icon className="animate-spin" /> : following ? <NavigationIcon className="fill-current" /> : <LocateFixedIcon />}
             </motion.span>
           </AnimatePresence>
         </motion.button>

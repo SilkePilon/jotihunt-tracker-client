@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import type { Area } from '@/types/Area';
 import type { SyncedHunt } from '@/types/HuntSync';
-import { formatOvDuration, FOX_GROUP_ORDER, foxGroup, groupCounts, huntCooldownMs, HUNT_COOLDOWN_MS, lastCooldownEnd, lastHuntTimeFor, legendGroups, legendInitials, legendInitialsChars, sameSidebarFox, sidebarFoxes, statusPillClass } from './fox-status';
+import { formatOvDuration, FOX_GROUP_ORDER, foxGroup, groupCounts, huntCooldownMs, HUNT_COOLDOWN_MS, lastCooldownEnd, lastHuntTimeFor, legendGroups, legendInitials, legendInitialsChars, cooldownLegendChars, soonestCooldown, sameSidebarFox, sidebarFoxes, statusPillClass } from './fox-status';
 
 function hunt(area: string, statusText: string, huntTime: string | null): SyncedHunt {
   return { _id: area + huntTime, siteKey: area + huntTime, area, huntTime, status: 'approved', statusText, points: 1, location: null, firstSeenAt: '2026-10-17T10:00:00Z', statusChangedAt: null };
@@ -180,5 +180,27 @@ describe('legendInitials', () => {
     // "▪A D Actief" 1+4+6, "  ▪B Onderweg" 2+1+2+8, "  ▪O OV" 2+1+2+2, "  ▪E Inactief" 2+1+2+8
     expect(legendInitialsChars(items)).toBe(11 + 13 + 7 + 13);
     expect(legendInitials([])).toEqual([]);
+  });
+});
+
+describe('soonestCooldown', () => {
+  test('the cooldown fox with the least time left', () => {
+    const foxes = [
+      { name: 'Alpha', group: 'green' as const, cooldownMs: 0 },
+      { name: 'Delta', group: 'cooldown' as const, cooldownMs: 40 * 60_000 },
+      { name: 'bravo', group: 'cooldown' as const, cooldownMs: 12 * 60_000 + 34_000 },
+    ];
+    expect(soonestCooldown(foxes)).toEqual({ initial: 'B', ms: 12 * 60_000 + 34_000 });
+  });
+
+  test('none without a running cooldown (an OV fox in cooldown is not in the cooldown group)', () => {
+    expect(soonestCooldown([])).toBeUndefined();
+    expect(soonestCooldown([{ name: 'Oscar', group: 'ov' as const, cooldownMs: 5 * 60_000 }])).toBeUndefined();
+    expect(soonestCooldown([{ name: 'Echo', group: 'cooldown' as const, cooldownMs: 0 }])).toBeUndefined();
+  });
+
+  test('its legend width grows with the countdown', () => {
+    expect(cooldownLegendChars('12:34')).toBe(11);
+    expect(cooldownLegendChars('1:02:03')).toBe(13);
   });
 });

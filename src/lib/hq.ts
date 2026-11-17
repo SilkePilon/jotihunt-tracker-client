@@ -6,3 +6,8 @@ export function openAssignment(articles: Article[] | undefined, now: number): Ar
     .filter((article) => article.type === 'assignment' && !!article.endTime && new Date(article.endTime).getTime() > now)
     .reduce<Article | undefined>((latest, article) => (!latest || new Date(article.publishAt) > new Date(latest.publishAt) ? article : latest), undefined);
 }
+
+/** Whether this page is the HQ wall screen (route /hq), which runs unattended on a beamer. */
+export function isHqWall(pathname: string): boolean {
+  return /^\/hq\/?$/.test(pathname);
+}

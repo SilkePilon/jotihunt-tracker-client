@@ -1,6 +1,13 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { AnimatePresence, motion, usePresence } from 'motion/react';
+import { LocateFixedIcon } from 'lucide-react';
 import { Layer, Marker, Source, type FillLayerSpecification } from 'react-map-gl/maplibre';
+import ArchiveReadOnlyNote from '@/components/ArchiveReadOnlyNote';
+import MapPopup from './MapPopup';
+import MarkerRegistration from './MarkerRegistration';
+import { PopupActions } from './popup/PopupActions';
+import PopupHeader, { PopupIcon } from './popup/PopupHeader';
+import { usePopupSelection } from '../layers/map-interactions';
 import { useDevices } from '@/hooks/devices.hook';
 import { AGE_CLOCK_TICK_MS, useNow } from '@/hooks/now.hook';
 import { useTrackerStatus } from '@/hooks/tracker.hook';
@@ -13,28 +20,76 @@ import useBrowserLocationStore from '@/stores/browser-location.store';
 /** Opacity of a dot whose last fix is from before the page was hidden, until a fresh one comes in */
 const STALE_DOT_OPACITY = 0.5;
 
-/** The dot itself: pops in, and pops out before its Marker goes (a Marker has no exit phase of its own). */
-function Dot({ lng, lat, fresh }: { lng: number; lat: number; fresh: boolean }) {
+/**
+ * The dot itself: pops in, and pops out before its Marker goes (a Marker has no exit phase of its own). A tap on it
+ * (44px target around the 14px dot) opens the Hunt/Spot popup for where you stand.
+ */
+function Dot({ lng, lat, fresh, onOpen }: { lng: number; lat: number; fresh: boolean; onOpen: () => void }) {
   const [isPresent, safeToRemove] = usePresence();
   return (
-    <Marker longitude={lng} latitude={lat} anchor="center" style={{ pointerEvents: 'none' }}>
-      <motion.span
-        aria-hidden
-        className="relative block size-3.5 rounded-full shadow-[0_0_0_2px_#fff,0_1px_4px_rgb(0_0_0/0.3)]"
-        style={{ backgroundColor: MAP_LOCATION_COLOR }}
-        initial={POP.initial}
-        animate={isPresent ? { ...POP.animate, opacity: fresh ? 1 : STALE_DOT_OPACITY } : POP.exit}
-        transition={isPresent ? POP.transition : POP.exit.transition}
-        onAnimationComplete={() => {
-          if (!isPresent) safeToRemove?.();
-        }}
+    <Marker
+      longitude={lng}
+      latitude={lat}
+      anchor="center"
+      onClick={(event) => {
+        // The map's own click would otherwise open the "Gekozen locatie" card (or close this popup) as well
+        event.originalEvent.stopPropagation();
+        onOpen();
+      }}
+    >
+      <button
+        type="button"
+        aria-label="Mijn locatie: Hunt of Spot hier"
+        className="grid size-11 cursor-pointer place-items-center rounded-full outline-none focus-visible:ring-[3px] focus-visible:ring-ring"
       >
-        {/* Pulse ring while fixes come in; none under reduced motion */}
-        {fresh && <span className="absolute -inset-0.5 -z-10 rounded-full motion-safe:animate-[jh-marker-pulse_1.6s_ease-out_infinite] motion-reduce:hidden" style={{ backgroundColor: MAP_LOCATION_COLOR }} />}
-      </motion.span>
+        <motion.span
+          aria-hidden
+          className="relative block size-3.5 rounded-full shadow-[0_0_0_2px_#fff,0_1px_4px_rgb(0_0_0/0.3)]"
+          style={{ backgroundColor: MAP_LOCATION_COLOR }}
+          initial={POP.initial}
+          animate={isPresent ? { ...POP.animate, opacity: fresh ? 1 : STALE_DOT_OPACITY } : POP.exit}
+          transition={isPresent ? POP.transition : POP.exit.transition}
+          onAnimationComplete={() => {
+            if (!isPresent) safeToRemove?.();
+          }}
+        >
+          {/* Pulse ring while fixes come in; none under reduced motion */}
+          {fresh && (
+            <span
+              className="absolute -inset-0.5 -z-10 rounded-full motion-safe:animate-[jh-marker-pulse_1.6s_ease-out_infinite] motion-reduce:hidden"
+              style={{ backgroundColor: MAP_LOCATION_COLOR }}
+            />
+          )}
+        </motion.span>
+      </button>
     </Marker>
   );
 }
+
+/** Where you stand (taken when the dot was tapped, so the point doesn't drift while registering): Hunt or Spot here. */
+function OwnLocationPopup({ lng, lat, accuracy, onClose }: { lng: number; lat: number; accuracy: number | null; onClose: () => void }) {
+  return (
+    <MapPopup longitude={lng} latitude={lat} onClose={onClose} offset={OWN_POPUP_OFFSET}>
+      <PopupHeader
+        icon={
+          <PopupIcon background={MAP_LOCATION_COLOR} color="#fff">
+            <LocateFixedIcon />
+          </PopupIcon>
+        }
+        title="Mijn locatie"
+        subtitle={accuracy !== null && Number.isFinite(accuracy) ? `Tot op ± ${Math.round(accuracy)} m nauwkeurig` : undefined}
+      />
+      <PopupActions>
+        <MarkerRegistration lat={lat} lng={lng} />
+      </PopupActions>
+      {/* Hunt/Spot are greyed out in an archive edition: say why */}
+      <ArchiveReadOnlyNote className="pt-2 text-(--map-muted)" />
+    </MapPopup>
+  );
+}
+
+// Just above the dot
+const OWN_POPUP_OFFSET = { bottom: [0, -12] as [number, number] };
 
 const ACCURACY_SOURCE = 'browser-location-accuracy';
 // Like the hunters' accuracy circles (Devices.tsx), in the own-position colour; fades in and out (paint transition)
@@ -72,6 +127,7 @@ export default function BrowserLocationDot() {
   const trackerLive = !!ownTrackerPosition(positions, ownDeviceId(devices, status?.configured ? status.uniqueId : undefined), now, OWN_POSITION_FRESH_MS);
   const watching = active && !trackerLive;
   const visible = usePageVisible();
+  const { active: popup, open: openPopup, close: closePopup } = usePopupSelection<{ lng: number; lat: number; accuracy: number | null }>();
 
   useEffect(() => {
     if (active && trackerLive) stop();
@@ -109,7 +165,8 @@ export default function BrowserLocationDot() {
           <Layer id="browser-location-accuracy-fill" type="fill" source={ACCURACY_SOURCE} paint={paint} />
         </Source>
       )}
-      <AnimatePresence>{watching && position && <Dot key="dot" lng={position.lng} lat={position.lat} fresh={fresh} />}</AnimatePresence>
+      <AnimatePresence>{watching && position && <Dot key="dot" lng={position.lng} lat={position.lat} fresh={fresh} onOpen={() => openPopup({ ...position, accuracy })} />}</AnimatePresence>
+      {popup && <OwnLocationPopup key={popup.opened} lng={popup.id.lng} lat={popup.id.lat} accuracy={popup.id.accuracy} onClose={closePopup} />}
     </>
   );
 }
