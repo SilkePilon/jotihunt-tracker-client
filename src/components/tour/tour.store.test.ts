@@ -72,6 +72,19 @@ describe('tour store', () => {
     expect(store().manual).toBe(false);
   });
 
+  test('resumeAuto turns auto-advance back on, unpaused', () => {
+    store().start({ mode: 'auto', stepCount: 4 });
+    store().togglePause();
+    store().takeOver();
+    store().resumeAuto();
+    expect(store()).toMatchObject({ manual: false, paused: false });
+  });
+
+  test('resumeAuto without a tour does nothing', () => {
+    store().resumeAuto();
+    expect(store().active).toBe(false);
+  });
+
   test('takeOver without a tour does nothing', () => {
     store().takeOver();
     expect(store().manual).toBe(false);

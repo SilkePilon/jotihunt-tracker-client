@@ -1,5 +1,7 @@
 import { forwardRef, useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { ChevronLeftIcon, ChevronRightIcon, PauseIcon, PlayIcon } from 'lucide-react';
+import { SWAP_TRANSITION } from '@/lib/motion';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
@@ -18,12 +20,17 @@ interface TourCardProps {
   stepCount: number;
   /** Auto-advance time; undefined = no timer ring progress (last step, or still loading) */
   durationMs?: number;
+  /** The step can auto-advance (not the last one or a panel step, and loaded); false disables the timer control */
+  timed: boolean;
+  /** The user took over: the timer control turns auto-advance back on ("Verder automatisch") instead of pausing */
+  manual: boolean;
   paused: boolean;
   /** Keep the card mounted (for measuring and transitions) but invisible, e.g. for an optional step about to be skipped */
   hidden?: boolean;
   onPrev: () => void;
   onNext: () => void;
   onTogglePause: () => void;
+  onResumeAuto: () => void;
   onSkip: () => void;
   /** Fired when the timer ring is full */
   onTimeUp: () => void;
@@ -31,7 +38,7 @@ interface TourCardProps {
 
 /** The floating tour card. The overlay positions it (via the ref); the ring around the pause button is the auto-advance timer. */
 const TourCard = forwardRef<HTMLDivElement, TourCardProps>(function TourCard(props, ref) {
-  const { title, titleId, bodyId, body, contentVisible, stepIndex, stepCount, durationMs, paused, hidden, onPrev, onNext, onTogglePause, onSkip, onTimeUp } = props;
+  const { title, titleId, bodyId, body, contentVisible, stepIndex, stepCount, durationMs, timed, manual, paused, hidden, onPrev, onNext, onTogglePause, onResumeAuto, onSkip, onTimeUp } = props;
   const [hovered, setHovered] = useState(false);
   // Focus on one of the card's buttons (any input): the overlay then leaves focus there on a new step, so the step's
   // text is read out through the live region below. When the card itself gets focus, the dialog reads it instead.
@@ -109,15 +116,29 @@ const TourCard = forwardRef<HTMLDivElement, TourCardProps>(function TourCard(pro
           Overslaan
         </Button>
         <TimerRing className="size-9" durationMs={durationMs} runKey={stepIndex} paused={paused || hovered || keyboardInside} onDone={onTimeUp}>
+          {/* Not a takeover (see TourOverlay): pauses / resumes the timer, or after a takeover turns auto-advance back on */}
           <Button
+            data-tour-timer
             variant="ghost"
             size="icon-sm"
             className="rounded-full"
-            aria-label={paused ? 'Verder' : 'Pauzeren'}
-            onClick={onTogglePause}
-            disabled={durationMs === undefined}
+            aria-label={manual ? 'Verder automatisch' : paused ? 'Verder' : 'Pauzeren'}
+            title={manual ? 'Verder automatisch' : undefined}
+            onClick={manual ? onResumeAuto : onTogglePause}
+            disabled={!timed}
           >
-            {paused ? <PlayIcon /> : <PauseIcon />}
+            <AnimatePresence mode="popLayout" initial={false}>
+              <motion.span
+                key={manual || paused ? 'play' : 'pause'}
+                className="inline-flex"
+                initial={{ opacity: 0, scale: 0.6 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.6 }}
+                transition={SWAP_TRANSITION}
+              >
+                {manual || paused ? <PlayIcon /> : <PauseIcon />}
+              </motion.span>
+            </AnimatePresence>
           </Button>
         </TimerRing>
         <Button variant="outline" size="icon" aria-label="Vorige" onClick={onPrev} disabled={stepIndex === 0}>

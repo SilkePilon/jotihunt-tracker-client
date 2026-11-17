@@ -21,6 +21,9 @@ import { useTargetRect } from './useTargetRect';
 const SPOTLIGHT_PADDING = 8;
 /** Keep in sync with the content fade duration in TourCard */
 const FADE_MS = 150;
+/** The card's pause/play control: using it is not a takeover (it pauses, or turns auto-advance back on) */
+const TIMER_CONTROL = '[data-tour-timer]';
+const onTimerControl = (target: EventTarget | null) => target instanceof Element && !!target.closest(TIMER_CONTROL);
 /** What Tab can land on in the card and the panel */
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
@@ -29,7 +32,7 @@ const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), selec
  * and floats the card next to it. Mounted once in Layout; renders nothing while the tour is inactive.
  */
 export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
-  const { active, stepIndex, direction, paused, manual, next, prev, togglePause, takeOver, skip, stop } = useTourStore();
+  const { active, stepIndex, direction, paused, manual, next, prev, togglePause, takeOver, resumeAuto, skip, stop } = useTourStore();
   const isMobile = useIsMobile();
   const platform = isMobile ? 'mobile' : 'desktop';
   const steps = stepsForPlatform(TOUR_STEPS, platform);
@@ -125,7 +128,7 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
     if (!active) return;
     function onKey(event: KeyboardEvent) {
       // A key on the tour (card, panel, or with focus nowhere) is the user taking over: auto-advance stops
-      if (ownsKey(event, document.body, [panelRef.current, cardRef.current])) takeOver();
+      if (ownsKey(event, document.body, [panelRef.current, cardRef.current]) && !onTimerControl(event.target)) takeOver();
       if (event.key === 'Tab' && !event.altKey && !event.ctrlKey && !event.metaKey) {
         const surfaces = [panelRef.current, cardRef.current];
         if (!ownsKey(event, document.body, surfaces)) return;
@@ -206,12 +209,24 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
   const isLast = stepIndex === steps.length - 1;
   const Panel = step.panel;
   const shownStep = (shownIndex !== null && steps[shownIndex]) || step;
+  // A step that auto-advances (when not manual): not the last one, not a panel the user works in, and on screen
+  const timed = ready && !isLast && !step.panel && shownIndex === stepIndex;
 
   return createPortal(
     // pointer-events-auto: Radix modals set pointer-events:none on <body> while open. A modal dialog (card + panel)
     // named by the card's title and body; Tab stays inside it (onKey above)
     // Any pointer on the tour (card, panel, the dimmed screen) is the user taking over: auto-advance stops for the rest
-    <div role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={bodyId} className="pointer-events-auto fixed inset-0 z-[60]" onPointerDownCapture={takeOver}>
+    // (except the pause/play control, which toggles pause or resumes auto-advance)
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titleId}
+      aria-describedby={bodyId}
+      className="pointer-events-auto fixed inset-0 z-[60]"
+      onPointerDownCapture={(event) => {
+        if (!onTimerControl(event.target)) takeOver();
+      }}
+    >
       {/* Click shield: the tour drives the UI, the user only uses the card */}
       <div className="absolute inset-0" />
       <div
@@ -240,12 +255,15 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
         contentVisible={shownIndex === stepIndex}
         stepIndex={stepIndex}
         stepCount={steps.length}
-        durationMs={!manual && ready && !isLast && !step.panel && shownIndex === stepIndex ? stepDuration(step) : undefined}
+        durationMs={!manual && timed ? stepDuration(step) : undefined}
+        timed={timed}
+        manual={manual}
         paused={paused}
         hidden={hideCard}
         onPrev={prev}
         onNext={next}
         onTogglePause={togglePause}
+        onResumeAuto={resumeAuto}
         onSkip={skip}
         onTimeUp={next}
       />
