@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { isSameMarker, sameDraft, lostResponseMessage, lostResponseOutcome, markerLostResponseMessage } from './hint-submit';
+import { hintPrimaryAction, holdsUnconfirmedHint, isSameMarker, sameDraft, lostResponseMessage, lostResponseOutcome, markerLostResponseMessage, type UnconfirmedHint } from './hint-submit';
 import { MarkerType } from '@/types/MarkerType';
 import type { Marker } from '@/types/Marker';
 
@@ -81,5 +81,36 @@ describe('sameDraft', () => {
   });
   test('any field changed means new input', () => {
     for (const key of ['area', 'time', 'x', 'y'] as const) expect(sameDraft({ ...draft, [key]: '' }, draft)).toBe(false);
+  });
+});
+
+describe('holdsUnconfirmedHint', () => {
+  const pending: UnconfirmedHint = { sent, values: { area: 'Alpha', time: '2026-10-17T12:00', x: '123456', y: '456789' }, outcome: 'unknown' };
+
+  test('a poll holding our own lost hint is the late success', () => {
+    expect(holdsUnconfirmedHint([fromServer({ area: 'Bravo' }), fromServer()], pending)).toBe(true);
+  });
+
+  test("someone else's hint for that hour (another spot) is not ours", () => {
+    expect(holdsUnconfirmedHint([fromServer({ location: { type: 'Point', coordinates: [5.3, 52.1] } })], pending)).toBe(false);
+  });
+
+  test('nothing pending or no list: false', () => {
+    expect(holdsUnconfirmedHint([fromServer()], null)).toBe(false);
+    expect(holdsUnconfirmedHint(undefined, pending)).toBe(false);
+  });
+});
+
+describe('hintPrimaryAction', () => {
+  const values = { area: 'Alpha', time: '2026-10-17T12:00', x: '123456', y: '456789' };
+
+  test('unknown outcome with the same values: Opnieuw controleren', () => {
+    expect(hintPrimaryAction({ sent, values, outcome: 'unknown' }, { ...values })).toBe('recheck');
+  });
+
+  test('absent outcome, nothing pending, or a different hint typed: Registreren', () => {
+    expect(hintPrimaryAction({ sent, values, outcome: 'absent' }, values)).toBe('register');
+    expect(hintPrimaryAction(null, values)).toBe('register');
+    expect(hintPrimaryAction({ sent, values, outcome: 'unknown' }, { ...values, x: '123457' })).toBe('register');
   });
 });
