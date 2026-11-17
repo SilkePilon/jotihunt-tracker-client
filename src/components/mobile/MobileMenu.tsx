@@ -6,9 +6,8 @@ import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import type { User } from '@/types/User';
 import SidebarHeader from '@/components/sidebar/SidebarHeader';
 import { FoxesSummary } from '@/components/sidebar/foxes/FoxesCard';
+import HintsSummary from '@/components/sidebar/HintsSummary';
 import { useAppConfig } from '@/hooks/app-config.hook';
-import { useHintBoard } from '@/hooks/hints.hook';
-import { hintProgress } from '@/lib/hints';
 import { useScore } from '@/hooks/score.hook';
 import { scoreSummary } from '@/lib/score';
 import { usePredictions, usePredictionSetting } from '@/hooks/predictions.hook';
@@ -87,8 +86,6 @@ export default function MobileMenu({ onSearch }: { onSearch: () => void }) {
   const push = useMobileNavStore((s) => s.push);
   const { homeTeamApiId } = useAppConfig();
   const user = useAuthUser<User>();
-  const { board } = useHintBoard();
-  const progress = board ? hintProgress(board) : undefined;
   const { predictions } = usePredictions();
   const { enabled: predictionEnabled } = usePredictionSetting();
   const { status } = useTrackerStatus();
@@ -113,7 +110,7 @@ export default function MobileMenu({ onSearch }: { onSearch: () => void }) {
     { key: 'hunts', icon: <CrosshairIcon className={icon} />, title: 'Hunts', meta: huntSyncSummary(huntSync), onSelect: page('hunts') },
     { key: 'telegram', icon: <MessageSquareIcon className={icon} />, title: 'Jotihunt-berichten', meta: telegramHeaderSummary(messages, link)?.text, onSelect: page('telegram') },
     ...(predictionEnabled !== false ? [{ key: 'predictions', icon: <MapPinIcon className={icon} />, title: 'Voorspelling', meta: predictionSummary(predictions), onSelect: page('predictions') }] : []),
-    { key: 'hints', icon: <Grid3x3Icon className={icon} />, title: 'Hints', meta: progress ? `${progress.solved}/${progress.total} opgelost` : undefined, onSelect: page('hints') },
+    { key: 'hints', icon: <Grid3x3Icon className={icon} />, title: 'Hints', meta: <HintsSummary />, onSelect: page('hints') },
     ...(score?.configured ? [{ key: 'points', icon: <TrophyIcon className={icon} />, title: 'Punten', meta: scoreSummary(score), onSelect: page('points') }] : []),
     ...(homeTeamApiId !== null ? [{ key: 'counterHunt', icon: <CounterHuntIcon className={icon} />, title: 'Tegenhunt',
         // A running tegenhunt reads red (destructive-text, the app's red text: >= 5.3:1 on the row); the rest stays muted
