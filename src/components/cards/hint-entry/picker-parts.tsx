@@ -24,8 +24,8 @@ interface PickerTriggerProps extends ComponentProps<'button'> {
 }
 
 /**
- * Card-coloured trigger on the tonal block; the chevron turns and it turns soft orange while its popover is open. A 1px
- * no outline while idle (the card fill sets it apart); on phones a 44px touch area (the block is `isolate`).
+ * Card-coloured trigger on the tonal block; the chevron turns and it turns soft orange while its popover is open. No
+ * outline while idle (the card fill sets it apart); on phones a 44px touch area (the block is `isolate`).
  */
 export function PickerTrigger({ lead, placeholder, label, invalid, className, ...props }: PickerTriggerProps) {
   return (

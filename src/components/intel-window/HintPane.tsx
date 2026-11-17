@@ -400,7 +400,7 @@ function AreaBody({ cell, label, onSave, onClear, mapRef }: { cell: HintCell; la
               aria-label={`Antwoord ${label}`}
               aria-describedby={describedBy}
               aria-invalid={invalid || undefined}
-              className="h-8 w-44 min-w-0 rounded-md bg-beheer-window px-2.5 font-mono text-base outline-none desk:text-body placeholder:text-muted-foreground read-only:opacity-60 focus:ring-2 focus:ring-ring"
+              className="h-8 w-44 min-w-0 rounded-md bg-beheer-row-high px-2.5 font-mono text-base outline-none desk:text-body placeholder:text-muted-foreground read-only:opacity-60 focus:ring-2 focus:ring-ring"
             />
             {/* An answer with unknown digits can't be saved yet: aria-disabled with the reason, so it stays findable */}
             <Pill
