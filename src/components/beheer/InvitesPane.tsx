@@ -219,7 +219,7 @@ export default function InvitesPane() {
           <div className="flex flex-wrap items-center gap-2">
             <Picker label="Geldig" value={expiry} options={EXPIRY_SEGMENTS} onChange={(value) => setExpiry(value as InviteExpiry)} disabled={busy} />
             <Picker label="Aantal" value={usesToValue(maxUses)} options={USES_SEGMENTS} onChange={(value) => setMaxUses(valueToUses(value))} disabled={busy} />
-            <Pill className="ml-auto" variant="primary" size="md" morphKey={busy ? 'busy' : 'idle'} disabled={busy} onClick={() => void submitCreate()}>
+            <Pill className="ml-auto" variant="primary" size="md" morphKey={busy ? 'busy' : 'idle'} busy={busy} onClick={() => void submitCreate()}>
               {busy ? <Loader2Icon className="animate-spin" /> : <PlusIcon />}
               Invite maken
             </Pill>

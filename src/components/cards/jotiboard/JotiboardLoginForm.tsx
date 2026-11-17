@@ -81,7 +81,7 @@ export default function JotiboardLoginForm({ fixedUsername, submitLabel, onSubmi
           </InlineError>
         )}
       </Reveal>
-      <Button type="submit" className={cn('h-9 w-full rounded-lg font-semibold', JOTIBOARD_BUTTON)} disabled={!user.trim() || !password || busy} aria-busy={busy}>
+      <Button type="submit" className={cn('h-9 w-full rounded-lg font-semibold', JOTIBOARD_BUTTON)} disabled={!user.trim() || !password} aria-disabled={busy || undefined} aria-busy={busy || undefined}>
         <BusyIcon busy={busy} />
         {submitLabel}
       </Button>

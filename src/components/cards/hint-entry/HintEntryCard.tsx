@@ -189,6 +189,8 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
                 duration: 2000,
                 zoom: 12,
             });
+            // The button stays focused while it registers; afterwards the next hint starts at the area
+            document.getElementById(`${fieldId}-area`)?.focus();
         } else if (isNetworkError(error)) {
             // The typed hint stays in the form (and the draft): one tap on Registreren once there is a connection
             setSubmitError('Geen verbinding: de hint is niet geregistreerd. Je invoer blijft staan, probeer het opnieuw zodra je verbinding hebt.');
@@ -226,7 +228,11 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
     );
 
     return (
-        <form onSubmit={(e) => form.handleSubmit(onSubmit)(e)} className="flex flex-col gap-3">
+        <form onSubmit={(e) => {
+            // Registreren is aria-disabled (not disabled) while busy, so Enter can still submit: ignore it
+            if (submitting) return e.preventDefault();
+            void form.handleSubmit(onSubmit)(e);
+        }} className="flex flex-col gap-3">
             {/* isolate: the pickers' 44px touch areas (COARSE_HIT_AREA) stay above the block's background */}
             <div className="isolate flex flex-col gap-1 rounded-[16px] bg-beheer-row p-2.5">
                 <div className="mb-1 flex gap-1">
@@ -267,8 +273,8 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
                     </button>
                 </div>
             </div>
-            <Button id={submitId} type="submit" className={`${SOFT_PRIMARY_BUTTON} h-11 text-[15px]`} disabled={!canSubmit || submitting || readOnly}
-                    aria-busy={submitting}>
+            <Button id={submitId} type="submit" className={`${SOFT_PRIMARY_BUTTON} h-11 text-[15px]`} disabled={!canSubmit || readOnly}
+                    aria-disabled={submitting || undefined} aria-busy={submitting || undefined}>
                 <AnimatePresence mode="popLayout" initial={false}>
                     <motion.span key={submitting ? 'busy' : 'idle'} className="inline-flex items-center gap-2" {...SWAP}>
                         {submitting ? <Loader2Icon className="animate-spin"/> : <Pin/>}

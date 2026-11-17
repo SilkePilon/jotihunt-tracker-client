@@ -37,8 +37,10 @@ function Header({ title, onCancel, disabled, cancelling }: { title: string; onCa
         size="icon"
         className="relative size-6 text-muted-foreground after:absolute after:-inset-2.5"
         aria-label="Koppelen annuleren"
-        aria-busy={cancelling}
-        disabled={disabled || cancelling}
+        // The running ✕ keeps the focus (aria-disabled); a second tap is refused by usePending
+        aria-disabled={cancelling || undefined}
+        aria-busy={cancelling || undefined}
+        disabled={disabled && !cancelling}
         onClick={onCancel}
       >
         <BusyIcon busy={!!cancelling} icon={<XIcon />} />
@@ -121,7 +123,14 @@ function PasswordStep({ hint, onSubmit, onCancel }: { hint?: string; onSubmit: T
         onChange={(event) => setPassword(event.target.value)}
       />
       <Reveal gap={8}>{error && <InlineError id={errorId}>{error}</InlineError>}</Reveal>
-      <Button type="submit" className={TELEGRAM_BUTTON} disabled={!password || !!pending} aria-busy={pending === 'submit'}>
+      <Button
+        type="submit"
+        className={TELEGRAM_BUTTON}
+        // The running button stays focusable (aria-disabled); usePending refuses a second submit
+        disabled={!password || (!!pending && pending !== 'submit')}
+        aria-disabled={pending === 'submit' || undefined}
+        aria-busy={pending === 'submit' || undefined}
+      >
         <BusyIcon busy={pending === 'submit'} />
         Koppelen
       </Button>

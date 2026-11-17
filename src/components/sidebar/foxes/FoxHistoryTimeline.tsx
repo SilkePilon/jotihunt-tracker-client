@@ -1,7 +1,7 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type FocusEvent, type MouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type FocusEvent, type KeyboardEvent, type MouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { AnimatePresence, motion, useReducedMotion, type Transition } from 'motion/react';
 import { CheckIcon, CircleXIcon, CrosshairIcon, EyeIcon, FlagIcon, LightbulbIcon, type LucideIcon } from 'lucide-react';
-import { axisTicks, HISTORY_WINDOW_MIN, LANES, nearestBlock, type HistoryBlock, type HistoryModel, type LaneKey } from '@/lib/fox-history';
+import { axisTicks, blockKeyTarget, defaultTabStop, HISTORY_WINDOW_MIN, isBlockKey, LANES, nearestBlock, type HistoryBlock, type HistoryModel, type LaneKey } from '@/lib/fox-history';
 import { COARSE_HIT_AREA } from '@/lib/hit-area';
 import { EASE_OUT } from '@/lib/motion';
 import { cn } from '@/lib/utils';
@@ -100,6 +100,8 @@ export default function FoxHistoryTimeline({ model, playKey, play = true }: { mo
   const lastPointer = useRef('mouse');
   const [active, setActive] = useState<ActiveCard | null>(null);
   const [focusLane, setFocusLane] = useState<LaneKey | null>(null);
+  // Roving tabindex: the blocks are one Tab stop (the last one focused or tapped), arrow keys move between them
+  const [tabStop, setTabStop] = useState<string | null>(null);
   const leaveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // A different fox: start over (adjusting state during render, not in an effect)
@@ -109,6 +111,7 @@ export default function FoxHistoryTimeline({ model, playKey, play = true }: { mo
     setPlayed(0);
     setActive(null);
     setFocusLane(null);
+    setTabStop(null);
   }
 
   useLayoutEffect(() => {
@@ -193,6 +196,8 @@ export default function FoxHistoryTimeline({ model, playKey, play = true }: { mo
       const block = id ? model.blocks.find((candidate) => candidate.id === id) : undefined;
       if (block) {
         setActive((current) => (current?.block.id === block.id ? null : { block, touch: true }));
+        // Keyboard use after the tap continues from this block
+        setTabStop(block.id);
         return;
       }
       setActive(null);
@@ -223,8 +228,20 @@ export default function FoxHistoryTimeline({ model, playKey, play = true }: { mo
   };
   // Keyboard focus shows the card too (not the focus a tap or click gives the button)
   const onBlockFocus = (block: HistoryBlock) => (event: FocusEvent<HTMLButtonElement>) => {
+    setTabStop(block.id);
     if (event.currentTarget.matches(':focus-visible')) setActive({ block, touch: false });
   };
+  const onBlockKeyDown = (block: HistoryBlock) => (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (!isBlockKey(event.key)) return;
+    event.preventDefault();
+    const next = blockKeyTarget(model.blocks, block.id, event.key);
+    if (!next) return;
+    setTabStop(next);
+    // Focusing it shows its card (onBlockFocus)
+    plotRef.current?.querySelector<HTMLButtonElement>(`[data-block-id="${CSS.escape(next)}"]`)?.focus();
+  };
+  // The picked block can drop out of the window: then the default (normally the current status) is the stop
+  const stop = tabStop !== null && model.blocks.some((block) => block.id === tabStop) ? tabStop : defaultTabStop(model.blocks);
 
   // Card under the active block, kept inside the plot
   const activeBlock = active ? model.blocks.find((block) => block.id === active.block.id) : undefined;
@@ -291,7 +308,10 @@ export default function FoxHistoryTimeline({ model, playKey, play = true }: { mo
                       key={block.id}
                       type="button"
                       data-fox-history-block=""
+                      data-block-id={block.id}
                       data-kind={block.kind}
+                      tabIndex={block.id === stop ? 0 : -1}
+                      onKeyDown={onBlockKeyDown(block)}
                       aria-label={`${block.card.title}, ${block.card.meta}${block.card.note ? `, ${block.card.note}` : ''}`}
                       onPointerDown={(event) => (lastPointer.current = event.pointerType)}
                       onPointerEnter={onBlockEnter(block)}

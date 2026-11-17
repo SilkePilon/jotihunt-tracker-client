@@ -67,9 +67,10 @@ function CommandInput({
   ...props
 }: React.ComponentProps<typeof CommandPrimitive.Input>) {
   return (
+    // Inset ring: the Command root clips overflow, so an outer ring would be cut off at its edges
     <div
       data-slot="command-input-wrapper"
-      className="mb-2 flex h-10 shrink-0 items-center gap-2 rounded-[14px] bg-beheer-row-high px-3"
+      className="mb-2 flex h-10 shrink-0 items-center gap-2 rounded-[14px] bg-beheer-row-high px-3 transition-[box-shadow] duration-150 focus-within:ring-2 focus-within:ring-ring focus-within:ring-inset"
     >
       <SearchIcon className="size-4 shrink-0 opacity-50" />
       <CommandPrimitive.Input
@@ -153,6 +154,8 @@ function CommandItem({
         MENU_ROW_BASE,
         // cmdk sets data-disabled="false" on enabled items too, so match only "true"
         "data-[selected=true]:bg-beheer-row-high data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50",
+        // Focus stays in the search field: while that is keyboard-focused, the arrow-key row also gets the focus ring
+        "[[cmdk-root]:has(input:focus-visible)_&]:data-[selected=true]:ring-2 [[cmdk-root]:has(input:focus-visible)_&]:data-[selected=true]:ring-ring [[cmdk-root]:has(input:focus-visible)_&]:data-[selected=true]:ring-inset",
         className
       )}
       {...props}

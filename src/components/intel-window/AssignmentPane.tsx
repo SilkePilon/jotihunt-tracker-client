@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { BeheerCard, BeheerRow, FadeSwap, BeheerRows, RowFrame } from '@/components/beheer/BeheerLayout';
 import { Pill } from '@/components/beheer/controls/Pill';
@@ -27,6 +27,7 @@ export default function AssignmentPane({ item }: { item: IntelItem }) {
   const { members, setStatus, setOwner, addNote } = useAssignments();
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
+  const noteInput = useRef<HTMLInputElement>(null);
   // An archive edition is read-only: status, owner and notes can't change
   const { readOnly } = useEdition();
   const status = item.assignment?.status ?? 'open';
@@ -45,7 +46,10 @@ export default function AssignmentPane({ item }: { item: IntelItem }) {
     setSaving(true);
     try {
       await addNote(item.id, text);
+      // Toevoegen goes disabled with the field emptied: its focus moves to the field, ready for the next note
+      const fromButton = document.activeElement instanceof HTMLElement && document.activeElement.dataset.noteAdd !== undefined;
       setNote('');
+      if (fromButton) noteInput.current?.focus();
     } catch (error) {
       toast.error(apiErrorMessage(error, 'Notitie opslaan mislukt'));
     } finally {
@@ -105,6 +109,7 @@ export default function AssignmentPane({ item }: { item: IntelItem }) {
               <RowFrame key="new">
                 <div className="flex items-center gap-2 px-3 py-2">
                   <input
+                    ref={noteInput}
                     aria-label="Notitie toevoegen"
                     value={note}
                     onChange={(event) => setNote(event.target.value)}
@@ -124,7 +129,7 @@ export default function AssignmentPane({ item }: { item: IntelItem }) {
                     data-1p-ignore
                     className="h-8 min-w-0 flex-1 rounded-[10px] bg-beheer-window px-2.5 text-base ring-1 ring-input outline-none md:text-[13px] placeholder:text-muted-foreground read-only:opacity-60 focus:ring-2 focus:ring-ring"
                   />
-                  <Pill variant="primary" disabled={!note.trim() || saving || readOnly} onClick={() => void submitNote()}>
+                  <Pill variant="primary" disabled={!note.trim() || readOnly} busy={saving} data-note-add onClick={() => void submitNote()}>
                     Toevoegen
                   </Pill>
                 </div>

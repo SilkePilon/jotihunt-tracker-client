@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import type { FileUIPart } from 'ai';
 import { BrainIcon, GlobeIcon, Loader2Icon, PaperclipIcon, XIcon } from 'lucide-react';
@@ -40,6 +40,7 @@ export default function ChatInput({ itemId, kind, busy, disabled, onSend, onStop
   const [dragging, setDragging] = useState(false);
   const [modes, setMode] = useChatModes();
   const fileInput = useRef<HTMLInputElement>(null);
+  const textareaId = useId();
   // A newer pick (or ✕) makes a resize that is still running irrelevant
   const attachId = useRef(0);
   const ready = !busy && !disabled && value.trim() !== '' && image?.status !== 'loading';
@@ -130,7 +131,11 @@ export default function ChatInput({ itemId, kind, busy, disabled, onSend, onStop
                 <button
                   type="button"
                   aria-label="Afbeelding weghalen"
-                  onClick={clearImage}
+                  onClick={() => {
+                    clearImage();
+                    // The button goes with the image: the focus moves to the question instead of dropping out
+                    document.getElementById(textareaId)?.focus();
+                  }}
                   className="absolute top-1 right-1 grid size-5 place-items-center rounded-full bg-black/60 text-white outline-none after:absolute after:-inset-3 focus-visible:ring-2 focus-visible:ring-white [&_svg]:size-3"
                 >
                   <XIcon />
@@ -141,6 +146,7 @@ export default function ChatInput({ itemId, kind, busy, disabled, onSend, onStop
         )}
       </AnimatePresence>
       <PromptInputTextarea
+        id={textareaId}
         placeholder={PLACEHOLDER[kind]}
         aria-label="Vraag aan de AI"
         maxLength={4000}

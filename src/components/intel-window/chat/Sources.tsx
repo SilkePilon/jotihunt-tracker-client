@@ -66,7 +66,7 @@ export default function Sources({ sources }: { sources: ChatSource[] }) {
   );
 }
 
-const ROW = 'flex w-full items-center gap-2.5 px-3 py-2 text-left text-[12.5px] font-semibold outline-none transition-colors hover:bg-beheer-row-high focus-visible:bg-beheer-row-high';
+const ROW = 'flex w-full items-center gap-2.5 px-3 py-2 text-left text-[12.5px] font-semibold outline-none transition-colors hover:bg-beheer-row-high focus-visible:bg-beheer-row-high focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset';
 
 /** One site; rows are split by the card colour (as the Account dialog's rows) */
 function SiteRow({ group }: { group: SourceGroup }) {

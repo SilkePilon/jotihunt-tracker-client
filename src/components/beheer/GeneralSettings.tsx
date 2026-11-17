@@ -161,7 +161,7 @@ function SaveBar({ show, saving, disabled, onReset, onSave }: { show: boolean; s
               <Pill variant="ghost" disabled={saving} onClick={onReset}>
                 Terugzetten
               </Pill>
-              <Pill variant="primary" morphKey={saving ? 'busy' : 'idle'} disabled={disabled || saving} onClick={onSave}>
+              <Pill variant="primary" morphKey={saving ? 'busy' : 'idle'} disabled={disabled} busy={saving} onClick={onSave}>
                 {saving && <Loader2Icon className="animate-spin" />}
                 Opslaan
               </Pill>
@@ -256,6 +256,7 @@ export default function GeneralSettings() {
   const groups = traccar.groups ?? [];
 
   async function save() {
+    if (saving) return;
     // The fields stay editable while saving: only the submitted values count as saved, typing after the tap stays an edit
     const submitted = edited;
     setSaving(true);
@@ -278,6 +279,7 @@ export default function GeneralSettings() {
   }
 
   async function testLogin() {
+    if (login === 'busy') return;
     setLogin('busy');
     const result = await testJotihuntLogin(authHeader, typedLogin);
     setLogin(result.ok ? 'ok' : 'fail');
@@ -346,7 +348,7 @@ export default function GeneralSettings() {
                 </AnimatePresence>
               </span>
               <Input id={`${id}-logo`} value={draft.logoUrl} onChange={(event) => set('logoUrl', event.target.value)} placeholder="/logo.svg" className={cn(FIELD, 'flex-1')} spellCheck={false} />
-              <Pill variant="secondary" size="md" morphKey={uploading ? 'busy' : 'idle'} disabled={uploading} onClick={() => fileInput.current?.click()}>
+              <Pill variant="secondary" size="md" morphKey={uploading ? 'busy' : 'idle'} busy={uploading} onClick={() => fileInput.current?.click()}>
                 {uploading && <Loader2Icon className="animate-spin" />}
                 Uploaden
               </Pill>
@@ -452,7 +454,9 @@ export default function GeneralSettings() {
         <div className="mx-1 mt-2.5">
           <Pill
             variant="secondary"
-            disabled={login === 'busy' || needsPassword || (!typedLogin && !siteConfigured)}
+            // busy, not disabled, while testing: the pill keeps the focus
+            busy={login === 'busy'}
+            disabled={needsPassword || (!typedLogin && !siteConfigured)}
             title={needsPassword ? NEEDS_PASSWORD_HINT : undefined}
             onClick={() => void testLogin()}
           >

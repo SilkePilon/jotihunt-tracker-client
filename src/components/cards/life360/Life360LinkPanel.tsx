@@ -2,6 +2,7 @@ import { FormEvent, useId, useState } from 'react';
 import InlineError from '@/components/InlineError';
 import { REGEXP_ONLY_DIGITS } from 'input-otp';
 import { XIcon } from 'lucide-react';
+import { RadioGroup as RadioGroupPrimitive } from 'radix-ui';
 import BusyIcon from '@/components/motion/BusyIcon';
 import Reveal from '@/components/motion/Reveal';
 import { inlineLinkClass } from '@/components/tracker/styles';
@@ -62,8 +63,10 @@ function Header({ title, onCancel, disabled, cancelling }: { title: string; onCa
         size="icon"
         className="relative size-6 text-muted-foreground after:absolute after:-inset-2.5"
         aria-label="Koppelen annuleren"
-        aria-busy={cancelling}
-        disabled={disabled || cancelling}
+        // The running ✕ keeps the focus (aria-disabled); a second tap is refused by usePending
+        aria-disabled={cancelling || undefined}
+        aria-busy={cancelling || undefined}
+        disabled={disabled && !cancelling}
         onClick={onCancel}
       >
         <BusyIcon busy={!!cancelling} icon={<XIcon />} />
@@ -108,7 +111,7 @@ function TokenFallback({ busy, blocked, onSubmit }: { busy: boolean; blocked: bo
             }}
           />
           <Reveal gap={8}>{error && <InlineError id={errorId}>{error}</InlineError>}</Reveal>
-          <Button type="submit" variant="outline" size="sm" disabled={!token.trim() || busy || blocked} aria-busy={busy}>
+          <Button type="submit" variant="outline" size="sm" disabled={!token.trim() || (blocked && !busy)} aria-disabled={busy || undefined} aria-busy={busy || undefined}>
             <BusyIcon busy={busy} />
             Koppel met token
           </Button>
@@ -164,7 +167,14 @@ function EmailStep({
           }}
         />
         <Reveal gap={8}>{error && <InlineError id={errorId}>{error}</InlineError>}</Reveal>
-        <Button type="submit" className={LIFE360_BUTTON} disabled={!email.trim() || !!pending} aria-busy={pending === 'code'}>
+        <Button
+          type="submit"
+          className={LIFE360_BUTTON}
+          // The running button stays focusable (aria-disabled); usePending refuses a second submit
+          disabled={!email.trim() || (!!pending && pending !== 'code')}
+          aria-disabled={pending === 'code' || undefined}
+          aria-busy={pending === 'code' || undefined}
+        >
           <BusyIcon busy={pending === 'code'} />
           Stuur code
         </Button>
@@ -255,12 +265,25 @@ function CodeStep({
       </InputOTP>
       <Reveal gap={8}>{error && <InlineError id={errorId}>{error}</InlineError>}</Reveal>
       {error ? (
-        <Button type="button" variant="outline" disabled={!!countdown || !!pending} aria-busy={pending === 'resend'} onClick={() => void resend()}>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={!!countdown || (!!pending && pending !== 'resend')}
+          aria-disabled={pending === 'resend' || undefined}
+          aria-busy={pending === 'resend' || undefined}
+          onClick={() => void resend()}
+        >
           <BusyIcon busy={pending === 'resend'} />
           {countdown ? `Stuur nieuwe code (${countdown})` : 'Stuur nieuwe code'}
         </Button>
       ) : (
-        <Button type="submit" className={LIFE360_BUTTON} disabled={!isSixDigits(code) || !!pending} aria-busy={pending === 'verify'}>
+        <Button
+          type="submit"
+          className={LIFE360_BUTTON}
+          disabled={!isSixDigits(code) || (!!pending && pending !== 'verify')}
+          aria-disabled={pending === 'verify' || undefined}
+          aria-busy={pending === 'verify' || undefined}
+        >
           <BusyIcon busy={pending === 'verify'} />
           Koppelen
         </Button>
@@ -300,27 +323,33 @@ function CircleStep({ circles, onChooseCircle, onCancel }: { circles: Life360Cir
   return (
     <form className="flex flex-col gap-2" data-life360-state="circle" onSubmit={submit}>
       <Header title="Welke cirkel?" onCancel={() => void run('cancel', onCancel)} disabled={!!pending} cancelling={pending === 'cancel'} />
-      <div role="radiogroup" aria-label="Life360-cirkel" className="flex flex-col gap-1.5">
+      {/* One Tab stop, arrow keys choose (Radix radio group) */}
+      <RadioGroupPrimitive.Root aria-label="Life360-cirkel" value={selected} onValueChange={setSelected} disabled={!!pending} className="flex flex-col gap-1.5">
         {circles.map((circle) => {
           const checked = circle.id === selected;
           return (
-            <button
+            <RadioGroupPrimitive.Item
               key={circle.id}
-              type="button"
-              role="radio"
-              aria-checked={checked}
-              disabled={!!pending}
-              onClick={() => setSelected(circle.id)}
-              className={cn('flex cursor-pointer items-center gap-2.5 rounded-lg border px-2.5 py-2 text-left text-[13px] transition-[border-color,opacity] disabled:cursor-not-allowed disabled:opacity-60', checked && 'border-[#7875ea]')}
+              value={circle.id}
+              className={cn(
+                'flex cursor-pointer items-center gap-2.5 rounded-lg border px-2.5 py-2 text-left text-[13px] outline-none transition-[border-color,opacity,box-shadow] focus-visible:ring-[3px] focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60',
+                checked && 'border-[#7875ea]',
+              )}
             >
               <span aria-hidden className={cn('size-4 shrink-0 rounded-full border-[1.5px] border-zinc-400', checked && 'border-[5px] border-[#7875ea]')} />
               <span className="min-w-0 flex-1 truncate">{circle.name}</span>
-            </button>
+            </RadioGroupPrimitive.Item>
           );
         })}
-      </div>
+      </RadioGroupPrimitive.Root>
       <Reveal gap={8}>{error && <InlineError>{error}</InlineError>}</Reveal>
-      <Button type="submit" className={LIFE360_BUTTON} disabled={!selected || !!pending} aria-busy={pending === 'choose'}>
+      <Button
+        type="submit"
+        className={LIFE360_BUTTON}
+        disabled={!selected || (!!pending && pending !== 'choose')}
+        aria-disabled={pending === 'choose' || undefined}
+        aria-busy={pending === 'choose' || undefined}
+      >
         <BusyIcon busy={pending === 'choose'} />
         Gebruik deze cirkel
       </Button>
