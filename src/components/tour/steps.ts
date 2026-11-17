@@ -9,6 +9,13 @@ import type { TourStep } from './types';
 export const TOUR_VERSION = 1;
 
 /**
+ * Ends a step whose spotlight invites a tap: that tap only moves the tour on (the real action is for later, "Straks …").
+ * Phone-only steps say "tik"; steps on both platforms "tik of klik".
+ */
+export const TAP_TO_CONTINUE = 'Tik nu op het uitgelichte deel of druk op Volgende om verder te gaan.';
+export const TAP_OR_CLICK_TO_CONTINUE = 'Tik of klik nu op het uitgelichte deel of druk op Volgende om verder te gaan.';
+
+/**
  * The onboarding tour, in order. To add a step: add its target id to targets.ts, put {...tourTarget(id)}
  * on the element, and add an entry here. New UI interactions go in actions.ts.
  * Phones get the peek strip and the menu first; a section step then points at its menu row, and only Hint registreren
@@ -28,14 +35,14 @@ export const TOUR_STEPS: TourStep[] = [
     id: 'map',
     target: 'map',
     title: 'De kaart',
-    body: 'Hier zie je de deelnemende groepen, de vossen per deelgebied en waar onze hunters rijden. Straks tik of klik je op de kaart om de coördinaten van een plek te zien; tik nu op de kaart om verder te gaan.',
+    body: `Hier zie je de deelnemende groepen, de vossen per deelgebied en waar onze hunters rijden. Straks tik of klik je op de kaart om de coördinaten van een plek te zien. ${TAP_OR_CLICK_TO_CONTINUE}`,
     actions: [sheetSnap('peek'), flyToOverview()],
   },
   {
     id: 'peek',
     target: 'mobile.peek',
     title: 'Altijd in beeld',
-    body: 'Onderin zie je altijd hoe je eigen tracker ervoor staat en hoe de vossen ervoor staan. Tik op een van de twee om meer te zien.',
+    body: `Onderin zie je altijd hoe je eigen tracker ervoor staat en hoe de vossen ervoor staan. Straks tik je op een van de twee om meer te zien. ${TAP_TO_CONTINUE}`,
     actions: [resetToMenu(), sheetSnap('peek')],
     only: 'mobile',
   },
@@ -43,7 +50,7 @@ export const TOUR_STEPS: TourStep[] = [
     id: 'menu',
     target: 'sidebar.root',
     title: 'Het menu',
-    body: 'Schuif het paneel omhoog voor het menu: alles wat je nodig hebt staat hier. Tik op een regel om dat onderdeel te openen; met "Menu" bovenaan ga je terug.',
+    body: `Schuif het paneel omhoog voor het menu: alles wat je nodig hebt staat hier. Straks tik je op een regel om dat onderdeel te openen; met "Menu" bovenaan ga je terug. ${TAP_TO_CONTINUE}`,
     actions: [resetToMenu(), sheetSnap('half'), scrollSidebarToTop()],
     only: 'mobile',
   },
@@ -58,7 +65,7 @@ export const TOUR_STEPS: TourStep[] = [
     id: 'foxes',
     target: { desktop: 'sidebar.foxes', mobile: 'menu.foxes' },
     title: 'Vossen',
-    body: 'De status van elk deelgebied: rood, oranje of groen. Tik op een vos voor zijn laatste 3 uur; daar kun je hem ook op de kaart verbergen.',
+    body: `De status van elk deelgebied: rood, oranje of groen. Straks tik of klik je op een vos voor zijn laatste 3 uur; daar kun je hem ook op de kaart verbergen. ${TAP_OR_CLICK_TO_CONTINUE}`,
     actions: [sheetSnap('full'), pointAtSection('foxes')],
   },
   {
@@ -72,14 +79,14 @@ export const TOUR_STEPS: TourStep[] = [
     id: 'hunts',
     target: 'sidebar.hunts',
     title: 'Hunts',
-    body: 'Hunts komen vanzelf binnen van jotihunt.nl. Je ziet hier of ze goedgekeurd zijn; tik op een regel om hem op de kaart te zien.',
+    body: `Hunts komen vanzelf binnen van jotihunt.nl. Je ziet hier of ze goedgekeurd zijn; straks tik of klik je op een regel om hem op de kaart te zien. ${TAP_OR_CLICK_TO_CONTINUE}`,
     actions: [sheetSnap('full'), showSection('hunts')],
   },
   {
     id: 'predictions',
     target: { desktop: 'sidebar.predictions', mobile: 'menu.predictions' },
     title: 'Voorspelling',
-    body: 'Een AI-voorspelling van waar de vossen waarschijnlijk zijn. Tik op een voorspelling om ernaartoe te gaan op de kaart.',
+    body: `Een AI-voorspelling van waar de vossen waarschijnlijk zijn. Straks tik of klik je op een voorspelling om ernaartoe te gaan op de kaart. ${TAP_OR_CLICK_TO_CONTINUE}`,
     actions: [sheetSnap('full'), pointAtSection('predictions')],
     optional: true,
   },

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { TOUR_STEPS, TOUR_VERSION } from './steps';
+import { TAP_OR_CLICK_TO_CONTINUE, TAP_TO_CONTINUE, TOUR_STEPS, TOUR_VERSION } from './steps';
 import { PHONE_MENU_SECTIONS, SIDEBAR_SECTIONS, TOUR_TARGET_IDS, sectionOfTarget } from './targets';
 import { stepsForPlatform, targetFor } from './resolve';
 import { autoAdvances } from './duration';
@@ -55,6 +55,15 @@ describe('TOUR_STEPS', () => {
   test('only the welcome and the sounds panel wait for the user; every other step advances by itself', () => {
     const waiting = TOUR_STEPS.filter((step) => !autoAdvances(step)).map((step) => step.id);
     expect(waiting).toEqual(['welcome', 'notification-sounds']);
+  });
+
+  test('a step that mentions a tap calls it "Straks" and ends with how to continue (the spotlight tap only advances)', () => {
+    const tapping = TOUR_STEPS.filter((step) => /\b(tik|klik)\b/i.test(step.body) && step.target !== null && !step.panel);
+    expect(tapping.map((step) => step.id)).toEqual(['map', 'peek', 'menu', 'foxes', 'hunts', 'predictions']);
+    for (const step of tapping) {
+      expect(step.body).toMatch(/\b[Ss]traks\b/);
+      expect(step.body.endsWith(step.only === 'mobile' ? TAP_TO_CONTINUE : TAP_OR_CLICK_TO_CONTINUE)).toBe(true);
+    }
   });
 
   test('first and last steps are not optional', () => {
