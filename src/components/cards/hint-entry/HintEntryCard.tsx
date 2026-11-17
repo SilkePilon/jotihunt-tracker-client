@@ -1,6 +1,4 @@
-import {z} from 'zod';
 import {Controller, useForm, useWatch} from 'react-hook-form';
-import {zodResolver} from '@hookform/resolvers/zod';
 import {Button} from '../../ui/button.tsx';
 import {EraserIcon, Pin} from 'lucide-react';
 import {useMarkers} from '@/hooks/markers.hook.ts';
@@ -22,14 +20,17 @@ import DigitBoxes from './DigitBoxes';
 import CoordinateStatus, {type CoordinateState} from './CoordinateStatus';
 import {buildHintHours, groupByDay, isFreeHour} from './hint-times';
 import {SOFT_PRIMARY_BUTTON} from '@/lib/tonal-button';
+import {fieldsResolver, nonEmptyString, oneOf, stringOfLength} from '@/lib/form-resolver';
 import {type GuessStatus, guessStatus, hasWildcard, parseGuess} from '@/lib/hint-guess';
 import useHintGuessStore from '@/stores/hint-guess.store';
 
-const FormSchema = z.object({
-    area: z.enum([...areaOptions.map((option) => option.value)] as [string, ...string[]]),
-    time: z.string().min(1),
-    x: z.string().length(6),
-    y: z.string().length(6),
+type FormValues = {area: string; time: string; x: string; y: string};
+
+const formResolver = fieldsResolver<FormValues>({
+    area: oneOf(areaOptions.map((option) => option.value), 'Kies een deelgebied.'),
+    time: nonEmptyString('Kies een tijd.'),
+    x: stringOfLength(6, 'Vul 6 cijfers in.'),
+    y: stringOfLength(6, 'Vul 6 cijfers in.'),
 });
 
 export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef | null> }) {
@@ -46,8 +47,8 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
     // Without a configured hunt window there are no hint hours to pick
     const hintHours = (area: string) => (HUNT_START && HUNT_END ? buildHintHours(HUNT_START, HUNT_END, new Date(), markers, area) : []);
 
-    const form = useForm<z.infer<typeof FormSchema>>({
-        resolver: zodResolver(FormSchema),
+    const form = useForm<FormValues>({
+        resolver: formResolver,
         defaultValues: {
             area: '',
             time: '',
@@ -138,7 +139,7 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
      * When submitted, create a new marker.
      * Checks if the coördinates are valid.
      */
-    async function onSubmit(data: z.infer<typeof FormSchema>) {
+    async function onSubmit(data: FormValues) {
         if (readOnly) return;
         // Convert RD coordinates to WGS84
         const x = Number(data.x);

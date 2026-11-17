@@ -6,9 +6,8 @@ import { useId, useState } from 'react';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { areaOptions, capitalizeFirstLetter, cn } from '@/lib/utils';
 import { DIALOG_SHELL } from '@/lib/dialog-shell';
-import { z } from 'zod';
 import { Controller, useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { fieldsResolver, oneOf, validDate } from '@/lib/form-resolver';
 import { Field, FieldError, FieldGroup, FieldLabel } from '../ui/field';
 import { Input } from '../ui/input';
 import { Marker } from '@/types/Marker';
@@ -20,10 +19,12 @@ import { apiErrorMessage } from '@/lib/api-error';
 import { popupActionClass } from './popup/PopupActions';
 
 
-const FormSchema = z.object({
-  area: z.enum([...areaOptions.map((option) => option.value)] as [string, ...string[]], { message: 'Geen geldig deelgebied.' }),
-  day: z.date(),
-  time: z.date(),
+type FormValues = { area: string; day: Date; time: Date };
+
+const formResolver = fieldsResolver<FormValues>({
+  area: oneOf(areaOptions.map((option) => option.value), 'Geen geldig deelgebied.'),
+  day: validDate('Geen geldige dag.'),
+  time: validDate('Geen geldige tijd.'),
 });
 
 /** Hunt / Spot buttons (fragment children, for inside `PopupActions`) plus the dialog to register a marker at this point. */
@@ -39,8 +40,8 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
   const HUNT_START_TIME = huntStart ? new Date(huntStart) : new Date();
   const HUNT_END_TIME = huntEnd ? new Date(huntEnd) : new Date();
 
-  const form = useForm<z.infer<typeof FormSchema>>({
-    resolver: zodResolver(FormSchema),
+  const form = useForm<FormValues>({
+    resolver: formResolver,
     defaultValues: {
       area: '',
       day: getCurrentOrFirstDate(),
@@ -98,7 +99,7 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
    * @param data The form data.
    * @returns Absolutely nothing :)
    */
-  async function onSubmit(data: z.infer<typeof FormSchema>) {
+  async function onSubmit(data: FormValues) {
     const day = new Date(data.day);
     const time = new Date(data.time);
     const newDate = new Date(day.getFullYear(), day.getMonth(), day.getDate(), time.getHours(), time.getMinutes());
