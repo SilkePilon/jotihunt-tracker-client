@@ -1,4 +1,4 @@
-import { useState, type RefObject } from 'react';
+import type { RefObject } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { toast } from 'sonner';
 import { ExternalLinkIcon, LocateFixedIcon } from 'lucide-react';
@@ -8,6 +8,7 @@ import MarkerGlyph from '@/components/map/popup/MarkerGlyph';
 import Reveal from '@/components/motion/Reveal';
 import { useAdmin } from '@/hooks/admin.hook';
 import { useDevices } from '@/hooks/devices.hook';
+import { usePending } from '@/hooks/pending.hook';
 import { useIsMobile } from '@/hooks/media.hook';
 import { SLOW_CLOCK_TICK_MS, useNow } from '@/hooks/now.hook';
 import { apiErrorMessage } from '@/lib/api-error';
@@ -148,21 +149,22 @@ export default function HuntersPane({ mapRef }: { mapRef: RefObject<MapRef | nul
 /** The unfolded part of a hunter row: Toon op kaart, Google Maps, and the vehicle (moves the Traccar device to the vehicle's group, i.e. its map icon). */
 function HunterActions({ row, onShowOnMap }: { row: HunterRow; onShowOnMap: ShowOnMap }) {
   const { setDeviceVehicle } = useAdmin();
-  const [saving, setSaving] = useState(false);
+  // Synchronous guard: a second tap before the re-render (saving shows) can't start a second, racing change
+  const { pending, run } = usePending<'vehicle'>();
+  const saving = pending !== null;
   const position = row.position;
   const name = row.device.name;
 
-  async function changeVehicle(value: Vehicle) {
+  function changeVehicle(value: Vehicle) {
     if (value === row.vehicle) return;
-    setSaving(true);
-    try {
-      await setDeviceVehicle(row.device.id, value);
-      toast.success(`Voertuig van ${name} aangepast`);
-    } catch (error) {
-      toast.error('Voertuig aanpassen is mislukt', { description: apiErrorMessage(error, 'Probeer het opnieuw.') });
-    } finally {
-      setSaving(false);
-    }
+    void run('vehicle', async () => {
+      try {
+        await setDeviceVehicle(row.device.id, value);
+        toast.success(`Voertuig van ${name} aangepast`);
+      } catch (error) {
+        toast.error('Voertuig aanpassen is mislukt', { description: apiErrorMessage(error, 'Probeer het opnieuw.') });
+      }
+    });
   }
 
   return (
@@ -175,7 +177,7 @@ function HunterActions({ row, onShowOnMap }: { row: HunterRow; onShowOnMap: Show
         <ExternalLinkIcon />
         Google Maps
       </Pill>
-      <Segmented label={`Voertuig van ${name}`} value={row.vehicle} options={VEHICLE_SEGMENTS} onChange={(value) => void changeVehicle(value)} disabled={saving} className="sm:ml-2" />
+      <Segmented label={`Voertuig van ${name}`} value={row.vehicle} options={VEHICLE_SEGMENTS} onChange={changeVehicle} disabled={saving} className="sm:ml-2" />
     </>
   );
 }
