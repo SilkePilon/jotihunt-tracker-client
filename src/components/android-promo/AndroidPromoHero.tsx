@@ -9,7 +9,9 @@ export default function AndroidPromoHero({ onClose }: { onClose: () => void }) {
   const fill = { ok: p.okContainer, warn: p.warnContainer, error: p.errorContainer };
   return (
     <div className="relative h-[170px] overflow-hidden" style={{ background: `radial-gradient(circle at 30% 20%, color-mix(in oklab, var(--primary) 35%, transparent), transparent 60%), ${p.tertiaryContainer}` }}>
-      <CloseButton label="Later herinneren" onClick={onClose} className="absolute top-3 right-3 z-10" />
+      {/* On the illustration, not on a card: a dark translucent button with a white icon stands out from the tertiary
+          background in both themes (the card-surface grey would blend into it) */}
+      <CloseButton label="Later herinneren" onClick={onClose} className="absolute top-3 right-3 z-10 bg-black/35 text-white hover:bg-black/50" />
       <div className="absolute bottom-[-40px] left-1/2 h-[200px] w-[130px] -translate-x-1/2 -rotate-6 overflow-hidden rounded-[22px] bg-muted shadow-[0_0_0_5px_#111,0_14px_30px_rgb(0_0_0/.4)]" aria-hidden>
         <span className="absolute left-10 top-10 size-[22px] rounded-lg" style={{ background: p.okContainer, boxShadow: `0 0 0 2px ${p.surfaceContainerLowest}` }} />
         <span className="absolute left-20 top-20 size-[22px] rounded-full bg-primary" style={{ boxShadow: `0 0 0 2px ${p.surfaceContainerLowest}` }} />
