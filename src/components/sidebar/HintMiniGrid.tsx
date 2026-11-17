@@ -129,22 +129,28 @@ export default function HintMiniGrid({ mapRef }: { mapRef: RefObject<MapRef | nu
       </AnimatePresence>
       {isMobile ? (
         <>
-          {/* Unfolds under the grid on the first tap; another cell swaps the line's content (keyed on the cell) */}
-          <Reveal gap={8}>
-            {selectedRow && selectedCell && selectedArea && (
-              <div className="overflow-hidden rounded-xl bg-beheer-row px-2.5 py-1.5 text-xs">
-                <AnimatePresence mode="wait" initial={false}>
-                  <motion.div key={`${selectedRow.article.id}-${selectedArea.value}`} {...SWAP} className="flex items-center gap-2">
-                    <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: getColorFromArea(selectedArea.value) }} aria-hidden />
-                    <span className="shrink-0 font-semibold">
-                      {selectedArea.label} · {formatClock(selectedRow.article.publishAt)}
-                    </span>
-                    <CellSummary cell={selectedCell} />
-                  </motion.div>
-                </AnimatePresence>
-              </div>
-            )}
-          </Reveal>
+          {/* Unfolds under the grid on the first tap; another cell swaps the line's content (keyed on the cell). The
+              always-mounted status region reads the answer out; -mt-2 cancels the column gap while it is folded and
+              the line's own pt-2 brings it back as it unfolds */}
+          <div role="status" className="-mt-2">
+            <Reveal>
+              {selectedRow && selectedCell && selectedArea && (
+                <div className="pt-2">
+                  <div className="overflow-hidden rounded-xl bg-beheer-row px-2.5 py-1.5 text-xs">
+                    <AnimatePresence mode="wait" initial={false}>
+                      <motion.div key={`${selectedRow.article.id}-${selectedArea.value}`} {...SWAP} className="flex items-center gap-2">
+                        <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: getColorFromArea(selectedArea.value) }} aria-hidden />
+                        <span className="shrink-0 font-semibold">
+                          {selectedArea.label} · {formatClock(selectedRow.article.publishAt)}
+                        </span>
+                        <CellSummary cell={selectedCell} />
+                      </motion.div>
+                    </AnimatePresence>
+                  </div>
+                </div>
+              )}
+            </Reveal>
+          </div>
           <p className="text-center text-xs text-muted-foreground">Oplossen kan alleen op een laptop</p>
         </>
       ) : (
