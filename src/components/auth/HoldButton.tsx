@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type MouseEvent, type PointerEvent, type ReactNode } from 'react';
 import { animate, AnimatePresence, motion, useMotionValue, useTransform, type AnimationPlaybackControls } from 'motion/react';
 import { Loader2Icon } from 'lucide-react';
-import { holdProgressAfter, isHoldComplete } from '@/lib/hold';
+import { holdProgressAfter, isHoldComplete, isHoldNearlyDone } from '@/lib/hold';
 import { SWAP } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 
@@ -63,10 +63,13 @@ export default function HoldButton({
   // The ref decides (event handlers may run before a re-render); the state only swaps the label
   const armedRef = useRef(false);
   const [armed, setArmed] = useState(false);
+  // Screen readers hear once per hold, at ~80%, that it is nearly done (the fill itself is silent)
+  const [nearlyDone, setNearlyDone] = useState(false);
   const blocked = disabled || busy;
   const hintId = useId();
   // Disabled or busy while armed: drop the "Laat los" label (adjusting state during render, not in an effect)
   if (blocked && armed) setArmed(false);
+  if (blocked && nearlyDone) setNearlyDone(false);
 
   function stopFrame() {
     if (frame.current !== null) cancelAnimationFrame(frame.current);
@@ -74,6 +77,7 @@ export default function HoldButton({
   }
 
   function drain() {
+    setNearlyDone(false);
     stopFrame();
     release.current?.stop();
     release.current = animate(fill, 0, { duration: RELEASE_S, ease: 'easeOut' });
@@ -92,7 +96,10 @@ export default function HoldButton({
     const startedAt = performance.now() - fill.get() * durationMs;
     const tick = (now: number) => {
       const elapsed = now - startedAt;
-      fill.set(holdProgressAfter(elapsed, durationMs));
+      const progress = holdProgressAfter(elapsed, durationMs);
+      fill.set(progress);
+      // A state, so setting it again on later frames doesn't re-render or re-announce
+      if (isHoldNearlyDone(progress)) setNearlyDone(true);
       if (isHoldComplete(elapsed, durationMs)) {
         frame.current = null;
         if (pointerType.current === 'touch' || pointerType.current === 'pen') {
@@ -236,6 +243,9 @@ export default function HoldButton({
           </motion.span>
         )}
       </button>
+      <span role="status" aria-live="polite" className="sr-only">
+        {nearlyDone ? 'Bijna bevestigd, blijf vasthouden' : ''}
+      </span>
       {/* Description, not part of the name; display:none (hidden) still works for aria-describedby and takes no flex gap */}
       <span id={hintId} hidden>
         Houd ingedrukt om te bevestigen

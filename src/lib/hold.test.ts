@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { holdProgressAfter, isHoldComplete } from './hold';
+import { holdProgressAfter, isHoldComplete, isHoldNearlyDone } from './hold';
 
 describe('hold to confirm', () => {
   test('progress is the elapsed share of the duration', () => {
@@ -29,5 +29,12 @@ describe('hold to confirm', () => {
     expect(isHoldComplete(-1, 1000)).toBe(false);
     expect(isHoldComplete(Number.NaN, 1000)).toBe(false);
     expect(holdProgressAfter(Number.NaN, 1000)).toBe(0);
+  });
+
+  test('nearly done from 80% of the hold on', () => {
+    expect(isHoldNearlyDone(holdProgressAfter(799, 1000))).toBe(false);
+    expect(isHoldNearlyDone(holdProgressAfter(800, 1000))).toBe(true);
+    expect(isHoldNearlyDone(1)).toBe(true);
+    expect(isHoldNearlyDone(0)).toBe(false);
   });
 });
