@@ -56,7 +56,7 @@ function App() {
     <>
       {/* Desktop only: on phones the map stays free (search via the sidebar, groups via the map). Between md and lg the
           two 300 px cards would slide under the 320 px sidebar, so they fold into two icon tiles that open the same card */}
-      <div className="absolute top-[max(0.5rem,env(safe-area-inset-top))] right-[max(0.5rem,env(safe-area-inset-right))] z-30 hidden md:block" {...tourTarget('cards.topRight')}>
+      <div className="absolute top-[max(0.5rem,env(safe-area-inset-top))] right-[max(0.5rem,env(safe-area-inset-right))] z-30 hidden md:block shell-mobile:hidden" {...tourTarget('cards.topRight')}>
         <div className="hidden gap-2 lg:flex">
           <div>
             <ErrorBoundary>
@@ -86,7 +86,7 @@ function App() {
       */}
       <div
         style={{ '--pill-top': belowSafeArea(pillTop), '--pill-top-md': `${pillTopMd}px` } as React.CSSProperties}
-        className="pointer-events-none absolute top-(--pill-top) left-1/2 z-30 -translate-x-1/2 transition-[top] duration-300 ease-out motion-reduce:transition-none md:top-(--pill-top-md) md:left-[calc(50%+164px)]"
+        className="pointer-events-none absolute top-(--pill-top) left-1/2 z-30 -translate-x-1/2 transition-[top] duration-300 ease-out motion-reduce:transition-none md:top-(--pill-top-md) md:left-[calc(50%+164px)] shell-mobile:top-(--pill-top) shell-mobile:left-1/2"
       >
         <ErrorBoundary variant="inline">
           <HappyHourPill />
