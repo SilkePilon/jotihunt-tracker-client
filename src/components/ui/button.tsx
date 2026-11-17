@@ -12,8 +12,9 @@ const buttonVariants = cva(
         default: "bg-primary-container text-on-primary-container hover:bg-[color-mix(in_oklab,var(--on-primary-container)_10%,var(--primary-container))]",
         destructive:
           "bg-destructive text-white hover:bg-destructive/90 focus-visible:ring-destructive dark:bg-destructive/60",
+        // Secondary action: the grey tonal sidebar button (TONAL_BUTTON) without border or shadow; 12px corners via compoundVariants
         outline:
-          "border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:border-border dark:bg-border/30 dark:hover:bg-border/50",
+          "border-0 bg-beheer-row-high text-foreground shadow-none hover:bg-[color-mix(in_oklab,var(--foreground)_14%,var(--card))] hover:text-foreground",
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost:
@@ -34,6 +35,8 @@ const buttonVariants = cva(
         "icon-lg": `${COARSE_HIT_AREA} size-10`,
       },
     },
+    // After the size classes, so the tonal button keeps 12px corners at every size
+    compoundVariants: [{ variant: "outline", className: "rounded-xl" }],
     defaultVariants: {
       variant: "default",
       size: "default",
