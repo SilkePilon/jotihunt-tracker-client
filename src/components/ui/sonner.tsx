@@ -9,12 +9,9 @@ import { Toaster as Sonner, type ToasterProps } from "sonner"
 
 import { useDarkMode } from "@/hooks/utils/darkmode.hook.ts"
 import { useIsMobile } from "@/hooks/media.hook"
+import { phoneToastOffset } from "@/lib/toast-offset"
+import useHappyHourPillStore from "@/stores/happy-hour-pill.store"
 
-/**
- * Phones (top-center): below the notch and the offline badge (8px under the safe area, up to two lines), so a toast
- * never hides the badge. Sonner only applies mobileOffset under 600px; offset covers the 600–767px phone widths.
- */
-const PHONE_OFFSET = { top: "calc(env(safe-area-inset-top) + 48px)" }
 /**
  * Desktop (bottom-right): left of the 40px map control column (8px margin + 40px + 12px gap, plus the landscape-phone
  * safe area), so a long-lived toast never covers zoom, layers or my location.
@@ -28,11 +25,16 @@ const Toaster = ({ ...props }: ToasterProps) => {
   const isDarkMode = useDarkMode()
   // Phones: the bottom sheet owns the bottom edge
   const isMobile = useIsMobile()
+  // Phones (top-center): below the offline badge, and below the happy-hour pill while it is shown (see toast-offset).
+  // Sonner only applies mobileOffset under 600px; offset covers the 600–767px phone widths.
+  const pillVisible = useHappyHourPillStore((s) => s.visible)
+  const phoneOffset = phoneToastOffset(pillVisible)
 
   return (
     <Sonner
       theme={isDarkMode ? "dark" : "light"}
-      className="toaster group"
+      // The stack eases down/up when the happy-hour pill comes or goes (sonner's own transform transition kept)
+      className="toaster group transition-[top,transform]! duration-300! ease-out! motion-reduce:transition-none!"
       icons={{
         success: <CircleCheckIcon className="size-4" />,
         info: <InfoIcon className="size-4" />,
@@ -62,8 +64,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
         },
       }}
       position={isMobile ? "top-center" : "bottom-right"}
-      offset={isMobile ? PHONE_OFFSET : DESKTOP_OFFSET}
-      mobileOffset={PHONE_OFFSET}
+      offset={isMobile ? phoneOffset : DESKTOP_OFFSET}
+      mobileOffset={phoneOffset}
       {...props}
     />
   )

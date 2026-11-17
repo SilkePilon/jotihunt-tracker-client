@@ -1,9 +1,11 @@
+import { useEffect } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import MaterialGlyph from '@/components/MaterialGlyph';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useHappyHour } from '@/hooks/happy-hour.hook';
 import { useNow } from '@/hooks/now.hook';
 import { LAYOUT_SPRING, SWAP_TRANSITION, swapPreset } from '@/lib/motion';
+import useHappyHourPillStore from '@/stores/happy-hour-pill.store';
 import { happyHourExplanation, happyHourPill, happyHourPillText, happyHourWindow, type HappyHourWindow } from '@/lib/happy-hour';
 
 /**
@@ -57,5 +59,11 @@ export default function HappyHourPill() {
   // Ticks while there is a happy hour; a new or changed one renders with the current time right away
   const now = useNow(!!view && view.state !== 'none');
   const hour = happyHourWindow(view, now);
+  // Phone toasts make room below the pill while it is shown
+  const shown = !!hour;
+  useEffect(() => {
+    useHappyHourPillStore.getState().setVisible(shown);
+    return () => useHappyHourPillStore.getState().setVisible(false);
+  }, [shown]);
   return <AnimatePresence>{hour && <HappyHourPillView key="pill" hour={hour} now={now} />}</AnimatePresence>;
 }
