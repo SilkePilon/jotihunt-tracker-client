@@ -25,7 +25,7 @@ interface PickerTriggerProps extends ComponentProps<'button'> {
 
 /**
  * Card-coloured trigger on the tonal block; the chevron turns and it turns soft orange while its popover is open. A 1px
- * --input edge while idle (>= 3:1 against the block); on phones a 44px touch area (the block is `isolate`).
+ * no outline while idle (the card fill sets it apart); on phones a 44px touch area (the block is `isolate`).
  */
 export function PickerTrigger({ lead, placeholder, label, invalid, className, ...props }: PickerTriggerProps) {
   return (
@@ -34,7 +34,7 @@ export function PickerTrigger({ lead, placeholder, label, invalid, className, ..
       aria-invalid={invalid || undefined}
       className={cn(
         COARSE_HIT_AREA,
-        'group flex h-8 w-full min-w-0 items-center gap-1.5 rounded-lg bg-card px-2 text-left text-body outline-none transition-[background-color,color,box-shadow,opacity] duration-150 shadow-[inset_0_0_0_1px_var(--input)] hover:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-card data-[state=open]:bg-(--map-selected-bg) data-[state=open]:shadow-none data-[state=open]:text-(--map-selected-fg) data-[state=open]:hover:bg-(--map-selected-bg) aria-invalid:shadow-[inset_0_0_0_2px_var(--destructive)]',
+        'group flex h-8 w-full min-w-0 items-center gap-1.5 rounded-lg bg-card px-2 text-left text-body outline-none transition-[background-color,color,box-shadow,opacity] duration-150 hover:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-card data-[state=open]:bg-(--map-selected-bg) data-[state=open]:text-(--map-selected-fg) data-[state=open]:hover:bg-(--map-selected-bg) aria-invalid:shadow-[inset_0_0_0_2px_var(--destructive)]',
         className,
       )}
       {...props}
