@@ -1,6 +1,7 @@
 import { useNow } from '@/hooks/now.hook';
 import { useTrackerStatus } from '@/hooks/tracker.hook';
 import { trackerPeekLine } from '@/lib/tracker';
+import { isIOSDevice } from '@/lib/android-promo';
 import { cookiePath, BADGE_COOKIE_DEPTH } from '@/lib/cookie-shape';
 import { useSidebarFoxes } from '@/components/sidebar/foxes/useSidebarFoxes';
 import { useHuntableAreas } from '@/hooks/huntable-areas.hook';
@@ -24,7 +25,7 @@ function TrackerLine({ onOpen }: { onOpen: () => void }) {
   const { status, isError } = useTrackerStatus();
   const now = useNow(true);
   // A failed first load says so; the tap opens the tracker page, whose LoadError retries
-  const line = trackerPeekLine(status, now, isError);
+  const line = trackerPeekLine(status, now, isError, isIOSDevice());
   return (
     <button type="button" onClick={onOpen} className={cn('flex min-h-9 items-center gap-2 text-left text-[13.5px] outline-none focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset rounded-md', COARSE_HIT_AREA)}>
       <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden className="shrink-0">

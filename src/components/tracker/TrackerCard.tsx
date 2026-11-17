@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { SWAP } from '@/lib/motion';
 import { usePairingCode } from '@/hooks/app-pairing.hook';
 import { notConfiguredText, trackerView } from '@/lib/tracker';
+import { isIOSDevice } from '@/lib/android-promo';
 import type { TrackerMe, Vehicle } from '@/types/Tracker';
 import type { User } from '@/types/User';
 import TrackerIdle from './TrackerIdle';
@@ -38,6 +39,11 @@ export default function TrackerCard({ status, isError, onRetry, savingVehicle, o
   }
 
   function startPairing() {
+    // An iPhone/iPad can't run the Jotihunt app: (re)pairing goes through Traccar Client and its guide
+    if (isIOSDevice()) {
+      onOpenGuide();
+      return;
+    }
     setPairingOpen(true);
     void create();
   }
@@ -62,7 +68,7 @@ export default function TrackerCard({ status, isError, onRetry, savingVehicle, o
   } else if (view === 'pairing') {
     content = <TrackerPairing pairing={pairing} creating={creating} failed={failed} onRetry={() => void create()} onClose={() => setPairingOpen(false)} />;
   } else if (view === 'idle') {
-    content = <TrackerIdle onPair={startPairing} onOpenGuide={onOpenGuide} />;
+    content = <TrackerIdle onPair={startPairing} onOpenGuide={onOpenGuide} ios={isIOSDevice()} />;
   } else {
     content = <TrackerLive status={status} savingVehicle={savingVehicle} onVehicleChange={onVehicleChange} onRepair={startPairing} />;
   }

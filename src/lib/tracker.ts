@@ -146,9 +146,12 @@ function ageText(iso: string | undefined, now: number): string | undefined {
   return minutes < 60 ? `${minutes} min` : `${Math.round(minutes / 60)} u`;
 }
 
+/** The pair action on an iPhone/iPad (no Android app there): it opens the Traccar Client guide */
+export const IOS_PAIR_LABEL = 'Koppel je iPhone (Traccar)';
+
 /** First line of the phone sheet's peek strip. `isError`: the last fetch failed; without a status yet that's a failed
  * first load, and a tap opens the tracker page (its LoadError retries). */
-export function trackerPeekLine(status: TrackerMe | undefined, now = Date.now(), isError = false): { tone: 'ok' | 'warn' | 'muted'; text: string } {
+export function trackerPeekLine(status: TrackerMe | undefined, now = Date.now(), isError = false, ios = false): { tone: 'ok' | 'warn' | 'muted'; text: string } {
   if (!status) return isError ? { tone: 'warn', text: 'Tracker niet geladen — tik om opnieuw te proberen' } : { tone: 'muted', text: 'Tracker laden…' };
   if (!status.configured) return { tone: 'muted', text: status.reason === 'unreachable' ? 'Tracker niet bereikbaar' : 'Tracker niet ingesteld' };
   const age = ageText(status.stats.lastUpdate, now);
@@ -157,5 +160,6 @@ export function trackerPeekLine(status: TrackerMe | undefined, now = Date.now(),
     return { tone: 'ok', text: joinParts('Verbonden', vehicle, age) };
   }
   if (hasSignalLost(status, now)) return { tone: 'warn', text: joinParts('Geen signaal', age) };
-  return { tone: 'warn', text: 'Koppel je telefoon' };
+  // An iPhone has no Jotihunt app: it pairs through Traccar Client (the card's guide)
+  return { tone: 'warn', text: ios ? IOS_PAIR_LABEL : 'Koppel je telefoon' };
 }
