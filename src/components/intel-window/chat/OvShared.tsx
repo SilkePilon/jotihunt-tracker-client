@@ -1,5 +1,6 @@
 import { BusIcon, ShipIcon, TrainFrontIcon, TrainTrackIcon, TramFrontIcon, type LucideIcon } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
+import { COARSE_HIT_AREA } from '@/lib/hit-area';
 import { SWAP } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import type { OvMode } from '@/types/IntelChat';
@@ -18,14 +19,17 @@ export function LineChip({ line }: { line: string }) {
   return <span className="inline-flex min-w-7 shrink-0 justify-center rounded-md bg-fox-ok-container px-1.5 py-px text-[11px] leading-4 font-extrabold text-fox-on-ok tabular-nums">{line}</span>;
 }
 
-/** Small text toggle under a list; its label swaps ("Toon alle 12" ↔ "Minder") */
+/**
+ * Small text toggle under a list; its label swaps ("Toon alle 12" ↔ "Minder"). Phones get a 44px touch area
+ * (COARSE_HIT_AREA): give its parent `isolate`.
+ */
 export function MoreToggle({ open, onToggle, more, less = 'Minder' }: { open: boolean; onToggle: () => void; more: string; less?: string }) {
   return (
     <button
       type="button"
       aria-expanded={open}
       onClick={onToggle}
-      className="self-start rounded-md text-[12px] font-semibold text-foreground outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring"
+      className={cn(COARSE_HIT_AREA, 'self-start rounded-md text-[12px] font-semibold text-foreground outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring')}
     >
       <AnimatePresence mode="wait" initial={false}>
         <motion.span key={open ? 'less' : 'more'} className="block" {...SWAP}>

@@ -27,7 +27,7 @@ export default function OvPredictionCard({ prediction, mapRef }: { prediction: O
           </ol>
         )}
         {assumptions.length > 0 && (
-          <div className="flex flex-col">
+          <div className="isolate flex flex-col">
             <MoreToggle open={open} onToggle={() => setOpen(!open)} more="Aannames" less="Aannames verbergen" />
             <Reveal>
               {open && (
