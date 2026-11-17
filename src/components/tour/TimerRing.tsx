@@ -34,13 +34,12 @@ export default function TimerRing({ durationMs, runKey, paused = false, onDone, 
     <div className={cn('relative flex items-center justify-center', className)}>
       <svg aria-hidden className="pointer-events-none absolute inset-0 size-full -rotate-90" viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`}>
         <circle cx={RING_SIZE / 2} cy={RING_SIZE / 2} r={RING_RADIUS} fill="none" strokeWidth={RING_STROKE} className="stroke-beheer-row-high" />
-        {/* The arc fades out when the timer stops (e.g. the user took over the tour) instead of vanishing */}
+        {/* The arc fades out when the timer stops (e.g. the user took over the tour) or the next run starts, instead of
+            vanishing: keyed per run, so a new run's arc fades in while the previous one fades out (and restarts its fill) */}
         <AnimatePresence initial={false}>
           {durationMs !== undefined && (
-            <motion.g key="arc" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+            <motion.g key={runKey} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
               <circle
-                // Remount per run so the animation restarts
-                key={runKey}
                 cx={RING_SIZE / 2}
                 cy={RING_SIZE / 2}
                 r={RING_RADIUS}
