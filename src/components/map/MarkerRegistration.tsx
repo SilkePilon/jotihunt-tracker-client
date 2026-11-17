@@ -1,7 +1,7 @@
 import { CrosshairIcon, GlassesIcon, InfoIcon, RefreshCwIcon } from 'lucide-react';
 import { Button } from '../ui/button';
 import { MarkerType } from '@/types/MarkerType';
-import { type ReactNode, useId, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import AreaPicker from '../cards/hint-entry/AreaPicker';
 import { areaOptions, capitalizeFirstLetter, cn } from '@/lib/utils';
@@ -16,13 +16,14 @@ import { useAppConfig } from '@/hooks/app-config.hook';
 import { useEdition } from '@/hooks/edition.hook';
 import {toast} from "sonner";
 import { apiErrorMessage, isNetworkError } from '@/lib/api-error';
-import { lostResponseOutcome, markerLostResponseMessage } from '@/lib/hint-submit';
+import { isKnownOffline, lostResponseOutcome, markerLostResponseMessage, OFFLINE_NOT_SENT_MESSAGE } from '@/lib/hint-submit';
 import InlineError from '../InlineError';
 import Reveal from '../motion/Reveal';
 import { popupActionClass } from './popup/PopupActions';
 import BusyIcon from '../motion/BusyIcon';
-import { ERROR_TOAST_MS, huntDays, markerMissingPick, markerNoun } from '@/lib/markers';
+import { ERROR_TOAST_MS, huntDays, markerMissingPick, markerNoun, markerSaveLabel, markerSavedToast, markerVerb } from '@/lib/markers';
 import useMarkerDraftStore, { draftElsewhere, draftKey, keyOfDraft, sameMarkerValues, type MarkerDraft, type MarkerDraftValues } from '@/stores/marker-draft.store';
+import useFollowMeStore from '@/stores/follow-me.store';
 import { AnimatePresence, motion } from 'motion/react';
 import { SWAP } from '@/lib/motion';
 import { useWorkHold } from '@/stores/prompt-queue.store';
@@ -38,11 +39,16 @@ type FormValues = { area: string; day: Date; time: Date };
 /** "zaterdag 18 oktober" */
 const formatDay = (day: Date) => day.toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' });
 
+/** "RD 187654, 432101" for a pin */
+const rdPlace = (lng: number, lat: number) => {
+  const rd = rdText(lng, lat);
+  return `RD ${rd.x}, ${rd.y}`;
+};
+
 /** "RD 187654, 432101" for a kept draft's pin */
 const draftPlace = (draft: MarkerDraft) => {
   const [lng, lat] = draft.sent.location.coordinates;
-  const rd = rdText(lng, lat);
-  return `RD ${rd.x}, ${rd.y}`;
+  return rdPlace(lng, lat);
 };
 
 /** The values a draft's marker was sent with (its `area/day/time` follow the form when the dialog closes) */
@@ -62,12 +68,22 @@ const formResolver = fieldsResolver<FormValues>({
   time: validDate('Geen geldige tijd.'),
 });
 
+interface MarkerRegistrationProps {
+  lat: number;
+  lng: number;
+  /** Fires once the dialog has closed (its exit animation done) after a successful save */
+  onRegistered?: () => void;
+  /** MarkerRegistrationHost: no Hunt / Spot buttons; each new store request (requestOpen) opens the dialog at its pin */
+  hosted?: boolean;
+}
+
 /**
  * Hunt / Spot buttons (fragment children, for inside `PopupActions`) plus the dialog to register a marker at this point.
  * `onRegistered` fires once the dialog has closed (its exit animation done) after a successful save, e.g. to close a
- * popup whose only job was this point.
+ * popup whose only job was this point. `hosted` (MarkerRegistrationHost): no buttons, each new request opens the
+ * dialog.
  */
-export default function MarkerRegistration({ lat, lng, onRegistered }: { lat: number; lng: number; onRegistered?: () => void }) {
+export default function MarkerRegistration({ lat, lng, onRegistered, hosted = false }: MarkerRegistrationProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [markerType, setMarkerType] = useState<MarkerType>();
   // The pin the dialog registers at: this popup's point, or another pin's unconfirmed save picked up with "Hervat"
@@ -78,18 +94,17 @@ export default function MarkerRegistration({ lat, lng, onRegistered }: { lat: nu
   const drafts = useMarkerDraftStore((state) => state.drafts);
   // The area the last Hunt/Spot went to: the form starts there, marked "(vorige)" while it still shows
   const lastArea = useMarkerDraftStore((state) => state.lastArea);
-  // "Hunt" / "Spot" in the toasts
+  // "Hunt" / "Spot" in the toasts; a Hunt is marked, a Spot registered
   const noun = markerNoun(markerType ?? MarkerType.Hunt);
+  const verb = markerVerb(markerType ?? MarkerType.Hunt);
   const key = markerType === undefined ? null : draftKey(markerType, target.lat, target.lng);
   const pending = key === null ? null : (drafts[key] ?? null);
   // An unconfirmed save of this type at another pin: named (not restored here), so it isn't silently forgotten
   const elsewhere = markerType === undefined || key === null || pending ? null : draftElsewhere(drafts, markerType, key);
-  // "Hervat" moved the dialog to another pin: say where it registers now
-  const resumed = target.lat === lat && target.lng === lng ? null : (() => {
-    const rd = rdText(target.lng, target.lat);
-    return `RD ${rd.x}, ${rd.y}`;
-  })();
-  const lostMessage = pending ? markerLostResponseMessage(pending.outcome) : null;
+  // "Hervat" moved the dialog to another pin: where it registers now. Set by resumeElsewhere only, not by comparing with
+  // the props (a hunter's popup passes its live position, which moves on while the dialog is open)
+  const [resumed, setResumed] = useState<string | null>(null);
+  const lostMessage = pending ? (pending.notSent ? OFFLINE_NOT_SENT_MESSAGE : markerLostResponseMessage(pending.outcome, pending.type)) : null;
   const [checking, setChecking] = useState(false);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   // Verwerpen folds away with the draft: focus goes to the first field instead of back to it
@@ -97,7 +112,7 @@ export default function MarkerRegistration({ lat, lng, onRegistered }: { lat: nu
   // The dialog closed because the marker was registered: onRegistered once it has slid / faded out
   const registeredRef = useRef(false);
   // Phones dock the popup with these buttons over the sheet: no follow-up prompt while it's open (the dialog holds itself)
-  useWorkHold(useIsMobile());
+  useWorkHold(useIsMobile() && !hosted);
   // An archive edition is read-only: no new markers
   const { readOnly } = useEdition();
   const fieldId = useId();
@@ -138,16 +153,20 @@ export default function MarkerRegistration({ lat, lng, onRegistered }: { lat: nu
   /**
    * Open a dialog to register a marker.
    * @param markerType What type of marker to open the dialog for.
+   * @param at The pin (default: this popup's point)
    */
-  function openDialog(markerType: MarkerType) {
+  function openDialog(markerType: MarkerType, at: { lat: number; lng: number } = { lat, lng }) {
     // An unconfirmed save of this type at this pin comes back as it was left; otherwise a fresh form (reset on open, not
     // on close, so the closing dialog doesn't flash empty fields)
-    const draft = useMarkerDraftStore.getState().drafts[draftKey(markerType, lat, lng)];
+    const draft = useMarkerDraftStore.getState().drafts[draftKey(markerType, at.lat, at.lng)];
     const values = draft ? { area: draft.area, day: draft.day, time: draft.time } : freshValues();
     form.reset(values);
     // reset() doesn't recompute isValid for a filled form: check the (prefilled) area so Registreren is live right away
     if (values.area) void form.trigger('area');
-    setTarget({ lat, lng });
+    // A dialog over the map: following the own position would move the map under it (and the pin out of view)
+    useFollowMeStore.getState().stop();
+    setTarget({ lat: at.lat, lng: at.lng });
+    setResumed(null);
     setMarkerType(markerType);
     registeredRef.current = false;
     setDialogOpen(true);
@@ -158,7 +177,21 @@ export default function MarkerRegistration({ lat, lng, onRegistered }: { lat: nu
     const [draftLng, draftLat] = draft.sent.location.coordinates;
     form.reset({ area: draft.area, day: draft.day, time: draft.time });
     setTarget({ lat: draftLat, lng: draftLng });
+    setResumed(rdPlace(draftLng, draftLat));
   }
+
+  // Hosted: each new request in the store opens the dialog at its pin
+  const openRef = useRef(openDialog);
+  useEffect(() => {
+    openRef.current = openDialog;
+  });
+  useEffect(() => {
+    if (!hosted) return;
+    return useMarkerDraftStore.subscribe((state, previous) => {
+      const { request } = state;
+      if (request && request.id !== previous.request?.id) openRef.current(request.type, request);
+    });
+  }, [hosted]);
 
   /** Keep the values as last typed with an unconfirmed save. */
   function keepTyped() {
@@ -186,12 +219,12 @@ export default function MarkerRegistration({ lat, lng, onRegistered }: { lat: nu
       useMarkerDraftStore.getState().clear(key);
       // Values changed since that save (a correction or a next marker): confirm the old one, keep the new values open
       if (!sameMarkerValues(form.getValues(), sentValues(pending))) {
-        toast.success(`Vorige ${noun.toLowerCase()} geregistreerd — je nieuwe invoer is nog niet opgeslagen`, { description: 'Bevestigd na verbindingsherstel.', duration: 10000 });
+        toast.success(`Vorige ${noun.toLowerCase()} ${verb.past} — je nieuwe invoer is nog niet opgeslagen`, { description: 'Bevestigd na verbindingsherstel.', duration: 10000 });
         return;
       }
       registeredRef.current = true;
       setDialogOpen(false);
-      toast.success(`${noun} geregistreerd`, { description: 'Bevestigd na verbindingsherstel.' });
+      toast.success(markerSavedToast(pending.type), { description: 'Bevestigd na verbindingsherstel.' });
       return;
     }
     useMarkerDraftStore.getState().update(key, { outcome });
@@ -237,6 +270,15 @@ export default function MarkerRegistration({ lat, lng, onRegistered }: { lat: nu
 
     // The next Hunt/Spot (often the same team) starts at this area
     useMarkerDraftStore.getState().rememberArea(data.area);
+    // Known offline: don't send (it can't arrive), keep the input with an 'absent' draft so "Opnieuw …" leads and the
+    // peek strip / sidebar keep naming it
+    if (isKnownOffline()) {
+      const typed = form.getValues();
+      const draft: MarkerDraft = { type: markerType, area: data.area, day, time, sent: marker, outcome: 'absent', notSent: true };
+      useMarkerDraftStore.getState().keep(draft);
+      useMarkerDraftStore.getState().update(keyOfDraft(draft), { area: typed.area, day: typed.day, time: typed.time });
+      return;
+    }
     const error = await createMarker(marker);
     let confirmedLate = false;
     if (error && isNetworkError(error)) {
@@ -256,19 +298,19 @@ export default function MarkerRegistration({ lat, lng, onRegistered }: { lat: nu
       confirmedLate = true;
     } else if (error) {
       // The server's message for e.g. a 429 (too many markers in a row)
-      toast.error(`${noun} registreren is mislukt`, { description: apiErrorMessage(error, 'Probeer het opnieuw.'), duration: ERROR_TOAST_MS });
+      toast.error(`${noun} ${verb.infinitive} is mislukt`, { description: apiErrorMessage(error, 'Probeer het opnieuw.'), duration: ERROR_TOAST_MS });
       return;
     }
     useMarkerDraftStore.getState().clear(key);
     const lateNote = confirmedLate ? 'Bevestigd na verbindingsherstel.' : undefined;
     // A correction or a next marker was typed while Registreren ran: confirm this one, leave the new values and the dialog
     if (!sameMarkerValues(form.getValues(), data)) {
-      toast.success(`Vorige ${noun.toLowerCase()} geregistreerd — je nieuwe invoer is nog niet opgeslagen`, { description: lateNote, duration: 10000 });
+      toast.success(`Vorige ${noun.toLowerCase()} ${verb.past} — je nieuwe invoer is nog niet opgeslagen`, { description: lateNote, duration: 10000 });
       return;
     }
     registeredRef.current = true;
     setDialogOpen(false);
-    toast.success(`${noun} geregistreerd`, { description: lateNote });
+    toast.success(markerSavedToast(markerType), { description: lateNote });
   }
 
   const { isSubmitting } = form.formState;
@@ -282,7 +324,7 @@ export default function MarkerRegistration({ lat, lng, onRegistered }: { lat: nu
   const missingId = `${fieldId}-missing`;
   // The form starts at the last area ("(vorige)"): the button names it, so a wrong team is seen at the moment of saving
   const prefilledArea = primary !== 'recheck' && areaValue && areaValue === lastArea ? areaOptions.find((option) => option.value === areaValue)?.label : undefined;
-  const saveLabel = primary === 'resave' ? 'Opnieuw registreren' : prefilledArea ? `${noun} ${prefilledArea} registreren` : 'Registreren';
+  const saveLabel = markerSaveLabel(markerType ?? MarkerType.Hunt, { resave: primary === 'resave', area: prefilledArea });
 
   const renderForm = () => (
     <form
@@ -439,7 +481,8 @@ export default function MarkerRegistration({ lat, lng, onRegistered }: { lat: nu
           variant="default"
           type={primary === 'recheck' ? 'button' : 'submit'}
           onClick={primary === 'recheck' ? recheck : undefined}
-          className={cn(DIALOG_ACTION, 'min-w-0 flex-[2_1_0%] pointer-coarse:h-11')}
+          // Busy (saving / checking): full colour with the spinner, not the greyed-out look of "can't press"
+          className={cn(DIALOG_ACTION, 'min-w-0 flex-[2_1_0%] pointer-coarse:h-11 aria-busy:aria-disabled:opacity-100')}
           disabled={!busy && primary !== 'recheck' && (!!missing || !form.formState.isValid || readOnly)}
           aria-disabled={busy || undefined}
           aria-describedby={missing ? missingId : undefined}
@@ -455,7 +498,7 @@ export default function MarkerRegistration({ lat, lng, onRegistered }: { lat: nu
               <>
                 <BusyIcon busy={isSubmitting} icon={markerType === MarkerType.Spot ? <GlassesIcon data-icon="inline-start" /> : <CrosshairIcon data-icon="inline-start" />} />
                 {/* Truncates rather than spilling out on the narrowest phones */}
-                <span className="min-w-0 truncate">{isSubmitting ? (checking ? 'Controleren…' : 'Registreren…') : saveLabel}</span>
+                <span className="min-w-0 truncate">{isSubmitting ? (checking ? 'Controleren…' : verb.busy) : saveLabel}</span>
               </>
             )}
           </PrimaryLabel>
@@ -486,8 +529,8 @@ export default function MarkerRegistration({ lat, lng, onRegistered }: { lat: nu
       <ConfirmDialog
         open={confirmDiscard}
         onOpenChange={setConfirmDiscard}
-        title="Niet-bevestigde marker verwerpen?"
-        description="Je invoer wordt gewist. Als de server de marker toch al heeft opgeslagen, blijft die gewoon op de kaart staan; verwijder hem daar als dat nodig is."
+        title={`Niet-bevestigde ${noun.toLowerCase()} verwerpen?`}
+        description={`Je invoer wordt gewist. Als de server de ${noun.toLowerCase()} toch al heeft opgeslagen, blijft die gewoon op de kaart staan; verwijder hem daar als dat nodig is.`}
         cancelLabel="Bewaren"
         confirmLabel="Verwerpen"
         destructive
@@ -500,13 +543,17 @@ export default function MarkerRegistration({ lat, lng, onRegistered }: { lat: nu
           document.getElementById(`${fieldId}-area`)?.focus();
         }}
       />
-      <button type="button" className={popupActionClass('primary', 'min-w-0 flex-1')} disabled={readOnly} title={HUNT_ACTION_LABEL} aria-label={HUNT_ACTION_LABEL} onClick={() => openDialog(MarkerType.Hunt)}>
-        <CrosshairIcon /> Hunt
-      </button>
-      {/* Hunt is the main action (soft primary); Spot the neutral tonal one, so the two read apart at a glance */}
-      <button type="button" className={popupActionClass('neutral', 'min-w-0 flex-1')} disabled={readOnly} onClick={() => openDialog(MarkerType.Spot)}>
-        <GlassesIcon /> Spot
-      </button>
+      {!hosted && (
+        <>
+          <button type="button" className={popupActionClass('primary', 'min-w-0 flex-1')} disabled={readOnly} title={HUNT_ACTION_LABEL} aria-label={HUNT_ACTION_LABEL} onClick={() => openDialog(MarkerType.Hunt)}>
+            <CrosshairIcon /> Hunt
+          </button>
+          {/* Hunt is the main action (soft primary); Spot the neutral tonal one, so the two read apart at a glance */}
+          <button type="button" className={popupActionClass('neutral', 'min-w-0 flex-1')} disabled={readOnly} onClick={() => openDialog(MarkerType.Spot)}>
+            <GlassesIcon /> Spot
+          </button>
+        </>
+      )}
     </>
   );
 }

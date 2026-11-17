@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 import { MarkerType } from '@/types/MarkerType';
-import useMarkerDraftStore, { draftElsewhere, draftKey, keyOfDraft, sameMarkerValues, type MarkerDraft } from './marker-draft.store';
+import useMarkerDraftStore, { draftCounts, draftElsewhere, draftKey, keyOfDraft, latestDraft, pendingDraftLine, reopenDraft, reviveDraftDates, sameMarkerValues, settleDrafts, type MarkerDraft } from './marker-draft.store';
 
 const day = new Date('2026-10-17T00:00:00Z');
 const time = new Date('2026-10-17T12:30:00Z');
@@ -73,5 +73,53 @@ describe('marker draft store', () => {
     store().rememberArea('bravo');
     store().rememberArea('delta');
     expect(store().lastArea).toBe('delta');
+  });
+});
+
+describe('kept drafts outside the dialog', () => {
+  afterEach(() => useMarkerDraftStore.setState({ drafts: {}, lastArea: '', request: null }));
+  const spot: MarkerDraft = { ...draft, type: MarkerType.Spot, sent: { ...draft.sent, type: MarkerType.Spot, location: { type: 'Point', coordinates: [6.0, 52.2] } } };
+  const hunt2: MarkerDraft = { ...draft, sent: { ...draft.sent, location: { type: 'Point', coordinates: [6.1, 52.3] } } };
+
+  test('pendingDraftLine counts hunts and spots with plurals', () => {
+    expect(pendingDraftLine({})).toBeNull();
+    expect(pendingDraftLine({ a: draft })).toBe('1 hunt niet bevestigd — tik om te controleren');
+    expect(pendingDraftLine({ a: draft, b: hunt2 })).toBe('2 hunts niet bevestigd — tik om te controleren');
+    expect(pendingDraftLine({ b: spot })).toBe('1 spot niet bevestigd — tik om te controleren');
+    expect(pendingDraftLine({ a: draft, b: hunt2, c: spot })).toBe('2 hunts en 1 spot niet bevestigd — tik om te controleren');
+    expect(draftCounts({ a: draft, c: spot })).toEqual({ hunt: 1, spot: 1 });
+  });
+
+  test('latestDraft is the last one kept; reopenDraft asks for the dialog at its pin', () => {
+    expect(latestDraft({})).toBeNull();
+    store().keep(draft);
+    store().keep(spot);
+    expect(latestDraft(store().drafts)).toBe(spot);
+    reopenDraft(spot);
+    expect(store().request).toEqual({ type: MarkerType.Spot, lat: 52.2, lng: 6.0, id: 1 });
+    // The same pin again still opens it again
+    reopenDraft(spot);
+    expect(store().request?.id).toBe(2);
+  });
+
+  test('settleDrafts clears what did save, marks the rest absent, and never guesses without a list', () => {
+    store().keep(draft);
+    store().keep(spot);
+    expect(settleDrafts(undefined)).toEqual([]);
+    expect(Object.keys(store().drafts)).toHaveLength(2);
+    // The hunt is in the fresh list (time as a string, like JSON), the spot isn't
+    const fresh = [{ ...draft.sent, time: draft.sent.time.toISOString() as unknown as Date }];
+    expect(settleDrafts(fresh)).toEqual([draft]);
+    expect(Object.values(store().drafts)).toEqual([{ ...spot, outcome: 'absent' }]);
+  });
+
+  test('reviveDraftDates turns the stored date strings back into dates', () => {
+    const json = JSON.stringify({ drafts: { [key]: draft } });
+    const revived = JSON.parse(json, reviveDraftDates) as { drafts: Record<string, MarkerDraft> };
+    expect(revived.drafts[key]).toEqual(draft);
+    expect(revived.drafts[key].sent.time).toBeInstanceOf(Date);
+    // Other strings stay strings
+    expect(reviveDraftDates('area', 'Alpha')).toBe('Alpha');
+    expect(reviveDraftDates('time', 'not a date')).toBe('not a date');
   });
 });

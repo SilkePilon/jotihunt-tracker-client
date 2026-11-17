@@ -11,6 +11,7 @@ import EditionBadge from './EditionBadge';
 import ThemeToggle from './ThemeToggle';
 import IntelButton from './IntelButton';
 import { HEADER_BUTTON_START } from './header-button';
+import DraftPendingLine from '@/components/DraftPendingLine';
 
 /** `className`: e.g. the phone menu's rounded-3xl, to match its menu cards (which have no ring, so neither does the header then) */
 export default function SidebarHeader({ className }: { className?: string }) {
@@ -21,19 +22,23 @@ export default function SidebarHeader({ className }: { className?: string }) {
   const isMobile = useIsMobile();
 
   return (
-    <div className={cn(!className && 'card', 'flex items-center gap-2 rounded-xl bg-card px-3 py-2 text-card-foreground', className)}>
-      <GroupLogo src={logo} groupName={groupName} />
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-bold leading-tight">Jotihunt Tracker</p>
-        {groupName && <p className="truncate text-xs text-muted-foreground">{groupName}</p>}
+    <div className={cn(!className && 'card', 'flex flex-col rounded-xl bg-card px-3 py-2 text-card-foreground', className)}>
+      <div className="flex items-center gap-2">
+        <GroupLogo src={logo} groupName={groupName} />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-bold leading-tight">Jotihunt Tracker</p>
+          {groupName && <p className="truncate text-xs text-muted-foreground">{groupName}</p>}
+        </div>
+        <EditionBadge />
+        {/* Joined tonal group: 2px seam, 12px outer and 6px inner corners */}
+        <div className="flex shrink-0 gap-0.5">
+          {!isMobile && <IntelButton />}
+          <ThemeToggle className={isMobile ? cn(HEADER_BUTTON_START, 'rounded-l-lg rounded-r-(--radius-segment)') : 'rounded-(--radius-segment)'} />
+          <Settings onReplayTour={() => startTour('replay')} />
+        </div>
       </div>
-      <EditionBadge />
-      {/* Joined tonal group: 2px seam, 12px outer and 6px inner corners */}
-      <div className="flex shrink-0 gap-0.5">
-        {!isMobile && <IntelButton />}
-        <ThemeToggle className={isMobile ? cn(HEADER_BUTTON_START, 'rounded-l-lg rounded-r-(--radius-segment)') : 'rounded-(--radius-segment)'} />
-        <Settings onReplayTour={() => startTour('replay')} />
-      </div>
+      {/* Laptop: an unconfirmed Hunt / Spot is named under the header (phones: the peek strip), a click reopens it */}
+      {!isMobile && <DraftPendingLine className="mt-1" />}
     </div>
   );
 }

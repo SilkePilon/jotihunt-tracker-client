@@ -6,6 +6,7 @@ import Map, {MapRef} from './components/Map';
 import {Loader2Icon} from 'lucide-react';
 import BeheerDialog from './components/beheer/BeheerDialog';
 import IntelDialog from './components/intel-window/IntelDialog';
+import MarkerRegistrationHost from '@/components/map/MarkerRegistrationHost';
 import EditionReloader from '@/components/EditionReloader';
 import AddPasskeyPrompt from './components/AddPasskeyPrompt';
 import IosInstallPrompt from './components/IosInstallPrompt';
@@ -298,6 +299,8 @@ export default function Layout() {
             <ErrorBoundary name="Dit venster" variant="floating">
                 <BeheerDialog mapRef={mapRef}/>
                 <IntelDialog mapRef={mapRef}/>
+                {/* The Hunt / Spot dialog outside map popups: a kept draft's line, the phone's "Hunt hier" */}
+                <MarkerRegistrationHost mapRef={mapRef}/>
                 <NotificationsDialog/>
                 <AccountDialog/>
                 <LayersDialog/>

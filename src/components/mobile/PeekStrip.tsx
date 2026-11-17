@@ -18,6 +18,7 @@ import { useAreas } from '@/hooks/areas.hook';
 import { SWAP, SWAP_TRANSITION } from '@/lib/motion';
 import { COARSE_HIT_AREA } from '@/lib/hit-area';
 import { tourTarget } from '@/components/tour/targets';
+import DraftPendingLine from '@/components/DraftPendingLine';
 
 const COOKIE_16 = cookiePath(16, BADGE_COOKIE_DEPTH);
 const TONE_FILL = { ok: 'var(--status-ok-dot)', warn: 'var(--status-warn-dot)', muted: 'var(--muted-foreground)' } as const;
@@ -148,6 +149,8 @@ export default function PeekStrip() {
     // sheet is a column already clear of the notch: no safe-area padding inside it
     <div {...tourTarget('mobile.peek')} className="isolate flex flex-col gap-2 pr-[max(1rem,env(safe-area-inset-right))] pb-3 pl-[max(1rem,env(safe-area-inset-left))] landscape-phone:px-4">
       <TrackerLine onOpen={() => push({ id: 'tracking' })} />
+      {/* An unconfirmed Hunt / Spot: named here, a tap reopens it */}
+      <DraftPendingLine gap={8} />
       <div className="relative h-8">
         <AnimatePresence initial={false}>
           <motion.div key={scene} className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={SWAP_TRANSITION}>
