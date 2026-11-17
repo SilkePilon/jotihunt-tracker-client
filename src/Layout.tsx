@@ -75,12 +75,13 @@ function openGroupSearch() {
 }
 
 /**
- * The desktop "Naar de kaart" skip link: out of sight (and unclickable) until it has focus, then a map tile sliding in
- * at the top left. Not sr-only: that can't animate in; screen readers read it either way.
+ * The "Naar de kaart" skip link (laptop and phone shell): out of sight (and unclickable) until it has focus, then a map
+ * tile sliding in at the top left, below a phone's notch. Not sr-only: that can't animate in; screen readers read it
+ * either way.
  */
 const SKIP_LINK = cn(
     MAP_TILE,
-    'fixed top-3 left-3 z-[70] inline-flex h-11 items-center rounded-2xl px-4 text-sm font-semibold outline-none',
+    'fixed top-[calc(env(safe-area-inset-top)+12px)] left-3 z-[70] inline-flex h-11 items-center rounded-2xl px-4 text-sm font-semibold outline-none',
     'pointer-events-none -translate-y-[calc(100%+1rem)] opacity-0 transition-[translate,opacity] duration-200 ease-out motion-reduce:transition-none',
     'focus:pointer-events-auto focus:translate-y-0 focus:opacity-100 focus-visible:ring-[3px] focus-visible:ring-ring',
 );
@@ -274,16 +275,15 @@ export default function Layout() {
             <main>
             {/* Page heading for screen readers, before the sidebar's section headings (h2) in the outlet */}
             <h1 className="sr-only">Jotihunt Tracker</h1>
-            {/* Desktop: past the sidebar straight onto the map. Hidden until focused, then it slides in as a map tile */}
-            {!isMobile && (
-                <a href="#" className={SKIP_LINK} onClick={(e) => {
-                    e.preventDefault();
-                    // No usable map (not created yet, or style/tiles failed): its "Kaart niet beschikbaar" card instead
-                    if (!mapRef.current?.focusCanvas()) document.getElementById(MAP_UNAVAILABLE_HEADING_ID)?.focus();
-                }}>
-                    Naar de kaart
-                </a>
-            )}
+            {/* Past the sidebar (laptop) or the sheet (phone, e.g. a keyboard or switch user) straight onto the map.
+                Hidden until focused, then it slides in as a map tile */}
+            <a href="#" className={SKIP_LINK} onClick={(e) => {
+                e.preventDefault();
+                // No usable map (not created yet, or style/tiles failed): its "Kaart niet beschikbaar" card instead
+                if (!mapRef.current?.focusCanvas()) document.getElementById(MAP_UNAVAILABLE_HEADING_ID)?.focus();
+            }}>
+                Naar de kaart
+            </a>
             <ErrorBoundary name="Deze pagina" variant="floating">
                 <Outlet context={{mapRef} satisfies OutletContextType}/>
             </ErrorBoundary>
