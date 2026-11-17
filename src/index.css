@@ -322,8 +322,10 @@ body {
   --map-warn: #9a4a00;
   --map-danger-bg: #ffdad6;
   --map-danger-fg: #93000a;
-  --map-selected-bg: #ffedd5;
-  --map-selected-fg: #7c2d12;
+  /* Selected / open state (open triggers, checked menu rows, tiles that are on): the M3 primary container pair, so it
+     matches the soft-orange buttons (10:1 light, 8.3:1 dark; the 70% label in Beheer triggers 4.6:1 / 4.9:1) */
+  --map-selected-bg: var(--primary-container);
+  --map-selected-fg: var(--on-primary-container);
   --map-success: #1b6d2f;
   --map-success-bg: rgb(27 109 47 / 0.12);
   --map-warn-bg: #ffedd5;
@@ -333,8 +335,6 @@ body.dark {
   --map-warn: #ffb68a;
   --map-danger-bg: rgb(147 0 10 / 0.35);
   --map-danger-fg: #ffb4ab;
-  --map-selected-bg: #7c2d12;
-  --map-selected-fg: #ffedd5;
   --map-success: #86efac;
   --map-success-bg: rgb(22 163 74 / 0.2);
   --map-warn-bg: rgb(154 74 0 / 0.3);
