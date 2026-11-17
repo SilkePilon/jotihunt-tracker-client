@@ -6,7 +6,7 @@ import CookieBadge from '@/components/tracker/CookieBadge';
 import SuccessBadge from '@/components/auth/SuccessBadge';
 import { Tag } from '@/components/beheer/controls/Pill';
 import { formatClock } from '@/lib/format';
-import { type DeadlineTone, type MetaSegment, type MetaTone, assignmentMeta, assignmentStatusLabel, INTEL_TAB_ORDER, isHintDone, KIND_COLOR, KIND_LABEL, areaStates, deadlineLabel, deadlineTone, groupByDay, siteSubmission, solvedCount } from '@/lib/intel-window';
+import { type DeadlineTone, type MetaSegment, type MetaTone, assignmentMeta, assignmentStatusLabel, INTEL_TAB_ORDER, isHintDone, KIND_COLOR, KIND_CONTAINER, KIND_LABEL, areaStates, deadlineLabel, deadlineTone, groupByDay, siteSubmission, solvedCount } from '@/lib/intel-window';
 import { EASE_OUT, REVEAL_TRANSITION, SWAP_TRANSITION } from '@/lib/motion';
 import { useHasMounted } from '@/hooks/has-mounted.hook';
 import { areaOptions, cn, getColorFromArea } from '@/lib/utils';
@@ -230,7 +230,7 @@ function KindTile({ kind, unread, done }: { kind: IntelKind; unread: boolean; do
   return (
     <span
       className="relative grid size-[34px] shrink-0 place-items-center rounded-xl"
-      style={{ color: KIND_COLOR[kind], backgroundColor: `color-mix(in oklab, ${KIND_COLOR[kind]} 16%, var(--card))` }}
+      style={{ color: KIND_COLOR[kind], backgroundColor: KIND_CONTAINER[kind] }}
     >
       <Icon className="size-[17px]" strokeWidth={2.2} />
       <AnimatePresence initial={false}>
@@ -361,7 +361,7 @@ export function KindTag({ kind }: { kind: IntelKind }) {
   return (
     <span
       className="shrink-0 rounded-lg px-2 py-0.5 text-[11px] font-bold"
-      style={{ color: KIND_COLOR[kind], backgroundColor: `color-mix(in oklab, ${KIND_COLOR[kind]} 14%, transparent)` }}
+      style={{ color: KIND_COLOR[kind], backgroundColor: KIND_CONTAINER[kind] }}
     >
       {KIND_LABEL[kind]}
     </span>

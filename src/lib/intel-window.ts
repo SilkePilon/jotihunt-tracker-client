@@ -8,7 +8,9 @@ import { areaOptions } from '@/lib/utils';
 
 export const ASSIGNMENT_STATUS_LABELS: Record<AssignmentStatus, string> = { open: 'Open', busy: 'Bezig', submitted: 'Ingeleverd', skipped: 'Skip' };
 
-export const KIND_COLOR: Record<IntelKind, string> = { hint: '#fb923c', assignment: '#60a5fa', news: '#c084fc' };
+/** Kind foreground (icon, label) and its tonal tile: theme tokens from index.css, dark enough on light, the 400 shades on dark */
+export const KIND_COLOR: Record<IntelKind, string> = { hint: 'var(--intel-hint)', assignment: 'var(--intel-assignment)', news: 'var(--intel-news)' };
+export const KIND_CONTAINER: Record<IntelKind, string> = { hint: 'var(--intel-hint-container)', assignment: 'var(--intel-assignment-container)', news: 'var(--intel-news-container)' };
 export const KIND_LABEL: Record<IntelKind, string> = { hint: 'Hint', assignment: 'Opdracht', news: 'Nieuws' };
 
 const AREAS = areaOptions.map((area) => area.value);

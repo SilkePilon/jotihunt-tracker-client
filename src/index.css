@@ -84,6 +84,14 @@
   --status-ok-dot: #22c55e;
   --status-warn-dot: #f59e0b;
   --status-warn-text: #b45309;
+  /* Intel kinds (hint orange, opdracht blue, nieuws purple): the -800 shades as text/icons on their own tonal tile
+     (>= 6:1); the tile is the kind's 400 shade over the card, as in dark mode */
+  --intel-hint: #9a3412;
+  --intel-assignment: #1e40af;
+  --intel-news: #6b21a8;
+  --intel-hint-container: color-mix(in oklab, #fb923c 16%, var(--card));
+  --intel-assignment-container: color-mix(in oklab, #60a5fa 16%, var(--card));
+  --intel-news-container: color-mix(in oklab, #c084fc 16%, var(--card));
 }
 
 .dark {
@@ -145,6 +153,12 @@
   /* --primary is 3.6:1 on beheer-row-high and 3:1 on primary-container; this lighter orange is >= 4.5:1 on card, rows and containers */
   --primary-text: #fb923c;
   --status-warn-text: #fcd34d;
+  --intel-hint: #fb923c;
+  --intel-assignment: #60a5fa;
+  --intel-news: #c084fc;
+  --intel-hint-container: color-mix(in oklab, #fb923c 16%, var(--card));
+  --intel-assignment-container: color-mix(in oklab, #60a5fa 16%, var(--card));
+  --intel-news-container: color-mix(in oklab, #c084fc 16%, var(--card));
 }
 
 @theme inline {
