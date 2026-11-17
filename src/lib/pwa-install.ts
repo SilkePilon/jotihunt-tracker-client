@@ -4,6 +4,10 @@
  * library just shows it (`isShown`).
  */
 
+/** The library's sheet slides out in 0.4 s; it unmounts once that has finished (at once without motion) */
+export const IOS_INSTALL_EXIT_MS = 450;
+export const iosInstallExitMs = (reducedMotion: boolean) => (reducedMotion ? 0 : IOS_INSTALL_EXIT_MS);
+
 /** Shown on the first this-many turns (the library's promptOnVisit 1 + timesToShow 2) */
 export const IOS_INSTALL_TIMES = 2;
 /** The library's localStorage entry ({ visits }) */
