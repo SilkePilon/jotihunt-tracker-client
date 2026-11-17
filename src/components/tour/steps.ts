@@ -12,13 +12,15 @@ export const TOUR_VERSION = 1;
  * The onboarding tour, in order. To add a step: add its target id to targets.ts, put {...tourTarget(id)}
  * on the element, and add an entry here. New UI interactions go in actions.ts.
  * On phones every sidebar step first pulls the sheet up so the section is visible.
+ * Steps that point at a sidebar section are shown in the order the platform shows the sections (laptop sidebar or
+ * phone menu, see stepsForPlatform); here they follow the laptop sidebar.
  */
 export const TOUR_STEPS: TourStep[] = [
   {
     id: 'welcome',
     target: null,
     title: 'Welkom bij de Jotihunt Tracker!',
-    body: 'In een paar stappen laten we zien hoe de app werkt. De rondleiding loopt vanzelf door; met de knoppen ga je sneller of terug.',
+    body: 'In een paar stappen laten we zien hoe de app werkt. De rondleiding loopt vanzelf door; zodra je zelf een knop gebruikt, ga je verder met Volgende.',
   },
   {
     id: 'map',
@@ -42,13 +44,6 @@ export const TOUR_STEPS: TourStep[] = [
     actions: [sheetSnap('full'), showSection('foxes')],
   },
   {
-    id: 'hunts',
-    target: 'sidebar.hunts',
-    title: 'Hunts',
-    body: 'Hunts komen vanzelf binnen van jotihunt.nl. Je ziet hier of ze goedgekeurd zijn; tik op een regel om hem op de kaart te zien.',
-    actions: [sheetSnap('full'), showSection('hunts')],
-  },
-  {
     id: 'hints',
     target: 'sidebar.hints',
     title: 'Hints',
@@ -56,11 +51,11 @@ export const TOUR_STEPS: TourStep[] = [
     actions: [sheetSnap('full'), showSection('hints')],
   },
   {
-    id: 'hint-entry',
-    target: 'sidebar.hintEntry',
-    title: 'Hint registreren',
-    body: 'Kies het deelgebied en de tijd en vul de RD-coördinaten van een opgeloste hint in; de hint komt dan op de kaart.',
-    actions: [sheetSnap('full'), showSection('hintEntry')],
+    id: 'hunts',
+    target: 'sidebar.hunts',
+    title: 'Hunts',
+    body: 'Hunts komen vanzelf binnen van jotihunt.nl. Je ziet hier of ze goedgekeurd zijn; tik op een regel om hem op de kaart te zien.',
+    actions: [sheetSnap('full'), showSection('hunts')],
   },
   {
     id: 'predictions',
@@ -69,6 +64,13 @@ export const TOUR_STEPS: TourStep[] = [
     body: 'Een AI-voorspelling van waar de vossen waarschijnlijk zijn. Tik op een voorspelling om ernaartoe te gaan op de kaart.',
     actions: [sheetSnap('full'), showSection('predictions')],
     optional: true,
+  },
+  {
+    id: 'hint-entry',
+    target: 'sidebar.hintEntry',
+    title: 'Hint registreren',
+    body: 'Kies het deelgebied en de tijd en vul de RD-coördinaten van een opgeloste hint in; de hint komt dan op de kaart.',
+    actions: [sheetSnap('full'), showSection('hintEntry')],
   },
   {
     id: 'counter-hunt',
