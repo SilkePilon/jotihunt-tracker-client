@@ -5,7 +5,7 @@ import { huntEventParts, huntEventRowLabel, huntEventTime } from '@/lib/hunt-syn
 import { Loader2Icon } from 'lucide-react';
 import LoadError from '@/components/LoadError';
 import { SidebarSectionVariantContext } from '@/components/sidebar/section-variant';
-import { REVEAL_TRANSITION, revealTransition, SWAP } from '@/lib/motion';
+import { revealTransition, SWAP } from '@/lib/motion';
 import { getColorFromArea } from '@/lib/utils';
 import type { HuntSyncEvent } from '@/types/HuntSync';
 
@@ -114,6 +114,7 @@ export function HuntEventLine({ event }: { event: HuntSyncEvent }) {
  */
 const LogRow = memo(function LogRow({ event, onSelect }: { event: HuntSyncEvent; onSelect: (event: HuntSyncEvent) => void }) {
   const located = event.location !== null;
+  const reduced = useReducedMotion() ?? false;
   // Count the moments the location arrived while this row was on screen (state adjusted during render, not in an effect)
   const [seenLocated, setSeenLocated] = useState(located);
   const [arrivals, setArrivals] = useState(0);
@@ -151,8 +152,9 @@ const LogRow = memo(function LogRow({ event, onSelect }: { event: HuntSyncEvent;
             className="col-start-2 overflow-hidden text-label text-muted-foreground pointer-coarse:text-xs"
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={REVEAL_TRANSITION}
+            // Reduced motion: the height settles at once and only the fade remains
+            exit={{ height: 0, opacity: 0, transition: revealTransition(reduced, 'exit') }}
+            transition={revealTransition(reduced, 'enter')}
           >
             Locatie volgt…
           </motion.span>
