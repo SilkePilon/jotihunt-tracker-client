@@ -91,7 +91,7 @@ export default function HintMiniGrid({ mapRef }: { mapRef: RefObject<MapRef | nu
           ))}
           {rows.map((row) => (
             <Fragment key={row.article.id}>
-              <span className="font-mono text-muted-foreground">
+              <span className="tabular-nums text-muted-foreground">
                 {formatClock(row.article.publishAt)}
               </span>
               {areaOptions.map((area) => {

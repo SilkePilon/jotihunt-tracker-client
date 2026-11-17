@@ -52,6 +52,16 @@ describe('TOUR_STEPS', () => {
     }
   });
 
+  test('steps that say how to go on use "klik" on a laptop and "tik" on a phone', () => {
+    for (const id of ['welcome', 'notification-sounds']) {
+      const step = TOUR_STEPS.find((candidate) => candidate.id === id)!;
+      expect(step.body).not.toMatch(/\btik/i);
+      expect(step.body).toMatch(/\bklik/i);
+      expect(step.bodyMobile).toMatch(/\btik/i);
+      expect(step.bodyMobile).not.toMatch(/\bklik/i);
+    }
+  });
+
   test('only the welcome and the sounds panel wait for the user; every other step advances by itself', () => {
     const waiting = TOUR_STEPS.filter((step) => !autoAdvances(step)).map((step) => step.id);
     expect(waiting).toEqual(['welcome', 'notification-sounds']);

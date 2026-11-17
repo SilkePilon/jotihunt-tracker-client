@@ -427,7 +427,7 @@ export default function FoxHistoryTimeline({ model, playKey, play = true }: { mo
             <motion.div
               key="card"
               aria-hidden
-              className="pointer-events-none absolute z-[6] rounded-[14px] bg-popover px-[11px] py-[9px] text-xs text-popover-foreground shadow-[0_12px_30px_rgb(0_0_0/0.2)] ring-1 ring-border"
+              className="pointer-events-none absolute z-[6] rounded-[14px] bg-popover px-[11px] py-[9px] text-xs text-popover-foreground shadow-(--shadow-tooltip)"
               style={{ width: CARD_W }}
               initial={{ opacity: 0, y: 3, left: card.left, top: card.top }}
               animate={{ opacity: 1, y: 0, left: card.left, top: card.top }}

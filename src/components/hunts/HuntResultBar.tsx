@@ -1,4 +1,5 @@
 import { motion } from 'motion/react';
+import { CheckIcon, ClockIcon, XIcon } from 'lucide-react';
 import CountUp from '@/components/motion/CountUp';
 import { LAYOUT_SPRING } from '@/lib/motion';
 import { cn } from '@/lib/utils';
@@ -8,10 +9,11 @@ const BAR_WIDTH = 150;
 const GAP = 3;
 
 const SEGMENTS = [
-  // The fox status colours (ok / warn / error), like the rest of the app's status fills
-  { key: 'approved', label: 'goedgekeurd', fill: 'bg-fox-ok' },
-  { key: 'pending', label: 'wacht', fill: 'bg-fox-warn' },
-  { key: 'rejected', label: 'afgekeurd', fill: 'bg-fox-error' },
+  // The fox status colours (ok / warn / error), like the rest of the app's status fills; the legend adds a glyph per
+  // state so it doesn't rest on colour alone
+  { key: 'approved', label: 'goedgekeurd', fill: 'bg-fox-ok', text: 'text-fox-ok', Icon: CheckIcon },
+  { key: 'pending', label: 'wacht', fill: 'bg-fox-warn', text: 'text-fox-warn', Icon: ClockIcon },
+  { key: 'rejected', label: 'afgekeurd', fill: 'bg-fox-error', text: 'text-fox-error', Icon: XIcon },
 ] as const;
 
 /**
@@ -43,8 +45,8 @@ export default function HuntResultBar({ counts }: { counts: HuntSyncStatus['coun
       </div>
       <div className="inline-flex gap-2 text-xs font-semibold desk:text-[11.5px] tabular-nums" aria-hidden>
         {SEGMENTS.map((segment, index) => (
-          <span key={segment.key} className="inline-flex items-center gap-[3px]">
-            <span className={cn('size-[7px] rounded-[2px]', segment.fill)} />
+          <span key={segment.key} className="inline-flex items-center gap-[3px]" title={segment.label}>
+            <segment.Icon className={cn('size-3 shrink-0', segment.text)} strokeWidth={3} />
             <CountUp value={values[index]} />
           </span>
         ))}

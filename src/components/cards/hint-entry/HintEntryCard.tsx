@@ -69,16 +69,18 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
     });
     const selectedArea = useWatch({control: form.control, name: 'area'});
     const [timeValue, xValue, yValue] = useWatch({control: form.control, name: ['time', 'x', 'y']});
-    // What the last Registreren attempt ran into when no answer came (offline); the draft stays either way
-    const [submitError, setSubmitError] = useState<string | null>(null);
     // The last hint that got no answer and wasn't confirmed: a later poll (or Opnieuw controleren) can still find it.
+    // Kept in the draft store, so leaving the phone page and coming back keeps Opnieuw controleren (no second send).
     // The ref settles it once (the poll and a recheck can both see it); the state drives the render.
-    const pendingRef = useRef<UnconfirmedHint | null>(null);
-    const [pending, setPendingState] = useState<UnconfirmedHint | null>(null);
+    const pendingRef = useRef<UnconfirmedHint | null>(useHintDraftStore.getState().pending);
+    const [pending, setPendingState] = useState<UnconfirmedHint | null>(pendingRef.current);
     const setPending = (next: UnconfirmedHint | null) => {
         pendingRef.current = next;
         setPendingState(next);
+        useHintDraftStore.getState().setPending(next);
     };
+    // What the last Registreren attempt ran into when no answer came (offline); the draft stays either way
+    const [submitError, setSubmitError] = useState<string | null>(() => (pendingRef.current ? lostResponseMessage(pendingRef.current.outcome) : null));
     const [checking, setChecking] = useState(false);
 
     // Every change goes to the draft store, so leaving the page doesn't lose what was typed
