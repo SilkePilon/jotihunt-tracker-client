@@ -22,6 +22,7 @@ import { markDevicePrompted } from '@/lib/notifications-prompt';
 import { currentDevicePush, subscribePush, type PushResult } from '@/lib/push';
 import useNotificationsDialogStore from '@/stores/notifications-dialog.store';
 import { cn } from '@/lib/utils';
+import { BUSY_CLASSES, busyProps } from '@/lib/busy';
 
 const RESULT_MESSAGE: Record<Exclude<PushResult, 'subscribed'>, string> = {
   denied: 'Meldingen zijn geblokkeerd. Zet ze aan in de instellingen van je browser; geluiden in de app werken wel.',
@@ -81,6 +82,7 @@ export default function NotificationsDialog() {
   }
 
   async function save() {
+    if (saving) return;
     setSaving(true);
     try {
       await update({ disabledTypes: current, promptedVersion: NOTIFICATIONS_PROMPT_VERSION });
@@ -172,20 +174,20 @@ export default function NotificationsDialog() {
             <button
               type="button"
               onClick={requestClose}
-              disabled={saving}
-              className="h-11 flex-1 cursor-pointer rounded-xl bg-beheer-row-high text-sm font-semibold outline-none transition-[background-color,opacity] hover:bg-[color-mix(in_oklab,var(--foreground)_14%,var(--card))] focus-visible:ring-[3px] focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+              // aria-disabled while saving, not disabled: the focused button would drop the focus to <body>
+              aria-disabled={saving || undefined}
+              className={cn('h-11 flex-1 cursor-pointer rounded-xl bg-beheer-row-high text-sm font-semibold outline-none transition-[background-color,opacity] hover:bg-[color-mix(in_oklab,var(--foreground)_14%,var(--card))] focus-visible:ring-[3px] focus-visible:ring-ring', BUSY_CLASSES)}
             >
               Later
             </button>
             <button
               type="button"
               onClick={() => void save()}
-              disabled={locked}
-              aria-busy={saving}
+              disabled={readOnly || !prefs}
+              {...busyProps(saving)}
               className={cn(
-                'inline-flex h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-primary-container text-sm font-semibold text-on-primary-container outline-none transition-[filter,opacity] hover:brightness-105 focus-visible:ring-[3px] focus-visible:ring-ring disabled:cursor-not-allowed [&_svg]:size-4',
-                // Saving keeps full colour (the spinner says it's busy); only "can't save" dims
-                !saving && 'disabled:opacity-50',
+                'inline-flex h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-primary-container text-sm font-semibold text-on-primary-container outline-none transition-[filter,opacity] hover:brightness-105 focus-visible:ring-[3px] focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:pointer-events-none [&_svg]:size-4',
+                // Saving keeps full colour and the focus (the spinner says it's busy); only "can't save" dims
               )}
             >
               <BusyIcon busy={saving} />

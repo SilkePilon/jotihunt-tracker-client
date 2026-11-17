@@ -17,6 +17,7 @@ import KoppelingenPane from './KoppelingenPane';
 import UsersPane from './UsersPane';
 import { NavItem } from './WindowNav';
 import { BEHEER_SECTIONS } from './sections';
+import NewTabHint from '@/components/NewTabHint';
 
 interface BeheerWindowProps {
   /** For the Hunters pane's "Toon op kaart" */
@@ -77,7 +78,12 @@ export default function BeheerWindow({ mapRef }: BeheerWindowProps) {
 
   const mounted = useHasMounted();
   const pane = <SectionPane section={section} mapRef={mapRef} />;
-  const hqTrailing = <ExternalLinkIcon className="ml-auto size-3.5 shrink-0" />;
+  const hqTrailing = (
+    <>
+      <ExternalLinkIcon className="ml-auto size-3.5 shrink-0" />
+      <NewTabHint />
+    </>
+  );
 
   if (isMobile) {
     return (

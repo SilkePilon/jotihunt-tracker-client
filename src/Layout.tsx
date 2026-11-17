@@ -36,6 +36,7 @@ import {usePromptQueueHold} from './stores/prompt-queue.store';
 import {createFetchErrorToastState, ERROR_TOAST_DELAY_MS, fetchErrorToastText} from '@/lib/fetch-error-toast';
 import {isNetworkError} from '@/lib/api-error';
 import {isCriticalFeedKey} from '@/lib/connection';
+import {MAP_UNAVAILABLE_HEADING_ID} from '@/lib/map-availability';
 import AndroidPromoAutoOpen from './components/android-promo/AndroidPromoAutoOpen';
 
 const QrConfirmDrawer = lazy(() => import('./components/auth/QrConfirmDrawer'));
@@ -208,7 +209,8 @@ export default function Layout() {
             {!isMobile && (
                 <a href="#" className={SKIP_LINK} onClick={(e) => {
                     e.preventDefault();
-                    mapRef.current?.focusCanvas();
+                    // No usable map (not created yet, or style/tiles failed): its "Kaart niet beschikbaar" card instead
+                    if (!mapRef.current?.focusCanvas()) document.getElementById(MAP_UNAVAILABLE_HEADING_ID)?.focus();
                 }}>
                     Naar de kaart
                 </a>

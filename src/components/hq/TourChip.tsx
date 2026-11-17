@@ -8,6 +8,8 @@ import { cn, getColorFromArea } from '@/lib/utils';
 export default function TourChip({ stop, index, count, step, hidden }: { stop: TourStop; index: number; count: number; step: number; hidden: boolean }) {
   return (
     <div
+      // Faded out (between stops, an event on screen): gone for screen readers too
+      aria-hidden={hidden || undefined}
       className={cn(
         MAP_TILE,
         'absolute left-4 top-4 z-10 flex items-center gap-3 rounded-2xl py-1.5 pl-1.5 pr-4 transition-opacity duration-600 motion-reduce:transition-none',

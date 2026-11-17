@@ -19,6 +19,7 @@ import { useAppConfig } from '@/hooks/app-config.hook';
 import { apiAssetUrl } from '@/lib/app-config';
 import { AUTH_CARD } from '@/components/auth/auth-card';
 import { cn } from '@/lib/utils';
+import { busyProps } from '@/lib/busy';
 
 function GroupLogo({ url, className }: { url: string | null; className: string }) {
   const fallback = apiAssetUrl(useAppConfig().logoUrl);
@@ -32,7 +33,7 @@ function InvalidCard({ text }: { text: string }) {
       <div className="flex size-10 items-center justify-center rounded-lg bg-muted">
         <Link2OffIcon className="size-5 text-muted-foreground" />
       </div>
-      <h2 className="text-lg font-bold tracking-tight">Deze uitnodiging werkt niet meer</h2>
+      <h1 className="text-lg font-bold tracking-tight">Deze uitnodiging werkt niet meer</h1>
       <p className="text-sm/relaxed text-muted-foreground">{text}</p>
       <Button variant="outline" className="mt-1 w-full" onClick={() => navigate('/login')}>
         Naar inloggen
@@ -83,6 +84,7 @@ export default function Invite() {
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
+    if (busy) return;
     const trimmed = name.trim();
     if (!trimmed) {
       setError('Vul je naam in.');
@@ -117,7 +119,7 @@ export default function Invite() {
   if (done) [scene, content] = ['done', <WelcomeCard name={done.name} withPasskey={done.withPasskey} />];
   else if (goneReason) [scene, content] = ['invalid', <InvalidCard text={INVITE_REASON_TEXT[goneReason]} />];
   else if (unreachable) [scene, content] = ['unreachable', <UnreachableCard onRetry={load} />];
-  else if (!invite) [scene, content] = ['loading', <Skeleton className="h-72 w-full max-w-[760px] rounded-[28px]" />];
+  else if (!invite) [scene, content] = ['loading', <Skeleton role="status" aria-label="Uitnodiging laden" className="h-72 w-full max-w-[760px] rounded-[28px]" />];
   else if (!invite.valid) [scene, content] = ['invalid', <InvalidCard text={INVITE_REASON_TEXT[invite.reason ?? 'unknown']} />];
   else [scene, content] = ['form', renderForm(invite)];
 
@@ -172,7 +174,7 @@ export default function Invite() {
               }}
             />
           </div>
-          <Button type={signupDone ? 'button' : 'submit'} size="lg" className="w-full" disabled={busy} onClick={signupDone ? () => navigate('/login') : undefined}>
+          <Button type={signupDone ? 'button' : 'submit'} size="lg" className="w-full" {...busyProps(busy)} onClick={signupDone ? () => navigate('/login') : undefined}>
             <AnimatePresence mode="popLayout" initial={false}>
               <motion.span key={signupDone ? 'login' : 'signup'} className="inline-flex items-center gap-2" {...SWAP}>
                 {signupDone ? (

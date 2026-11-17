@@ -22,6 +22,7 @@ export default function NotificationTile({ icon: Icon, label, short, description
     <button
       type="button"
       aria-pressed={on}
+      // The description: title is not part of the name (label + short), so screen readers read it once, as the description
       title={description}
       onClick={onToggle}
       disabled={disabled}
@@ -40,7 +41,6 @@ export default function NotificationTile({ icon: Icon, label, short, description
       </AnimatePresence>
       <span className={cn('text-[13px] font-semibold transition-colors duration-200 motion-reduce:transition-none', !on && 'text-foreground')}>{label}</span>
       <span className="-mt-1 text-xs leading-snug desk:text-[11px]">{short}</span>
-      <span className="sr-only">{description}</span>
     </button>
   );
 }

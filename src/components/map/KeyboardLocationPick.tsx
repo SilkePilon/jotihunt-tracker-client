@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence } from 'motion/react';
 import { useMap } from 'react-map-gl/maplibre';
 import type { LngLat, Map as MaplibreMap } from 'maplibre-gl';
 import CenterCrosshair from './CenterCrosshair';
-import { isPickKey, PICK_MESSAGE } from '@/lib/map-pick-keys';
+import { isPickKey, mapKeysDescription, PICK_MESSAGE } from '@/lib/map-pick-keys';
 
 /** The picked-location puck's colour (Map.tsx sets the marker palette on the map's wrapper) */
 const CROSSHAIR_COLOR = 'var(--jh-marker-primary)';
@@ -20,6 +20,15 @@ export default function KeyboardLocationPick({ enabled, onPick }: { enabled: boo
   const [keyboardFocus, setKeyboardFocus] = useState(false);
   // What the live region last said; `n` makes the same sentence twice still a change, so it is read out again
   const [said, setSaid] = useState({ text: '', n: 0 });
+  const descriptionId = useId();
+
+  // The canvas is a bare focus stop: describe its keys, so a screen reader says what it can do there
+  useEffect(() => {
+    if (!map) return;
+    const canvas = map.getCanvas();
+    canvas.setAttribute('aria-describedby', descriptionId);
+    return () => canvas.removeAttribute('aria-describedby');
+  }, [map, descriptionId]);
 
   useEffect(() => {
     if (!map || !enabled) return;
@@ -53,6 +62,9 @@ export default function KeyboardLocationPick({ enabled, onPick }: { enabled: boo
   return createPortal(
     <>
       <AnimatePresence>{enabled && keyboardFocus && <CenterCrosshair key="pick-crosshair" map={map} color={CROSSHAIR_COLOR} />}</AnimatePresence>
+      <p id={descriptionId} className="sr-only">
+        {mapKeysDescription(enabled)}
+      </p>
       {/* Always mounted, so each pick is read out (a freshly mounted region often isn't) */}
       <div role="status" aria-live="polite" className="sr-only">
         {said.text}

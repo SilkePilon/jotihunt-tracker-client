@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import AuthScreen from '@/components/auth/AuthScreen';
 import { AUTH_CARD } from '@/components/auth/auth-card';
 import { cn } from '@/lib/utils';
+import { busyProps } from '@/lib/busy';
 import QrLoginPanel from '@/components/auth/QrLoginPanel';
 import Reveal from '@/components/motion/Reveal';
 import { passkeyLogin, passkeysSupported, type SessionResult } from '@/lib/auth-api';
@@ -46,6 +47,7 @@ export default function Login() {
   }
 
   async function handleLogin() {
+    if (busy) return;
     setBusy(true);
     setError(null);
     try {
@@ -92,7 +94,7 @@ export default function Login() {
             </div>
           </div>
           <p className="text-sm text-muted-foreground">Gebruik de vingerafdruk, het gezicht of de schermvergrendeling van dit apparaat.</p>
-          <Button size="lg" className="w-full" onClick={handleLogin} disabled={busy || !supported}>
+          <Button size="lg" className="w-full" onClick={handleLogin} disabled={!supported} {...busyProps(busy)}>
             {busy ? <Loader2Icon className="animate-spin" /> : <KeyRoundIcon />}
             Inloggen met passkey
           </Button>

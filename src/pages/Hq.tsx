@@ -32,8 +32,12 @@ import { getColorFromArea } from '@/lib/utils';
 import useHqDirectorStore from '@/stores/hq-director.store';
 import type { User } from '@/types/User';
 
-/** Everything on the screen is sized in rem: scale the root font with the screen width, so 1080p and a beamer look alike. */
-const WALL_FONT_SIZE = '1.3vw';
+/**
+ * Everything on the screen is sized in rem: scale the root font with the screen width, so 1080p and a beamer look alike.
+ * The rem part (the browser's own font size, inside html's font-size) keeps browser zoom and a larger default font
+ * working; pure vw ignored both. 1920 px wide: 19.2 + 4.8 = 24 px (was 1.3vw = 25 px).
+ */
+const WALL_FONT_SIZE = 'calc(1vw + 0.3rem)';
 
 /** Admin-only wall display for the HQ beamer: a map that tours the active foxes and flies to events, plus the fox board. */
 export default function Hq() {
