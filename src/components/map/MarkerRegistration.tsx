@@ -28,6 +28,7 @@ import { useIsMobile } from '@/hooks/media.hook';
 import ResponsiveDialog from '../ResponsiveDialog';
 import ConfirmDialog from '../ConfirmDialog';
 import { rdText } from '@/lib/rd';
+import { timeInputValue, withTimeOfDay } from '@/lib/time-input';
 
 
 type FormValues = { area: string; day: Date; time: Date };
@@ -350,29 +351,24 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
               control={form.control}
               name="time"
               render={({ field, fieldState }) => {
-                const timeValue =
-                  field.value instanceof Date
-                    ? field.value.toTimeString().substring(0, 5) // Convert Date to HH:MM format
-                    : ''; // Ensure it's a time string in HH:MM
-
                 return (
                   <Field data-invalid={fieldState.invalid} className="min-w-0">
                     <FieldLabel htmlFor={`${fieldId}-time`}>Tijd</FieldLabel>
                     <Input
                       id={`${fieldId}-time`}
                       type="time"
-                      value={timeValue}
+                      value={timeInputValue(field.value)}
                       aria-invalid={fieldState.invalid}
                       onChange={(e) => {
-                        const [hours, minutes] = e.target.value.split(':');
-                        const updatedDate = new Date(field.value);
-                        updatedDate.setHours(parseInt(hours, 10));
-                        updatedDate.setMinutes(parseInt(minutes, 10));
-                        field.onChange(updatedDate); // Update the form field value with the selected time
+                        // A cleared or half-typed field is no time (not setHours(NaN) on the last one, which stuck): the
+                        // next complete value builds from a valid date again
+                        field.onChange(withTimeOfDay(field.value, e.target.value, getCurrentOrFirstDate()));
+                        // Said right away, not only after Opslaan
+                        void form.trigger('time');
                       }}
-                      className="w-full border p-2 pointer-coarse:h-11"
+                      className="w-full pointer-coarse:h-11"
                     />
-                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                    <Reveal>{fieldState.invalid && <FieldError errors={[fieldState.error]} />}</Reveal>
                   </Field>
                 );
               }}
