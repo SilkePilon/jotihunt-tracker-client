@@ -17,9 +17,11 @@ import { startsInOwnGesture, SWIPE_EDGE_PX, swipeAxis, swipeGoesBack, swipeOffse
  */
 export default function MobilePage({ page, depth, mapRef }: { page: Page; depth: number; mapRef: RefObject<MapRef | null> }) {
   const pop = useMobileNavStore((s) => s.pop);
-  // A form page (Hint registreren): no follow-up prompt over it while it's open
-  useWorkHold(isFormPage(page.id));
-  const { ref: swipeRef, x, handlers } = useSwipeBack(pop);
+  // A form page (Hint registreren): no follow-up prompt over it while it's open, and no swipe-back (a sideways slip
+  // while typing coordinates must not throw the form away; "‹ Menu" still goes back)
+  const formPage = isFormPage(page.id);
+  useWorkHold(formPage);
+  const { ref: swipeRef, x, handlers } = useSwipeBack(pop, !formPage);
   return (
     <motion.div
       ref={swipeRef}
@@ -56,9 +58,9 @@ interface SwipeGesture {
  * Swipe right on the page to go back (lib/swipe-back.ts decides): the page follows the finger, then either leaves the
  * way a pop does (MobileShell's PANE_SLIDE, out to the right) or eases back. Vertical scrolling stays native (passive
  * touch listeners, an axis lock), and a drag that starts in a field, a slider, horizontally scrollable content or at the
- * screen's left edge (the system back gesture) is left alone.
+ * screen's left edge (the system back gesture) is left alone. `enabled` false (form pages): no swipe at all.
  */
-function useSwipeBack(pop: () => void) {
+function useSwipeBack(pop: () => void, enabled: boolean) {
   const ref = useRef<HTMLDivElement>(null);
   const x = useMotionValue(0);
   const reduceMotion = useReducedMotion();
@@ -74,7 +76,7 @@ function useSwipeBack(pop: () => void) {
   const onTouchStart = (event: TouchEvent<HTMLDivElement>) => {
     swallowClick.current = false;
     const touch = event.touches[0];
-    if (event.touches.length !== 1 || !touch || !ref.current || touch.clientX < SWIPE_EDGE_PX || startsInOwnGesture(event.target, ref.current)) {
+    if (!enabled || event.touches.length !== 1 || !touch || !ref.current || touch.clientX < SWIPE_EDGE_PX || startsInOwnGesture(event.target, ref.current)) {
       gesture.current = null;
       return;
     }
@@ -98,7 +100,14 @@ function useSwipeBack(pop: () => void) {
     x.set(swipeOffset(dx));
   };
 
+  // The click a drag could end in comes right after touchend; later on, a keyboard or assistive-technology click must
+  // not be eaten by a flag left from a drag that produced none
+  const releaseClick = () => {
+    if (swallowClick.current) setTimeout(() => (swallowClick.current = false), 0);
+  };
+
   const onTouchEnd = () => {
+    releaseClick();
     const current = gesture.current;
     gesture.current = null;
     if (!current || current.axis !== 'horizontal') return;
@@ -108,6 +117,7 @@ function useSwipeBack(pop: () => void) {
   };
 
   const onTouchCancel = () => {
+    releaseClick();
     const current = gesture.current;
     gesture.current = null;
     if (current?.axis === 'horizontal') settle();
