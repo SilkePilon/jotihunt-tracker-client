@@ -58,7 +58,7 @@ function DigitSlot({ index, bad }: { index: number; bad: boolean }) {
   return (
     <div
       className={cn(
-        'relative flex h-9 items-center justify-center rounded-lg text-lg font-semibold tabular-nums transition-[background-color,color,box-shadow] duration-150',
+        'relative flex h-9 items-center justify-center rounded-lg text-lg pointer-coarse:h-11 font-semibold tabular-nums transition-[background-color,color,box-shadow] duration-150',
         !char
           ? // A 1px --input edge, so an empty box stands out >= 3:1 from the tonal block
             'bg-card shadow-[inset_0_0_0_1px_var(--input)]'
