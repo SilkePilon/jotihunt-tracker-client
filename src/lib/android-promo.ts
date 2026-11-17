@@ -63,3 +63,12 @@ export function shouldShowAndroidPromo({ isMobile, isAndroid, hasRelease, paired
 export function appDidNotOpen(startedAt: number, now: number, visible: boolean): boolean {
   return visible && now - startedAt >= APP_OPEN_TIMEOUT_MS;
 }
+
+/**
+ * Back on the page after the deep link: the app opened only when this launch saw the page go hidden first. A page that
+ * was already hidden when the link fired (backgrounded while the code was created) comes back without the app having
+ * opened; the visible timeout (appDidNotOpen) decides then.
+ */
+export function appOpenedOnReturn(hiddenSinceLaunch: boolean, visible: boolean): boolean {
+  return hiddenSinceLaunch && visible;
+}
