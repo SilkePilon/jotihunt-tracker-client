@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import Settings from '@/components/Settings';
 import { cn } from '@/lib/utils';
 import { useAppConfig } from '@/hooks/app-config.hook';
-import { useIsMobile } from '@/hooks/media.hook';
+import { useIntelAvailable, useIsMobile } from '@/hooks/media.hook';
 import { apiAssetUrl } from '@/lib/app-config';
 import { useStartTour } from '@/components/tour/useTour';
 import { SWAP_TRANSITION } from '@/lib/motion';
@@ -18,8 +18,10 @@ export default function SidebarHeader({ className }: { className?: string }) {
   const startTour = useStartTour();
   const { logoUrl, groupName } = useAppConfig();
   const logo = apiAssetUrl(logoUrl);
-  // The Intel window is laptop-only (phones have the Hints page); there it leads the group
+  // The Intel window is for a mouse (phones have the Hints page); there it leads the group, also in a laptop window
+  // narrowed to the phone layout
   const isMobile = useIsMobile();
+  const showIntel = useIntelAvailable();
 
   return (
     <div className={cn(!className && 'card', 'flex flex-col rounded-xl bg-card px-3 py-2 text-card-foreground', className)}>
@@ -32,8 +34,8 @@ export default function SidebarHeader({ className }: { className?: string }) {
         <EditionBadge />
         {/* Joined tonal group: 2px seam, 12px outer and 6px inner corners */}
         <div className="flex shrink-0 gap-0.5">
-          {!isMobile && <IntelButton />}
-          <ThemeToggle className={isMobile ? cn(HEADER_BUTTON_START, 'rounded-l-lg rounded-r-(--radius-segment)') : 'rounded-(--radius-segment)'} />
+          {showIntel && <IntelButton />}
+          <ThemeToggle className={showIntel ? 'rounded-(--radius-segment)' : cn(HEADER_BUTTON_START, 'rounded-l-lg rounded-r-(--radius-segment)')} />
           <Settings onReplayTour={() => startTour('replay')} />
         </div>
       </div>

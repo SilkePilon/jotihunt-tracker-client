@@ -19,6 +19,33 @@ export function useIsMobile(): boolean {
   return useSyncExternalStore(subscribe, () => window.matchMedia(MOBILE_QUERY).matches);
 }
 
+/** A mouse or trackpad as the main pointer: a laptop, also in a narrow split-screen window that gets the mobile shell */
+export const FINE_POINTER_QUERY = '(pointer: fine)';
+
+function subscribeFinePointer(callback: () => void) {
+  const media = window.matchMedia(FINE_POINTER_QUERY);
+  media.addEventListener('change', callback);
+  return () => media.removeEventListener('change', callback);
+}
+
+/** Whether the main pointer is fine (mouse, trackpad); see {@link FINE_POINTER_QUERY}. */
+export function useFinePointer(): boolean {
+  return useSyncExternalStore(subscribeFinePointer, () => window.matchMedia(FINE_POINTER_QUERY).matches);
+}
+
+/**
+ * Whether the Intel window (and its header button) is offered: always outside the mobile shell, and inside it with a
+ * fine pointer (a laptop window narrowed to phone width for split screen keeps it; phones use the Hints page).
+ */
+export function intelAvailable(mobile: boolean, finePointer: boolean): boolean {
+  return !mobile || finePointer;
+}
+
+/** {@link intelAvailable} for this window, kept current */
+export function useIntelAvailable(): boolean {
+  return intelAvailable(useIsMobile(), useFinePointer());
+}
+
 /**
  * A phone held sideways (inside the mobile shell): the sheet becomes a left column instead of spanning the width.
  * Orientation and the layout viewport's height, not the visible height, so an open keyboard never switches it.

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from 'bun:test';
-import { MOBILE_QUERY, shellAttribute, syncShellAttribute } from './media.hook';
+import { FINE_POINTER_QUERY, intelAvailable, MOBILE_QUERY, shellAttribute, syncShellAttribute } from './media.hook';
 
 const originalWindow = globalThis.window;
 
@@ -47,5 +47,15 @@ describe('syncShellAttribute', () => {
   test('shellAttribute', () => {
     expect(shellAttribute(true)).toBe('mobile');
     expect(shellAttribute(false)).toBe('desktop');
+  });
+});
+
+describe('intelAvailable', () => {
+  test('laptop layout always; the mobile shell only with a fine pointer (split screen)', () => {
+    expect(FINE_POINTER_QUERY).toBe('(pointer: fine)');
+    expect(intelAvailable(false, false)).toBe(true);
+    expect(intelAvailable(false, true)).toBe(true);
+    expect(intelAvailable(true, true)).toBe(true);
+    expect(intelAvailable(true, false)).toBe(false);
   });
 });
