@@ -78,7 +78,7 @@ export default function BroadcastPane() {
           placeholder="Bijv. Iedereen terug naar HQ"
           aria-label="Bericht"
           disabled={state === 'sending'}
-          className="block min-h-[84px] w-full resize-none rounded-2xl bg-beheer-row px-3.5 py-3 text-base outline-none transition-shadow placeholder:text-muted-foreground focus-visible:shadow-[inset_0_0_0_1.5px_var(--primary)] disabled:opacity-60 md:text-sm"
+          className="block min-h-[84px] w-full resize-none rounded-2xl bg-beheer-row px-3.5 py-3 text-base outline-none transition-shadow placeholder:text-muted-foreground focus-visible:shadow-[inset_0_0_0_1.5px_var(--ring)] disabled:opacity-60 md:text-sm"
         />
         <div className="mt-2.5 flex items-center gap-3">
           <span className="flex-1 px-1 text-xs text-muted-foreground tabular-nums">
