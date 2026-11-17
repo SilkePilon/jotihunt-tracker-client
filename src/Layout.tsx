@@ -30,6 +30,7 @@ import {resyncPush} from '@/lib/push';
 import type {OutletContextType} from '@/hooks/outlet.hook.ts';
 import TourOverlay from './components/tour/TourOverlay';
 import {useTourAutoStart} from './components/tour/useTour';
+import {usePromptQueueHold} from './stores/prompt-queue.store';
 import {createFetchErrorToastState, fetchErrorToastText} from '@/lib/fetch-error-toast';
 import AndroidPromoAutoOpen from './components/android-promo/AndroidPromoAutoOpen';
 
@@ -81,6 +82,8 @@ export default function Layout() {
     const tour = useTourAutoStart();
     // Like the tour, the notifications prompt only opens on the map page
     useNotificationsPrompt(tour.pending || pathname !== '/');
+    // The follow-up prompts (Meldingen, Android app, passkey) wait for the tour, then come one at a time
+    usePromptQueueHold(tour.pending);
 
     // Which SWR keys are failing, and whether the error toast is up. Mutable, not state: every poll passes through here.
     const [errorToast] = useState(createFetchErrorToastState);
