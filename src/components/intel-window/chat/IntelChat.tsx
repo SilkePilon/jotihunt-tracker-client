@@ -1,5 +1,5 @@
-import { type ReactNode, type RefObject, useState } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { type RefObject, useState } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Loader2Icon, RotateCcwIcon, SquarePenIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { IconPill, Pill } from '@/components/beheer/controls/Pill';
@@ -8,9 +8,9 @@ import type { MapRef } from '@/components/Map';
 import { useHasMounted } from '@/hooks/has-mounted.hook';
 import Reveal from '@/components/motion/Reveal';
 import { apiErrorMessage } from '@/lib/api-error';
-import { BUSY_MESSAGE, CONTEXT_LABEL, answerAnnouncement, chatStatusLabel, lastUserMessageId } from '@/lib/intel-chat';
+import { BUSY_MESSAGE, answerAnnouncement, chatStatusLabel, lastUserMessageId } from '@/lib/intel-chat';
 import { CHAT_EMPTY_ENTRANCE_DELAY, CHAT_MESSAGE } from '@/lib/intel-window';
-import { POP, SWAP, SWAP_TRANSITION } from '@/lib/motion';
+import { SWAP, SWAP_TRANSITION, revealTransition } from '@/lib/motion';
 import type { IntelItem, IntelKind } from '@/types/Intel';
 import ChatEmpty from './ChatEmpty';
 import ChatInput from './ChatInput';
@@ -18,7 +18,6 @@ import ChatMessage from './ChatMessage';
 import ToolStatus from './ToolStatus';
 import { ChatScrollerContext, useStickToBottom } from './stick-to-bottom';
 import { type IntelChatState, useIntelChat } from './useIntelChat';
-import { CARD_TITLE } from '@/lib/dialog-shell';
 
 interface IntelChatProps {
   item: IntelItem;
@@ -42,6 +41,7 @@ export default function IntelChat({ item, mapRef, entrance }: IntelChatProps) {
 function ChatPanel({ item, mapRef, entrance }: IntelChatProps) {
   const chat = useIntelChat(item.id);
   const [confirmReset, setConfirmReset] = useState(false);
+  const reduced = useReducedMotion() ?? false;
   const busy = chat.status === 'submitted' || chat.status === 'streaming';
   const scene = chat.loading ? 'loading' : chat.loadError ? 'load-error' : chat.messages.length === 0 ? 'empty' : 'thread';
   // The delayed empty stagger only applies until the first settled scene is left
@@ -65,20 +65,23 @@ function ChatPanel({ item, mapRef, entrance }: IntelChatProps) {
 
   return (
     <>
-      <ChatHeader
-        kind={item.kind}
-        action={
-          <AnimatePresence initial={false}>
-            {chat.messages.length > 0 && (
-              <motion.span key="new" {...POP} className="-my-1.5 inline-grid">
-                <IconPill aria-label="Nieuw gesprek" title="Nieuw gesprek" onClick={() => setConfirmReset(true)}>
-                  <SquarePenIcon />
-                </IconPill>
-              </motion.span>
-            )}
-          </AnimatePresence>
-        }
-      />
+      {/* No title row: "Nieuw gesprek" sits in a slim row that unfolds once there is a conversation */}
+      <AnimatePresence initial={false}>
+        {chat.messages.length > 0 && (
+          <motion.div
+            key="new"
+            className="-mb-2.5 flex justify-end overflow-hidden"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0, transition: revealTransition(reduced, 'exit') }}
+            transition={revealTransition(reduced, 'enter')}
+          >
+            <IconPill aria-label="Nieuw gesprek" title="Nieuw gesprek" onClick={() => setConfirmReset(true)}>
+              <SquarePenIcon />
+            </IconPill>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* Nieuw gesprek: the thread fades out, the empty state rises in (its parts stagger; the wrapper only fades). The
           first scene doesn't fade in (no initial={false} here, that would also block the empty state's stagger). */}
       <AnimatePresence mode="wait">
@@ -115,16 +118,6 @@ function ChatPanel({ item, mapRef, entrance }: IntelChatProps) {
         onConfirm={reset}
       />
     </>
-  );
-}
-
-function ChatHeader({ kind, action }: { kind: IntelKind; action?: ReactNode }) {
-  return (
-    <div className="mx-1 flex items-center gap-2">
-      <h3 className={CARD_TITLE}>Vraag de AI</h3>
-      <span className="ml-auto rounded-lg bg-beheer-row-high px-2 py-0.5 text-label font-semibold text-muted-foreground">{CONTEXT_LABEL[kind]}</span>
-      {action}
-    </div>
   );
 }
 

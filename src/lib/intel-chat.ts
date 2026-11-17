@@ -443,9 +443,6 @@ export function suggestionChips(item: Pick<IntelItem, 'kind' | 'cells'>): string
   return [...open.map((option) => `Los ${option.label} op`), 'Check antwoorden'];
 }
 
-/** The chip in the chat header: what the AI sees */
-export const CONTEXT_LABEL: Record<IntelKind, string> = { hint: 'ziet deze hint', assignment: 'ziet deze opdracht', news: 'ziet dit bericht' };
-
 export const PLACEHOLDER: Record<IntelKind, string> = {
   hint: 'Vraag iets over deze hint…',
   assignment: 'Vraag iets over deze opdracht…',
