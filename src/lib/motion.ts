@@ -39,7 +39,18 @@ export const POP = {
   transition: POP_SPRING,
 } satisfies { initial: TargetAndTransition; animate: TargetAndTransition; exit: TargetAndTransition; transition: Transition };
 
-export const REVEAL_TRANSITION: Transition = { duration: 0.2, ease: EASE_OUT };
+const REVEAL_DURATION = 0.2;
+export const REVEAL_TRANSITION: Transition = { duration: REVEAL_DURATION, ease: EASE_OUT };
+
+/**
+ * Reveal's height + opacity transition. Reduced motion: the height settles at once (no sliding content below) and only
+ * the fade remains; folding away, the height waits for the fade so the line doesn't vanish before it has faded.
+ */
+export function revealTransition(reduced: boolean, phase: 'enter' | 'exit'): Transition {
+  if (!reduced) return REVEAL_TRANSITION;
+  const height = phase === 'enter' ? { duration: 0 } : { duration: 0, delay: REVEAL_DURATION };
+  return { ...REVEAL_TRANSITION, height };
+}
 
 /** Login, invite and herstel cards on first mount */
 export const CARD_ENTER = {

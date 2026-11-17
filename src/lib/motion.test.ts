@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { SWAP, swapPreset } from './motion';
+import { REVEAL_TRANSITION, SWAP, revealTransition, swapPreset } from './motion';
 
 describe('swapPreset', () => {
   test('full motion: slide + blur', () => {
@@ -15,5 +15,21 @@ describe('swapPreset', () => {
   });
   test('SWAP without a window is the full-motion preset', () => {
     expect(SWAP).toEqual(swapPreset(false));
+  });
+});
+
+describe('revealTransition', () => {
+  test('full motion: height and opacity ease together', () => {
+    expect(revealTransition(false, 'enter')).toBe(REVEAL_TRANSITION);
+    expect(revealTransition(false, 'exit')).toBe(REVEAL_TRANSITION);
+  });
+  test('reduced motion: the height settles at once, only the fade eases', () => {
+    const enter = revealTransition(true, 'enter') as Record<string, unknown>;
+    expect(enter.height).toEqual({ duration: 0 });
+    expect(enter.duration).toBe(0.2);
+  });
+  test('reduced motion: folding away, the height waits for the fade', () => {
+    const exit = revealTransition(true, 'exit') as Record<string, unknown>;
+    expect(exit.height).toEqual({ duration: 0, delay: 0.2 });
   });
 });

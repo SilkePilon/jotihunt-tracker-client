@@ -1,5 +1,5 @@
 import { useNow } from '@/hooks/now.hook';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { RefreshCwIcon, TimerIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -10,13 +10,14 @@ import TrackerQrCode from '@/components/tracker/TrackerQrCode';
 import { useQrLogin } from '@/hooks/qr-login.hook';
 import type { SessionResult } from '@/lib/auth-api';
 import { formatCountdown } from '@/lib/format';
-import { fadeUp, POP, SWAP, SWAP_TRANSITION } from '@/lib/motion';
+import { fadeUp, POP, SWAP, SWAP_TRANSITION, swapPreset } from '@/lib/motion';
 import type { QrPanelState } from '@/lib/qr-login';
 
 const QR_SIZE = 176;
 
-const QR_SHARP = { opacity: 1, filter: 'blur(0px)', scale: 1 };
-const QR_FADED = { opacity: 0.3, filter: 'blur(4px)', scale: 0.96 };
+// Reduced motion leaves the blur out (MotionConfig "user" only skips the scale): a plain fade remains
+const qrSharp = (reduced: boolean) => ({ opacity: 1, scale: 1, ...(reduced ? {} : { filter: 'blur(0px)' }) });
+const qrFaded = (reduced: boolean) => ({ opacity: 0.3, scale: 0.96, ...(reduced ? {} : { filter: 'blur(4px)' }) });
 const CROSS_FADE = { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 }, transition: { duration: 0.25 } };
 
 /** loading, waiting and scanned are one scene: the QR box stays put while its contents and the text below change */
@@ -68,18 +69,20 @@ export default function QrLoginPanel({ onApproved }: { onApproved: (result: Sess
 function QrScene({ state, restart }: { state: QrPanelState; restart: () => void }) {
   const scanned = state.phase === 'scanned';
   const url = state.phase === 'waiting' || state.phase === 'scanned' ? state.url : null;
+  const reduced = useReducedMotion() ?? false;
+  const swap = swapPreset(reduced);
 
   return (
     <motion.div
       className="flex flex-col items-center gap-3"
-      initial={SWAP.initial}
-      animate={SWAP.animate}
+      initial={swap.initial}
+      animate={swap.animate}
       // Approved: the code and the cookie shrink away before the check pops in
-      exit={{ opacity: 0, scale: 0.92, filter: 'blur(4px)' }}
+      exit={{ opacity: 0, scale: 0.92, ...(reduced ? {} : { filter: 'blur(4px)' }) }}
       transition={SWAP_TRANSITION}
     >
       <div className="relative" style={{ width: QR_SIZE, height: QR_SIZE }}>
-        <motion.div className="absolute inset-0" initial={false} animate={scanned ? QR_FADED : QR_SHARP} transition={SWAP_TRANSITION} aria-hidden={scanned || undefined}>
+        <motion.div className="absolute inset-0" initial={false} animate={scanned ? qrFaded(reduced) : qrSharp(reduced)} transition={SWAP_TRANSITION} aria-hidden={scanned || undefined}>
           {/* Skeleton → code and a renewed code cross-fade on top of each other, so the box never changes size */}
           <AnimatePresence initial={false}>
             <motion.div key={url ?? 'loading'} className="absolute inset-0" {...CROSS_FADE}>
