@@ -49,10 +49,9 @@ export default function SearchCard({ mapRef, onDone }: { mapRef: React.RefObject
         <div className={"w-full flex flex-col gap-2"}>
         <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
+                {/* A plain button (named by its text) that opens the search popover; Radix adds aria-haspopup/expanded */}
                 <button
                     type="button"
-                    role="combobox"
-                    aria-expanded={open}
                     className={cn(
                         MAP_TILE,
                         "group flex h-11 w-[300px] items-center gap-2.5 rounded-[14px] pr-3 pl-1.5 text-left transition-colors hover:bg-beheer-row focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:outline-none",
@@ -65,7 +64,7 @@ export default function SearchCard({ mapRef, onDone }: { mapRef: React.RefObject
                 </button>
             </PopoverTrigger>
             <PopoverContent className="w-(--radix-popover-trigger-width) p-3">
-                <Command>
+                <Command label="Groep zoeken">
                     <CommandInput placeholder="Zoeken..." />
                     <CommandList>
                         <AnimatePresence mode="wait" initial={false}>

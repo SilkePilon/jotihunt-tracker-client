@@ -83,7 +83,7 @@ export default function ModelPicker({ value, defaultId, models, fetchedAt, listE
         </button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 p-3">
-        <Command>
+        <Command label="Model zoeken">
           <CommandInput placeholder="Zoek model…" />
           <CommandList className="max-h-72">
             {loading ? (
