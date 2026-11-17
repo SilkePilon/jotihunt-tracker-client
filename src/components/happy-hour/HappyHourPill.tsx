@@ -5,6 +5,8 @@ import { useHappyHour } from '@/hooks/happy-hour.hook';
 import { useNow } from '@/hooks/now.hook';
 import { LAYOUT_SPRING, SWAP_TRANSITION, swapPreset } from '@/lib/motion';
 import { usePublishTopHeight } from '@/stores/top-stack.store';
+import { COARSE_HIT_AREA } from '@/lib/hit-area';
+import { cn } from '@/lib/utils';
 import { happyHourExplanation, happyHourPill, happyHourPillText, happyHourWindow, type HappyHourWindow } from '@/lib/happy-hour';
 
 /**
@@ -30,7 +32,7 @@ function HappyHourPillView({ hour, now, measureRef }: { hour: HappyHourWindow; n
           layout
           // Set as a style so motion corrects the corners while the width animates
           style={{ borderRadius: 9999 }}
-          className="pointer-events-auto flex cursor-pointer items-center gap-2 bg-happy-hour py-1.5 pr-3.5 pl-2.5 text-[13px] font-bold whitespace-nowrap text-on-happy-hour shadow-md outline-none focus-visible:ring-[3px] focus-visible:ring-ring"
+          className={cn(COARSE_HIT_AREA, "pointer-events-auto flex cursor-pointer items-center gap-2 bg-happy-hour py-1.5 pr-3.5 pl-2.5 text-[13px] font-bold whitespace-nowrap text-on-happy-hour shadow-md outline-none focus-visible:ring-[3px] focus-visible:ring-ring")}
           data-happy-hour={hour.state}
         >
           <motion.span layout="position" className="grid place-items-center">

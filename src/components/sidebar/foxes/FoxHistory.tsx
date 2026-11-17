@@ -1,7 +1,8 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
-import { EyeIcon, EyeOffIcon, RotateCwIcon } from 'lucide-react';
+import { EyeIcon, EyeOffIcon } from 'lucide-react';
 import AutoHeight from '@/components/motion/AutoHeight';
+import LoadError from '@/components/LoadError';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAreaHistory } from '@/hooks/area-history.hook';
 import { useEdition } from '@/hooks/edition.hook';
@@ -155,14 +156,8 @@ export default function FoxHistory({ fox, hidden, onToggleHidden }: FoxHistoryPr
             </motion.div>
           ) : scene === 'error' ? (
             <motion.div key="error" {...swap}>
-              <button
-                type="button"
-                onClick={retry}
-                className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl py-6 text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
-              >
-                Historie niet geladen
-                <RotateCwIcon aria-hidden className="size-3" />
-              </button>
+              {/* The shared "couldn't load" line + tonal retry button; a retry shows the skeleton again */}
+              <LoadError centered className="py-4" message="Historie kon niet worden geladen." onRetry={retry} />
             </motion.div>
           ) : (
             <motion.div key="loading" {...swap}>

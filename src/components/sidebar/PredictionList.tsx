@@ -108,7 +108,7 @@ export default function PredictionList({ mapRef }: { mapRef: RefObject<MapRef | 
                       COARSE_HIT_AREA,
                       // Stale: only the background softens; text and icons keep full contrast
                       !active && (prediction.stale ? 'bg-muted/60 text-muted-foreground' : 'bg-muted text-muted-foreground'),
-                      openArea === prediction.area && 'ring-2 ring-offset-2 ring-offset-background',
+                      openArea === prediction.area && 'ring-2 ring-offset-2 ring-offset-card',
                     )}
                     style={{ ...(active && chipColors(color, !!prediction.stale)), ...(openArea === prediction.area && { ['--tw-ring-color' as string]: color }) }}
                   >
