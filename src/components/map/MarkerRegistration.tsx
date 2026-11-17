@@ -24,6 +24,8 @@ import BusyIcon from '../motion/BusyIcon';
 import useMarkerDraftStore, { draftForType } from '@/stores/marker-draft.store';
 import { AnimatePresence, motion } from 'motion/react';
 import { LAYOUT_SPRING, POP } from '@/lib/motion';
+import { useWorkHold } from '@/stores/prompt-queue.store';
+import { useIsMobile } from '@/hooks/media.hook';
 
 
 type FormValues = { area: string; day: Date; time: Date };
@@ -48,6 +50,8 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
   const pending = markerType === undefined ? null : draftForType(storedDraft, markerType);
   const lostMessage = pending ? markerLostResponseMessage(pending.outcome) : null;
   const [checking, setChecking] = useState(false);
+  // Phones dock the popup with these buttons over the sheet: no follow-up prompt while it's open (the dialog holds itself)
+  useWorkHold(useIsMobile());
   // An archive edition is read-only: no new markers
   const { readOnly } = useEdition();
   const fieldId = useId();

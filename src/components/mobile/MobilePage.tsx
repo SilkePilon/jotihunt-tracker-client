@@ -4,6 +4,8 @@ import type { MapRef } from '@/components/Map';
 import type { MobilePage as Page } from '@/lib/mobile-nav';
 import useMobileNavStore from '@/stores/mobile-nav.store';
 import SidebarSections from '@/components/sidebar/SidebarSections';
+import { useWorkHold } from '@/stores/prompt-queue.store';
+import { isFormPage } from '@/lib/mobile-nav';
 
 /**
  * A pushed page: "‹ Menu" (or "‹ Terug" on a page above another page) plus the page content. Plan 1 shows the existing sidebar card for the section
@@ -11,6 +13,8 @@ import SidebarSections from '@/components/sidebar/SidebarSections';
  */
 export default function MobilePage({ page, depth, mapRef }: { page: Page; depth: number; mapRef: RefObject<MapRef | null> }) {
   const pop = useMobileNavStore((s) => s.pop);
+  // A form page (Hint registreren): no follow-up prompt over it while it's open
+  useWorkHold(isFormPage(page.id));
   return (
     <div className="flex flex-col gap-3 pr-[max(0.75rem,env(safe-area-inset-right))] pb-8 pl-[max(0.75rem,env(safe-area-inset-left))]">
       {/* Takes focus when the page pushes in (MobileShell); 44px tall on touch screens. Inset focus ring: it sits at the top edge of the sheet's scroller */}
