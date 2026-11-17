@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ComponentType } from 'react';
-import { BellRingIcon, FlagIcon, MegaphoneIcon, NewspaperIcon, PlayIcon, PuzzleIcon, SirenIcon, SquareIcon, Volume2Icon } from 'lucide-react';
-import { CelebrationIcon, FoxIcon } from '@/components/MaterialGlyph';
+import { PlayIcon, SquareIcon, Volume2Icon } from 'lucide-react';
+import { FoxIcon } from '@/components/MaterialGlyph';
+import { NOTIFICATION_ICON } from '@/components/notifications/notification-icons';
 import { playNotificationSound } from '@/lib/notification-sounds';
 import type { SoundKey } from '@/lib/notifications';
 import { cn } from '@/lib/utils';
@@ -11,20 +12,20 @@ interface SoundItem {
   label: string;
   when: string;
   icon: ComponentType<{ className?: string }>;
-  /** Icon circle colours */
+  /** Icon circle colours: the app's fox-status, Intel and toast tile tokens (on-colour >= 4.5:1 on its container) */
   tone: string;
 }
 
 /** Most important first, the same order the app uses when several arrive at once. */
 const SOUNDS: SoundItem[] = [
-  { key: 'fox-green', label: 'Vos op groen', when: 'Jagen mag! Het belangrijkste geluid.', icon: FlagIcon, tone: 'bg-green-500/15 text-green-600 dark:text-green-400' },
-  { key: 'counter-hunt', label: 'Tegenhunt', when: 'Er is een tegenhunt bij ons clubhuis, met de richting.', icon: SirenIcon, tone: 'bg-red-500/15 text-red-600 dark:text-red-400' },
-  { key: 'broadcast', label: 'Bericht van HQ', when: 'Altijd aan. Lees het bericht meteen.', icon: MegaphoneIcon, tone: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400' },
-  { key: 'happy-hour', label: 'Happy hour', when: 'Hunts tellen dubbel. Tegenhunts tellen niet mee.', icon: CelebrationIcon, tone: 'bg-amber-500/15 text-amber-600 dark:text-amber-400' },
-  { key: 'hunt', label: 'Hunt', when: 'Een hunt komt binnen op jotihunt.nl of is beoordeeld.', icon: FoxIcon, tone: 'bg-amber-500/15 text-amber-600 dark:text-amber-400' },
-  { key: 'fox-status', label: 'Vos rood of oranje', when: 'Een deelgebied verandert van status.', icon: BellRingIcon, tone: 'bg-orange-500/15 text-orange-600 dark:text-orange-400' },
-  { key: 'hint', label: 'Nieuwe hint', when: 'De organisatie heeft een hint gepubliceerd.', icon: PuzzleIcon, tone: 'bg-sky-500/15 text-sky-600 dark:text-sky-400' },
-  { key: 'article', label: 'Opdracht of nieuws', when: 'Een nieuwe opdracht of nieuwsbericht.', icon: NewspaperIcon, tone: 'bg-muted text-muted-foreground' },
+  { key: 'fox-green', label: 'Vos op groen', when: 'Jagen mag! Het belangrijkste geluid.', icon: NOTIFICATION_ICON['fox-status'], tone: 'bg-fox-ok-container text-fox-on-ok' },
+  { key: 'counter-hunt', label: 'Tegenhunt', when: 'Er is een tegenhunt bij ons clubhuis, met de richting.', icon: NOTIFICATION_ICON['counter-hunt'], tone: 'bg-fox-error-container text-fox-on-error' },
+  { key: 'broadcast', label: 'Bericht van HQ', when: 'Altijd aan. Lees het bericht meteen.', icon: NOTIFICATION_ICON.broadcast, tone: 'bg-(--intel-news-container) text-(--intel-news)' },
+  { key: 'happy-hour', label: 'Happy hour', when: 'Hunts tellen dubbel. Tegenhunts tellen niet mee.', icon: NOTIFICATION_ICON['happy-hour'], tone: 'bg-[color-mix(in_oklab,var(--happy-hour)_22%,var(--card))] text-status-warn-text' },
+  { key: 'hunt', label: 'Hunt', when: 'Een hunt komt binnen op jotihunt.nl of is beoordeeld.', icon: FoxIcon, tone: 'bg-primary-container text-on-primary-container' },
+  { key: 'fox-status', label: 'Vos rood of oranje', when: 'Een deelgebied verandert van status.', icon: NOTIFICATION_ICON['fox-status'], tone: 'bg-fox-warn-container text-fox-on-warn' },
+  { key: 'hint', label: 'Nieuwe hint', when: 'De organisatie heeft een hint gepubliceerd.', icon: NOTIFICATION_ICON.hint, tone: 'bg-(--intel-hint-container) text-(--intel-hint)' },
+  { key: 'article', label: 'Opdracht of nieuws', when: 'Een nieuwe opdracht of nieuwsbericht.', icon: NOTIFICATION_ICON.article, tone: 'bg-muted text-muted-foreground' },
 ];
 
 /** Tour step: try every notification sound, so users recognise them on the road without looking. */

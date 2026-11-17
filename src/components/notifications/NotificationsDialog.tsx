@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { toast } from 'sonner';
-import { BadgeCheckIcon, BellOffIcon, FlagIcon, InboxIcon, LightbulbIcon, MegaphoneIcon, NewspaperIcon, PartyPopperIcon, SwordsIcon, TimerIcon, type LucideIcon } from 'lucide-react';
+import { BellOffIcon, MegaphoneIcon } from 'lucide-react';
 import BeheerSwitch from '@/components/beheer/controls/BeheerSwitch';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import LoadError from '@/components/LoadError';
@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import BusyIcon from '@/components/motion/BusyIcon';
 import Reveal from '@/components/motion/Reveal';
 import NotificationTile from '@/components/notifications/NotificationTile';
+import { NOTIFICATION_ICON } from '@/components/notifications/notification-icons';
 import { NOTIFICATION_OPTIONS, NOTIFICATIONS_PROMPT_VERSION, sameTypes, setAllTypes, toggleType, type OptionalNotificationType } from '@/lib/notifications';
 import ResponsiveDialog from '@/components/ResponsiveDialog';
 import { useFetcher } from '@/hooks/utils/api.hook';
@@ -27,18 +28,6 @@ const RESULT_MESSAGE: Record<Exclude<PushResult, 'subscribed'>, string> = {
   unsupported: 'Deze browser ondersteunt geen pushmeldingen; geluiden in de app werken wel.',
   unavailable: 'Pushmeldingen zijn niet ingesteld op de server; geluiden in de app werken wel.',
   error: 'Je keuzes zijn opgeslagen, maar aanmelden voor pushmeldingen op dit apparaat is mislukt. Probeer het later opnieuw.',
-};
-
-const ICONS: Record<OptionalNotificationType, LucideIcon> = {
-  'fox-status': FlagIcon,
-  hint: LightbulbIcon,
-  article: NewspaperIcon,
-  'hunt-new': InboxIcon,
-  'hunt-approved': BadgeCheckIcon,
-  'hunt-rejected': BadgeCheckIcon,
-  'counter-hunt': SwordsIcon,
-  'happy-hour': PartyPopperIcon,
-  'hunt-cooldown': TimerIcon,
 };
 
 const NOTICE = 'mt-2.5 rounded-2xl bg-beheer-row p-3 text-xs';
@@ -148,7 +137,7 @@ export default function NotificationsDialog() {
                   <div className="grid grid-cols-2 gap-1.5">
                     {NOTIFICATION_OPTIONS.map((option) => {
                       const on = !current.includes(option.type);
-                      return <NotificationTile key={option.type} icon={ICONS[option.type]} label={option.label} short={option.short} description={option.description} on={on} onToggle={() => toggle(option.type, !on)} disabled={locked} />;
+                      return <NotificationTile key={option.type} icon={NOTIFICATION_ICON[option.type]} label={option.label} short={option.short} description={option.description} on={on} onToggle={() => toggle(option.type, !on)} disabled={locked} />;
                     })}
                   </div>
                 ) : view === 'error' ? (

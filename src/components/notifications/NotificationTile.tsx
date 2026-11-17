@@ -1,11 +1,11 @@
-import type { LucideIcon } from 'lucide-react';
 import { CheckIcon } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { POP } from '@/lib/motion';
 import { cn } from '@/lib/utils';
+import type { NotificationIcon } from './notification-icons';
 
 interface NotificationTileProps {
-  icon: LucideIcon;
+  icon: NotificationIcon;
   label: string;
   short: string;
   /** Full explanation: tooltip and screen-reader text */
