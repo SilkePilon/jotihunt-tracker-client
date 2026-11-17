@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import {
   CircleCheckIcon,
   DownloadIcon,
@@ -15,6 +16,7 @@ import ResponsiveDialog from '@/components/ResponsiveDialog';
 import { useIsMobile } from '@/hooks/media.hook';
 import { DIALOG_SHELL } from '@/lib/dialog-shell';
 import { cn } from '@/lib/utils';
+import { SWAP } from '@/lib/motion';
 import { TRACCAR_APP_STORE_URL, TRACCAR_PLAY_STORE_URL } from '@/lib/tracker';
 import type { TrackerMe } from '@/types/Tracker';
 import TrackerQrCode from './TrackerQrCode';
@@ -104,21 +106,25 @@ export default function TrackerGuideDialog({ open, onOpenChange, status }: Track
           />
           <Step number={firstCommonStep + 1} icon={ToggleRightIcon} title='Zet de schakelaar "Continu volgen" (Service status) aan.' />
           <Step number={firstCommonStep + 2} icon={CircleCheckIcon} title='Wacht tot hieronder "Verbonden" verschijnt.'>
+            {/* Always mounted, so screen readers announce the change to "Verbonden"; the two lines cross-fade */}
             <div
-              className="flex items-center gap-2 rounded-2xl bg-beheer-row px-3 py-2 text-sm"
+              role="status"
+              className="rounded-2xl bg-beheer-row px-3 py-2 text-sm"
               data-tracker-live-status={status.connected ? 'connected' : 'waiting'}
             >
-              {status.connected ? (
-                <>
-                  <CircleCheckIcon className="size-4 text-fox-ok" />
-                  <span className="font-medium text-fox-ok">Verbonden</span>
-                </>
-              ) : (
-                <>
-                  <LoaderCircleIcon className="size-4 animate-spin text-muted-foreground" />
-                  <span className="text-muted-foreground">Wachten op de eerste locatie…</span>
-                </>
-              )}
+              <AnimatePresence mode="wait" initial={false}>
+                {status.connected ? (
+                  <motion.span key="connected" {...SWAP} className="flex items-center gap-2">
+                    <CircleCheckIcon aria-hidden className="size-4 text-fox-ok" />
+                    <span className="font-medium text-fox-ok">Verbonden</span>
+                  </motion.span>
+                ) : (
+                  <motion.span key="waiting" {...SWAP} className="flex items-center gap-2">
+                    <LoaderCircleIcon aria-hidden className="size-4 animate-spin text-muted-foreground" />
+                    <span className="text-muted-foreground">Wachten op de eerste locatie…</span>
+                  </motion.span>
+                )}
+              </AnimatePresence>
             </div>
           </Step>
         </ol>
