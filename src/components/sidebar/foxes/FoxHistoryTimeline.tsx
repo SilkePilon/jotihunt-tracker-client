@@ -87,7 +87,7 @@ interface ActiveCard {
 /**
  * One fox's last three hours as four lanes (status, hints, spots, hunts) in uiarc's agent-timeline look: blocks grow
  * from one CSS variable (`--t`, minutes) during a 1.6 s play-in, branch lines draw down from the status lane as the
- * playhead passes them, a running block shines. Hover/tap a block for a card; tap a lane to highlight it.
+ * play-in passes them (no visible playhead line). Hover/tap a block for a card; tap a lane to highlight it.
  * A new `playKey` replays the play-in; a new `model` for the same key only re-lays out. While `play` is false the window
  * waits empty (e.g. until the panel around it has opened); reduced motion shows everything at once regardless.
  */
