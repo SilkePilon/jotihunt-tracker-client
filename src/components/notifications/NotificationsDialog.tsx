@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { BadgeCheckIcon, FlagIcon, InboxIcon, LightbulbIcon, MegaphoneIcon, NewspaperIcon, PartyPopperIcon, SwordsIcon, TimerIcon, type LucideIcon } from 'lucide-react';
 import BeheerSwitch from '@/components/beheer/controls/BeheerSwitch';
+import BusyIcon from '@/components/motion/BusyIcon';
 import Reveal from '@/components/motion/Reveal';
 import NotificationTile from '@/components/notifications/NotificationTile';
 import { NOTIFICATION_OPTIONS, NOTIFICATIONS_PROMPT_VERSION, setAllTypes, toggleType, type OptionalNotificationType } from '@/lib/notifications';
@@ -59,6 +60,8 @@ export default function NotificationsDialog() {
   }
 
   async function close() {
+    // While saving, Later, Esc, the backdrop and swiping down leave the dialog open until the save settles
+    if (saving) return;
     setOpen(false);
     // Closing counts as "seen" too, so the dialog doesn't come back on every open
     if ((prefs?.promptedVersion ?? 0) < NOTIFICATIONS_PROMPT_VERSION) {
@@ -119,16 +122,27 @@ export default function NotificationsDialog() {
         <Reveal>{blocked && <p className={NOTICE}>{RESULT_MESSAGE.denied}</p>}</Reveal>
 
         <div className="mt-3.5 flex gap-2">
-          <button type="button" onClick={() => void close()} className="h-11 flex-1 cursor-pointer rounded-xl bg-beheer-row-high text-sm font-semibold outline-none transition-colors hover:bg-[color-mix(in_oklab,var(--foreground)_14%,var(--card))] focus-visible:ring-[3px] focus-visible:ring-ring">
+          <button
+            type="button"
+            onClick={() => void close()}
+            disabled={saving}
+            className="h-11 flex-1 cursor-pointer rounded-xl bg-beheer-row-high text-sm font-semibold outline-none transition-[background-color,opacity] hover:bg-[color-mix(in_oklab,var(--foreground)_14%,var(--card))] focus-visible:ring-[3px] focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+          >
             Later
           </button>
           <button
             type="button"
             onClick={() => void save()}
             disabled={saving || !prefs || readOnly}
-            className="h-11 flex-1 cursor-pointer rounded-xl bg-primary-container text-sm font-semibold text-on-primary-container outline-none transition-[filter,opacity] hover:brightness-105 focus-visible:ring-[3px] focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+            aria-busy={saving}
+            className={cn(
+              'inline-flex h-11 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-primary-container text-sm font-semibold text-on-primary-container outline-none transition-[filter,opacity] hover:brightness-105 focus-visible:ring-[3px] focus-visible:ring-ring disabled:cursor-not-allowed [&_svg]:size-4',
+              // Saving keeps full colour (the spinner says it's busy); only "can't save" dims
+              !saving && 'disabled:opacity-50',
+            )}
           >
-            Opslaan
+            <BusyIcon busy={saving} />
+            {saving ? 'Opslaan…' : 'Opslaan'}
           </button>
         </div>
       </div>
