@@ -20,11 +20,6 @@ import type { Vehicle } from '@/types/Tracker';
 import { BeheerCard, BeheerLoadError, BeheerSkeleton, WarnBar } from './BeheerLayout';
 import { Pill, Tag } from './controls/Pill';
 
-/**
- * Text inputs: 36px, 12px corners, tonal fill with a 1px inset outline (the fill alone is ~1.2:1 against the card).
- * 16px text on phones: smaller text makes iOS zoom in on focus.
- */
-const FIELD = 'h-9 rounded-lg border-0 bg-beheer-row-high text-base shadow-[inset_0_0_0_1px_var(--input)] md:text-[13px] dark:bg-beheer-row-high';
 const NO_GROUP = 'none';
 const NEEDS_PASSWORD_HINT = 'Vul ook het wachtwoord in om de nieuwe gebruikersnaam te testen.';
 const TIMELINE_TICK_MS = 60_000;
@@ -131,7 +126,7 @@ function DateTimeInput({ id, value, invalid, disabled, onChange }: { id: string;
       disabled={disabled}
       aria-invalid={invalid || undefined}
       onChange={(event) => onChange(event.target.value)}
-      className={cn(FIELD, 'tabular-nums [color-scheme:light] dark:[color-scheme:dark]')}
+      className="tabular-nums [color-scheme:light] dark:[color-scheme:dark]"
     />
   );
 }
@@ -343,7 +338,7 @@ export default function GeneralSettings() {
             </Select>
           </Field>
           <Field label="Groepsnaam" htmlFor={`${id}-name`}>
-            <Input id={`${id}-name`} value={draft.groupName} onChange={(event) => set('groupName', event.target.value)} placeholder="Scouting …" className={FIELD} />
+            <Input id={`${id}-name`} value={draft.groupName} onChange={(event) => set('groupName', event.target.value)} placeholder="Scouting …" />
           </Field>
           <Field label="Logo" htmlFor={`${id}-logo`}>
             <div className="flex gap-1.5">
@@ -352,7 +347,7 @@ export default function GeneralSettings() {
                   <motion.img key={logoSrc} src={logoSrc} alt="" className="size-7 object-contain" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} />
                 </AnimatePresence>
               </span>
-              <Input id={`${id}-logo`} value={draft.logoUrl} onChange={(event) => set('logoUrl', event.target.value)} placeholder="/logo.svg" className={cn(FIELD, 'flex-1')} spellCheck={false} />
+              <Input id={`${id}-logo`} value={draft.logoUrl} onChange={(event) => set('logoUrl', event.target.value)} placeholder="/logo.svg" className="flex-1" spellCheck={false} />
               <Pill variant="secondary" size="md" morphKey={uploading ? 'busy' : 'idle'} busy={uploading} onClick={() => fileInput.current?.click()}>
                 {uploading && <Loader2Icon className="animate-spin" />}
                 Uploaden
@@ -371,7 +366,7 @@ export default function GeneralSettings() {
             </div>
           </Field>
           <Field label="Discord-link" htmlFor={`${id}-discord`}>
-            <Input id={`${id}-discord`} value={draft.discordUrl} onChange={(event) => set('discordUrl', event.target.value)} placeholder="https://discord.gg/…" className={FIELD} spellCheck={false} />
+            <Input id={`${id}-discord`} value={draft.discordUrl} onChange={(event) => set('discordUrl', event.target.value)} placeholder="https://discord.gg/…" spellCheck={false} />
           </Field>
         </div>
       </BeheerCard>
@@ -439,7 +434,6 @@ export default function GeneralSettings() {
               id={`${id}-user`}
               value={draft.jotihuntWebUsername}
               onChange={(event) => setLoginField('jotihuntWebUsername', event.target.value)}
-              className={FIELD}
               autoComplete="off"
               spellCheck={false}
             />
@@ -451,7 +445,6 @@ export default function GeneralSettings() {
               value={draft.jotihuntWebPassword}
               onChange={(event) => setLoginField('jotihuntWebPassword', event.target.value)}
               placeholder={password.hint ?? ''}
-              className={FIELD}
               autoComplete="new-password"
             />
           </Field>

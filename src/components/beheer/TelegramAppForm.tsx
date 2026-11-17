@@ -7,7 +7,8 @@ import { apiErrorMessage } from '@/lib/api-error';
 import { Pill, Tag } from './controls/Pill';
 
 // Same field as GeneralSettings: inset outline instead of a border, 16px text on phones (no iOS zoom on focus)
-const FIELD = 'h-9 rounded-lg border-0 bg-beheer-row-high font-mono text-base shadow-[inset_0_0_0_1px_var(--input)] md:text-[12.5px] dark:bg-beheer-row-high';
+/** Ids and tokens: monospace, a bit smaller than the default 13px field text on desktop */
+const FIELD = 'font-mono md:text-[12.5px]';
 const LABEL = 'mb-1 ml-0.5 block text-[11.5px] font-semibold text-muted-foreground';
 
 /**
