@@ -122,7 +122,7 @@ export default function AssignmentPane({ item }: { item: IntelItem }) {
                     maxLength={1000}
                     autoComplete="off"
                     data-1p-ignore
-                    className="h-8 min-w-0 flex-1 rounded-[10px] bg-beheer-window px-2.5 text-[13px] ring-1 ring-border outline-none placeholder:text-muted-foreground read-only:opacity-60 focus:ring-2 focus:ring-ring"
+                    className="h-8 min-w-0 flex-1 rounded-[10px] bg-beheer-window px-2.5 text-base ring-1 ring-input outline-none md:text-[13px] placeholder:text-muted-foreground read-only:opacity-60 focus:ring-2 focus:ring-ring"
                   />
                   <Pill variant="primary" disabled={!note.trim() || saving || readOnly} onClick={() => void submitNote()}>
                     Toevoegen
