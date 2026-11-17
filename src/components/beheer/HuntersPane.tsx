@@ -175,7 +175,7 @@ function HunterActions({ row, onShowOnMap }: { row: HunterRow; onShowOnMap: Show
         <ExternalLinkIcon />
         Google Maps
       </Pill>
-      <Segmented label={`Voertuig van ${name}`} value={row.vehicle} options={VEHICLE_SEGMENTS} onChange={(value) => void changeVehicle(value)} disabled={saving} className="sm:ml-2" />
+      <Segmented label={`Voertuig van ${name}`} value={row.vehicle} options={VEHICLE_SEGMENTS} onChange={(value) => void changeVehicle(value)} busy={saving} className="sm:ml-2" />
     </>
   );
 }

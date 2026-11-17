@@ -313,6 +313,7 @@ export function InlineConfirm({ title, description, confirmLabel, confirmIcon, o
   const [busy, setBusy] = useState(false);
 
   async function confirm() {
+    if (busy) return;
     setBusy(true);
     try {
       await onConfirm();
@@ -336,10 +337,11 @@ export function InlineConfirm({ title, description, confirmLabel, confirmIcon, o
         <p className="text-xs text-muted-foreground">{description}</p>
       </div>
       <div className="flex shrink-0 gap-1.5">
-        <Pill variant="secondary" data-inline-edit onClick={onCancel} disabled={busy} autoFocus>
+        {/* busy, not disabled: disabling the pill that has focus would drop it */}
+        <Pill variant="secondary" data-inline-edit onClick={onCancel} busy={busy} autoFocus>
           Annuleer
         </Pill>
-        <Pill variant="danger" data-inline-edit morphKey={busy ? 'busy' : 'idle'} onClick={() => void confirm()} disabled={busy}>
+        <Pill variant="danger" data-inline-edit morphKey={busy ? 'busy' : 'idle'} onClick={() => void confirm()} busy={busy}>
           {busy ? <Loader2Icon className="animate-spin" /> : confirmIcon}
           {confirmLabel}
         </Pill>

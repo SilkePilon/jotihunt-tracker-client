@@ -63,7 +63,7 @@ function TestButton({ slot, compact }: { slot: AiSlot; compact?: boolean }) {
       morphKey={key}
       // tabular-nums: the latency ("1,4 s") doesn't wobble the pill's width between runs
       className={cn('tabular-nums', key === 'ok' && 'text-green-800 hover:text-green-800 dark:text-green-300 dark:hover:text-green-300')}
-      disabled={state === 'busy'}
+      busy={state === 'busy'}
       onClick={() => void run()}
       aria-label={`Test ${SLOT_INFO[slot].title}`}
     >
@@ -197,7 +197,7 @@ export default function AiPane() {
             <AnimatePresence initial={false}>
               {key?.source === 'db' && (
                 <motion.span key="clear" {...POP}>
-                  <Pill variant="ghost" morphKey={clearing ? 'busy' : 'idle'} disabled={clearing} onClick={() => setClearOpen(true)}>
+                  <Pill variant="ghost" morphKey={clearing ? 'busy' : 'idle'} busy={clearing} onClick={() => setClearOpen(true)}>
                     {clearing && <Loader2Icon className="animate-spin" />}
                     Wissen
                   </Pill>
@@ -234,7 +234,7 @@ export default function AiPane() {
               <Pill variant="secondary" size="md" onClick={closeEditor}>
                 Annuleer
               </Pill>
-              <Pill type="submit" variant="primary" size="md" disabled={!draft.trim() || saving} morphKey={saving ? 'busy' : 'idle'}>
+              <Pill type="submit" variant="primary" size="md" disabled={!draft.trim()} busy={saving} morphKey={saving ? 'busy' : 'idle'}>
                 {saving && <Loader2Icon className="animate-spin" />}
                 Opslaan
               </Pill>

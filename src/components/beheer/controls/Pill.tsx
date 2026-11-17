@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 const pill = cva(
   [
     COARSE_HIT_AREA,
-    "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg font-semibold whitespace-nowrap outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+    "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg font-semibold whitespace-nowrap outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   ],
   {
     variants: {
@@ -43,13 +43,23 @@ type PillProps = Omit<HTMLMotionProps<'button'>, 'children'> &
      * eases to its new width. Leave undefined for a pill whose label never changes.
      */
     morphKey?: string;
+    /**
+     * Working on it (saving, sending): looks disabled and ignores clicks, but stays focusable (aria-disabled), so a
+     * keyboard or screen-reader user keeps their place. Use `disabled` only for a pill that can't be used at all.
+     */
+    busy?: boolean;
   };
 
 /** Beheer's text button: a full pill. */
-export function Pill({ variant, size, className, children, morphKey, style, type = 'button', ...props }: PillProps) {
+export function Pill({ variant, size, className, children, morphKey, style, busy, onClick, type = 'button', 'aria-disabled': ariaDisabled, ...props }: PillProps) {
+  const inert = busy || ariaDisabled === true || ariaDisabled === 'true';
   return (
     <motion.button
       type={type}
+      aria-disabled={inert || undefined}
+      aria-busy={busy || undefined}
+      // preventDefault: a busy submit pill doesn't submit its form either
+      onClick={inert ? (event) => event.preventDefault() : onClick}
       layout={morphKey !== undefined}
       // Set as a style so motion corrects the corners while the width animates
       style={{ borderRadius: 12, ...style }}
