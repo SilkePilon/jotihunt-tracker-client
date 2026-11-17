@@ -11,9 +11,9 @@ export type PromptId = (typeof PROMPTS)[number];
 /** Between one prompt closing (or the tour ending, or a prompt being asked for) and the next one showing */
 export const PROMPT_GAP_MS = 1500;
 /**
- * While the user is busy with the map or the sheet / sidebar, a prompt waits until this long after the last interaction
- * (restarted by each one). Counted from the tour's end or the previous prompt closing, so follow-ups never chain while
- * the user is at work.
+ * After the tour, and while the user is busy with the map or the sheet / sidebar, a prompt waits until this long after
+ * the tour ended or the last interaction (restarted by each one). Interactions count from the tour's end or the previous
+ * prompt closing, so follow-ups never chain while the user is at work.
  */
 export const QUIET_MS = 10_000;
 
@@ -49,6 +49,8 @@ export function nextPromptStep(times: PromptQueueTimes, now: number): QueueStep 
   const id = PROMPTS.find((prompt) => times.waiting[prompt] !== undefined);
   if (!id) return null;
   let at = Math.max(times.readyAt, times.waiting[id]! + PROMPT_GAP_MS);
+  // Not straight after the tour: a quiet window first, so the user can look around before the follow-ups start
+  if (times.tourEndedAt !== null) at = Math.max(at, times.tourEndedAt + QUIET_MS);
   // Busy with the map or the sheet: wait for a quiet window after the last interaction. Only interactions since the tour
   // ended or the last prompt closed count (the tour's own taps, or what came before that prompt, don't hold the next).
   const since = Math.max(times.tourEndedAt ?? -Infinity, times.closedAt ?? -Infinity);

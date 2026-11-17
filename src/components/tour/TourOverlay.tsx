@@ -3,10 +3,11 @@ import { createPortal } from 'react-dom';
 import type { MapRef } from '@/components/Map';
 import { useIsMobile } from '@/hooks/media.hook';
 import { ownsKey, trapTabIndex } from '@/lib/focus';
+import { cn } from '@/lib/utils';
 import type { MobilePage } from '@/lib/mobile-nav';
 import useMobileNavStore from '@/stores/mobile-nav.store';
 import useSidebarStore from '@/stores/sidebar.store';
-import { stepDuration } from './duration';
+import { autoAdvances, stepDuration } from './duration';
 import { phonePanelMaxHeight, placeCard, type Size } from './placement';
 import { stepsForPlatform, targetFor } from './resolve';
 import { tourTarget } from './targets';
@@ -124,11 +125,17 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
   // belong to what has focus: a menu, a toggle group, the map, a tour panel.
   // Tab stays inside the card and the step's panel (the overlay is a modal dialog), while focus is in them or nowhere.
   const panelRef = useRef<HTMLDivElement>(null);
+  // The welcome waits for Volgende: using the card there starts the tour rather than taking it over
+  const waitsForUser = !!step?.waitsForUser;
+  const waitsForUserRef = useRef(waitsForUser);
+  useLayoutEffect(() => {
+    waitsForUserRef.current = waitsForUser;
+  }, [waitsForUser]);
   useEffect(() => {
     if (!active) return;
     function onKey(event: KeyboardEvent) {
       // A key on the tour (card, panel, or with focus nowhere) is the user taking over: auto-advance stops
-      if (ownsKey(event, document.body, [panelRef.current, cardRef.current]) && !onTimerControl(event.target)) takeOver();
+      if (ownsKey(event, document.body, [panelRef.current, cardRef.current]) && !onTimerControl(event.target) && !waitsForUserRef.current) takeOver();
       if (event.key === 'Tab' && !event.altKey && !event.ctrlKey && !event.metaKey) {
         const surfaces = [panelRef.current, cardRef.current];
         if (!ownsKey(event, document.body, surfaces)) return;
@@ -206,11 +213,13 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
 
   if (!step) return null;
 
-  const isLast = stepIndex === steps.length - 1;
   const Panel = step.panel;
   const shownStep = (shownIndex !== null && steps[shownIndex]) || step;
-  // A step that auto-advances (when not manual): not the last one, not a panel the user works in, and on screen
-  const timed = ready && !isLast && !step.panel && shownIndex === stepIndex;
+  // A step that auto-advances (when not manual): not the welcome, not a panel the user works in, and on screen. The
+  // last one finishes the tour when its time is up
+  const timed = ready && autoAdvances(step) && shownIndex === stepIndex;
+  // A tap on the spotlighted target counts as Volgende (not on a panel step: the gap around the panel is too easy to hit)
+  const holeClickable = ready && targetStatus === 'found' && !step.panel;
 
   return createPortal(
     // pointer-events-auto: Radix modals set pointer-events:none on <body> while open. A modal dialog (card + panel)
@@ -224,15 +233,21 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
       aria-describedby={bodyId}
       className="pointer-events-auto fixed inset-0 z-[60]"
       onPointerDownCapture={(event) => {
-        if (!onTimerControl(event.target)) takeOver();
+        if (!onTimerControl(event.target) && !step.waitsForUser) takeOver();
       }}
     >
       {/* Click shield: the tour drives the UI, the user only uses the card */}
       <div className="absolute inset-0" />
+      {/* The spotlight. Only its box takes pointers (the dimming shadow doesn't): a tap on the highlighted target goes
+          to the next step, like Volgende (the card's button stays the keyboard way) */}
       <div
         aria-hidden
         ref={holeRef}
-        className="pointer-events-none fixed left-0 top-0 rounded-xl shadow-[0_0_0_9999px_rgb(0_0_0/0.6)] will-change-[transform,width,height]"
+        onClick={holeClickable ? next : undefined}
+        className={cn(
+          'fixed left-0 top-0 rounded-xl shadow-[0_0_0_9999px_rgb(0_0_0/0.6)] will-change-[transform,width,height]',
+          holeClickable ? 'pointer-events-auto cursor-pointer' : 'pointer-events-none',
+        )}
       />
       {Panel && (
         // Above the dim layer and the click shield, so the user can use it. Phones: at the top, the card docks below.

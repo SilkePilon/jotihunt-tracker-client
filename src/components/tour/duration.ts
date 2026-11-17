@@ -4,6 +4,12 @@ const MIN_MS = 6000;
 const MAX_MS = 15000;
 const MS_PER_CHAR = 60;
 
+/**
+ * Whether the step advances by itself (unless the user took over): all but the welcome, which waits for Volgende, and a
+ * panel step, which the user works in.
+ */
+export const autoAdvances = (step: Pick<TourStep, 'waitsForUser' | 'panel'>): boolean => !step.waitsForUser && !step.panel;
+
 /** How long a step stays before auto-advancing: longer text gets more time. */
 export function stepDuration(step: Pick<TourStep, 'title' | 'body' | 'durationMs'>): number {
   if (step.durationMs != null) return step.durationMs;

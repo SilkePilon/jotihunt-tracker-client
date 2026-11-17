@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { TOUR_STEPS, TOUR_VERSION } from './steps';
 import { PHONE_MENU_SECTIONS, SIDEBAR_SECTIONS, TOUR_TARGET_IDS, sectionOfTarget } from './targets';
 import { stepsForPlatform, targetFor } from './resolve';
+import { autoAdvances } from './duration';
 
 describe('TOUR_STEPS', () => {
   test('TOUR_VERSION is at least 1', () => {
@@ -49,6 +50,11 @@ describe('TOUR_STEPS', () => {
     for (const step of TOUR_STEPS) {
       expect(!!step.panel).toBe(step.target === 'tour.panel');
     }
+  });
+
+  test('only the welcome and the sounds panel wait for the user; every other step advances by itself', () => {
+    const waiting = TOUR_STEPS.filter((step) => !autoAdvances(step)).map((step) => step.id);
+    expect(waiting).toEqual(['welcome', 'notification-sounds']);
   });
 
   test('first and last steps are not optional', () => {

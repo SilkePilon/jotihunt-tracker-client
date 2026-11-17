@@ -46,8 +46,9 @@ describe('nextPromptStep', () => {
 
   test('after the tour, map or sheet use holds prompts back until a quiet window after the last interaction', () => {
     const base = { ...idle, waiting: { notifications: T - 60_000 }, tourEndedAt: T, readyAt: T + PROMPT_GAP_MS };
-    // Not using the map: just the gap
-    expect(nextPromptStep(base, T + PROMPT_GAP_MS)).toEqual({ show: 'notifications' });
+    // Not using the map: still a quiet window after the tour, not straight after it
+    expect(nextPromptStep(base, T + PROMPT_GAP_MS)).toEqual({ waitMs: QUIET_MS - PROMPT_GAP_MS });
+    expect(nextPromptStep(base, T + QUIET_MS)).toEqual({ show: 'notifications' });
     // Panning the map after the tour: wait until the quiet window after that is over
     const busy = { ...base, interactedAt: T + 1000 };
     expect(nextPromptStep(busy, T + PROMPT_GAP_MS)).toEqual({ waitMs: 1000 + QUIET_MS - PROMPT_GAP_MS });
@@ -56,7 +57,7 @@ describe('nextPromptStep', () => {
     const later = { ...base, interactedAt: T + 8000 };
     expect(nextPromptStep(later, T + 1000 + QUIET_MS)).toEqual({ waitMs: 7000 });
     // Use from before the tour ended doesn't count
-    expect(nextPromptStep({ ...base, interactedAt: T - 1 }, T + PROMPT_GAP_MS)).toEqual({ show: 'notifications' });
+    expect(nextPromptStep({ ...base, interactedAt: T - 1 }, T + QUIET_MS)).toEqual({ show: 'notifications' });
   });
 
   test('a form or a focused text field holds the queue', () => {
@@ -100,7 +101,7 @@ describe('prompt queue store', () => {
     expect(queue().active).toBe('passkey');
   });
 
-  test('requests while held wait for the tour to end, then the gap', () => {
+  test('requests while held wait for the tour to end, then the quiet window', () => {
     queue().setHeld(true, T);
     queue().request('android-promo', T);
     queue().pump(T + 30_000);
@@ -108,6 +109,8 @@ describe('prompt queue store', () => {
     queue().setHeld(false, T + 30_000);
     expect(queue().tourEndedAt).toBe(T + 30_000);
     queue().pump(T + 30_000 + PROMPT_GAP_MS);
+    expect(queue().active).toBeNull();
+    queue().pump(T + 30_000 + QUIET_MS);
     expect(queue().active).toBe('android-promo');
   });
 

@@ -21,7 +21,8 @@ export const TOUR_STEPS: TourStep[] = [
     id: 'welcome',
     target: null,
     title: 'Welkom bij de Jotihunt Tracker!',
-    body: 'In een paar stappen laten we zien hoe de app werkt. De rondleiding loopt vanzelf door; zodra je zelf een knop gebruikt, ga je verder met Volgende.',
+    body: 'In een paar stappen laten we zien hoe de app werkt. Tik op Volgende om te beginnen; daarna loopt de rondleiding vanzelf door. Raak je zelf iets aan, dan ga je verder met Volgende of door op het uitgelichte deel te tikken.',
+    waitsForUser: true,
   },
   {
     id: 'map',
