@@ -224,8 +224,11 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
         setPending(null);
         const error = await createMarker(marker);
         if (error && isNetworkError(error)) {
-            // No answer (offline, timeout) doesn't mean it failed: the server may have saved it. A fresh list tells.
+            // No answer (offline, timeout) doesn't mean it failed: the server may have saved it. A fresh list tells (the
+            // button says "Controleren…" meanwhile)
+            setChecking(true);
             const outcome = lostResponseOutcome(await fetchFreshMarkers(), marker);
+            setChecking(false);
             if (outcome !== 'registered') {
                 // The typed hint stays in the form (and the draft); a later poll that finds it still confirms it
                 setPending({sent: marker, values: data, outcome});
@@ -424,11 +427,11 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
                     disabled={primary === 'register' && (!canSubmit || readOnly)}
                     aria-disabled={busy || undefined} aria-busy={busy || undefined}>
                 <AnimatePresence mode="popLayout" initial={false}>
-                    <motion.span key={`${primary}-${busy ? 'busy' : 'idle'}`} className="inline-flex items-center gap-2" {...SWAP}>
+                    <motion.span key={`${primary}-${checking ? 'check' : busy ? 'busy' : 'idle'}`} className="inline-flex items-center gap-2" {...SWAP}>
                         {busy ? <Loader2Icon className="animate-spin"/> : primary === 'recheck' ? <RefreshCwIcon/> : <Pin/>}
                         {primary === 'recheck'
                             ? (checking ? 'Controleren…' : 'Opnieuw controleren')
-                            : (submitting ? 'Registreren…' : 'Registreren')}
+                            : (submitting ? (checking ? 'Controleren…' : 'Registreren…') : 'Registreren')}
                     </motion.span>
                 </AnimatePresence>
             </Button>

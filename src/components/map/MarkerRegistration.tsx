@@ -235,8 +235,11 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
     const error = await createMarker(marker);
     let confirmedLate = false;
     if (error && isNetworkError(error)) {
-      // No answer (offline, timeout) doesn't mean it failed: the server may have saved it. A fresh list tells.
+      // No answer (offline, timeout) doesn't mean it failed: the server may have saved it. A fresh list tells (the
+      // button says "Controleren…" meanwhile)
+      setChecking(true);
       const outcome = lostResponseOutcome(await fetchFreshMarkers(), marker);
+      setChecking(false);
       if (outcome !== 'registered') {
         const typed = form.getValues();
         const draft: MarkerDraft = { type: markerType, area: data.area, day, time, sent: marker, outcome };
@@ -436,7 +439,7 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
           aria-describedby={missing ? missingId : undefined}
           aria-busy={busy}
         >
-          <PrimaryLabel id={`${primary}-${prefilledArea ?? ''}`}>
+          <PrimaryLabel id={`${primary}-${prefilledArea ?? ''}${isSubmitting && checking ? '-check' : ''}`}>
             {primary === 'recheck' ? (
               <>
                 <BusyIcon busy={checking} icon={<RefreshCwIcon data-icon="inline-start" />} />
@@ -446,7 +449,7 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
               <>
                 <BusyIcon busy={isSubmitting} icon={markerType === MarkerType.Spot ? <GlassesIcon data-icon="inline-start" /> : <CrosshairIcon data-icon="inline-start" />} />
                 {/* Truncates rather than spilling out on the narrowest phones */}
-                <span className="min-w-0 truncate">{isSubmitting ? 'Registreren…' : saveLabel}</span>
+                <span className="min-w-0 truncate">{isSubmitting ? (checking ? 'Controleren…' : 'Registreren…') : saveLabel}</span>
               </>
             )}
           </PrimaryLabel>

@@ -3,6 +3,7 @@ import { fetcherWithMethod, useAuthSWR } from '../lib/swr';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
 import { asList, hasExpectedShape } from '@/lib/response-shape';
 import { confirmHaptic } from '@/lib/haptics';
+import { CONFIRM_REQUEST_TIMEOUT_MS } from '@/lib/http';
 
 export const useMarkers = () => {
   const authHeader = useAuthHeader() || '';
@@ -44,7 +45,7 @@ export const useMarkers = () => {
    */
   async function fetchFreshMarkers(): Promise<Marker[] | undefined> {
     try {
-      const fresh: unknown = await fetcherWithMethod('/markers', authHeader);
+      const fresh: unknown = await fetcherWithMethod('/markers', authHeader, 'GET', undefined, CONFIRM_REQUEST_TIMEOUT_MS);
       if (!hasExpectedShape('/markers', fresh)) return undefined;
       await mutate(fresh as Marker[], { revalidate: false });
       return fresh as Marker[];
