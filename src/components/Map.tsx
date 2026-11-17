@@ -44,6 +44,7 @@ import {ORBIT_MAX_PITCH} from '@/lib/orbit';
 import {FullscreenControl} from "react-map-gl/maplibre";
 import '@mapbox-controls/ruler/src/index.css';
 import Ruler from "@/components/map/RulerControl.tsx";
+import {MAP_LOCALE_NL} from "@/lib/map-locale";
 import type {SymbolLayerSpecification} from '@maplibre/maplibre-gl-style-spec';
 import {DEFAULT_VIEW} from '@/lib/map-view';
 import {FASTFOOD_LAYER, FOX_MARKERS_LAYER, HUNTER_ARROWS_LAYER, HUNTERS_LAYER, LIFE360_LAYER, TEAM_PINS_LAYER, TRAILS_HIT_LAYER} from '@/lib/map-layers';
@@ -259,6 +260,8 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
                 initialViewState={DEFAULT_VIEW}
                 style={{width: '100%', height: '100%'}}
                 attributionControl={false}
+                // Dutch labels for MapLibre's own control buttons (screen readers read their names)
+                locale={MAP_LOCALE_NL}
                 mapStyle={resolvedMapStyle}
                 maxBounds={maxBounds}
                 maxPitch={ORBIT_MAX_PITCH}
