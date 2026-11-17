@@ -20,7 +20,7 @@ const RESULT_MESSAGE: Record<Exclude<PushResult, 'subscribed'>, string> = {
   denied: 'Meldingen zijn geblokkeerd. Zet ze aan in de instellingen van je browser; geluiden in de app werken wel.',
   unsupported: 'Deze browser ondersteunt geen pushmeldingen; geluiden in de app werken wel.',
   unavailable: 'Pushmeldingen zijn niet ingesteld op de server; geluiden in de app werken wel.',
-  error: 'Aanmelden voor pushmeldingen is mislukt, probeer het later opnieuw.',
+  error: 'Je keuzes zijn opgeslagen, maar aanmelden voor pushmeldingen op dit apparaat is mislukt. Probeer het later opnieuw.',
 };
 
 const ICONS: Record<OptionalNotificationType, LucideIcon> = {
