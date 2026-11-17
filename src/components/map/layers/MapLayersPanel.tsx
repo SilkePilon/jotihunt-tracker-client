@@ -90,7 +90,7 @@ function StyleBar() {
                 draggable={false}
                 className="relative aspect-[1.3] w-full rounded-[9px] object-cover transition-transform duration-200 group-hover:scale-[1.04]"
               />
-              <span className={cn('relative text-[11px] transition-colors', selected ? 'font-semibold text-on-primary-container' : 'text-muted-foreground')}>{style.label}</span>
+              <span className={cn('relative text-xs transition-colors md:text-[11px]', selected ? 'font-semibold text-on-primary-container' : 'text-muted-foreground')}>{style.label}</span>
             </RadioGroupPrimitive.Item>
           );
         })}
