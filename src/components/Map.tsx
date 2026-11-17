@@ -33,6 +33,7 @@ import useLayersStore from '../stores/layers.store';
 import useSettingsStore from '../stores/settings.store';
 import useSidebarStore from '@/stores/sidebar.store';
 import useViewportStore from '@/stores/viewport.store';
+import useTopStackStore from '@/stores/top-stack.store';
 import {MapStyle} from '@/types/MapStyle';
 import {getHybridSatelliteStyle, resolveStaticMapStyle, themeRasters} from '@/lib/map-styles';
 import {materialMapStyle} from '@/lib/map-style';
@@ -274,6 +275,9 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
     // Phones held sideways: the sheet is a left column (BottomSheet), the left pads for it instead of the bottom
     const sheetSide = useSidebarStore((state) => state.sheetSide);
     const safeBottom = useViewportStore((state) => state.safeBottom);
+    // Phones: the offline badge or the drawing toolbar at the top centre can reach the corners; the scale bar fades out
+    // under them (index.css, data-top-stack)
+    const topStackShown = useTopStackStore((state) => state.heights.badge > 0 || state.heights.toolbar > 0);
     const {bottom: bottomPadding, left: leftPadding} = isMobile && !wall ? phoneMapPadding({sheet: sheetHeight, card: dockCardHeight, mapHeight: window.innerHeight, sheetSide, safeBottom}) : NO_PADDING;
     // The sheet the padding was last applied for: a sheet move eases, a docked card coming or going doesn't move the view
     const sheetKey = `${sheetHeight}:${sheetSide}`;
@@ -378,6 +382,7 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
 
     return (
         <div className={cn('relative', className ?? "w-dvw h-dvh")} style={wrapperStyle} {...tourTarget('map')}
+             data-top-stack={isMobile && !wall && topStackShown ? '' : undefined}
              onPointerDownCapture={() => {
                  popupOpenAtPress.current = isMapPopupOpen();
              }}>
@@ -411,7 +416,9 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
                     {/* Credits on the right: bottom-right on desktop; on phones top-right, above the bottom sheet; on the HQ wall top-right, above the event card. */}
                     <AttributionControl position={isMobile || wall ? 'top-right' : 'bottom-right'} customAttribution={groupName ? `Jotihunt Tracker | ${groupName}` : 'Jotihunt Tracker'} compact={true}/>
                 </div>
-                {/* Phones: no MapLibre controls (touch navigation, the sheet needs the room); MyLocationButton floats above the sheet */}
+                {/* Phones: only the scale bar, top-left level with the credits button (index.css); no other MapLibre controls
+                    (touch navigation, the sheet needs the room); MyLocationButton floats above the sheet */}
+                {isMobile && !wall && <ScaleControl position="top-left" maxWidth={80}/>}
                 {!isMobile && !wall && (
                     <>
                         <ScaleControl/>
