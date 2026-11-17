@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { toast } from 'sonner';
 import { BrainIcon, CheckIcon, FileTextIcon, KeyRoundIcon, ListTreeIcon, Loader2Icon, MessageCircleIcon, PlayIcon, RadarIcon, WrenchIcon } from 'lucide-react';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import Reveal from '@/components/motion/Reveal';
 import { Input } from '@/components/ui/input';
 import { testAiSlot, useAdminConfig, useAiModels } from '@/hooks/app-config.hook';
@@ -80,6 +81,8 @@ export default function AiPane() {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
   const [saving, setSaving] = useState(false);
+  const [clearOpen, setClearOpen] = useState(false);
+  const [clearing, setClearing] = useState(false);
   const isMobile = useIsMobile();
 
   function closeEditor() {
@@ -101,13 +104,18 @@ export default function AiPane() {
     }
   }
 
+  /** Runs from the confirm dialog (it stays open, buttons disabled, until this settles; open on failure) */
   async function clearKey() {
+    setClearing(true);
     try {
       await admin.clearSecret('geminiApiKey');
+      setClearOpen(false);
       closeEditor();
       toast.success('Gemini-sleutel gewist');
     } catch (error) {
       toast.error(apiErrorMessage(error, 'Wissen is mislukt.'));
+    } finally {
+      setClearing(false);
     }
   }
 
@@ -184,7 +192,8 @@ export default function AiPane() {
             <AnimatePresence initial={false}>
               {key?.source === 'db' && (
                 <motion.span key="clear" {...POP}>
-                  <Pill variant="ghost" onClick={() => void clearKey()}>
+                  <Pill variant="ghost" morphKey={clearing ? 'busy' : 'idle'} disabled={clearing} onClick={() => setClearOpen(true)}>
+                    {clearing && <Loader2Icon className="animate-spin" />}
                     Wissen
                   </Pill>
                 </motion.span>
@@ -302,6 +311,16 @@ export default function AiPane() {
           )}
         </AnimatePresence>
       </BeheerCard>
+
+      <ConfirmDialog
+        open={clearOpen}
+        onOpenChange={setClearOpen}
+        title="Gemini-sleutel wissen?"
+        description="De sleutel geldt voor de hele groep. Staat er een sleutel in .env, dan wordt die weer gebruikt; anders gaan samenvattingen, hint-analyse en de AI-chat voor iedereen uit."
+        confirmLabel="Wissen"
+        destructive
+        onConfirm={clearKey}
+      />
     </BeheerPane>
   );
 }
