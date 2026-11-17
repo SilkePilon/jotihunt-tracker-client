@@ -10,9 +10,9 @@ import { cooldownLegendChars, FOX_GROUP_LABEL, groupCounts, legendGroups, legend
 import { formatCountdown } from '@/lib/format';
 import useMobileNavStore from '@/stores/mobile-nav.store';
 import { cn } from '@/lib/utils';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, motion, useIsPresent } from 'motion/react';
 import { EyeOffIcon, TimerIcon } from 'lucide-react';
-import { useLayoutEffect, useRef, useState } from 'react';
+import { type ComponentProps, useLayoutEffect, useRef, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAreas } from '@/hooks/areas.hook';
 import { SWAP, SWAP_TRANSITION } from '@/lib/motion';
@@ -61,6 +61,15 @@ function useWidth<T extends HTMLElement>() {
 }
 
 /**
+ * One cross-fading layer of the legend. The leaving layer is hidden from screen readers while it fades out, so the
+ * strip's name isn't read twice during the swap (old and new layer are both in the DOM then).
+ */
+function LegendLayer(props: ComponentProps<typeof motion.span>) {
+  const isPresent = useIsPresent();
+  return <motion.span {...SWAP} aria-hidden={isPresent ? undefined : true} {...props} />;
+}
+
+/**
  * Legend under the peek's fox bar: which foxes are in which group ("A D actief  B onderweg") when that fits on one line,
  * with the countdown of the cooldown that ends first ("B 12:34") when that fits too; else the counts per group
  * ("2 actief"). A colour swatch before each ties it to the bar; without room for those either (narrow phones with an OV
@@ -86,7 +95,7 @@ function PeekLegend({ foxes, counts, hidden }: { foxes: SidebarFox[]; counts: Re
     <span ref={ref} className="relative block h-4 text-xs text-muted-foreground tabular-nums">
       <AnimatePresence initial={false}>
         {/* Cross-fades when the layout changes or the hidden entry comes or goes */}
-        <motion.span key={`${mode}:${showTime}:${hidden > 0}`} {...SWAP} className={cn('absolute inset-0 flex items-center whitespace-nowrap', mode === 'initials' ? 'gap-3' : 'justify-between')}>
+        <LegendLayer key={`${mode}:${showTime}:${hidden > 0}`} className={cn('absolute inset-0 flex items-center whitespace-nowrap', mode === 'initials' ? 'gap-3' : 'justify-between')}>
           {mode === 'initials'
             ? initials.map((item) => (
                 <span key={item.group} className="inline-flex items-center gap-1">
@@ -114,7 +123,7 @@ function PeekLegend({ foxes, counts, hidden }: { foxes: SidebarFox[]; counts: Re
               <b className="font-semibold text-foreground">{hidden}</b> <span className={cn(mode === 'plain' && 'sr-only')}>verborgen</span>
             </span>
           )}
-        </motion.span>
+        </LegendLayer>
       </AnimatePresence>
     </span>
   );

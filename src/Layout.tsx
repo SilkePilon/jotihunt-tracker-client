@@ -25,6 +25,7 @@ import {MAP_TILE} from '@/lib/map-chrome';
 import {cn} from '@/lib/utils';
 import useIntelStore from '@/stores/intel.store';
 import useMobileNavStore from '@/stores/mobile-nav.store';
+import useSettingsStore from '@/stores/settings.store';
 import {useFetcher} from '@/hooks/utils/api.hook';
 import {isUnauthorized} from '@/lib/session';
 import {useSessionExpired} from '@/hooks/session.hook';
@@ -74,12 +75,13 @@ function openGroupSearch() {
 }
 
 /**
- * The desktop "Naar de kaart" skip link: out of sight (and unclickable) until it has focus, then a map tile sliding in
- * at the top left. Not sr-only: that can't animate in; screen readers read it either way.
+ * The "Naar de kaart" skip link (laptop and phone shell): out of sight (and unclickable) until it has focus, then a map
+ * tile sliding in at the top left, below a phone's notch. Not sr-only: that can't animate in; screen readers read it
+ * either way.
  */
 const SKIP_LINK = cn(
     MAP_TILE,
-    'fixed top-3 left-3 z-[70] inline-flex h-11 items-center rounded-2xl px-4 text-sm font-semibold outline-none',
+    'fixed top-[calc(env(safe-area-inset-top)+12px)] left-3 z-[70] inline-flex h-11 items-center rounded-2xl px-4 text-sm font-semibold outline-none',
     'pointer-events-none -translate-y-[calc(100%+1rem)] opacity-0 transition-[translate,opacity] duration-200 ease-out motion-reduce:transition-none',
     'focus:pointer-events-auto focus:translate-y-0 focus:opacity-100 focus-visible:ring-[3px] focus-visible:ring-ring',
 );
@@ -119,9 +121,11 @@ export default function Layout() {
     const {pathname} = location;
     const navigate = useNavigate();
 
-    // Laptop shortcuts: "/" the group search (map page), "i" the Intel window (lib/shortcuts.ts says when not)
+    // Laptop shortcuts: "/" the group search (map page), "i" the Intel window (lib/shortcuts.ts says when not); the
+    // settings menu's "Sneltoetsen" switch turns them off (WCAG 2.1.4: speech input can type these letters by accident)
+    const shortcutsEnabled = useSettingsStore((state) => state.shortcutsEnabled);
     useEffect(() => {
-        if (isMobile) return;
+        if (isMobile || !shortcutsEnabled) return;
         const onKeyDown = (event: KeyboardEvent) => {
             const target = event.target instanceof Element ? event.target : null;
             const shortcut = shortcutFor(event, {
@@ -137,7 +141,7 @@ export default function Layout() {
         };
         window.addEventListener('keydown', onKeyDown);
         return () => window.removeEventListener('keydown', onKeyDown);
-    }, [isMobile, pathname]);
+    }, [isMobile, pathname, shortcutsEnabled]);
 
     /** Phone: the Hints page on top of the sheet (push also raises the sheet to full; already on top stays as is) */
     function openHintsPage() {
@@ -271,16 +275,15 @@ export default function Layout() {
             <main>
             {/* Page heading for screen readers, before the sidebar's section headings (h2) in the outlet */}
             <h1 className="sr-only">Jotihunt Tracker</h1>
-            {/* Desktop: past the sidebar straight onto the map. Hidden until focused, then it slides in as a map tile */}
-            {!isMobile && (
-                <a href="#" className={SKIP_LINK} onClick={(e) => {
-                    e.preventDefault();
-                    // No usable map (not created yet, or style/tiles failed): its "Kaart niet beschikbaar" card instead
-                    if (!mapRef.current?.focusCanvas()) document.getElementById(MAP_UNAVAILABLE_HEADING_ID)?.focus();
-                }}>
-                    Naar de kaart
-                </a>
-            )}
+            {/* Past the sidebar (laptop) or the sheet (phone, e.g. a keyboard or switch user) straight onto the map.
+                Hidden until focused, then it slides in as a map tile */}
+            <a href="#" className={SKIP_LINK} onClick={(e) => {
+                e.preventDefault();
+                // No usable map (not created yet, or style/tiles failed): its "Kaart niet beschikbaar" card instead
+                if (!mapRef.current?.focusCanvas()) document.getElementById(MAP_UNAVAILABLE_HEADING_ID)?.focus();
+            }}>
+                Naar de kaart
+            </a>
             <ErrorBoundary name="Deze pagina" variant="floating">
                 <Outlet context={{mapRef} satisfies OutletContextType}/>
             </ErrorBoundary>

@@ -6,6 +6,7 @@ import { useGrantedBrowserPosition } from '@/hooks/granted-position.hook';
 import { useNow } from '@/hooks/now.hook';
 import { useTrackerStatus } from '@/hooks/tracker.hook';
 import { useWakeLock } from '@/hooks/wake-lock.hook';
+import { endsFollowing, FOLLOW_GESTURE_EVENTS, type FollowGestureEvent } from '@/lib/follow-gesture';
 import { followTarget } from '@/lib/locate';
 import { OWN_POSITION_FRESH_MS, OWN_POSITION_LIVE_MS, ownDeviceId, ownTrackerPosition } from '@/lib/own-position';
 import useBrowserLocationStore from '@/stores/browser-location.store';
@@ -17,15 +18,11 @@ const FOLLOW_EASE_MS = 800;
 const FRESHNESS_TICK_MS = 5000;
 const FOLLOW_WATCH: PositionOptions = { enableHighAccuracy: true, maximumAge: 10_000 };
 
-// User gestures that end following (MapLibre only sets originalEvent for those, never for our own camera moves).
-// Zooming is not one: a pinch (like the ± tiles) keeps following, the next fix re-centres at the new zoom.
-const GESTURE_EVENTS = ['dragstart', 'rotatestart', 'pitchstart'] as const;
-
 /**
  * Phones: while "Mijn locatie" follows (MyLocationButton), the map eases to every new own fix: the own tracker when its
  * fix is under 20 s old, else the browser's position (when access is already granted, or BrowserLocationDot's), else a
- * tracker fix under 150 s. Dragging or twisting the map stops following; pinch zoom
- * keeps it.
+ * tracker fix under 150 s. Dragging, twisting or arrow-key panning the map stops following;
+ * zooming (pinch, wheel, +/-) keeps it, the next fix re-centres at the new zoom (lib/follow-gesture.ts).
  * The screen stays on meanwhile, like a navigation app.
  */
 export default function FollowMe() {
@@ -52,11 +49,12 @@ export default function FollowMe() {
   useEffect(() => {
     if (!map || !following) return;
     const onGesture = (event: MapLibreEvent<unknown>) => {
-      if ((event as { originalEvent?: unknown }).originalEvent) useFollowMeStore.getState().stop();
+      const { originalEvent } = event as { originalEvent?: unknown };
+      if (endsFollowing(event.type as FollowGestureEvent, originalEvent)) useFollowMeStore.getState().stop();
     };
-    for (const type of GESTURE_EVENTS) map.on(type, onGesture);
+    for (const type of FOLLOW_GESTURE_EVENTS) map.on(type, onGesture);
     return () => {
-      for (const type of GESTURE_EVENTS) map.off(type, onGesture);
+      for (const type of FOLLOW_GESTURE_EVENTS) map.off(type, onGesture);
     };
   }, [map, following]);
 

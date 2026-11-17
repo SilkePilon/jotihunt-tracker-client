@@ -86,7 +86,10 @@ export default function ImageLightbox({ src, alt, open, onOpenChange }: { src: s
         <DialogDescription className="sr-only">Zoom met scrollen, knijpen of dubbelklikken; sleep of tik op een plek om te verschuiven. Toetsen: plus en min zoomen, 0 herstelt, pijltjes verschuiven.</DialogDescription>
         <div
           tabIndex={0}
-          role="img"
+          // Its own keys (+/-/0/arrows): role=application passes them through screen readers' browse mode (role=img
+          // would swallow them); the roledescription says what it is
+          role="application"
+          aria-roledescription="zoombare foto"
           aria-label={alt || 'Foto'}
           onKeyDown={(event) => {
             if (event.ctrlKey || event.metaKey || event.altKey) return;

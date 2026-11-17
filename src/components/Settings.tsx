@@ -10,6 +10,7 @@ import {
     UserRoundIcon,
     ShieldIcon,
     LayersIcon,
+    KeyboardIcon,
 } from 'lucide-react';
 import {siDiscord} from "simple-icons"
 import {cn} from '@/lib/utils';
@@ -17,7 +18,7 @@ import {HEADER_BUTTON, HEADER_BUTTON_END} from './sidebar/header-button';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuTrigger} from './ui/dropdown-menu';
 import {AnimatePresence, motion} from 'motion/react';
 import {SWAP} from '@/lib/motion';
-import {MenuRow, MenuRows, MenuTile} from './settings/menu-parts';
+import {MenuCheckboxTile, MenuRow, MenuRows, MenuSwitchRow, MenuTile} from './settings/menu-parts';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import useSettingsStore from '@/stores/settings.store';
 import {User} from '@/types/User';
@@ -58,6 +59,8 @@ export default function Settings({onReplayTour}: SettingsProps) {
     const openLayers = useLayersDialogStore((state) => state.setOpen);
     const soundMuted = useSettingsStore((state) => state.soundMuted);
     const setSoundMuted = useSettingsStore((state) => state.setSoundMuted);
+    const shortcutsEnabled = useSettingsStore((state) => state.shortcutsEnabled);
+    const setShortcutsEnabled = useSettingsStore((state) => state.setShortcutsEnabled);
     const {isStandalone, isInstallPromptSupported, promptInstall} = usePWA();
     const openAdminDialog = useAdminStore((state) => state.openDialog);
     const isMobile = useIsMobile();
@@ -79,18 +82,18 @@ export default function Settings({onReplayTour}: SettingsProps) {
                 <DropdownMenuContent align="start" className="w-[290px]">
                     {/* Quick tiles for what you change most */}
                     <div className={cn('mb-1.5 grid gap-1.5', onReplayTour ? 'grid-cols-3' : 'grid-cols-2')}>
-                        <MenuTile onSelect={(e) => {
-                            e.preventDefault();
-                            setSoundMuted(!soundMuted);
-                        }}
-                                  className={cn(!soundMuted && 'bg-(--map-selected-bg) text-(--map-selected-fg) focus:bg-(--map-selected-bg) focus:text-(--map-selected-fg)')}>
+                        {/* A menuitemcheckbox: checked while the sound is on; the menu stays open on toggle */}
+                        <MenuCheckboxTile checked={!soundMuted}
+                                          onSelect={(e) => e.preventDefault()}
+                                          onCheckedChange={(on) => setSoundMuted(!on)}
+                                          className={cn(!soundMuted && 'bg-(--map-selected-bg) text-(--map-selected-fg) focus:bg-(--map-selected-bg) focus:text-(--map-selected-fg)')}>
                             <AnimatePresence mode="wait" initial={false}>
                                 <motion.span key={soundMuted ? 'off' : 'on'} {...SWAP} className="flex flex-col items-center gap-1.5">
                                     {soundMuted ? <VolumeXIcon className="size-5"/> : <Volume2Icon className="size-5 text-current"/>}
                                     {soundMuted ? 'Geluid uit' : 'Geluid aan'}
                                 </motion.span>
                             </AnimatePresence>
-                        </MenuTile>
+                        </MenuCheckboxTile>
                         <MenuTile onClick={() => openNotifications(true)}>
                             <BellIcon className="size-5"/>
                             Meldingen
@@ -114,6 +117,15 @@ export default function Settings({onReplayTour}: SettingsProps) {
                                 {auth?.name}{auth?.admin && ' · Admin'}
                             </span>
                         </MenuRow>
+                        {/* Laptop: the single-key shortcuts ("i" Intel, "/" groep zoeken) can be turned off (WCAG 2.1.4) */}
+                        {!isMobile && (
+                            <MenuSwitchRow checked={shortcutsEnabled}
+                                           onSelect={(e) => e.preventDefault()}
+                                           onCheckedChange={(on) => setShortcutsEnabled(on === true)}>
+                                <KeyboardIcon/>
+                                Sneltoetsen
+                            </MenuSwitchRow>
+                        )}
                         {!isStandalone && isInstallPromptSupported && (
                             <MenuRow onClick={promptInstall}>
                                 <DownloadIcon/>
