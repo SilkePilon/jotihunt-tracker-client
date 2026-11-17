@@ -53,20 +53,23 @@ export const useMarkers = () => {
   /**
    * Delete a marker via the API.
    * @param markerId The ID of the marker to delete
-   * @returns True if the marker was deleted successfully, false otherwise (never throws)
+   * @returns null if the marker was deleted, else the error (never throws; show it with apiErrorMessage)
    */
-  async function deleteMarker(markerId: string): Promise<boolean> {
-    const result = await fetcherWithMethod(`/markers/${markerId}`, authHeader, 'DELETE').catch(() => null);
-    if (result) {
-      mutate((data) => {
-        if (data) {
-          return data.filter((marker) => marker._id !== markerId);
-        }
-        return [];
-      });
-      return true;
+  async function deleteMarker(markerId: string): Promise<unknown> {
+    let result;
+    try {
+      result = await fetcherWithMethod(`/markers/${markerId}`, authHeader, 'DELETE');
+    } catch (error) {
+      return error ?? new Error('Request failed');
     }
-    return false;
+    if (!result) return new Error('Unexpected response');
+    mutate((data) => {
+      if (data) {
+        return data.filter((marker) => marker._id !== markerId);
+      }
+      return [];
+    });
+    return null;
   }
 
   return {
