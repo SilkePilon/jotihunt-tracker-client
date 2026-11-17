@@ -45,9 +45,9 @@ export default function MarkerPopup({ marker, onClose, deleteMarker }: MarkerPop
     setConfirmOpen(false);
     if (deleted) {
       onClose();
-      toast.success('Marker verwijderd!', { description: 'De marker is succesvol verwijderd.' });
+      toast.success('Marker verwijderd');
     } else {
-      toast.error('Fout bij verwijderen marker.', { description: 'Er is iets fout gegaan bij het verwijderen van de marker. Probeer het later opnieuw.' });
+      toast.error('Marker verwijderen is mislukt', { description: 'Probeer het opnieuw.' });
     }
   }
 

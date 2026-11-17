@@ -196,9 +196,7 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
                 form.reset(EMPTY_HINT_DRAFT);
                 useHintDraftStore.getState().clear();
             }
-            toast.success('Hint geregistreerd!', {
-                description: 'De hint is succesvol geregistreerd.'
-            });
+            toast.success('Hint geregistreerd');
             // On a phone the full sheet would hide the flight: lower it to peek first (like Hunts and Voorspellingen)
             if (isMobile) useSidebarStore.getState().setSheetSnap('peek');
             mapRef.current?.flyTo({
@@ -210,8 +208,8 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
             // The typed hint stays in the form (and the draft): one tap on Registreren once there is a connection
             setSubmitError('Geen verbinding: de hint is niet geregistreerd. Je invoer blijft staan, probeer het opnieuw zodra je verbinding hebt.');
         } else {
-            toast.error('Fout bij registreren hint.', {
-                description: apiErrorMessage(error, 'Er is een fout opgetreden bij het registreren van de hint.')
+            toast.error('Hint registreren is mislukt', {
+                description: apiErrorMessage(error, 'Probeer het opnieuw.')
             });
         }
     }

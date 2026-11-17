@@ -29,7 +29,7 @@ export default function ReloadTeamsDialog({ open, onOpenChange }: ReloadTeamsDia
     // Never throws; the error on failure (a 423 while an archive edition is shown reads "Archief is alleen-lezen")
     const failure = await reloadTeams();
     if (failure) {
-      setError(apiErrorMessage(failure, 'Er is iets misgegaan bij het herladen van de teams. Probeer het later opnieuw.'));
+      setError(apiErrorMessage(failure, 'Teams herladen is mislukt. Probeer het opnieuw.'));
       return;
     }
     toast.success('Teams herladen', {
