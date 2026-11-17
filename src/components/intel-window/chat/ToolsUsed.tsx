@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion } from 'motion/react';
 import { CalculatorIcon, ChevronRightIcon, FileTextIcon, GlobeIcon, MapPinIcon, type LucideIcon } from 'lucide-react';
 import Reveal from '@/components/motion/Reveal';
+import { COARSE_HIT_AREA } from '@/lib/hit-area';
 import { type ChatToolCall, stackedTools, toolDoneLabel, toolSummary, toolTone } from '@/lib/intel-chat';
 import { SWAP_TRANSITION } from '@/lib/motion';
 import { cn } from '@/lib/utils';
@@ -31,12 +32,16 @@ export default function ToolsUsed({ calls }: { calls: ChatToolCall[] }) {
   const [open, setOpen] = useState(false);
   const failed = calls.some((call) => call.state === 'error');
   return (
-    <div className="flex flex-col items-start">
+    // isolate: the toggle's 44px touch area on phones (COARSE_HIT_AREA) stays above the message's background
+    <div className="isolate flex flex-col items-start">
       <button
         type="button"
         aria-expanded={open}
         onClick={() => setOpen(!open)}
-        className="inline-flex items-center gap-1.5 rounded-[10px] bg-beheer-row px-2 py-1 text-xs font-semibold text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring"
+        className={cn(
+          COARSE_HIT_AREA,
+          'inline-flex items-center gap-1.5 rounded-[10px] bg-beheer-row px-2 py-1 text-xs font-semibold text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring',
+        )}
       >
         <span className="flex pr-1">
           {stackedTools(calls).map((name) => (

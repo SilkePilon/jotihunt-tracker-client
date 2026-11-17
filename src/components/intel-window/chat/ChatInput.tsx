@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import type { FileUIPart } from 'ai';
 import { BrainIcon, GlobeIcon, Loader2Icon, PaperclipIcon, XIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import { COARSE_HIT_AREA } from '@/lib/hit-area';
 import { prepareChatImage } from '@/lib/image';
 import { CHAT_IMAGE_MAX_BYTES, CHAT_IMAGE_MAX_SIDE, CHAT_IMAGE_QUALITY, PLACEHOLDER, chatImageProblem, dataUrlBytes } from '@/lib/intel-chat';
 import { POP, REVEAL_TRANSITION } from '@/lib/motion';
@@ -157,14 +158,18 @@ export default function ChatInput({ itemId, kind, busy, disabled, onSend, onStop
           void attach(file);
         }}
       />
-      <PromptInputActions className="pt-0.5">
+      {/* isolate: the paperclip's 44px touch area on phones (COARSE_HIT_AREA) stays above the box's background */}
+      <PromptInputActions className="isolate pt-0.5">
         <PromptInputAction tooltip="Afbeelding toevoegen">
           <button
             type="button"
             aria-label="Afbeelding toevoegen"
             disabled={disabled}
             onClick={() => fileInput.current?.click()}
-            className="grid size-8 place-items-center rounded-xl text-muted-foreground outline-none transition-colors hover:bg-foreground/5 hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4"
+            className={cn(
+              COARSE_HIT_AREA,
+              'grid size-8 place-items-center rounded-xl text-muted-foreground outline-none transition-colors hover:bg-foreground/5 hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4',
+            )}
           >
             <PaperclipIcon />
           </button>
