@@ -142,8 +142,9 @@ function IntegrationCard({ name, brand, logo, view, isError, onRetry, action, ac
               )}
             </AnimatePresence>
           </div>
+          {/* "Gekoppeld als <e-mail>": a long address breaks anywhere instead of pushing past the card at 360px */}
           <AnimatePresence mode="wait" initial={false}>
-            <motion.div key={view ? `line:${view.line}` : isError ? 'error' : 'loading'} className="text-[12.5px] text-muted-foreground" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+            <motion.div key={view ? `line:${view.line}` : isError ? 'error' : 'loading'} className="text-[12.5px] text-muted-foreground [overflow-wrap:anywhere]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
               {view ? view.line : isError ? <LoadError className="mt-1 text-[12.5px]" message="Status ophalen is mislukt." onRetry={onRetry} /> : <Skeleton className="mt-1 h-3 w-40" />}
             </motion.div>
           </AnimatePresence>
