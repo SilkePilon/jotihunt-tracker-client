@@ -78,7 +78,7 @@ export default function ResponsiveDialog({ open, onClose, title, description, ch
     return (
       <Drawer.Root open={open} onOpenChange={(next) => !next && onClose()}>
         <Drawer.Portal>
-          <Drawer.Overlay className="fixed inset-0 z-50 bg-black/40" />
+          <Drawer.Overlay className="fixed inset-0 z-50 bg-black/50" />
           <Drawer.Content
             // Escape inside an inline editor cancels the edit instead of closing the drawer
             onEscapeKeyDown={keepOpenWhileEditing}
