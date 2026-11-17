@@ -86,7 +86,7 @@
   --on-happy-hour: #1c1300;
   --status-ok-dot: #22c55e;
   --status-warn-dot: #f59e0b;
-  --status-warn-text: #b45309;
+  --status-warn-text: #92400e;
   /* Intel kinds (hint orange, opdracht blue, nieuws purple): the -800 shades as text/icons on their own tonal tile
      (>= 6:1); the tile is the kind's 400 shade over the card, as in dark mode */
   --intel-hint: #9a3412;
