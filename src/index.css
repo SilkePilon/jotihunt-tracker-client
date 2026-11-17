@@ -58,6 +58,8 @@
   --border: hsl(20 0% 90%);
   /* Text field outlines (border-input): kept subtle; fields are told apart by their tonal fill, not an outline */
   --input: hsl(20 0% 90%);
+  /* Edge of an open (unsolved) cell in the hint mini grid: clearly visible on the sidebar card */
+  --hint-cell-edge: hsl(20 0% 54%);
   /* Focus ring: orange-700, so a solid ring is >= 3:1 against white cards, the tonal rows and primary containers
      (the orange-600 of dark mode was 2.73:1 on beheer-row-high / primary-container) */
   --ring: #c2410c;
@@ -171,6 +173,7 @@
   --border: hsl(240 4% 22%);
   /* Field outlines: subtle like the borders; fields are told apart by their tonal fill */
   --input: hsl(240 4% 22%);
+  --hint-cell-edge: hsl(240 4% 46%);
   /* orange-500: >= 3:1 against primary-container (3.8), card (5.7) and the tonal rows (>= 4.5); orange-600 was 2.98:1 on primary-container */
   --ring: #f97316;
   --fox-ok: #9bd893;

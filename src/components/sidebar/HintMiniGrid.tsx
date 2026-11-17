@@ -23,7 +23,8 @@ const MINI_GRID_ROWS = 4;
 
 const cellClass: Record<HintCell['status'], string> = {
   solved: 'bg-fox-ok',
-  open: 'bg-muted',
+  // A 1px grey edge: bg-muted alone is near-invisible on the sidebar card
+  open: 'bg-muted inset-ring inset-ring-(--hint-cell-edge)',
   none: 'border border-dashed border-muted-foreground/50',
 };
 
