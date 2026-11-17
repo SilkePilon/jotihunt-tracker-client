@@ -288,7 +288,8 @@
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
-  /* Fixed (not size-relative) so every badge/pill/chip has identical corners at any size. */
+  /* 8px corners of the rounded-rectangle chips: the sidebar edition badge (EditionBadge) and the prediction chips
+     (PredictionList). Status tags are full pills (rounded-full), not this. */
   --radius-badge: 8px;
 
   /* Sidebar sections: height slides in 200 ms with Material's standard decelerate curve */
