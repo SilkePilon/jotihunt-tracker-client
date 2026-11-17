@@ -117,7 +117,8 @@ function GroupBlock({ group, foxes, count, popIn, openKey, panelFox, onOpen }: G
             <span>{FOX_GROUP_LABEL[group]}</span>
             <Count value={count} />
           </div>
-          <div className="flex flex-wrap gap-1">
+          {/* isolate: the chips' bigger touch areas (COARSE_HIT_AREA) stay above the block's background */}
+          <div className="isolate flex flex-wrap gap-1">
             {/* popLayout: a chip popping out leaves the flow at once, so its neighbours close the gap */}
             <AnimatePresence mode="popLayout" initial={false}>
               {foxes.map((fox) => (
@@ -205,7 +206,7 @@ export default function FoxesCard() {
     // Fades in when it takes over from the skeleton (or the empty line)
     <motion.div className="flex flex-col" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={SWAP_TRANSITION}>
       <FoxStatusBar foxes={foxes} size="full" isForbidden={isForbidden} />
-      <div className="mt-1.5 mb-2.5 flex justify-between text-[11px] text-muted-foreground">
+      <div className="mt-1.5 mb-2.5 flex justify-between text-xs text-muted-foreground md:text-[11px]">
         {legendGroups(counts).map((group) => (
           <span key={group} className="inline-flex items-baseline gap-1">
             <Count value={counts[group]} className="font-semibold text-foreground" />

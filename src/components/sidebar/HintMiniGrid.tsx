@@ -14,6 +14,7 @@ import { HintCell } from '@/types/HintCell';
 import { TONAL_BUTTON } from '@/lib/tonal-button';
 import { SWAP, SWAP_TRANSITION } from '@/lib/motion';
 import { loadState } from '@/lib/load-state';
+import { COARSE_HIT_AREA } from '@/lib/hit-area';
 import LoadError from '@/components/LoadError';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -79,7 +80,7 @@ export default function HintMiniGrid({ mapRef }: { mapRef: RefObject<MapRef | nu
       ) : rows.length === 0 ? (
         <motion.p key="empty" {...SWAP} className="text-xs text-muted-foreground">Nog geen hints</motion.p>
       ) : (
-        <motion.div key="grid" {...SWAP} className="grid grid-cols-[2.5rem_repeat(9,1fr)] items-center gap-0.5 text-[10px]">
+        <motion.div key="grid" {...SWAP} className="isolate grid grid-cols-[2.5rem_repeat(9,1fr)] items-center gap-0.5 text-xs md:text-[10px]">
           <span />
           {areaOptions.map((area) => (
             <span key={area.value} className="text-center font-semibold">
@@ -106,6 +107,7 @@ export default function HintMiniGrid({ mapRef }: { mapRef: RefObject<MapRef | nu
                     onClick={() => selectCell(row.article.id, area.value, cell)}
                     className={cn(
                       'flex h-6 cursor-pointer items-center justify-center rounded-[6px] transition-colors duration-200 hover:ring-2 hover:ring-primary/50 md:h-4',
+                      COARSE_HIT_AREA,
                       cellClass[cell.status],
                       isSelected && 'ring-2 ring-primary hover:ring-primary',
                     )}

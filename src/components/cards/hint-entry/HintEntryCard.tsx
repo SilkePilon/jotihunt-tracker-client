@@ -27,6 +27,7 @@ import DigitBoxes from './DigitBoxes';
 import CoordinateStatus, {type CoordinateState} from './CoordinateStatus';
 import {buildHintHours, groupByDay, isFreeHour} from './hint-times';
 import {SOFT_PRIMARY_BUTTON} from '@/lib/tonal-button';
+import {COARSE_HIT_AREA} from '@/lib/hit-area';
 import {type GuessStatus, guessStatus, hasWildcard, parseGuess} from '@/lib/hint-guess';
 import useHintGuessStore from '@/stores/hint-guess.store';
 
@@ -256,10 +257,10 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
                     {coordinateField('x', 'X', () => document.getElementById(`${fieldId}-y`)?.focus())}
                     {coordinateField('y', 'Y', () => setTimeout(() => document.getElementById(submitId)?.focus()))}
                 </div>
-                <div className="mt-0.5 flex items-center justify-between gap-2">
+                <div className="isolate mt-0.5 flex items-center justify-between gap-2">
                     <CoordinateStatus state={coordinateState} guess={status}/>
                     <button type="button" onClick={clearCoordinates}
-                            className="inline-flex items-center gap-1.5 rounded-lg px-1 text-[11px] font-semibold text-primary outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50">
+                            className={`${COARSE_HIT_AREA} inline-flex items-center gap-1.5 rounded-lg px-1 text-xs font-semibold text-primary md:text-[11px] outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50`}>
                         <EraserIcon aria-hidden className="size-3"/> Wissen
                     </button>
                 </div>
