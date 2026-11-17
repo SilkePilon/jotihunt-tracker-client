@@ -5,6 +5,7 @@ import { EllipsisIcon, KeyRoundIcon, LaptopIcon, Loader2Icon, LogOutIcon, Pencil
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
 import ResponsiveDialog from '@/components/ResponsiveDialog';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import LoadError from '@/components/LoadError';
 import RenamePasskeyDialog from '@/components/account/RenamePasskeyDialog';
 import Reveal from '@/components/motion/Reveal';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -17,6 +18,7 @@ import { deviceMeta, logoutDescription, orderSessions, passkeyMeta, sessionDevic
 import { apiErrorMessage } from '@/lib/api-error';
 import { addPasskey, passkeysSupported } from '@/lib/auth-api';
 import { DIALOG_SHELL } from '@/lib/dialog-shell';
+import { COARSE_HIT_AREA } from '@/lib/hit-area';
 import { TRIGGER_OPEN } from '@/lib/menu-styles';
 import { REVEAL_TRANSITION, SWAP } from '@/lib/motion';
 import { classifyPasskeyError, PASSKEY_MESSAGES } from '@/lib/passkey';
@@ -131,9 +133,8 @@ export default function AccountDialog() {
           )}
 
           {view === 'error' && (
-            <motion.div key="error" className="flex flex-col items-start gap-3" {...SWAP}>
-              <p className="text-sm text-muted-foreground">Kan je account niet laden.</p>
-              <SmallButton onClick={() => void refresh()}>Opnieuw</SmallButton>
+            <motion.div key="error" {...SWAP}>
+              <LoadError className="text-sm" message="Kan je account niet laden." onRetry={refresh} />
             </motion.div>
           )}
 
@@ -393,7 +394,8 @@ function Row({
         {title === undefined ? (
           children
         ) : (
-          <div className="flex items-center gap-3 px-3 py-2.5">
+          // isolate: the actions' 44px touch areas (COARSE_HIT_AREA) stay above the row's background
+          <div className="isolate flex items-center gap-3 px-3 py-2.5">
             {Icon && <IconTile className={cn(highlight && 'bg-(--map-selected-bg) text-(--map-selected-fg)')}><Icon /></IconTile>}
             <div className="min-w-0 flex-1">
               <div className="flex min-w-0 items-center gap-1.5">
@@ -427,7 +429,7 @@ function IconTile({ className, children }: { className?: string; children: React
   );
 }
 
-/** Tonal 32px button with 12px corners; `icon` makes it a 34×32 square. */
+/** Tonal 32px button with 12px corners; `icon` makes it a 34×32 square. Phones get a 44px touch area, same look. */
 function SmallButton({ icon, className, ...props }: ComponentProps<'button'> & { icon?: boolean }) {
   return (
     <button
@@ -436,6 +438,7 @@ function SmallButton({ icon, className, ...props }: ComponentProps<'button'> & {
         'inline-flex h-8 flex-none items-center justify-center gap-1.5 rounded-xl bg-beheer-row-high text-[12.5px] font-semibold transition-colors outline-none',
         'hover:bg-[color-mix(in_oklab,var(--foreground)_14%,var(--card))] focus-visible:ring-[3px] focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4',
         icon ? 'w-[34px]' : 'px-3',
+        COARSE_HIT_AREA,
         className,
       )}
       {...props}
