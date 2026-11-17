@@ -1,7 +1,11 @@
 import { RefObject, useRef, useState } from 'react';
 import { PauseIcon, TriangleAlertIcon } from 'lucide-react';
 import { MapRef } from '@/components/Map';
+import { AnimatePresence, motion } from 'motion/react';
 import { Skeleton } from '@/components/ui/skeleton';
+import LoadError from '@/components/LoadError';
+import { loadState } from '@/lib/load-state';
+import { SWAP } from '@/lib/motion';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { usePredictions } from '@/hooks/predictions.hook';
 import { AGE_CLOCK_TICK_MS, useNow } from '@/hooks/now.hook';
@@ -32,23 +36,14 @@ function ConfidenceBars({ confidence }: { confidence: Confidence }) {
 
 /** One pill per fox team in its colour with the AI confidence; tap flies to the pin and shows the AI's reason in a tooltip. */
 export default function PredictionList({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
-  const { predictions } = usePredictions();
+  const { predictions, isError, retry } = usePredictions();
   const setSheetSnap = useSidebarStore((state) => state.setSheetSnap);
   const now = useNow(true, AGE_CLOCK_TICK_MS);
   const [openArea, setOpenArea] = useState<string | null>(null);
   // Radix closes a tooltip on pointerdown of its trigger; remember the state before that so a tap toggles
   const wasOpen = useRef(false);
 
-  if (!predictions) {
-    return (
-      <div className="flex flex-wrap gap-1.5">
-        {Array.from({ length: 9 }, (_, index) => (
-          <Skeleton key={index} className="h-7 w-20 rounded-badge" />
-        ))}
-      </div>
-    );
-  }
-  if (predictions.length === 0) return <p className="text-xs text-muted-foreground">Nog geen voorspellingen.</p>;
+  const view = loadState(predictions, isError);
 
   function flyTo(prediction: Prediction) {
     const point = prediction.pin ?? prediction.lastObservation;
@@ -59,51 +54,69 @@ export default function PredictionList({ mapRef }: { mapRef: RefObject<MapRef | 
   }
 
   return (
-    <div className="flex flex-wrap gap-1.5">
-      {predictions.map((prediction) => {
-        const color = getColorFromArea(prediction.area);
-        const status = predictionStatusText(prediction);
-        const active = !prediction.paused && !!prediction.pin;
-        const text = prediction.why || status || 'Geen toelichting';
-        return (
-          <Tooltip
-            key={prediction.area}
-            open={openArea === prediction.area}
-            onOpenChange={(open) => setOpenArea((current) => (open ? prediction.area : current === prediction.area ? null : current))}
-          >
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                data-prediction-area={prediction.area}
-                onPointerDown={() => (wasOpen.current = openArea === prediction.area)}
-                onClick={() => {
-                  setOpenArea(wasOpen.current ? null : prediction.area);
-                  if (!wasOpen.current) flyTo(prediction);
-                }}
-                className={cn(
-                  'inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-badge px-2.5 text-xs font-semibold transition-[transform,box-shadow,opacity] active:scale-95',
-                  !active && 'bg-muted text-muted-foreground',
-                  prediction.stale && 'opacity-60',
-                  openArea === prediction.area && 'ring-2 ring-offset-2 ring-offset-background',
-                )}
-                style={active ? { backgroundColor: color, color: textColorOn(color), ['--tw-ring-color' as string]: color } : { ['--tw-ring-color' as string]: color }}
+    <AnimatePresence mode="wait" initial={false}>
+      {view === 'loading' ? (
+        <motion.div key="loading" {...SWAP} className="flex flex-wrap gap-1.5" role="status" aria-label="Voorspellingen laden">
+          {Array.from({ length: 9 }, (_, index) => (
+            <Skeleton key={index} className="h-7 w-20 rounded-badge" />
+          ))}
+        </motion.div>
+      ) : view === 'error' ? (
+        <motion.div key="error" {...SWAP}>
+          <LoadError message="Voorspellingen konden niet worden geladen." onRetry={retry} />
+        </motion.div>
+      ) : !predictions || predictions.length === 0 ? (
+        <motion.p key="empty" {...SWAP} className="text-xs text-muted-foreground">
+          Nog geen voorspellingen.
+        </motion.p>
+      ) : (
+        <motion.div key="list" {...SWAP} className="flex flex-wrap gap-1.5">
+          {predictions.map((prediction) => {
+            const color = getColorFromArea(prediction.area);
+            const status = predictionStatusText(prediction);
+            const active = !prediction.paused && !!prediction.pin;
+            const text = prediction.why || status || 'Geen toelichting';
+            return (
+              <Tooltip
+                key={prediction.area}
+                open={openArea === prediction.area}
+                onOpenChange={(open) => setOpenArea((current) => (open ? prediction.area : current === prediction.area ? null : current))}
               >
-                {prediction.paused && <PauseIcon className="size-3" aria-label="Gepauzeerd" />}
-                {capitalizeFirstLetter(prediction.area)}
-                {active && prediction.confidence && <ConfidenceBars confidence={prediction.confidence} />}
-                {prediction.stale && <TriangleAlertIcon className="size-3" aria-label="Verouderd" />}
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" sideOffset={6} className="max-w-60">
-              <p className="font-semibold">
-                {capitalizeFirstLetter(prediction.area)} <span className="font-normal text-muted-foreground tabular-nums">· {ageLabel(prediction.updatedAt, now)}</span>
-              </p>
-              <p>{text}</p>
-              {prediction.stale && prediction.error && <p className="text-muted-foreground">{prediction.error}</p>}
-            </TooltipContent>
-          </Tooltip>
-        );
-      })}
-    </div>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    data-prediction-area={prediction.area}
+                    onPointerDown={() => (wasOpen.current = openArea === prediction.area)}
+                    onClick={() => {
+                      setOpenArea(wasOpen.current ? null : prediction.area);
+                      if (!wasOpen.current) flyTo(prediction);
+                    }}
+                    className={cn(
+                      'inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-badge px-2.5 text-xs font-semibold transition-[transform,box-shadow,opacity] active:scale-95',
+                      !active && 'bg-muted text-muted-foreground',
+                      prediction.stale && 'opacity-60',
+                      openArea === prediction.area && 'ring-2 ring-offset-2 ring-offset-background',
+                    )}
+                    style={active ? { backgroundColor: color, color: textColorOn(color), ['--tw-ring-color' as string]: color } : { ['--tw-ring-color' as string]: color }}
+                  >
+                    {prediction.paused && <PauseIcon className="size-3" aria-label="Gepauzeerd" />}
+                    {capitalizeFirstLetter(prediction.area)}
+                    {active && prediction.confidence && <ConfidenceBars confidence={prediction.confidence} />}
+                    {prediction.stale && <TriangleAlertIcon className="size-3" aria-label="Verouderd" />}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" sideOffset={6} className="max-w-60">
+                  <p className="font-semibold">
+                    {capitalizeFirstLetter(prediction.area)} <span className="font-normal text-muted-foreground tabular-nums">· {ageLabel(prediction.updatedAt, now)}</span>
+                  </p>
+                  <p>{text}</p>
+                  {prediction.stale && prediction.error && <p className="text-muted-foreground">{prediction.error}</p>}
+                </TooltipContent>
+              </Tooltip>
+            );
+          })}
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
