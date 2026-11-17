@@ -79,7 +79,7 @@ export default function NotificationSoundsPanel() {
                   active && 'border-primary/40 bg-primary/10 hover:bg-primary/10',
                 )}
               >
-                <span className={cn('flex size-8 shrink-0 items-center justify-center rounded-full', tone, active && 'animate-pulse')}>
+                <span className={cn('flex size-8 shrink-0 items-center justify-center rounded-full', tone, active && 'motion-safe:animate-pulse')}>
                   <Icon className="size-4" />
                 </span>
                 <span className="min-w-0 flex-1">
