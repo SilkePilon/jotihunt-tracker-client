@@ -18,7 +18,7 @@ const QR_SIZE = 176;
 // Reduced motion leaves the blur out (MotionConfig "user" only skips the scale): a plain fade remains
 const qrSharp = (reduced: boolean) => ({ opacity: 1, scale: 1, ...(reduced ? {} : { filter: 'blur(0px)' }) });
 const qrFaded = (reduced: boolean) => ({ opacity: 0.3, scale: 0.96, ...(reduced ? {} : { filter: 'blur(4px)' }) });
-const CROSS_FADE = { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 }, transition: { duration: 0.25 } };
+const CROSS_FADE = { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 }, transition: SWAP_TRANSITION };
 
 /** loading, waiting and scanned are one scene: the QR box stays put while its contents and the text below change */
 function sceneOf(state: QrPanelState) {

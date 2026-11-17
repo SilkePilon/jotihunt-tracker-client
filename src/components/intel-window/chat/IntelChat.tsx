@@ -10,7 +10,7 @@ import Reveal from '@/components/motion/Reveal';
 import { apiErrorMessage } from '@/lib/api-error';
 import { BUSY_MESSAGE, CONTEXT_LABEL, answerAnnouncement, chatStatusLabel, lastUserMessageId } from '@/lib/intel-chat';
 import { CHAT_EMPTY_ENTRANCE_DELAY, CHAT_MESSAGE } from '@/lib/intel-window';
-import { POP, SWAP } from '@/lib/motion';
+import { POP, SWAP, SWAP_TRANSITION } from '@/lib/motion';
 import type { IntelItem, IntelKind } from '@/types/Intel';
 import ChatEmpty from './ChatEmpty';
 import ChatInput from './ChatInput';
@@ -95,7 +95,7 @@ function ChatPanel({ item, mapRef, entrance }: IntelChatProps) {
             </Pill>
           </motion.div>
         ) : scene === 'empty' ? (
-          <motion.div key="empty" className="flex min-h-0 flex-1 flex-col" initial={mounted ? { opacity: 0 } : false} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
+          <motion.div key="empty" className="flex min-h-0 flex-1 flex-col" initial={mounted ? { opacity: 0 } : false} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={SWAP_TRANSITION}>
             <ChatEmpty item={item} disabled={busy || chat.unavailable} onPick={chat.send} delay={emptyDelay ? CHAT_EMPTY_ENTRANCE_DELAY : 0} stagger={mounted || emptyDelay} />
           </motion.div>
         ) : (
