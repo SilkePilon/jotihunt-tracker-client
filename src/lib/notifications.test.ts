@@ -1,5 +1,5 @@
 import { describe, expect, mock, test } from 'bun:test';
-import { NOTIFICATION_OPTIONS, sameTypes, setAllTypes, toggleType, isSilent, isRecent, mergeFeed, missedSummary, pickPrimary, pickSound, shouldAlert, soundKey, toastAction, toastKind, type AppNotification } from './notifications';
+import { NOTIFICATION_OPTIONS, sameTypes, setAllTypes, toggleType, isSilent, isRecent, mergeFeed, missedSummary, pickPrimary, pickSound, shouldAlert, soundKey, toastAction, toastDuration, toastKind, type AppNotification } from './notifications';
 
 const n = (overrides: Partial<AppNotification>): AppNotification => ({ id: '1', type: 'hint', title: 't', body: '', urgent: false, data: {}, createdAt: '2026-10-17T20:00:00Z', ...overrides });
 
@@ -181,5 +181,17 @@ describe('missedSummary', () => {
   test('one missed reads singular; no action when the newest has nothing to open', () => {
     const summary = missedSummary([at('a', 'fox-status', '2026-10-17T10:00:00Z')], { openArticle: () => {} });
     expect(summary).toEqual({ title: '1 melding gemist · nieuwste: Titel a', action: undefined });
+  });
+});
+
+describe('toastDuration', () => {
+  test('broadcasts and tegenhunts stay until closed', () => {
+    expect(toastDuration({ type: 'broadcast', urgent: true })).toBe(Infinity);
+    expect(toastDuration({ type: 'counter-hunt', urgent: false })).toBe(Infinity);
+  });
+
+  test('the rest: 30 s when urgent, else 8 s', () => {
+    expect(toastDuration({ type: 'fox-status', urgent: true })).toBe(30_000);
+    expect(toastDuration({ type: 'hint', urgent: false })).toBe(8000);
   });
 });

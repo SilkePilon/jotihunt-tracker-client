@@ -85,6 +85,15 @@ export function toastKind(notification: Pick<AppNotification, 'type' | 'data'>):
   return 'info';
 }
 
+/**
+ * How long the toast stays: an HQ broadcast or a tegenhunt until it is closed (its close button), since missing one
+ * costs; urgent ones 30 s, the rest 8 s.
+ */
+export function toastDuration(notification: Pick<AppNotification, 'type' | 'urgent'>): number {
+  if (notification.type === 'broadcast' || notification.type === 'counter-hunt') return Infinity;
+  return notification.urgent ? 30_000 : 8000;
+}
+
 export interface ToastOpeners {
   /** Laptop: open the hint/news article in the Intel window */
   openArticle?: (articleId: number) => void;
