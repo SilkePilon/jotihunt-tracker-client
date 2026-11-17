@@ -1,7 +1,7 @@
 import {Controller, useForm, useWatch} from 'react-hook-form';
 import {Button} from '../../ui/button.tsx';
 import {EraserIcon, Loader2Icon, Pin, RefreshCwIcon} from 'lucide-react';
-import {AnimatePresence, motion} from 'motion/react';
+import {AnimatePresence, motion, useReducedMotion} from 'motion/react';
 import InlineError from '@/components/InlineError';
 import LoadError from '@/components/LoadError';
 import Reveal from '@/components/motion/Reveal';
@@ -38,6 +38,9 @@ import {useIsMobile} from '@/hooks/media.hook';
 
 type FormValues = {area: string; time: string; x: string; y: string};
 
+/** The sidebar section's unfold (--animate-collapsible-down, 0.2 s) plus a frame: scroll once it has its full height */
+const SECTION_UNFOLD_MS = 220;
+
 const formResolver = fieldsResolver<FormValues>({
     area: oneOf(areaOptions.map((option) => option.value), 'Kies een deelgebied.'),
     time: nonEmptyString('Kies een tijd.'),
@@ -49,6 +52,8 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
     const {coords, clear} = useHintFormBridge();
     const fieldId = useId();
     const isMobile = useIsMobile();
+    const reducedMotion = useReducedMotion() ?? false;
+    const formRef = useRef<HTMLFormElement>(null);
     const submitId = `${fieldId}-submit`;
     const {markers, loaded: markersLoaded, isError: markersError, retry: retryMarkers, createMarker, fetchFreshMarkers} = useMarkers();
     const [timeOpen, setTimeOpen] = useState(false);
@@ -149,14 +154,22 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
     }, [wildcard, complete, xValue, yValue, selectedArea, timeValue]);
     useEffect(() => () => useHintGuessStore.getState().clear('card'), []);
 
-    // Handle hint bridge
+    // Handle hint bridge. The reveal timer outlives the clear() below (which re-runs this effect), so it sits in a ref.
+    const revealTimer = useRef<number | undefined>(undefined);
+    useEffect(() => () => window.clearTimeout(revealTimer.current), []);
     useEffect(() => {
-        if (coords) {
-            form.setValue("x", coords.x, { shouldValidate: true, shouldDirty: true });
-            form.setValue("y", coords.y, { shouldValidate: true, shouldDirty: true });
-            clear();
-        }
-    }, [coords, clear, form]);
+        if (!coords) return;
+        form.setValue("x", coords.x, { shouldValidate: true, shouldDirty: true });
+        form.setValue("y", coords.y, { shouldValidate: true, shouldDirty: true });
+        clear();
+        if (!coords.reveal) return;
+        // Laptop "In hint": once the section has unfolded, bring the form into view and start at Deelgebied
+        window.clearTimeout(revealTimer.current);
+        revealTimer.current = window.setTimeout(() => {
+            formRef.current?.scrollIntoView({block: 'nearest', behavior: reducedMotion ? 'auto' : 'smooth'});
+            document.getElementById(`${fieldId}-area`)?.focus({preventScroll: true});
+        }, SECTION_UNFOLD_MS);
+    }, [coords, clear, form, fieldId, reducedMotion]);
 
     /**
      * Choose an area; the chosen time stays only while it's still free for the new area.
@@ -337,7 +350,7 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
     );
 
     return (
-        <form onSubmit={(e) => {
+        <form ref={formRef} onSubmit={(e) => {
             // Registreren is aria-disabled (not disabled) while busy, so Enter can still submit: ignore it
             if (busy) return e.preventDefault();
             if (primary === 'recheck') {

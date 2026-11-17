@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { LightbulbIcon, MapPinIcon } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 import { Marker, useMap } from 'react-map-gl/maplibre';
 import { useDistanceFromMe } from '@/hooks/distance-from-me.hook';
 import { useHintFormBridge } from '@/hooks/hint-bridge.hook';
@@ -13,9 +14,12 @@ import { rdText } from '@/lib/rd';
 import CoordRows from './popup/CoordRows';
 import { PopupActions, popupActionClass, RouteAction } from './popup/PopupActions';
 import PopupHeader, { PopupIcon } from './popup/PopupHeader';
+import { SWAP } from '@/lib/motion';
 
 // Above the 18px picked-location puck
 const POPUP_OFFSET = { bottom: [0, -15] as [number, number] };
+/** How long "In hint ✓" shows after the coordinates went into the form (laptop) */
+const SENT_MS = 1600;
 
 /**
  * The clicked map point: coordinates (copy), Route, register a hunt / spot here, and "In hint" (its RD coordinates into
@@ -30,11 +34,20 @@ export default function PickedLocationPopup({ lat, lng, onClose }: { lat: number
   const distance = useDistanceFromMe(lat, lng);
   // Phones after "In hint": only the pin
   const [pinOnly, setPinOnly] = useState(false);
+  // Laptop: "In hint ✓" for a moment once the coordinates are in the form (the popup stays open there)
+  const [sent, setSent] = useState(false);
   const { current: map } = useMap();
+
+  useEffect(() => {
+    if (!sent) return;
+    const timer = setTimeout(() => setSent(false), SENT_MS);
+    return () => clearTimeout(timer);
+  }, [sent]);
 
   function toHint() {
     const rd = rdText(lng, lat);
-    setCoords(rd.x, rd.y);
+    // Laptop: the form scrolls into view and the focus goes to Deelgebied (HintEntryCard), so it's clear where they went
+    setCoords(rd.x, rd.y, { reveal: !isMobile });
     if (isMobile) {
       // Phones: the sheet shows one page at a time; open the hint form at half height, the pin stays visible above it
       pushPage({ id: 'hintEntry' }, 'half');
@@ -42,6 +55,7 @@ export default function PickedLocationPopup({ lat, lng, onClose }: { lat: number
     } else {
       // Desktop: the hint entry section is collapsed by default, make sure it is visible
       openSection('hintEntry');
+      setSent(true);
     }
   }
 
@@ -84,7 +98,11 @@ export default function PickedLocationPopup({ lat, lng, onClose }: { lat: number
           <ArchiveReadOnlyNote className="pt-2 text-(--map-muted)" />
           <PopupActions className="mt-2">
             <button type="button" className={popupActionClass('neutral', 'min-w-0 flex-1')} onClick={toHint}>
-              <LightbulbIcon /> In hint
+              <AnimatePresence mode="popLayout" initial={false}>
+                <motion.span key={sent ? 'sent' : 'idle'} {...SWAP} className="inline-flex items-center gap-1.5">
+                  <LightbulbIcon /> {sent ? 'In hint ✓' : 'In hint'}
+                </motion.span>
+              </AnimatePresence>
             </button>
           </PopupActions>
         </MapPopup>
