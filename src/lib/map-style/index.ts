@@ -5,8 +5,8 @@ import { mapPalette, materialStyle } from './material-style';
 
 /**
  * OpenFreeMap Liberty, bundled (a copy of the Android app's `assets/map/liberty.json`) so the default map style is
- * built without a style round-trip. Tiles, glyphs and sprite load from tiles.openfreemap.org (not cached by the service
- * worker, so offline the map shows only what the browser's HTTP cache still has).
+ * built without a style round-trip. Tiles, glyphs and sprite load from tiles.openfreemap.org; the service worker keeps
+ * them (map-tile-cache.ts), so offline the map still draws the places already seen.
  */
 const LIBERTY = libertyJson as unknown as StyleSpecification;
 

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { Article } from '@/types/Article';
-import { getLastHintTime, getNextHintTime, nextHintLabel, type NextHintState } from './next-hint';
+import { getLastHintTime, getNextHintTime, hintSummaryCountdown, nextHintLabel, type NextHintState } from './next-hint';
 
 function article(type: string, publishAt: string): Article {
   return { id: 1, title: 't', type, publishAt: new Date(publishAt), content: '', messageType: '', maxPoints: 0, endTime: new Date() };
@@ -56,5 +56,21 @@ describe('nextHintLabel', () => {
     expect(nextHintLabel({ ...base, articlesError: true, isNewHint: true }).label).toBe('Fout');
     expect(nextHintLabel({ ...base, isNewHint: true, hasHuntStart: false }).label).toBe('Nieuwe hint!');
     expect(nextHintLabel({ ...base, huntOver: true })).toEqual({ label: 'Geen hints meer', isCountdown: false });
+  });
+});
+
+describe('hintSummaryCountdown', () => {
+  test('the countdown reads "hint over …"', () => {
+    expect(hintSummaryCountdown({ label: '12:34', isCountdown: true, isNewHint: false })).toBe('hint over 12:34');
+  });
+
+  test('a new hint is announced instead of the countdown', () => {
+    expect(hintSummaryCountdown({ label: 'Nieuwe hint!', isCountdown: false, isNewHint: true })).toBe('nieuwe hint!');
+  });
+
+  test('nothing for the other states', () => {
+    for (const label of ['…', 'Fout', 'Geen hunttijd', 'Geen hints meer']) {
+      expect(hintSummaryCountdown({ label, isCountdown: false, isNewHint: false })).toBeUndefined();
+    }
   });
 });

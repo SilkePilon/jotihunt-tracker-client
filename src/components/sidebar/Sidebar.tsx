@@ -1,6 +1,7 @@
 import { RefObject, useEffect, useRef } from 'react';
 import { MapRef } from '@/components/Map';
 import { useIsMobile } from '@/hooks/media.hook';
+import { useLaunchShortcut } from '@/hooks/launch-shortcut.hook';
 import SidebarHeader from './SidebarHeader';
 import SidebarSections from './SidebarSections';
 import { tourTarget } from '@/components/tour/targets';
@@ -35,6 +36,8 @@ export default function Sidebar({ mapRef }: { mapRef: RefObject<MapRef | null> }
   const content = useRef<HTMLDivElement>(null);
   // Desktop only: the phone shell has its own scrollers
   useBottomFade(scroller, content, !isMobile);
+  // A home-screen shortcut (Hint registreren, Vossen) opens its section
+  useLaunchShortcut(isMobile);
 
   if (isMobile) return <MobileShell mapRef={mapRef} />;
 

@@ -571,6 +571,29 @@ body.dark {
   margin-bottom: env(safe-area-inset-bottom);
 }
 
+/* Phone shell: the credits button (top-right) and the scale bar (top-left) sit under the top safe area (notch, status
+   bar) and right of the sheet column when held sideways (--sheet-side, BottomSheet) */
+[data-shell='mobile'] .maplibregl-ctrl-top-right {
+  margin-top: env(safe-area-inset-top);
+  margin-right: env(safe-area-inset-right);
+}
+
+[data-shell='mobile'] .maplibregl-ctrl-top-left {
+  margin-top: env(safe-area-inset-top);
+  margin-left: max(var(--sheet-side, 0px), env(safe-area-inset-left));
+}
+
+/* Level with the 24px compact credits button across: the bar is 22px (20px line + 2px border), 10px margin + 1px */
+[data-shell='mobile'] .maplibregl-ctrl-top-left .maplibregl-ctrl-scale {
+  margin-top: 11px;
+  transition: opacity 200ms ease-out;
+}
+
+/* The offline badge or the drawing toolbar at the top centre may reach the corner: the scale bar fades out under it */
+[data-top-stack] .maplibregl-ctrl-top-left .maplibregl-ctrl-scale {
+  opacity: 0;
+}
+
 .maplibregl-ctrl-attrib {
   @apply bg-background!;
 

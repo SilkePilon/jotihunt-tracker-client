@@ -13,7 +13,16 @@ const CHECK_MS = 5000;
 const PLACEMENT = {
   app: 'top-[calc(env(safe-area-inset-top)+8px)] md:top-[calc(env(safe-area-inset-top)+52px)] left-1/2 max-w-[min(calc(100vw-32px),420px)] md:left-[calc(50%+164px)] md:max-w-[min(calc(100vw-360px),420px)] shell-mobile:top-[calc(env(safe-area-inset-top)+8px)] shell-mobile:left-[calc(var(--sheet-side,0px)_+_(100vw_-_var(--sheet-side,0px))_/_2)] shell-mobile:max-w-[min(calc(100vw_-_var(--sheet-side,0px)_-_32px),420px)]',
   // The wall's map is the left 58% of the screen (Hq.tsx grid 58fr / 42fr): centred over it, 16px from the top
-  wall: 'top-[16px] left-[29vw] max-w-[calc(58vw-32px)]',
+  wall: 'top-[16px] left-[29vw] max-w-[50vw]',
+} as const;
+
+/**
+ * Text, padding and icon. The wall's are a size up and all in rem, so they grow with the wall's root font size (Hq.tsx)
+ * and read across the room.
+ */
+const SIZE = {
+  app: { badge: 'gap-2 py-1.5 pr-3.5 pl-2.5 text-body', icon: 'size-4' },
+  wall: { badge: 'gap-2.5 py-2 pr-4.5 pl-3.5 text-base', icon: 'size-5' },
 } as const;
 
 /**
@@ -88,8 +97,9 @@ export default function StaleDataBadge({ wall = false }: { wall?: boolean }) {
             // by BottomSheet; 0px upright, so plain centred). The HQ wall: over its map column (PLACEMENT.wall)
             style={{ x: '-50%' }}
             className={cn(
-              'pointer-events-none fixed z-50 flex w-max items-center gap-2 rounded-full bg-fox-error-container py-1.5 pr-3.5 pl-2.5 text-body font-bold text-fox-on-error shadow-(--shadow-tile)',
+              'pointer-events-none fixed z-50 flex w-max items-center rounded-full bg-fox-error-container font-bold text-fox-on-error shadow-(--shadow-tile)',
               PLACEMENT[wall ? 'wall' : 'app'],
+              SIZE[wall ? 'wall' : 'app'].badge,
             )}
           >
             {/* Round tonal pill like the happy-hour pill: dark red on the light red container (7.2:1, both themes). Neutral tone: a tonal layer over the error fill (under the content, in the badge's own stacking context),
@@ -99,7 +109,11 @@ export default function StaleDataBadge({ wall = false }: { wall?: boolean }) {
                 <motion.span key="neutral" aria-hidden className="absolute inset-0 -z-10 rounded-[inherit] bg-beheer-row-high" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={SWAP_TRANSITION} />
               )}
             </AnimatePresence>
-            {tone === 'neutral' ? <RefreshCwIcon className="size-4 shrink-0 text-foreground motion-safe:animate-spin" /> : <WifiOffIcon className="size-4 shrink-0" />}
+            {tone === 'neutral' ? (
+              <RefreshCwIcon className={cn(SIZE[wall ? 'wall' : 'app'].icon, 'shrink-0 text-foreground motion-safe:animate-spin')} />
+            ) : (
+              <WifiOffIcon className={cn(SIZE[wall ? 'wall' : 'app'].icon, 'shrink-0')} />
+            )}
             {/* Wraps to a second line on narrow phones instead of cutting off the feed or the age */}
             <span className={cn('min-w-0 text-center leading-snug text-balance transition-colors', tone === 'neutral' && 'text-foreground')}>{label}</span>
           </motion.div>

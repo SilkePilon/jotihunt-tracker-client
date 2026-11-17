@@ -47,3 +47,12 @@ export function nextHintLabel(state: NextHintState): { label: string; isCountdow
   if (state.huntOver) return { label: 'Geen hints meer', isCountdown: false };
   return { label: state.countdown, isCountdown: true };
 }
+
+/**
+ * The next-hint part of the collapsed Hints summary ("hint over 12:34", or "nieuwe hint!" while a new one is highlighted);
+ * undefined in the other states (loading, error, no hunt time, no hints left), where the summary stays the solved count.
+ */
+export function hintSummaryCountdown(next: { label: string; isCountdown: boolean; isNewHint: boolean }): string | undefined {
+  if (next.isNewHint) return 'nieuwe hint!';
+  return next.isCountdown ? `hint over ${next.label}` : undefined;
+}

@@ -3,16 +3,15 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { MapRef } from '@/components/Map';
 import HintEntryCard from '@/components/cards/hint-entry/HintEntryCard';
 import { useAppConfig } from '@/hooks/app-config.hook';
-import { useHintBoard } from '@/hooks/hints.hook';
 import { useScore } from '@/hooks/score.hook';
 import { usePredictions, usePredictionSetting } from '@/hooks/predictions.hook';
-import { hintProgress } from '@/lib/hints';
 import { revealTransition } from '@/lib/motion';
 import { predictionSummary } from '@/lib/prediction';
 import HuntsSyncCard from '@/components/hunts/HuntsSyncCard';
 import SidebarSection from './SidebarSection';
 import FoxesCard, { FoxesSummary } from './foxes/FoxesCard';
 import HintMiniGrid from './HintMiniGrid';
+import HintsSummary from './HintsSummary';
 import PredictionList from './PredictionList';
 import TrackerSection from './TrackerSection';
 import CounterHuntSection from './CounterHuntSection';
@@ -32,10 +31,8 @@ export default function SidebarSections({ mapRef, only }: { mapRef: RefObject<Ma
   const reduced = useReducedMotion() ?? false;
   const show = (id: SidebarSectionId) => !only || only === id;
   const { homeTeamApiId } = useAppConfig();
-  const { board } = useHintBoard();
   const { predictions } = usePredictions();
   const { enabled: predictionEnabled } = usePredictionSetting();
-  const progress = board ? hintProgress(board) : undefined;
   const { score, isError: scoreError, retry: retryScore } = useScore();
 
   return (
@@ -47,7 +44,7 @@ export default function SidebarSections({ mapRef, only }: { mapRef: RefObject<Ma
         </SidebarSection>
       )}
       {show('hints') && (
-        <SidebarSection id="hints" title="Hints" summary={progress ? `${progress.solved}/${progress.total} opgelost` : undefined}>
+        <SidebarSection id="hints" title="Hints" summary={<HintsSummary />}>
           <HintMiniGrid mapRef={mapRef} />
         </SidebarSection>
       )}
