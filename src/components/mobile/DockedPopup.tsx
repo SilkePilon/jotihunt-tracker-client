@@ -100,7 +100,9 @@ export default function DockedPopup({
   // the user's pan/zoom. Switching to another point remounts the popup (key), which eases again.
   const [center] = useState<[number, number]>(() => [longitude, latitude]);
   useEffect(() => {
-    map?.easeTo({ center, duration: 500 });
+    // A list that opened this popup (Life360, hunt log) already flies there with a zoom: an ease now would cancel it
+    if (!map || map.isMoving()) return;
+    map.easeTo({ center, duration: 500 });
   }, [map, center]);
   // Focus goes back where it came from (else the map) once the card is gone, unless a tap elsewhere already moved it
   useRestoreFocus(() => map?.getCanvas());
