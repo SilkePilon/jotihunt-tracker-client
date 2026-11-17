@@ -5,6 +5,7 @@ import { computeSnapHeights, grabLabel, nextSnap, rubberBand, settleSnap, type S
 import useSidebarStore from '@/stores/sidebar.store';
 import useViewportStore from '@/stores/viewport.store';
 import { tourTarget } from '@/components/tour/targets';
+import { WORK_AREA_ATTRIBUTE } from '@/stores/prompt-queue.store';
 import { sheetVisibleHeight } from './sheet-motion';
 
 const GRAB = 24;
@@ -215,6 +216,7 @@ export default function BottomSheet({ peek, children, onHeights }: { peek: React
       {...tourTarget('sidebar.root')}
       role="region"
       aria-label="Zijbalk"
+      {...{ [WORK_AREA_ATTRIBUTE]: '' }}
       className="fixed inset-x-0 bottom-0 z-40 flex flex-col rounded-t-3xl bg-beheer-window shadow-[0_-6px_30px_rgb(0_0_0/.25)] [-webkit-touch-callout:none]"
       style={{ height: heights.full, y, marginBottom: keyboard, paddingBottom: 'env(safe-area-inset-bottom)' }}
       onPointerDown={onPointerDown}

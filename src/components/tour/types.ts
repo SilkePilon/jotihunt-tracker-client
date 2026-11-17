@@ -32,6 +32,11 @@ export interface TourStep {
   actions?: TourAction[];
   /** Overrides the length-based duration */
   durationMs?: number;
+  /**
+   * Doesn't auto-advance: waits for Volgende (the welcome). Using the card here isn't a takeover, so after Volgende the
+   * tour runs on by itself.
+   */
+  waitsForUser?: boolean;
   /** Default 'auto' */
   placement?: Placement;
   /** Only show on this platform */

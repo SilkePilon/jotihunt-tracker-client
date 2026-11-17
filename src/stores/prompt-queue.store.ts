@@ -10,8 +10,12 @@ export type PromptId = (typeof PROMPTS)[number];
 
 /** Between one prompt closing (or the tour ending, or a prompt being asked for) and the next one showing */
 export const PROMPT_GAP_MS = 1500;
-/** Right after the tour, prompts wait this long while the user is busy with the map */
-export const AFTER_TOUR_QUIET_MS = 10_000;
+/**
+ * After the tour, and while the user is busy with the map or the sheet / sidebar, a prompt waits until this long after
+ * the tour ended or the last interaction (restarted by each one). Interactions count from the tour's end or the previous
+ * prompt closing, so follow-ups never chain while the user is at work.
+ */
+export const QUIET_MS = 10_000;
 
 export interface PromptQueueTimes {
   /** Waiting prompts, with when each was asked for */
@@ -26,8 +30,14 @@ export interface PromptQueueTimes {
   readyAt: number;
   /** When the hold (tour) last ended; null when there was none */
   tourEndedAt: number | null;
-  /** Last pointer/wheel on the map */
-  mapTouchedAt: number | null;
+  /** When the last prompt closed; null when none has */
+  closedAt: number | null;
+  /** Last pointer, wheel, key or focus on the map, a map popup or the sheet / sidebar */
+  interactedAt: number | null;
+  /** Forms the user is in now (the phone's Hint registreren page, a docked popup with Hunt / Spot): nothing shows */
+  workHolds: number;
+  /** Focus is in a text field outside a dialog (typing a search, a hint): nothing shows */
+  fieldFocused: boolean;
 }
 
 /** What the queue does now: show a prompt, check again after `waitMs`, or nothing (idle, held or one is on screen). */
@@ -35,14 +45,16 @@ export type QueueStep = { show: PromptId } | { waitMs: number } | null;
 
 /** Pure: the next step of the queue at `now`. */
 export function nextPromptStep(times: PromptQueueTimes, now: number): QueueStep {
-  if (times.held || times.active || times.openModals > 0) return null;
+  if (times.held || times.active || times.openModals > 0 || times.workHolds > 0 || times.fieldFocused) return null;
   const id = PROMPTS.find((prompt) => times.waiting[prompt] !== undefined);
   if (!id) return null;
   let at = Math.max(times.readyAt, times.waiting[id]! + PROMPT_GAP_MS);
-  // The map was used since the tour ended: leave the user alone for the first seconds after it
-  if (times.tourEndedAt !== null && times.mapTouchedAt !== null && times.mapTouchedAt >= times.tourEndedAt) {
-    at = Math.max(at, times.tourEndedAt + AFTER_TOUR_QUIET_MS);
-  }
+  // Not straight after the tour: a quiet window first, so the user can look around before the follow-ups start
+  if (times.tourEndedAt !== null) at = Math.max(at, times.tourEndedAt + QUIET_MS);
+  // Busy with the map or the sheet: wait for a quiet window after the last interaction. Only interactions since the tour
+  // ended or the last prompt closed count (the tour's own taps, or what came before that prompt, don't hold the next).
+  const since = Math.max(times.tourEndedAt ?? -Infinity, times.closedAt ?? -Infinity);
+  if (times.interactedAt !== null && times.interactedAt >= since) at = Math.max(at, times.interactedAt + QUIET_MS);
   return at <= now ? { show: id } : { waitMs: at - now };
 }
 
@@ -58,14 +70,32 @@ interface PromptQueueState extends PromptQueueTimes {
   modalOpened: () => void;
   /** A dialog or drawer closed: once none is left, the next prompt follows after the gap */
   modalClosed: (now?: number) => void;
-  mapTouched: (now?: number) => void;
+  /** Pointer, wheel, key or focus on the map or the sheet: restarts the quiet window */
+  interacted: (now?: number) => void;
+  /** A form opened (phone form page, docked popup with Hunt / Spot): hold the queue until it closes */
+  workStarted: () => void;
+  /** A form closed: the quiet window starts now */
+  workEnded: (now?: number) => void;
+  /** Focus entered or left a text field; leaving one starts the quiet window */
+  setFieldFocused: (focused: boolean, now?: number) => void;
   /** Re-check (timer); tests pass `now` */
   pump: (now?: number) => void;
   /** Tests only */
   reset: () => void;
 }
 
-const INITIAL: PromptQueueTimes = { waiting: {}, active: null, held: false, openModals: 0, readyAt: 0, tourEndedAt: null, mapTouchedAt: null };
+const INITIAL: PromptQueueTimes = {
+  waiting: {},
+  active: null,
+  held: false,
+  openModals: 0,
+  readyAt: 0,
+  tourEndedAt: null,
+  closedAt: null,
+  interactedAt: null,
+  workHolds: 0,
+  fieldFocused: false,
+};
 
 let timer: ReturnType<typeof setTimeout> | undefined;
 
@@ -86,7 +116,7 @@ const usePromptQueueStore = create<PromptQueueState>()((set, get) => ({
   },
   done: (id, now = Date.now()) => {
     if (get().active !== id) return;
-    set({ active: null, readyAt: now + PROMPT_GAP_MS });
+    set({ active: null, readyAt: now + PROMPT_GAP_MS, closedAt: now });
     get().pump(now);
   },
   setHeld: (held, now = Date.now()) => {
@@ -104,8 +134,21 @@ const usePromptQueueStore = create<PromptQueueState>()((set, get) => ({
     set(openModals === 0 ? { openModals, readyAt: Math.max(get().readyAt, now + PROMPT_GAP_MS) } : { openModals });
     get().pump(now);
   },
-  mapTouched: (now = Date.now()) => {
-    set({ mapTouchedAt: now });
+  interacted: (now = Date.now()) => {
+    set({ interactedAt: now });
+    get().pump(now);
+  },
+  workStarted: () => {
+    set({ workHolds: get().workHolds + 1 });
+    get().pump();
+  },
+  workEnded: (now = Date.now()) => {
+    set({ workHolds: Math.max(0, get().workHolds - 1), interactedAt: now });
+    get().pump(now);
+  },
+  setFieldFocused: (focused, now = Date.now()) => {
+    if (focused === get().fieldFocused) return;
+    set(focused ? { fieldFocused: true } : { fieldFocused: false, interactedAt: now });
     get().pump(now);
   },
   pump: (now = Date.now()) => {
@@ -162,23 +205,83 @@ export function ModalHold() {
   return null;
 }
 
-/** A pointer or wheel on the map canvas */
-const isOnMap = (target: EventTarget | null) => target instanceof Element && !!target.closest('.maplibregl-canvas-container');
+/**
+ * Hold the prompt queue while `active`: a form the user is in that isn't a dialog (the phone's Hint registreren page, a
+ * docked popup with Hunt / Spot). Closing it starts the quiet window.
+ */
+export function useWorkHold(active = true) {
+  useEffect(() => {
+    if (!active) return;
+    usePromptQueueStore.getState().workStarted();
+    return () => usePromptQueueStore.getState().workEnded();
+  }, [active]);
+}
 
-/** Hold the queue while `held` (the tour is due or running), and notice map use right after it. Mounted once (Layout). */
+/** Marks the sheet / sidebar: pointer, wheel, key and focus in it count as work, like on the map */
+export const WORK_AREA_ATTRIBUTE = 'data-work-area';
+/** The map canvas, its popups (also docked on a phone: DOCK_ID in DockedPopup) and the sheet / sidebar */
+const WORK_AREAS = `.maplibregl-canvas-container, .maplibregl-popup, #map-popup-dock, [${WORK_AREA_ATTRIBUTE}]`;
+const isInWorkArea = (target: EventTarget | null) => target instanceof Element && !!target.closest(WORK_AREAS);
+
+/** Input types that take typing (not buttons, checkboxes, sliders…) */
+const NON_TYPING_INPUTS = new Set(['button', 'submit', 'reset', 'checkbox', 'radio', 'range', 'color', 'file', 'image', 'hidden']);
+
+/** Pure: whether an element with this tag / input type / contenteditable takes typing. */
+export function isTypingField(tagName: string, inputType: string | null, contentEditable: boolean): boolean {
+  const tag = tagName.toLowerCase();
+  if (tag === 'textarea' || tag === 'select' || contentEditable) return true;
+  return tag === 'input' && !NON_TYPING_INPUTS.has((inputType ?? 'text').toLowerCase());
+}
+
+/** A text field outside a dialog (fields in dialogs, prompts included, are covered by the modal hold) */
+function isWorkField(element: Element | null): boolean {
+  if (!(element instanceof HTMLElement)) return false;
+  if (!isTypingField(element.tagName, element.getAttribute('type'), element.isContentEditable)) return false;
+  return !element.closest('[role="dialog"], [role="alertdialog"]');
+}
+
+/** How often a focused field is checked again (a field removed while focused fires no focusout everywhere) */
+const FIELD_RECHECK_MS = 2000;
+
+/**
+ * Hold the queue while `held` (the tour is due or running) or while a text field has focus, and restart the quiet
+ * window on every interaction with the map or the sheet. Mounted once (Layout).
+ */
 export function usePromptQueueHold(held: boolean) {
   useEffect(() => {
     usePromptQueueStore.getState().setHeld(held);
   }, [held]);
   useEffect(() => {
+    const queue = () => usePromptQueueStore.getState();
     const onInput = (event: Event) => {
-      if (isOnMap(event.target)) usePromptQueueStore.getState().mapTouched();
+      if (isInWorkArea(event.target)) queue().interacted();
     };
+    const onFocusIn = (event: FocusEvent) => {
+      onInput(event);
+      queue().setFieldFocused(isWorkField(event.target as Element | null));
+    };
+    // focusout fires before focus lands on the next element: decide once it has
+    let pending: ReturnType<typeof setTimeout> | undefined;
+    const onFocusOut = () => {
+      clearTimeout(pending);
+      pending = setTimeout(() => queue().setFieldFocused(isWorkField(document.activeElement)));
+    };
+    const recheck = setInterval(() => {
+      if (queue().fieldFocused && !isWorkField(document.activeElement)) queue().setFieldFocused(false);
+    }, FIELD_RECHECK_MS);
     window.addEventListener('pointerdown', onInput, true);
+    window.addEventListener('keydown', onInput, true);
     window.addEventListener('wheel', onInput, { capture: true, passive: true });
+    window.addEventListener('focusin', onFocusIn, true);
+    window.addEventListener('focusout', onFocusOut, true);
     return () => {
+      clearTimeout(pending);
+      clearInterval(recheck);
       window.removeEventListener('pointerdown', onInput, true);
+      window.removeEventListener('keydown', onInput, true);
       window.removeEventListener('wheel', onInput, true);
+      window.removeEventListener('focusin', onFocusIn, true);
+      window.removeEventListener('focusout', onFocusOut, true);
     };
   }, []);
 }

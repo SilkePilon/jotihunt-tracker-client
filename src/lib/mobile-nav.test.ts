@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { popPage, pushPage, replacePage } from './mobile-nav';
+import { isFormPage, popPage, pushPage, replacePage } from './mobile-nav';
 
 describe('mobile nav stack', () => {
   test('push adds a page', () => expect(pushPage([], { id: 'foxes' })).toEqual([{ id: 'foxes' }]));
@@ -17,5 +17,13 @@ describe('mobile nav stack', () => {
   test('replace swaps the top page (or pushes on an empty stack)', () => {
     expect(replacePage([{ id: 'foxes' }], { id: 'hunts' })).toEqual([{ id: 'hunts' }]);
     expect(replacePage([], { id: 'hunts' })).toEqual([{ id: 'hunts' }]);
+  });
+});
+
+describe('form pages', () => {
+  test('Hint registreren is a form page; list pages are not', () => {
+    expect(isFormPage('hintEntry')).toBe(true);
+    expect(isFormPage('foxes')).toBe(false);
+    expect(isFormPage('hunts')).toBe(false);
   });
 });

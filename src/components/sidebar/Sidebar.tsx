@@ -5,6 +5,7 @@ import SidebarHeader from './SidebarHeader';
 import SidebarSections from './SidebarSections';
 import { tourTarget } from '@/components/tour/targets';
 import MobileShell from '@/components/mobile/MobileShell';
+import { WORK_AREA_ATTRIBUTE } from '@/stores/prompt-queue.store';
 
 export default function Sidebar({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
   const isMobile = useIsMobile();
@@ -13,7 +14,7 @@ export default function Sidebar({ mapRef }: { mapRef: RefObject<MapRef | null> }
 
   return (
     // Safe-area insets: landscape phones at desktop width (viewport-fit=cover); 0 on desktops, so still 8px there
-    <aside aria-label="Zijbalk" className="pointer-events-none absolute bottom-[calc(0.5rem+env(safe-area-inset-bottom))] left-[calc(0.5rem+env(safe-area-inset-left))] top-[calc(0.5rem+env(safe-area-inset-top))] z-40 w-[320px]">
+    <aside aria-label="Zijbalk" {...{ [WORK_AREA_ATTRIBUTE]: '' }} className="pointer-events-none absolute bottom-[calc(0.5rem+env(safe-area-inset-bottom))] left-[calc(0.5rem+env(safe-area-inset-left))] top-[calc(0.5rem+env(safe-area-inset-top))] z-40 w-[320px]">
       {/* Plain overflow container: Radix ScrollArea's table wrapper lets content grow wider than 300px.
           The scroller itself takes pointer events: iOS/iPadOS Safari won't touch-scroll a pointer-events:none
           scroller from pointer-events:auto children (WebKit bug 183870). max-h-full, not h-full, so the empty

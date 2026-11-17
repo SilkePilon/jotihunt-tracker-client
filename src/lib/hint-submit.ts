@@ -41,10 +41,13 @@ export function lostResponseMessage(outcome: Exclude<LostResponseOutcome, 'regis
     : 'Geen antwoord ontvangen en de hint staat niet op de kaart: hij is niet geregistreerd. Je invoer blijft staan, probeer het opnieuw.';
 }
 
-/** The Hunt/Spot dialog's inline error for a marker that got no answer and wasn't confirmed ('registered' closes it). */
+/**
+ * The Hunt/Spot dialog's inline error for a marker that got no answer and wasn't confirmed ('registered' closes it).
+ * The dialog covers the map, so 'unknown' points at its own "Opnieuw controleren" instead of at the map.
+ */
 export function markerLostResponseMessage(outcome: Exclude<LostResponseOutcome, 'registered'>): string {
   return outcome === 'unknown'
-    ? 'Geen antwoord ontvangen. Controleer eerst of de marker op de kaart staat.'
+    ? 'Geen antwoord ontvangen. Misschien is de marker toch geplaatst: controleer het opnieuw voordat je nog eens opslaat.'
     : 'Geen antwoord ontvangen en de marker staat niet op de kaart: hij is niet geplaatst. Probeer het opnieuw.';
 }
 

@@ -1,0 +1,79 @@
+/*
+ * react-ios-pwa-prompt in the app's look. Its own CSS (hashed class names) follows the OS colour scheme with iOS
+ * colours; these overrides follow the app theme instead (tokens switch with body.dark). Scoped to the wrapper and the
+ * library's stable iOSPWA-* classes, so nothing else is touched.
+ */
+.ios-install-prompt .iOSPWA-overlay {
+  background-color: rgb(0 0 0 / 0.3);
+}
+body.dark .ios-install-prompt .iOSPWA-overlay {
+  background-color: rgb(0 0 0 / 0.5);
+}
+
+.ios-install-prompt .iOSPWA-panel {
+  background-color: var(--card);
+  color: var(--card-foreground);
+  border-radius: 1.5rem 1.5rem 0 0;
+  box-shadow: 0 -6px 30px rgb(0 0 0 / 0.25);
+  /* The home indicator sits over the bottom edge */
+  padding-bottom: env(safe-area-inset-bottom);
+  outline: none;
+}
+.ios-install-prompt .iOSPWA-panel,
+.ios-install-prompt .iOSPWA-panel * {
+  font-family: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
+}
+
+/* Title, then the subtitle */
+.ios-install-prompt .iOSPWA-header span:first-child {
+  color: var(--card-foreground);
+  font-weight: 600;
+}
+.ios-install-prompt .iOSPWA-header span + span {
+  color: var(--muted-foreground);
+  font-weight: 400;
+}
+.ios-install-prompt .iOSPWA-description {
+  color: var(--muted-foreground);
+  font-weight: 400;
+}
+.ios-install-prompt .iOSPWA-stepList p {
+  color: var(--card-foreground);
+  font-weight: 400;
+}
+/* The dividers (hairlines between header, text and steps) */
+.ios-install-prompt .iOSPWA-divider {
+  background-color: var(--border);
+  transform: none;
+}
+
+/* 30px round button; 44px to touch, and a focus ring like the app's buttons */
+.ios-install-prompt .iOSPWA-closeButton {
+  position: relative;
+  padding: 0;
+  cursor: pointer;
+  outline: none;
+}
+.ios-install-prompt .iOSPWA-closeButton:focus-visible {
+  box-shadow: 0 0 0 3px var(--ring);
+}
+@media (pointer: coarse) {
+  .ios-install-prompt .iOSPWA-closeButton::after {
+    content: '';
+    position: absolute;
+    inset: -7px;
+  }
+}
+.ios-install-prompt .iOSPWA-closeButton path:first-child {
+  fill: var(--muted);
+}
+.ios-install-prompt .iOSPWA-closeButton path:last-child {
+  fill: var(--muted-foreground);
+}
+
+/* Reduced motion: no slide, the sheet is there (and gone) at once; the backdrop only fades */
+@media (prefers-reduced-motion: reduce) {
+  .ios-install-prompt .iOSPWA-panel {
+    transition: none;
+  }
+}

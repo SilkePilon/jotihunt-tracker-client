@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { iosInstallDue, isIosBrowser, parseIosInstallVisits, type IosInstallEnv } from './pwa-install';
+import { IOS_INSTALL_EXIT_MS, iosInstallDue, iosInstallExitMs, isIosBrowser, parseIosInstallVisits, type IosInstallEnv } from './pwa-install';
 
 const IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Mobile/15E148 Safari/604.1';
 const MAC = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Safari/605.1.15';
@@ -36,4 +36,12 @@ test('parseIosInstallVisits', () => {
   expect(parseIosInstallVisits('{"visits":"x"}')).toBe(0);
   expect(parseIosInstallVisits('not json')).toBe(0);
   expect(parseIosInstallVisits('null')).toBe(0);
+});
+
+describe('iosInstallExitMs', () => {
+  test('waits for the slide-out, or unmounts at once without motion', () => {
+    expect(iosInstallExitMs(false)).toBe(IOS_INSTALL_EXIT_MS);
+    expect(IOS_INSTALL_EXIT_MS).toBeGreaterThanOrEqual(400);
+    expect(iosInstallExitMs(true)).toBe(0);
+  });
 });
