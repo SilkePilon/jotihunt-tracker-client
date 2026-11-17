@@ -7,7 +7,7 @@ import createStore from 'react-auth-kit/createStore';
 import AuthProvider from 'react-auth-kit';
 import {registerSW} from 'virtual:pwa-register';
 import {TooltipProvider} from "@/components/ui/tooltip.tsx";
-import {Toaster} from "@/components/ui/sonner.tsx";
+import AppToaster from "@/components/AppToaster";
 import {toast} from 'sonner';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import {MotionConfig} from 'motion/react';
@@ -54,6 +54,6 @@ ReactDOM.createRoot(document.getElementById('root')!, {
                 </ErrorBoundary>
             </AuthProvider>
         </TooltipProvider>
-        <Toaster />
+        <AppToaster />
     </MotionConfig>,
 );

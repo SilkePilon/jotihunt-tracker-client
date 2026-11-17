@@ -1,7 +1,7 @@
 import { type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { animate, motion, useReducedMotion, useTransform } from 'motion/react';
-import { computeSnapHeights, grabLabel, landscapeSheetBox, nextSnap, rubberBand, settleSnap, type SnapHeights } from '@/lib/sheet-snaps';
+import { SHEET_SIDE_VAR, computeSnapHeights, grabLabel, landscapeSheetBox, nextSnap, rubberBand, settleSnap, type SnapHeights } from '@/lib/sheet-snaps';
 import { useLandscapePhone } from '@/hooks/media.hook';
 import { cn } from '@/lib/utils';
 import useSidebarStore from '@/stores/sidebar.store';
@@ -60,6 +60,15 @@ export default function BottomSheet({ peek, children, onHeights }: { peek: React
   const setSheetSide = useSidebarStore((s) => s.setSheetSide);
   useEffect(() => setSheetSide(side), [side, setSheetSide]);
   useEffect(() => () => setSheetSide(0), [setSheetSide]);
+  // The same for CSS on the root (--sheet-side: the column plus its left gap, 0px upright), so the top stack (offline
+  // badge, happy-hour pill) centres on the map beside the column instead of on the viewport
+  useEffect(() => document.documentElement.style.setProperty(SHEET_SIDE_VAR, `${side}px`), [side]);
+  useEffect(
+    () => () => {
+      document.documentElement.style.removeProperty(SHEET_SIDE_VAR);
+    },
+    [],
+  );
   const peekRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const sheetRef = useRef<HTMLDivElement>(null);

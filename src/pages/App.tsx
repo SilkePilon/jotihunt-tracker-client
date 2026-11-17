@@ -81,12 +81,13 @@ function App() {
       {/*
         Centred over the map: right of the 320 px sidebar on desktop (half of its 328 px = 164 px) and under the
         search / coordinates row (and the offline badge, which sits there too); on phones under the offline badge and the
-        attribution button. The drawing toolbar and phone toasts start below it while it is shown (lib/top-stack.ts).
+        attribution button, held sideways centred on the map right of the sheet column (--sheet-side, BottomSheet). The
+        drawing toolbar and phone toasts start below it while it is shown (lib/top-stack.ts).
         Eases to its new place when the badge above it comes, goes or wraps.
       */}
       <div
         style={{ '--pill-top': belowSafeArea(pillTop), '--pill-top-md': `${pillTopMd}px` } as React.CSSProperties}
-        className="pointer-events-none absolute top-(--pill-top) left-1/2 z-30 -translate-x-1/2 transition-[top] duration-300 ease-out motion-reduce:transition-none md:top-(--pill-top-md) md:left-[calc(50%+164px)] shell-mobile:top-(--pill-top) shell-mobile:left-1/2"
+        className="pointer-events-none absolute top-(--pill-top) left-1/2 z-30 -translate-x-1/2 transition-[top] duration-300 ease-out motion-reduce:transition-none md:top-(--pill-top-md) md:left-[calc(50%+164px)] shell-mobile:top-(--pill-top) shell-mobile:left-[calc(var(--sheet-side,0px)_+_(100vw_-_var(--sheet-side,0px))_/_2)] shell-mobile:max-w-[calc(100vw_-_var(--sheet-side,0px)_-_32px)]"
       >
         <ErrorBoundary variant="inline">
           <HappyHourPill />
