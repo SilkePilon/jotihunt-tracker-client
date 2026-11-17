@@ -19,6 +19,7 @@ import {useTheme} from "@/hooks/theme.hook.ts";
 import {useNotificationFeed} from '@/hooks/notification-feed.hook';
 import {useIsMobile} from '@/hooks/media.hook';
 import useIntelStore from '@/stores/intel.store';
+import useMobileNavStore from '@/stores/mobile-nav.store';
 import {useFetcher} from '@/hooks/utils/api.hook';
 import {isUnauthorized} from '@/lib/session';
 import {useSessionExpired} from '@/hooks/session.hook';
@@ -50,7 +51,6 @@ export default function Layout() {
 
     useTheme();
     const isMobile = useIsMobile();
-    useNotificationFeed({onUnauthorized: sessionExpired, openArticle: isMobile ? undefined : (articleId) => useIntelStore.getState().openIntel(articleId)});
     const {fetch} = useFetcher();
     useEffect(() => {
         void resyncPush(fetch);
@@ -61,6 +61,19 @@ export default function Layout() {
     const location = useLocation();
     const {pathname} = location;
     const navigate = useNavigate();
+
+    /** Phone: the Hints page on top of the sheet (push also raises the sheet to full; already on top stays as is) */
+    function openHintsPage() {
+        if (pathname !== '/') navigate('/');
+        useMobileNavStore.getState().push({id: 'hints'});
+    }
+
+    // Laptop: "Openen" on a hint/news toast opens the article; phone: a hint toast opens the Hints page (solving stays laptop-only)
+    useNotificationFeed({
+        onUnauthorized: sessionExpired,
+        openArticle: isMobile ? undefined : (articleId) => useIntelStore.getState().openIntel(articleId),
+        openHints: isMobile ? openHintsPage : undefined,
+    });
     // Set by /l/:code: a laptop's QR code was scanned with this phone
     const qrLogin = (location.state as {qrLogin?: unknown} | null)?.qrLogin;
     const tour = useTourAutoStart();

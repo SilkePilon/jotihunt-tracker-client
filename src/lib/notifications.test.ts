@@ -1,5 +1,5 @@
-import { describe, expect, test } from 'bun:test';
-import { NOTIFICATION_OPTIONS, setAllTypes, toggleType, isSilent, isRecent, mergeFeed, pickPrimary, pickSound, shouldAlert, soundKey, toastKind, type AppNotification } from './notifications';
+import { describe, expect, mock, test } from 'bun:test';
+import { NOTIFICATION_OPTIONS, setAllTypes, toggleType, isSilent, isRecent, mergeFeed, pickPrimary, pickSound, shouldAlert, soundKey, toastAction, toastKind, type AppNotification } from './notifications';
 
 const n = (overrides: Partial<AppNotification>): AppNotification => ({ id: '1', type: 'hint', title: 't', body: '', urgent: false, data: {}, createdAt: '2026-10-17T20:00:00Z', ...overrides });
 
@@ -130,5 +130,24 @@ describe('hunt-cooldown', () => {
     expect(NOTIFICATION_OPTIONS.find((option) => option.type === 'hunt-cooldown')?.label).toBe('Weer huntbaar');
     expect(toggleType([], 'hunt-cooldown', false)).toEqual(['hunt-cooldown']);
     expect(setAllTypes(false)).toContain('hunt-cooldown');
+  });
+});
+
+describe('toastAction', () => {
+  test('laptop opens hint and news articles', () => {
+    const openArticle = mock(() => {});
+    toastAction(n({ type: 'article', data: { articleId: 7 } }), { openArticle })?.onClick();
+    expect(openArticle).toHaveBeenCalledWith(7);
+    expect(toastAction(n({ type: 'hint', data: { articleId: 3 } }), { openArticle })?.label).toBe('Openen');
+    expect(toastAction(n({ type: 'hint', data: {} }), { openArticle })).toBeUndefined();
+    expect(toastAction(n({ type: 'hunt-new', data: { articleId: 3 } }), { openArticle })).toBeUndefined();
+  });
+
+  test('phone opens the Hints page for hints only', () => {
+    const openHints = mock(() => {});
+    toastAction(n({ type: 'hint' }), { openHints })?.onClick();
+    expect(openHints).toHaveBeenCalledTimes(1);
+    expect(toastAction(n({ type: 'article', data: { articleId: 7 } }), { openHints })).toBeUndefined();
+    expect(toastAction(n({ type: 'hint' }), {})).toBeUndefined();
   });
 });

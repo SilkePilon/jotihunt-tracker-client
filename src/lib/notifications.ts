@@ -78,6 +78,21 @@ export function toastKind(notification: Pick<AppNotification, 'type' | 'data'>):
   return 'info';
 }
 
+export interface ToastOpeners {
+  /** Laptop: open the hint/news article in the Intel window */
+  openArticle?: (articleId: number) => void;
+  /** Phone: open the Hints page in the sheet */
+  openHints?: () => void;
+}
+
+/** The toast's "Openen" button for this notification, or undefined when there is nothing to open. */
+export function toastAction(notification: Pick<AppNotification, 'type' | 'data'>, { openArticle, openHints }: ToastOpeners): { label: string; onClick: () => void } | undefined {
+  const articleId = notification.data.articleId;
+  if (openArticle && articleId !== undefined && (notification.type === 'hint' || notification.type === 'article')) return { label: 'Openen', onClick: () => openArticle(articleId) };
+  if (openHints && notification.type === 'hint') return { label: 'Openen', onClick: openHints };
+  return undefined;
+}
+
 /** Highest first: what the one sound of a poll (and the HQ banner) goes by. */
 const SOUND_PRIORITY: SoundKey[] = ['fox-green', 'counter-hunt', 'broadcast', 'happy-hour', 'hunt', 'fox-status', 'hint', 'article'];
 
