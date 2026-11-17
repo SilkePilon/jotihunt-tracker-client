@@ -86,7 +86,7 @@ describe('notConfiguredText', () => {
 
   test('group_invalid: admins get the .env hint in the title, others a generic message', () => {
     expect(notConfiguredText('group_invalid', true)).toEqual({
-      title: 'Traccar-groep bestaat niet — controleer GROUP_*_ID in .env',
+      title: 'Traccar-groep bestaat niet — controleer de voertuiggroepen in Beheer → Algemeen',
     });
     expect(notConfiguredText('group_invalid', false)).toEqual({
       title: 'Live tracking is tijdelijk niet beschikbaar',

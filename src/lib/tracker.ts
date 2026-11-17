@@ -87,7 +87,7 @@ export function notConfiguredText(reason: TrackerNotConfiguredReason, admin: boo
   }
   if (reason === 'group_invalid') {
     return {
-      title: admin ? 'Traccar-groep bestaat niet — controleer GROUP_*_ID in .env' : 'Live tracking is tijdelijk niet beschikbaar',
+      title: admin ? 'Traccar-groep bestaat niet — controleer de voertuiggroepen in Beheer → Algemeen' : 'Live tracking is tijdelijk niet beschikbaar',
     };
   }
   const hint =
