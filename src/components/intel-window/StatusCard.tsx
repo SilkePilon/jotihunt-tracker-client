@@ -7,6 +7,7 @@ import { formatClock } from '@/lib/format';
 import { type ChartColumn, chartColumns, formatSolveTime, intelStats, type SlotBar, unreadLabel, unreadTab } from '@/lib/intel-window';
 import { EASE_OUT, LAYOUT_SPRING, SWAP } from '@/lib/motion';
 
+import { OVERLINE } from '@/lib/menu-styles';
 import { areaOptions, cn } from '@/lib/utils';
 import useIntelStore from '@/stores/intel.store';
 import type { HintCell } from '@/types/HintCell';
@@ -15,7 +16,6 @@ import type { IntelItem } from '@/types/Intel';
 /** A bar swapping between expected (dashed) and published */
 const FADE = { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 }, transition: { duration: 0.22 } };
 
-const LABEL = 'text-[11px] font-extrabold tracking-[0.06em] uppercase';
 const BIG = 'text-[24px] leading-none font-extrabold tracking-[-0.02em] tabular-nums';
 
 /**
@@ -73,7 +73,7 @@ function Tile({ label, sub, onClick, children }: { label: string; sub: string; o
       onClick={onClick}
       className="flex cursor-pointer flex-col items-start gap-1.5 rounded-[18px] bg-beheer-row p-3 text-left outline-none transition-colors hover:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring"
     >
-      <span className={cn(LABEL, 'text-muted-foreground')}>{label}</span>
+      <span className={cn(OVERLINE, 'text-muted-foreground')}>{label}</span>
       <span className={BIG}>{children}</span>
       <span className="text-[11.5px] text-muted-foreground">{sub}</span>
     </button>
@@ -92,7 +92,7 @@ function NextHintTile({ next }: { next: ReturnType<typeof useNextHint> }) {
         urgent ? 'bg-fox-error-container text-fox-on-error' : 'bg-primary-container text-on-primary-container',
       )}
     >
-      <span className={LABEL}>Volgende hint</span>
+      <span className={OVERLINE}>Volgende hint</span>
       <AnimatePresence mode="wait" initial={false}>
         <motion.span key={mode} className={cn(BIG, !next.isCountdown && 'text-[18px]')} {...SWAP}>
           {next.label}
@@ -144,7 +144,7 @@ const SolveChart = memo(function SolveChart({ slots, avgSolveMs, nextMs, entranc
   return (
     <div className="flex min-h-[200px] flex-1 flex-col rounded-[18px] bg-beheer-row p-3.5">
       <div className="flex items-center justify-between gap-2">
-        <span className={cn(LABEL, 'text-muted-foreground')}>Oplos-tempo</span>
+        <span className={cn(OVERLINE, 'text-muted-foreground')}>Oplos-tempo</span>
         <AnimatePresence mode="wait" initial={false}>
           {side && (
             <motion.span key={side} {...SWAP} className="text-[11.5px] text-muted-foreground">

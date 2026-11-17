@@ -24,8 +24,12 @@ export const MENU_ROW_DISABLED = 'data-[disabled]:pointer-events-none data-[disa
 /** The chosen radio / select row: soft orange, icons included; a bit darker when focused (data-* variants come after focus:). */
 export const MENU_ROW_CHECKED = 'data-[state=checked]:bg-(--map-selected-bg) data-[state=checked]:text-(--map-selected-fg) data-[state=checked]:[&_svg]:text-(--map-selected-fg)! data-[state=checked]:focus:bg-[color-mix(in_oklab,var(--map-selected-bg)_85%,var(--map-selected-fg))]';
 
+/** The overline type of every small uppercase label (menu headers, map layer groups, popup row labels, Intel tiles and
+ * day headers): 12px on phones, 11px on the desktop shell. Callers add the colour and spacing. */
+export const OVERLINE = 'text-xs desk:text-[11px] font-bold tracking-wide uppercase';
+
 /** Small header above a group of rows. */
-export const MENU_LABEL = 'px-1 pt-1 pb-1.5 text-xs desk:text-[11px] font-bold tracking-wide text-muted-foreground uppercase';
+export const MENU_LABEL = `px-1 pt-1 pb-1.5 ${OVERLINE} text-muted-foreground`;
 
 /** Any button that opens a dropdown or popover: soft orange while open, its `data-chevron` icon turns. */
 export const TRIGGER_OPEN =

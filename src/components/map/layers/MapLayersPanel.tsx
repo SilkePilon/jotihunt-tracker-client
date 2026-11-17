@@ -12,6 +12,7 @@ import { useLayerGroups, type FoodToggle, type LayerRow } from '@/components/set
 import { useDarkMode } from '@/hooks/utils/darkmode.hook';
 import { BRAND_COLOR } from '@/lib/fastfood';
 import { POP_SPRING } from '@/lib/motion';
+import { OVERLINE } from '@/lib/menu-styles';
 import { cn } from '@/lib/utils';
 import useSettingsStore from '@/stores/settings.store';
 import { MapStyle } from '@/types/MapStyle';
@@ -30,7 +31,7 @@ const STYLES: { value: MapStyle | ''; label: string; name?: string; thumb: strin
 /** Radix radio values can't be empty: the automatic style's '' goes through this one */
 const AUTO_VALUE = 'auto';
 
-const GROUP_TITLE = 'mx-1 mt-3 mb-1.5 text-xs desk:text-[11px] font-semibold tracking-wide text-muted-foreground uppercase';
+const GROUP_TITLE = `mx-1 mt-3 mb-1.5 ${OVERLINE} text-muted-foreground`;
 
 /** Map style bar + grouped layer rows + fastfood brands (option A); used in the desktop popover and the phone drawer. */
 export default function MapLayersPanel({ fetchLife360 }: { fetchLife360: boolean }) {
