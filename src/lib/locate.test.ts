@@ -1,10 +1,10 @@
 import { describe, expect, test } from 'bun:test';
 import { locateMe } from './locate';
 
-function fakeGeolocation(result: { lat: number; lng: number } | { code: number }): Geolocation {
+function fakeGeolocation(result: { lat: number; lng: number; accuracy?: number } | { code: number }): Geolocation {
   return {
     getCurrentPosition: (success: PositionCallback, failure?: PositionErrorCallback | null) => {
-      if ('lat' in result) success({ coords: { latitude: result.lat, longitude: result.lng } } as GeolocationPosition);
+      if ('lat' in result) success({ coords: { latitude: result.lat, longitude: result.lng, accuracy: result.accuracy } } as GeolocationPosition);
       else failure?.({ code: result.code, PERMISSION_DENIED: 1, POSITION_UNAVAILABLE: 2, TIMEOUT: 3, message: '' } as GeolocationPositionError);
     },
   } as Geolocation;
@@ -17,6 +17,10 @@ describe('locateMe', () => {
 
   test('falls back to the browser position', async () => {
     expect(await locateMe(undefined, fakeGeolocation({ lat: 51.9, lng: 6.1 }))).toEqual({ lat: 51.9, lng: 6.1 });
+  });
+
+  test('a browser position carries its accuracy', async () => {
+    expect(await locateMe(undefined, fakeGeolocation({ lat: 51.9, lng: 6.1, accuracy: 45 }))).toEqual({ lat: 51.9, lng: 6.1, accuracy: 45 });
   });
 
   test('denied or unavailable: a Dutch message', async () => {

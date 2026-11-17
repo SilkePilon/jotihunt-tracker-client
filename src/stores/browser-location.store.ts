@@ -6,9 +6,15 @@ interface BrowserLocationState {
   active: boolean;
   /** The last browser fix, null before the first */
   position: LatLng | null;
+  /** Accuracy radius of the last fix in metres, null when unknown */
+  accuracy: number | null;
+  /** The last fix came in while being watched; false after the page was hidden, until the next fix (the dot fades) */
+  fresh: boolean;
   /** Start (or keep) the dot, optionally at a fix already in hand */
-  start: (position?: LatLng) => void;
-  setPosition: (position: LatLng) => void;
+  start: (position?: LatLng, accuracy?: number) => void;
+  setPosition: (position: LatLng, accuracy?: number) => void;
+  /** No fixes for a while (page hidden): keep the dot, marked as old */
+  markStale: () => void;
   stop: () => void;
 }
 
@@ -16,9 +22,13 @@ interface BrowserLocationState {
 const useBrowserLocationStore = create<BrowserLocationState>()((set) => ({
   active: false,
   position: null,
-  start: (position) => set((state) => ({ active: true, position: position ?? state.position })),
-  setPosition: (position) => set({ position }),
-  stop: () => set({ active: false, position: null }),
+  accuracy: null,
+  fresh: false,
+  start: (position, accuracy) =>
+    set((state) => (position ? { active: true, position, accuracy: accuracy ?? null, fresh: true } : { active: true, position: state.position, accuracy: state.accuracy, fresh: state.fresh })),
+  setPosition: (position, accuracy) => set({ position, accuracy: accuracy ?? null, fresh: true }),
+  markStale: () => set((state) => (state.fresh ? { fresh: false } : state)),
+  stop: () => set({ active: false, position: null, accuracy: null, fresh: false }),
 }));
 
 export default useBrowserLocationStore;
