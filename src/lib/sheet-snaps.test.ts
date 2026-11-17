@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { computeSnapHeights, dockCardMax, dockedPadding, grabLabel, landscapeSheetBox, nextSnap, phoneMapPadding, rubberBand, settleSnap } from './sheet-snaps';
+import { computeSnapHeights, dockCardMax, dockedPadding, grabLabel, landscapeSheetBox, nextSnap, normalizeSnap, phoneMapPadding, rubberBand, settleSnap } from './sheet-snaps';
 
 describe('computeSnapHeights', () => {
   test('iPhone-like viewport', () => {
@@ -58,10 +58,28 @@ test('nextSnap cycles peek → half → full → peek', () => {
 
 test('nextSnap skips a stop at the current height (two-stop sheet)', () => {
   const twoStops = { peek: 157, half: 348, full: 348 };
-  expect(nextSnap('peek', twoStops)).toBe('half');
+  // The folded half is reported as full, so the map tiles hide and the grab label says "helemaal open"
+  expect(nextSnap('peek', twoStops)).toBe('full');
   expect(nextSnap('half', twoStops)).toBe('peek');
   expect(nextSnap('full', twoStops)).toBe('peek');
   expect(nextSnap('half', { peek: 170, half: 380, full: 700 })).toBe('full');
+});
+
+describe('two-stop sheet (half folded into full)', () => {
+  const twoStops = { peek: 157, half: 348, full: 348 };
+  test('normalizeSnap reports half as full only when they are the same height', () => {
+    expect(normalizeSnap('half', twoStops)).toBe('full');
+    expect(normalizeSnap('peek', twoStops)).toBe('peek');
+    expect(normalizeSnap('full', twoStops)).toBe('full');
+    expect(normalizeSnap('half', { peek: 170, half: 380, full: 700 })).toBe('half');
+    expect(normalizeSnap('half', null)).toBe('half');
+  });
+  test('settleSnap never lands on the folded half', () => {
+    expect(settleSnap(340, 0, twoStops)).toBe('full');
+    expect(settleSnap(200, 0.8, twoStops)).toBe('full');
+    expect(settleSnap(330, -0.8, twoStops)).toBe('peek');
+    expect(settleSnap(170, 0, twoStops)).toBe('peek');
+  });
 });
 
 test('grabLabel names the current snap', () => {
