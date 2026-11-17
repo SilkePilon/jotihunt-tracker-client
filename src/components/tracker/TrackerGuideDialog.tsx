@@ -61,7 +61,7 @@ export default function TrackerGuideDialog({ open, onOpenChange, status }: Track
       title="Je telefoon koppelen"
       description="Zo deelt je telefoon zijn locatie met het team. Dit hoef je maar één keer te doen."
       compact
-      className={cn(DIALOG_SHELL, 'bg-card sm:max-w-md')}
+      className={cn(DIALOG_SHELL, 'bg-card p-5 sm:max-w-md')}
       drawerClassName="bg-card"
     >
       {/* The steps scroll on short screens; the 4px inset keeps the buttons' focus rings inside the clip */}

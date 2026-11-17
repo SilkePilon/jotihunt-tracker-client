@@ -55,7 +55,7 @@ export default function RenamePasskeyDialog({ open, name, onOpenChange, onSave }
 
   return (
     <Dialog open={open} onOpenChange={(next) => !saving && onOpenChange(next)}>
-      <DialogContent className={cn(DIALOG_SHELL, 'bg-card sm:max-w-sm')}>
+      <DialogContent className={cn(DIALOG_SHELL, 'bg-card p-5 sm:max-w-sm')}>
         <form onSubmit={submit} className="flex flex-col gap-4">
           <DialogHeader>
             <DialogTitle>Passkey hernoemen</DialogTitle>
