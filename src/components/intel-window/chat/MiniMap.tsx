@@ -1,4 +1,4 @@
-import { useContext, useRef } from 'react';
+import { useContext, useMemo, useRef } from 'react';
 import Maplibre, { AttributionControl, Marker, useMap } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { AnimatePresence, motion, useInView } from 'motion/react';
@@ -28,7 +28,8 @@ export default function MiniMap({ point, label }: { point: LatLng; label: string
   const near = useInView(ref, { root, margin: '200px 0px' });
   const mapStyle = useSettingsStore((state) => state.mapStyle);
   const dark = useDarkMode();
-  const style = mapStyle ? resolveStaticMapStyle(mapStyle) : materialMapStyle(dark);
+  // Memoised: the dark raster paint makes a new style object
+  const style = useMemo(() => (mapStyle ? resolveStaticMapStyle(mapStyle, dark) : materialMapStyle(dark)), [mapStyle, dark]);
   return (
     <div ref={ref} className="relative h-24 overflow-hidden bg-beheer-row-high">
       <AnimatePresence>

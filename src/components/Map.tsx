@@ -33,7 +33,7 @@ import useLayersStore from '../stores/layers.store';
 import useSettingsStore from '../stores/settings.store';
 import useSidebarStore from '@/stores/sidebar.store';
 import {MapStyle} from '@/types/MapStyle';
-import {getHybridSatelliteStyle, resolveStaticMapStyle} from '@/lib/map-styles';
+import {getHybridSatelliteStyle, resolveStaticMapStyle, themeRasters} from '@/lib/map-styles';
 import {materialMapStyle} from '@/lib/map-style';
 import {mapStyleKey} from '@/lib/map-availability';
 import {useDarkMode} from '@/hooks/utils/darkmode.hook';
@@ -260,11 +260,13 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
     // The satellite style starts out raster-only, then upgrades to the hybrid (labels on top) style once the
     // OpenFreeMap liberty style JSON has been fetched.
     const staticStyle = useMemo(
-        () => (mapStyle ? resolveStaticMapStyle(mapStyle) : materialMapStyle(isDarkMode)),
+        () => (mapStyle ? resolveStaticMapStyle(mapStyle, isDarkMode) : materialMapStyle(isDarkMode)),
         [mapStyle, isDarkMode],
     );
     const [hybridSatellite, setHybridSatellite] = useState<StyleSpecification>();
-    const resolvedMapStyle = mapStyle === MapStyle.Satellite && hybridSatellite ? hybridSatellite : staticStyle;
+    // Dark theme: the aerial photos toned down a little (a paint-only diff on a theme switch)
+    const themedHybrid = useMemo(() => hybridSatellite && themeRasters(hybridSatellite, isDarkMode), [hybridSatellite, isDarkMode]);
+    const resolvedMapStyle = mapStyle === MapStyle.Satellite && themedHybrid ? themedHybrid : staticStyle;
     // The style's own sources, to tell a base-map failure from an overlay's (null for a style URL: any source counts)
     const baseSourceIds = useMemo(() => (typeof resolvedMapStyle === 'string' ? null : new Set(Object.keys(resolvedMapStyle.sources))), [resolvedMapStyle]);
     const styleKey = useMemo(() => mapStyleKey(resolvedMapStyle), [resolvedMapStyle]);
