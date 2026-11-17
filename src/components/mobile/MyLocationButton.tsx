@@ -53,6 +53,8 @@ export default function MyLocationButton({ mapRef }: { mapRef: RefObject<MapRef 
       mapRef.current?.flyTo({ center: [lng, lat], zoom: Math.max(LOCATE_ZOOM, mapRef.current.getZoom() ?? 0), duration: 1200 });
       // After the flight call: any other camera move through the map ref ends following
       useFollowMeStore.getState().start();
+      // "Hunt hier" (above this button) registers here
+      useFollowMeStore.getState().setLocated({ lat, lng, at: Date.now() });
       useHuntFocusStore.getState().show({ lng, lat, color: MAP_LOCATION_COLOR });
     } catch (error) {
       toast.error('Locatie niet gevonden', { description: error instanceof Error ? error.message : undefined });

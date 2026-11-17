@@ -66,3 +66,19 @@ export async function geolocationGranted(
     return false;
   }
 }
+
+/** How long the phone's "Hunt hier" tile stays after a successful "Mijn locatie" once following has ended */
+export const HUNT_HERE_GRACE_MS = 30_000;
+
+/** Whether "Hunt hier" shows: while following, or within the grace time after the last successful locate. */
+export function huntHereVisible(following: boolean, located: { at: number } | null, now: number): boolean {
+  return following || (located !== null && now - located.at < HUNT_HERE_GRACE_MS);
+}
+
+/**
+ * Where "Hunt hier" marks: the own position now, like following (live tracker, browser, recent tracker), else the spot
+ * the last locate found.
+ */
+export function huntHereFix(live: LatLng | undefined, browser: LatLng | null | undefined, recent: LatLng | undefined, located: LatLng | null): LatLng | undefined {
+  return followTarget(live, browser, recent) ?? located ?? undefined;
+}
