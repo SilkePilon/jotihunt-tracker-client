@@ -285,10 +285,12 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
     useEffect(() => {
         const map = mapRef.current?.getMap();
         if (!map) return;
-        const sheetMoved = paddedSheet.current !== sheetKey;
-        paddedSheet.current = sheetKey;
         const padding = {top: 0, right: 0, bottom: bottomPadding, left: leftPadding};
         const apply = () => {
+            // Read and set when it is applied, not when deferred: a second change before moveend (the first apply
+            // dropped) still sees the sheet as moved and eases
+            const sheetMoved = paddedSheet.current !== sheetKey;
+            paddedSheet.current = sheetKey;
             // Nothing to do (desktop/HQ on mount, or a camera move that already carried this padding)
             const current = map.getPadding();
             if (current.bottom === bottomPadding && current.left === leftPadding) return;
