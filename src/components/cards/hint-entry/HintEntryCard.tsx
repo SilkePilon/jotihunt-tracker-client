@@ -314,6 +314,13 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
         document.getElementById(`${fieldId}-x`)?.focus();
     }
 
+    /** Both coordinates pasted into one row: fill X and Y, then on to Registreren (like typing the last digit of Y) */
+    function pastePair(x: string, y: string) {
+        form.setValue('x', x, {shouldValidate: true, shouldDirty: true});
+        form.setValue('y', y, {shouldValidate: true, shouldDirty: true});
+        setTimeout(() => document.getElementById(submitId)?.focus());
+    }
+
     /**
      * One RD coordinate row: axis label and 6 digit boxes.
      * Calls onComplete once all 6 digits are entered, so focus can move on.
@@ -323,7 +330,7 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
             control={form.control}
             name={name}
             render={({field, fieldState}) => (
-                <DigitBoxes id={`${fieldId}-${name}`} label={label} onComplete={onComplete}
+                <DigitBoxes id={`${fieldId}-${name}`} label={label} onComplete={onComplete} onPastePair={pastePair}
                             bad={outsideNetherlands || fieldState.invalid} {...field}/>
             )}
         />

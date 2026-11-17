@@ -40,6 +40,24 @@ export function sanitizeDigits(value: string, max = 6): string {
   return [...value].map(normalizeWildcard).filter((char) => /[0-9?]/.test(char)).join('').slice(0, max);
 }
 
+/**
+ * Pasted text for the digit boxes: separators and other text dropped, '*' as '?'. Typed, '.' ',' '-' and space mean an
+ * unknown digit; pasted they are what sits between the groups of a copied coordinate ("155.000", "155 000, 463 000").
+ */
+export function stripPasted(text: string): string {
+  return text.replaceAll('*', '?').replace(/[^0-9?]/g, '');
+}
+
+/**
+ * A paste into the X boxes: X, and Y too when both coordinates arrive at once (12 digits or wildcards, e.g.
+ * "155000 463000" or "155.000, 463.000"). Otherwise Y is null and X is what the boxes take.
+ */
+export function splitPastedCoordinates(text: string): { x: string; y: string | null } {
+  const stripped = stripPasted(text);
+  if (stripped.length === 12) return { x: stripped.slice(0, 6), y: stripped.slice(6) };
+  return { x: stripped.slice(0, 6), y: null };
+}
+
 export const hasWildcard = (...patterns: string[]) => patterns.some((pattern) => pattern.includes('?'));
 
 /** The pattern with every '?' replaced by `digit`. */
