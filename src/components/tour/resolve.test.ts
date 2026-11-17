@@ -38,6 +38,11 @@ describe('section order per platform', () => {
     expect(stepsForPlatform(tour, 'mobile').map((s) => s.id)).toEqual(['welcome', 'foxes', 'hintEntry', 'hunts', 'predictions', 'hints', 'tracker', 'settings']);
   });
 
+  test('phone menu rows sort with the section pages', () => {
+    const mixed = [section('hints', { desktop: 'sidebar.hints', mobile: 'menu.hints' }), section('hunts', 'sidebar.hunts'), section('foxes', { desktop: 'sidebar.foxes', mobile: 'menu.foxes' })];
+    expect(stepsForPlatform(mixed, 'mobile').map((s) => s.id)).toEqual(['foxes', 'hunts', 'hints']);
+  });
+
   test('non-section steps keep their place', () => {
     const mixed = [section('a', 'sidebar.hints'), section('mid', 'map'), section('b', 'sidebar.foxes')];
     expect(stepsForPlatform(mixed, 'desktop').map((s) => s.id)).toEqual(['b', 'mid', 'a']);

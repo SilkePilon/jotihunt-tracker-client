@@ -7,7 +7,7 @@ import type { MobilePage } from '@/lib/mobile-nav';
 import useMobileNavStore from '@/stores/mobile-nav.store';
 import useSidebarStore from '@/stores/sidebar.store';
 import { stepDuration } from './duration';
-import { placeCard, type Size } from './placement';
+import { phonePanelMaxHeight, placeCard, type Size } from './placement';
 import { stepsForPlatform, targetFor } from './resolve';
 import { tourTarget } from './targets';
 import { runActions, runUndos } from './runner';
@@ -236,12 +236,14 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
       />
       {Panel && (
         // Above the dim layer and the click shield, so the user can use it. Phones: at the top, the card docks below.
-        // Desktop: shifted left by half a card (340px + gap), so the card fits beside it
+        // Desktop: shifted left by half a card (340px + gap), so the card fits beside it. Phones: it stops above the
+        // docked card (measured), so nothing in the panel hides under it
         <div
           key={step.id}
           ref={panelRef}
           {...tourTarget('tour.panel')}
           className="fixed left-1/2 top-[calc(env(safe-area-inset-top)+12px)] w-[min(400px,calc(100vw-24px))] -translate-x-1/2 overflow-y-auto rounded-xl border bg-background shadow-2xl animate-in fade-in duration-300 max-h-[calc(100dvh-24px-env(safe-area-inset-top))] md:left-[calc(50%-376px)] md:top-1/2 md:-translate-y-1/2 md:translate-x-0 motion-reduce:animate-none"
+          style={isMobile ? { maxHeight: `calc(${phonePanelMaxHeight(viewport.height, cardSize.height, SPOTLIGHT_PADDING)}px - env(safe-area-inset-top))` } : undefined}
         >
           <Panel />
         </div>

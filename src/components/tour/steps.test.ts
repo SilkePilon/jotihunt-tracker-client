@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { TOUR_STEPS, TOUR_VERSION } from './steps';
-import { PHONE_MENU_SECTIONS, SIDEBAR_SECTIONS, TOUR_TARGET_IDS } from './targets';
+import { PHONE_MENU_SECTIONS, SIDEBAR_SECTIONS, TOUR_TARGET_IDS, sectionOfTarget } from './targets';
 import { stepsForPlatform, targetFor } from './resolve';
 
 describe('TOUR_STEPS', () => {
@@ -62,10 +62,36 @@ describe('TOUR_STEPS', () => {
       const order: readonly string[] = orders[platform];
       const positions = stepsForPlatform(TOUR_STEPS, platform)
         .map((step) => targetFor(step, platform))
-        .filter((target): target is NonNullable<typeof target> => !!target?.startsWith('sidebar.') && target !== 'sidebar.root')
-        .map((target) => order.indexOf(target.slice('sidebar.'.length)));
+        .map((target) => (target ? sectionOfTarget(target) : null))
+        .filter((section) => section !== null)
+        .map((section) => order.indexOf(section));
+      expect(positions.length).toBeGreaterThan(0);
       expect(positions).not.toContain(-1);
       expect(positions).toEqual([...positions].sort((a, b) => a - b));
     }
+  });
+
+  test('phones: peek strip and menu come first, before any section', () => {
+    const ids = stepsForPlatform(TOUR_STEPS, 'mobile').map((step) => step.id);
+    const firstSection = stepsForPlatform(TOUR_STEPS, 'mobile').findIndex((step) => sectionOfTarget(targetFor(step, 'mobile') ?? 'map') !== null);
+    expect(ids.indexOf('peek')).toBeLessThan(ids.indexOf('menu'));
+    expect(ids.indexOf('menu')).toBeLessThan(firstSection);
+  });
+
+  test('phones: only Hint registreren and Hunts push their page; other sections point at their menu row', () => {
+    const pushed: string[] = [];
+    for (const step of stepsForPlatform(TOUR_STEPS, 'mobile')) {
+      const target = targetFor(step, 'mobile');
+      if (target === null || sectionOfTarget(target) === null) continue;
+      const names = (step.actions ?? []).map((action) => action.name);
+      if (names.some((name) => name.startsWith('showSection('))) {
+        pushed.push(sectionOfTarget(target)!);
+        expect(target.startsWith('sidebar.')).toBe(true);
+      } else {
+        expect(target).toBe(`menu.${sectionOfTarget(target)}`);
+        expect(names).toContain(`pointAtSection(${sectionOfTarget(target)})`);
+      }
+    }
+    expect(pushed.sort()).toEqual(['hintEntry', 'hunts']);
   });
 });

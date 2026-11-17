@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { placeCard } from './placement';
+import { phonePanelMaxHeight, placeCard } from './placement';
 
 const viewport = { width: 1280, height: 800 };
 const card = { width: 340, height: 200 };
@@ -44,5 +44,16 @@ describe('placeCard', () => {
     const phone = { width: 390, height: 844 };
     const target = { x: 0, y: 40, width: 390, height: 60 };
     expect(placeCard({ target, card: { width: 366, height: 180 }, viewport: phone, isMobile: true })).toEqual({ x: 12, y: 652 });
+  });
+});
+
+describe('phonePanelMaxHeight', () => {
+  test('stops above the docked card, its gap and the spotlight padding', () => {
+    // card top = 800 - 200 - 12 = 588; minus gap 12, padding 8 and the panel's top offset 12
+    expect(phonePanelMaxHeight(800, 200, 8)).toBe(556);
+  });
+
+  test('never negative on a tiny screen', () => {
+    expect(phonePanelMaxHeight(100, 400, 8)).toBe(0);
   });
 });
