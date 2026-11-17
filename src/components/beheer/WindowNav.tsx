@@ -16,17 +16,20 @@ interface NavItemProps {
   indicatorId?: string;
   onClick: () => void;
   className?: string;
+  /** data-nav-id, so a pushed view can put focus back on the item that opened it */
+  'data-nav-id'?: string;
 }
 
 /** N1 item of a window's nav: icon + name, 40px, rounded-xl; active = soft grey fill + semibold (no pill, no orange). */
-export function NavItem({ icon: ItemIcon, leading, title, active, trailing, indicatorId, onClick, className }: NavItemProps) {
+export function NavItem({ icon: ItemIcon, leading, title, active, trailing, indicatorId, onClick, className, 'data-nav-id': navId }: NavItemProps) {
   return (
     <button
       type="button"
+      data-nav-id={navId}
       aria-current={active ? 'page' : undefined}
       onClick={onClick}
       className={cn(
-        'relative flex h-10 items-center rounded-xl px-3 text-left text-[13.5px] outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50',
+        'relative flex h-10 items-center rounded-xl px-3 text-left text-body outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring',
         active ? 'font-semibold text-foreground' : 'text-muted-foreground hover:bg-beheer-row-high/50 hover:text-foreground active:bg-beheer-row-high',
         className,
       )}

@@ -7,6 +7,10 @@ export interface MobilePage {
   params?: Record<string, string>;
 }
 
+/** Pages that are a form the user fills in: the prompt queue holds while one is open */
+const FORM_PAGES: ReadonlySet<MobilePageId> = new Set<MobilePageId>(['hintEntry']);
+export const isFormPage = (id: MobilePageId) => FORM_PAGES.has(id);
+
 function samePage(a: MobilePage, b: MobilePage): boolean {
   return a.id === b.id && JSON.stringify(a.params ?? {}) === JSON.stringify(b.params ?? {});
 }

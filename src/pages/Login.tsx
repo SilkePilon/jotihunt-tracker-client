@@ -2,14 +2,15 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { motion } from 'motion/react';
 import { KeyRoundIcon, Loader2Icon } from 'lucide-react';
-import usePWA from 'react-pwa-install-prompt';
-import { isMobile as isMobileDevice } from 'react-device-detect';
 import { Button } from '@/components/ui/button';
 import AuthScreen from '@/components/auth/AuthScreen';
+import { AUTH_CARD } from '@/components/auth/auth-card';
+import { cn } from '@/lib/utils';
+import { busyProps } from '@/lib/busy';
 import QrLoginPanel from '@/components/auth/QrLoginPanel';
 import Reveal from '@/components/motion/Reveal';
 import { passkeyLogin, passkeysSupported, type SessionResult } from '@/lib/auth-api';
-import { classifyPasskeyError, PASSKEY_MESSAGES } from '@/lib/passkey';
+import { classifyPasskeyError, PASSKEY_MESSAGES, unsupportedLoginText } from '@/lib/passkey';
 import { CARD_ENTER, EASE_OUT } from '@/lib/motion';
 import { nextAfterLogin } from '@/lib/qr-login';
 import { useStartSession } from '@/hooks/start-session.hook';
@@ -24,9 +25,13 @@ export default function Login() {
   const [searchParams] = useSearchParams();
   const startSession = useStartSession();
   const isMobile = useIsMobile();
-  const { isStandalone, isInstallPromptSupported, promptInstall } = usePWA();
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(passkeysSupported() ? null : PASSKEY_MESSAGES.unsupported);
+  const supported = passkeysSupported();
+  const [error, setError] = useState<string | null>(null);
+  // Cancelled passkey prompts in a row: from the second, a phone also gets the QR code (another phone can log it in)
+  const [cancelled, setCancelled] = useState(0);
+  // Without passkeys the button can't work: say what does, for this device (shown until another error replaces it)
+  const shownError = error ?? (supported ? null : unsupportedLoginText(isMobile));
   const next = nextAfterLogin(searchParams.get('next'));
   /** Fading the card out after a QR approval, right before the map takes over */
   const [leaving, setLeaving] = useState(false);
@@ -39,13 +44,16 @@ export default function Login() {
   }
 
   async function handleLogin() {
+    if (busy) return;
     setBusy(true);
     setError(null);
     try {
+      // No install prompt right after signing in; the gear menu keeps "Installeer app"
       enter(await passkeyLogin());
-      if (isInstallPromptSupported && !isStandalone && isMobileDevice) promptInstall();
     } catch (failure) {
-      setError(PASSKEY_MESSAGES[classifyPasskeyError(failure)]);
+      const kind = classifyPasskeyError(failure);
+      setCancelled((count) => (kind === 'cancelled' ? count + 1 : 0));
+      setError(kind === 'unsupported' ? unsupportedLoginText(isMobile) : PASSKEY_MESSAGES[kind]);
     } finally {
       setBusy(false);
     }
@@ -69,7 +77,7 @@ export default function Login() {
   return (
     <AuthScreen>
       <motion.div
-        className="w-full max-w-sm rounded-xl border bg-card text-card-foreground shadow-lg md:grid md:max-w-3xl md:grid-cols-[1fr_auto_auto]"
+        className={cn(AUTH_CARD, 'w-full max-w-sm', !isMobile && 'md:grid md:max-w-3xl md:grid-cols-[1fr_auto_auto]')}
         initial={CARD_ENTER.initial}
         animate={leaving ? { opacity: 0, y: 0, scale: 0.98 } : { ...CARD_ENTER.animate, scale: 1 }}
         transition={leaving ? { duration: LEAVE_MS / 1000, ease: EASE_OUT } : CARD_ENTER.transition}
@@ -83,25 +91,35 @@ export default function Login() {
             </div>
           </div>
           <p className="text-sm text-muted-foreground">Gebruik de vingerafdruk, het gezicht of de schermvergrendeling van dit apparaat.</p>
-          <Button size="lg" className="w-full" onClick={handleLogin} disabled={busy || !passkeysSupported()}>
+          <Button size="lg" className="w-full" onClick={handleLogin} disabled={!supported} {...busyProps(busy)}>
             {busy ? <Loader2Icon className="animate-spin" /> : <KeyRoundIcon />}
             Inloggen met passkey
           </Button>
           <Reveal gap={20}>
-            {error && (
+            {shownError && (
               <InlineError role="alert">
-                {error}
+                {shownError}
               </InlineError>
             )}
           </Reveal>
-          <p className="text-xs text-muted-foreground">Geen account? Vraag de organisatie om een invite-link.</p>
+          <p className="text-xs text-muted-foreground">Geen account of passkey kwijt? Vraag de organisatie om een invite- of herstel-link.</p>
         </div>
-        {/* Phones log in with their own passkey; only laptops and the beamer need the code */}
-        {!isMobile && (
+        {/* Phones log in with their own passkey; only laptops and the beamer need the code, and a phone whose browser
+            has no passkeys or whose passkey prompt was cancelled twice (then below the button, for another phone that is
+            logged in to scan) */}
+        {!isMobile ? (
           <>
             <div className="my-8 w-px bg-border" />
             <QrLoginPanel onApproved={handleQrApproved} />
           </>
+        ) : (
+          <Reveal>
+            {(!supported || cancelled >= 2) && (
+              <div className="flex justify-center border-t">
+                <QrLoginPanel onApproved={handleQrApproved} />
+              </div>
+            )}
+          </Reveal>
         )}
       </motion.div>
     </AuthScreen>

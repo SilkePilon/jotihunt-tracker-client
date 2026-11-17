@@ -95,14 +95,14 @@ function UserMessage({ message, text }: { message: UIMessage; text: string }) {
             type="button"
             aria-label="Afbeelding vergroten"
             onClick={() => setZoom(true)}
-            className="cursor-zoom-in overflow-hidden rounded-2xl outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            className="cursor-zoom-in overflow-hidden rounded-2xl outline-none focus-visible:ring-[3px] focus-visible:ring-ring"
           >
             <img src={image.url} alt="" className="max-h-40 max-w-[220px] object-cover" />
           </button>
           <ImageLightbox src={image.url} alt="" open={zoom} onOpenChange={setZoom} />
         </>
       )}
-      {text && <div className="max-w-[85%] rounded-[16px_16px_6px_16px] bg-beheer-row-high px-3 py-2 text-[13px] break-words whitespace-pre-wrap">{text}</div>}
+      {text && <div className="max-w-[85%] rounded-[16px_16px_6px_16px] bg-beheer-row-high px-3 py-2 text-body break-words whitespace-pre-wrap">{text}</div>}
     </div>
   );
 }

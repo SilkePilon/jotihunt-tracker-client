@@ -5,6 +5,7 @@ import type { HintCell } from '@/types/HintCell';
 import { scaledSize } from './image';
 import {
   CHAT_IMAGE_MAX_SIDE,
+  answerAnnouncement,
   CONTEXT_LABEL,
   THINKING_LABEL,
   TOOL_META,
@@ -47,6 +48,8 @@ import {
   toolTone,
   webSources,
   groupSources,
+  offlineSendMessage,
+  OFFLINE_SEND_MESSAGE,
 } from './intel-chat';
 
 const point = {
@@ -386,6 +389,8 @@ describe('chatErrorKind', () => {
   test('a 200 with { error } (fetcherWithMethod throws Error(error)) and anything else', () => {
     expect(chatErrorKind(new Error('ai_unavailable'))).toBe('ai_unavailable');
     expect(chatErrorKind(new Error('Failed to fetch'))).toBe('other');
+    expect(chatErrorKind(new TypeError('Failed to fetch'))).toBe('offline');
+    expect(chatErrorKind(new AxiosError('Network Error', 'ERR_NETWORK'))).toBe('offline');
     expect(chatErrorKind(undefined)).toBe('other');
   });
 });
@@ -523,4 +528,24 @@ describe('groupSources', () => {
     ]);
   });
   test('no sources: no groups', () => expect(groupSources([])).toEqual([]));
+});
+
+describe('answerAnnouncement', () => {
+  test('the last answer as plain text', () => {
+    const messages = [user('u1', 'Waar is Alpha?'), assistant({ type: 'reasoning', text: 'hmm' }, { type: 'text', text: '**Alpha** zit bij [Ede](https://x.nl).\n\n- `12:30`' })];
+    expect(answerAnnouncement(messages)).toBe('Antwoord van de AI: Alpha zit bij Ede. - 12:30');
+  });
+  test('silent without an answer', () => {
+    expect(answerAnnouncement([])).toBe('');
+    expect(answerAnnouncement([user('u1')])).toBe('');
+    expect(answerAnnouncement([assistant({ type: 'text', text: '  ' })])).toBe('');
+  });
+});
+
+describe('offlineSendMessage', () => {
+  test('says where the question went and when its image has to be added again', () => {
+    expect(offlineSendMessage({ merged: false, imageDropped: false })).toBe(OFFLINE_SEND_MESSAGE);
+    expect(offlineSendMessage({ merged: true, imageDropped: false })).toContain('bovenaan');
+    expect(offlineSendMessage({ merged: true, imageDropped: true })).toContain('afbeelding opnieuw');
+  });
 });

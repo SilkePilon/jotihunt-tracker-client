@@ -1,30 +1,33 @@
 import { useEffect, useRef, useState, type ComponentType } from 'react';
-import { BellRingIcon, FlagIcon, MegaphoneIcon, NewspaperIcon, PlayIcon, PuzzleIcon, SirenIcon, SquareIcon, Volume2Icon } from 'lucide-react';
-import { CelebrationIcon, FoxIcon } from '@/components/MaterialGlyph';
+import { PlayIcon, SquareIcon, Volume2Icon } from 'lucide-react';
+import { FoxIcon } from '@/components/MaterialGlyph';
+import { NOTIFICATION_ICON } from '@/components/notifications/notification-icons';
 import { playNotificationSound } from '@/lib/notification-sounds';
 import type { SoundKey } from '@/lib/notifications';
+import { MENU_GROUP } from '@/lib/menu-styles';
 import { cn } from '@/lib/utils';
 import useSettingsStore from '@/stores/settings.store';
+import { CARD_TITLE } from '@/lib/dialog-shell';
 
 interface SoundItem {
   key: SoundKey;
   label: string;
   when: string;
   icon: ComponentType<{ className?: string }>;
-  /** Icon circle colours */
+  /** Icon circle colours: the app's fox-status, Intel and toast tile tokens (on-colour >= 4.5:1 on its container) */
   tone: string;
 }
 
 /** Most important first, the same order the app uses when several arrive at once. */
 const SOUNDS: SoundItem[] = [
-  { key: 'fox-green', label: 'Vos op groen', when: 'Jagen mag! Het belangrijkste geluid.', icon: FlagIcon, tone: 'bg-green-500/15 text-green-600 dark:text-green-400' },
-  { key: 'counter-hunt', label: 'Tegenhunt', when: 'Er is een tegenhunt bij ons clubhuis, met de richting.', icon: SirenIcon, tone: 'bg-red-500/15 text-red-600 dark:text-red-400' },
-  { key: 'broadcast', label: 'Bericht van HQ', when: 'Altijd aan. Lees het bericht meteen.', icon: MegaphoneIcon, tone: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400' },
-  { key: 'happy-hour', label: 'Happy hour', when: 'Hunts tellen dubbel. Tegenhunts tellen niet mee.', icon: CelebrationIcon, tone: 'bg-amber-500/15 text-amber-600 dark:text-amber-400' },
-  { key: 'hunt', label: 'Hunt', when: 'Een hunt komt binnen op jotihunt.nl of is beoordeeld.', icon: FoxIcon, tone: 'bg-amber-500/15 text-amber-600 dark:text-amber-400' },
-  { key: 'fox-status', label: 'Vos rood of oranje', when: 'Een deelgebied verandert van status.', icon: BellRingIcon, tone: 'bg-orange-500/15 text-orange-600 dark:text-orange-400' },
-  { key: 'hint', label: 'Nieuwe hint', when: 'De organisatie heeft een hint gepubliceerd.', icon: PuzzleIcon, tone: 'bg-sky-500/15 text-sky-600 dark:text-sky-400' },
-  { key: 'article', label: 'Opdracht of nieuws', when: 'Een nieuwe opdracht of nieuwsbericht.', icon: NewspaperIcon, tone: 'bg-muted text-muted-foreground' },
+  { key: 'fox-green', label: 'Vos op groen', when: 'Jagen mag! Het belangrijkste geluid.', icon: NOTIFICATION_ICON['fox-status'], tone: 'bg-fox-ok-container text-fox-on-ok' },
+  { key: 'counter-hunt', label: 'Tegenhunt', when: 'Er is een tegenhunt bij ons clubhuis, met de richting.', icon: NOTIFICATION_ICON['counter-hunt'], tone: 'bg-fox-error-container text-fox-on-error' },
+  { key: 'broadcast', label: 'Bericht van HQ', when: 'Altijd aan. Lees het bericht meteen.', icon: NOTIFICATION_ICON.broadcast, tone: 'bg-(--intel-news-container) text-(--intel-news)' },
+  { key: 'happy-hour', label: 'Happy hour', when: 'Hunts tellen dubbel. Tegenhunts tellen niet mee.', icon: NOTIFICATION_ICON['happy-hour'], tone: 'bg-[color-mix(in_oklab,var(--happy-hour)_22%,var(--card))] text-status-warn-text' },
+  { key: 'hunt', label: 'Hunt', when: 'Een hunt komt binnen op jotihunt.nl of is beoordeeld.', icon: FoxIcon, tone: 'bg-primary-container text-on-primary-container' },
+  { key: 'fox-status', label: 'Vos rood of oranje', when: 'Een deelgebied verandert van status.', icon: NOTIFICATION_ICON['fox-status'], tone: 'bg-fox-warn-container text-fox-on-warn' },
+  { key: 'hint', label: 'Nieuwe hint', when: 'De organisatie heeft een hint gepubliceerd.', icon: NOTIFICATION_ICON.hint, tone: 'bg-(--intel-hint-container) text-(--intel-hint)' },
+  { key: 'article', label: 'Opdracht of nieuws', when: 'Een nieuwe opdracht of nieuwsbericht.', icon: NOTIFICATION_ICON.article, tone: 'bg-muted text-muted-foreground' },
 ];
 
 /** Tour step: try every notification sound, so users recognise them on the road without looking. */
@@ -57,36 +60,37 @@ export default function NotificationSoundsPanel() {
   return (
     <div className="flex flex-col gap-3 p-4">
       <div className="flex items-center gap-3">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary-container text-on-primary-container">
           <Volume2Icon className="size-5" />
         </div>
         <div className="min-w-0">
-          <p className="font-semibold leading-tight">Leer de geluiden</p>
+          <p className={`${CARD_TITLE} leading-tight`}>Leer de geluiden</p>
           <p className="text-xs text-muted-foreground">Tik op een melding om te horen hoe hij klinkt.</p>
         </div>
       </div>
-      <ul className="flex flex-col gap-1">
+      <ul className={MENU_GROUP}>
         {SOUNDS.map(({ key, label, when, icon: Icon, tone }) => {
           const active = playing === key;
           return (
-            <li key={key}>
+            <li key={key} className="group/row">
               <button
                 type="button"
                 onClick={() => play(key)}
                 aria-pressed={active}
                 className={cn(
-                  'flex w-full items-center gap-3 rounded-lg border border-transparent px-2 py-1.5 text-left transition-colors hover:bg-muted/60',
-                  active && 'border-primary/40 bg-primary/10 hover:bg-primary/10',
+                  // The row is the <li>'s only child, so the group's 16px outer ends come from the <li> position
+                  'flex w-full items-center gap-3 rounded-(--radius-segment) bg-beheer-row px-3 py-2 text-left outline-none transition-colors duration-150 group-first/row:rounded-t-2xl group-last/row:rounded-b-2xl hover:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset',
+                  active && 'bg-primary-container text-on-primary-container hover:bg-primary-container',
                 )}
               >
-                <span className={cn('flex size-8 shrink-0 items-center justify-center rounded-full', tone, active && 'animate-pulse')}>
+                <span className={cn('flex size-8 shrink-0 items-center justify-center rounded-full', tone, active && 'motion-safe:animate-pulse')}>
                   <Icon className="size-4" />
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-sm font-medium leading-tight">{label}</span>
-                  <span className="block text-xs text-muted-foreground">{when}</span>
+                  <span className={cn('block text-xs transition-colors', active ? 'text-on-primary-container/80' : 'text-muted-foreground')}>{when}</span>
                 </span>
-                <span className={cn('flex size-7 shrink-0 items-center justify-center rounded-full border', active ? 'border-primary bg-primary text-primary-foreground' : 'text-muted-foreground')}>
+                <span className={cn('flex size-7 shrink-0 items-center justify-center rounded-full border', active ? 'border-primary-fill bg-primary-fill text-primary-foreground' : 'border-transparent bg-card text-muted-foreground')}>
                   {active ? <SquareIcon className="size-3 fill-current" /> : <PlayIcon className="size-3.5 fill-current" />}
                 </span>
               </button>
@@ -94,7 +98,7 @@ export default function NotificationSoundsPanel() {
           );
         })}
       </ul>
-      <p className="rounded-md bg-muted/60 px-2.5 py-1.5 text-xs text-muted-foreground">
+      <p className="rounded-xl bg-beheer-row px-3 py-2 text-xs text-muted-foreground">
         {soundMuted ? 'Geluid staat nu uit. Zet het aan via Instellingen → Geluid, anders hoor je deze meldingen niet.' : 'Tip: zet je telefoon tijdens de hunt niet op stil, en het volume omhoog.'}
       </p>
     </div>

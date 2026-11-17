@@ -1,7 +1,7 @@
 import { useRef, useState, type KeyboardEvent } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { toast } from 'sonner';
-import { CheckIcon, LinkIcon, Loader2Icon, PencilIcon, ShieldIcon, ShieldOffIcon, Trash2Icon } from 'lucide-react';
+import { CheckIcon, LinkIcon, Loader2Icon, PencilIcon, ShieldIcon, ShieldOffIcon, TicketIcon, Trash2Icon } from 'lucide-react';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import Reveal from '@/components/motion/Reveal';
 import { useAdmin, type UserChanges } from '@/hooks/admin.hook';
@@ -14,7 +14,8 @@ import { formatClock } from '@/lib/format';
 import { SWAP } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import type { User } from '@/types/User';
-import { BeheerCard, BeheerExpandableRow, BeheerPane, BeheerRows, BeheerSkeleton, InlineConfirm } from './BeheerLayout';
+import useAdminStore from '@/stores/admin.store';
+import { BeheerCard, BeheerExpandableRow, BeheerLoadError, BeheerPane, BeheerRow, BeheerRows, BeheerSkeleton, InlineConfirm } from './BeheerLayout';
 import { Pill, Tag } from './controls/Pill';
 
 /** The pane's card gap (gap-3.5), so a card folding away doesn't leave a gap behind */
@@ -26,29 +27,42 @@ const LINK_DONE_MS = 1800;
 /** Beheer → Gebruikers (G3): admins and members; tap a row for herstel-link, rename, admin and delete. */
 export default function UsersPane() {
   const me = useAuthUser<User>();
-  const { users, isError, updateUser, deleteUser, createRecoveryLink } = useAdmin();
+  const { users, isError, retry, updateUser, deleteUser, createRecoveryLink } = useAdmin();
+  const openDialog = useAdminStore((state) => state.openDialog);
   const now = useNow(true, SLOW_CLOCK_TICK_MS);
   const [renamingId, setRenamingId] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  // One question at a time per row: delete the user, or take away their admin rights
+  const [confirming, setConfirming] = useState<{ id: string; kind: 'delete' | 'revoke' } | null>(null);
   const [linkBusyId, setLinkBusyId] = useState<string | null>(null);
   const [linkDoneId, setLinkDone] = useTimedValue<string>(LINK_DONE_MS);
 
   const view = users ? 'content' : isError ? 'error' : 'loading';
   const { admins, members } = splitUsers(users ?? []);
 
-  // Users whose admin change is on its way: a second tap meanwhile is ignored
+  // Users whose admin change is on its way: their button is disabled and spins (the ref also stops a double tap
+  // within the same render)
   const adminSaving = useRef(new Set<string>());
+  const [adminBusy, setAdminBusy] = useState<ReadonlySet<string>>(new Set());
 
-  async function toggleAdmin(user: User) {
-    if (adminSaving.current.has(user._id)) return;
+  /** Resolves to whether it was saved */
+  async function toggleAdmin(user: User): Promise<boolean> {
+    if (adminSaving.current.has(user._id)) return false;
     adminSaving.current.add(user._id);
+    setAdminBusy(new Set(adminSaving.current));
     try {
       const error = await updateUser(user._id, { admin: !user.admin });
       if (error) toast.error(apiErrorMessage(error, 'Opslaan is mislukt.'));
       else toast.success(user.admin ? `${user.name} is geen admin meer` : `${user.name} is nu admin`);
+      return !error;
     } finally {
       adminSaving.current.delete(user._id);
+      setAdminBusy(new Set(adminSaving.current));
     }
+  }
+
+  async function confirmRevoke(user: User) {
+    // On failure the question stays, so trying again is one tap
+    if (await toggleAdmin(user)) setConfirming(null);
   }
 
   async function confirmDelete(user: User) {
@@ -73,8 +87,10 @@ export default function UsersPane() {
         toast.success(`Herstel-link voor ${user.name} gekopieerd`, { description });
       } else {
         // iOS Safari refuses clipboard writes this long after the tap: offer a copy button (a fresh tap)
+        // Stays until closed: the link is only reachable through this button
         toast.success(`Herstel-link voor ${user.name} gemaakt`, {
           description,
+          duration: Infinity,
           action: { label: 'Kopieer link', onClick: () => void copyToClipboard(link.url, 'Link gekopieerd') },
         });
       }
@@ -100,7 +116,7 @@ export default function UsersPane() {
         leading={
           <span
             aria-hidden
-            className={cn('size-2 shrink-0 rounded-full transition-colors duration-300', isActiveNow(user, now) ? 'bg-green-500 shadow-[0_0_0_3px_rgb(34_197_94/0.18)]' : 'bg-muted-foreground/50')}
+            className={cn('size-2 shrink-0 rounded-full transition-colors duration-300', isActiveNow(user, now) ? 'bg-(--status-ok-dot) shadow-[0_0_0_3px_color-mix(in_oklab,var(--status-ok-dot)_18%,transparent)]' : 'bg-muted-foreground/50')}
           />
         }
         title={
@@ -122,23 +138,43 @@ export default function UsersPane() {
         }
         meta={
           <>
-            <span className={cn(!user.passkeyCount && 'text-amber-600 dark:text-amber-400')}>{passkeyText(user.passkeyCount)}</span> · {userActivity(user, now)}
+            <span className={cn(!user.passkeyCount && 'text-status-warn-text')}>{passkeyText(user.passkeyCount)}</span> · {userActivity(user, now)}
           </>
         }
         confirm={
-          deletingId === user._id && (
+          confirming?.id === user._id &&
+          (confirming.kind === 'delete' ? (
             <InlineConfirm
+              key="delete"
               title={`${user.name} verwijderen?`}
               description="Account en alle sessies worden verwijderd."
               confirmLabel="Verwijder"
               confirmIcon={<Trash2Icon />}
-              onCancel={() => setDeletingId(null)}
+              onCancel={() => setConfirming(null)}
               onConfirm={() => confirmDelete(user)}
             />
-          )
+          ) : (
+            <InlineConfirm
+              key="revoke"
+              title={`${user.name} geen admin meer?`}
+              description="Deze gebruiker verliest de admin-rechten, zoals Beheer en het HQ-scherm."
+              confirmLabel="Geen admin meer"
+              confirmIcon={<ShieldOffIcon />}
+              onCancel={() => setConfirming(null)}
+              onConfirm={() => confirmRevoke(user)}
+            />
+          ))
         }
       >
-        <Pill morphKey={linkDone ? 'done' : linkBusy ? 'busy' : 'idle'} variant={linkDone ? 'success' : 'secondary'} disabled={linkBusy} onClick={() => void recoveryLink(user)}>
+        {/* One herstel-link at a time: every row's pill reads as unavailable while one is made (aria-disabled keeps the focus) */}
+        <Pill
+          morphKey={linkDone ? 'done' : linkBusy ? 'busy' : 'idle'}
+          variant={linkDone ? 'success' : 'secondary'}
+          aria-disabled={linkBusyId !== null || undefined}
+          aria-busy={linkBusy || undefined}
+          className="aria-disabled:cursor-default aria-disabled:opacity-50"
+          onClick={() => void recoveryLink(user)}
+        >
           {linkDone ? (
             <>
               <CheckIcon />
@@ -162,11 +198,16 @@ export default function UsersPane() {
         </Pill>
         {!isMe && (
           <>
-            <Pill onClick={() => void toggleAdmin(user)}>
-              {user.admin ? <ShieldOffIcon /> : <ShieldIcon />}
-              {user.admin ? 'Geen admin meer' : 'Admin maken'}
+            <Pill
+              morphKey={adminBusy.has(user._id) ? 'busy' : user.admin ? 'revoke' : 'grant'}
+              busy={adminBusy.has(user._id)}
+              // Granting is harmless; taking admin away asks first
+              onClick={() => (user.admin ? setConfirming({ id: user._id, kind: 'revoke' }) : void toggleAdmin(user))}
+            >
+              {adminBusy.has(user._id) ? <Loader2Icon className="animate-spin" /> : user.admin ? <ShieldOffIcon /> : <ShieldIcon />}
+              {adminBusy.has(user._id) ? 'Opslaan…' : user.admin ? 'Geen admin meer' : 'Admin maken'}
             </Pill>
-            <Pill variant="danger-outline" onClick={() => setDeletingId(user._id)}>
+            <Pill variant="danger-outline" onClick={() => setConfirming({ id: user._id, kind: 'delete' })}>
               <Trash2Icon />
               Verwijderen
             </Pill>
@@ -185,9 +226,9 @@ export default function UsersPane() {
           </motion.div>
         )}
         {view === 'error' && (
-          <motion.p key="error" className="text-sm text-muted-foreground" {...SWAP}>
-            Kan de gebruikers niet laden.
-          </motion.p>
+          <motion.div key="error" {...SWAP}>
+            <BeheerLoadError message="Kan de gebruikers niet laden." onRetry={retry} />
+          </motion.div>
         )}
         {view === 'content' && (
           <motion.div key="content" className="flex flex-col gap-3.5" {...SWAP}>
@@ -199,13 +240,19 @@ export default function UsersPane() {
                 </BeheerCard>
               )}
             </Reveal>
-            <Reveal gap={CARD_GAP}>
-              {members.length > 0 && (
-                <BeheerCard title="Leden" count={members.length}>
-                  <BeheerRows>{members.map(row)}</BeheerRows>
-                </BeheerCard>
-              )}
-            </Reveal>
+            <BeheerCard title="Leden" count={members.length}>
+              <BeheerRows>
+                {members.map(row)}
+                {members.length === 0 && (
+                  <BeheerRow key="empty" title={<span className="font-normal text-muted-foreground">Nog geen leden.</span>} meta="Nieuwe mensen komen binnen via een invite-link.">
+                    <Pill variant="primary" onClick={() => openDialog('invites')}>
+                      <TicketIcon />
+                      Invite maken
+                    </Pill>
+                  </BeheerRow>
+                )}
+              </BeheerRows>
+            </BeheerCard>
           </motion.div>
         )}
       </AnimatePresence>
@@ -280,7 +327,7 @@ function NameInput({ user, onDone, updateUser }: { user: User; onDone: () => voi
         onChange={(event) => setValue(event.target.value)}
         onKeyDown={onKeyDown}
         onBlur={() => void save()}
-        className="h-7 w-40 rounded-lg border-[1.5px] border-primary bg-card px-2 text-[13.5px] font-semibold outline-none read-only:opacity-60"
+        className="h-7 w-40 rounded-lg border-[1.5px] border-primary-text bg-card px-2 text-base font-semibold desk:text-body outline-none read-only:opacity-60"
       />
       {saving && <Loader2Icon className="size-3.5 animate-spin text-muted-foreground" />}
     </span>

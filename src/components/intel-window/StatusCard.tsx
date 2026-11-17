@@ -1,12 +1,13 @@
-import { type ReactNode, useMemo } from 'react';
+import { memo, type ReactNode, useMemo } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import CountUp from '@/components/motion/CountUp';
 import { useAppConfig } from '@/hooks/app-config.hook';
 import { useNextHint } from '@/hooks/next-hint.hook';
 import { formatClock } from '@/lib/format';
 import { type ChartColumn, chartColumns, formatSolveTime, intelStats, type SlotBar, unreadLabel, unreadTab } from '@/lib/intel-window';
-import { EASE_OUT, LAYOUT_SPRING, SWAP } from '@/lib/motion';
+import { EASE_OUT, LAYOUT_SPRING, SOFT_SPRING, SWAP } from '@/lib/motion';
 
+import { OVERLINE } from '@/lib/menu-styles';
 import { areaOptions, cn } from '@/lib/utils';
 import useIntelStore from '@/stores/intel.store';
 import type { HintCell } from '@/types/HintCell';
@@ -15,7 +16,6 @@ import type { IntelItem } from '@/types/Intel';
 /** A bar swapping between expected (dashed) and published */
 const FADE = { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 }, transition: { duration: 0.22 } };
 
-const LABEL = 'text-[11px] font-extrabold tracking-[0.06em] uppercase';
 const BIG = 'text-[24px] leading-none font-extrabold tracking-[-0.02em] tabular-nums';
 
 /**
@@ -27,16 +27,19 @@ export default function StatusCard({ items, cells, entrance }: { items: IntelIte
   const setTab = useIntelStore((state) => state.setTab);
   const from = entrance ? 0 : undefined;
   const { hints, assignments, unread } = stats;
+  // One countdown (and one interval) for the tile and the chart
+  const next = useNextHint();
+  const nextMs = next.nextAt?.getTime() ?? null;
   return (
     <motion.aside
       initial={entrance ? { opacity: 0, x: 14 } : false}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.4, delay: 0.18, ease: EASE_OUT }}
       aria-label="Status"
-      className="flex w-[340px] shrink-0 flex-col gap-2.5 overflow-y-auto rounded-[24px] bg-card p-4"
+      className="flex w-[340px] shrink-0 flex-col gap-2.5 overflow-y-auto rounded-3xl bg-card p-4"
     >
       <div className="grid grid-cols-2 gap-2">
-        <NextHintTile />
+        <NextHintTile next={next} />
         <Tile label="Hints" onClick={() => setTab('hint')} sub={hints.total ? `${hints.solved} van ${hints.total} opgelost` : 'nog geen hints'}>
           {hints.percent === null ? (
             '—'
@@ -51,13 +54,13 @@ export default function StatusCard({ items, cells, entrance }: { items: IntelIte
         </Tile>
         <Tile label="Opdrachten" onClick={() => setTab('assignment')} sub={assignments.total ? `ingeleverd${assignments.judged ? ` · ${assignments.points} pt verdiend` : ''}` : 'nog geen opdrachten'}>
           <CountUp value={assignments.submitted} from={from} />
-          <span className="text-[15px] text-muted-foreground">/{assignments.total}</span>
+          <span className="text-title text-muted-foreground">/{assignments.total}</span>
         </Tile>
         <Tile label="Ongelezen" onClick={() => setTab(unreadTab(unread))} sub={unreadLabel(unread)}>
           <CountUp value={unread.news + unread.assignment} from={from} />
         </Tile>
       </div>
-      <SolveChart slots={stats.slots} avgSolveMs={stats.avgSolveMs} entrance={entrance} />
+      <SolveChart slots={stats.slots} avgSolveMs={stats.avgSolveMs} nextMs={nextMs} entrance={entrance} />
     </motion.aside>
   );
 }
@@ -68,34 +71,34 @@ function Tile({ label, sub, onClick, children }: { label: string; sub: string; o
     <button
       type="button"
       onClick={onClick}
-      className="flex cursor-pointer flex-col items-start gap-1.5 rounded-[18px] bg-beheer-row p-3 text-left outline-none transition-colors hover:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring/50"
+      className="flex cursor-pointer flex-col items-start gap-1.5 rounded-2xl bg-beheer-row p-3 text-left outline-none transition-colors hover:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring"
     >
-      <span className={cn(LABEL, 'text-muted-foreground')}>{label}</span>
+      <span className={cn(OVERLINE, 'text-muted-foreground')}>{label}</span>
       <span className={BIG}>{children}</span>
-      <span className="text-[11.5px] text-muted-foreground">{sub}</span>
+      <span className="text-label text-muted-foreground">{sub}</span>
     </button>
   );
 }
 
 /** Countdown to the next hint (orange tonal, red-ish under 5 minutes); its message swaps when the state changes */
-function NextHintTile() {
-  const next = useNextHint();
+function NextHintTile({ next }: { next: ReturnType<typeof useNextHint> }) {
   const urgent = next.isUrgent || next.isNewHint;
   const mode = next.isCountdown ? 'countdown' : next.label;
   return (
     <div
       className={cn(
-        'flex flex-col gap-1.5 rounded-[18px] p-3 transition-colors duration-300',
-        urgent ? 'bg-destructive/15 text-destructive dark:text-red-300' : 'bg-primary-container text-orange-800 dark:text-orange-200',
+        'flex flex-col gap-1.5 rounded-2xl p-3 transition-colors duration-300',
+        // M3 tonal pairs, so text keeps its contrast in both themes
+        urgent ? 'bg-fox-error-container text-fox-on-error' : 'bg-primary-container text-on-primary-container',
       )}
     >
-      <span className={LABEL}>Volgende hint</span>
+      <span className={OVERLINE}>Volgende hint</span>
       <AnimatePresence mode="wait" initial={false}>
         <motion.span key={mode} className={cn(BIG, !next.isCountdown && 'text-[18px]')} {...SWAP}>
           {next.label}
         </motion.span>
       </AnimatePresence>
-      <span className="min-h-[1lh] text-[11.5px] opacity-80">{next.nextAt ? `om ${formatClock(next.nextAt)}` : ''}</span>
+      <span className="min-h-[1lh] text-label opacity-80">{next.nextAt ? `om ${formatClock(next.nextAt)}` : ''}</span>
     </div>
   );
 }
@@ -129,9 +132,8 @@ const AREA_COUNT = areaOptions.length;
  * so one hint is never one big block). Expected slots fill the rest as dashed outlines; the next one in orange. Bars
  * grow in on entrance and ease to new heights.
  */
-function SolveChart({ slots, avgSolveMs, entrance }: { slots: SlotBar[]; avgSolveMs: number | null; entrance: boolean }) {
-  const { nextAt } = useNextHint();
-  const nextMs = nextAt?.getTime() ?? null;
+// Memoised: the countdown above re-renders the card every second, the chart only changes with its props
+const SolveChart = memo(function SolveChart({ slots, avgSolveMs, nextMs, entrance }: { slots: SlotBar[]; avgSolveMs: number | null; nextMs: number | null; entrance: boolean }) {
   const { huntEnd } = useAppConfig();
   // The last hint slot of the hunt (as in useNextHint): nothing is expected after it (no limit while the end is unset)
   const lastSlotMs = huntEnd ? new Date(huntEnd).getTime() - 60 * 60 * 1000 : Infinity;
@@ -140,12 +142,12 @@ function SolveChart({ slots, avgSolveMs, entrance }: { slots: SlotBar[]; avgSolv
   const nextColumn = columns.find((column): column is Exclude<ChartColumn, { kind: 'past' }> => column.kind === 'next');
   const side = avgSolveMs !== null ? `gem. ${formatSolveTime(avgSolveMs)} per gebied` : nextColumn ? `volgende om ${nextColumn.hour}:00` : null;
   return (
-    <div className="flex min-h-[200px] flex-1 flex-col rounded-[18px] bg-beheer-row p-3.5">
+    <div className="flex min-h-[200px] flex-1 flex-col rounded-2xl bg-beheer-row p-3.5">
       <div className="flex items-center justify-between gap-2">
-        <span className={cn(LABEL, 'text-muted-foreground')}>Oplos-tempo</span>
+        <span className={cn(OVERLINE, 'text-muted-foreground')}>Oplos-tempo</span>
         <AnimatePresence mode="wait" initial={false}>
           {side && (
-            <motion.span key={side} {...SWAP} className="text-[11.5px] text-muted-foreground">
+            <motion.span key={side} {...SWAP} className="text-label text-muted-foreground">
               {side}
             </motion.span>
           )}
@@ -181,7 +183,7 @@ function SolveChart({ slots, avgSolveMs, entrance }: { slots: SlotBar[]; avgSolv
                       className="flex w-full max-w-6 flex-1 origin-bottom flex-col justify-end gap-0.5"
                       initial={entrance ? { scaleY: 0 } : false}
                       animate={{ scaleY: 1 }}
-                      transition={{ type: 'spring', stiffness: 260, damping: 22, delay: 0.12 + index * 0.045 }}
+                      transition={{ ...SOFT_SPRING, delay: 0.12 + index * 0.045 }}
                     >
                       <AnimatePresence initial={false} mode="popLayout">
                         {past ? (
@@ -203,8 +205,8 @@ function SolveChart({ slots, avgSolveMs, entrance }: { slots: SlotBar[]; avgSolv
                     </motion.div>
                     <span
                       className={cn(
-                        'mt-1.5 text-center text-[11px] tabular-nums transition-colors duration-300',
-                        column.kind === 'next' ? 'font-bold text-primary' : slotTime === newestPast ? 'font-bold text-foreground' : 'text-muted-foreground',
+                        'mt-1.5 text-center text-label tabular-nums transition-colors duration-300',
+                        column.kind === 'next' ? 'font-bold text-primary-text' : slotTime === newestPast ? 'font-bold text-foreground' : 'text-muted-foreground',
                       )}
                     >
                       {hour}
@@ -216,7 +218,7 @@ function SolveChart({ slots, avgSolveMs, entrance }: { slots: SlotBar[]; avgSolv
           </motion.div>
         )}
       </AnimatePresence>
-      <div className="mt-2 flex gap-3.5 text-[11.5px] text-muted-foreground">
+      <div className="mt-2 flex gap-3.5 text-label text-muted-foreground">
         <span className="flex items-center gap-1.5">
           <span className="size-2 rounded-full bg-green-400 dark:bg-green-500/80" aria-hidden />
           opgelost
@@ -232,4 +234,4 @@ function SolveChart({ slots, avgSolveMs, entrance }: { slots: SlotBar[]; avgSolv
       </div>
     </div>
   );
-}
+});

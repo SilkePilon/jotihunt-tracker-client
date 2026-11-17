@@ -3,17 +3,20 @@ import { toast } from 'sonner';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
 import { isUnauthorized } from '@/lib/session';
 import { fetcherWithMethod } from '@/lib/swr';
-import { isRecent, mergeFeed, pickSound, shouldAlert, toastKind, type AppNotification } from '@/lib/notifications';
+import { isRecent, mergeFeed, missedSummary, pickSound, shouldAlert, toastAction, toastDuration, toastKind, type AppNotification } from '@/lib/notifications';
 import { playNotificationSound } from '@/lib/notification-sounds';
+import { hasPushSubscription } from '@/lib/push';
 import { showHighlightToast } from '@/components/notifications/HighlightToast';
 import { useNotificationPrefs } from '@/hooks/notification-prefs.hook';
+import { MOBILE_QUERY } from '@/hooks/media.hook';
 import useSettingsStore from '@/stores/settings.store';
 import { revalidateHappyHour, revalidateTelegramViews } from '@/hooks/telegram.hook';
 
 const POLL_MS = 5000;
 /** Re-ask this far back each poll: a notification can be stored just after a poll read the server time. */
 const OVERLAP_MS = 20_000;
-/** Older notifications were already pushed to the phone (e.g. a backgrounded tab resuming): mark them seen without alerting. */
+/** Older notifications were already pushed to the phone (e.g. a backgrounded tab resuming): mark them seen without alerting
+ * (without a push subscription on this device: one "gemist" summary toast instead). */
 const MAX_ALERT_AGE_MS = 60_000;
 
 interface FeedOptions {
@@ -26,21 +29,23 @@ interface FeedOptions {
   onUnauthorized?: () => void;
   /** Desktop: hint/news toasts get an "Openen" button that opens the article */
   openArticle?: (articleId: number) => void;
+  /** Phone: hint toasts get an "Openen" button that opens the Hints page */
+  openHints?: () => void;
 }
 
 /**
  * Poll the server's notification feed and alert (sound + toast) for new ones. Starts at "now": notifications
  * from before the page loaded are never replayed.
  */
-export function useNotificationFeed({ respectPreferences = true, toasts = true, onPoll, onUnauthorized, openArticle }: FeedOptions = {}) {
+export function useNotificationFeed({ respectPreferences = true, toasts = true, onPoll, onUnauthorized, openArticle, openHints }: FeedOptions = {}) {
   const authHeader = useAuthHeader() || '';
   const { disabledTypes } = useNotificationPrefs();
   const soundMuted = useSettingsStore((state) => state.soundMuted);
 
   // Read inside the interval, so changing a setting doesn't restart polling
-  const latest = useRef({ disabledTypes, soundMuted, respectPreferences, toasts, onPoll, onUnauthorized, openArticle });
+  const latest = useRef({ disabledTypes, soundMuted, respectPreferences, toasts, onPoll, onUnauthorized, openArticle, openHints });
   useEffect(() => {
-    latest.current = { disabledTypes, soundMuted, respectPreferences, toasts, onPoll, onUnauthorized, openArticle };
+    latest.current = { disabledTypes, soundMuted, respectPreferences, toasts, onPoll, onUnauthorized, openArticle, openHints };
   });
 
   useEffect(() => {
@@ -71,18 +76,24 @@ export function useNotificationFeed({ respectPreferences = true, toasts = true, 
         // Same for a happy hour: the pill appears, starts or goes right away
         if (fresh.some((n) => n.type === 'happy-hour')) revalidateHappyHour();
         const options = latest.current;
-        const alertable = fresh.filter((n) => isRecent(n, response.serverTime, MAX_ALERT_AGE_MS) && (!options.respectPreferences || shouldAlert(n.type, options.disabledTypes)));
+        const wanted = fresh.filter((n) => !options.respectPreferences || shouldAlert(n.type, options.disabledTypes));
+        const alertable = wanted.filter((n) => isRecent(n, response.serverTime, MAX_ALERT_AGE_MS));
+        // No push subscription here (permission alone isn't one), so nothing reached this device while the tab slept:
+        // say what was missed, quietly and once
+        if (options.toasts && !hasPushSubscription()) {
+          const missed = missedSummary(wanted.filter((n) => !alertable.includes(n)), options);
+          if (missed) toast.info(missed.title, { id: 'missed-notifications', duration: 15_000, action: missed.action });
+        }
         if (alertable.length === 0) return;
         // One sound per poll, for the most important notification: several at once would play on top of each other
         const sound = pickSound(alertable);
         if (sound && !options.soundMuted) playNotificationSound(sound);
         if (options.toasts) {
           for (const notification of alertable) {
-            const duration = notification.urgent ? 30_000 : 8000;
+            // Phones (the mobile shell): broadcasts and tegenhunts time out instead of covering the map until closed
+            const duration = toastDuration(notification, window.matchMedia(MOBILE_QUERY).matches);
             if (showHighlightToast(notification, duration)) continue;
-            const articleId = notification.data.articleId;
-            const open = options.openArticle;
-            const action = open && articleId !== undefined && (notification.type === 'hint' || notification.type === 'article') ? { label: 'Openen', onClick: () => open(articleId) } : undefined;
+            const action = toastAction(notification, options);
             toast[toastKind(notification)](notification.title, { description: notification.body || undefined, duration, action });
           }
         }

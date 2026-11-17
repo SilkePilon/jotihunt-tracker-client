@@ -1,6 +1,6 @@
 // src/stores/android-promo.store.ts
 import { create } from 'zustand';
-import { laterState, writePromoState } from '@/lib/android-promo';
+import { laterState, readPromoState, writePromoState, type PromoState } from '@/lib/android-promo';
 
 export type PromoStep = 'intro' | 'download' | 'install' | 'pair' | 'done';
 export type PromoClose = 'later' | 'never' | 'paired' | 'dismiss';
@@ -13,6 +13,8 @@ interface AndroidPromoState {
   show: () => void;
   /** Close and remember why: later = 3 days, never/paired = forever, dismiss = nothing stored */
   close: (result: PromoClose) => void;
+  /** "Niet meer tonen" with an undo: closes for good, and returns a function that puts the stored state back and reopens */
+  neverWithUndo: () => () => void;
 }
 
 const useAndroidPromoStore = create<AndroidPromoState>()((set) => ({
@@ -29,6 +31,23 @@ const useAndroidPromoStore = create<AndroidPromoState>()((set) => ({
       // Nothing stored: it may show again next session
     }
     set({ open: false });
+  },
+  neverWithUndo: () => {
+    let previous: PromoState = {};
+    try {
+      previous = readPromoState(localStorage);
+    } catch {
+      // Nothing stored before
+    }
+    useAndroidPromoStore.getState().close('never');
+    return () => {
+      try {
+        writePromoState(localStorage, previous);
+      } catch {
+        // Storage blocked: the popup just shows again now
+      }
+      set({ open: true, step: 'intro' });
+    };
   },
 }));
 

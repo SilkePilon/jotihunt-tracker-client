@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type KeyboardEvent, type MouseEvent, type PointerEvent, type ReactNode } from 'react';
 import { animate, AnimatePresence, motion, useMotionValue, useTransform, type AnimationPlaybackControls } from 'motion/react';
 import { Loader2Icon } from 'lucide-react';
-import { holdProgressAfter, isHoldComplete } from '@/lib/hold';
+import { confirmHaptic } from '@/lib/haptics';
+import { holdProgressAfter, isHoldComplete, isHoldNearlyDone } from '@/lib/hold';
 import { SWAP } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 
@@ -41,7 +42,19 @@ const LABEL_CLASS = 'pointer-events-none relative flex items-center gap-2 [&_*]:
  * lift: `onConfirm` usually opens the passkey prompt, and WebAuthn needs a user activation, which a touch pointerdown
  * is not (iOS WebKit rejects it) but the pointerup is.
  */
-export default function HoldButton({ durationMs = 1000, onConfirm, disabled, busy, busyLabel, releaseLabel = 'Laat los om te bevestigen', children, className, fillClassName, filledLabelClassName, 'aria-label': ariaLabel }: HoldButtonProps) {
+export default function HoldButton({
+  durationMs = 1000,
+  onConfirm,
+  disabled,
+  busy,
+  busyLabel,
+  releaseLabel = 'Laat los om te bevestigen',
+  children,
+  className,
+  fillClassName,
+  filledLabelClassName,
+  'aria-label': ariaLabel,
+}: HoldButtonProps) {
   const fill = useMotionValue(0);
   const filledClip = useTransform(fill, (value) => `inset(0 ${(1 - value) * 100}% 0 0)`);
   const frame = useRef<number | null>(null);
@@ -51,9 +64,13 @@ export default function HoldButton({ durationMs = 1000, onConfirm, disabled, bus
   // The ref decides (event handlers may run before a re-render); the state only swaps the label
   const armedRef = useRef(false);
   const [armed, setArmed] = useState(false);
+  // Screen readers hear once per hold, at ~80%, that it is nearly done (the fill itself is silent)
+  const [nearlyDone, setNearlyDone] = useState(false);
   const blocked = disabled || busy;
+  const hintId = useId();
   // Disabled or busy while armed: drop the "Laat los" label (adjusting state during render, not in an effect)
   if (blocked && armed) setArmed(false);
+  if (blocked && nearlyDone) setNearlyDone(false);
 
   function stopFrame() {
     if (frame.current !== null) cancelAnimationFrame(frame.current);
@@ -61,6 +78,7 @@ export default function HoldButton({ durationMs = 1000, onConfirm, disabled, bus
   }
 
   function drain() {
+    setNearlyDone(false);
     stopFrame();
     release.current?.stop();
     release.current = animate(fill, 0, { duration: RELEASE_S, ease: 'easeOut' });
@@ -79,7 +97,10 @@ export default function HoldButton({ durationMs = 1000, onConfirm, disabled, bus
     const startedAt = performance.now() - fill.get() * durationMs;
     const tick = (now: number) => {
       const elapsed = now - startedAt;
-      fill.set(holdProgressAfter(elapsed, durationMs));
+      const progress = holdProgressAfter(elapsed, durationMs);
+      fill.set(progress);
+      // A state, so setting it again on later frames doesn't re-render or re-announce
+      if (isHoldNearlyDone(progress)) setNearlyDone(true);
       if (isHoldComplete(elapsed, durationMs)) {
         frame.current = null;
         if (pointerType.current === 'touch' || pointerType.current === 'pen') {
@@ -88,7 +109,7 @@ export default function HoldButton({ durationMs = 1000, onConfirm, disabled, bus
           setArmed(true);
           return;
         }
-        onConfirm();
+        confirm();
         // The busy label takes over; the fill drains underneath it, ready for another try
         drain();
         return;
@@ -96,6 +117,12 @@ export default function HoldButton({ durationMs = 1000, onConfirm, disabled, bus
       frame.current = requestAnimationFrame(tick);
     };
     frame.current = requestAnimationFrame(tick);
+  }
+
+  /** The hold went through: a short tick on phones that can vibrate, then the action */
+  function confirm() {
+    confirmHaptic();
+    onConfirm();
   }
 
   /** Let go early, slid off, cancelled by the browser or lost focus: drain and never confirm */
@@ -115,7 +142,7 @@ export default function HoldButton({ durationMs = 1000, onConfirm, disabled, bus
       return;
     }
     disarm();
-    onConfirm();
+    confirm();
     drain();
   }
 
@@ -169,43 +196,67 @@ export default function HoldButton({ durationMs = 1000, onConfirm, disabled, bus
     cancel();
   }
 
+  // Screen readers (VoiceOver/TalkBack double tap, switch access) activate with a synthetic click (detail 0) and can't
+  // hold: let that confirm. Pointer clicks have detail >= 1, and Enter/Space never click (their keydown is prevented).
+  function onClick(event: MouseEvent<HTMLButtonElement>) {
+    if (event.detail === 0 && !blocked) confirm();
+  }
+
   return (
-    <button
-      type="button"
-      aria-label={busy ? undefined : ariaLabel}
-      disabled={blocked}
-      aria-busy={busy || undefined}
-      // vaul would otherwise start dragging the drawer when a held finger wobbles
-      data-vaul-no-drag
-      onPointerDown={onPointerDown}
-      onPointerUp={onPointerUp}
-      onPointerLeave={cancel}
-      onPointerCancel={cancel}
-      onKeyDown={onKeyDown}
-      onKeyUp={onKeyUp}
-      onBlur={cancel}
-      // A long press must not open the context menu or select the label
-      onContextMenu={(event) => event.preventDefault()}
-      className={cn(
-        'relative flex h-12 w-full items-center justify-center overflow-hidden rounded-xl bg-primary-container px-4 text-[14.5px] font-semibold text-on-primary-container outline-none select-none [-webkit-touch-callout:none] transition-[transform,opacity] focus-visible:ring-[3px] focus-visible:ring-ring/50 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-70',
-        className,
-      )}
-    >
-      <motion.span aria-hidden className={cn('pointer-events-none absolute inset-0 origin-left bg-[color-mix(in_oklab,var(--on-primary-container)_16%,transparent)]', fillClassName)} style={{ scaleX: fill }} />
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.span key={labelKey} className={LABEL_CLASS} {...SWAP}>
-          {label}
-        </motion.span>
-      </AnimatePresence>
-      {filledLabelClassName && (
-        <motion.span aria-hidden className={cn('pointer-events-none absolute inset-0 flex items-center justify-center', filledLabelClassName)} style={{ clipPath: filledClip }}>
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.span key={labelKey} className={LABEL_CLASS} {...SWAP}>
-              {label}
-            </motion.span>
-          </AnimatePresence>
-        </motion.span>
-      )}
-    </button>
+    <>
+      <button
+        type="button"
+        aria-label={busy ? undefined : ariaLabel}
+        // Busy keeps the button focusable (disabled would drop focus to <body> mid-flow): aria-disabled, and start()
+        // and onClick refuse while blocked
+        disabled={disabled}
+        aria-disabled={busy || undefined}
+        aria-busy={busy || undefined}
+        aria-describedby={hintId}
+        // vaul would otherwise start dragging the drawer when a held finger wobbles
+        data-vaul-no-drag
+        onPointerDown={onPointerDown}
+        onPointerUp={onPointerUp}
+        onPointerLeave={cancel}
+        onPointerCancel={cancel}
+        onKeyDown={onKeyDown}
+        onKeyUp={onKeyUp}
+        onClick={onClick}
+        onBlur={cancel}
+        // A long press must not open the context menu or select the label
+        onContextMenu={(event) => event.preventDefault()}
+        className={cn(
+          'relative flex h-12 w-full items-center justify-center overflow-hidden rounded-xl bg-primary-container px-4 text-title font-semibold text-on-primary-container outline-none select-none [-webkit-touch-callout:none] transition-[transform,opacity] focus-visible:ring-[3px] focus-visible:ring-ring motion-safe:active:scale-[0.97] disabled:pointer-events-none disabled:opacity-70 aria-disabled:pointer-events-none aria-disabled:opacity-70',
+          className,
+        )}
+      >
+        <motion.span
+          aria-hidden
+          className={cn('pointer-events-none absolute inset-0 origin-left bg-[color-mix(in_oklab,var(--on-primary-container)_16%,transparent)]', fillClassName)}
+          style={{ scaleX: fill }}
+        />
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.span key={labelKey} className={LABEL_CLASS} {...SWAP}>
+            {label}
+          </motion.span>
+        </AnimatePresence>
+        {filledLabelClassName && (
+          <motion.span aria-hidden className={cn('pointer-events-none absolute inset-0 flex items-center justify-center', filledLabelClassName)} style={{ clipPath: filledClip }}>
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.span key={labelKey} className={LABEL_CLASS} {...SWAP}>
+                {label}
+              </motion.span>
+            </AnimatePresence>
+          </motion.span>
+        )}
+      </button>
+      <span role="status" aria-live="polite" className="sr-only">
+        {nearlyDone ? 'Bijna bevestigd, blijf vasthouden' : ''}
+      </span>
+      {/* Description, not part of the name; display:none (hidden) still works for aria-describedby and takes no flex gap */}
+      <span id={hintId} hidden>
+        Houd ingedrukt om te bevestigen
+      </span>
+    </>
   );
 }

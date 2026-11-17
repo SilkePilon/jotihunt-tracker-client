@@ -32,20 +32,30 @@ import {usePredictionSetting} from '@/hooks/predictions.hook';
 import useLayersStore from '../stores/layers.store';
 import useSettingsStore from '../stores/settings.store';
 import useSidebarStore from '@/stores/sidebar.store';
+import useViewportStore from '@/stores/viewport.store';
+import useTopStackStore from '@/stores/top-stack.store';
 import {MapStyle} from '@/types/MapStyle';
-import {getHybridSatelliteStyle, resolveStaticMapStyle} from '@/lib/map-styles';
+import {getHybridSatelliteStyle, resolveStaticMapStyle, themeRasters} from '@/lib/map-styles';
 import {materialMapStyle} from '@/lib/map-style';
+import {mapStyleKey} from '@/lib/map-availability';
 import {useDarkMode} from '@/hooks/utils/darkmode.hook';
 import {useIsMobile} from '@/hooks/media.hook';
 import PickedLocationPopup from './map/PickedLocationPopup';
 import OrbitControls from './map/OrbitControls';
 import MapLayersControl from './map/MapLayersControl';
+import {MapRotationTracker, ResetNorthControl} from './map/ResetNorth';
+import {keepFocusAfterReset, resetNorth} from '@/lib/reset-north';
 import {ORBIT_MAX_PITCH} from '@/lib/orbit';
 import {FullscreenControl} from "react-map-gl/maplibre";
 import '@mapbox-controls/ruler/src/index.css';
 import Ruler from "@/components/map/RulerControl.tsx";
+import {MAP_LOCALE_NL} from "@/lib/map-locale";
 import type {SymbolLayerSpecification} from '@maplibre/maplibre-gl-style-spec';
 import {DEFAULT_VIEW} from '@/lib/map-view';
+import {loadSavedView, saveView} from '@/lib/continuity';
+import {phoneMapPadding} from '@/lib/sheet-snaps';
+import {currentPhonePadding, setPaddingInPlace} from '@/lib/dock-camera';
+import {isMapPopupOpen} from '@/lib/open-popups';
 import {FASTFOOD_LAYER, FOX_MARKERS_LAYER, HUNTER_ARROWS_LAYER, HUNTERS_LAYER, LIFE360_LAYER, TEAM_PINS_LAYER, TRAILS_HIT_LAYER} from '@/lib/map-layers';
 import LayerStack from './layers/LayerStack';
 import MarkerImages from './layers/MarkerImages';
@@ -56,10 +66,19 @@ import {useAppConfig} from '@/hooks/app-config.hook';
 import {tourTarget} from '@/components/tour/targets';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import {AnimatePresence} from 'motion/react';
+import {cn} from '@/lib/utils';
 import type {User} from '@/types/User';
 import {useNightDraw} from '@/stores/night-draw.store';
 import NightAreaDraw from './layers/trails/NightAreaDraw';
 import NightAreasLayer from './layers/trails/NightAreasLayer';
+import MapUnavailableCard from './map/MapUnavailableCard';
+import BrowserLocationDot from './map/BrowserLocationDot';
+import FollowMe from './map/FollowMe';
+import useFollowMeStore from '@/stores/follow-me.store';
+import {featureNear, openLayerFeature, type OpenFeatureOptions} from './layers/map-interactions';
+import {useMapAvailability} from './map/useMapAvailability';
+import KeyboardLocationPick from './map/KeyboardLocationPick';
+import {requestPopupFocus} from '@/lib/popup-focus';
 
 // MapLibre resolves its worker relative to its own module, which bundlers don't emit;
 // let Vite bundle the worker and hand MapLibre the resulting URL. Here, not in main.tsx, so the
@@ -75,10 +94,36 @@ export interface MapRef {
     /** False while the map isn't created yet (react-map-gl fills its ref after the first render). */
     fitBounds(bounds: FitBoundsArgs[0], options?: FitBoundsArgs[1]): boolean;
 
-    markPoint(lngLat: LngLat): void;
+    /** Open the "Gekozen locatie" card at a point. `focus`: the card takes focus (pass it for keyboard activations, see activatedByKeyboard). */
+    markPoint(lngLat: LngLat, options?: {focus?: boolean}): void;
+
+    /**
+     * Open the popup of a canvas marker layer's feature (by its `id` property), the same popup a click opens: for
+     * lists that fly the map to a marker. False when the layer is hidden or has no such feature. `focus`: the popup
+     * takes focus (pass it for keyboard activations, see activatedByKeyboard).
+     */
+    openFeature(layer: string, id: string | number, options?: OpenFeatureOptions): boolean;
+
+    /**
+     * Move keyboard focus onto the map canvas (the desktop skip link); false (focus untouched) while the map isn't
+     * created yet or can't show (MapUnavailableCard).
+     */
+    focusCanvas(): boolean;
 
     /** The map's centre; null while the map isn't created yet. */
     getCenter(): LngLat | null;
+
+    /** The current zoom level; null while the map isn't created yet. */
+    getZoom(): number | null;
+
+    /**
+     * Back to north-up and flat (the phone dock's reset tile). `from`: the pressed button; when it had keyboard focus the
+     * map takes it, as the tile folds away.
+     */
+    resetNorth(from?: HTMLElement): void;
+
+    /** One zoom level in (+1) or out (-1), eased; MapLibre jumps instead under reduced motion (the phone zoom tiles). */
+    zoomBy(delta: number): void;
 }
 
 interface MapProps {
@@ -114,11 +159,15 @@ const RULER_LABEL_PAINT = {'text-color': '#fff', 'text-halo-color': RULER_COLOR,
 // Clicks on these canvas layers open their own popup instead of the location popup
 const INTERACTIVE_LAYER_IDS = [FOX_MARKERS_LAYER, TEAM_PINS_LAYER, HUNTERS_LAYER, HUNTER_ARROWS_LAYER, LIFE360_LAYER, FASTFOOD_LAYER, TRAILS_HIT_LAYER];
 
-/** Bottom map padding for the phone sheet's current snap (undefined on desktop, the HQ wall, or before the sheet measured) */
-function phonePaddingFor(wall: boolean): number | undefined {
-    const {sheetSnapHeights, sheetSnap} = useSidebarStore.getState();
-    return wall || !sheetSnapHeights ? undefined : sheetSnapHeights[sheetSnap];
+/**
+ * Map padding for the phone sheet's current snap and a docked card (undefined on desktop, the HQ wall, or before the
+ * sheet measured)
+ */
+function phonePaddingFor(wall: boolean) {
+    return wall ? undefined : currentPhonePadding();
 }
+
+const NO_PADDING = {top: 0, right: 0, bottom: 0, left: 0};
 
 // Memoized: Layout re-renders often and the map's props (ref, the HQ wall's memoized overlay) rarely change
 const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay}, ref) => {
@@ -130,27 +179,55 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
 
     // Make map fly available to other components
     const mapRef = useRef<MaplibreRef>(null);
+    // Another part of the app moving the camera ("show on map", a list row) ends "Mijn locatie" following, or the next
+    // own fix would pull the map straight back (MyLocationButton starts following after its own flight)
+    const stopFollowing = () => useFollowMeStore.getState().stop();
     useImperativeHandle(ref, () => ({
         flyTo: (options: FlyToOpts) => {
+            stopFollowing();
             if (mapRef.current) {
                 // Phones: fly with the padding of the snap the sheet is heading to (a caller lowering the sheet sets the
                 // snap first), so the point lands above the sheet and the padding effect has nothing left to ease
-                const bottom = phonePaddingFor(wall);
-                mapRef.current.flyTo(bottom === undefined || options.padding !== undefined ? options : {...options, padding: {top: 0, left: 0, right: 0, bottom}});
+                const padding = phonePaddingFor(wall);
+                mapRef.current.flyTo(padding === undefined || options.padding !== undefined ? options : {...options, padding});
             }
         },
         fitBounds: (bounds, options) => {
             if (!mapRef.current) return false;
+            stopFollowing();
             mapRef.current.fitBounds(bounds, options);
             return true;
         },
-        markPoint: (lngLat: LngLat) => {
+        markPoint: (lngLat: LngLat, options?: {focus?: boolean}) => {
             // No location popup while a night area is being drawn
             if (mapRef.current && !drawing) {
+                if (options?.focus) requestPopupFocus();
                 setPopupPosition(lngLat);
             }
         },
+        openFeature: (layer: string, id: string | number, options?: OpenFeatureOptions) => {
+            const map = mapRef.current?.getMap();
+            return !!map && !wall && openLayerFeature(map, layer, id, options);
+        },
+        focusCanvas: () => {
+            const canvas = availability.unavailable ? undefined : mapRef.current?.getMap().getCanvas();
+            canvas?.focus();
+            return !!canvas;
+        },
         getCenter: () => mapRef.current?.getCenter() ?? null,
+        getZoom: () => mapRef.current?.getZoom() ?? null,
+        resetNorth: (from?: HTMLElement) => {
+            const map = mapRef.current?.getMap();
+            if (!map) return;
+            if (from) keepFocusAfterReset(from, map);
+            resetNorth(map);
+        },
+        zoomBy: (delta: number) => {
+            const map = mapRef.current?.getMap();
+            if (!map) return;
+            if (delta > 0) map.zoomIn({duration: 250});
+            else map.zoomOut({duration: 250});
+        },
     }));
 
     // Store for all layers
@@ -191,16 +268,36 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
     const mapStyle = useSettingsStore((state) => state.mapStyle);
     const isDarkMode = useDarkMode();
     const isMobile = useIsMobile();
-    // Phones: the bottom sheet covers the lower part of the map; padding keeps every flyTo/easeTo centre above it
+    // Phones: the bottom sheet covers the lower part of the map; padding keeps every flyTo/easeTo centre above it, and
+    // above the card docked on the sheet while one is open (so the point it belongs to isn't under it)
     const sheetHeight = useSidebarStore((state) => state.sheetHeight);
-    const bottomPadding = isMobile && !wall ? sheetHeight : 0;
+    const dockCardHeight = useSidebarStore((state) => state.dockCardHeight);
+    // Phones held sideways: the sheet is a left column (BottomSheet), the left pads for it instead of the bottom
+    const sheetSide = useSidebarStore((state) => state.sheetSide);
+    const safeBottom = useViewportStore((state) => state.safeBottom);
+    // Phones: the offline badge or the drawing toolbar at the top centre can reach the corners; the scale bar fades out
+    // under them (index.css, data-top-stack)
+    const topStackShown = useTopStackStore((state) => state.heights.badge > 0 || state.heights.toolbar > 0);
+    const {bottom: bottomPadding, left: leftPadding} = isMobile && !wall ? phoneMapPadding({sheet: sheetHeight, card: dockCardHeight, mapHeight: window.innerHeight, sheetSide, safeBottom}) : NO_PADDING;
+    // The sheet the padding was last applied for: a sheet move eases, a docked card coming or going doesn't move the view
+    const sheetKey = `${sheetHeight}:${sheetSide}`;
+    const paddedSheet = useRef(sheetKey);
     useEffect(() => {
         const map = mapRef.current?.getMap();
         if (!map) return;
+        const padding = {top: 0, right: 0, bottom: bottomPadding, left: leftPadding};
         const apply = () => {
-            // Nothing to do (desktop/HQ on mount, or a flyTo that already carried this padding)
-            if (map.getPadding().bottom === bottomPadding) return;
-            map.easeTo({padding: {top: 0, left: 0, right: 0, bottom: bottomPadding}, duration: 300});
+            // Read and set when it is applied, not when deferred: a second change before moveend (the first apply
+            // dropped) still sees the sheet as moved and eases
+            const sheetMoved = paddedSheet.current !== sheetKey;
+            paddedSheet.current = sheetKey;
+            // Nothing to do (desktop/HQ on mount, or a camera move that already carried this padding)
+            const current = map.getPadding();
+            if (current.bottom === bottomPadding && current.left === leftPadding) return;
+            // The sheet moved: ease, so the centre stays in view above it. A docked card opened, closed or resized:
+            // pad for it without shifting what is on screen
+            if (sheetMoved) map.easeTo({padding, duration: 300});
+            else setPaddingInPlace(map, padding);
         };
         // easeTo stops a running camera move: a "show on map" that lowers the sheet would be cancelled. Pad once it lands.
         if (map.isMoving()) {
@@ -210,7 +307,7 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
             };
         }
         apply();
-    }, [bottomPadding]);
+    }, [bottomPadding, leftPadding, sheetKey]);
     // Own position like the Android app's: the vehicle of our own tracker (a person without one)
     const {status: tracker} = useTrackerStatus();
     const markerPalette = useMarkerPalette();
@@ -225,11 +322,17 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
     // The satellite style starts out raster-only, then upgrades to the hybrid (labels on top) style once the
     // OpenFreeMap liberty style JSON has been fetched.
     const staticStyle = useMemo(
-        () => (mapStyle ? resolveStaticMapStyle(mapStyle) : materialMapStyle(isDarkMode)),
+        () => (mapStyle ? resolveStaticMapStyle(mapStyle, isDarkMode) : materialMapStyle(isDarkMode)),
         [mapStyle, isDarkMode],
     );
     const [hybridSatellite, setHybridSatellite] = useState<StyleSpecification>();
-    const resolvedMapStyle = mapStyle === MapStyle.Satellite && hybridSatellite ? hybridSatellite : staticStyle;
+    // Dark theme: the aerial photos toned down a little (a paint-only diff on a theme switch)
+    const themedHybrid = useMemo(() => hybridSatellite && themeRasters(hybridSatellite, isDarkMode), [hybridSatellite, isDarkMode]);
+    const resolvedMapStyle = mapStyle === MapStyle.Satellite && themedHybrid ? themedHybrid : staticStyle;
+    // The style's own sources, to tell a base-map failure from an overlay's (null for a style URL: any source counts)
+    const baseSourceIds = useMemo(() => (typeof resolvedMapStyle === 'string' ? null : new Set(Object.keys(resolvedMapStyle.sources))), [resolvedMapStyle]);
+    const styleKey = useMemo(() => mapStyleKey(resolvedMapStyle), [resolvedMapStyle]);
+    const availability = useMapAvailability(baseSourceIds, styleKey);
 
     useEffect(() => {
         if (mapStyle !== MapStyle.Satellite) return;
@@ -242,23 +345,58 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
         };
     }, [mapStyle]);
 
+    // Session continuity: a reload within 2 h comes back to the last view (never on the HQ wall, which directs itself)
+    const [initialView] = useState(() => (wall ? DEFAULT_VIEW : (loadSavedView() ?? DEFAULT_VIEW)));
+    const saveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+    const rememberView = useCallback((event: {target: MaplibreMap}) => {
+        if (wall) return;
+        clearTimeout(saveTimer.current);
+        // Debounced: a fling or a flyTo chain ends in several moveends
+        saveTimer.current = setTimeout(() => {
+            const map = event.target;
+            const {lng, lat} = map.getCenter();
+            saveView({longitude: lng, latitude: lat, zoom: map.getZoom(), bearing: map.getBearing(), pitch: map.getPitch()});
+        }, 800);
+    }, [wall]);
+    useEffect(() => () => clearTimeout(saveTimer.current), []);
+
+    // Whether a map popup (marker, hunter, ... card) was open when this tap started: that tap only closes it
+    const popupOpenAtPress = useRef(false);
+
     /**
      * Open the current location popup when the map is clicked.
      */
     function openPopup(e: MapLayerMouseEvent) {
-        if (popupPosition || rulerActive || drawing || e.features?.length) return;
+        // A tap that closes an open card doesn't pick a location as well; the next one does
+        const closingPopup = popupOpenAtPress.current || isMapPopupOpen();
+        popupOpenAtPress.current = false;
+        // A tap next to a marker (within the hit tolerance) opens that marker's popup, not this one
+        if (popupPosition || closingPopup || rulerActive || drawing || e.features?.length || featureNear(e.target, e.point, INTERACTIVE_LAYER_IDS)) return;
 
         setPopupPosition(e.lngLat);
     }
 
+    // Enter on the focused map (KeyboardLocationPick): the keyboard's map tap, its card takes focus
+    const pickWithKeyboard = useCallback((lngLat: LngLat) => {
+        requestPopupFocus();
+        setPopupPosition(lngLat);
+    }, []);
+
     return (
-        <div className={className ?? "w-dvw h-dvh"} style={wrapperStyle} {...tourTarget('map')}>
+        <div className={cn('relative', className ?? "w-dvw h-dvh")} style={wrapperStyle} {...tourTarget('map')}
+             data-top-stack={isMobile && !wall && topStackShown ? '' : undefined}
+             onPointerDownCapture={() => {
+                 popupOpenAtPress.current = isMapPopupOpen();
+             }}>
             <Maplibre
                 ref={mapRef}
                 reuseMaps
-                initialViewState={DEFAULT_VIEW}
+                initialViewState={initialView}
+                onMoveEnd={wall ? undefined : rememberView}
                 style={{width: '100%', height: '100%'}}
                 attributionControl={false}
+                // Dutch labels for MapLibre's own control buttons (screen readers read their names)
+                locale={MAP_LOCALE_NL}
                 mapStyle={resolvedMapStyle}
                 maxBounds={maxBounds}
                 maxPitch={ORBIT_MAX_PITCH}
@@ -268,17 +406,21 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
                 // No symbol fade: every tracker poll moves the hunter icons, which then faded in again (about 20 extra
                 // full map repaints per poll); the HTML markers they replace moved instantly
                 fadeDuration={0}
+                onError={availability.onError}
+                onSourceData={availability.onSourceData}
                 // Phones and the HQ wall: start with the credits collapsed to the (i) button; MapLibre opens them on load
                 onLoad={(event) => {
                     if (isMobile || wall) event.target.getContainer().querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show');
-                    event.target.setPadding({top: 0, left: 0, right: 0, bottom: bottomPadding});
+                    event.target.setPadding({top: 0, right: 0, bottom: bottomPadding, left: leftPadding});
                 }}
             >
                 <div className="bg-background">
                     {/* Credits on the right: bottom-right on desktop; on phones top-right, above the bottom sheet; on the HQ wall top-right, above the event card. */}
                     <AttributionControl position={isMobile || wall ? 'top-right' : 'bottom-right'} customAttribution={groupName ? `Jotihunt Tracker | ${groupName}` : 'Jotihunt Tracker'} compact={true}/>
                 </div>
-                {/* Phones: no map controls, the map is navigated by touch and the bottom sheet needs the room */}
+                {/* Phones: only the scale bar, top-left level with the credits button (index.css); no other MapLibre controls
+                    (touch navigation, the sheet needs the room); MyLocationButton floats above the sheet */}
+                {isMobile && !wall && <ScaleControl position="top-left" maxWidth={80}/>}
                 {!isMobile && !wall && (
                     <>
                         <ScaleControl/>
@@ -291,6 +433,8 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
                         <FullscreenControl position="bottom-right"/>
                         <GeolocateControl position="bottom-right"/>
                         <NavigationControl position="bottom-right" showCompass={false}/>
+                        {/* Pops in above zoom while the map is turned or tilted */}
+                        <ResetNorthControl position="bottom-right"/>
                         <MapLayersControl position="bottom-right"/>
                     </>
                 )}
@@ -298,6 +442,9 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
                 <MarkerImages/>
                 {/* Desktop mouse: calm rotate/tilt around the pointer (phones keep MapLibre's touch gestures) */}
                 <OrbitControls enabled={!isMobile && !wall}/>
+                {/* Turned or tilted (touch twist, orbit, 3D tilt): the reset-north tile shows (desktop stack, phone dock) */}
+                {!wall && <MapRotationTracker/>}
+                {!wall && <KeyboardLocationPick enabled={!rulerActive && !drawing} onPick={pickWithKeyboard}/>}
                 {popupPosition && !wall && <PickedLocationPopup key={`${popupPosition.lng},${popupPosition.lat}`} lng={popupPosition.lng} lat={popupPosition.lat}
                                                        onClose={() => setPopupPosition(undefined)}/>}
                 <Buildings3D visible={showBuildings3d}/>
@@ -312,11 +459,19 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
                 <HomeCircle showCircle={showHomeCircle}/>
                 {!wall && <HuntFocus/>}
                 {!wall && <HintGuess/>}
+                {/* Phones: own position from the browser after a "Mijn locatie" tap (the desktop has MapLibre's geolocate) */}
+                {isMobile && !wall && <BrowserLocationDot/>}
+                {/* Phones: "Mijn locatie" keeps the map on the own position until the map is moved by hand */}
+                {isMobile && !wall && <FollowMe/>}
                 {isAdmin && <NightAreasLayer/>}
                 <AnimatePresence>{drawing && <NightAreaDraw key="draw"/>}</AnimatePresence>
                 <LayerStack/>
                 {overlay}
             </Maplibre>
+            {/* Style or tiles failed (offline cold start, tile server down): say so instead of a blank map */}
+            <div className="pointer-events-none absolute inset-x-4 top-[30%] z-10 flex justify-center">
+                <AnimatePresence>{availability.unavailable && <MapUnavailableCard key="unavailable"/>}</AnimatePresence>
+            </div>
         </div>
     );
 }));

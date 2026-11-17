@@ -1,5 +1,5 @@
 import NotificationSoundsPanel from './panels/NotificationSoundsPanel';
-import { flyToOverview, openSettings, resetToMenu, scrollSidebarToTop, sheetSnap, showSection } from './actions';
+import { flyToOverview, openSettings, pointAtSection, resetToMenu, scrollSidebarToTop, sheetSnap, showSection } from './actions';
 import type { TourStep } from './types';
 
 /**
@@ -9,51 +9,92 @@ import type { TourStep } from './types';
 export const TOUR_VERSION = 1;
 
 /**
+ * Ends a step whose spotlight invites a tap: that tap only moves the tour on (the real action is for later, "Straks …").
+ * Phone-only steps say "tik"; steps on both platforms "tik of klik".
+ */
+export const TAP_TO_CONTINUE = 'Tik nu op het uitgelichte deel of druk op Volgende om verder te gaan.';
+export const TAP_OR_CLICK_TO_CONTINUE = 'Tik of klik nu op het uitgelichte deel of druk op Volgende om verder te gaan.';
+
+/**
  * The onboarding tour, in order. To add a step: add its target id to targets.ts, put {...tourTarget(id)}
  * on the element, and add an entry here. New UI interactions go in actions.ts.
- * On phones every sidebar step first pulls the sheet up so the section is visible.
+ * Phones get a short tour (~10 steps): the peek strip and the menu first (its copy names the sections that are
+ * laptop-only steps: hints, predictions, counter-hunt, tracker); a section step then points at its menu row, and only
+ * Hint registreren and Hunts push their page (showSection). Every sidebar step first pulls the sheet up so the section is visible.
+ * Steps that point at a sidebar section are shown in the order the platform shows the sections (laptop sidebar or
+ * phone menu, see stepsForPlatform); here they follow the laptop sidebar.
  */
 export const TOUR_STEPS: TourStep[] = [
   {
     id: 'welcome',
     target: null,
     title: 'Welkom bij de Jotihunt Tracker!',
-    body: 'In een paar stappen laten we zien hoe de app werkt. De rondleiding loopt vanzelf door; met de knoppen ga je sneller of terug.',
+    body: 'In een paar stappen laten we zien hoe de app werkt. Klik op Volgende om te beginnen; daarna loopt de rondleiding vanzelf door. Klik je zelf ergens op, dan ga je verder met Volgende of door op het uitgelichte deel te klikken.',
+    bodyMobile: 'In een paar stappen laten we zien hoe de app werkt. Tik op Volgende om te beginnen; daarna loopt de rondleiding vanzelf door. Raak je zelf iets aan, dan ga je verder met Volgende of door op het uitgelichte deel te tikken.',
+    waitsForUser: true,
   },
   {
     id: 'map',
     target: 'map',
     title: 'De kaart',
-    body: 'Hier zie je de deelnemende groepen, de vossen per deelgebied en waar onze hunters rijden. Tik of klik op de kaart om de coördinaten van die plek te zien.',
+    body: `Hier zie je de deelnemende groepen, de vossen per deelgebied en waar onze hunters rijden. Straks tik of klik je op de kaart om de coördinaten van een plek te zien en daar een hunt of spot te registreren. ${TAP_OR_CLICK_TO_CONTINUE}`,
+    bodyMobile: `Hier zie je de deelnemende groepen, de vossen per deelgebied en waar onze hunters rijden. Straks tik je op de kaart om de coördinaten van een plek te zien en daar een hunt of spot te registreren. Om een hunt te markeren waar je staat, tik je op Mijn locatie en dan op Hunt hier. ${TAP_TO_CONTINUE}`,
     actions: [sheetSnap('peek'), flyToOverview()],
+  },
+  {
+    id: 'peek',
+    target: 'mobile.peek',
+    title: 'Altijd in beeld',
+    body: `Onderin zie je altijd hoe je eigen tracker ervoor staat en hoe de vossen ervoor staan. Straks tik je op een van de twee om meer te zien. ${TAP_TO_CONTINUE}`,
+    actions: [resetToMenu(), sheetSnap('peek')],
+    only: 'mobile',
+  },
+  {
+    id: 'menu',
+    target: 'sidebar.root',
+    title: 'Het menu',
+    // The hints, predictions, counter-hunt and tracker steps are laptop-only (a short phone tour): named here instead
+    body: `Schuif het paneel omhoog voor het menu: alles wat je nodig hebt staat hier, ook de hints, de AI-voorspelling, een tegenhunt bij ons clubhuis en je eigen tracker. Straks tik je op een regel om dat onderdeel te openen; met "Menu" bovenaan ga je terug. ${TAP_TO_CONTINUE}`,
+    actions: [resetToMenu(), sheetSnap('half'), scrollSidebarToTop()],
+    only: 'mobile',
   },
   {
     id: 'sidebar',
     target: 'sidebar.root',
     title: 'Het zijpaneel',
-    body: 'Alles wat je nodig hebt staat in dit paneel. Elk blok klapt open en dicht. Op je telefoon schuif je het paneel omhoog en omlaag.',
-    actions: [sheetSnap('half')],
+    body: 'Alles wat je nodig hebt staat in dit paneel. Elk blok klapt open en dicht.',
+    only: 'desktop',
   },
   {
     id: 'foxes',
-    target: 'sidebar.foxes',
+    target: { desktop: 'sidebar.foxes', mobile: 'menu.foxes' },
     title: 'Vossen',
-    body: 'De status van elk deelgebied: rood, oranje of groen. Tik op een vos voor zijn laatste 3 uur; daar kun je hem ook op de kaart verbergen.',
-    actions: [sheetSnap('full'), showSection('foxes')],
-  },
-  {
-    id: 'hunts',
-    target: 'sidebar.hunts',
-    title: 'Hunts',
-    body: 'Hunts komen vanzelf binnen van jotihunt.nl. Je ziet hier of ze goedgekeurd zijn; tik op een regel om hem op de kaart te zien.',
-    actions: [sheetSnap('full'), showSection('hunts')],
+    body: `De status van elk deelgebied in kleur: groen = actief, oranje = onderweg, rood = inactief, blauw = cooldown na een hunt en paars = met het OV. Straks tik of klik je op een vos voor zijn laatste 3 uur; daar kun je hem ook op de kaart verbergen. ${TAP_OR_CLICK_TO_CONTINUE}`,
+    actions: [sheetSnap('full'), pointAtSection('foxes')],
   },
   {
     id: 'hints',
     target: 'sidebar.hints',
     title: 'Hints',
-    body: 'De laatste hints per deelgebied in één oogopslag: groen is opgelost, grijs staat nog open. Op een laptop open je met "Open hints" het venster met alle hints, opdrachten en nieuws.',
-    actions: [sheetSnap('full'), showSection('hints')],
+    body: 'De laatste hints per deelgebied in één oogopslag: groen is opgelost, grijs staat nog open. Met "Open Intel" open je het venster met alle hints, opdrachten en nieuws.',
+    actions: [pointAtSection('hints')],
+    only: 'desktop',
+  },
+  {
+    id: 'hunts',
+    target: 'sidebar.hunts',
+    title: 'Hunts',
+    body: `Hunts komen vanzelf binnen van jotihunt.nl. Je ziet hier of ze goedgekeurd zijn; straks tik of klik je op een regel om hem op de kaart te zien. ${TAP_OR_CLICK_TO_CONTINUE}`,
+    actions: [sheetSnap('full'), showSection('hunts')],
+  },
+  {
+    id: 'predictions',
+    target: 'sidebar.predictions',
+    title: 'Voorspelling',
+    body: `Een AI-voorspelling van waar de vossen waarschijnlijk zijn. Straks tik of klik je op een voorspelling om ernaartoe te gaan op de kaart. ${TAP_OR_CLICK_TO_CONTINUE}`,
+    actions: [pointAtSection('predictions')],
+    optional: true,
+    only: 'desktop',
   },
   {
     id: 'hint-entry',
@@ -63,27 +104,21 @@ export const TOUR_STEPS: TourStep[] = [
     actions: [sheetSnap('full'), showSection('hintEntry')],
   },
   {
-    id: 'predictions',
-    target: 'sidebar.predictions',
-    title: 'Voorspelling',
-    body: 'Een AI-voorspelling van waar de vossen waarschijnlijk zijn. Tik op een voorspelling om ernaartoe te gaan op de kaart.',
-    actions: [sheetSnap('full'), showSection('predictions')],
-    optional: true,
-  },
-  {
     id: 'counter-hunt',
     target: 'sidebar.counterHunt',
     title: 'Tegenhunt',
     body: 'Wordt ons clubhuis gehunt? Dan zie je hier automatisch uit welke richting, en op de kaart.',
-    actions: [sheetSnap('full'), showSection('counterHunt')],
+    actions: [pointAtSection('counterHunt')],
     optional: true,
+    only: 'desktop',
   },
   {
     id: 'tracker',
     target: 'sidebar.tracking',
     title: 'Mijn tracker',
     body: 'Koppel je telefoon als GPS-tracker, zodat iedereen ziet waar je bent. Kies hier ook of je loopt, fietst of rijdt.',
-    actions: [sheetSnap('full'), showSection('tracking')],
+    actions: [pointAtSection('tracking')],
+    only: 'desktop',
   },
   {
     id: 'map-tools',
@@ -95,7 +130,7 @@ export const TOUR_STEPS: TourStep[] = [
   {
     id: 'map-layers',
     target: 'map.layersButton',
-    title: 'Kaartstijl en lagen',
+    title: 'Kaart & lagen',
     body: 'Wissel hier tussen kaartstijlen zoals satelliet, en zet lagen als groepen, markers en 3D-gebouwen aan of uit.',
     only: 'desktop',
   },
@@ -111,6 +146,7 @@ export const TOUR_STEPS: TourStep[] = [
     target: 'tour.panel',
     title: 'Meldingen en geluiden',
     body: 'Bij elke soort melding hoort een eigen geluid. Speel ze hier af, zodat je onderweg zonder te kijken weet wat er gebeurt. Welke meldingen je krijgt, kies je in Instellingen → Meldingen. Klik op Volgende als je klaar bent.',
+    bodyMobile: 'Bij elke soort melding hoort een eigen geluid. Speel ze hier af, zodat je onderweg zonder te kijken weet wat er gebeurt. Welke meldingen je krijgt, kies je in Instellingen → Meldingen. Tik op Volgende als je klaar bent.',
     actions: [sheetSnap('peek')],
     panel: NotificationSoundsPanel,
   },

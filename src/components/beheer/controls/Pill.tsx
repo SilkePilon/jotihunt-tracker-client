@@ -2,27 +2,36 @@ import type { ComponentProps, ReactNode } from 'react';
 import { AnimatePresence, motion, type HTMLMotionProps } from 'motion/react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { SWAP_TRANSITION } from '@/lib/motion';
+import { COARSE_HIT_AREA } from '@/lib/hit-area';
+import { TONAL_HOVER } from '@/lib/tonal-button';
 import { cn } from '@/lib/utils';
 
+// Both sizes are under 44px: COARSE_HIT_AREA grows the touch area on phones (give the row/card `isolate`)
 const pill = cva(
-  "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg font-semibold whitespace-nowrap outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  [
+    COARSE_HIT_AREA,
+    "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg font-semibold whitespace-nowrap outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  ],
   {
     variants: {
       variant: {
         primary: 'bg-primary-container text-on-primary-container hover:bg-[color-mix(in_oklab,var(--on-primary-container)_10%,var(--primary-container))]',
-        secondary: 'bg-beheer-row-high text-foreground hover:bg-beheer-row-high/70',
+        secondary: `bg-beheer-row-high text-foreground ${TONAL_HOVER}`,
         ghost: 'text-muted-foreground hover:bg-beheer-row-high hover:text-foreground',
-        'danger-soft': 'bg-destructive/15 text-destructive hover:bg-destructive/20 dark:text-red-300',
+        'danger-soft': 'bg-destructive/15 text-destructive-text hover:bg-destructive/20',
         'danger-outline':
-          'text-destructive shadow-[inset_0_0_0_1.5px_color-mix(in_oklab,var(--destructive)_60%,transparent)] hover:bg-destructive/10 dark:text-red-300',
-        danger: 'bg-destructive text-white hover:bg-destructive/90',
-        success: 'bg-green-500/20 text-green-700 dark:text-green-300',
-        warn: 'bg-amber-700 text-white hover:bg-amber-700/90',
-        whatsapp: 'bg-[#25D366]/15 text-[#128C7E] hover:bg-[#25D366]/25 dark:text-[#4ade80]',
+          'text-destructive-text shadow-[inset_0_0_0_1.5px_color-mix(in_oklab,var(--destructive)_60%,transparent)] hover:bg-destructive/10',
+        // White on --destructive-fill (4.8:1 light, 8.7:1 dark); hover darkens instead of /90, which lightened it to 4.3:1
+        danger: 'bg-destructive-fill text-white hover:bg-[color-mix(in_oklab,var(--destructive-fill)_88%,black)]',
+        success: 'bg-green-500/15 text-status-ok-text',
+        // The warning-text colour as a fill: white on #92400e (7.1:1); dark mode the card colour on #fcd34d (11:1)
+        warn: 'bg-status-warn-text text-card hover:bg-status-warn-text/90',
+        // teal-800 / green-800: >= 4.5:1 on their tinted fills in light mode (green-700 and WhatsApp's #128C7E were below)
+        whatsapp: 'bg-[#25D366]/15 text-teal-800 hover:bg-[#25D366]/25 dark:text-[#4ade80]',
       },
       size: {
-        sm: 'h-8 px-3 text-[12.5px]',
-        md: 'h-9 px-4 text-[13px]',
+        sm: 'h-8 px-3 text-caption',
+        md: 'h-9 px-4 text-body',
       },
     },
     defaultVariants: { variant: 'secondary', size: 'sm' },
@@ -37,13 +46,23 @@ type PillProps = Omit<HTMLMotionProps<'button'>, 'children'> &
      * eases to its new width. Leave undefined for a pill whose label never changes.
      */
     morphKey?: string;
+    /**
+     * Working on it (saving, sending): looks disabled and ignores clicks, but stays focusable (aria-disabled), so a
+     * keyboard or screen-reader user keeps their place. Use `disabled` only for a pill that can't be used at all.
+     */
+    busy?: boolean;
   };
 
-/** Beheer's text button: a full pill. */
-export function Pill({ variant, size, className, children, morphKey, style, type = 'button', ...props }: PillProps) {
+/** Beheer's text button, 8px corners. */
+export function Pill({ variant, size, className, children, morphKey, style, busy, onClick, type = 'button', 'aria-disabled': ariaDisabled, ...props }: PillProps) {
+  const inert = busy || ariaDisabled === true || ariaDisabled === 'true';
   return (
     <motion.button
       type={type}
+      aria-disabled={inert || undefined}
+      aria-busy={busy || undefined}
+      // preventDefault: a busy submit pill doesn't submit its form either
+      onClick={inert ? (event) => event.preventDefault() : onClick}
       layout={morphKey !== undefined}
       // Set as a style so motion corrects the corners while the width animates
       style={{ borderRadius: 12, ...style }}
@@ -72,35 +91,41 @@ export function Pill({ variant, size, className, children, morphKey, style, type
 }
 
 const iconPill = cva(
-  "inline-grid size-[34px] shrink-0 place-items-center rounded-lg outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4",
+  [
+    COARSE_HIT_AREA,
+    "inline-grid size-[34px] shrink-0 place-items-center rounded-lg outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4",
+  ],
   {
     variants: {
       variant: {
         ghost: 'text-muted-foreground hover:bg-beheer-row-high hover:text-foreground',
-        soft: 'bg-beheer-row-high text-foreground hover:bg-beheer-row-high/70',
-        success: 'bg-green-500/20 text-green-700 dark:text-green-300',
-        active: 'bg-primary/20 text-orange-700 dark:text-orange-300',
-        'danger-soft': 'bg-destructive/15 text-destructive hover:bg-destructive/20 dark:text-red-300',
+        soft: `bg-beheer-row-high text-foreground ${TONAL_HOVER}`,
+        success: 'bg-green-500/15 text-status-ok-text',
+        // M3 tonal "on" state: on-primary-container on primary-container (10:1 light, 8.3:1 dark)
+        active: 'bg-primary-container text-on-primary-container',
+        'danger-soft': 'bg-destructive/15 text-destructive-text hover:bg-destructive/20',
       },
     },
     defaultVariants: { variant: 'ghost' },
   },
 );
 
-/** Round 34px icon button; always give it an aria-label. */
+/** 34px icon button with 8px corners; always give it an aria-label. */
 export function IconPill({ variant, className, type = 'button', ...props }: ComponentProps<'button'> & VariantProps<typeof iconPill> & { 'aria-label': string }) {
   return <button type={type} className={cn(iconPill({ variant }), className)} {...props} />;
 }
 
-const tag = cva('inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[10.5px] leading-4 font-extrabold transition-colors duration-300 [&_svg]:size-3', {
+const tag = cva('inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs leading-4 font-extrabold desk:text-label transition-colors duration-300 [&_svg]:size-3', {
   variants: {
     tone: {
-      primary: 'bg-primary/20 text-orange-700 dark:text-orange-300',
+      // The small (12px phone, 11px desktop) text needs >= 4.5:1 on its tint over card, beheer-row and beheer-row-high
+      primary: 'bg-primary-container text-on-primary-container',
       neutral: 'bg-beheer-row-high text-muted-foreground',
-      ok: 'bg-green-500/15 text-green-700 dark:text-green-300',
-      warn: 'bg-amber-500/20 text-amber-700 dark:text-amber-300',
-      info: 'bg-sky-500/15 text-sky-700 dark:text-sky-300',
-      danger: 'bg-destructive/15 text-destructive dark:text-red-300',
+      ok: 'bg-green-500/15 text-status-ok-text',
+      warn: 'bg-amber-500/20 text-status-warn-text',
+      info: 'bg-sky-500/15 text-status-info-text',
+      // red-800 in light (5.6:1 on row-high; destructive-text was 3.7:1 there); destructive-text in dark (6.4:1)
+      danger: 'bg-destructive/10 text-red-800 dark:text-destructive-text',
     },
   },
   defaultVariants: { tone: 'neutral' },

@@ -5,6 +5,7 @@ import TelegramCard, { type TelegramAdminProps } from '@/components/cards/telegr
 import { revalidateTelegramViews, useTelegramAdmin, useTelegramMessages } from '@/hooks/telegram.hook';
 import { apiErrorMessage } from '@/lib/api-error';
 import { telegramHeaderSummary } from '@/lib/bot-messages';
+import { loadState } from '@/lib/load-state';
 import type { User } from '@/types/User';
 import SidebarSection from './SidebarSection';
 
@@ -12,8 +13,8 @@ import SidebarSection from './SidebarSection';
 export default function TelegramSection() {
   const user = useAuthUser<User>();
   const isAdmin = !!user?.admin;
-  const { messages, linked, link: connection } = useTelegramMessages();
-  const { status, link, submitPassword, unlink, refresh } = useTelegramAdmin(isAdmin);
+  const { messages, linked, link: connection, isError, retry } = useTelegramMessages();
+  const { status, isError: statusError, retry: retryStatus, link, submitPassword, unlink, refresh } = useTelegramAdmin(isAdmin);
 
   // The QR scan (or password) completes on the server; the admin poll notices it: refresh the "linked" views
   const state = status?.state;
@@ -33,6 +34,8 @@ export default function TelegramSection() {
   const admin: TelegramAdminProps | undefined = isAdmin
     ? {
         status,
+        isError: statusError,
+        onRetry: retryStatus,
         onLink: async () => {
           try {
             await link();
@@ -76,7 +79,7 @@ export default function TelegramSection() {
 
   return (
     <SidebarSection id="telegram" title="Jotihunt-berichten" summary={summary}>
-      <TelegramCard messages={messages} admin={admin} />
+      <TelegramCard messages={messages} loadState={loadState(messages, isError)} onRetry={retry} admin={admin} />
     </SidebarSection>
   );
 }

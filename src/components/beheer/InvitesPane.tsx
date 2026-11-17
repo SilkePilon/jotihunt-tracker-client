@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { toast } from 'sonner';
 import { CheckIcon, ChevronDownIcon, CopyIcon, Loader2Icon, PlusIcon, QrCodeIcon, SquareIcon } from 'lucide-react';
@@ -26,7 +26,8 @@ import { copyToClipboard, writeClipboard } from '@/lib/clipboard';
 import { TRIGGER_OPEN } from '@/lib/menu-styles';
 import { POP, SWAP } from '@/lib/motion';
 import { cn } from '@/lib/utils';
-import { BeheerCard, BeheerPane, BeheerRow, BeheerRows, BeheerSkeleton, RowFrame } from './BeheerLayout';
+import { BeheerCard, BeheerLoadError, BeheerPane, BeheerRow, BeheerRows, BeheerSkeleton, RowFrame } from './BeheerLayout';
+import { focusAwayFromRow } from './row-focus';
 import { IconPill, Pill, Tag } from './controls/Pill';
 import WhatsAppLogo from './WhatsAppLogo';
 import InlineError from '@/components/InlineError';
@@ -61,7 +62,7 @@ function Picker({ label, value, options, onChange, disabled }: { label: string; 
           type="button"
           aria-label={`${label}: ${current}`}
           className={cn(
-            'group inline-flex h-[38px] items-center gap-1.5 rounded-lg bg-beheer-row pr-2.5 pl-3.5 text-[13px] font-semibold outline-none transition-colors hover:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-50',
+            'group inline-flex h-[38px] items-center gap-1.5 rounded-lg bg-beheer-row pr-2.5 pl-3.5 text-body font-semibold outline-none transition-colors hover:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring disabled:opacity-50',
             TRIGGER_OPEN,
           )}
         >
@@ -89,7 +90,7 @@ function Picker({ label, value, options, onChange, disabled }: { label: string; 
 
 /** Beheer → Invites (I5): make invite links; share (WhatsApp), copy, QR or stop the active ones; the stopped ones of the last 24 h. */
 export default function InvitesPane() {
-  const { invites, error: loadError, create, revoke } = useInvites(true);
+  const { invites, error: loadError, retry, create, revoke } = useInvites(true);
   const now = useNow(true, SLOW_CLOCK_TICK_MS);
 
   const [expiry, setExpiry] = useState<InviteExpiry>(DEFAULT_EXPIRY);
@@ -103,6 +104,9 @@ export default function InvitesPane() {
   // The confirm dialog keeps its invite while it fades out
   const [revoking, setRevoking] = useState<AdminInvite | null>(null);
   const [revokeOpen, setRevokeOpen] = useState(false);
+  // The stop pill that opened the dialog and its card: after a revoke, focus moves on to the next row (the row folds away)
+  const revokeOpener = useRef<{ button: HTMLElement; card: Element | null } | null>(null);
+  const revoked = useRef(false);
 
   const view = invites ? 'content' : loadError ? 'error' : 'loading';
   const active = (invites ?? []).filter((invite) => invite.state === 'active').sort(newestFirst);
@@ -129,7 +133,8 @@ export default function InvitesPane() {
       setHighlightId(invite._id);
       // One toast: iOS Safari refuses clipboard writes this long after the tap, so then offer a copy button (a fresh tap)
       if (await writeClipboard(invite.url)) toast.success('Invite gemaakt', { description: 'De link staat op je klembord.' });
-      else toast.success('Invite gemaakt', { action: { label: 'Kopieer link', onClick: () => void copyToClipboard(invite.url, 'Link gekopieerd') } });
+      // Stays until closed: the link is only reachable through this button
+      else toast.success('Invite gemaakt', { duration: Infinity, action: { label: 'Kopieer link', onClick: () => void copyToClipboard(invite.url, 'Link gekopieerd') } });
     } catch (failure) {
       setCreateError(apiErrorMessage(failure, 'Invite maken is mislukt.'));
     } finally {
@@ -146,6 +151,7 @@ export default function InvitesPane() {
     try {
       await revoke(revoking._id);
       if (qrId === revoking._id) setQrId(null);
+      revoked.current = true;
       setRevokeOpen(false);
       toast.success('Invite ingetrokken');
     } catch (failure) {
@@ -163,7 +169,7 @@ export default function InvitesPane() {
         meta={inviteMeta(invite, now)}
         className={cn(invite._id === highlightId && 'relative z-10 motion-safe:animate-beheer-ring')}
       >
-        <Pill variant="whatsapp" aria-label={`Invite ${invite.code} delen via WhatsApp`} onClick={() => window.open(whatsAppShareUrl(inviteShareText(invite.url)), '_blank', 'noopener')}>
+        <Pill variant="whatsapp" aria-label={`Invite ${invite.code} delen via WhatsApp (opent in nieuw tabblad)`} onClick={() => window.open(whatsAppShareUrl(inviteShareText(invite.url)), '_blank', 'noopener')}>
           <WhatsAppLogo className="size-4" />
           <span className="hidden sm:inline">WhatsApp</span>
         </Pill>
@@ -179,7 +185,9 @@ export default function InvitesPane() {
         </IconPill>
         <IconPill
           aria-label={`Invite ${invite.code} stoppen`}
-          onClick={() => {
+          onClick={(event) => {
+            revokeOpener.current = { button: event.currentTarget, card: event.currentTarget.closest('section') };
+            revoked.current = false;
             setRevoking(invite);
             setRevokeOpen(true);
           }}
@@ -219,7 +227,7 @@ export default function InvitesPane() {
           <div className="flex flex-wrap items-center gap-2">
             <Picker label="Geldig" value={expiry} options={EXPIRY_SEGMENTS} onChange={(value) => setExpiry(value as InviteExpiry)} disabled={busy} />
             <Picker label="Aantal" value={usesToValue(maxUses)} options={USES_SEGMENTS} onChange={(value) => setMaxUses(valueToUses(value))} disabled={busy} />
-            <Pill className="ml-auto" variant="primary" size="md" morphKey={busy ? 'busy' : 'idle'} disabled={busy} onClick={() => void submitCreate()}>
+            <Pill className="ml-auto" variant="primary" size="md" morphKey={busy ? 'busy' : 'idle'} busy={busy} onClick={() => void submitCreate()}>
               {busy ? <Loader2Icon className="animate-spin" /> : <PlusIcon />}
               Invite maken
             </Pill>
@@ -241,9 +249,9 @@ export default function InvitesPane() {
           </motion.div>
         )}
         {view === 'error' && (
-          <motion.p key="error" className="text-sm text-muted-foreground" {...SWAP}>
-            Kan de invites niet laden.
-          </motion.p>
+          <motion.div key="error" {...SWAP}>
+            <BeheerLoadError message="Kan de invites niet laden." onRetry={retry} />
+          </motion.div>
         )}
         {view === 'content' && (
           <motion.div key="content" className="flex flex-col gap-3.5" {...SWAP}>
@@ -272,6 +280,12 @@ export default function InvitesPane() {
         confirmLabel="Intrekken"
         destructive
         onConfirm={confirmRevoke}
+        onCloseAutoFocus={(event) => {
+          // Cancelled: back to the stop pill (Radix default). Revoked: that row is going away, so the next one takes focus
+          if (!revoked.current) return;
+          event.preventDefault();
+          focusAwayFromRow(revokeOpener.current?.button ?? null, revokeOpener.current?.card ?? null);
+        }}
       />
     </BeheerPane>
   );

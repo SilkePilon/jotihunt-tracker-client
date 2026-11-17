@@ -1,10 +1,11 @@
-import { useEffect, useState, type ComponentProps, type ReactNode } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { useEffect, useRef, useState, type ComponentProps, type ReactNode } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { toast } from 'sonner';
 import { EllipsisIcon, KeyRoundIcon, LaptopIcon, Loader2Icon, LogOutIcon, PencilIcon, PlusIcon, SmartphoneIcon, TabletIcon, Trash2Icon, type LucideIcon } from 'lucide-react';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
 import ResponsiveDialog from '@/components/ResponsiveDialog';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import LoadError from '@/components/LoadError';
 import RenamePasskeyDialog from '@/components/account/RenamePasskeyDialog';
 import Reveal from '@/components/motion/Reveal';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -13,14 +14,17 @@ import { useAccount } from '@/hooks/account.hook';
 import { useAuth } from '@/hooks/auth.hook';
 import { useLogout } from '@/hooks/logout.hook';
 import { useNow } from '@/hooks/now.hook';
-import { deviceMeta, orderSessions, passkeyMeta, sessionDevice, sessionMeta, type AccountPasskey, type SessionDevice } from '@/lib/account';
+import { deviceMeta, logoutDescription, orderSessions, passkeyMeta, sessionDevice, sessionMeta, type AccountPasskey, type SessionDevice } from '@/lib/account';
 import { apiErrorMessage } from '@/lib/api-error';
 import { addPasskey, passkeysSupported } from '@/lib/auth-api';
 import { DIALOG_SHELL } from '@/lib/dialog-shell';
+import { neighbourIndex } from '@/lib/focus';
+import { COARSE_HIT_AREA } from '@/lib/hit-area';
 import { TRIGGER_OPEN } from '@/lib/menu-styles';
-import { REVEAL_TRANSITION, SWAP } from '@/lib/motion';
+import { revealTransition, SWAP } from '@/lib/motion';
 import { classifyPasskeyError, PASSKEY_MESSAGES } from '@/lib/passkey';
 import { cn } from '@/lib/utils';
+import { busyProps } from '@/lib/busy';
 import useAccountDialogStore from '@/stores/account-dialog.store';
 
 interface Confirm {
@@ -49,6 +53,8 @@ export default function AccountDialog() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [renaming, setRenaming] = useState<AccountPasskey | null>(null);
   const [renameOpen, setRenameOpen] = useState(false);
+  // The row whose confirmed removal closed the confirm: focus goes to its neighbour instead of the vanishing button
+  const removedRow = useRef<string | null>(null);
 
   // The store is global: Layout unmounts on /login (logout, or a 401 after "Alle andere browsers uitloggen" elsewhere),
   // and a dialog left open would pop up again right after the next login
@@ -85,6 +91,7 @@ export default function AccountDialog() {
       action: async () => {
         try {
           await removePasskey(passkey.id);
+          removedRow.current = `passkey-${passkey.id}`;
           setConfirmOpen(false);
           toast.success('Passkey verwijderd');
         } catch (failure) {
@@ -124,16 +131,15 @@ export default function AccountDialog() {
               {[0, 1].map((index) => (
                 <div key={index} className="flex flex-col gap-1.5">
                   <Skeleton className="mx-1.5 h-3.5 w-24" />
-                  <Skeleton className="h-28 w-full rounded-[18px]" />
+                  <Skeleton className="h-28 w-full rounded-2xl" />
                 </div>
               ))}
             </motion.div>
           )}
 
           {view === 'error' && (
-            <motion.div key="error" className="flex flex-col items-start gap-3" {...SWAP}>
-              <p className="text-sm text-muted-foreground">Kan je account niet laden.</p>
-              <SmallButton onClick={() => void refresh()}>Opnieuw</SmallButton>
+            <motion.div key="error" {...SWAP}>
+              <LoadError className="text-sm" message="Kan je account niet laden." onRetry={refresh} />
             </motion.div>
           )}
 
@@ -147,7 +153,7 @@ export default function AccountDialog() {
                     </Row>
                   )}
                   {passkeys.map((passkey) => (
-                    <Row key={passkey.id} icon={KeyRoundIcon} highlight title={passkey.name} meta={passkeyMeta(passkey, now)}>
+                    <Row key={passkey.id} rowKey={`passkey-${passkey.id}`} icon={KeyRoundIcon} highlight title={passkey.name} meta={passkeyMeta(passkey, now)}>
                       <DropdownMenu modal={false}>
                         <DropdownMenuTrigger asChild>
                           <SmallButton icon className={TRIGGER_OPEN} aria-label={`Opties voor ${passkey.name}`}>
@@ -159,11 +165,20 @@ export default function AccountDialog() {
                             <PencilIcon />
                             Hernoemen
                           </DropdownMenuItem>
-                          <DropdownMenuItem variant="destructive" disabled={lastPasskey} onSelect={() => askRemovePasskey(passkey)}>
+                          {/* The last passkey: aria-disabled, not disabled, so keyboard and screen-reader users still reach the reason */}
+                          <DropdownMenuItem
+                            variant="destructive"
+                            aria-disabled={lastPasskey || undefined}
+                            className="aria-disabled:opacity-50"
+                            onSelect={(event) => {
+                              if (lastPasskey) event.preventDefault();
+                              else askRemovePasskey(passkey);
+                            }}
+                          >
                             <Trash2Icon />
                             <div className="flex flex-col">
                               <span>Verwijderen</span>
-                              {lastPasskey && <span className="text-xs text-(--map-danger-fg)/70">Je laatste passkey kan niet weg</span>}
+                              {lastPasskey && <span className="text-xs text-(--map-danger-fg)">Je laatste passkey kan niet weg</span>}
                             </div>
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -174,9 +189,11 @@ export default function AccountDialog() {
                     <Row key="add">
                       <ActionRow
                         onClick={() => void handleAddPasskey()}
-                        disabled={adding}
-                        className="text-primary"
-                        iconClassName="bg-transparent text-primary shadow-[inset_0_0_0_1.5px_var(--border)]"
+                        {...busyProps(adding)}
+                        // Orange text on the hovered / focused row-high background is too faint (3.96:1) in the light
+                        // theme: there it turns the darker on-primary-container brown; dark keeps its orange
+                        className="group text-primary-text hover:text-on-primary-container focus-visible:text-on-primary-container dark:hover:text-primary-text dark:focus-visible:text-primary-text"
+                        iconClassName="bg-transparent text-primary-text shadow-[inset_0_0_0_1.5px_var(--border)] group-hover:text-on-primary-container group-focus-visible:text-on-primary-container dark:group-hover:text-primary-text dark:group-focus-visible:text-primary-text"
                         icon={
                           <AnimatePresence mode="popLayout" initial={false}>
                             <motion.span
@@ -204,6 +221,7 @@ export default function AccountDialog() {
                   {sessions.map((session) => (
                     <Row
                       key={`session-${session.id}`}
+                      rowKey={`session-${session.id}`}
                       icon={DEVICE_ICONS[sessionDevice(session.label)]}
                       highlight={session.current}
                       title={session.label}
@@ -216,9 +234,7 @@ export default function AccountDialog() {
                             session.current
                               ? {
                                   title: 'Uitloggen op dit apparaat?',
-                                  description: noPasskey
-                                    ? 'Je hebt nog geen passkey: daarna kom je alleen weer binnen met een QR-code of een herstel-link.'
-                                    : 'Je moet daarna opnieuw inloggen.',
+                                  description: logoutDescription(noPasskey),
                                   confirmLabel: 'Uitloggen',
                                   action: async () => {
                                     try {
@@ -237,6 +253,7 @@ export default function AccountDialog() {
                                   action: async () => {
                                     try {
                                       await removeSession(session.id);
+                                      removedRow.current = `session-${session.id}`;
                                       setConfirmOpen(false);
                                       toast.success(`Uitgelogd op ${session.label}`);
                                     } catch (failure) {
@@ -254,10 +271,10 @@ export default function AccountDialog() {
                     </Row>
                   ))}
                   {hasOtherSessions && (
-                    <Row key="logout-others">
+                    <Row key="logout-others" rowKey="logout-others">
                       <ActionRow
-                        className="text-destructive"
-                        iconClassName="text-destructive"
+                        className="text-destructive-text"
+                        iconClassName="text-destructive-text"
                         icon={<LogOutIcon />}
                         onClick={() =>
                           ask({
@@ -270,6 +287,7 @@ export default function AccountDialog() {
                             action: async () => {
                               try {
                                 const removed = await removeOtherSessions();
+                                removedRow.current = 'logout-others';
                                 setConfirmOpen(false);
                                 toast.success(removed === 1 ? '1 browser uitgelogd' : `${removed} browsers uitgelogd`);
                               } catch (failure) {
@@ -292,7 +310,7 @@ export default function AccountDialog() {
                   <Group title="Gekoppelde telefoons">
                     <AnimatePresence initial={false}>
                       {devices.map((device) => (
-                        <Row key={`device-${device.id}`} icon={SmartphoneIcon} title={device.name} meta={deviceMeta(device, now)}>
+                        <Row key={`device-${device.id}`} rowKey={`device-${device.id}`} icon={SmartphoneIcon} title={device.name} meta={deviceMeta(device, now)}>
                           <SmallButton
                             onClick={() =>
                               ask({
@@ -303,6 +321,7 @@ export default function AccountDialog() {
                                 action: async () => {
                                   try {
                                     await removeDevice(device.id);
+                                    removedRow.current = `device-${device.id}`;
                                     setConfirmOpen(false);
                                     toast.success(`${device.name} ontkoppeld`);
                                   } catch (failure) {
@@ -335,6 +354,18 @@ export default function AccountDialog() {
         confirmLabel={confirm?.confirmLabel}
         destructive={confirm?.destructive}
         onConfirm={() => confirm?.action()}
+        onCloseAutoFocus={(event) => {
+          const key = removedRow.current;
+          removedRow.current = null;
+          // Rows still listed; the others are folding away (e.g. every other session after "Alle andere browsers uitloggen")
+          const listed = new Set([
+            ...passkeys.map((passkey) => `passkey-${passkey.id}`),
+            ...sessions.map((session) => `session-${session.id}`),
+            ...devices.map((device) => `device-${device.id}`),
+            ...(hasOtherSessions ? ['logout-others'] : []),
+          ]);
+          if (key && focusRowNeighbour(key, listed)) event.preventDefault();
+        }}
       />
       <RenamePasskeyDialog
         open={renameOpen}
@@ -359,15 +390,41 @@ export default function AccountDialog() {
 function Group({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section>
-      <h3 className="mx-1.5 mb-1.5 text-xs font-semibold text-muted-foreground">{title}</h3>
-      {/* The corners sit on each row's inner surface, so they stay right while a neighbour folds away */}
-      <div className="flex flex-col gap-0.5 [&>*:first-child>*]:rounded-t-[18px] [&>*:last-child>*]:rounded-b-[18px]">{children}</div>
+      {/* tabIndex -1: focus lands here when the group's last removed row took it along (focusRowNeighbour) */}
+      <h3 tabIndex={-1} className="mx-1.5 mb-1.5 text-xs font-semibold text-muted-foreground outline-none">
+        {title}
+      </h3>
+      {/* The corners sit on each row's inner surface, so they stay right while a neighbour folds away: segment corners
+          inside the group and 16px ends, like the Beheer rows and the menus */}
+      <div className="flex flex-col gap-0.5 [&>*:first-child>*]:rounded-t-2xl [&>*:last-child>*]:rounded-b-2xl">{children}</div>
     </section>
   );
 }
 
 /** One tonal row; unfolds in and folds away. With a `title` it shows an icon tile, title (+ chip), meta and the action on the right. */
+/**
+ * After a removal: focus the next row's control in the group (else the previous one's, else the group heading) instead
+ * of the removed row's button; rows no longer `listed` are leaving too and are skipped. False when the row is gone
+ * already (then the dialog's default applies).
+ */
+function focusRowNeighbour(key: string, listed: ReadonlySet<string>): boolean {
+  const row = Array.from(document.querySelectorAll<HTMLElement>('[data-account-row]')).find((element) => element.dataset.accountRow === key);
+  const list = row?.parentElement;
+  if (!row || !list) return false;
+  const rows = Array.from(list.children);
+  const targets = rows.map((element) => {
+    const other = element instanceof HTMLElement ? element.dataset.accountRow : undefined;
+    if (element === row || (other !== undefined && !listed.has(other))) return null;
+    return element.querySelector<HTMLElement>('button:not(:disabled)');
+  });
+  const index = neighbourIndex(targets.map(Boolean), rows.indexOf(row));
+  const target = index >= 0 ? targets[index] : list.closest('section')?.querySelector<HTMLElement>('h3');
+  target?.focus();
+  return !!target;
+}
+
 function Row({
+  rowKey,
   icon: Icon,
   highlight,
   title,
@@ -375,6 +432,8 @@ function Row({
   meta,
   children,
 }: {
+  /** Finds the row again after its removal (focusRowNeighbour) */
+  rowKey?: string;
   icon?: LucideIcon;
   /** Orange icon tile: your passkeys and this browser */
   highlight?: boolean;
@@ -383,30 +442,34 @@ function Row({
   meta?: string;
   children: ReactNode;
 }) {
+  const reduced = useReducedMotion() ?? false;
   return (
     <motion.div
+      data-account-row={rowKey}
       className="overflow-hidden"
       initial={{ opacity: 0, height: 0 }}
       animate={{ opacity: 1, height: 'auto' }}
-      exit={{ opacity: 0, height: 0 }}
-      transition={REVEAL_TRANSITION}
+      exit={{ opacity: 0, height: 0, transition: revealTransition(reduced, 'exit') }}
+      // Reduced motion: the row takes and gives back its room at once and only fades
+      transition={revealTransition(reduced, 'enter')}
     >
-      <div className="overflow-hidden rounded-md bg-beheer-row">
+      <div className="overflow-hidden rounded-(--radius-segment) bg-beheer-row">
         {title === undefined ? (
           children
         ) : (
-          <div className="flex items-center gap-3 px-3 py-2.5">
+          // isolate: the actions' 44px touch areas (COARSE_HIT_AREA) stay above the row's background
+          <div className="isolate flex items-center gap-3 px-3 py-2.5">
             {Icon && <IconTile className={cn(highlight && 'bg-(--map-selected-bg) text-(--map-selected-fg)')}><Icon /></IconTile>}
             <div className="min-w-0 flex-1">
               <div className="flex min-w-0 items-center gap-1.5">
-                <span className="truncate text-[13.5px] font-semibold">{title}</span>
+                <span className="truncate text-body font-semibold">{title}</span>
                 {chip && (
-                  <span className="inline-flex h-[18px] flex-none items-center rounded-full bg-(--map-selected-bg) px-[7px] text-[10.5px] font-bold text-(--map-selected-fg)">
+                  <span className="inline-flex h-[18px] flex-none items-center rounded-full bg-(--map-selected-bg) px-[7px] text-xs font-bold text-(--map-selected-fg) desk:text-label">
                     {chip}
                   </span>
                 )}
               </div>
-              <div className="text-[11.5px] leading-snug text-muted-foreground">{meta}</div>
+              <div className="text-xs leading-snug text-muted-foreground desk:text-label">{meta}</div>
             </div>
             {children}
           </div>
@@ -429,15 +492,16 @@ function IconTile({ className, children }: { className?: string; children: React
   );
 }
 
-/** Tonal 32px button with 12px corners; `icon` makes it a 34×32 square. */
+/** Tonal 32px button with 12px corners; `icon` makes it a 34×32 square. Phones get a 44px touch area, same look. */
 function SmallButton({ icon, className, ...props }: ComponentProps<'button'> & { icon?: boolean }) {
   return (
     <button
       type="button"
       className={cn(
-        'inline-flex h-8 flex-none items-center justify-center gap-1.5 rounded-xl bg-beheer-row-high text-[12.5px] font-semibold transition-colors outline-none',
-        'hover:bg-[color-mix(in_oklab,var(--foreground)_14%,var(--card))] focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4',
+        'inline-flex h-8 flex-none items-center justify-center gap-1.5 rounded-xl bg-beheer-row-high text-caption font-semibold transition-colors outline-none',
+        'hover:bg-[color-mix(in_oklab,var(--foreground)_14%,var(--card))] focus-visible:ring-[3px] focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4',
         icon ? 'w-[34px]' : 'px-3',
+        COARSE_HIT_AREA,
         className,
       )}
       {...props}
@@ -451,8 +515,8 @@ function ActionRow({ icon, iconClassName, className, children, ...props }: Compo
     <button
       type="button"
       className={cn(
-        'flex w-full items-center gap-3 px-3 py-2.5 text-left text-[13.5px] font-semibold transition-colors outline-none',
-        'hover:bg-beheer-row-high focus-visible:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset disabled:pointer-events-none disabled:opacity-60',
+        'flex w-full items-center gap-3 px-3 py-2.5 text-left text-body font-semibold transition-colors outline-none',
+        'hover:bg-beheer-row-high focus-visible:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset disabled:pointer-events-none disabled:opacity-60 aria-disabled:pointer-events-none aria-disabled:opacity-60',
         className,
       )}
       {...props}

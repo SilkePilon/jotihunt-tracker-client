@@ -5,7 +5,7 @@ import CookieBadge from '@/components/tracker/CookieBadge';
 import { type HqEvent, type HqTone } from '@/lib/hq-director';
 import { cn } from '@/lib/utils';
 
-const RING_CLASS: Record<HqTone, string> = { ok: 'stroke-green-500', warn: 'stroke-amber-500', danger: 'stroke-red-600', neutral: 'stroke-primary' };
+const RING_CLASS: Record<HqTone, string> = { ok: 'stroke-cookie-ok', warn: 'stroke-cookie-warn', danger: 'stroke-destructive', neutral: 'stroke-primary-fill' };
 
 /** Bottom of the map: the current event, its hold time (`holdMs`, from the director) (tour ring in the event colour) and how many are queued (tour dots). */
 export default function HqEventCard({ event, queued, step, holdMs }: { event: HqEvent | null; queued: number; step: number; holdMs: number }) {
@@ -19,7 +19,7 @@ export default function HqEventCard({ event, queued, step, holdMs }: { event: Hq
     <div
       aria-live="polite"
       className={cn(
-        'card absolute inset-x-4 bottom-4 z-10 flex items-center gap-4 rounded-2xl bg-card px-5 py-4 text-card-foreground shadow-2xl transition-[translate,opacity] duration-900 ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none',
+        'absolute inset-x-4 bottom-4 z-10 flex items-center gap-4 rounded-2xl bg-card px-5 py-4 text-card-foreground shadow-(--shadow-dialog) transition-[translate,opacity] duration-900 ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none',
         event ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-[130%] opacity-0',
       )}
     >

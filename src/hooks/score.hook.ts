@@ -1,6 +1,6 @@
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
 import useSWR from 'swr';
-import { apiErrorStatus } from '@/lib/api-error';
+import { apiErrorStatus, isNetworkError } from '@/lib/api-error';
 import { reportFetchError, reportFetchSuccess } from '@/lib/connection';
 import { normalizeScore, SCORE_NOT_CONFIGURED } from '@/lib/score';
 import { fetcherWithMethod } from '@/lib/swr';
@@ -17,7 +17,7 @@ async function fetchScore([url, authHeader]: [string, string]): Promise<ScoreSta
     return score;
   } catch (error) {
     if (apiErrorStatus(error) === 404) return SCORE_NOT_CONFIGURED;
-    reportFetchError();
+    reportFetchError(undefined, Date.now(), isNetworkError(error));
     throw error;
   }
 }
@@ -25,10 +25,11 @@ async function fetchScore([url, authHeader]: [string, string]): Promise<ScoreSta
 /** Our provisional jotihunt.nl score (total + split), for the sidebar "Punten" card. */
 export function useScore() {
   const authHeader = useAuthHeader();
-  const { data, error } = useSWR<ScoreStatus>(['/score', authHeader], fetchScore, {
+  const { data, error, mutate } = useSWR<ScoreStatus>(['/score', authHeader], fetchScore, {
     refreshInterval: SCORE_REFRESH_MS,
     dedupingInterval: SCORE_REFRESH_MS,
     focusThrottleInterval: 30_000,
   });
-  return { score: data, isError: !!error && !data };
+  // isError: the first load failed (no score to show yet); later failures keep the last score
+  return { score: data, isError: !!error && !data, retry: () => mutate() };
 }

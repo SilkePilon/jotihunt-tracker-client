@@ -8,8 +8,19 @@ import { areaOptions } from '@/lib/utils';
 
 export const ASSIGNMENT_STATUS_LABELS: Record<AssignmentStatus, string> = { open: 'Open', busy: 'Bezig', submitted: 'Ingeleverd', skipped: 'Skip' };
 
-export const KIND_COLOR: Record<IntelKind, string> = { hint: '#fb923c', assignment: '#60a5fa', news: '#c084fc' };
+/** Kind foreground (icon, label) and its tonal tile: theme tokens from index.css, dark enough on light, the 400 shades on dark */
+export const KIND_COLOR: Record<IntelKind, string> = { hint: 'var(--intel-hint)', assignment: 'var(--intel-assignment)', news: 'var(--intel-news)' };
+export const KIND_CONTAINER: Record<IntelKind, string> = { hint: 'var(--intel-hint-container)', assignment: 'var(--intel-assignment-container)', news: 'var(--intel-news-container)' };
 export const KIND_LABEL: Record<IntelKind, string> = { hint: 'Hint', assignment: 'Opdracht', news: 'Nieuws' };
+
+/**
+ * The kind a timeline row says before its title for screen readers (the tile's icon and colour are visual only):
+ * "Opdracht: ", or nothing when the title already starts with it ("Hint 3", "Opdracht 4").
+ */
+export function kindPrefix(kind: IntelKind, title: string): string {
+  const label = KIND_LABEL[kind];
+  return title.trim().toLowerCase().startsWith(label.toLowerCase()) ? '' : `${label}: `;
+}
 
 const AREAS = areaOptions.map((area) => area.value);
 const HOUR_MS = 60 * 60 * 1000;
@@ -53,6 +64,14 @@ export function filterByTab(items: IntelItem[], tab: IntelTab): IntelItem[] {
 /** Unread items, optionally of one kind only */
 export function unreadCount(items: IntelItem[], kind?: IntelKind): number {
   return items.filter((item) => item.unread && (!kind || item.kind === kind)).length;
+}
+
+/**
+ * The header dot: news or an opdracht unread. Without the read state (still loading, or its fetch failed) nothing is
+ * known to be read, and every item would count; that says nothing, so no dot until it is there.
+ */
+export function hasUnreadIntel(articles: Article[] | undefined, readState: ReadState | undefined): boolean {
+  return readState !== undefined && unreadCount(buildIntelItems({ articles, readState })) > 0;
 }
 
 const dayKey = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Amsterdam', year: 'numeric', month: '2-digit', day: '2-digit' });
@@ -323,9 +342,6 @@ export const CHAT_MESSAGE = {
   exit: { opacity: 0, transition: { duration: 0.15 } },
   transition: { duration: 0.3, ease: EASE_OUT },
 } satisfies { initial: TargetAndTransition; animate: TargetAndTransition; exit: TargetAndTransition; transition: Transition };
-
-/** Prompt box toggles: the icon turns once and grows a little when switched on */
-export const TOGGLE_SPRING: Transition = { type: 'spring', stiffness: 260, damping: 25 };
 
 /** The chat's empty state: its parts stagger in 70 ms apart; custom = delay in seconds before the first */
 export const CHAT_EMPTY: Variants = {

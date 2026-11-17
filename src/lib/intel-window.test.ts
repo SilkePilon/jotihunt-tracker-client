@@ -1,9 +1,10 @@
 import { describe, expect, test } from 'bun:test';
+import { readFileSync } from 'node:fs';
 import { AxiosError, AxiosHeaders } from 'axios';
 import type { Article } from '@/types/Article';
 import type { HintCell } from '@/types/HintCell';
 import type { Assignment, IntelItem } from '@/types/Intel';
-import { answerPreview, areaStates, assignmentMeta, assignmentStatusLabel, earnedPoints, chartColumns, initialOpenArea, buildIntelItems, deadlineLabel, deadlineTone, filterByTab, formatSolveTime, groupByDay, hasExistingMarker, intelStats, isDeadlineUrgent, isHintDone, nextOpenArea, ratingStars, siteSubmission, solvedCount, statusAuthor, unreadCount, unreadLabel, unreadTab } from './intel-window';
+import { KIND_COLOR, KIND_CONTAINER, answerPreview, areaStates, assignmentMeta, assignmentStatusLabel, earnedPoints, chartColumns, initialOpenArea, buildIntelItems, deadlineLabel, deadlineTone, filterByTab, formatSolveTime, groupByDay, hasExistingMarker, hasUnreadIntel, intelStats, isDeadlineUrgent, isHintDone, kindPrefix, nextOpenArea, ratingStars, siteSubmission, solvedCount, statusAuthor, unreadCount, unreadLabel, unreadTab } from './intel-window';
 
 const article = (id: number, type: string, publishAt: string, extra: Partial<Article> = {}) =>
   ({ id, title: `A${id}`, type, publishAt: new Date(publishAt), content: '<p>x</p>', messageType: '', maxPoints: 0, endTime: new Date(publishAt), ...extra }) as Article;
@@ -340,4 +341,39 @@ describe('assignmentMeta', () => {
   test('no deadline: only status and owner', () => {
     expect(assignmentMeta(item({ endTime: undefined }), now)).toEqual([{ text: 'niemand', tone: 'muted' }]);
   });
+});
+
+describe('kind colours', () => {
+  test('theme tokens defined for light and dark, no fixed hex in components', () => {
+    const css = readFileSync(new URL('../index.css', import.meta.url), 'utf8');
+    const block = (selector: string) => css.slice(css.indexOf(`${selector} {`), css.indexOf('}', css.indexOf(`${selector} {`)));
+    for (const token of [...Object.values(KIND_COLOR), ...Object.values(KIND_CONTAINER)]) {
+      const name = token.match(/^var\((--[\w-]+)\)$/)?.[1];
+      expect(name).toBeDefined();
+      expect(block(':root')).toContain(`${name}:`);
+      expect(block('.dark')).toContain(`${name}:`);
+    }
+  });
+});
+
+describe('kindPrefix', () => {
+  test('names the kind before a title that does not', () => {
+    expect(kindPrefix('news', 'Belangrijke mededeling')).toBe('Nieuws: ');
+    expect(kindPrefix('assignment', 'Bouw een vlot')).toBe('Opdracht: ');
+    expect(kindPrefix('hint', 'Vossenjacht ronde 2')).toBe('Hint: ');
+  });
+
+  test('nothing when the title already starts with the kind (any case)', () => {
+    expect(kindPrefix('hint', 'Hint 3')).toBe('');
+    expect(kindPrefix('assignment', 'opdracht 4: vlot')).toBe('');
+    expect(kindPrefix('news', '  Nieuws van de organisatie')).toBe('');
+  });
+});
+
+describe('hasUnreadIntel', () => {
+  const articles = [article(1, 'news', '2026-10-04T10:00:00Z'), article(2, 'hint', '2026-10-04T11:00:00Z')];
+  test('read state not loaded (or failed): no dot, not every item unread', () => expect(hasUnreadIntel(articles, undefined)).toBe(false));
+  test('an unread news item', () => expect(hasUnreadIntel(articles, { read: [], readBy: {} })).toBe(true));
+  test('all read (hints never count)', () => expect(hasUnreadIntel(articles, { read: [1], readBy: {} })).toBe(false));
+  test('no articles', () => expect(hasUnreadIntel(undefined, { read: [], readBy: {} })).toBe(false));
 });

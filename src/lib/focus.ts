@@ -1,0 +1,61 @@
+/** Structural stand-ins for DOM nodes, so the rules below run (and are tested) without a DOM. */
+export interface ConnectedNode {
+  isConnected: boolean;
+}
+export interface ContainerNode {
+  contains(other: unknown): boolean;
+}
+
+/**
+ * Where focus goes once a popup/card that may have held it is gone: back to the opener (else the fallback, e.g. the
+ * map canvas). Only when focus was lost with it (it sits on <body> or a detached node then); null leaves focus alone,
+ * e.g. after a tap elsewhere already moved it.
+ */
+export function focusRestoreTarget<T extends ConnectedNode>(active: ConnectedNode | null, body: ConnectedNode, opener: T | null, fallback: T | null | undefined): T | null {
+  if (active && active !== body && active.isConnected) return null;
+  return opener?.isConnected ? opener : (fallback ?? null);
+}
+
+/**
+ * Whether a key press belongs to a surface (a map popup, the tour card) rather than to whatever else has focus: it
+ * was not handled yet and focus is on <body> or inside one of `within` (the surface itself, the map).
+ */
+export function ownsKey(event: { defaultPrevented: boolean; target: unknown }, body: unknown, within: (ContainerNode | null | undefined)[]): boolean {
+  if (event.defaultPrevented) return false;
+  if (event.target === body) return true;
+  return within.some((container) => container?.contains(event.target) ?? false);
+}
+
+export interface FocusedNode extends ConnectedNode {
+  closest(selector: string): unknown;
+}
+
+/**
+ * Whether focus was dropped by a view change: it sits on nothing or <body>, on a removed node, or inside an inert
+ * subtree (a pushed view that is leaving, a collapsed button). Then the arriving view may take it; otherwise focus
+ * moved somewhere on purpose and stays.
+ */
+export function focusDropped(active: FocusedNode | null, body: unknown): boolean {
+  if (!active || active === body || !active.isConnected) return true;
+  return active.closest('[inert]') !== null;
+}
+
+/**
+ * Tab inside a trap (the tour's card and panel): the index to focus among `count` focusable elements, from `current`
+ * (-1: focus is not on one of them) going forward or, with Shift, backward; wraps at both ends. null: nothing to focus.
+ */
+export function trapTabIndex(count: number, current: number, backwards: boolean): number | null {
+  if (count === 0) return null;
+  if (current < 0) return backwards ? count - 1 : 0;
+  return (current + (backwards ? count - 1 : 1)) % count;
+}
+
+/**
+ * A list item that held focus is going away (a deleted row): the index of the item to move focus to, the nearest
+ * usable one after it, else the nearest before it; -1 when there is none (then e.g. the list's heading takes it).
+ */
+export function neighbourIndex(usable: readonly boolean[], self: number): number {
+  for (let index = self + 1; index < usable.length; index++) if (usable[index]) return index;
+  for (let index = self - 1; index >= 0; index--) if (usable[index]) return index;
+  return -1;
+}

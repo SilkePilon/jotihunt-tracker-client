@@ -22,7 +22,8 @@ export function classifyPasskeyError(error: unknown): PasskeyFailure {
 
 export const PASSKEY_MESSAGES: Record<PasskeyFailure, string> = {
   cancelled: 'Niet afgerond. Probeer het opnieuw.',
-  unsupported: 'Deze browser ondersteunt geen passkeys. Log in met de QR-code vanaf je telefoon.',
+  // Login says where to go instead (unsupportedLoginText); invite and herstel fall back to an account without passkey
+  unsupported: 'Deze browser ondersteunt geen passkeys.',
   'unknown-passkey': 'Deze passkey werkt niet meer. Vraag de organisatie om een herstel-link.',
   expired: 'Dat duurde te lang. Probeer het opnieuw.',
   'invite-gone': 'Deze uitnodiging werkt niet meer.',
@@ -50,4 +51,27 @@ export function inviteGoneReason(error: unknown): InviteReason | null {
   const reason = error.response.data?.reason;
   if (!reason) return null;
   return INVITE_REASONS.includes(reason as InviteReason) ? (reason as InviteReason) : 'unknown';
+}
+
+/** Whether a failed link check (GET /invites/:code, /herstel/:token) means the link is really gone (404/410), not just unreachable. */
+export function isLinkGone(error: unknown): boolean {
+  if (!isAxiosError(error)) return false;
+  const status = error.response?.status;
+  return status === 404 || status === 410;
+}
+
+/** The account (or new passkey) is there but this browser didn't keep the session (startSession returned false). */
+export const SESSION_NOT_STORED = {
+  withPasskey: 'Gelukt, maar inloggen op dit apparaat mislukte. Ga naar inloggen en gebruik je nieuwe passkey.',
+  withoutPasskey: 'Gelukt, maar inloggen op dit apparaat mislukte. Sta opslag/cookies voor deze site toe en vraag de organisatie om een herstel-link.',
+} as const;
+
+/**
+ * Login on a browser without passkeys: the way in that this screen really offers. Laptops show the QR code beside the
+ * button; phones show it below (Login renders the panel then). Either way a herstel-link from an admin works too.
+ */
+export function unsupportedLoginText(isMobile: boolean): string {
+  return isMobile
+    ? 'Deze browser ondersteunt geen passkeys. Laat de QR-code hieronder scannen met een telefoon waarop je al bent ingelogd, of vraag een admin om een herstel-link.'
+    : 'Deze browser ondersteunt geen passkeys. Scan de QR-code hiernaast met een telefoon waarop je al bent ingelogd, of vraag een admin om een herstel-link.';
 }

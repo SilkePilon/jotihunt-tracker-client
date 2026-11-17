@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { Command as CommandPrimitive } from "cmdk"
-import { cn } from "cn"
+import { cn } from "@/lib/cn"
 import { SearchIcon } from "lucide-react"
 
 import { MENU_ROW_BASE } from "@/lib/menu-styles"
@@ -67,15 +67,16 @@ function CommandInput({
   ...props
 }: React.ComponentProps<typeof CommandPrimitive.Input>) {
   return (
+    // Inset ring: the Command root clips overflow, so an outer ring would be cut off at its edges
     <div
       data-slot="command-input-wrapper"
-      className="mb-2 flex h-10 shrink-0 items-center gap-2 rounded-[14px] bg-beheer-row-high px-3"
+      className="mb-2 flex h-10 shrink-0 items-center gap-2 rounded-(--radius-tile) bg-beheer-row-high px-3 transition-[box-shadow] duration-150 focus-within:ring-2 focus-within:ring-ring focus-within:ring-inset"
     >
       <SearchIcon className="size-4 shrink-0 opacity-50" />
       <CommandPrimitive.Input
         data-slot="command-input"
         className={cn(
-          "flex h-10 w-full bg-transparent text-[13px] outline-hidden placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50",
+          "flex h-10 w-full bg-transparent text-base outline-hidden desk:text-body placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50",
           className
         )}
         {...props}
@@ -106,7 +107,7 @@ function CommandEmpty({
   return (
     <CommandPrimitive.Empty
       data-slot="command-empty"
-      className="py-6 text-center text-[13px] text-muted-foreground"
+      className="py-6 text-center text-body text-muted-foreground"
       {...props}
     />
   )
@@ -121,7 +122,7 @@ function CommandGroup({
       data-slot="command-group"
       className={cn(
         "overflow-hidden text-foreground [&+&]:mt-2 [&_[cmdk-group-items]]:flex [&_[cmdk-group-items]]:flex-col [&_[cmdk-group-items]]:gap-0.5",
-        "[&_[cmdk-group-heading]]:px-1 [&_[cmdk-group-heading]]:pt-1 [&_[cmdk-group-heading]]:pb-1.5 [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:font-bold [&_[cmdk-group-heading]]:tracking-wide [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group-heading]]:uppercase",
+        "[&_[cmdk-group-heading]]:px-1 [&_[cmdk-group-heading]]:pt-1 [&_[cmdk-group-heading]]:pb-1.5 [&_[cmdk-group-heading]]:text-label [&_[cmdk-group-heading]]:font-bold [&_[cmdk-group-heading]]:tracking-wide [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group-heading]]:uppercase",
         className
       )}
       {...props}
@@ -153,6 +154,8 @@ function CommandItem({
         MENU_ROW_BASE,
         // cmdk sets data-disabled="false" on enabled items too, so match only "true"
         "data-[selected=true]:bg-beheer-row-high data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50",
+        // Focus stays in the search field: while that is keyboard-focused, the arrow-key row also gets the focus ring
+        "[[cmdk-root]:has(input:focus-visible)_&]:data-[selected=true]:ring-2 [[cmdk-root]:has(input:focus-visible)_&]:data-[selected=true]:ring-ring [[cmdk-root]:has(input:focus-visible)_&]:data-[selected=true]:ring-inset",
         className
       )}
       {...props}

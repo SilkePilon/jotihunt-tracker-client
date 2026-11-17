@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion } from 'motion/react';
 import { CalculatorIcon, ChevronRightIcon, FileTextIcon, GlobeIcon, MapPinIcon, type LucideIcon } from 'lucide-react';
 import Reveal from '@/components/motion/Reveal';
+import { COARSE_HIT_AREA } from '@/lib/hit-area';
 import { type ChatToolCall, stackedTools, toolDoneLabel, toolSummary, toolTone } from '@/lib/intel-chat';
 import { SWAP_TRANSITION } from '@/lib/motion';
 import { cn } from '@/lib/utils';
@@ -31,12 +32,16 @@ export default function ToolsUsed({ calls }: { calls: ChatToolCall[] }) {
   const [open, setOpen] = useState(false);
   const failed = calls.some((call) => call.state === 'error');
   return (
-    <div className="flex flex-col items-start">
+    // isolate: the toggle's 44px touch area on phones (COARSE_HIT_AREA) stays above the message's background
+    <div className="isolate flex flex-col items-start">
       <button
         type="button"
         aria-expanded={open}
         onClick={() => setOpen(!open)}
-        className="inline-flex items-center gap-1.5 rounded-[10px] bg-beheer-row px-2 py-1 text-xs font-semibold text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        className={cn(
+          COARSE_HIT_AREA,
+          'inline-flex items-center gap-1.5 rounded-md bg-beheer-row px-2 py-1 text-xs font-semibold text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring',
+        )}
       >
         <span className="flex pr-1">
           {stackedTools(calls).map((name) => (
@@ -55,16 +60,20 @@ export default function ToolsUsed({ calls }: { calls: ChatToolCall[] }) {
             <ul className="flex flex-col gap-0.5 pt-1.5">
               {calls.map((call) => {
                 const summary = toolSummary(call);
+                const error = call.state === 'error';
                 return (
-                  <li key={call.id} className="flex min-w-0 items-center gap-2 rounded-xl bg-beheer-row px-2 py-1.5 text-[12px]">
+                  // An error wraps onto more lines (the reason is the point); a result line stays one truncated line
+                  <li key={call.id} className={cn('flex min-w-0 gap-2 rounded-xl bg-beheer-row px-2 py-1.5 text-xs', error ? 'items-start' : 'items-center')}>
                     <ToolIcon name={call.name} big />
-                    <span className="shrink-0 font-semibold">{toolDoneLabel(call.name)}</span>
-                    {summary && (
-                      <span className={cn('flex min-w-0 items-center gap-1.5', call.state === 'error' ? 'text-destructive dark:text-red-300' : 'text-muted-foreground')}>
-                        {call.state === 'error' && <span className="size-1.5 shrink-0 rounded-full bg-destructive" aria-hidden />}
-                        <span className="truncate">{summary}</span>
-                      </span>
-                    )}
+                    <span className={cn('flex min-w-0 gap-x-2', error ? 'flex-wrap pt-[3px]' : 'items-center')}>
+                      <span className="shrink-0 font-semibold">{toolDoneLabel(call.name)}</span>
+                      {summary && (
+                        <span className={cn('flex min-w-0 gap-1.5', error ? 'text-destructive-text' : 'items-center text-muted-foreground')}>
+                          {error && <span className="mt-[6px] size-1.5 shrink-0 self-start rounded-full bg-destructive" aria-hidden />}
+                          <span className={error ? 'min-w-0 break-words' : 'truncate'}>{summary}</span>
+                        </span>
+                      )}
+                    </span>
                   </li>
                 );
               })}

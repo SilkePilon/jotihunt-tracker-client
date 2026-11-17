@@ -9,6 +9,7 @@ import type { MapRef } from '@/components/Map';
 import { useEdition } from '@/hooks/edition.hook';
 import { useHintBoard } from '@/hooks/hints.hook';
 import { apiErrorMessage } from '@/lib/api-error';
+import { activatedByKeyboard } from '@/lib/input-modality';
 import { areaLabel, formatDistance, sameAnswer } from '@/lib/intel-chat';
 import { INTEL_CLOSE_MS, hasExistingMarker } from '@/lib/intel-window';
 import { SWAP } from '@/lib/motion';
@@ -27,9 +28,9 @@ interface PointCardProps {
 /** M3 result card: mini map, RD / Deelgebied / Dichtstbij, "Toon op kaart" and (proposals) "Zet als antwoord" */
 export default function PointCard({ point, proposal, mapRef }: PointCardProps) {
   return (
-    <div className="overflow-hidden rounded-[18px] bg-beheer-row">
+    <div className="overflow-hidden rounded-2xl bg-beheer-row">
       {point && <MiniMap point={point.latLng} label={point.label} />}
-      <div className="grid gap-1.5 px-3 py-2.5 text-[12.5px]">
+      <div className="grid gap-1.5 px-3 py-2.5 text-caption">
         {proposal && (
           <Row name={`Antwoord ${areaLabel(proposal.area)}`}>
             <span className="truncate font-mono">{proposal.answer}</span>
@@ -64,10 +65,12 @@ export function ShowOnMapPill({ point, mapRef }: { point: Pick<PointResult, 'lat
 
   function showOnMap() {
     const { lng, lat } = point.latLng;
+    // Decided now: the dialog's close animation runs first
+    const focus = activatedByKeyboard();
     close();
     setTimeout(() => {
       mapRef.current?.flyTo({ center: [lng, lat], zoom: 15, duration: 2000 });
-      mapRef.current?.markPoint({ lng, lat } as LngLat);
+      mapRef.current?.markPoint({ lng, lat } as LngLat, { focus });
     }, INTEL_CLOSE_MS);
   }
 
@@ -135,7 +138,7 @@ function SaveAnswerButton({ proposal }: { proposal: HintAnswerProposal }) {
 
   return (
     <>
-      <Pill variant={saved ? 'success' : 'primary'} disabled={saving || (readOnly && !saved)} aria-disabled={saved} onClick={click} morphKey={saved ? 'saved' : saving ? 'saving' : 'idle'}>
+      <Pill variant={saved ? 'success' : 'primary'} busy={saving} disabled={readOnly && !saved} aria-disabled={saved} onClick={click} morphKey={saved ? 'saved' : saving ? 'saving' : 'idle'}>
         {saved ? (
           <>
             Opgeslagen

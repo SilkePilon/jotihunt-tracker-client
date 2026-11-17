@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { SidebarFox } from './fox-status';
-import { axisTicks, chipSinceText, formatSince, historyModel, historyStatusLine, statusSinceText, type AreaHistory } from './fox-history';
+import { axisTicks, blockKeyTarget, chipSinceText, defaultTabStop, formatSince, historyModel, historyStatusLine, isBlockKey, nearestBlock, statusSinceText, type AreaHistory, type HistoryBlock } from './fox-history';
 
 const MIN = 60_000;
 // 18:40 Amsterdam; the window runs 15:40 – 18:40.
@@ -226,5 +226,64 @@ describe('historyStatusLine', () => {
 describe('axisTicks', () => {
   test('window start, middle and now', () => {
     expect(axisTicks(from)).toEqual(['15:40', '17:10', 'nu']);
+  });
+});
+
+describe('nearestBlock', () => {
+  const blocks = [
+    { id: 'a', left: 10, right: 40, centreY: 15 },
+    { id: 'b', left: 60, right: 62, centreY: 37 },
+  ];
+  test('a tap inside a span picks it; between rows the nearer lane wins', () => {
+    expect(nearestBlock(blocks, 20, 15, 22)).toBe('a');
+    expect(nearestBlock(blocks, 61, 30, 22)).toBe('b');
+  });
+  test('a tap next to a tiny block still reaches it, but not beyond the radius', () => {
+    expect(nearestBlock(blocks, 75, 37, 22)).toBe('b');
+    expect(nearestBlock(blocks, 90, 37, 22)).toBeNull();
+    expect(nearestBlock(blocks, 20, 70, 22)).toBeNull();
+  });
+});
+
+describe('timeline keyboard navigation', () => {
+  const block = (id: string, lane: HistoryBlock['lane'], start: number, end: number | null): HistoryBlock => ({ id, lane, kind: 'green', start, end, card: { title: id, meta: '' } });
+  // Status: s1 0–60, s2 60–now; hints: h1 at 50; spots: none; hunts: u1 at 150, u2 at 20 (out of order on purpose)
+  const blocks = [block('s2', 'status', 60, null), block('s1', 'status', 0, 60), block('h1', 'hint', 50, 55), block('u1', 'hunt', 150, 160), block('u2', 'hunt', 20, 30)];
+
+  test('the default tab stop is the latest block of the first lane with blocks', () => {
+    expect(defaultTabStop(blocks)).toBe('s2');
+    expect(defaultTabStop(blocks.filter((b) => b.lane !== 'status'))).toBe('h1');
+    expect(defaultTabStop([])).toBeNull();
+  });
+
+  test('left/right move along the lane in time order and stop at its ends', () => {
+    expect(blockKeyTarget(blocks, 's1', 'ArrowRight')).toBe('s2');
+    expect(blockKeyTarget(blocks, 's2', 'ArrowLeft')).toBe('s1');
+    expect(blockKeyTarget(blocks, 's2', 'ArrowRight')).toBeNull();
+    expect(blockKeyTarget(blocks, 'u2', 'ArrowRight')).toBe('u1');
+  });
+
+  test('home/end jump to the lane ends', () => {
+    expect(blockKeyTarget(blocks, 'u1', 'Home')).toBe('u2');
+    expect(blockKeyTarget(blocks, 'u2', 'End')).toBe('u1');
+    expect(blockKeyTarget(blocks, 'u2', 'Home')).toBeNull();
+  });
+
+  test('up/down go to the nearest block in time on the next lane with blocks, skipping empty lanes', () => {
+    expect(blockKeyTarget(blocks, 's1', 'ArrowDown')).toBe('h1');
+    // h1 (52.5) to the hunts lane, skipping the empty spots lane: u2 (25) is nearer than u1 (155)
+    expect(blockKeyTarget(blocks, 'h1', 'ArrowDown')).toBe('u2');
+    // u1 (155) up past spots and hints (h1 52.5)… hints has a block, so h1
+    expect(blockKeyTarget(blocks, 'u1', 'ArrowUp')).toBe('h1');
+    // h1 (52.5) up: s1 middle 30, s2 middle 120
+    expect(blockKeyTarget(blocks, 'h1', 'ArrowUp')).toBe('s1');
+    expect(blockKeyTarget(blocks, 's2', 'ArrowUp')).toBeNull();
+    expect(blockKeyTarget(blocks, 'u1', 'ArrowDown')).toBeNull();
+  });
+
+  test('unknown blocks and keys', () => {
+    expect(blockKeyTarget(blocks, 'gone', 'ArrowRight')).toBeNull();
+    expect(isBlockKey('ArrowDown')).toBe(true);
+    expect(isBlockKey('Enter')).toBe(false);
   });
 });

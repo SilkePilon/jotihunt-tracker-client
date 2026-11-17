@@ -1,14 +1,18 @@
 import StepDots from '@/components/tour/StepDots';
 import TimerRing from '@/components/tour/TimerRing';
 import { FLY_MS, GROUP_LABEL, TOUR_DWELL_MS, type TourStop } from '@/lib/hq-director';
+import { MAP_TILE } from '@/lib/map-chrome';
 import { cn, getColorFromArea } from '@/lib/utils';
 
 /** Top-left on the map: which tour stop is on screen, the time until the next one (tour ring) and the stops (tour dots). */
 export default function TourChip({ stop, index, count, step, hidden }: { stop: TourStop; index: number; count: number; step: number; hidden: boolean }) {
   return (
     <div
+      // Faded out (between stops, an event on screen): gone for screen readers too
+      aria-hidden={hidden || undefined}
       className={cn(
-        'card absolute left-4 top-4 z-10 flex items-center gap-3 rounded-2xl bg-card py-1.5 pl-1.5 pr-4 text-card-foreground shadow-lg transition-opacity duration-600 motion-reduce:transition-none',
+        MAP_TILE,
+        'absolute left-4 top-4 z-10 flex items-center gap-3 rounded-2xl py-1.5 pl-1.5 pr-4 transition-opacity duration-600 motion-reduce:transition-none',
         hidden && 'opacity-0',
       )}
     >

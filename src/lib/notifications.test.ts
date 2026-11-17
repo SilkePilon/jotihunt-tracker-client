@@ -1,5 +1,5 @@
-import { describe, expect, test } from 'bun:test';
-import { NOTIFICATION_OPTIONS, setAllTypes, toggleType, isSilent, isRecent, mergeFeed, pickPrimary, pickSound, shouldAlert, soundKey, toastKind, type AppNotification } from './notifications';
+import { describe, expect, mock, test } from 'bun:test';
+import { NOTIFICATION_OPTIONS, sameTypes, setAllTypes, toggleType, isSilent, isRecent, mergeFeed, missedSummary, pickPrimary, pickSound, routePushClick, shouldAlert, soundKey, toastAction, toastDuration, toastKind, PHONE_STICKY_TOAST_MS, type AppNotification } from './notifications';
 
 const n = (overrides: Partial<AppNotification>): AppNotification => ({ id: '1', type: 'hint', title: 't', body: '', urgent: false, data: {}, createdAt: '2026-10-17T20:00:00Z', ...overrides });
 
@@ -130,5 +130,102 @@ describe('hunt-cooldown', () => {
     expect(NOTIFICATION_OPTIONS.find((option) => option.type === 'hunt-cooldown')?.label).toBe('Weer huntbaar');
     expect(toggleType([], 'hunt-cooldown', false)).toEqual(['hunt-cooldown']);
     expect(setAllTypes(false)).toContain('hunt-cooldown');
+  });
+});
+
+describe('toastAction', () => {
+  test('laptop opens hint and news articles', () => {
+    const openArticle = mock(() => {});
+    toastAction(n({ type: 'article', data: { articleId: 7 } }), { openArticle })?.onClick();
+    expect(openArticle).toHaveBeenCalledWith(7);
+    expect(toastAction(n({ type: 'hint', data: { articleId: 3 } }), { openArticle })?.label).toBe('Openen');
+    expect(toastAction(n({ type: 'hint', data: {} }), { openArticle })).toBeUndefined();
+    expect(toastAction(n({ type: 'hunt-new', data: { articleId: 3 } }), { openArticle })).toBeUndefined();
+  });
+
+  test('phone opens the Hints page for hints only', () => {
+    const openHints = mock(() => {});
+    toastAction(n({ type: 'hint' }), { openHints })?.onClick();
+    expect(openHints).toHaveBeenCalledTimes(1);
+    expect(toastAction(n({ type: 'article', data: { articleId: 7 } }), { openHints })).toBeUndefined();
+    expect(toastAction(n({ type: 'hint' }), {})).toBeUndefined();
+  });
+});
+
+test('sameTypes compares disabled lists as sets', () => {
+  expect(sameTypes([], [])).toBe(true);
+  expect(sameTypes(['hint', 'article'], ['article', 'hint'])).toBe(true);
+  expect(sameTypes(['hint', 'hint'], ['hint'])).toBe(true);
+  expect(sameTypes(['hint'], [])).toBe(false);
+  expect(sameTypes(['hint'], ['article'])).toBe(false);
+});
+
+describe('missedSummary', () => {
+  const at = (id: string, type: AppNotification['type'], createdAt: string, data: AppNotification['data'] = {}): AppNotification => ({ id, type, title: `Titel ${id}`, body: '', urgent: false, data, createdAt });
+
+  test('nothing missed: no toast', () => {
+    expect(missedSummary([], {})).toBeNull();
+  });
+
+  test('counts them and names the newest, with its Openen action', () => {
+    const openArticle = mock(() => {});
+    const summary = missedSummary(
+      [at('a', 'fox-status', '2026-10-17T10:00:00Z'), at('b', 'hint', '2026-10-17T10:05:00Z', { articleId: 7 }), at('c', 'article', '2026-10-17T10:01:00Z', { articleId: 3 })],
+      { openArticle },
+    );
+    expect(summary?.title).toBe('3 meldingen gemist · nieuwste: Titel b');
+    summary?.action?.onClick();
+    expect(openArticle).toHaveBeenCalledWith(7);
+  });
+
+  test('one missed reads singular; no action when the newest has nothing to open', () => {
+    const summary = missedSummary([at('a', 'fox-status', '2026-10-17T10:00:00Z')], { openArticle: () => {} });
+    expect(summary).toEqual({ title: '1 melding gemist · nieuwste: Titel a', action: undefined });
+  });
+});
+
+describe('toastDuration', () => {
+  test('broadcasts and tegenhunts stay until closed', () => {
+    expect(toastDuration({ type: 'broadcast', urgent: true })).toBe(Infinity);
+    expect(toastDuration({ type: 'counter-hunt', urgent: false })).toBe(Infinity);
+  });
+
+  test('on a phone they stay two minutes instead', () => {
+    expect(toastDuration({ type: 'broadcast', urgent: true }, true)).toBe(PHONE_STICKY_TOAST_MS);
+    expect(toastDuration({ type: 'counter-hunt', urgent: false }, true)).toBe(120_000);
+    expect(toastDuration({ type: 'hint', urgent: false }, true)).toBe(8000);
+  });
+
+  test('the rest: 30 s when urgent, else 8 s', () => {
+    expect(toastDuration({ type: 'fox-status', urgent: true })).toBe(30_000);
+    expect(toastDuration({ type: 'hint', urgent: false })).toBe(8000);
+  });
+});
+
+describe('routePushClick', () => {
+  const message = (data: unknown) => ({ type: 'notification-click', data });
+
+  test('laptop: a hint or news push opens the Intel window, on the article when known', () => {
+    const openIntel = mock((articleId?: number) => articleId);
+    expect(routePushClick(message({ type: 'hint', articleId: 12 }), { openIntel })).toBe(true);
+    expect(openIntel).toHaveBeenLastCalledWith(12);
+    expect(routePushClick(message({ type: 'article' }), { openIntel })).toBe(true);
+    expect(openIntel).toHaveBeenLastCalledWith(undefined);
+  });
+
+  test('phone: a hint push opens the Hints page; news has nothing to open there', () => {
+    const openHints = mock(() => {});
+    expect(routePushClick(message({ type: 'hint' }), { openHints })).toBe(true);
+    expect(openHints).toHaveBeenCalledTimes(1);
+    expect(routePushClick(message({ type: 'article' }), { openHints })).toBe(false);
+  });
+
+  test('other pushes and other messages only bring the app to the front', () => {
+    const openIntel = mock(() => {});
+    expect(routePushClick(message({ type: 'fox-status' }), { openIntel })).toBe(false);
+    expect(routePushClick({ type: 'SKIP_WAITING' }, { openIntel })).toBe(false);
+    expect(routePushClick(null, { openIntel })).toBe(false);
+    expect(routePushClick(message(null), { openIntel })).toBe(false);
+    expect(openIntel).not.toHaveBeenCalled();
   });
 });

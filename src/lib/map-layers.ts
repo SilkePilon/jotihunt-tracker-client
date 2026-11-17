@@ -74,12 +74,13 @@ export function huntAccuracyCircles(hunts: SyncedHunt[] | undefined): FeatureCol
 
 /**
  * The app's map layers from bottom to top. Within the first group the order is free; every later group is drawn above
- * all groups before it. The markers stack like the Android app's: groups, foxes (and hints), prediction pins, hunters.
+ * all groups before it. Markers bottom to top: fast food, groups, hunters and Life360 members, foxes (and hints),
+ * prediction pins.
  */
 export const MAP_LAYER_STACK: string[][] = [
   // 3D buildings under every app layer (below the style labels through beforeId; on raster styles this keeps them under the markers)
   [BUILDINGS_LAYER],
-  ['device-accuracy-fill', LIFE360_ACCURACY_LAYER, HUNT_ACCURACY_FILL_LAYER, HUNT_ACCURACY_LINE_LAYER, HUNT_ACCURACY_ESTIMATE_LINE_LAYER, 'prediction-areas-fill', 'prediction-areas-line', REACH_FILL_LAYER, REACH_CONE_LAYER, REACH_LINE_LAYER, 'prediction-pin-lines', 'circle-layer-home', 'team-circles-fill', 'marker-trails-line', ...ROUTED_TRAIL_LAYERS],
+  ['device-accuracy-fill', LIFE360_ACCURACY_LAYER, HUNT_ACCURACY_FILL_LAYER, HUNT_ACCURACY_LINE_LAYER, HUNT_ACCURACY_ESTIMATE_LINE_LAYER, 'prediction-areas-fill', 'prediction-areas-line', REACH_FILL_LAYER, REACH_CONE_LAYER, REACH_LINE_LAYER, 'prediction-pin-lines', 'circle-layer-home', 'circle-layer-home-outline', 'team-circles-fill', 'team-circles-outline', 'marker-trails-line', ...ROUTED_TRAIL_LAYERS],
   [TRAIL_BADGE_LAYER],
   // Above the trails, below the markers: the night areas, the one being drawn on top
   [...NIGHT_AREA_LAYERS, ...NIGHT_DRAW_LAYERS],
@@ -89,12 +90,14 @@ export const MAP_LAYER_STACK: string[][] = [
   [FASTFOOD_HOVER_LAYER],
   [TEAM_PINS_LAYER],
   ['team-pins-hover'],
-  [FOX_MARKERS_LAYER],
-  ['fox-markers-hover'],
-  [PREDICTION_PINS_LAYER],
+  // The people (hunters, Life360) above the groups (our own hunters near a group's pin stay visible) but under the
+  // foxes, so the game's markers stay readable where they overlap
   [HUNTER_ARROWS_LAYER],
   [HUNTERS_LAYER, LIFE360_LAYER],
   ['hunters-hover', LIFE360_HOVER_LAYER],
+  [FOX_MARKERS_LAYER],
+  ['fox-markers-hover'],
+  [PREDICTION_PINS_LAYER],
 ];
 
 /** Radius of the circle drawn around each group (metres). */
@@ -167,6 +170,15 @@ export function accuracyCircles(positions: Position[]): FeatureCollection<Polygo
   return collection(
     positions.filter((position) => Number.isFinite(position.accuracy) && position.accuracy > 0).map((position) => circle(position.longitude, position.latitude, position.accuracy, { deviceId: position.deviceId })),
   );
+}
+
+/** Below this accuracy (m) the own-position dot needs no accuracy circle: it would hide under the dot anyway. */
+export const OWN_ACCURACY_MIN_M = 30;
+
+/** The browser fix's accuracy circle around the own-position dot (empty without a fix or a usable accuracy). */
+export function ownAccuracyCircle(position: { lat: number; lng: number } | null, accuracy: number | null): FeatureCollection<Polygon, Record<string, never>> {
+  if (!position || accuracy === null || !Number.isFinite(accuracy) || accuracy <= 0) return collection([]);
+  return collection([circle(position.lng, position.lat, accuracy, {})]);
 }
 
 /** One line per area through its (time-sorted) markers; areas with a single marker have no line. */

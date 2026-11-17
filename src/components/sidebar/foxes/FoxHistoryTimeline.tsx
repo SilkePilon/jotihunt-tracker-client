@@ -1,7 +1,9 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type FocusEvent, type MouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type FocusEvent, type KeyboardEvent, type MouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { AnimatePresence, motion, useReducedMotion, type Transition } from 'motion/react';
-import { CheckIcon, CircleXIcon, CrosshairIcon, EyeIcon, FlagIcon, LightbulbIcon, type LucideIcon } from 'lucide-react';
-import { axisTicks, HISTORY_WINDOW_MIN, LANES, type HistoryBlock, type HistoryModel, type LaneKey } from '@/lib/fox-history';
+import { CheckIcon, CircleXIcon, CrosshairIcon, FlagIcon, GlassesIcon, LightbulbIcon, type LucideIcon } from 'lucide-react';
+import { axisTicks, blockKeyTarget, defaultTabStop, HISTORY_WINDOW_MIN, isBlockKey, LANES, nearestBlock, type HistoryBlock, type HistoryModel, type LaneKey } from '@/lib/fox-history';
+import { COARSE_HIT_AREA } from '@/lib/hit-area';
+import { TOOLTIP_SURFACE } from '@/lib/menu-styles';
 import { EASE_OUT } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 
@@ -17,11 +19,13 @@ const SYNC_MS = 50;
 const RETURN_DOT_DELAY = 0.26;
 const LEAVE_MS = 90; // grace before a mouse-leave closes the card, so crossing the gap to the next block slides it
 const ENTER = [0.16, 1, 0.3, 1] as const;
+/** Touch: a tap within this many px of a block selects it (a 44 px target around the 12 px block) */
+const TOUCH_RADIUS = 22;
 
 const LANE_ICON: Record<LaneKey, { icon: LucideIcon; name: string }> = {
   status: { icon: FlagIcon, name: 'Status' },
   hint: { icon: LightbulbIcon, name: 'Hints' },
-  spot: { icon: EyeIcon, name: 'Spots' },
+  spot: { icon: GlassesIcon, name: 'Spots' },
   hunt: { icon: CrosshairIcon, name: 'Hunts' },
 };
 
@@ -36,17 +40,19 @@ const LANE_COLOR: Record<LaneKey, string> = {
   hunt: 'var(--fox-cooldown)',
 };
 
+// Status colours from the same variables as the blocks (index.css, .fox-history), so the legend follows dark mode too
 const LEGEND: { label: string; style: CSSProperties }[] = [
-  { label: 'groen', style: { background: '#22c55e' } },
-  { label: 'oranje', style: { background: '#f97316' } },
+  { label: 'groen', style: { background: 'var(--fox-history-green)' } },
+  { label: 'oranje', style: { background: 'var(--fox-history-orange)' } },
   {
     label: 'rood',
     style: {
-      background: 'repeating-linear-gradient(-45deg, color-mix(in oklab, #ef4444 75%, transparent) 0 1px, transparent 1px 4px), color-mix(in oklab, #ef4444 10%, var(--card))',
-      boxShadow: 'inset 0 0 0 1px #ef4444',
+      background:
+        'repeating-linear-gradient(-45deg, color-mix(in oklab, var(--fox-history-red) 75%, transparent) 0 1px, transparent 1px 4px), color-mix(in oklab, var(--fox-history-red) 10%, var(--card))',
+      boxShadow: 'inset 0 0 0 1px var(--fox-history-red)',
     },
   },
-  { label: 'OV', style: { background: '#6366f1' } },
+  { label: 'OV', style: { background: 'var(--fox-history-blue)' } },
   { label: 'puzzelen', style: { background: 'color-mix(in oklab, var(--muted-foreground) var(--fox-history-pastel), var(--card))' } },
   {
     label: 'cooldown',
@@ -95,6 +101,8 @@ export default function FoxHistoryTimeline({ model, playKey, play = true }: { mo
   const lastPointer = useRef('mouse');
   const [active, setActive] = useState<ActiveCard | null>(null);
   const [focusLane, setFocusLane] = useState<LaneKey | null>(null);
+  // Roving tabindex: the blocks are one Tab stop (the last one focused or tapped), arrow keys move between them
+  const [tabStop, setTabStop] = useState<string | null>(null);
   const leaveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // A different fox: start over (adjusting state during render, not in an effect)
@@ -104,6 +112,7 @@ export default function FoxHistoryTimeline({ model, playKey, play = true }: { mo
     setPlayed(0);
     setActive(null);
     setFocusLane(null);
+    setTabStop(null);
   }
 
   useLayoutEffect(() => {
@@ -148,7 +157,8 @@ export default function FoxHistoryTimeline({ model, playKey, play = true }: { mo
   useEffect(() => {
     if (!active?.touch) return;
     const close = (event: PointerEvent) => {
-      if (!(event.target instanceof Element && event.target.closest('[data-fox-history-block]'))) setActive(null);
+      // Taps in the plot pick the nearest block (or close the card) in onLaneTap
+      if (!(event.target instanceof Element && event.target.closest('[data-fox-history-block], [data-fox-history-plot]'))) setActive(null);
     };
     document.addEventListener('pointerdown', close);
     return () => document.removeEventListener('pointerdown', close);
@@ -177,6 +187,22 @@ export default function FoxHistoryTimeline({ model, playKey, play = true }: { mo
 
   const onLaneTap = (lane: LaneKey) => (event: MouseEvent) => {
     if (event.target instanceof Element && event.target.closest('[data-fox-history-block]')) return;
+    // Touch on a plot row (not the lane icons): the 12px blocks are small targets, so a tap near one (within 22px) opens that block's card
+    if (lastPointer.current !== 'mouse' && event.detail !== 0 && plotRef.current?.contains(event.currentTarget as Node)) {
+      const rect = plotRef.current.getBoundingClientRect();
+      const placed = model.blocks
+        .filter((block) => block.start <= passed)
+        .map((block) => ({ id: block.id, left: x(block.start) + 1, right: x(Math.min(capEnd(block), passed)), centreY: laneCentre(block.lane) }));
+      const id = nearestBlock(placed, event.clientX - rect.left, event.clientY - rect.top, TOUCH_RADIUS);
+      const block = id ? model.blocks.find((candidate) => candidate.id === id) : undefined;
+      if (block) {
+        setActive((current) => (current?.block.id === block.id ? null : { block, touch: true }));
+        // Keyboard use after the tap continues from this block
+        setTabStop(block.id);
+        return;
+      }
+      setActive(null);
+    }
     setFocusLane((current) => (current === lane ? null : lane));
   };
 
@@ -203,8 +229,20 @@ export default function FoxHistoryTimeline({ model, playKey, play = true }: { mo
   };
   // Keyboard focus shows the card too (not the focus a tap or click gives the button)
   const onBlockFocus = (block: HistoryBlock) => (event: FocusEvent<HTMLButtonElement>) => {
+    setTabStop(block.id);
     if (event.currentTarget.matches(':focus-visible')) setActive({ block, touch: false });
   };
+  const onBlockKeyDown = (block: HistoryBlock) => (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (!isBlockKey(event.key)) return;
+    event.preventDefault();
+    const next = blockKeyTarget(model.blocks, block.id, event.key);
+    if (!next) return;
+    setTabStop(next);
+    // Focusing it shows its card (onBlockFocus)
+    plotRef.current?.querySelector<HTMLButtonElement>(`[data-block-id="${CSS.escape(next)}"]`)?.focus();
+  };
+  // The picked block can drop out of the window: then the default (normally the current status) is the stop
+  const stop = tabStop !== null && model.blocks.some((block) => block.id === tabStop) ? tabStop : defaultTabStop(model.blocks);
 
   // Card under the active block, kept inside the plot
   const activeBlock = active ? model.blocks.find((block) => block.id === active.block.id) : undefined;
@@ -218,7 +256,7 @@ export default function FoxHistoryTimeline({ model, playKey, play = true }: { mo
       ref={wrapRef}
       role="group"
       aria-label={label}
-      className="fox-history relative grid grid-cols-[20px_minmax(0,1fr)] text-foreground"
+      className="fox-history relative isolate grid grid-cols-[20px_minmax(0,1fr)] text-foreground"
       style={{ '--t': reduced ? HISTORY_WINDOW_MIN : 0 } as CSSProperties}
     >
       {/* Lane icons */}
@@ -234,7 +272,11 @@ export default function FoxHistoryTimeline({ model, playKey, play = true }: { mo
               aria-label={`Markeer ${name.toLowerCase()}`}
               aria-pressed={focusLane === lane}
               onClick={onLaneTap(lane)}
-              className="flex w-full cursor-pointer items-center rounded-[4px] text-muted-foreground transition-opacity duration-200 focus-visible:outline-2 focus-visible:outline-ring motion-reduce:transition-none"
+              className={cn(
+                'flex w-full cursor-pointer items-center rounded-[4px] text-muted-foreground transition-opacity duration-200 focus-visible:outline-2 focus-visible:outline-ring motion-reduce:transition-none',
+                // Touch: a 44px target (it reaches out to the left; the plot to its right keeps its own taps)
+                COARSE_HIT_AREA,
+              )}
               style={{ height: ROW, opacity: dim(lane, 0.28) }}
             >
               <Icon aria-hidden size={13} />
@@ -243,7 +285,7 @@ export default function FoxHistoryTimeline({ model, playKey, play = true }: { mo
         })}
       </div>
 
-      <div ref={plotRef} className="relative" style={{ paddingTop: TOP }}>
+      <div ref={plotRef} data-fox-history-plot="" className="relative" style={{ paddingTop: TOP }} onPointerDownCapture={(event) => (lastPointer.current = event.pointerType)}>
         {/* Hourly grid */}
         {hours.map((minute) => (
           <div key={minute} aria-hidden className="absolute top-0 w-px bg-foreground/[0.06]" style={{ left: x(minute), bottom: AXIS }} />
@@ -267,7 +309,10 @@ export default function FoxHistoryTimeline({ model, playKey, play = true }: { mo
                       key={block.id}
                       type="button"
                       data-fox-history-block=""
+                      data-block-id={block.id}
                       data-kind={block.kind}
+                      tabIndex={block.id === stop ? 0 : -1}
+                      onKeyDown={onBlockKeyDown(block)}
                       aria-label={`${block.card.title}, ${block.card.meta}${block.card.note ? `, ${block.card.note}` : ''}`}
                       onPointerDown={(event) => (lastPointer.current = event.pointerType)}
                       onPointerEnter={onBlockEnter(block)}
@@ -276,7 +321,7 @@ export default function FoxHistoryTimeline({ model, playKey, play = true }: { mo
                       onBlur={() => setActive((current) => (current?.touch ? current : null))}
                       onClick={onBlockTap(block)}
                       className={cn(
-                        'fox-history-block absolute grid cursor-pointer place-items-center overflow-hidden rounded-[4px] text-white transition-[filter] duration-150 hover:brightness-110 hover:saturate-110 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring',
+                        'fox-history-block absolute grid cursor-pointer place-items-center overflow-hidden rounded-[4px] transition-[filter] duration-150 hover:brightness-110 hover:saturate-110 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring',
                         live && 'fox-history-live',
                       )}
                       style={{
@@ -365,7 +410,7 @@ export default function FoxHistoryTimeline({ model, playKey, play = true }: { mo
         />
 
         {/* Axis */}
-        <div aria-hidden className="relative text-[10.5px] text-muted-foreground tabular-nums" style={{ height: AXIS }}>
+        <div aria-hidden className="relative text-xs text-muted-foreground desk:text-label tabular-nums" style={{ height: AXIS }}>
           <span className="absolute top-1 whitespace-nowrap" style={{ left: x(0) }}>
             {ticks[0]}
           </span>
@@ -383,7 +428,7 @@ export default function FoxHistoryTimeline({ model, playKey, play = true }: { mo
             <motion.div
               key="card"
               aria-hidden
-              className="pointer-events-none absolute z-[6] rounded-[14px] bg-popover px-[11px] py-[9px] text-xs text-popover-foreground shadow-[0_12px_30px_rgb(0_0_0/0.2)] ring-1 ring-border"
+              className={`pointer-events-none absolute z-[6] bg-popover text-popover-foreground ${TOOLTIP_SURFACE}`}
               style={{ width: CARD_W }}
               initial={{ opacity: 0, y: 3, left: card.left, top: card.top }}
               animate={{ opacity: 1, y: 0, left: card.left, top: card.top }}
@@ -396,7 +441,7 @@ export default function FoxHistoryTimeline({ model, playKey, play = true }: { mo
             >
               <AnimatePresence mode="popLayout" initial={false}>
                 <motion.div key={activeBlock.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={reduced ? { duration: 0 } : { duration: 0.16, ease: ENTER }}>
-                  <div className="text-[13px] font-medium">{activeBlock.card.title}</div>
+                  <div className="text-body font-semibold">{activeBlock.card.title}</div>
                   <div className="mt-0.5 text-muted-foreground tabular-nums">{activeBlock.card.meta}</div>
                   {activeBlock.card.note && <div className="mt-1 text-muted-foreground">{activeBlock.card.note}</div>}
                 </motion.div>
@@ -407,7 +452,7 @@ export default function FoxHistoryTimeline({ model, playKey, play = true }: { mo
       </div>
 
       {/* Legend */}
-      <div aria-hidden className="col-span-2 mx-0.5 mt-1 flex flex-wrap gap-x-2.5 gap-y-1 text-[10.5px] text-muted-foreground">
+      <div aria-hidden className="col-span-2 mx-0.5 mt-1 flex flex-wrap gap-x-2.5 gap-y-1 text-xs text-muted-foreground desk:text-label">
         {LEGEND.map(({ label, style }) => (
           <span key={label} className="inline-flex items-center gap-1">
             <i className="inline-block h-1.5 w-2.5 rounded-[2px]" style={style} />

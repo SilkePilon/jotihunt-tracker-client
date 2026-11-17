@@ -2,6 +2,27 @@
 @import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
+/* The mobile shell on a screen at least md wide (a phone held sideways, hooks/media.hook.ts): undoes the md: desktop
+   positions. :is() with the attribute outranks a plain md: class, whatever order the variants are emitted in */
+@custom-variant shell-mobile (&:is([data-shell="mobile"] *));
+/* The mobile shell on a phone held sideways (LANDSCAPE_PHONE_QUERY in hooks/media.hook.ts): the sheet and phone
+   drawers are a column, not the full width */
+@custom-variant landscape-phone {
+  @media (orientation: landscape) and (max-height: 500px) {
+    &:is([data-shell="mobile"] *) {
+      @slot;
+    }
+  }
+}
+/* Desktop shell at md width and up: the smaller desktop text sizes. A phone held sideways is md wide but keeps the
+   phone sizes (the text-xs floor, 16px inputs that iOS doesn't zoom into) */
+@custom-variant desk {
+  @media (width >= 48rem) {
+    &:not(:is([data-shell="mobile"] *)) {
+      @slot;
+    }
+  }
+}
 
 @utility container {
   margin-inline: auto;
@@ -23,20 +44,36 @@
   --secondary: hsl(60 0% 95.9%);
   --secondary-foreground: hsl(24 9.8% 10%);
   --muted: hsl(60 0% 95.9%);
-  --muted-foreground: hsl(25 5.3% 44.7%);
+  /* 38% (not shadcn's 44.7%): keeps >= 4.5:1 on the tonal rows (beheer-row-high, fox groups) */
+  --muted-foreground: hsl(25 5.3% 38%);
   --accent: hsl(60 0% 95.9%);
   --accent-foreground: hsl(24 9.8% 10%);
-  --destructive: hsl(0 84.2% 60.2%);
+  /* Same red as dark mode: white button text needs >= 4.5:1 */
+  --destructive: hsl(0 72.2% 50.6%);
   --destructive-foreground: hsl(60 9.1% 97.8%);
+  /* Red as small text (errors, danger rows, penalties): >= 4.5:1 on white, the tonal rows and bg-destructive/15 */
+  --destructive-text: hsl(0 72.2% 44%);
+  /* Solid red fill under white text (destructive Button, ConfirmDialog action, danger Pill): 4.8:1 */
+  --destructive-fill: var(--destructive);
   --border: hsl(20 0% 90%);
-  --input: hsl(20 0% 90%);
-  --ring: hsl(24.6 95% 53.1%);
+  /* Text field outlines (border-input): >= 3:1 against white so the field's boundary is visible */
+  --input: hsl(20 0% 54%);
+  /* Focus ring: orange-700, so a solid ring is >= 3:1 against white cards, the tonal rows and primary containers
+     (the orange-600 of dark mode was 2.73:1 on beheer-row-high / primary-container) */
+  --ring: #c2410c;
   --radius: 0.75rem;
-  --chart-1: hsl(12 76% 61%);
-  --chart-2: hsl(173 58% 39%);
-  --chart-3: hsl(197 37% 24%);
-  --chart-4: hsl(43 74% 66%);
-  --chart-5: hsl(27 87% 67%);
+  /* Inner corners of segmented rows (Beheer rows, menu rows, phone menu: M3 segmented list, outer ends 16px). Used as
+     rounded-(--radius-segment), which tailwind-merge still lets a caller's rounded-* override */
+  --radius-segment: 6px;
+  /* The tighter inner corners of the map's segmented button stacks (zoom, my location / fullscreen / ruler) */
+  --radius-segment-tight: 4px;
+  /* Tiles: search and coordinate rows, the command list rows, tonal note boxes, picker buttons. Used as
+     rounded-(--radius-tile) like the segment radius above */
+  --radius-tile: 14px;
+  /* Inner controls inside a tile or track: segmented tabs and their thumb, the Bekijk button, map style thumbnails */
+  --radius-inner: 9px;
+  /* Intel panels: the chat input, the AI-off note and the summary skeleton */
+  --radius-panel: 20px;
   /* Vossen card: M3 status roles of the map markers (marker-style.ts) + a cooldown blue */
   --fox-ok: #2f6b2c;
   --fox-ok-container: #b7f2ae;
@@ -69,6 +106,45 @@
   /* Orange tonal pair (M3 primary container): picked tiles, filled digit boxes */
   --primary-container: #ffdcc6;
   --on-primary-container: #5a1f00;
+  /* Orange as text (links, small labels): --primary is only 2.8:1 on white, this darker orange is >= 4.5:1 */
+  --primary-text: #c2410c;
+  /* Orange as a small fill (progress, dots, switch track, check badge): --primary is 2.8:1 on white, orange-700 is
+     >= 3:1 against white cards and the tonal rows. Dark mode keeps --primary */
+  --primary-fill: #c2410c;
+  /* Happy hour's own amber (pill, toast, tile) and the status dots on the phone's tracker line */
+  --happy-hour: #f59e0b;
+  --on-happy-hour: #1c1300;
+  /* Cookie badges (CookieBadge, SuccessBadge): the green/amber fills with a dark glyph on them; white was ~2.2:1,
+     these are >= 6:1. The same in both themes, like the fills */
+  --cookie-ok: #22c55e;
+  --on-cookie-ok: #052e16;
+  --cookie-warn: #f59e0b;
+  --on-cookie-warn: #1c1300;
+  --status-ok-dot: #22c55e;
+  --status-warn-dot: #f59e0b;
+  --status-warn-text: #92400e;
+  /* Amber notice bar (Beheer problems, Koppelingen): amber-500 over the card, status-warn-text on it is >= 6:1 in both themes */
+  --warn-container: color-mix(in oklab, #f59e0b 16%, var(--card));
+  /* Positive small text (points, "werkt"): green-800, >= 5.4:1 on card and the tonal rows (green-700 is 3.8:1 on row-high) */
+  --status-ok-text: #166534;
+  /* Informational small text (Pill info tone, Intel meta "info"): sky-800, >= 5:1 on the sky tint and the tonal rows */
+  --status-info-text: #075985;
+  /* Score categories (lib/score.ts: Punten bar segments + legend squares, hunt result bar). Hints is amber-600 in light:
+     yellow-500 was 1.9:1 on white, a legend square needs >= 3:1 (this is 3.2:1) */
+  --score-hunts: var(--color-orange-500);
+  --score-counter-hunts: var(--color-purple-500);
+  --score-assignments: var(--color-blue-500);
+  --score-photo: var(--color-teal-500);
+  --score-hints: var(--color-amber-600);
+  --score-penalty: var(--color-red-500);
+  /* Intel kinds (hint orange, opdracht blue, nieuws purple): the -800 shades as text/icons on their own tonal tile
+     (>= 6:1); the tile is the kind's 400 shade over the card, as in dark mode */
+  --intel-hint: #9a3412;
+  --intel-assignment: #1e40af;
+  --intel-news: #6b21a8;
+  --intel-hint-container: color-mix(in oklab, #fb923c 16%, var(--card));
+  --intel-assignment-container: color-mix(in oklab, #60a5fa 16%, var(--card));
+  --intel-news-container: color-mix(in oklab, #c084fc 16%, var(--card));
 }
 
 .dark {
@@ -88,14 +164,15 @@
   --accent-foreground: hsl(0 0% 97%);
   --destructive: hsl(0 72.2% 50.6%);
   --destructive-foreground: hsl(60 9.1% 97.8%);
+  /* --destructive is 3.3:1 on the dark card; red-300 is >= 6.5:1 on card, rows and bg-destructive/15 */
+  --destructive-text: #fca5a5;
+  /* The solid red fill a step darker on the dark window: white text 8.7:1 */
+  --destructive-fill: color-mix(in oklab, var(--destructive) 75%, black);
   --border: hsl(240 4% 22%);
-  --input: hsl(240 4% 22%);
-  --ring: hsl(20.5 90.2% 48.2%);
-  --chart-1: hsl(220 70% 50%);
-  --chart-2: hsl(160 60% 45%);
-  --chart-3: hsl(30 80% 55%);
-  --chart-4: hsl(280 65% 60%);
-  --chart-5: hsl(340 75% 55%);
+  /* Field outlines: >= 3:1 against the card (22% was 1.3:1); fills use bg-input/10 so they stay dark */
+  --input: hsl(240 4% 46%);
+  /* orange-500: >= 3:1 against primary-container (3.8), card (5.7) and the tonal rows (>= 4.5); orange-600 was 2.98:1 on primary-container */
+  --ring: #f97316;
   --fox-ok: #9bd893;
   --fox-ok-container: #1e5120;
   --fox-on-ok-container: #b7f2ae;
@@ -124,6 +201,23 @@
   --ai-on-think-container: #f0dbff;
   --primary-container: #6b2b05;
   --on-primary-container: #ffdcc6;
+  /* --primary is 3.6:1 on beheer-row-high and 3:1 on primary-container; this lighter orange is >= 4.5:1 on card, rows and containers */
+  --primary-text: #fb923c;
+  --primary-fill: var(--primary);
+  --status-warn-text: #fcd34d;
+  --warn-container: color-mix(in oklab, #f59e0b 16%, var(--card));
+  /* green-400: >= 7.3:1 on card and the tonal rows */
+  --status-ok-text: #4ade80;
+  /* sky-300: >= 6.2:1 on the sky tint and the tonal rows */
+  --status-info-text: #7dd3fc;
+  /* yellow-500 reads on the dark card (the light theme's amber-600 is darker than it needs to be) */
+  --score-hints: var(--color-yellow-500);
+  --intel-hint: #fb923c;
+  --intel-assignment: #60a5fa;
+  --intel-news: #c084fc;
+  --intel-hint-container: color-mix(in oklab, #fb923c 16%, var(--card));
+  --intel-assignment-container: color-mix(in oklab, #60a5fa 16%, var(--card));
+  --intel-news-container: color-mix(in oklab, #c084fc 16%, var(--card));
 }
 
 @theme inline {
@@ -143,14 +237,11 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-text: var(--destructive-text);
+  --color-destructive-fill: var(--destructive-fill);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
   --color-fox-ok: var(--fox-ok);
   --color-fox-warn: var(--fox-warn);
   --color-fox-cooldown: var(--fox-cooldown);
@@ -180,14 +271,42 @@
   --color-ai-on-think: var(--ai-on-think-container);
   --color-primary-container: var(--primary-container);
   --color-on-primary-container: var(--on-primary-container);
+  --color-primary-text: var(--primary-text);
+  --color-primary-fill: var(--primary-fill);
+  --color-happy-hour: var(--happy-hour);
+  --color-on-happy-hour: var(--on-happy-hour);
+  --color-cookie-ok: var(--cookie-ok);
+  --color-on-cookie-ok: var(--on-cookie-ok);
+  --color-cookie-warn: var(--cookie-warn);
+  --color-on-cookie-warn: var(--on-cookie-warn);
+  --color-status-warn-text: var(--status-warn-text);
+  --color-warn-container: var(--warn-container);
+  --color-status-ok-text: var(--status-ok-text);
+  --color-status-info-text: var(--status-info-text);
   --color-beheer-window: var(--beheer-window);
   --color-beheer-row: var(--beheer-row);
   --color-beheer-row-high: var(--beheer-row-high);
+  --color-score-hunts: var(--score-hunts);
+  --color-score-counter-hunts: var(--score-counter-hunts);
+  --color-score-assignments: var(--score-assignments);
+  --color-score-photo: var(--score-photo);
+  --color-score-hints: var(--score-hints);
+  --color-score-penalty: var(--score-penalty);
+
+  /* Named type scale for the off-Tailwind sizes (text-label / text-caption / text-body / text-title; text-xs 12px,
+     text-sm 14px and up stay Tailwind's). label: overlines, meta and tags on the desktop shell; caption: secondary
+     lines; body: the desktop body text of rows, dialogs and cards; title: card titles (CARD_TITLE) and big CTA labels.
+     In rem like Tailwind's own sizes, so they follow the root size (the HQ wall). Sizes only: callers add leading. */
+  --text-label: 0.6875rem; /* 11px */
+  --text-caption: 0.78125rem; /* 12.5px */
+  --text-body: 0.8125rem; /* 13px */
+  --text-title: 0.9375rem; /* 15px */
 
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
-  /* Fixed (not size-relative) so every badge/pill/chip has identical corners at any size. */
+  /* 8px corners of the rounded-rectangle chips: the sidebar edition badge (EditionBadge) and the prediction chips
+     (PredictionList). Status tags are full pills (rounded-full), not this. */
   --radius-badge: 8px;
 
   /* Sidebar sections: height slides in 200 ms with Material's standard decelerate curve */
@@ -268,8 +387,10 @@ body {
   --map-warn: #9a4a00;
   --map-danger-bg: #ffdad6;
   --map-danger-fg: #93000a;
-  --map-selected-bg: #ffedd5;
-  --map-selected-fg: #7c2d12;
+  /* Selected / open state (open triggers, checked menu rows, tiles that are on): the M3 primary container pair, so it
+     matches the soft-orange buttons (10:1 light, 8.3:1 dark; the 70% label in Beheer triggers 4.6:1 / 4.9:1) */
+  --map-selected-bg: var(--primary-container);
+  --map-selected-fg: var(--on-primary-container);
   --map-success: #1b6d2f;
   --map-success-bg: rgb(27 109 47 / 0.12);
   --map-warn-bg: #ffedd5;
@@ -279,8 +400,6 @@ body.dark {
   --map-warn: #ffb68a;
   --map-danger-bg: rgb(147 0 10 / 0.35);
   --map-danger-fg: #ffb4ab;
-  --map-selected-bg: #7c2d12;
-  --map-selected-fg: #ffedd5;
   --map-success: #86efac;
   --map-success-bg: rgb(22 163 74 / 0.2);
   --map-warn-bg: rgb(154 74 0 / 0.3);
@@ -289,6 +408,18 @@ body.dark {
 /* Beheer window: in light mode the window is a step darker than its (white) cards; rows are a tonal step above the
    card (M3 surface containers). Declared on body because the theme's `.dark` class sits on body. */
 body {
+  /* Elevation of the shared surfaces: a 1px hairline in the border colour + a soft drop shadow. Use as shadow-(--shadow-…)
+     (cn merges that with a caller's shadow-none; a named @theme shadow it can't). On body, not in @theme (emitted on
+     :root): the theme's .dark class sits on body, so only here var(--border) resolves to the dark value.
+     tile: map tiles/buttons (MAP_TILE); tooltip: tooltips; menu: menus, popovers, toasts (MENU_SURFACE); dialog:
+     dialogs, map popups, HQ event card (DIALOG_SHELL); sheet: phone bottom sheet + drawers (a floating landscape
+     column uses dialog) */
+  --shadow-tile: 0 0 0 1px var(--border), 0 4px 14px rgb(0 0 0 / 0.22);
+  --shadow-tooltip: 0 0 0 1px var(--border), 0 4px 12px rgb(0 0 0 / 0.25);
+  --shadow-menu: 0 0 0 1px var(--border), 0 10px 30px rgb(0 0 0 / 0.28);
+  --shadow-dialog: 0 0 0 1px var(--border), 0 18px 50px rgb(0 0 0 / 0.35);
+  /* sheet: the phone's bottom sheet and drawers (BottomSheet, ResponsiveDialog), lit from below the screen edge */
+  --shadow-sheet: 0 0 0 1px var(--border), 0 -6px 30px rgb(0 0 0 / 0.25);
   --beheer-window: color-mix(in oklab, var(--foreground) 5%, var(--background));
   --beheer-row: color-mix(in oklab, var(--foreground) 4%, var(--card));
   --beheer-row-high: color-mix(in oklab, var(--foreground) 9%, var(--card));
@@ -304,13 +435,11 @@ body.dark {
   background: var(--map-surface) !important;
   color: var(--map-on-surface);
   font-family: var(--map-font);
-  font-size: 13px;
+  font-size: var(--text-body);
   line-height: 1.35;
-  border-radius: 24px !important;
+  border-radius: var(--radius-3xl) !important;
   padding: 14px;
-  box-shadow:
-    0 0 0 1px var(--map-hairline),
-    0 18px 50px rgb(0 0 0 / 0.35);
+  box-shadow: var(--shadow-dialog);
 }
 
 .maplibregl-popup-tip {
@@ -321,8 +450,9 @@ body.dark {
   border-top-color: var(--map-surface) !important;
 }
 
+/* Legacy outline of the sidebar/HQ cards: a 1px ring in the theme's border colour (a 2px black/10% ring vanished in dark mode) */
 .card {
-  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 0 0 1px var(--border);
 }
 
 /*
@@ -334,7 +464,7 @@ body.dark {
   @apply flex flex-col gap-0.5 overflow-visible! rounded-none! border-0! bg-transparent! shadow-none!;
 
   > button {
-    @apply size-10! rounded-[4px]! bg-card! shadow-[0_0_0_1px_var(--border),0_4px_14px_rgb(0_0_0/0.22)]! transition-colors! duration-150! hover:bg-beheer-row-high!;
+    @apply size-10! rounded-(--radius-segment-tight)! bg-card! shadow-(--shadow-tile)! transition-colors! duration-150! hover:bg-beheer-row-high!;
   }
 
   > button:first-child {
@@ -357,6 +487,57 @@ body.dark {
   }
 }
 
+/* Geolocate on (following, background, waiting): MapLibre's light-blue icon on primary-container was under 3:1. Draw the
+   same icon as a mask in on-primary-container instead (no dark-mode invert), so it reads in both themes. The
+   background state (not following) keeps MapLibre's icon without the centre dot. */
+.maplibregl-ctrl-group > button.maplibregl-ctrl-geolocate:is(.maplibregl-ctrl-geolocate-active, .maplibregl-ctrl-geolocate-waiting, .maplibregl-ctrl-geolocate-background) > .maplibregl-ctrl-icon {
+  background-image: none !important;
+  background-color: var(--on-primary-container);
+  filter: none !important;
+  -webkit-mask: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><path d='M10 4C9 4 9 5 9 5v.1A5 5 0 0 0 5.1 9H5s-1 0-1 1 1 1 1 1h.1A5 5 0 0 0 9 14.9v.1s0 1 1 1 1-1 1-1v-.1a5 5 0 0 0 3.9-3.9h.1s1 0 1-1-1-1-1-1h-.1A5 5 0 0 0 11 5.1V5s0-1-1-1m0 2.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 1 1 0-7'/><circle cx='10' cy='10' r='2'/></svg>") center / 29px 29px no-repeat;
+  mask: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><path d='M10 4C9 4 9 5 9 5v.1A5 5 0 0 0 5.1 9H5s-1 0-1 1 1 1 1 1h.1A5 5 0 0 0 9 14.9v.1s0 1 1 1 1-1 1-1v-.1a5 5 0 0 0 3.9-3.9h.1s1 0 1-1-1-1-1-1h-.1A5 5 0 0 0 11 5.1V5s0-1-1-1m0 2.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 1 1 0-7'/><circle cx='10' cy='10' r='2'/></svg>") center / 29px 29px no-repeat;
+}
+
+.maplibregl-ctrl-group > button.maplibregl-ctrl-geolocate.maplibregl-ctrl-geolocate-background > .maplibregl-ctrl-icon {
+  -webkit-mask-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><path d='M10 4C9 4 9 5 9 5v.1A5 5 0 0 0 5.1 9H5s-1 0-1 1 1 1 1 1h.1A5 5 0 0 0 9 14.9v.1s0 1 1 1 1-1 1-1v-.1a5 5 0 0 0 3.9-3.9h.1s1 0 1-1-1-1-1-1h-.1A5 5 0 0 0 11 5.1V5s0-1-1-1m0 2.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 1 1 0-7'/></svg>");
+  mask-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><path d='M10 4C9 4 9 5 9 5v.1A5 5 0 0 0 5.1 9H5s-1 0-1 1 1 1 1 1h.1A5 5 0 0 0 9 14.9v.1s0 1 1 1 1-1 1-1v-.1a5 5 0 0 0 3.9-3.9h.1s1 0 1-1-1-1-1-1h-.1A5 5 0 0 0 11 5.1V5s0-1-1-1m0 2.5a3.5 3.5 0 1 1 0 7 3.5 3.5 0 1 1 0-7'/></svg>");
+}
+
+/* Touch (landscape phones, tablets at desktop width): 44px tiles, the minimum comfortable target */
+@media (pointer: coarse) {
+  .maplibregl-ctrl-group > button {
+    @apply size-11!;
+  }
+}
+
+/* Keyboard focus on map controls: the app's solid focus ring. The tile shadow above (with !important) would
+   otherwise hide MapLibre's own focus box-shadow, leaving no visible focus at all. */
+.maplibregl-ctrl-group > button:focus-visible,
+.maplibregl-ctrl button:focus-visible,
+.maplibregl-ctrl-attrib-button:focus-visible,
+.maplibregl-ctrl-attrib a:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 3px var(--ring),
+    0 4px 14px rgb(0 0 0 / 0.22) !important;
+}
+
+/* Keyboard focus on the map itself (Tab onto the canvas, then arrows/+/−/Enter): a two-tone ring inside the map's
+   edge, orange with a white inner line, so it reads on light tiles and on dark satellite photos alike. Drawn by the
+   map element (a canvas has no ::after), above the tiles and below the controls. */
+.maplibregl-canvas:focus-visible {
+  outline: none;
+}
+.maplibregl-map:has(.maplibregl-canvas:focus-visible)::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-shadow:
+    inset 0 0 0 3px var(--ring),
+    inset 0 0 0 4.5px #ffffff;
+}
+
 /* Layers: on its own, soft orange */
 .maplibregl-ctrl-group.map-layers-ctrl > button {
   @apply rounded-xl! bg-primary-container! text-on-primary-container! hover:bg-[color-mix(in_oklab,var(--on-primary-container)_10%,var(--primary-container))]!;
@@ -364,15 +545,15 @@ body.dark {
 
 /* My location + fullscreen + ruler read as one stack */
 .maplibregl-ctrl-group:has(> .maplibregl-ctrl-geolocate) > button {
-  @apply rounded-t-xl! rounded-b-[4px]!;
+  @apply rounded-t-xl! rounded-b-(--radius-segment-tight)!;
 }
 
 .maplibregl-ctrl-group:has(> .maplibregl-ctrl-fullscreen, > .maplibregl-ctrl-shrink) > button {
-  @apply rounded-[4px]!;
+  @apply rounded-(--radius-segment-tight)!;
 }
 
 .maplibregl-ctrl-group.mapbox-ctrl-ruler > button {
-  @apply rounded-t-[4px]! rounded-b-xl!;
+  @apply rounded-t-(--radius-segment-tight)! rounded-b-xl!;
 }
 
 .maplibregl-ctrl-bottom-right .maplibregl-ctrl {
@@ -390,6 +571,29 @@ body.dark {
   margin-bottom: env(safe-area-inset-bottom);
 }
 
+/* Phone shell: the credits button (top-right) and the scale bar (top-left) sit under the top safe area (notch, status
+   bar) and right of the sheet column when held sideways (--sheet-side, BottomSheet) */
+[data-shell='mobile'] .maplibregl-ctrl-top-right {
+  margin-top: env(safe-area-inset-top);
+  margin-right: env(safe-area-inset-right);
+}
+
+[data-shell='mobile'] .maplibregl-ctrl-top-left {
+  margin-top: env(safe-area-inset-top);
+  margin-left: max(var(--sheet-side, 0px), env(safe-area-inset-left));
+}
+
+/* Level with the 24px compact credits button across: the bar is 22px (20px line + 2px border), 10px margin + 1px */
+[data-shell='mobile'] .maplibregl-ctrl-top-left .maplibregl-ctrl-scale {
+  margin-top: 11px;
+  transition: opacity 200ms ease-out;
+}
+
+/* The offline badge or the drawing toolbar at the top centre may reach the corner: the scale bar fades out under it */
+[data-top-stack] .maplibregl-ctrl-top-left .maplibregl-ctrl-scale {
+  opacity: 0;
+}
+
 .maplibregl-ctrl-attrib {
   @apply bg-background!;
 
@@ -405,14 +609,32 @@ body.dark {
     filter: invert(1);
   }
 
-  ::-webkit-calendar-picker-indicator {
-    filter: invert(1);
-  }
+  /* No invert for ::-webkit-calendar-picker-indicator: <html> has color-scheme: dark in dark mode (lib/theme-color.ts),
+     so the native date/time picker icon is already light; inverting it made it dark on dark */
 }
 
-.card {
-  /* From https://css.glass */
-  backdrop-filter: blur(5px);
+/* Desktop sidebar: while there is more below (data-more-below, Sidebar.tsx) its bottom 24px fade out, a hint to scroll.
+   The fade size is a registered property so it eases in and out; at 0px the mask is solid (no fade). */
+@property --sidebar-fade {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+.sidebar-scroll-fade {
+  --sidebar-fade: 0px;
+  mask-image: linear-gradient(to bottom, #000 calc(100% - var(--sidebar-fade)), transparent);
+  transition: --sidebar-fade 200ms ease-out;
+}
+
+.sidebar-scroll-fade[data-more-below] {
+  --sidebar-fade: 24px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-scroll-fade {
+    transition: none;
+  }
 }
 
 /* Onboarding tour: the progress ring around the pause button doubles as the auto-advance timer (animationend = next step) */
@@ -672,49 +894,65 @@ html.flashbang::view-transition-new(root) {
   }
 }
 
-/* Vossen card OV block: the train glides between the two stations */
+/* Vossen card OV block: the train glides between the two stations. A transform on the compositor (the rail is an
+   inline-size container, so 100cqw is the rail's width), not an animated left that lays out every frame */
 @keyframes ov-ride {
   from {
-    left: 0;
+    transform: translateX(0);
   }
   to {
-    left: calc(100% - 22px);
+    transform: translateX(calc(100cqw - 22px));
   }
 }
 .ov-train {
+  left: 0;
   animation: ov-ride 6s ease-in-out infinite alternate;
 }
 @media (prefers-reduced-motion: reduce) {
   .ov-train {
     animation: none;
-    left: calc(50% - 11px);
+    transform: translateX(calc(50cqw - 11px));
   }
 }
 
 /* Vossen card fox history (components/sidebar/foxes/FoxHistoryTimeline.tsx): blocks per kind (`--c` = lane colour),
-   the running block's cap + shine sweep, and the shimmering status word in the panel. Status colours (P4) are the
-   same in light and dark; hint "puzzelen" blocks are a pastel of the lane colour. */
+   the running block's cap + shine sweep, and the shimmering status word in the panel. Status colours (P4) are shared
+   with the legend (--fox-history-*); dark mode mixes them 20% into the card so they don't glare. Hint "puzzelen"
+   blocks are a pastel of the lane colour. */
 .fox-history {
   --fox-history-pastel: 26%;
+  --fox-history-green: #22c55e;
+  --fox-history-orange: #f97316;
+  --fox-history-red: #ef4444;
+  --fox-history-blue: #6366f1;
+  /* Icon on a solid block (hunt goedgekeurd check): white on the deep light-mode blue, a dark on-colour on the light
+     dark-mode blue (white on #93ccff is only 1.7:1) */
+  --fox-history-on-solid: #fff;
 }
 .dark .fox-history {
+  --fox-history-on-solid: #00325a;
   --fox-history-pastel: 34%;
+  --fox-history-green: color-mix(in oklab, #22c55e 80%, var(--card));
+  --fox-history-orange: color-mix(in oklab, #f97316 80%, var(--card));
+  --fox-history-red: color-mix(in oklab, #ef4444 80%, var(--card));
+  --fox-history-blue: color-mix(in oklab, #6366f1 80%, var(--card));
 }
 .fox-history-block {
   background: var(--c);
+  color: var(--fox-history-on-solid);
 }
 .fox-history-block[data-kind='green'] {
-  background: #22c55e;
+  background: var(--fox-history-green);
 }
 .fox-history-block[data-kind='orange'] {
-  background: #f97316;
+  background: var(--fox-history-orange);
 }
 .fox-history-block[data-kind='blue'] {
-  background: #6366f1;
+  background: var(--fox-history-blue);
 }
 .fox-history-block[data-kind='red'] {
-  background: repeating-linear-gradient(-45deg, color-mix(in oklab, #ef4444 75%, transparent) 0 1px, transparent 1px 4px), color-mix(in oklab, #ef4444 10%, var(--card));
-  box-shadow: inset 0 0 0 1px #ef4444;
+  background: repeating-linear-gradient(-45deg, color-mix(in oklab, var(--fox-history-red) 75%, transparent) 0 1px, transparent 1px 4px), color-mix(in oklab, var(--fox-history-red) 10%, var(--card));
+  box-shadow: inset 0 0 0 1px var(--fox-history-red);
 }
 .fox-history-block[data-kind='think'] {
   background: color-mix(in oklab, var(--c) var(--fox-history-pastel), var(--card));
@@ -729,16 +967,16 @@ html.flashbang::view-transition-new(root) {
   color: var(--fox-error);
 }
 .fox-history-block[data-kind='green'] {
-  --c: #22c55e;
+  --c: var(--fox-history-green);
 }
 .fox-history-block[data-kind='orange'] {
-  --c: #f97316;
+  --c: var(--fox-history-orange);
 }
 .fox-history-block[data-kind='blue'] {
-  --c: #6366f1;
+  --c: var(--fox-history-blue);
 }
 .fox-history-block[data-kind='red'] {
-  --c: #ef4444;
+  --c: var(--fox-history-red);
 }
 .fox-history-block[data-kind='fail'] {
   --c: var(--fox-error);
@@ -760,18 +998,20 @@ html.flashbang::view-transition-new(root) {
   content: '';
   position: absolute;
   inset-block: 0;
-  left: -22px;
-  width: 22px;
-  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.4), transparent);
+  left: 0;
+  /* The block's width, with the 22px shine band at its left edge, so translateX(100%) carries the band just past the end */
+  width: 100%;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.4), transparent) 0 0 / 22px 100% no-repeat;
+  transform: translateX(-22px);
   animation: fox-history-shine 1.5s ease-in-out infinite;
 }
 @keyframes fox-history-shine {
   0% {
-    left: -22px;
+    transform: translateX(-22px);
   }
   70%,
   100% {
-    left: 100%;
+    transform: translateX(100%);
   }
 }
 /* Status word: 1.8 s sweep, then a 0.576 s pause (75.7 % of 2.376 s) */
@@ -800,5 +1040,61 @@ html.flashbang::view-transition-new(root) {
     animation: none;
     background: none;
     color: var(--muted-foreground);
+  }
+}
+
+/* Reduced motion: tw-animate-css (Radix menus, popovers, dialogs, map popups) has no reduced-motion handling of its
+   own. Keep its fades, drop the zoom / slide / spin / blur, so things still appear and disappear smoothly but don't
+   move. Unlayered + !important to beat the utility layer's zoom-in-95, slide-in-from-*, etc. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    --tw-enter-scale: 1 !important;
+    --tw-enter-translate-x: 0 !important;
+    --tw-enter-translate-y: 0 !important;
+    --tw-enter-rotate: 0 !important;
+    --tw-enter-blur: 0 !important;
+    --tw-exit-scale: 1 !important;
+    --tw-exit-translate-x: 0 !important;
+    --tw-exit-translate-y: 0 !important;
+    --tw-exit-rotate: 0 !important;
+    --tw-exit-blur: 0 !important;
+  }
+}
+
+/* Reduced motion: vaul drawers (ResponsiveDialog on phones, the other bottom drawers) slide in and out over 500ms with
+   keyframes vaul injects itself, ignoring the setting. Swap the open/close slide for a short fade. Only the
+   data-state animations change: dragging (inline transforms) and the snap back after a drag keep working.
+   !important: vaul's injected <style> lands after this stylesheet with more specific selectors. */
+@keyframes vaul-reduced-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes vaul-reduced-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-vaul-drawer][data-state='open'],
+  [data-vaul-overlay][data-state='open'] {
+    animation-name: vaul-reduced-fade-in !important;
+    animation-duration: 150ms !important;
+    animation-timing-function: ease-out !important;
+  }
+  [data-vaul-drawer][data-state='closed'],
+  [data-vaul-overlay][data-state='closed'] {
+    animation-name: vaul-reduced-fade-out !important;
+    animation-duration: 150ms !important;
+    animation-timing-function: ease-in !important;
+    animation-fill-mode: forwards !important;
   }
 }

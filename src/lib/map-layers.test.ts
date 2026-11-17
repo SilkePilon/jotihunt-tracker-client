@@ -6,6 +6,7 @@ import type { Team } from '@/types/Team';
 import type { SyncedHunt } from '@/types/HuntSync';
 import {
   accuracyCircles,
+  ownAccuracyCircle,
   fastfoodFeatures,
   hunterFeatures,
   huntAccuracyCircles,
@@ -68,6 +69,19 @@ describe('accuracyCircles', () => {
   test('skips positions without a usable accuracy (device id 0 is kept)', () => {
     const fc = accuracyCircles([position(0, 15), position(2, 0), position(3, Number.NaN)]);
     expect(fc.features.map((f) => f.properties.deviceId)).toEqual([0]);
+  });
+});
+
+describe('ownAccuracyCircle', () => {
+  test('one circle around a fix with a usable accuracy', () => {
+    expect(ownAccuracyCircle({ lat: 52, lng: 6 }, 45).features).toHaveLength(1);
+  });
+
+  test('nothing without a fix or a usable accuracy', () => {
+    expect(ownAccuracyCircle(null, 45).features).toHaveLength(0);
+    expect(ownAccuracyCircle({ lat: 52, lng: 6 }, null).features).toHaveLength(0);
+    expect(ownAccuracyCircle({ lat: 52, lng: 6 }, 0).features).toHaveLength(0);
+    expect(ownAccuracyCircle({ lat: 52, lng: 6 }, Number.NaN).features).toHaveLength(0);
   });
 });
 
@@ -297,5 +311,33 @@ describe('fastfoodFeatures', () => {
       ['node/3', 'fastfood|burgerking|open'],
     ]);
     expect(fastfoodFeatures(restaurants, ['kfc'], NOW).features.map((feature) => feature.properties.id)).toEqual(['node/2']);
+  });
+});
+
+describe('marker layers', () => {
+  const level = (id: string) => MAP_LAYER_STACK.findIndex((ids) => ids.includes(id));
+
+  test('fast food at the bottom, then groups, the people, foxes', () => {
+    const people = ['hunter-arrows', 'hunters', 'life360-members', 'hunters-hover', 'life360-members-hover'];
+    expect(level('fastfood')).toBeLessThan(level('team-pins'));
+    expect(level('fastfood-hover')).toBeLessThan(level('team-pins'));
+    for (const id of people) {
+      // Above the group pins (and their hover), below the fox markers
+      expect(level(id)).toBeGreaterThan(level('team-pins-hover'));
+      expect(level(id)).toBeLessThan(level('fox-markers'));
+    }
+    // Arrows under the hunter markers, hover rings above them
+    expect(level('hunter-arrows')).toBeLessThan(level('hunters'));
+    expect(level('hunters-hover')).toBeGreaterThan(level('hunters'));
+  });
+
+  test('restacking puts a hunter added before the groups above them', () => {
+    const order = ['base', 'hunters', 'fox-markers', 'team-pins'];
+    const result = [...order];
+    for (const [id, beforeId] of layerStackMoves(order, MAP_LAYER_STACK)) {
+      result.splice(result.indexOf(id), 1);
+      result.splice(result.indexOf(beforeId), 0, id);
+    }
+    expect(result).toEqual(['base', 'team-pins', 'hunters', 'fox-markers']);
   });
 });

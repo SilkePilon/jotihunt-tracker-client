@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test } from 'bun:test';
 import useMobileNavStore from '@/stores/mobile-nav.store';
 import useSidebarStore from '@/stores/sidebar.store';
-import { resetToMenu, showSection } from './actions';
+import { pointAtSection, resetToMenu, showSection } from './actions';
 import type { TourContext } from './types';
 
 const desktop = { mapRef: { current: null }, isMobile: false } as TourContext;
@@ -41,5 +41,21 @@ describe('resetToMenu', () => {
     useMobileNavStore.setState({ stack: [{ id: 'hunts' }] });
     resetToMenu().run(desktop);
     expect(useMobileNavStore.getState().stack).toEqual([{ id: 'hunts' }]);
+  });
+});
+
+describe('pointAtSection', () => {
+  test('desktop expands the section like showSection', () => {
+    const undo = pointAtSection('foxes').run(desktop);
+    expect(useSidebarStore.getState().openSections.foxes).toBe(true);
+    if (typeof undo === 'function') undo();
+    expect(useSidebarStore.getState().openSections.foxes).toBe(false);
+  });
+
+  test('phone goes back to the menu without pushing the page', () => {
+    useMobileNavStore.setState({ stack: [{ id: 'hunts' }] });
+    const undo = pointAtSection('foxes').run(phone);
+    expect(useMobileNavStore.getState().stack).toEqual([]);
+    expect(undo).toBeUndefined();
   });
 });

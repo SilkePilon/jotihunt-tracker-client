@@ -1,9 +1,8 @@
 import { createContext, useContext, useLayoutEffect, useRef, type ComponentProps, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { ArrowUpIcon, SquareIcon } from 'lucide-react';
+import { ArrowUpIcon, Loader2Icon, SquareIcon } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { TOGGLE_SPRING } from '@/lib/intel-window';
-import { POP_SPRING } from '@/lib/motion';
+import { EASE_OUT, POP_SPRING, SOFT_SPRING } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 
 interface PromptInputContextValue {
@@ -35,7 +34,7 @@ interface PromptInputProps extends Omit<ComponentProps<'div'>, 'onSubmit'> {
 export function PromptInput({ value, onValueChange, onSubmit, maxHeight = 160, disabled = false, className, children, ...props }: PromptInputProps) {
   return (
     <PromptInputContext.Provider value={{ value, setValue: onValueChange, maxHeight, onSubmit, disabled }}>
-      <div className={cn('rounded-[20px] bg-beheer-row-high p-1.5 transition-shadow duration-200 focus-within:ring-[3px] focus-within:ring-ring/50', className)} {...props}>
+      <div className={cn('rounded-(--radius-panel) bg-beheer-row-high p-1.5 transition-shadow duration-200 focus-within:ring-[3px] focus-within:ring-ring', className)} {...props}>
         {children}
       </div>
     </PromptInputContext.Provider>
@@ -69,7 +68,7 @@ export function PromptInputTextarea({ className, onKeyDown, ...props }: Omit<Com
         }
       }}
       className={cn(
-        'block min-h-[38px] w-full resize-none overflow-y-auto bg-transparent px-2.5 py-2 text-[13.5px] leading-snug outline-none placeholder:text-muted-foreground disabled:opacity-60',
+        'block min-h-[38px] w-full resize-none overflow-y-auto bg-transparent px-2.5 py-2 text-base leading-snug desk:text-body outline-none placeholder:text-muted-foreground disabled:opacity-60',
         className,
       )}
     />
@@ -114,11 +113,11 @@ export function ModeToggle({ on, onToggle, icon, label, tone, tooltip }: ModeTog
         aria-label={label}
         onClick={() => onToggle(!on)}
         className={cn(
-          'flex h-8 items-center rounded-xl px-2 text-[12.5px] font-semibold outline-none transition-colors duration-200 focus-visible:ring-[3px] focus-visible:ring-ring/50',
+          'flex h-8 items-center rounded-xl px-2 text-caption font-semibold outline-none transition-colors duration-200 focus-visible:ring-[3px] focus-visible:ring-ring',
           on ? TOGGLE_ON[tone] : 'text-muted-foreground hover:bg-foreground/5 hover:text-foreground',
         )}
       >
-        <motion.span className="grid place-items-center [&_svg]:size-4" initial={false} animate={{ rotate: on ? 360 : 0, scale: on ? 1.08 : 1 }} transition={TOGGLE_SPRING}>
+        <motion.span className="grid place-items-center [&_svg]:size-4" initial={false} animate={{ rotate: on ? 360 : 0, scale: on ? 1.08 : 1 }} transition={SOFT_SPRING}>
           {icon}
         </motion.span>
         <AnimatePresence initial={false}>
@@ -129,7 +128,7 @@ export function ModeToggle({ on, onToggle, icon, label, tone, tooltip }: ModeTog
               initial={{ width: 0, opacity: 0, marginLeft: 0 }}
               animate={{ width: 'auto', opacity: 1, marginLeft: 6 }}
               exit={{ width: 0, opacity: 0, marginLeft: 0 }}
-              transition={{ duration: 0.28, ease: [0.2, 0, 0, 1], opacity: { duration: 0.2 } }}
+              transition={{ duration: 0.28, ease: EASE_OUT, opacity: { duration: 0.2 } }}
             >
               {label}
             </motion.span>
@@ -140,33 +139,37 @@ export function ModeToggle({ on, onToggle, icon, label, tone, tooltip }: ModeTog
   );
 }
 
-/** Idle: muted arrow (disabled); ready: orange arrow; busy: stop square. The icon swaps with a turn. */
-export function SendButton({ state, onSend, onStop }: { state: 'idle' | 'ready' | 'busy'; onSend: () => void; onStop: () => void }) {
-  const busy = state === 'busy';
+/** Idle: muted arrow (disabled); ready: orange arrow; busy: stop square; stopping: spinner until the server stopped. The icon swaps with a turn. */
+export function SendButton({ state, onSend, onStop }: { state: 'idle' | 'ready' | 'busy' | 'stopping'; onSend: () => void; onStop: () => void }) {
+  const stopping = state === 'stopping';
+  const busy = state === 'busy' || stopping;
   return (
-    <PromptInputAction tooltip={busy ? 'Stoppen' : 'Versturen (Enter)'}>
+    <PromptInputAction tooltip={stopping ? 'Stoppen…' : busy ? 'Stoppen' : 'Versturen (Enter)'}>
       <motion.button
         type="button"
-        aria-label={busy ? 'Stoppen' : 'Versturen'}
-        disabled={state === 'idle'}
-        onClick={busy ? onStop : onSend}
+        aria-label={stopping ? 'Stoppen…' : busy ? 'Stoppen' : 'Versturen'}
+        // Not `disabled` (idle, stopping): that would drop the focus, e.g. when the answer ends with the field empty
+        aria-disabled={state === 'idle' || stopping || undefined}
+        aria-busy={stopping || undefined}
+        onClick={state === 'idle' || stopping ? undefined : busy ? onStop : onSend}
         animate={{ scale: state === 'ready' ? 1.04 : 1 }}
         transition={POP_SPRING}
         className={cn(
-          'ml-auto grid size-[34px] place-items-center rounded-xl outline-none transition-colors duration-200 focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none',
-          state === 'idle' ? 'text-muted-foreground' : 'bg-primary-container text-on-primary-container hover:bg-[color-mix(in_oklab,var(--on-primary-container)_10%,var(--primary-container))]',
+          'ml-auto grid size-[34px] place-items-center rounded-xl outline-none transition-colors duration-200 focus-visible:ring-[3px] focus-visible:ring-ring',
+          stopping && 'opacity-70',
+          state === 'idle' ? 'pointer-events-none text-muted-foreground' : 'bg-primary-container text-on-primary-container hover:bg-[color-mix(in_oklab,var(--on-primary-container)_10%,var(--primary-container))]',
         )}
       >
         <AnimatePresence mode="popLayout" initial={false}>
           <motion.span
-            key={busy ? 'stop' : 'send'}
+            key={stopping ? 'stopping' : busy ? 'stop' : 'send'}
             className="grid place-items-center"
             initial={{ opacity: 0, scale: 0.5, rotate: -90 }}
             animate={{ opacity: 1, scale: 1, rotate: 0 }}
             exit={{ opacity: 0, scale: 0.5, rotate: 90 }}
             transition={{ duration: 0.18 }}
           >
-            {busy ? <SquareIcon className="size-3.5 fill-current" /> : <ArrowUpIcon className="size-4" />}
+            {stopping ? <Loader2Icon className="size-4 animate-spin" /> : busy ? <SquareIcon className="size-3.5 fill-current" /> : <ArrowUpIcon className="size-4" />}
           </motion.span>
         </AnimatePresence>
       </motion.button>

@@ -60,7 +60,8 @@ export const useTeams = () => {
   return {
     teams: asList(data),
     isLoading: !error && !data,
-    isError: error,
+    isError: !!error,
+    retry: () => mutate(),
     setTeamArea,
     reloadTeams,
   };

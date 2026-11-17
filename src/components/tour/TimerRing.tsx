@@ -1,4 +1,5 @@
-import type { CSSProperties, Key, ReactNode } from 'react';
+import { type CSSProperties, type Key, type ReactNode, useEffect, useRef } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { cn } from '@/lib/utils';
 
 // 36-unit viewBox, 2.5-unit stroke: the ring scales with the box set by className
@@ -23,33 +24,44 @@ interface TimerRingProps {
 }
 
 /** Circular countdown, the website tour's auto-advance ring: fills once over `durationMs` around its children. */
-export default function TimerRing({ durationMs, runKey, paused = false, onDone, progressClassName = 'stroke-primary', className, children }: TimerRingProps) {
+export default function TimerRing({ durationMs, runKey, paused = false, onDone, progressClassName = 'stroke-primary-fill', className, children }: TimerRingProps) {
+  // The run that may still finish: an arc fading out (timer stopped, or a step later) must not fire onDone
+  const live = useRef<Key | null>(null);
+  useEffect(() => {
+    live.current = durationMs === undefined ? null : runKey;
+  }, [durationMs, runKey]);
   return (
     <div className={cn('relative flex items-center justify-center', className)}>
       <svg aria-hidden className="pointer-events-none absolute inset-0 size-full -rotate-90" viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`}>
-        <circle cx={RING_SIZE / 2} cy={RING_SIZE / 2} r={RING_RADIUS} fill="none" strokeWidth={RING_STROKE} className="stroke-muted" />
-        {durationMs !== undefined && (
-          <circle
-            // Remount per run so the animation restarts
-            key={runKey}
-            cx={RING_SIZE / 2}
-            cy={RING_SIZE / 2}
-            r={RING_RADIUS}
-            fill="none"
-            strokeWidth={RING_STROKE}
-            strokeLinecap="round"
-            strokeDasharray={RING_LENGTH}
-            className={progressClassName}
-            style={
-              {
-                '--tour-ring-length': RING_LENGTH,
-                animation: `tour-ring ${durationMs}ms linear forwards`,
-                animationPlayState: paused ? 'paused' : 'running',
-              } as CSSProperties
-            }
-            onAnimationEnd={onDone}
-          />
-        )}
+        <circle cx={RING_SIZE / 2} cy={RING_SIZE / 2} r={RING_RADIUS} fill="none" strokeWidth={RING_STROKE} className="stroke-beheer-row-high" />
+        {/* The arc fades out when the timer stops (e.g. the user took over the tour) or the next run starts, instead of
+            vanishing: keyed per run, so a new run's arc fades in while the previous one fades out (and restarts its fill) */}
+        <AnimatePresence initial={false}>
+          {durationMs !== undefined && (
+            <motion.g key={runKey} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+              <circle
+                cx={RING_SIZE / 2}
+                cy={RING_SIZE / 2}
+                r={RING_RADIUS}
+                fill="none"
+                strokeWidth={RING_STROKE}
+                strokeLinecap="round"
+                strokeDasharray={RING_LENGTH}
+                className={progressClassName}
+                style={
+                  {
+                    '--tour-ring-length': RING_LENGTH,
+                    animation: `tour-ring ${durationMs}ms linear forwards`,
+                    animationPlayState: paused ? 'paused' : 'running',
+                  } as CSSProperties
+                }
+                onAnimationEnd={() => {
+                  if (live.current === runKey) onDone?.();
+                }}
+              />
+            </motion.g>
+          )}
+        </AnimatePresence>
       </svg>
       {children}
     </div>

@@ -1,24 +1,27 @@
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { type RefObject, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import type { MapRef } from '@/components/Map';
 import { AnimatePresence, motion, useReducedMotion, type Transition } from 'motion/react';
+import { EyeOffIcon, LockIcon } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAreas } from '@/hooks/areas.hook';
 import { useHuntableAreas } from '@/hooks/huntable-areas.hook';
 import { FOX_GROUP_LABEL, FOX_GROUP_ORDER, groupCounts, legendGroups, type FoxGroup, type SidebarFox } from '@/lib/fox-status';
-import { EASE_OUT, REVEAL_TRANSITION } from '@/lib/motion';
+import LoadError from '@/components/LoadError';
+import { EASE_OUT, POP, revealTransition, SWAP, SWAP_TRANSITION } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import FoxChip from './FoxChip';
 import FoxHistory from './FoxHistory';
-import FoxStatusBar from './FoxStatusBar';
+import FoxStatusBar, { GroupSwatch } from './FoxStatusBar';
 import OvBlock from './OvBlock';
 import { GROUP_CLASS } from './styles';
 import { useSidebarFoxes } from './useSidebarFoxes';
 
-/** A number that swaps with a short vertical fade when it changes. */
+/** A number that swaps (the shared SWAP) when it changes. */
 function Count({ value, className }: { value: number; className?: string }) {
   return (
     <span className={cn('relative inline-grid tabular-nums', className)}>
       <AnimatePresence mode="popLayout" initial={false}>
-        <motion.span key={value} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.18 }}>
+        <motion.span key={value} {...SWAP}>
           {value}
         </motion.span>
       </AnimatePresence>
@@ -99,10 +102,11 @@ interface GroupBlockProps {
   /** Fox whose panel is shown in this group, if it's in this group */
   panelFox: SidebarFox | undefined;
   onOpen: (key: string) => void;
+  mapRef?: RefObject<MapRef | null>;
 }
 
 /** One tonal group: header + chips (or the OV rows), and the history panel of the open fox when it's in this group. */
-function GroupBlock({ group, foxes, count, popIn, openKey, panelFox, onOpen }: GroupBlockProps) {
+function GroupBlock({ group, foxes, count, popIn, openKey, panelFox, onOpen, mapRef }: GroupBlockProps) {
   const { toggleHidden, isHidden } = useAreas();
   const { isForbidden } = useHuntableAreas();
   const reduced = useReducedMotion() ?? false;
@@ -116,11 +120,12 @@ function GroupBlock({ group, foxes, count, popIn, openKey, panelFox, onOpen }: G
             <span>{FOX_GROUP_LABEL[group]}</span>
             <Count value={count} />
           </div>
-          <div className="flex flex-wrap gap-1">
+          {/* isolate: the chips' bigger touch areas (COARSE_HIT_AREA) stay above the block's background */}
+          <div className="isolate flex flex-wrap gap-1">
             {/* popLayout: a chip popping out leaves the flow at once, so its neighbours close the gap */}
             <AnimatePresence mode="popLayout" initial={false}>
               {foxes.map((fox) => (
-                <FoxChip key={fox.key} fox={fox} hidden={isHidden(fox.area.name)} forbidden={isForbidden(fox.area.name)} popIn={popIn} open={openKey === fox.key} onOpen={() => onOpen(fox.key)} />
+                <FoxChip key={fox.key} fox={fox} hidden={isHidden(fox.area.name)} forbidden={isForbidden(fox.area.name)} popIn={popIn} open={openKey === fox.key} onOpen={onOpen} />
               ))}
             </AnimatePresence>
           </div>
@@ -130,7 +135,7 @@ function GroupBlock({ group, foxes, count, popIn, openKey, panelFox, onOpen }: G
       <AnimatePresence mode="wait">
         {panelFox && (
           <HistoryPanel key={panelFox.key} id={`fox-history-${panelFox.key}`} reduced={reduced}>
-            <FoxHistory fox={panelFox} hidden={isHidden(panelFox.area.name)} onToggleHidden={() => toggleHidden(panelFox.area.name)} />
+            <FoxHistory fox={panelFox} hidden={isHidden(panelFox.area.name)} forbidden={isForbidden(panelFox.area.name)} onToggleHidden={() => toggleHidden(panelFox.area.name)} mapRef={mapRef} />
           </HistoryPanel>
         )}
       </AnimatePresence>
@@ -139,8 +144,9 @@ function GroupBlock({ group, foxes, count, popIn, openKey, panelFox, onOpen }: G
 }
 
 /** "Vossen" card (mockup C2): status bar, count legend, one tonal block per non-empty group with area chips. */
-export default function FoxesCard() {
+export default function FoxesCard({ mapRef }: { mapRef?: RefObject<MapRef | null> }) {
   const foxes = useSidebarFoxes();
+  const { isError: areasError, retry: retryAreas, isHidden } = useAreas();
   const { isForbidden } = useHuntableAreas();
   const reduced = useReducedMotion() ?? false;
   // One fox open per card: `openKey` follows the taps at once (ring), `panelKey` lags while the old panel folds away
@@ -150,7 +156,7 @@ export default function FoxesCard() {
   const panelKey = laggingPanelKey === openKey ? laggingPanelKey : null;
   const switchTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => () => clearTimeout(switchTimer.current), []);
-  const onOpen = (key: string) => {
+  const toggle = (key: string) => {
     const next = openKey === key ? null : key;
     setOpenKey(next);
     clearTimeout(switchTimer.current);
@@ -161,6 +167,12 @@ export default function FoxesCard() {
     setPanelKey(null);
     switchTimer.current = setTimeout(() => setPanelKey(next), PANEL_SWITCH_MS);
   };
+  // Stable for the memoised chips; it calls the toggle of the latest render
+  const toggleRef = useRef(toggle);
+  useLayoutEffect(() => {
+    toggleRef.current = toggle;
+  });
+  const onOpen = useCallback((key: string) => toggleRef.current(key), []);
   // The open fox left the list (area removed or renamed): forget it during render, so the next tap opens at once
   // and the panel doesn't come back by itself when the area returns
   if (foxes && openKey !== null && !foxes.some((fox) => fox.key === openKey)) setOpenKey(null);
@@ -171,30 +183,67 @@ export default function FoxesCard() {
     return () => cancelAnimationFrame(frame);
   }, []);
 
-  if (!foxes) {
+  if (!foxes || foxes.length === 0) {
+    const scene = foxes ? 'empty' : areasError ? 'error' : 'loading';
     return (
-      <div className="flex flex-col gap-2">
-        <Skeleton className="h-2.5 w-full rounded-md" />
-        <Skeleton className="h-3 w-full" />
-        <Skeleton className="h-16 w-full rounded-2xl" />
-        <Skeleton className="h-16 w-full rounded-2xl" />
-      </div>
+      <AnimatePresence mode="wait" initial={false}>
+        {scene === 'loading' && (
+          <motion.div key="loading" {...SWAP} className="flex flex-col gap-2" role="status" aria-label="Vossen laden">
+            <Skeleton className="h-2.5 w-full rounded-md" />
+            <Skeleton className="h-3 w-full" />
+            <Skeleton className="h-16 w-full rounded-2xl" />
+            <Skeleton className="h-16 w-full rounded-2xl" />
+          </motion.div>
+        )}
+        {scene === 'error' && (
+          <motion.div key="error" {...SWAP}>
+            <LoadError message="Vossen konden niet worden geladen." onRetry={retryAreas} />
+          </motion.div>
+        )}
+        {scene === 'empty' && (
+          <motion.p key="empty" {...SWAP} className="text-xs text-muted-foreground">
+            Nog geen vossen
+          </motion.p>
+        )}
+      </AnimatePresence>
     );
   }
-  if (foxes.length === 0) return <p className="text-xs text-muted-foreground">Nog geen vossen</p>;
 
   const counts = groupCounts(foxes);
+  // The chips' lock gets a legend entry while any fox is outside our huntable areas
+  const anyForbidden = foxes.some((fox) => isForbidden(fox.area.name));
+  // And the eye: how many foxes are hidden on the map (chosen in their history panel)
+  const hiddenCount = foxes.filter((fox) => isHidden(fox.area.name)).length;
   const panelFox = panelKey === null ? undefined : foxes.find((fox) => fox.key === panelKey);
   return (
-    <div className="flex flex-col">
+    // Fades in when it takes over from the skeleton (or the empty line)
+    <motion.div className="flex flex-col" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={SWAP_TRANSITION}>
       <FoxStatusBar foxes={foxes} size="full" isForbidden={isForbidden} />
-      <div className="mt-1.5 mb-2.5 flex justify-between text-[11px] text-muted-foreground">
-        {legendGroups(counts).map((group) => (
-          <span key={group} className="inline-flex items-baseline gap-1">
-            <Count value={counts[group]} className="font-semibold text-foreground" />
-            {FOX_GROUP_LABEL[group].toLowerCase()}
-          </span>
-        ))}
+      {/* Wraps instead of overflowing when a fifth group (OV) joins on a narrow sidebar */}
+      <div className="mt-1.5 mb-2.5 flex flex-wrap justify-between gap-x-2 gap-y-0.5 text-xs text-muted-foreground desk:text-label">
+        {/* layout: the entries slide aside when the lock entry pops in or out */}
+        <AnimatePresence initial={false} mode="popLayout">
+          {legendGroups(counts).map((group) => (
+            <motion.span key={group} layout="position" transition={{ layout: SWAP_TRANSITION }} className="inline-flex items-center gap-1">
+              <GroupSwatch group={group} />
+              <Count value={counts[group]} className="font-semibold text-foreground" />
+              {FOX_GROUP_LABEL[group].toLowerCase()}
+            </motion.span>
+          ))}
+          {anyForbidden && (
+            <motion.span key="forbidden" layout="position" {...POP} className="inline-flex items-center gap-1">
+              <LockIcon aria-hidden className="size-3" strokeWidth={2.75} />
+              niet toegestaan
+            </motion.span>
+          )}
+          {hiddenCount > 0 && (
+            <motion.span key="hidden" layout="position" {...POP} className="inline-flex items-center gap-1">
+              <EyeOffIcon aria-hidden className="size-3" strokeWidth={2.75} />
+              <Count value={hiddenCount} className="font-semibold text-foreground" />
+              verborgen
+            </motion.span>
+          )}
+        </AnimatePresence>
       </div>
 
       <AnimatePresence initial={false}>
@@ -204,8 +253,9 @@ export default function FoxesCard() {
             layout="position"
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0, overflow: 'hidden' }}
-            transition={REVEAL_TRANSITION}
+            // Reduced motion: the group takes (or gives back) its room at once and only fades
+            exit={{ height: 0, opacity: 0, overflow: 'hidden', transition: revealTransition(reduced, 'exit') }}
+            transition={revealTransition(reduced, 'enter')}
             className="[&:last-child>div]:pb-0"
           >
             {/* clip only on exit (fold out); entering and resting groups stay overflow-visible so popping chips aren't cut off */}
@@ -219,12 +269,13 @@ export default function FoxesCard() {
                 openKey={openKey}
                 panelFox={panelFox?.group === group ? panelFox : undefined}
                 onOpen={onOpen}
+                mapRef={mapRef}
               />
             </div>
           </motion.div>
         ))}
       </AnimatePresence>
-    </div>
+    </motion.div>
   );
 }
 

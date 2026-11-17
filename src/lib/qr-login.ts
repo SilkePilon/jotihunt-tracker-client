@@ -31,6 +31,8 @@ export interface QrProblem {
   message: string;
   /** Offer "Passkey toevoegen" (the account has none, so it can not confirm) */
   addPasskey: boolean;
+  /** No answer (offline, server down): offer "Opnieuw proberen", the code may well still wait */
+  retry?: boolean;
 }
 
 /** Why the phone can not confirm the code, in words for the drawer. */
@@ -41,11 +43,44 @@ export function qrProblem(error: unknown): QrProblem {
     if (code === 'QR_TAKEN') return { message: 'Iemand anders heeft deze code al gescand.', addPasskey: false };
     if (code === 'NO_PASSKEY') return { message: 'Je hebt nog geen passkey. Voeg er een toe en scan de code opnieuw.', addPasskey: true };
   }
-  return { message: PASSKEY_MESSAGES[classifyPasskeyError(error)], addPasskey: false };
+  const failure = classifyPasskeyError(error);
+  return { message: PASSKEY_MESSAGES[failure], addPasskey: false, retry: failure === 'offline' };
 }
 
 /** After a failed confirm: stay on the confirm view only when the prompt was cancelled or the passkey did not match (the code still waits). */
 export function canRetryConfirm(error: unknown): boolean {
   if (isAxiosError<{ code?: unknown }>(error)) return error.response?.data?.code === 'PASSKEY_FAILED';
   return classifyPasskeyError(error) === 'cancelled';
+}
+
+/**
+ * After a failed "Nee, dat ben ik niet": a code that is gone or taken can not log anyone in any more, so show why; any
+ * other failure (offline, server error) keeps the confirm view with a message and lets them try again.
+ */
+export function denyFailure(error: unknown): { retry: string } | { problem: QrProblem } {
+  if (isAxiosError<{ code?: unknown }>(error)) {
+    const code = error.response?.data?.code;
+    if (code === 'QR_GONE' || code === 'QR_TAKEN') return { problem: qrProblem(error) };
+    if (!error.response) return { retry: 'Kan de server niet bereiken, controleer je verbinding.' };
+  }
+  return { retry: 'Weigeren is mislukt, probeer het opnieuw.' };
+}
+
+/**
+ * The QR half's polite status line for screen readers: what changed (heading and status line), not the whole panel.
+ * Empty while a code just waits to be scanned (the visible heading and hint say that; a renewed code isn't news).
+ */
+export function qrPanelAnnouncement(state: QrPanelState): string {
+  switch (state.phase) {
+    case 'scanned':
+      return `Gescand door ${state.name}. Bevestig op je telefoon.`;
+    case 'done':
+      return `Ingelogd. Welkom, ${state.name}.`;
+    case 'expired':
+      return 'Code verlopen. Maak een nieuwe code om met je telefoon in te loggen.';
+    case 'error':
+      return 'Kan geen code maken. Kan de server niet bereiken, controleer je verbinding.';
+    default:
+      return '';
+  }
 }

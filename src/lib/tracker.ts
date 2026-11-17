@@ -46,9 +46,19 @@ export function trackerRefreshInterval(status: TrackerMe | undefined): number {
   return status.connected ? TRACKER_POLL_CONNECTED_MS : TRACKER_POLL_NOT_CONNECTED_MS;
 }
 
+/**
+ * Live now: the server says connected and the last update (when readable) is within {@link ACTIVE_WINDOW_MS}. The server's
+ * flag is only refreshed with its poll, so a phone that stopped minutes ago could still read "Verbonden" in green.
+ */
+export function isTrackerLive(status: TrackerMe | undefined, now = Date.now()): boolean {
+  if (!status?.configured || !status.connected) return false;
+  const time = status.stats.lastUpdate ? Date.parse(status.stats.lastUpdate) : NaN;
+  return Number.isNaN(time) || isActive(time, now);
+}
+
 /** Paired before (Traccar has an update) but nothing in the last 5 minutes: the app stopped or lost signal. */
-function hasSignalLost(status: TrackerMe | undefined): boolean {
-  return !!status?.configured && !status.connected && !!status.stats.lastUpdate;
+function hasSignalLost(status: TrackerMe | undefined, now = Date.now()): boolean {
+  return !!status?.configured && !!status.stats.lastUpdate && !isTrackerLive(status, now);
 }
 
 /** Collapsed-section summary. */
@@ -77,7 +87,7 @@ export function notConfiguredText(reason: TrackerNotConfiguredReason, admin: boo
   }
   if (reason === 'group_invalid') {
     return {
-      title: admin ? 'Traccar-groep bestaat niet — controleer GROUP_*_ID in .env' : 'Live tracking is tijdelijk niet beschikbaar',
+      title: admin ? 'Traccar-groep bestaat niet — controleer de voertuiggroepen in Beheer → Algemeen' : 'Live tracking is tijdelijk niet beschikbaar',
     };
   }
   const hint =
@@ -136,15 +146,20 @@ function ageText(iso: string | undefined, now: number): string | undefined {
   return minutes < 60 ? `${minutes} min` : `${Math.round(minutes / 60)} u`;
 }
 
-/** First line of the phone sheet's peek strip. */
-export function trackerPeekLine(status: TrackerMe | undefined, now = Date.now()): { tone: 'ok' | 'warn' | 'muted'; text: string } {
-  if (!status) return { tone: 'muted', text: 'Tracker laden…' };
+/** The pair action on an iPhone/iPad (no Android app there): it opens the Traccar Client guide. No device name: isIOSDevice() covers both */
+export const IOS_PAIR_LABEL = 'Koppel via Traccar';
+
+/** First line of the phone sheet's peek strip. `isError`: the last fetch failed; without a status yet that's a failed
+ * first load, and a tap opens the tracker page (its LoadError retries). */
+export function trackerPeekLine(status: TrackerMe | undefined, now = Date.now(), isError = false, ios = false): { tone: 'ok' | 'warn' | 'muted'; text: string } {
+  if (!status) return isError ? { tone: 'warn', text: 'Tracker niet geladen — tik voor opnieuw' } : { tone: 'muted', text: 'Tracker laden…' };
   if (!status.configured) return { tone: 'muted', text: status.reason === 'unreachable' ? 'Tracker niet bereikbaar' : 'Tracker niet ingesteld' };
   const age = ageText(status.stats.lastUpdate, now);
-  if (status.connected) {
+  if (isTrackerLive(status, now)) {
     const vehicle = VEHICLE_OPTIONS.find((option) => option.value === status.vehicle)?.phrase.toLowerCase();
     return { tone: 'ok', text: joinParts('Verbonden', vehicle, age) };
   }
-  if (hasSignalLost(status)) return { tone: 'warn', text: joinParts('Geen signaal', age) };
-  return { tone: 'warn', text: 'Koppel je telefoon' };
+  if (hasSignalLost(status, now)) return { tone: 'warn', text: joinParts('Geen signaal', age) };
+  // An iPhone has no Jotihunt app: it pairs through Traccar Client (the card's guide)
+  return { tone: 'warn', text: ios ? IOS_PAIR_LABEL : 'Koppel je telefoon' };
 }

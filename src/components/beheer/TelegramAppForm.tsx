@@ -5,9 +5,12 @@ import { Input } from '@/components/ui/input';
 import { useAdminConfig } from '@/hooks/app-config.hook';
 import { apiErrorMessage } from '@/lib/api-error';
 import { Pill, Tag } from './controls/Pill';
+import NewTabHint from '@/components/NewTabHint';
 
-const FIELD = 'h-9 rounded-lg bg-beheer-row-high font-mono text-[12.5px]';
-const LABEL = 'mb-1 ml-0.5 block text-[11.5px] font-semibold text-muted-foreground';
+// Same field as GeneralSettings: inset outline instead of a border, 16px text on phones (no iOS zoom on focus)
+/** Ids and tokens: monospace, a bit smaller than the default 13px field text on desktop */
+const FIELD = 'font-mono desk:text-caption';
+const LABEL = 'mb-1 ml-0.5 block text-xs desk:text-label font-semibold text-muted-foreground';
 
 /**
  * T1: API ID / hash / bot of the group's Telegram app (my.telegram.org), as step 1 of "Koppelen" or to change them later.
@@ -49,7 +52,7 @@ export default function TelegramAppForm({ step, onSaved, onCancel }: { step?: bo
         <div className="mb-2.5 flex items-center gap-2.5">
           <span aria-hidden className="flex gap-1.5">
             {[0, 1, 2, 3].map((i) => (
-              <i key={i} className={`h-[5px] w-6 rounded-full ${i === 0 ? 'bg-primary' : 'bg-beheer-row-high'}`} />
+              <i key={i} className={`h-[5px] w-6 rounded-full ${i === 0 ? 'bg-primary-fill' : 'bg-beheer-row-high'}`} />
             ))}
           </span>
           <span className="text-xs text-muted-foreground">Stap 1 van 4</span>
@@ -69,6 +72,8 @@ export default function TelegramAppForm({ step, onSaved, onCancel }: { step?: bo
             onChange={(event) => setApiHash(event.target.value)}
             placeholder={hashUsable ? `${hash.hint ?? '••••'} (laat leeg om te houden)` : '32 tekens'}
             autoComplete="off"
+            autoCapitalize="off"
+            autoCorrect="off"
             spellCheck={false}
           />
         </label>
@@ -81,6 +86,7 @@ export default function TelegramAppForm({ step, onSaved, onCancel }: { step?: bo
         Maak een app op{' '}
         <a className="underline" href="https://my.telegram.org/apps" target="_blank" rel="noopener noreferrer">
           my.telegram.org
+          <NewTabHint />
         </a>{' '}
         → API development tools. {plain?.telegramApiId.source === 'env' && <Tag tone="info">uit .env</Tag>}
       </p>
@@ -88,7 +94,7 @@ export default function TelegramAppForm({ step, onSaved, onCancel }: { step?: bo
         <Pill variant="secondary" onClick={onCancel}>
           Annuleer
         </Pill>
-        <Pill type="submit" variant="primary" disabled={!valid || saving || !admin.config?.settingsKeyOk} morphKey={saving ? 'busy' : 'idle'}>
+        <Pill type="submit" variant="primary" disabled={!valid || !admin.config?.settingsKeyOk} busy={saving} morphKey={saving ? 'busy' : 'idle'}>
           {saving && <Loader2Icon className="animate-spin" />}
           {step ? 'Volgende' : 'Opslaan'}
         </Pill>

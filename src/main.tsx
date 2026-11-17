@@ -7,17 +7,34 @@ import createStore from 'react-auth-kit/createStore';
 import AuthProvider from 'react-auth-kit';
 import {registerSW} from 'virtual:pwa-register';
 import {TooltipProvider} from "@/components/ui/tooltip.tsx";
-import {Toaster} from "@/components/ui/sonner.tsx";
+import AppToaster from "@/components/AppToaster";
 import {toast} from 'sonner';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import {MotionConfig} from 'motion/react';
 import {AppConfigSync} from '@/hooks/app-config.hook';
+import {syncShellAttribute} from '@/hooks/media.hook';
+import {isHqWall} from '@/lib/hq';
+import {captureLaunchShortcut} from '@/lib/launch-shortcut';
+
+// data-shell on <html> before the first paint: CSS follows the mobile shell on landscape phones too (shell-mobile:)
+syncShellAttribute();
+
+// A PWA shortcut's ?open=: kept for the sidebar (useLaunchShortcut) and taken out of the URL before the router reads it
+captureLaunchShortcut();
 
 // Service worker registration. A new version waits for the user: an automatic reload mid-hunt
-// would throw away a half-entered hunt photo or hint answer.
+// would throw away a half-entered hunt photo or hint answer. The HQ wall has no one at it to tap "Herladen" (and nothing
+// to lose): it updates by itself, once no event card is on screen (the director store is loaded on the wall anyway).
 const updateSW = registerSW({
     immediate: true,
     onNeedRefresh() {
+        if (isHqWall(window.location.pathname)) {
+            void Promise.all([import('@/stores/hq-director.store'), import('@/lib/hq-unlock')])
+                .then(([{default: store}, {updateWhenNoEventCard}]) => updateWhenNoEventCard(store, () => void updateSW(true)))
+                // The chunk didn't load (offline, an old deploy's file gone): update straight away
+                .catch(() => void updateSW(true));
+            return;
+        }
         toast.info('Nieuwe versie beschikbaar', {
             id: 'app-update',
             duration: Infinity,
@@ -50,6 +67,6 @@ ReactDOM.createRoot(document.getElementById('root')!, {
                 </ErrorBoundary>
             </AuthProvider>
         </TooltipProvider>
-        <Toaster />
+        <AppToaster />
     </MotionConfig>,
 );

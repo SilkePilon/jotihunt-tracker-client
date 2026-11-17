@@ -203,3 +203,13 @@ test('MAP_LAYER_STACK: Life360 members next to the hunters, their accuracy with 
   expect(groupOf(LIFE360_HOVER_LAYER)).toBe(groupOf('hunters-hover'));
   expect(groupOf(LIFE360_ACCURACY_LAYER)).toBe(groupOf('device-accuracy-fill'));
 });
+
+test('MAP_LAYER_STACK: the people above the groups, foxes above the people, fast food below everything', () => {
+  const groupOf = (id: string) => MAP_LAYER_STACK.findIndex((group) => group.includes(id));
+  for (const people of [HUNTERS_LAYER, 'hunter-arrows', 'hunters-hover', LIFE360_LAYER, LIFE360_HOVER_LAYER]) {
+    expect(groupOf('team-pins')).toBeLessThan(groupOf(people));
+    expect(groupOf('team-pins-hover')).toBeLessThan(groupOf(people));
+    expect(groupOf('fox-markers')).toBeGreaterThan(groupOf(people));
+    expect(groupOf('fastfood-hover')).toBeLessThan(groupOf(people));
+  }
+});

@@ -1,5 +1,5 @@
 import * as React from "react"
-import { cn } from "cn"
+import { cn } from "@/lib/cn"
 import { CheckIcon, ChevronRightIcon } from "lucide-react"
 import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui"
 import { MENU_GROUP, MENU_LABEL, MENU_MOTION, MENU_ROW_BASE, MENU_ROW_CHECKED, MENU_ROW_DISABLED, MENU_SURFACE } from "@/lib/menu-styles"

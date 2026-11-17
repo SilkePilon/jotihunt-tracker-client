@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react';
 import { Layer, Source, useMap, type FillLayerSpecification, type SymbolLayerSpecification } from 'react-map-gl/maplibre';
 import { useDevices } from '@/hooks/devices.hook';
+import { AGE_CLOCK_TICK_MS, useNow } from '@/hooks/now.hook';
 import { useAppConfig } from '@/hooks/app-config.hook';
 import { vehicleGroupIds } from '@/lib/app-config';
 import { vehicleForGroupId, type VehicleGroupIds } from '@/lib/hunters';
 import { accuracyCircles, HUNTER_ARROWS_LAYER, hunterFeatures, HUNTERS_LAYER, type HunterIcon } from '@/lib/map-layers';
 import { isActive } from '@/lib/tracker';
+import { LABEL_HOVER_ICON_SIZE, LABEL_ICON_SIZE } from '@/lib/zoom-scale';
 import { markerIconId, themedIconExpression, themedImageId, type MarkerPalette, type MarkerTheme } from '@/lib/marker-style';
 import { featureId, useLayerInteractions, usePopupSelection } from './map-interactions';
 import { useMarkerPalette, useMarkerTheme } from './marker-icons';
@@ -23,16 +25,19 @@ function accuracyPaint(palette: MarkerPalette): FillLayerSpecification['paint'] 
   return { 'fill-color': palette.secondary, 'fill-opacity': 0.12, 'fill-outline-color': palette.secondary };
 }
 
-// All hunters are one GeoJSON source (updated every poll) with symbol layers instead of an HTML marker each
+// All hunters are one GeoJSON source (updated every poll) with symbol layers instead of an HTML marker each.
+// Like the foxes they stop shrinking at a readable size (the vehicle glyph), the arrow with them.
 const HUNTERS_SOURCE = 'hunters';
 const HUNTERS_HOVER_LAYER = 'hunters-hover';
 function huntersLayout(theme: MarkerTheme): SymbolLayerSpecification['layout'] {
-  return { 'icon-image': themedIconExpression(theme), 'icon-allow-overlap': true, 'icon-ignore-placement': true };
+  return { 'icon-image': themedIconExpression(theme), 'icon-size': LABEL_ICON_SIZE, 'icon-allow-overlap': true, 'icon-ignore-placement': true };
 }
-// Heading arrow 30px from the hunter towards its course, pointing along it (screen-aligned, like the Android app)
+// Heading arrow 30px (times the icon size, like the offset of every symbol) from the hunter towards its course,
+// pointing along it (screen-aligned, like the Android app)
 function arrowsLayout(theme: MarkerTheme): SymbolLayerSpecification['layout'] {
   return {
     'icon-image': themedImageId(theme, markerIconId({ kind: 'arrow' })),
+    'icon-size': LABEL_ICON_SIZE,
     'icon-rotate': ['get', 'course'],
     'icon-offset': [0, -30],
     'icon-rotation-alignment': 'viewport',
@@ -54,7 +59,7 @@ export default function Devices() {
   const groups = useMemo(() => vehicleGroupIds({ vehicleGroups }), [vehicleGroups]);
   const layout = useMemo(() => huntersLayout(theme), [theme]);
   // Hovered: 10% larger
-  const hoverLayout = useMemo<SymbolLayerSpecification['layout']>(() => ({ ...layout, 'icon-size': 1.1 }), [layout]);
+  const hoverLayout = useMemo<SymbolLayerSpecification['layout']>(() => ({ ...layout, 'icon-size': LABEL_HOVER_ICON_SIZE }), [layout]);
   const arrows = useMemo(() => arrowsLayout(theme), [theme]);
   const accuracy = useMemo(() => accuracyPaint(palette), [palette]);
 
@@ -69,8 +74,9 @@ export default function Devices() {
   /** Device id -> icon for its vehicle group (phone when the group isn't a vehicle) */
   const iconByDevice = useMemo(() => new Map((devices ?? []).map((device) => [device.id, iconForGroup(device.groupId, groups)])), [devices, groups]);
   const circles = useMemo(() => accuracyCircles(positions ?? []), [positions]);
-  // Stale (greyed out) is decided on each poll, like before
-  const features = useMemo(() => hunterFeatures(positions ?? [], (deviceId) => iconByDevice.get(deviceId) ?? 'phone', (fixTime) => !isActive(fixTime)), [positions, iconByDevice]);
+  // Stale (greyed out) is decided on each poll and on a clock, so a hunter whose data stops changing still greys out
+  const now = useNow(true, AGE_CLOCK_TICK_MS);
+  const features = useMemo(() => hunterFeatures(positions ?? [], (deviceId) => iconByDevice.get(deviceId) ?? 'phone', (fixTime) => !isActive(fixTime, now)), [positions, iconByDevice, now]);
   const hoverFilter = useMemo<SymbolLayerSpecification['filter']>(() => ['==', ['get', 'id'], hoveredId ?? -1], [hoveredId]);
 
   // Click → popup, hover → tooltip + slightly larger icon
@@ -84,6 +90,13 @@ export default function Devices() {
     onHover: (feature) => {
       const id = featureId(feature);
       setHoveredId(typeof id === 'number' ? id : undefined);
+    },
+    // Opened from Beheer → Hunters (Toon op kaart): the caller already flies the map there
+    onOpen: (id) => {
+      if (typeof id !== 'number' || !positions?.some((position) => position.deviceId === id)) return false;
+      setHoveredId(undefined);
+      openPopup(id);
+      return true;
     },
   });
 

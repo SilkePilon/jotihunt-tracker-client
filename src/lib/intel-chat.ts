@@ -1,4 +1,5 @@
 import { isAxiosError } from 'axios';
+import { isNetworkError } from '@/lib/api-error';
 import type { ChatStatus, ReasoningUIPart, UIMessage } from 'ai';
 import { formatClock } from '@/lib/format';
 import { ASSIGNMENT_STATUS_LABELS, areaStates } from '@/lib/intel-window';
@@ -354,6 +355,23 @@ export function stackedTools(calls: ChatToolCall[]): string[] {
 
 export const THINKING_LABEL = 'Even denken…';
 
+/**
+ * What a screen reader hears once an answer is complete (the transcript's live region stays silent while tokens stream):
+ * the last assistant message's text with the markdown markers stripped. Empty when the last message is not an answer.
+ */
+export function answerAnnouncement(messages: UIMessage[]): string {
+  const last = messages.at(-1);
+  if (!last || last.role !== 'assistant') return '';
+  const text = last.parts
+    .flatMap((part) => (part.type === 'text' ? [part.text] : []))
+    .join(' ')
+    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/[*_`#>|~]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return text ? `Antwoord van de AI: ${text}` : '';
+}
+
 const isReasoning = (part: ChatPart): part is ReasoningUIPart => part.type === 'reasoning';
 /** Text or reasoning without content, and step starts, say nothing about where the turn is */
 const isMeaningful = (part: ChatPart) => part.type !== 'step-start' && !((part.type === 'text' || part.type === 'reasoning') && !part.text.trim());
@@ -434,9 +452,18 @@ export const PLACEHOLDER: Record<IntelKind, string> = {
   news: 'Vraag iets over dit bericht…',
 };
 
-export type ChatErrorKind = 'rate_limited' | 'ai_unavailable' | 'not_found' | 'busy' | 'other';
+export type ChatErrorKind = 'rate_limited' | 'ai_unavailable' | 'not_found' | 'busy' | 'offline' | 'other';
 
 export const BUSY_MESSAGE = 'Vorige vraag wordt nog afgerond, probeer het zo opnieuw';
+
+/** A question that couldn't be sent (no connection): it goes back into the prompt box */
+export const OFFLINE_SEND_MESSAGE = 'Geen verbinding: je vraag is niet verstuurd en staat weer in het invoerveld.';
+
+/** The notice after an offline send, saying where the question went (see chat-draft.store restore) */
+export function offlineSendMessage({ merged, imageDropped }: { merged: boolean; imageDropped: boolean }): string {
+  const base = merged ? 'Geen verbinding: je vraag is niet verstuurd en staat weer bovenaan in het invoerveld.' : OFFLINE_SEND_MESSAGE;
+  return imageDropped ? `${base} Voeg de afbeelding opnieuw toe als je die nog nodig hebt.` : base;
+}
 
 export const RATE_LIMIT_MESSAGE = 'Even rustig aan: te veel vragen, probeer het zo weer';
 
@@ -452,6 +479,8 @@ export function chatErrorKind(error: unknown): ChatErrorKind {
   if (status === 409) return 'busy';
   if (error instanceof Error && error.message === 'ai_unavailable') return 'ai_unavailable';
   if (error instanceof Error && error.message === 'rate_limited') return 'rate_limited';
+  // No answer at all (offline, server unreachable): the question never reached the AI
+  if (status === undefined && isNetworkError(error)) return 'offline';
   return 'other';
 }
 

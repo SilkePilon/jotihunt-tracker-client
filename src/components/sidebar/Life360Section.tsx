@@ -5,7 +5,9 @@ import Life360Card from '@/components/cards/life360/Life360Card';
 import type { MapRef } from '@/components/Map';
 import { useLife360Admin, useLife360Members } from '@/hooks/life360.hook';
 import { apiErrorMessage } from '@/lib/api-error';
+import { activatedByKeyboard } from '@/lib/input-modality';
 import { life360HeaderSummary } from '@/lib/life360';
+import { LIFE360_LAYER } from '@/lib/map-layers';
 import useSidebarStore from '@/stores/sidebar.store';
 import type { Life360Member } from '@/types/Life360';
 import type { User } from '@/types/User';
@@ -25,7 +27,7 @@ async function errorText(action: () => Promise<unknown>, fallback: string): Prom
 export default function Life360Section({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
   const user = useAuthUser<User>();
   const isAdmin = !!user?.admin;
-  const { status, isError, sendCode, verifyCode, chooseCircle, submitToken, requestFreshLocations, unlink } = useLife360Admin(isAdmin);
+  const { status, isError, retry, sendCode, verifyCode, chooseCircle, submitToken, requestFreshLocations, unlink } = useLife360Admin(isAdmin);
   const { data: members } = useLife360Members(isAdmin && status?.state === 'linked');
   const setSheetSnap = useSidebarStore((state) => state.setSheetSnap);
 
@@ -34,7 +36,9 @@ export default function Life360Section({ mapRef }: { mapRef: RefObject<MapRef | 
   function flyTo(member: Life360Member) {
     if (!member.location) return;
     setSheetSnap('peek');
-    mapRef.current?.flyTo({ center: [member.location.lon, member.location.lat], zoom: 15, essential: true });
+    mapRef.current?.flyTo({ center: [member.location.lon, member.location.lat], zoom: 15 });
+    // The member's popup, as if the map icon was clicked (nothing when the Life360 layer is off); focused for keyboard users
+    mapRef.current?.openFeature(LIFE360_LAYER, member.id, { focus: activatedByKeyboard() });
   }
 
   const header = life360HeaderSummary(status);
@@ -46,6 +50,7 @@ export default function Life360Section({ mapRef }: { mapRef: RefObject<MapRef | 
       <Life360Card
         status={status}
         isError={isError}
+        onRetry={retry}
         members={members?.members}
         onSendCode={(email) => errorText(() => sendCode(email), 'Code versturen is mislukt, probeer het opnieuw.')}
         onVerifyCode={(code) => errorText(() => verifyCode(code), 'Koppelen is mislukt, probeer het opnieuw.')}

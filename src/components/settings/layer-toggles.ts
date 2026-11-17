@@ -1,4 +1,4 @@
-import { Building2Icon, CarIcon, CircleDashedIcon, MapPinIcon, RadarIcon, SparklesIcon, TargetIcon, UserRoundIcon, UsersIcon, type LucideIcon } from 'lucide-react';
+import { Building2Icon, CircleDashedIcon, MapPinIcon, NavigationIcon, RadarIcon, SparklesIcon, TargetIcon, UserRoundIcon, UsersIcon, type LucideIcon } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import useLayersStore, { type LayersState } from '@/stores/layers.store';
 import { useLife360Members } from '@/hooks/life360.hook';
@@ -70,7 +70,8 @@ export function layerGroups(layers: LayerFlags, options: { predictions: boolean;
   if (options.predictions) game.push(sw('predictions', 'Voorspelling', SparklesIcon, layers.showPredictions, layers.togglePredictions));
   game.push(sw('reach', 'Bereik vossen', RadarIcon, layers.showReach, layers.toggleReach));
 
-  const team: LayerRow[] = [sw('devices', "Auto's", CarIcon, layers.showDevices, layers.toggleDevices)];
+  // Every Traccar hunter (car, bike, on foot), not only the cars
+  const team: LayerRow[] = [sw('devices', 'Hunters', NavigationIcon, layers.showDevices, layers.toggleDevices)];
   if (options.life360) team.push(sw('life360', 'Life360', UserRoundIcon, layers.showLife360, layers.toggleLife360));
   team.push(sw('buildings3d', '3D-gebouwen', Building2Icon, layers.showBuildings3d, layers.toggleBuildings3d));
 

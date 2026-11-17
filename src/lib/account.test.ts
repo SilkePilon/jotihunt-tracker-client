@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { deviceMeta, formatAgo, formatDay, orderSessions, passkeyMeta, sessionDevice, sessionMeta, type AccountSession } from './account';
+import { deviceMeta, formatAgo, formatDay, logoutDescription, orderSessions, passkeyMeta, sessionDevice, sessionMeta, type AccountSession } from './account';
 
 const now = Date.parse('2026-10-17T12:00:00Z');
 const ago = (ms: number) => new Date(now - ms).toISOString();
@@ -62,5 +62,12 @@ describe('sessionDevice', () => {
     expect(sessionDevice('Safari op macOS')).toBe('computer');
     expect(sessionDevice('Edge op Windows')).toBe('computer');
     expect(sessionDevice('chrome op ANDROID')).toBe('phone');
+  });
+});
+
+describe('logoutDescription', () => {
+  test('warns about the lockout without a passkey', () => {
+    expect(logoutDescription(true)).toContain('herstel-link');
+    expect(logoutDescription(false)).toBe('Je moet daarna opnieuw inloggen.');
   });
 });

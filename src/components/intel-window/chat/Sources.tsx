@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { motion } from 'motion/react';
 import { ChevronDownIcon, ChevronRightIcon, GlobeIcon } from 'lucide-react';
 import Reveal from '@/components/motion/Reveal';
+import NewTabHint from '@/components/NewTabHint';
 import { type ChatSource, groupSources, type SourceGroup } from '@/lib/intel-chat';
 import { SWAP_TRANSITION } from '@/lib/motion';
 import { cn } from '@/lib/utils';
@@ -39,7 +40,7 @@ export default function Sources({ sources }: { sources: ChatSource[] }) {
         type="button"
         onClick={() => setOpen(!open)}
         aria-expanded={open}
-        className="flex h-8 cursor-pointer items-center gap-2 rounded-xl bg-beheer-row pr-2 pl-2 text-[12px] font-semibold outline-none transition-colors hover:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        className="flex h-8 cursor-pointer items-center gap-2 rounded-xl bg-beheer-row pr-2 pl-2 text-xs font-semibold outline-none transition-colors hover:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring"
       >
         <span className="flex">
           {groups.slice(0, STACK).map((group, index) => (
@@ -66,7 +67,7 @@ export default function Sources({ sources }: { sources: ChatSource[] }) {
   );
 }
 
-const ROW = 'flex w-full items-center gap-2.5 px-3 py-2 text-left text-[12.5px] font-semibold outline-none transition-colors hover:bg-beheer-row-high focus-visible:bg-beheer-row-high';
+const ROW = 'flex w-full items-center gap-2.5 px-3 py-2 text-left text-caption font-semibold outline-none transition-colors hover:bg-beheer-row-high focus-visible:bg-beheer-row-high focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset';
 
 /** One site; rows are split by the card colour (as the Account dialog's rows) */
 function SiteRow({ group }: { group: SourceGroup }) {
@@ -76,7 +77,7 @@ function SiteRow({ group }: { group: SourceGroup }) {
     <>
       <Favicon site={group.site} />
       <span className="min-w-0 flex-1 truncate">{group.site}</span>
-      {count > 1 && <span className="rounded-md bg-beheer-row-high px-1.5 text-[10.5px] font-bold text-muted-foreground tabular-nums">{count}</span>}
+      {count > 1 && <span className="rounded-md bg-beheer-row-high px-1.5 text-label font-bold text-muted-foreground tabular-nums">{count}</span>}
     </>
   );
   return (
@@ -84,6 +85,7 @@ function SiteRow({ group }: { group: SourceGroup }) {
       {count === 1 ? (
         <a href={group.sources[0].url} target="_blank" rel="noopener noreferrer" title={group.sources[0].title} className={ROW}>
           {label}
+          <NewTabHint />
           <ChevronRightIcon className="size-3.5 text-muted-foreground" aria-hidden />
         </a>
       ) : (
@@ -103,9 +105,10 @@ function SiteRow({ group }: { group: SourceGroup }) {
                 href={source.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="truncate py-1 pr-3 pl-[38px] text-[12px] text-muted-foreground outline-none hover:text-foreground focus-visible:text-foreground focus-visible:underline"
+                className="truncate py-1 pr-3 pl-[38px] text-xs text-muted-foreground outline-none hover:text-foreground focus-visible:text-foreground focus-visible:underline"
               >
                 {source.title.toLowerCase() === group.site ? `Bron ${index + 1}` : source.title}
+                <NewTabHint />
               </a>
             ))}
           </div>

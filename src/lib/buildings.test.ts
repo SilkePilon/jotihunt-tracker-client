@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { MapStyle } from '@/types/MapStyle';
-import { mapPalette, MAP_SEED } from '@/lib/map-style/material-style';
+import { mapPalette } from '@/lib/map-style/material-style';
 import { BUILDINGS_TILES, buildingColor, buildingsApiUrl, buildingsRefreshInterval, createTileCache, fetchBuildingTile, firstSymbolLayerId, formatMegabytes, jobLine, jobRunning, parseBuildingsUrl, type BuildingsJob, type BuildingsStatus } from './buildings';
 
 const API = 'https://jotihunt.silkepilon.dev/api';
@@ -87,7 +87,7 @@ describe('createTileCache', () => {
 describe('buildingColor', () => {
   test('Material map: palette ramp on height, per theme', () => {
     for (const dark of [false, true]) {
-      const p = mapPalette(MAP_SEED, dark);
+      const p = mapPalette(dark);
       expect(buildingColor('', dark)).toEqual(['interpolate', ['linear'], ['get', 'h'], 0, p.surfaceContainerHigh, 30, p.surfaceContainerHighest]);
     }
   });

@@ -6,6 +6,7 @@ import { useLife360Members } from '@/hooks/life360.hook';
 import { AGE_CLOCK_TICK_MS, useNow } from '@/hooks/now.hook';
 import { life360AccuracyCircles, life360Features, parseLife360ImageId } from '@/lib/life360-map';
 import { LIFE360_ACCURACY_LAYER, LIFE360_HOVER_LAYER, LIFE360_LAYER } from '@/lib/map-layers';
+import { HOVER_ICON_SIZE, ICON_SIZE } from '@/lib/zoom-scale';
 import type { Life360Member } from '@/types/Life360';
 import { drawLife360Icon } from './life360/life360-icons';
 import Life360Popup from './life360/Life360Popup';
@@ -18,8 +19,8 @@ const MEMBERS_SOURCE = 'life360';
 const ACCURACY_SOURCE = 'life360-accuracy';
 const NO_MEMBERS: Life360Member[] = [];
 // The features carry the full image id (theme included)
-const LAYOUT: SymbolLayerSpecification['layout'] = { 'icon-image': ['get', 'icon'], 'icon-allow-overlap': true, 'icon-ignore-placement': true };
-const HOVER_LAYOUT: SymbolLayerSpecification['layout'] = { ...LAYOUT, 'icon-size': 1.1 };
+const LAYOUT: SymbolLayerSpecification['layout'] = { 'icon-image': ['get', 'icon'], 'icon-size': ICON_SIZE, 'icon-allow-overlap': true, 'icon-ignore-placement': true };
+const HOVER_LAYOUT: SymbolLayerSpecification['layout'] = { ...LAYOUT, 'icon-size': HOVER_ICON_SIZE };
 const ACCURACY_PAINT: FillLayerSpecification['paint'] = { 'fill-color': ['get', 'color'], 'fill-opacity': 0.14, 'fill-outline-color': ['get', 'color'] };
 const INTERACTIVE_LAYERS = [LIFE360_LAYER];
 /** Re-decide staleness this often: SWR keeps the same members object when a poll returns the same data. */
@@ -101,6 +102,13 @@ export default function Life360() {
     onHover: (feature) => {
       const id = featureId(feature);
       setHoveredId(typeof id === 'string' ? id : undefined);
+    },
+    // Opened from the sidebar's member list: the caller already flies the map there
+    onOpen: (id) => {
+      if (typeof id !== 'string' || !members.some((member) => member.id === id && member.location)) return false;
+      setHoveredId(undefined);
+      openPopup(id);
+      return true;
     },
   });
 

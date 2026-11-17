@@ -2,7 +2,6 @@
  * The Android app's "Material You" map, for the website: OpenFreeMap Liberty recoloured with Material 3 colour roles.
  * A port of the app's `MapStyles.materialYou`, `MapPalette` and `waterColors`; pure, so it is unit tested.
  */
-import { Hct, SchemeTonalSpot } from '@material/material-color-utilities';
 import type { LayerSpecification, StyleSpecification } from 'maplibre-gl';
 
 /** The Android app's fallback seed (#4C8C4A). */
@@ -32,11 +31,43 @@ export interface MapPalette {
   onWater: string;
 }
 
-/** Road-number text on Liberty's white `road_N` shield sprites, in light and dark (Android `MapStyles.SHIELD_TEXT`). */
+/** Road-number text on Liberty's white `road_N` shield sprites (Android `MapStyles.SHIELD_TEXT`). */
 export const SHIELD_TEXT = '#191d17';
 
+/**
+ * Dark theme: Liberty's `road_N` shields are opaque white non-SDF sprites that glare on the dark map, so the style asks
+ * for `jh-dark-road_N` instead, drawn at runtime (see `components/layers/dark-shields.ts`) in these colours. The US
+ * shields keep their sprites (and {@link SHIELD_TEXT}); the Netherlands has none.
+ */
+export const DARK_SHIELD_PREFIX = 'jh-dark-road_';
+/** Road-number text on the dark shields (Android neutral N90, onSurface in dark). */
+export const SHIELD_TEXT_DARK = '#e0e4db';
+
+/** Width (CSS px) of Liberty's `road_N` sprite per ref length N = 1…6; all are {@link ROAD_SHIELD_HEIGHT} high. */
+export const ROAD_SHIELD_WIDTHS: readonly number[] = [14, 20, 25, 31, 36, 40];
+export const ROAD_SHIELD_HEIGHT = 14;
+
+/** Fill, 1px outline and text of a dark shield: a raised tonal tile, like the map's other dark surfaces. */
+export function darkShieldColours(p: MapPalette): { fill: string; outline: string; text: string } {
+  return { fill: p.surfaceContainerHighest, outline: p.outline, text: SHIELD_TEXT_DARK };
+}
+
+/** Size (CSS px) of the dark shield image `id` (`jh-dark-road_N`), undefined for any other id. */
+export function darkShieldSize(id: string): { width: number; height: number } | undefined {
+  if (!id.startsWith(DARK_SHIELD_PREFIX)) return undefined;
+  const rest = id.slice(DARK_SHIELD_PREFIX.length);
+  const n = /^[1-9]$/.test(rest) ? Number(rest) : NaN;
+  const width = ROAD_SHIELD_WIDTHS[n - 1];
+  return width === undefined ? undefined : { width, height: ROAD_SHIELD_HEIGHT };
+}
+
+/** Liberty's `["concat", "road_", …]` shield icon with the dark prefix; undefined for any other icon-image. */
+export function darkShieldIcon(icon: unknown): unknown[] | undefined {
+  return Array.isArray(icon) && icon[0] === 'concat' && icon[1] === 'road_' ? ['concat', DARK_SHIELD_PREFIX, ...icon.slice(2)] : undefined;
+}
+
 /** The app's `LightStatusColors` / `DarkStatusColors` warn container (amber; Material 3 has no warn role). */
-const WARN_CONTAINER = { light: '#ffddb8', dark: '#693c00' };
+export const WARN_CONTAINER = { light: '#ffddb8', dark: '#693c00' };
 
 /** "#rrggbb" when opaque, else "rgba(r, g, b, a)" (a with up to 3 decimals). */
 export function argbToCss(argb: number): string {
@@ -48,26 +79,49 @@ export function argbToCss(argb: number): string {
   return `rgba(${r}, ${g}, ${b}, ${Number((a / 255).toFixed(3))})`;
 }
 
-/** The map palette of the tonal-spot scheme for [seed] (RGB, alpha ignored). */
-export function mapPalette(seed: number, dark: boolean): MapPalette {
-  const s = new SchemeTonalSpot(Hct.fromInt((0xff000000 | seed) >>> 0), dark, 0);
-  const water = waterColors(s.primary, dark);
-  return {
-    dark,
-    surface: argbToCss(s.surface),
-    surfaceContainerLowest: argbToCss(s.surfaceContainerLowest),
-    surfaceContainerLow: argbToCss(s.surfaceContainerLow),
-    surfaceContainer: argbToCss(s.surfaceContainer),
-    surfaceContainerHigh: argbToCss(s.surfaceContainerHigh),
-    surfaceContainerHighest: argbToCss(s.surfaceContainerHighest),
-    onSurfaceVariant: argbToCss(s.onSurfaceVariant),
-    outline: argbToCss(s.outline),
-    outlineVariant: argbToCss(s.outlineVariant),
-    primaryContainer: argbToCss(s.primaryContainer),
-    warnContainer: dark ? WARN_CONTAINER.dark : WARN_CONTAINER.light,
-    water: argbToCss(water.water),
-    onWater: argbToCss(water.onWater),
-  };
+/**
+ * The map palettes of the tonal-spot scheme for {@link MAP_SEED}, precomputed so @material/material-color-utilities
+ * (~18 KB gzip) stays out of the bundle. `mapPaletteFromSeed` (palette-from-seed.ts) derives them with the library; a
+ * unit test checks these still match it, so after changing the seed or the roles paste its output here.
+ */
+export const MAP_PALETTES: { light: MapPalette; dark: MapPalette } = {
+  light: {
+    dark: false,
+    surface: '#f7fbf1',
+    surfaceContainerLowest: '#ffffff',
+    surfaceContainerLow: '#f1f5eb',
+    surfaceContainer: '#ecefe6',
+    surfaceContainerHigh: '#e6e9e0',
+    surfaceContainerHighest: '#e0e4db',
+    onSurfaceVariant: '#424940',
+    outline: '#72796f',
+    outlineVariant: '#c2c9bd',
+    primaryContainer: '#bcf0b4',
+    warnContainer: '#ffddb8',
+    water: '#b0dbe8',
+    onWater: '#1e4c5a',
+  },
+  dark: {
+    dark: true,
+    surface: '#10140f',
+    surfaceContainerLowest: '#0b0f0a',
+    surfaceContainerLow: '#191d17',
+    surfaceContainer: '#1d211b',
+    surfaceContainerHigh: '#272b25',
+    surfaceContainerHighest: '#323630',
+    onSurfaceVariant: '#c2c9bd',
+    outline: '#8c9388',
+    outlineVariant: '#424940',
+    primaryContainer: '#245024',
+    warnContainer: '#693c00',
+    water: '#2d4b54',
+    onWater: '#abdcea',
+  },
+};
+
+/** The map palette (seed {@link MAP_SEED}) for the light or dark theme. */
+export function mapPalette(dark: boolean): MapPalette {
+  return dark ? MAP_PALETTES.dark : MAP_PALETTES.light;
 }
 
 // ---- Water: always blue (Android `WaterColors.kt`) ----
@@ -253,7 +307,7 @@ function paintFor(role: Role, p: MapPalette): { set: Paint; remove?: string[] } 
     case 'waterLabel':
       return { set: { 'text-color': p.onWater, 'text-halo-color': p.surface } };
     case 'shield':
-      // The road_N shield sprites are opaque white in both themes (not SDF, so not tintable): always dark text.
+      // The sprites are opaque white (not SDF, so not tintable): dark text. Dark-theme road_N shields: see recolour.
       return { set: { 'text-color': SHIELD_TEXT } };
     case 'label':
       return { set: { 'text-color': p.onSurfaceVariant, 'text-halo-color': p.surface } };
@@ -272,6 +326,8 @@ function recolour(layer: LayerSpecification, p: MapPalette): LayerSpecification 
   const paint: Paint = { ...loose.paint };
   for (const key of change.remove ?? []) delete paint[key];
   Object.assign(paint, change.set);
+  const darkIcon = role === 'shield' && p.dark ? darkShieldIcon(loose.layout?.['icon-image']) : undefined;
+  if (darkIcon) return { ...loose, layout: { ...loose.layout, 'icon-image': darkIcon }, paint: { ...paint, 'text-color': darkShieldColours(p).text } } as LayerSpecification;
   return { ...loose, paint } as LayerSpecification;
 }
 

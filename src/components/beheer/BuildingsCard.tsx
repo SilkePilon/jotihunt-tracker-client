@@ -13,9 +13,10 @@ import { EASE_OUT, SWAP_TRANSITION } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { BeheerCard, CountSwap, FadeSwap, InlineConfirm } from './BeheerLayout';
 import { Pill } from './controls/Pill';
+import { CARD_TITLE } from '@/lib/dialog-shell';
 
 /** The inline confirm sits in the card as a red box (as in KoppelingenPane) */
-const CONFIRM_BOX = 'rounded-[18px] bg-destructive/12 px-3.5 py-3';
+const CONFIRM_BOX = 'rounded-2xl bg-destructive/12 px-3.5 py-3';
 const dateFormat = new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'short', year: 'numeric' });
 
 type Action = 'refresh' | 'prefetch' | 'clear';
@@ -117,12 +118,12 @@ export default function BuildingsCard({ mapRef }: { mapRef: RefObject<MapRef | n
   return (
     <BeheerCard>
       <div className="flex items-center gap-3">
-        <span aria-hidden className="grid size-11 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground">
+        <span aria-hidden className="grid size-11 shrink-0 place-items-center rounded-full bg-primary-fill text-primary-foreground">
           <Building2Icon className="size-[22px]" />
         </span>
         <div className="min-w-0 flex-1">
-          <h3 className="text-[15px] font-bold">3D-gebouwen</h3>
-          <FadeSwap className="text-[12.5px] text-muted-foreground">{summary ?? (isError ? 'Status ophalen is mislukt.' : <Skeleton className="mt-1 h-3 w-40" />)}</FadeSwap>
+          <h3 className={CARD_TITLE}>3D-gebouwen</h3>
+          <FadeSwap className="text-caption text-muted-foreground">{summary ?? (isError ? 'Status ophalen is mislukt.' : <Skeleton className="mt-1 h-3 w-40" />)}</FadeSwap>
           <Reveal>{status && <FadeSwap className="text-xs text-muted-foreground">{dates}</FadeSwap>}</Reveal>
         </div>
       </div>
@@ -131,9 +132,9 @@ export default function BuildingsCard({ mapRef }: { mapRef: RefObject<MapRef | n
         {job && (
           // Lined up with the text (44px icon + 12px gap)
           <div className="pt-3 pl-14">
-            <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+            <div className="h-1.5 overflow-hidden rounded-full bg-beheer-row-high">
               <motion.div
-                className="h-full rounded-full bg-primary"
+                className="h-full rounded-full bg-primary-fill"
                 initial={false}
                 animate={{ width: `${Math.round(progress * 100)}%` }}
                 transition={{ duration: 0.4, ease: EASE_OUT }}
@@ -168,7 +169,7 @@ export default function BuildingsCard({ mapRef }: { mapRef: RefObject<MapRef | n
               disabled={locked}
               onClick={() => setRadiusKm(radius)}
               className={cn(
-                'inline-flex h-8 items-center rounded-lg px-3 text-[12.5px] font-semibold tabular-nums outline-none transition-[background-color,color,transform] duration-200 focus-visible:ring-[3px] focus-visible:ring-ring/50 active:scale-[0.97] disabled:opacity-50 motion-reduce:transition-none',
+                'inline-flex h-8 items-center rounded-lg px-3 text-caption font-semibold tabular-nums outline-none transition-[background-color,color,transform] duration-200 focus-visible:ring-[3px] focus-visible:ring-ring active:scale-[0.97] disabled:opacity-50 motion-reduce:transition-none',
                 radius === radiusKm ? 'bg-foreground/12 text-foreground' : 'bg-beheer-row text-muted-foreground',
               )}
             >

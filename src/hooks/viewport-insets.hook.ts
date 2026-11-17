@@ -5,7 +5,7 @@ import useViewportStore from '@/stores/viewport.store';
 /** Reads env(safe-area-inset-*) through a hidden probe element (JS has no direct API for it). */
 function readSafeAreas(probe: HTMLElement) {
   const style = getComputedStyle(probe);
-  return { safeTop: parseFloat(style.paddingTop) || 0, safeBottom: parseFloat(style.paddingBottom) || 0 };
+  return { safeTop: parseFloat(style.paddingTop) || 0, safeBottom: parseFloat(style.paddingBottom) || 0, safeLeft: parseFloat(style.paddingLeft) || 0 };
 }
 
 /**
@@ -16,7 +16,7 @@ function readSafeAreas(probe: HTMLElement) {
 export function useViewportInsets() {
   useEffect(() => {
     const probe = document.createElement('div');
-    probe.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)';
+    probe.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);padding-left:env(safe-area-inset-left)';
     document.body.appendChild(probe);
     const vv = window.visualViewport;
     const timers: number[] = [];
@@ -24,7 +24,7 @@ export function useViewportInsets() {
     const update = () => {
       const keyboard = keyboardInset(window.innerHeight, vv);
       document.documentElement.style.setProperty('--kb', `${keyboard}px`);
-      useViewportStore.getState().set({ visibleH: visibleHeight(window.innerHeight, vv), keyboard, ...readSafeAreas(probe) });
+      useViewportStore.getState().set({ visibleH: visibleHeight(window.innerHeight, vv), width: window.innerWidth, keyboard, ...readSafeAreas(probe) });
     };
     const later = (ms: number) => () => timers.push(window.setTimeout(update, ms));
     const onRotate = later(300);

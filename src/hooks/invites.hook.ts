@@ -28,7 +28,7 @@ export const useInvites = (enabled: boolean) => {
     }
   }
 
-  return { invites: asList(data), error, create, revoke };
+  return { invites: asList(data), error, retry: () => mutate(), create, revoke };
 };
 
 /** Global admin switch that stops new accounts via invite links. `paused` is undefined until loaded. */

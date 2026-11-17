@@ -8,12 +8,18 @@ interface AreaPickerProps {
   value: string;
   onChange: (area: string) => void;
   invalid?: boolean;
-  /** Runs once the popover has closed after a pick (opens the time picker) */
+  /** Runs once the popover has closed after a pick (opens the time picker); without it focus returns to the trigger */
   afterPick?: () => void;
+  /** Shown while nothing is picked */
+  placeholder?: string;
+  /** Trigger size for other forms (the Hunt / Spot dialog's 36px fields) */
+  className?: string;
+  /** Muted word after the picked value, e.g. "(vorige)" for an area prefilled from the last marker */
+  note?: string;
 }
 
 /** Deelgebied picker: trigger with the area's map colour, popover with a 3×3 grid of area tiles. */
-export default function AreaPicker({ id, value, onChange, invalid, afterPick }: AreaPickerProps) {
+export default function AreaPicker({ id, value, onChange, invalid, afterPick, placeholder = 'Gebied', className, note }: AreaPickerProps) {
   const [open, setOpen] = useState(false);
   const picked = useRef(false);
   const current = areaOptions.find((option) => option.value === value);
@@ -24,23 +30,34 @@ export default function AreaPicker({ id, value, onChange, invalid, afterPick }: 
         <PickerTrigger
           id={id}
           invalid={invalid}
-          placeholder="Gebied"
-          label={current?.label}
-          aria-label={current ? `Gebied: ${current.label}` : 'Gebied kiezen'}
+          placeholder={placeholder}
+          className={className}
+          label={
+            current && (
+              <>
+                {current.label}
+                {note && <span className="ml-1 text-muted-foreground group-data-[state=open]:text-(--map-selected-fg)">{note}</span>}
+              </>
+            )
+          }
+          aria-label={current ? `Gebied: ${current.label}${note ? ` ${note}` : ''}` : 'Gebied kiezen'}
           lead={<span aria-hidden className="size-2.5 shrink-0 rounded-full transition-colors duration-200" style={{ background: current ? getColorFromArea(current.value) : 'var(--border)' }} />}
         />
       </PopoverTrigger>
       <PopoverContent
+        aria-label="Gebied kiezen"
         align="start"
         sideOffset={6}
         collisionPadding={8}
         className="w-[300px] p-2.5"
         // After a pick, focus goes on to the time picker instead of back to this trigger
         onCloseAutoFocus={(event) => {
-          if (!picked.current) return;
+          // Cleared on every close, so a later close without a pick never counts as one (even if afterPick arrives later)
+          const didPick = picked.current;
           picked.current = false;
+          if (!didPick || !afterPick) return;
           event.preventDefault();
-          afterPick?.();
+          afterPick();
         }}
       >
         <div className="grid grid-cols-3 gap-1">

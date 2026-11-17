@@ -23,7 +23,7 @@ export default function FastFoodPopup({ restaurant, nowMs, onClose }: { restaura
   const { line1, line2 } = restaurantAddress(restaurant);
 
   return (
-    <MapPopup longitude={lng} latitude={lat} onClose={onClose} offset={POPUP_OFFSET}>
+    <MapPopup longitude={lng} latitude={lat} onClose={onClose} offset={POPUP_OFFSET} offsetScale="icon">
       <PopupHeader
         icon={
           <PopupIcon shape="square" rim background={BRAND_COLOR[restaurant.brand]} color="#fff">

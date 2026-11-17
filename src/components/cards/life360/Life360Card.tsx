@@ -1,8 +1,12 @@
 import { ReactNode, useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
+import IntegrationCardSkeleton from '@/components/cards/IntegrationCardSkeleton';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import LoadError from '@/components/LoadError';
 import { inlineLinkClass } from '@/components/tracker/styles';
 import { useEdition } from '@/hooks/edition.hook';
 import { life360View } from '@/lib/life360';
+import { SWAP } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import type { Life360AdminStatus, Life360Member } from '@/types/Life360';
 import Life360LinkPanel, { type Life360LinkActions } from './Life360LinkPanel';
@@ -13,6 +17,8 @@ export interface Life360CardProps extends Life360LinkActions {
   /** undefined while loading */
   status: Life360AdminStatus | undefined;
   isError: boolean;
+  /** Refetch the status after a failed first load */
+  onRetry: () => Promise<unknown> | unknown;
   /** For the members pill; undefined while loading */
   members: Life360Member[] | undefined;
   onRefresh: () => Promise<void>;
@@ -22,7 +28,7 @@ export interface Life360CardProps extends Life360LinkActions {
 }
 
 /** Admins: link the team's Life360 account and see whether the server can read the circle. */
-export default function Life360Card({ status, isError, members, onRefresh, onUnlink, onFlyTo, ...actions }: Life360CardProps) {
+export default function Life360Card({ status, isError, onRetry, members, onRefresh, onUnlink, onFlyTo, ...actions }: Life360CardProps) {
   const [emailStep, setEmailStep] = useState(false);
   const [emailPrefill, setEmailPrefill] = useState('');
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -54,9 +60,8 @@ export default function Life360Card({ status, isError, members, onRefresh, onUnl
   let body: ReactNode;
   switch (view) {
     case 'loading':
-      return null;
     case 'error':
-      return <p className="text-xs text-muted-foreground">Life360-status ophalen is mislukt.</p>;
+      break;
     case 'linked':
       body = status?.state === 'linked' && <Life360Linked status={status} members={members} readOnly={readOnly} onRefresh={onRefresh} onFlyTo={onFlyTo} />;
       break;
@@ -72,7 +77,7 @@ export default function Life360Card({ status, isError, members, onRefresh, onUnl
           emailPrefill={emailPrefill}
           onOpenEmail={() => setEmailStep(true)}
           onCloseEmail={() => setEmailStep(false)}
-          onOtherAddress={() => void otherAddress()}
+          onOtherAddress={otherAddress}
           {...actions}
         />
       );
@@ -80,8 +85,21 @@ export default function Life360Card({ status, isError, members, onRefresh, onUnl
 
   const footer = status?.state === 'linked' || status?.state === 'paused' ? status : undefined;
 
+  // Loading and a failed first load take the card's place, then swap for it
+  const scene = view === 'loading' || view === 'error' ? view : 'card';
+
   return (
-    <div className="flex flex-col gap-3" data-life360-card>
+    <AnimatePresence mode="wait" initial={false}>
+      {scene === 'loading' ? (
+        <motion.div key="loading" {...SWAP}>
+          <IntegrationCardSkeleton label="Life360 laden" />
+        </motion.div>
+      ) : scene === 'error' ? (
+        <motion.div key="error" {...SWAP}>
+          <LoadError message="Life360-status ophalen is mislukt." onRetry={onRetry} />
+        </motion.div>
+      ) : (
+    <motion.div key="card" {...SWAP} className="flex flex-col gap-3" data-life360-card>
       {body}
       {footer && (
         <>
@@ -105,6 +123,8 @@ export default function Life360Card({ status, isError, members, onRefresh, onUnl
           />
         </>
       )}
-    </div>
+    </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

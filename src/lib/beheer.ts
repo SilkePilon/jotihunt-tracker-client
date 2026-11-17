@@ -140,8 +140,8 @@ export function splitUsers<T extends { admin: boolean; name: string }>(users: T[
 export type SendState = 'idle' | 'confirm' | 'sending' | 'sent';
 export type SendEvent = 'tap' | 'expire' | 'success' | 'failure' | 'reset';
 
-/** How long "Zeker? Tik nogmaals" waits for the second tap */
-export const SEND_CONFIRM_MS = 3000;
+/** How long "Zeker? Tik nogmaals" waits for the second tap, counted from when the pointer and focus leave the button */
+export const SEND_CONFIRM_MS = 8000;
 /** How long "Verstuurd ✓" stays */
 export const SEND_DONE_MS = 1600;
 
@@ -199,3 +199,18 @@ export function toggleHuntable(areas: readonly string[], ownArea: string | undef
   const next = current.includes(area) ? current.filter((other) => other !== area) : [...current, area];
   return next.sort();
 }
+
+/** What a screen reader hears when the send button asks "Zeker? Tik nogmaals" */
+export function sendConfirmAnnouncement(recipients: number | undefined): string {
+  if (!recipients) return 'Tik nog eens om naar iedereen te sturen';
+  return recipients === 1 ? 'Tik nog eens om naar 1 persoon te sturen' : `Tik nog eens om naar ${recipients} mensen te sturen`;
+}
+
+/**
+ * AI model rows (Beheer → AI): the Test button and the 190px model picker fit beside the title from this row width
+ * (icon, a readable title, both controls and the paddings); narrower, they get their own line under the text.
+ */
+export const AI_ROW_INLINE_MIN_PX = 520;
+
+/** Stack the AI model rows' controls: until the rows have been measured (undefined) and while they're too narrow. */
+export const aiRowsStacked = (width: number | undefined): boolean => width === undefined || width < AI_ROW_INLINE_MIN_PX;

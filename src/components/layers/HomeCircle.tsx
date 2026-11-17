@@ -1,5 +1,6 @@
+import { zoomScaled } from '@/lib/zoom-scale';
 import { useMemo } from 'react';
-import { Layer, Source, type FillLayerSpecification } from 'react-map-gl/maplibre';
+import { Layer, Source, type FillLayerSpecification, type LineLayerSpecification } from 'react-map-gl/maplibre';
 import { useHomeTeam } from '@/hooks/teams.hook';
 import { createCircle, createWindSector } from '@/lib/utils';
 import { useCounterHunt } from '@/hooks/counter-hunt.hook';
@@ -11,7 +12,12 @@ const WIND_ANGLE_RANGE = 45;
 const HOME_SOURCE = 'circle-source-home';
 const HOME_PAINT: FillLayerSpecification['paint'] = {
   'fill-color': 'hsla(256, 90%, 61%, 0.2)',
-  'fill-outline-color': 'hsla(256, 90%, 61%, 0.5)',
+};
+// Same thicker dashed rim as the other groups' circles (Teams.tsx)
+const HOME_OUTLINE_PAINT: LineLayerSpecification['paint'] = {
+  'line-color': 'hsla(256, 90%, 61%, 0.85)',
+  'line-width': zoomScaled(3),
+  'line-dasharray': [2, 1.5],
 };
 
 /**
@@ -37,6 +43,7 @@ export default function HomeCircle({ showCircle }: { showCircle: boolean }) {
   return (
     <Source id={HOME_SOURCE} type="geojson" data={data}>
       <Layer id="circle-layer-home" type="fill" source={HOME_SOURCE} paint={HOME_PAINT} />
+      <Layer id="circle-layer-home-outline" type="line" source={HOME_SOURCE} paint={HOME_OUTLINE_PAINT} />
     </Source>
   );
 }

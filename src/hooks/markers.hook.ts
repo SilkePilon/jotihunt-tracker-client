@@ -1,7 +1,9 @@
 import { Marker } from '@/types/Marker';
 import { fetcherWithMethod, useAuthSWR } from '../lib/swr';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
-import { asList } from '@/lib/response-shape';
+import { asList, hasExpectedShape } from '@/lib/response-shape';
+import { confirmHaptic } from '@/lib/haptics';
+import { CONFIRM_REQUEST_TIMEOUT_MS } from '@/lib/http';
 
 export const useMarkers = () => {
   const authHeader = useAuthHeader() || '';
@@ -26,6 +28,8 @@ export const useMarkers = () => {
       return error ?? new Error('Request failed');
     }
     if (!result?._id) return new Error('Unexpected response');
+    // Registered: a short tick on phones that can vibrate (no visual change, the toast confirms on screen)
+    confirmHaptic();
     mutate((data) => {
       if (data) {
         return [...data, result];
@@ -36,29 +40,52 @@ export const useMarkers = () => {
   }
 
   /**
+   * Fetch the marker list now, bypassing SWR's dedupe (a poll may have just failed too), and put it in the cache.
+   * @returns The fresh list, or undefined when the fetch failed (never throws)
+   */
+  async function fetchFreshMarkers(): Promise<Marker[] | undefined> {
+    try {
+      const fresh: unknown = await fetcherWithMethod('/markers', authHeader, 'GET', undefined, CONFIRM_REQUEST_TIMEOUT_MS);
+      if (!hasExpectedShape('/markers', fresh)) return undefined;
+      await mutate(fresh as Marker[], { revalidate: false });
+      return fresh as Marker[];
+    } catch {
+      return undefined;
+    }
+  }
+
+  /**
    * Delete a marker via the API.
    * @param markerId The ID of the marker to delete
-   * @returns True if the marker was deleted successfully, false otherwise (never throws)
+   * @returns null if the marker was deleted, else the error (never throws; show it with apiErrorMessage)
    */
-  async function deleteMarker(markerId: string): Promise<boolean> {
-    const result = await fetcherWithMethod(`/markers/${markerId}`, authHeader, 'DELETE').catch(() => null);
-    if (result) {
-      mutate((data) => {
-        if (data) {
-          return data.filter((marker) => marker._id !== markerId);
-        }
-        return [];
-      });
-      return true;
+  async function deleteMarker(markerId: string): Promise<unknown> {
+    let result;
+    try {
+      result = await fetcherWithMethod(`/markers/${markerId}`, authHeader, 'DELETE');
+    } catch (error) {
+      return error ?? new Error('Request failed');
     }
-    return false;
+    if (!result) return new Error('Unexpected response');
+    mutate((data) => {
+      if (data) {
+        return data.filter((marker) => marker._id !== markerId);
+      }
+      return [];
+    });
+    return null;
   }
 
   return {
     markers: asList(data),
     isLoading: !error && !data,
     isError: error,
+    /** A list has come in (a later failed poll keeps it); until then it isn't known which hint hours are taken */
+    loaded: data !== undefined,
+    /** Refetch now (LoadError's retry) */
+    retry: () => mutate(),
     createMarker,
+    fetchFreshMarkers,
     deleteMarker,
   };
 };

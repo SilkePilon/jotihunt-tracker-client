@@ -2,9 +2,11 @@ import { ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { Drawer } from 'vaul';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useIsMobile } from '@/hooks/media.hook';
+import { CloseButton } from '@/components/ui/close-button';
 import { cn } from '@/lib/utils';
 import { keepOpenWhileEditing } from '@/lib/inline-edit';
 import { useBackEntry } from '@/hooks/back-entry.hook';
+import { useModalHold } from '@/stores/prompt-queue.store';
 
 interface ResponsiveDialogProps {
   open: boolean;
@@ -26,6 +28,8 @@ interface ResponsiveDialogProps {
   onEscapeKeyDown?: (event: KeyboardEvent) => void;
   /** Phones: the Back button closes the drawer (default). Off for drawers that manage their own history entry. */
   backEntry?: boolean;
+  /** Always the desktop dialog, also in the mobile shell (the Intel window in a laptop window narrowed for split screen) */
+  alwaysDialog?: boolean;
 }
 
 // vaul's slide-out (TRANSITIONS.DURATION) and the Radix dialog's `duration-200` fade/zoom-out, plus a margin so the content never unmounts a frame early
@@ -33,10 +37,24 @@ const DRAWER_CLOSE_MS = 500;
 const DIALOG_CLOSE_MS = 250;
 
 /** Frame shared by the large dialogs: a large dialog on desktop, a bottom drawer on phones. */
-export default function ResponsiveDialog({ open, onClose, title, description, children, className, drawerClassName, hideHeader, compact, onClosed, onEscapeKeyDown, backEntry = true }: ResponsiveDialogProps) {
-  const isMobile = useIsMobile();
-  // Phones: Back closes the drawer instead of lowering the sheet behind it
-  useBackEntry(`dialog:${useId()}`, open && isMobile && backEntry, onClose);
+export default function ResponsiveDialog({ open, onClose, title, description, children, className, drawerClassName, hideHeader, compact, onClosed, onEscapeKeyDown, backEntry = true, alwaysDialog = false }: ResponsiveDialogProps) {
+  const isMobile = useIsMobile() && !alwaysDialog;
+  // Phones: Back closes the drawer instead of lowering the sheet behind it. A dialog may refuse to close (e.g. while it
+  // saves); Back has used up its history entry by then, so a fresh one is opened for the next Back press
+  const id = useId();
+  const openRef = useRef(open);
+  useEffect(() => {
+    openRef.current = open;
+  });
+  // No follow-up prompt (Meldingen, passkey, install) opens over it; the phone drawer has no DialogContent to count it
+  useModalHold(open);
+  const [backGeneration, setBackGeneration] = useState(0);
+  useBackEntry(`dialog:${id}:${backGeneration}`, open && isMobile && backEntry, () => {
+    onClose();
+    setTimeout(() => {
+      if (openRef.current) setBackGeneration((generation) => generation + 1);
+    });
+  });
   // Keep the content while the drawer slides out / the dialog fades out, instead of an empty frame leaving
   const [mounted, setMounted] = useState(open);
   if (open && !mounted) setMounted(true);
@@ -62,18 +80,27 @@ export default function ResponsiveDialog({ open, onClose, title, description, ch
     return (
       <Drawer.Root open={open} onOpenChange={(next) => !next && onClose()}>
         <Drawer.Portal>
-          <Drawer.Overlay className="fixed inset-0 z-50 bg-black/40" />
+          <Drawer.Overlay className="fixed inset-0 z-50 bg-black/50" />
           <Drawer.Content
             // Escape inside an inline editor cancels the edit instead of closing the drawer
             onEscapeKeyDown={keepOpenWhileEditing}
-            className={cn('fixed inset-x-0 bottom-0 z-50 flex flex-col', compact ? 'max-h-[92dvh]' : 'h-[92dvh]', 'rounded-t-2xl border-t bg-background outline-none', drawerClassName)}
+            // Same surface as the phone's bottom sheet (BottomSheet.tsx): 24px top corners, no border, --shadow-sheet (a landscape column --shadow-dialog),
+            // bg-beheer-window. Dialogs whose rows are tuned for the card (Account, Kaart & lagen, Meldingen) pass bg-card.
+            // Landscape phones: a centred column as wide as the sheet column (BottomSheet), not the full width
+            className={cn('fixed inset-x-0 bottom-0 z-50 flex flex-col landscape-phone:mx-auto landscape-phone:max-w-[min(400px,50vw)]', compact ? 'max-h-[92dvh]' : 'h-[92dvh]', 'rounded-t-3xl border-0 bg-beheer-window shadow-(--shadow-sheet) outline-none landscape-phone:shadow-(--shadow-dialog)', drawerClassName)}
           >
-            <Drawer.Handle className="mx-auto mb-1 mt-2" />
-            <div className={hideHeader ? 'sr-only' : 'px-4 pb-3 pt-1'}>
-              <Drawer.Title className="text-lg font-semibold">{title}</Drawer.Title>
+            {/* The phone bottom sheet's grab bar (BottomSheet.tsx): vaul's own handle styles need the !important overrides */}
+            <Drawer.Handle className="mx-auto mb-1 mt-2 h-[5px]! w-9! rounded-full! bg-muted-foreground/80! opacity-100!" />
+            {/* Wide drawers clear the notch / rounded corners (safe areas), never less than the 16px gutter; the centred
+                landscape column stays clear of them anyway */}
+            <div className={hideHeader ? 'sr-only' : 'pb-3 pl-[max(1rem,env(safe-area-inset-left))] pr-[calc(max(1rem,env(safe-area-inset-right))+2.5rem)] pt-1 landscape-phone:pr-14 landscape-phone:pl-4'}>
+              <Drawer.Title className="text-lg font-bold">{title}</Drawer.Title>
               <Drawer.Description className="text-sm text-muted-foreground">{description}</Drawer.Description>
             </div>
-            <div className="flex min-h-0 flex-1 flex-col px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">{mounted && children}</div>
+            <div className="flex min-h-0 flex-1 flex-col pb-[max(1rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] landscape-phone:px-4">{mounted && children}</div>
+            {/* The handle is decorative (aria-hidden) and a swipe is no option for VoiceOver or an iOS PWA without Back:
+                a visible close button, last in the DOM so opening still focuses the content first (as the desktop dialog does) */}
+            <CloseButton onClick={onClose} className="absolute top-[18px] right-[max(1rem,env(safe-area-inset-right))] landscape-phone:right-4" />
           </Drawer.Content>
         </Drawer.Portal>
       </Drawer.Root>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { MapPinIcon } from 'lucide-react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { toast } from 'sonner';
 import MapPopup from '../../map/MapPopup';
 import { PopupActions, RouteAction } from '../../map/popup/PopupActions';
@@ -13,7 +13,7 @@ import { useAreas } from '@/hooks/areas.hook';
 import { useDistanceFromMe } from '@/hooks/distance-from-me.hook';
 import { useEdition } from '@/hooks/edition.hook';
 import { usePredictionSetting } from '@/hooks/predictions.hook';
-import { REVEAL_TRANSITION } from '@/lib/motion';
+import { revealTransition } from '@/lib/motion';
 import { getColorFromArea } from '@/lib/utils';
 import type { Team } from '@/types/Team';
 
@@ -32,6 +32,7 @@ const POPUP_OFFSET = { bottom: [0, -16] as [number, number] };
 
 /** Details of a group: address, visit status, area select (TEAMS_AREA_EDITING) and Route. */
 export default function TeamPopup({ team, onClose, setTeamArea }: TeamPopupProps) {
+  const reduced = useReducedMotion() ?? false;
   const { areas } = useAreas();
   const { enabled: predictionEnabled } = usePredictionSetting();
   const { readOnly } = useEdition();
@@ -60,7 +61,7 @@ export default function TeamPopup({ team, onClose, setTeamArea }: TeamPopupProps
   const address = `${team.street} ${team.houseNumber}${team.housenumberAddition ? ` ${team.housenumberAddition}` : ''}, ${team.city}`;
 
   return (
-    <MapPopup longitude={lng} latitude={lat} onClose={onClose} offset={POPUP_OFFSET}>
+    <MapPopup longitude={lng} latitude={lat} onClose={onClose} offset={POPUP_OFFSET} offsetScale="icon">
       <PopupHeader
         icon={<TeamLogo name={team.name} logoUrl={team.logoUrl} className="size-9 rounded-[11px] border-0 shadow-none" />}
         title={team.name}
@@ -87,8 +88,8 @@ export default function TeamPopup({ team, onClose, setTeamArea }: TeamPopupProps
               className="overflow-hidden"
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={REVEAL_TRANSITION}
+              exit={{ height: 0, opacity: 0, transition: revealTransition(reduced, 'exit') }}
+              transition={revealTransition(reduced, 'enter')}
             >
               <VisitStatusRow teamApiId={team.apiId} />
             </motion.div>
@@ -98,7 +99,7 @@ export default function TeamPopup({ team, onClose, setTeamArea }: TeamPopupProps
       {TEAMS_AREA_EDITING && (
         <Select onValueChange={handleAreaChange} value={area ?? 'onbekend'} disabled={readOnly}>
           <SelectTrigger autoFocus={false} size="sm" className="mt-2 w-full">
-            <SelectValue placeholder="Kies deelgebied..." />
+            <SelectValue placeholder="Kies deelgebied…" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="onbekend">Onbekend deelgebied</SelectItem>

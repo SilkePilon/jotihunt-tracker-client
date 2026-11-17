@@ -12,3 +12,11 @@ export function isHoldComplete(elapsedMs: number, durationMs: number): boolean {
   if (Number.isNaN(elapsedMs) || elapsedMs < 0) return false;
   return holdProgressAfter(elapsedMs, durationMs) >= 1;
 }
+
+/** Share of the hold after which screen readers hear "Bijna bevestigd, blijf vasthouden" (once per hold) */
+export const HOLD_NEARLY_SHARE = 0.8;
+
+/** True from 80% of the hold on: time to tell a screen-reader user to keep holding. */
+export function isHoldNearlyDone(progress: number): boolean {
+  return progress >= HOLD_NEARLY_SHARE;
+}

@@ -12,10 +12,10 @@ export default function DeparturesCard({ departures: result }: { departures: OvD
   const { departures } = result;
   const rest = departures.slice(FIRST);
   return (
-    <div className="overflow-hidden rounded-[18px] bg-beheer-row">
-      <div className="grid gap-1.5 px-3 py-2.5 text-[12.5px]">
-        <div className="truncate text-[13px] font-semibold">Vertrek {result.stop.name}</div>
-        {result.note && <p className="text-[12px] text-muted-foreground">{result.note}</p>}
+    <div className="overflow-hidden rounded-2xl bg-beheer-row">
+      <div className="isolate grid gap-1.5 px-3 py-2.5 text-caption">
+        <div className="truncate text-body font-semibold">Vertrek {result.stop.name}</div>
+        {result.note && <p className="text-xs text-muted-foreground">{result.note}</p>}
         {departures.length === 0 ? (
           <p className="text-muted-foreground">Geen vertrekken</p>
         ) : (
@@ -50,13 +50,13 @@ function DepartureRow({ departure }: { departure: OvDeparture }) {
       <LineChip line={departure.line} />
       <span className="min-w-0 flex-1 truncate">{departure.destination}</span>
       {departure.platform && (
-        <span className="shrink-0 text-[11.5px] text-muted-foreground">
+        <span className="shrink-0 text-label text-muted-foreground">
           {departure.mode === 'TRAIN' ? 'spoor' : 'perron'} {departure.platform}
         </span>
       )}
       <span className="flex shrink-0 items-baseline gap-1 font-semibold tabular-nums">
         {ovClock(departure.expected)}
-        {delay && <span className="text-[11.5px] font-bold text-destructive dark:text-red-300">{delay}</span>}
+        {delay && <span className="text-label font-bold text-destructive-text">{delay}</span>}
       </span>
     </li>
   );

@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'motion/react';
-import { LockIcon, TrainFrontIcon } from 'lucide-react';
+import { EyeOffIcon, LockIcon, TrainFrontIcon } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import { useNow } from '@/hooks/now.hook';
@@ -59,12 +59,16 @@ function OvRow({ fox, hidden, forbidden, popIn, now, open, onOpen }: OvRowProps)
         open ? 'ring-[1.5px]' : 'ring-0',
       )}
     >
-      <span className={cn('block px-0.5 transition-opacity duration-200 motion-reduce:transition-none', hidden ? 'opacity-40' : forbidden && 'opacity-45')}>
+      <span className={cn('block px-0.5 transition-opacity duration-200 motion-reduce:transition-none', hidden ? 'opacity-65' : forbidden && 'opacity-75')}>
         <span className="flex items-center justify-between gap-2 text-xs font-bold">
           <span className="inline-flex min-w-0 items-center gap-1.5">
             <span className="relative grid size-2.5 shrink-0 place-items-center">
               <AnimatePresence initial={false}>
-                {forbidden ? (
+                {hidden ? (
+                  <motion.span key="hidden" className="absolute inset-0 grid place-items-center" initial={POP.initial} animate={POP.animate} exit={POP.exit} transition={POP.transition}>
+                    <EyeOffIcon aria-hidden className="size-2.5" strokeWidth={2.75} />
+                  </motion.span>
+                ) : forbidden ? (
                   <motion.span key="lock" className="absolute inset-0 grid place-items-center" initial={POP.initial} animate={POP.animate} exit={POP.exit} transition={POP.transition}>
                     <LockIcon aria-hidden className="size-2.5" strokeWidth={2.75} />
                   </motion.span>
@@ -83,10 +87,11 @@ function OvRow({ fox, hidden, forbidden, popIn, now, open, onOpen }: OvRowProps)
             </span>
             <span className="truncate">{fox.name} · in het OV</span>
           </span>
-          <span className="shrink-0 font-semibold tabular-nums opacity-80">{duration}</span>
+          {/* Not dimmed again when the row is already dimmed (like FoxChip): stacked opacity drops the text below 4.5:1 */}
+          <span className={cn('shrink-0 font-semibold tabular-nums', !hidden && !forbidden && 'opacity-80')}>{duration}</span>
         </span>
         {/* Rail: dashed track between two stations, the train glides back and forth (still with reduced motion) */}
-        <span aria-hidden className="relative mt-1.5 block h-[18px]">
+        <span aria-hidden className="@container relative mt-1.5 block h-[18px]">
           <span className="absolute inset-x-0 top-2 border-t-2 border-dashed border-fox-ov/55" />
           <span className="absolute top-1 left-0 size-2.5 rounded-full border-2 border-fox-ov bg-card" />
           <span className="absolute top-1 right-0 size-2.5 rounded-full border-2 border-fox-ov bg-card" />

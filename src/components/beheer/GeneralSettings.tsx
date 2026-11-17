@@ -1,5 +1,5 @@
-import { useId, useRef, useState, type ReactNode } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { toast } from 'sonner';
 import { CheckIcon, Loader2Icon } from 'lucide-react';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
@@ -12,15 +12,14 @@ import { useNow } from '@/hooks/now.hook';
 import { useTeams } from '@/hooks/teams.hook';
 import { apiErrorMessage } from '@/lib/api-error';
 import { apiAssetUrl, draftFrom, fromLocalInput, generalPatch, isDirty, timelineGeometry, type AdminConfig, type GeneralDraft } from '@/lib/app-config';
-import { POP, REVEAL_TRANSITION, SWAP_TRANSITION } from '@/lib/motion';
+import { POP, revealTransition, SWAP_TRANSITION } from '@/lib/motion';
 import { VEHICLE_ICONS, VEHICLE_OPTIONS } from '@/lib/tracker';
 import { cn, getColorFromArea } from '@/lib/utils';
+import useAdminStore from '@/stores/admin.store';
 import type { Vehicle } from '@/types/Tracker';
-import { BeheerCard, BeheerSkeleton, WarnBar } from './BeheerLayout';
+import { BeheerCard, BeheerLoadError, BeheerSkeleton, WarnBar } from './BeheerLayout';
 import { Pill, Tag } from './controls/Pill';
 
-/** Text inputs and select triggers: 36px, 12px corners, tonal fill */
-const FIELD = 'h-9 rounded-lg border-0 bg-beheer-row-high text-[13px] shadow-none md:text-[13px] dark:bg-beheer-row-high';
 const NO_GROUP = 'none';
 const NEEDS_PASSWORD_HINT = 'Vul ook het wachtwoord in om de nieuwe gebruikersnaam te testen.';
 const TIMELINE_TICK_MS = 60_000;
@@ -28,16 +27,17 @@ const LOGO_TYPES = 'image/png,image/jpeg,image/webp,image/svg+xml';
 
 /** Label above a field, and an error line that folds in under it. */
 function Field({ label, htmlFor, error, className, children }: { label: ReactNode; htmlFor?: string; error?: string; className?: string; children: ReactNode }) {
+  const reduced = useReducedMotion() ?? false;
   return (
     <div className={cn('min-w-0', className)}>
-      <label htmlFor={htmlFor} className="mb-1 ml-0.5 flex items-center gap-1.5 text-[11.5px] font-semibold text-muted-foreground">
+      <label htmlFor={htmlFor} className="mb-1 ml-0.5 flex items-center gap-1.5 text-xs desk:text-label font-semibold text-muted-foreground">
         {label}
       </label>
       {children}
       <AnimatePresence initial={false}>
         {error && (
-          <motion.span key="error" className="block overflow-hidden" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={REVEAL_TRANSITION}>
-            <span className="mt-1 ml-0.5 block text-xs text-destructive">{error}</span>
+          <motion.span key="error" className="block overflow-hidden" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0, transition: revealTransition(reduced, 'exit') }} transition={revealTransition(reduced, 'enter')}>
+            <span className="mt-1 ml-0.5 block text-xs text-destructive-text">{error}</span>
           </motion.span>
         )}
       </AnimatePresence>
@@ -64,6 +64,7 @@ const formatDayTime = (ms: number) => dayTime.format(ms);
 
 /** Track with the hunt as an orange stretch, a white "nu" tick and labels; the stretch slides when the times change. */
 function HuntTimeline({ start, end }: { start: string | null; end: string | null }) {
+  const reduced = useReducedMotion() ?? false;
   const now = useNow(true, TIMELINE_TICK_MS);
   const startMs = start ? Date.parse(start) : NaN;
   const endMs = end ? Date.parse(end) : NaN;
@@ -71,7 +72,7 @@ function HuntTimeline({ start, end }: { start: string | null; end: string | null
   return (
     <AnimatePresence initial={false}>
       {ready && (
-        <motion.div key="timeline" className="overflow-hidden" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={REVEAL_TRANSITION}>
+        <motion.div key="timeline" className="overflow-hidden" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0, transition: revealTransition(reduced, 'exit') }} transition={revealTransition(reduced, 'enter')}>
           <Timeline startMs={startMs} endMs={endMs} now={now} />
         </motion.div>
       )}
@@ -84,11 +85,11 @@ function Timeline({ startMs, endMs, now }: { startMs: number; endMs: number; now
   const end = geo.left + geo.width;
   // Leave out the "nu" label when it would run into a time label
   const nowLabel = geo.now !== null && Math.abs(geo.now - geo.left) > 9 && Math.abs(geo.now - end) > 9;
-  const label = 'absolute top-[30px] -translate-x-1/2 text-[10.5px] whitespace-nowrap text-muted-foreground tabular-nums';
+  const label = 'absolute top-[30px] -translate-x-1/2 text-xs desk:text-label whitespace-nowrap text-muted-foreground tabular-nums';
   return (
     <div className="relative mx-2 mt-1.5 mb-0.5 h-11" aria-hidden>
       <div className="absolute inset-x-0 top-[18px] h-2 rounded-md bg-beheer-row" />
-      <motion.div className="absolute top-[18px] h-2 rounded-md bg-primary" initial={false} animate={{ left: `${geo.left}%`, width: `${geo.width}%` }} transition={SWAP_TRANSITION} />
+      <motion.div className="absolute top-[18px] h-2 rounded-md bg-primary-fill" initial={false} animate={{ left: `${geo.left}%`, width: `${geo.width}%` }} transition={SWAP_TRANSITION} />
       <AnimatePresence initial={false}>
         {geo.now !== null && (
           <motion.div
@@ -125,25 +126,29 @@ function DateTimeInput({ id, value, invalid, disabled, onChange }: { id: string;
       disabled={disabled}
       aria-invalid={invalid || undefined}
       onChange={(event) => onChange(event.target.value)}
-      className={cn(FIELD, 'tabular-nums [color-scheme:light] dark:[color-scheme:dark]')}
+      className="tabular-nums [color-scheme:light] dark:[color-scheme:dark]"
     />
   );
 }
 
 /** Sticky at the bottom of the pane while there are changes; slides up, and the cards below make room smoothly. */
 function SaveBar({ show, saving, disabled, onReset, onSave }: { show: boolean; saving: boolean; disabled: boolean; onReset: () => void; onSave: () => void }) {
+  const reduced = useReducedMotion() ?? false;
   return (
     <AnimatePresence initial={false}>
       {show && (
         <motion.div
           key="savebar"
+          // The Beheer pane's scroller adds scroll padding while this is there (BeheerWindow, has-[[data-save-bar]])
+          data-save-bar
           // -14px cancels the column's gap, so the bar takes no room once folded away
           className="sticky bottom-4 z-10 -mt-3.5"
           style={{ overflow: 'hidden' }}
           initial={{ height: 0, opacity: 0 }}
           animate={{ height: 'auto', opacity: 1, transitionEnd: { overflow: 'visible' } }}
-          exit={{ height: 0, opacity: 0, overflow: 'hidden' }}
-          transition={SWAP_TRANSITION}
+          // Reduced motion: the bar takes (or gives back) its room at once and only fades
+          exit={{ height: 0, opacity: 0, overflow: 'hidden', transition: revealTransition(reduced, 'exit') }}
+          transition={revealTransition(reduced, 'enter')}
         >
           <div className="pt-3.5">
             <motion.div
@@ -151,13 +156,13 @@ function SaveBar({ show, saving, disabled, onReset, onSave }: { show: boolean; s
               animate={{ y: 0 }}
               exit={{ y: 24 }}
               transition={SWAP_TRANSITION}
-              className="flex items-center gap-2.5 rounded-2xl border border-border bg-beheer-row-high py-2.5 pr-2.5 pl-4 shadow-lg"
+              className="flex items-center gap-2.5 rounded-2xl bg-beheer-row-high py-2.5 pr-2.5 pl-4 shadow-(--shadow-menu)"
             >
-              <span className="min-w-0 flex-1 text-[13px] font-medium">Niet-opgeslagen wijzigingen</span>
+              <span className="min-w-0 flex-1 text-body font-semibold">Niet-opgeslagen wijzigingen</span>
               <Pill variant="ghost" disabled={saving} onClick={onReset}>
                 Terugzetten
               </Pill>
-              <Pill variant="primary" morphKey={saving ? 'busy' : 'idle'} disabled={disabled || saving} onClick={onSave}>
+              <Pill variant="primary" morphKey={saving ? 'busy' : 'idle'} disabled={disabled} busy={saving} onClick={onSave}>
                 {saving && <Loader2Icon className="animate-spin" />}
                 Opslaan
               </Pill>
@@ -199,6 +204,7 @@ function LoginTag({ state }: { state: LoginState | 'none' | null }) {
 
 /** Beheer → Algemeen (B3): Hunt, Ons team, Voertuiggroepen and Jotihunt-site as always-open forms with one save bar. */
 export default function GeneralSettings() {
+  const reduced = useReducedMotion() ?? false;
   const admin = useAdminConfig();
   const { teams } = useTeams();
   const traccar = useTraccarGroups(true);
@@ -214,14 +220,14 @@ export default function GeneralSettings() {
   const { readOnly } = useEdition();
 
   const config = admin.config;
+  // Shared with the window, so closing it (or switching section) asks before throwing the changes away
+  const hasChanges = !!config && edited !== null && isDirty(draftFrom(config), edited);
+  const setStoreDirty = useAdminStore((state) => state.setDirty);
+  useEffect(() => setStoreDirty(hasChanges), [hasChanges, setStoreDirty]);
+  useEffect(() => () => setStoreDirty(false), [setStoreDirty]);
+
   if (!config) {
-    return admin.isError ? (
-      <BeheerCard title="Hunt">
-        <p className="mx-1 text-sm text-muted-foreground">De instellingen konden niet worden geladen.</p>
-      </BeheerCard>
-    ) : (
-      <BeheerSkeleton groups={2} />
-    );
+    return admin.isError ? <BeheerLoadError message="De instellingen konden niet worden geladen." onRetry={admin.retry} /> : <BeheerSkeleton groups={2} />;
   }
 
   const saved = draftFrom(config);
@@ -252,13 +258,20 @@ export default function GeneralSettings() {
   const groups = traccar.groups ?? [];
 
   async function save() {
+    if (saving) return;
+    // The fields stay editable while saving: only the submitted values count as saved, typing after the tap stays an edit
+    const submitted = edited;
     setSaving(true);
     try {
       const patch = generalPatch(saved, draft);
       if (Object.keys(patch).length) await admin.saveGeneral(patch);
       if (draft.jotihuntWebUsername !== saved.jotihuntWebUsername) await admin.savePlain({ jotihuntWebUsername: draft.jotihuntWebUsername.trim() || null });
       if (draft.jotihuntWebPassword) await admin.saveSecret('jotihuntWebPassword', draft.jotihuntWebPassword);
-      setEdited(null);
+      // Typed on while saving: keep those edits (the saved values drop out against the reloaded config); the password
+      // field empties when it still holds the one just stored
+      setEdited((current) =>
+        current === submitted || !current || !submitted ? null : current.jotihuntWebPassword === submitted.jotihuntWebPassword ? { ...current, jotihuntWebPassword: '' } : current,
+      );
       toast.success('Opgeslagen');
     } catch (error) {
       toast.error(apiErrorMessage(error, 'Opslaan is mislukt.'));
@@ -268,6 +281,7 @@ export default function GeneralSettings() {
   }
 
   async function testLogin() {
+    if (login === 'busy') return;
     setLogin('busy');
     const result = await testJotihuntLogin(authHeader, typedLogin);
     setLogin(result.ok ? 'ok' : 'fail');
@@ -326,7 +340,7 @@ export default function GeneralSettings() {
             </Select>
           </Field>
           <Field label="Groepsnaam" htmlFor={`${id}-name`}>
-            <Input id={`${id}-name`} value={draft.groupName} onChange={(event) => set('groupName', event.target.value)} placeholder="Scouting …" className={FIELD} />
+            <Input id={`${id}-name`} value={draft.groupName} onChange={(event) => set('groupName', event.target.value)} placeholder="Scouting …" />
           </Field>
           <Field label="Logo" htmlFor={`${id}-logo`}>
             <div className="flex gap-1.5">
@@ -335,8 +349,8 @@ export default function GeneralSettings() {
                   <motion.img key={logoSrc} src={logoSrc} alt="" className="size-7 object-contain" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} />
                 </AnimatePresence>
               </span>
-              <Input id={`${id}-logo`} value={draft.logoUrl} onChange={(event) => set('logoUrl', event.target.value)} placeholder="/logo.svg" className={cn(FIELD, 'flex-1')} spellCheck={false} />
-              <Pill variant="secondary" size="md" morphKey={uploading ? 'busy' : 'idle'} disabled={uploading} onClick={() => fileInput.current?.click()}>
+              <Input id={`${id}-logo`} value={draft.logoUrl} onChange={(event) => set('logoUrl', event.target.value)} placeholder="/logo.svg" className="flex-1" spellCheck={false} />
+              <Pill variant="secondary" size="md" morphKey={uploading ? 'busy' : 'idle'} busy={uploading} onClick={() => fileInput.current?.click()}>
                 {uploading && <Loader2Icon className="animate-spin" />}
                 Uploaden
               </Pill>
@@ -354,7 +368,7 @@ export default function GeneralSettings() {
             </div>
           </Field>
           <Field label="Discord-link" htmlFor={`${id}-discord`}>
-            <Input id={`${id}-discord`} value={draft.discordUrl} onChange={(event) => set('discordUrl', event.target.value)} placeholder="https://discord.gg/…" className={FIELD} spellCheck={false} />
+            <Input id={`${id}-discord`} value={draft.discordUrl} onChange={(event) => set('discordUrl', event.target.value)} placeholder="https://discord.gg/…" spellCheck={false} />
           </Field>
         </div>
       </BeheerCard>
@@ -399,7 +413,7 @@ export default function GeneralSettings() {
         </div>
         <AnimatePresence initial={false}>
           {traccar.isError && (
-            <motion.p key="traccar" className="overflow-hidden" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={REVEAL_TRANSITION}>
+            <motion.p key="traccar" className="overflow-hidden" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0, transition: revealTransition(reduced, 'exit') }} transition={revealTransition(reduced, 'enter')}>
               <span className="mx-1 block pt-2 text-xs text-muted-foreground">Traccar niet bereikbaar</span>
             </motion.p>
           )}
@@ -422,7 +436,6 @@ export default function GeneralSettings() {
               id={`${id}-user`}
               value={draft.jotihuntWebUsername}
               onChange={(event) => setLoginField('jotihuntWebUsername', event.target.value)}
-              className={FIELD}
               autoComplete="off"
               spellCheck={false}
             />
@@ -434,7 +447,6 @@ export default function GeneralSettings() {
               value={draft.jotihuntWebPassword}
               onChange={(event) => setLoginField('jotihuntWebPassword', event.target.value)}
               placeholder={password.hint ?? ''}
-              className={FIELD}
               autoComplete="new-password"
             />
           </Field>
@@ -442,7 +454,9 @@ export default function GeneralSettings() {
         <div className="mx-1 mt-2.5">
           <Pill
             variant="secondary"
-            disabled={login === 'busy' || needsPassword || (!typedLogin && !siteConfigured)}
+            // busy, not disabled, while testing: the pill keeps the focus
+            busy={login === 'busy'}
+            disabled={needsPassword || (!typedLogin && !siteConfigured)}
             title={needsPassword ? NEEDS_PASSWORD_HINT : undefined}
             onClick={() => void testLogin()}
           >

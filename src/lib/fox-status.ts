@@ -30,19 +30,36 @@ export function huntCooldownMs(lastHuntTime: Date | string | undefined, now: num
   return Math.max(0, new Date(lastHuntTime).getTime() + HUNT_COOLDOWN_MS - now);
 }
 
-/** Pill colours per fox status (and for a fox still in its hunt cooldown), light and dark mode. */
-export const COOLDOWN_PILL_CLASS = 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/15 dark:text-blue-300';
+/**
+ * When the last running hunt cooldown ends (ms since epoch; may lie in the past), or undefined without any hunt.
+ * The sidebar only needs a per-second clock until then.
+ */
+export function lastCooldownEnd(areas: Area[], hunts: SyncedHunt[] | undefined): number | undefined {
+  let end: number | undefined;
+  for (const area of areas) {
+    const lastHunt = lastHuntTimeFor(hunts, area.name);
+    if (!lastHunt) continue;
+    const areaEnd = new Date(lastHunt).getTime() + HUNT_COOLDOWN_MS;
+    if (end === undefined || areaEnd > end) end = areaEnd;
+  }
+  return end;
+}
+
+/** Pill colours per fox status (and for a fox still in its hunt cooldown): the fox-* tonal tokens, light and dark. */
+export const COOLDOWN_PILL_CLASS = 'border-fox-cooldown/30 bg-fox-cooldown-container text-fox-on-cooldown';
 
 export function statusPillClass(status: string): string {
   switch (status) {
     case 'green':
-      return 'border-green-200 bg-green-50 text-green-700 dark:border-green-500/30 dark:bg-green-500/15 dark:text-green-400';
+      return 'border-fox-ok/30 bg-fox-ok-container text-fox-on-ok';
     case 'orange':
-      return 'border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-500/30 dark:bg-orange-500/15 dark:text-orange-300';
+      return 'border-fox-warn/30 bg-fox-warn-container text-fox-on-warn';
     case 'red':
-      return 'border-red-200 bg-red-50 text-red-700 dark:border-red-500/30 dark:bg-red-500/15 dark:text-red-300';
+      return 'border-fox-error/30 bg-fox-error-container text-fox-on-error';
+    case 'blue':
+      return 'border-fox-ov/30 bg-fox-ov-container text-fox-on-ov';
     default:
-      return 'border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-500/30 dark:bg-gray-500/15 dark:text-gray-300';
+      return 'border-border bg-muted text-muted-foreground';
   }
 }
 
@@ -108,8 +125,50 @@ export function sidebarFoxes({ areas, hunts, now }: { areas: Area[]; hunts?: Syn
     );
 }
 
+/** Same fox as far as its chip shows (the list is rebuilt every tick, so the objects themselves are always new). */
+export function sameSidebarFox(a: SidebarFox, b: SidebarFox): boolean {
+  return a === b || (a.area === b.area && a.key === b.key && a.name === b.name && a.group === b.group && a.cooldownMs === b.cooldownMs && a.lastHunt === b.lastHunt);
+}
+
 export function groupCounts(foxes: SidebarFox[]): Record<FoxGroup, number> {
   const counts: Record<FoxGroup, number> = { green: 0, orange: 0, ov: 0, cooldown: 0, red: 0 };
   for (const fox of foxes) counts[fox.group] += 1;
   return counts;
+}
+
+/** One legend item with the initials of its foxes ("A D actief"): the phone peek names which fox is in which group. */
+export interface LegendInitials {
+  group: FoxGroup;
+  initials: string[];
+}
+
+/** The groups that have foxes, in {@link FOX_GROUP_ORDER}, each with its foxes' first letters (in list order). */
+export function legendInitials(foxes: Pick<SidebarFox, 'name' | 'group'>[]): LegendInitials[] {
+  return FOX_GROUP_ORDER.flatMap((group) => {
+    const initials = foxes.filter((fox) => fox.group === group).map((fox) => fox.name.charAt(0).toUpperCase());
+    return initials.length > 0 ? [{ group, initials }] : [];
+  });
+}
+
+/**
+ * Rough width in characters of the initials legend ("A D actief  B onderweg"): each item is its swatch (about one
+ * character), initials with spaces, the lowercase label and a gap of about two characters to the next.
+ */
+export function legendInitialsChars(items: LegendInitials[]): number {
+  return items.reduce((sum, item, index) => sum + 1 + item.initials.length * 2 + FOX_GROUP_LABEL[item.group].length + (index > 0 ? 2 : 0), 0);
+}
+
+/** The fox whose hunt cooldown ends first ("B" + its remaining ms), for the phone peek; undefined when none runs. */
+export function soonestCooldown(foxes: Pick<SidebarFox, 'name' | 'group' | 'cooldownMs'>[]): { initial: string; ms: number } | undefined {
+  let soonest: { initial: string; ms: number } | undefined;
+  for (const fox of foxes) {
+    if (fox.group !== 'cooldown' || fox.cooldownMs <= 0) continue;
+    if (!soonest || fox.cooldownMs < soonest.ms) soonest = { initial: fox.name.charAt(0).toUpperCase(), ms: fox.cooldownMs };
+  }
+  return soonest;
+}
+
+/** Rough width in characters of the peek's cooldown entry ("⏱ B 12:34"): icon, initial, countdown and a gap before it. */
+export function cooldownLegendChars(countdown: string): number {
+  return 2 + 1 + 1 + countdown.length + 2;
 }

@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import AutoHeight from '@/components/motion/AutoHeight';
 import { useEdition } from '@/hooks/edition.hook';
 import { useNightAreas, useRouterStatus } from '@/hooks/night-areas.hook';
+import { busyProps } from '@/lib/busy';
 import { POP, SWAP } from '@/lib/motion';
 import useAdminStore from '@/stores/admin.store';
 import { useNightDraw } from '@/stores/night-draw.store';
@@ -28,21 +29,23 @@ function routerState(status: RouterStatus | undefined): { meta: string; tag?: { 
 }
 
 const KIND_TAG: Record<NightArea['kind'], { label: string; className: string; meta: string }> = {
-  closed: { label: "Dicht 's nachts", className: 'bg-[#ffdad6] text-[#93000a]', meta: 'Paden dicht, wegen open' },
-  open: { label: "Open 's nachts", className: 'bg-[rgb(27_109_47/0.12)] text-[#1b6d2f] dark:text-green-300', meta: 'Telt niet als gesloten bos' },
+  closed: { label: "Dicht 's nachts", className: 'bg-fox-error-container text-fox-on-error', meta: 'Paden dicht, wegen open' },
+  open: { label: "Open 's nachts", className: 'bg-fox-ok-container text-fox-on-ok', meta: 'Telt niet als gesloten bos' },
 };
 
 interface AreaRowProps {
   area: NightArea;
   confirming: boolean;
   disabled: boolean;
+  /** Another save runs: looks disabled but keeps the focus (aria-disabled) */
+  busy: boolean;
   onAsk: () => void;
   onCancel: () => void;
   onDelete: () => Promise<void>;
 }
 
 /** One own night area; ✕ turns the row red with an inline "Gebied verwijderen?" (swaps like BeheerExpandableRow's confirm). */
-function AreaRow({ area, confirming, disabled, onAsk, onCancel, onDelete }: AreaRowProps) {
+function AreaRow({ area, confirming, disabled, busy, onAsk, onCancel, onDelete }: AreaRowProps) {
   const tag = KIND_TAG[area.kind];
   return (
     <RowFrame tone={confirming ? 'danger' : 'default'}>
@@ -55,12 +58,12 @@ function AreaRow({ area, confirming, disabled, onAsk, onCancel, onDelete }: Area
           ) : (
             <motion.div key="row" className="flex items-center gap-3 px-3 py-2.5" {...SWAP}>
               <div className="min-w-0 flex-1">
-                <div className="truncate text-[13.5px] font-semibold">{area.name}</div>
+                <div className="truncate text-body font-semibold">{area.name}</div>
                 <div className="text-xs text-muted-foreground">{tag.meta}</div>
               </div>
               <div className="flex shrink-0 items-center gap-1.5">
                 <Tag className={tag.className}>{tag.label}</Tag>
-                <IconPill variant="soft" aria-label={`${area.name} verwijderen`} disabled={disabled} onClick={onAsk} className="size-8">
+                <IconPill variant="soft" aria-label={`${area.name} verwijderen`} disabled={disabled} aria-disabled={busy || undefined} onClick={busy ? undefined : onAsk} className="size-8">
                   <XIcon />
                 </IconPill>
               </div>
@@ -99,6 +102,7 @@ export default function RoutesCard() {
   }
 
   async function handleRebuild() {
+    if (rebuilding) return;
     setRebuilding(true);
     try {
       const result = await rebuild();
@@ -125,8 +129,12 @@ export default function RoutesCard() {
           <BeheerSwitch
             aria-label="Routes tekenen"
             checked={setting?.enabled !== false}
-            disabled={!setting || saving || readOnly}
-            onCheckedChange={(enabled) => void persist({ ...setting!, enabled })}
+            disabled={!setting || readOnly}
+            // Saving keeps the focus on the switch (aria-disabled); toggles are ignored meanwhile
+            {...busyProps(saving)}
+            onCheckedChange={(enabled) => {
+              if (!saving) void persist({ ...setting!, enabled });
+            }}
           />
         </BeheerRow>
         <BeheerRow key="router" title="Router" meta={<FadeSwap>{router.meta}</FadeSwap>}>
@@ -140,7 +148,7 @@ export default function RoutesCard() {
         </BeheerRow>
       </BeheerRows>
       <div className="mt-3 flex">
-        <Pill variant="secondary" morphKey={rebuilding ? 'busy' : 'idle'} disabled={!status?.configured || status.building || rebuilding || readOnly} onClick={() => void handleRebuild()}>
+        <Pill variant="secondary" morphKey={rebuilding ? 'busy' : 'idle'} disabled={!status?.configured || status.building || readOnly} busy={rebuilding} onClick={() => void handleRebuild()}>
           {rebuilding && <Loader2Icon className="animate-spin" />}
           Kaartdata vernieuwen
         </Pill>
@@ -159,7 +167,8 @@ export default function RoutesCard() {
             key={area.id}
             area={area}
             confirming={confirmId === area.id}
-            disabled={saving || readOnly}
+            disabled={readOnly}
+            busy={saving}
             onAsk={() => setConfirmId(area.id)}
             onCancel={() => setConfirmId(null)}
             onDelete={async () => {

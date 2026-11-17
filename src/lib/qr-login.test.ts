@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { AxiosError, AxiosHeaders } from 'axios';
-import { canRetryConfirm, nextAfterLogin, panelAfterPoll, qrProblem, QR_RENEW_FOR_MS } from './qr-login';
+import { canRetryConfirm, denyFailure, nextAfterLogin, panelAfterPoll, qrPanelAnnouncement, qrProblem, QR_RENEW_FOR_MS } from './qr-login';
 
 function httpError(status: number, data: unknown = {}) {
   const error = new AxiosError('fail');
@@ -48,6 +48,13 @@ describe('qrProblem', () => {
     expect(qrProblem(Object.assign(new Error('x'), { name: 'NotAllowedError' })).message).toBe('Niet afgerond. Probeer het opnieuw.');
     expect(qrProblem(new AxiosError('offline')).message).toBe('Kan de server niet bereiken, controleer je verbinding.');
   });
+
+  test('only no answer (offline, server down) offers "Opnieuw proberen"', () => {
+    expect(qrProblem(new AxiosError('offline')).retry).toBe(true);
+    expect(qrProblem(httpError(503)).retry).toBe(true);
+    expect(qrProblem(httpError(401, { code: 'PASSKEY_FAILED' })).retry).toBe(false);
+    expect(qrProblem(httpError(404, { code: 'QR_GONE' })).retry).toBeFalsy();
+  });
 });
 
 describe('canRetryConfirm', () => {
@@ -60,5 +67,29 @@ describe('canRetryConfirm', () => {
     expect(canRetryConfirm(httpError(404, { code: 'QR_GONE' }))).toBe(false);
     expect(canRetryConfirm(httpError(401))).toBe(false);
     expect(canRetryConfirm(new AxiosError('offline'))).toBe(false);
+  });
+});
+
+describe('denyFailure', () => {
+  test('a gone or taken code shows the problem', () => {
+    expect(denyFailure(httpError(404, { code: 'QR_GONE' }))).toEqual({ problem: qrProblem(httpError(404, { code: 'QR_GONE' })) });
+    expect(denyFailure(httpError(409, { code: 'QR_TAKEN' }))).toEqual({ problem: qrProblem(httpError(409, { code: 'QR_TAKEN' })) });
+  });
+
+  test('offline and server errors stay retryable', () => {
+    expect(denyFailure(new AxiosError('offline'))).toEqual({ retry: 'Kan de server niet bereiken, controleer je verbinding.' });
+    expect(denyFailure(httpError(500))).toEqual({ retry: 'Weigeren is mislukt, probeer het opnieuw.' });
+    expect(denyFailure(new Error('x'))).toEqual({ retry: 'Weigeren is mislukt, probeer het opnieuw.' });
+  });
+});
+
+describe('qrPanelAnnouncement', () => {
+  test('announces what changed, nothing while a code waits', () => {
+    expect(qrPanelAnnouncement({ phase: 'loading' })).toBe('');
+    expect(qrPanelAnnouncement({ phase: 'waiting', url: 'u', expiresAt: 0 })).toBe('');
+    expect(qrPanelAnnouncement({ phase: 'scanned', url: 'u', name: 'Silke' })).toBe('Gescand door Silke. Bevestig op je telefoon.');
+    expect(qrPanelAnnouncement({ phase: 'done', name: 'Silke' })).toBe('Ingelogd. Welkom, Silke.');
+    expect(qrPanelAnnouncement({ phase: 'expired' })).toContain('Code verlopen');
+    expect(qrPanelAnnouncement({ phase: 'error' })).toContain('Kan geen code maken');
   });
 });

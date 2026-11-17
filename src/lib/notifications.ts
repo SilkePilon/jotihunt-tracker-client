@@ -53,6 +53,13 @@ export function setAllTypes(on: boolean): OptionalNotificationType[] {
   return on ? [] : NOTIFICATION_OPTIONS.flatMap((option) => tileTypes(option.type));
 }
 
+/** Whether two disabled lists switch off the same types (order and duplicates don't matter): the Meldingen dialog's "unsaved changes". */
+export function sameTypes(a: readonly string[], b: readonly string[]): boolean {
+  const left = new Set(a);
+  const right = new Set(b);
+  return left.size === right.size && [...left].every((type) => right.has(type));
+}
+
 export function shouldAlert(type: NotificationType, disabledTypes: readonly string[]): boolean {
   return type === 'broadcast' || !disabledTypes.includes(type);
 }
@@ -76,6 +83,66 @@ export function toastKind(notification: Pick<AppNotification, 'type' | 'data'>):
   if ((notification.type === 'fox-status' && notification.data.status === 'green') || notification.type === 'hunt-approved') return 'success';
   if (notification.type === 'hunt-rejected' || notification.type === 'broadcast' || notification.type === 'counter-hunt' || notification.type === 'happy-hour') return 'warning';
   return 'info';
+}
+
+/** Phones: how long an HQ broadcast or a tegenhunt toast stays (it would otherwise cover the map until closed) */
+export const PHONE_STICKY_TOAST_MS = 120_000;
+
+/**
+ * How long the toast stays: an HQ broadcast or a tegenhunt until it is closed (its close button) on a laptop, since
+ * missing one costs; on a phone two minutes (PHONE_STICKY_TOAST_MS), so it doesn't sit over the map for good (Meldingen
+ * keeps it). Urgent ones 30 s, the rest 8 s.
+ */
+export function toastDuration(notification: Pick<AppNotification, 'type' | 'urgent'>, phone = false): number {
+  if (notification.type === 'broadcast' || notification.type === 'counter-hunt') return phone ? PHONE_STICKY_TOAST_MS : Infinity;
+  return notification.urgent ? 30_000 : 8000;
+}
+
+export interface ToastOpeners {
+  /** Laptop: open the hint/news article in the Intel window */
+  openArticle?: (articleId: number) => void;
+  /** Phone: open the Hints page in the sheet */
+  openHints?: () => void;
+}
+
+/** The toast's "Openen" button for this notification, or undefined when there is nothing to open. */
+export function toastAction(notification: Pick<AppNotification, 'type' | 'data'>, { openArticle, openHints }: ToastOpeners): { label: string; onClick: () => void } | undefined {
+  const articleId = notification.data.articleId;
+  if (openArticle && articleId !== undefined && (notification.type === 'hint' || notification.type === 'article')) return { label: 'Openen', onClick: () => openArticle(articleId) };
+  if (openHints && notification.type === 'hint') return { label: 'Openen', onClick: openHints };
+  return undefined;
+}
+
+/** What the push service worker posts to an open window when its notification is tapped (public/push-sw.js). */
+export const NOTIFICATION_CLICK_MESSAGE = 'notification-click';
+
+export interface PushClickOpeners {
+  /** Laptop: the Intel window, on the article when the push carried one */
+  openIntel?: (articleId?: number) => void;
+  /** Phone: the Hints page in the sheet */
+  openHints?: () => void;
+}
+
+/**
+ * A tapped push notification, posted by the service worker to the window it focuses: open what the toast's "Openen"
+ * would (a hint on a phone: the Hints page; a hint or news item on a laptop: the Intel window). False when the message
+ * is something else or there is nothing to open (the app just comes to the front).
+ */
+export function routePushClick(message: unknown, { openIntel, openHints }: PushClickOpeners): boolean {
+  if (typeof message !== 'object' || message === null) return false;
+  const { type, data } = message as { type?: unknown; data?: unknown };
+  if (type !== NOTIFICATION_CLICK_MESSAGE || typeof data !== 'object' || data === null) return false;
+  const { type: notificationType, articleId } = data as { type?: unknown; articleId?: unknown };
+  const article = typeof articleId === 'number' && Number.isFinite(articleId) ? articleId : undefined;
+  if (openIntel && (notificationType === 'hint' || notificationType === 'article')) {
+    openIntel(article);
+    return true;
+  }
+  if (openHints && notificationType === 'hint') {
+    openHints();
+    return true;
+  }
+  return false;
 }
 
 /** Highest first: what the one sound of a poll (and the HQ banner) goes by. */
@@ -113,4 +180,16 @@ export function mergeFeed(seen: Set<string>, incoming: AppNotification[]): AppNo
   for (const notification of fresh) seen.add(notification.id);
   while (seen.size > SEEN_LIMIT) seen.delete(seen.values().next().value as string);
   return fresh;
+}
+
+/**
+ * Without push on this device, notifications too old to alert (a backgrounded tab or a locked phone resuming) would be
+ * gone without a trace: one quiet summary toast instead, "N meldingen gemist · nieuwste: …", with the newest one's
+ * Openen action. Null when there is nothing missed.
+ */
+export function missedSummary(missed: readonly AppNotification[], openers: ToastOpeners): { title: string; action?: { label: string; onClick: () => void } } | null {
+  if (missed.length === 0) return null;
+  const newest = missed.reduce((best, notification) => (new Date(notification.createdAt).getTime() > new Date(best.createdAt).getTime() ? notification : best));
+  const count = missed.length === 1 ? '1 melding gemist' : `${missed.length} meldingen gemist`;
+  return { title: `${count} · nieuwste: ${newest.title}`, action: toastAction(newest, openers) };
 }

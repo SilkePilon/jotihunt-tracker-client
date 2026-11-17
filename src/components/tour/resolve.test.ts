@@ -17,6 +17,47 @@ describe('stepsForPlatform', () => {
   });
 });
 
+describe('phone wording', () => {
+  test('bodyMobile replaces the body on phones only, as the same object every call', () => {
+    const tour: TourStep[] = [{ ...base, id: 'sounds', target: null, body: 'Klik op Volgende', bodyMobile: 'Tik op Volgende' }];
+    expect(stepsForPlatform(tour, 'mobile')[0].body).toBe('Tik op Volgende');
+    expect(stepsForPlatform(tour, 'desktop')[0].body).toBe('Klik op Volgende');
+    expect(stepsForPlatform(tour, 'mobile')[0]).toBe(stepsForPlatform(tour, 'mobile')[0]);
+  });
+});
+
+describe('section order per platform', () => {
+  const section = (id: string, target: TourStep['target']): TourStep => ({ ...base, id, target });
+  const tour: TourStep[] = [
+    section('welcome', null),
+    section('foxes', 'sidebar.foxes'),
+    section('hunts', 'sidebar.hunts'),
+    section('hints', 'sidebar.hints'),
+    section('hintEntry', 'sidebar.hintEntry'),
+    section('predictions', 'sidebar.predictions'),
+    section('tracker', 'sidebar.tracking'),
+    section('settings', 'settings.replayItem'),
+  ];
+
+  test('laptop: the sidebar order', () => {
+    expect(stepsForPlatform(tour, 'desktop').map((s) => s.id)).toEqual(['welcome', 'foxes', 'hints', 'hunts', 'predictions', 'hintEntry', 'tracker', 'settings']);
+  });
+
+  test('phone: the menu order', () => {
+    expect(stepsForPlatform(tour, 'mobile').map((s) => s.id)).toEqual(['welcome', 'foxes', 'hintEntry', 'hunts', 'predictions', 'hints', 'tracker', 'settings']);
+  });
+
+  test('phone menu rows sort with the section pages', () => {
+    const mixed = [section('hints', { desktop: 'sidebar.hints', mobile: 'menu.hints' }), section('hunts', 'sidebar.hunts'), section('foxes', { desktop: 'sidebar.foxes', mobile: 'menu.foxes' })];
+    expect(stepsForPlatform(mixed, 'mobile').map((s) => s.id)).toEqual(['foxes', 'hunts', 'hints']);
+  });
+
+  test('non-section steps keep their place', () => {
+    const mixed = [section('a', 'sidebar.hints'), section('mid', 'map'), section('b', 'sidebar.foxes')];
+    expect(stepsForPlatform(mixed, 'desktop').map((s) => s.id)).toEqual(['b', 'mid', 'a']);
+  });
+});
+
 describe('targetFor', () => {
   test('plain target', () => {
     expect(targetFor(steps[1], 'mobile')).toBe('sidebar.hunts');

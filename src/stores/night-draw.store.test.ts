@@ -38,4 +38,18 @@ describe('night draw store', () => {
     expect(ringFromPoints([[1, 1], [2, 1]])).toBeNull();
     expect(ringFromPoints([[1, 1], [2, 1], [2, 2]])).toEqual([[1, 1], [2, 1], [2, 2], [1, 1]]);
   });
+  test('moveLast moves only the last corner, not once closed or without corners', () => {
+    const s = useNightDraw.getState();
+    s.start();
+    s.moveLast([5, 5]);
+    expect(useNightDraw.getState().points).toEqual([]);
+    s.addPoint([1, 1]);
+    s.addPoint([2, 1]);
+    useNightDraw.getState().moveLast([3, 3]);
+    expect(useNightDraw.getState().points).toEqual([[1, 1], [3, 3]]);
+    useNightDraw.getState().addPoint([2, 2]);
+    useNightDraw.getState().close();
+    useNightDraw.getState().moveLast([9, 9]);
+    expect(useNightDraw.getState().points).toEqual([[1, 1], [3, 3], [2, 2]]);
+  });
 });

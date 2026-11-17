@@ -1,4 +1,4 @@
-import { RefObject, useEffect, useRef, useState } from 'react';
+import { RefObject, useEffect, useId, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Loader2Icon, MapIcon, PencilIcon, Trash2Icon } from 'lucide-react';
 import { toast } from 'sonner';
@@ -177,7 +177,7 @@ function AreaRow({ cell, area, label, open, onToggle, onSave, onClear, mapRef, h
   if (!cell) {
     return (
       <RowFrame tone="muted">
-        <div className="flex items-center gap-3 px-3 py-2.5 text-[13px]">
+        <div className="flex items-center gap-3 px-3 py-2.5 text-body">
           {dot}
           <span className="w-16 font-semibold">{label}</span>
           <span className="text-xs text-muted-foreground">geen hint</span>
@@ -196,17 +196,17 @@ function AreaRow({ cell, area, label, open, onToggle, onSave, onClear, mapRef, h
         type="button"
         aria-expanded={open}
         onClick={onToggle}
-        className="flex w-full items-center px-3 py-2.5 text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset"
+        className="flex w-full items-center px-3 py-2.5 text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset"
       >
         <motion.span initial={false} animate={{ opacity: none ? 0.6 : 1 }} transition={SWAP.transition} className="flex min-w-0 flex-1 items-center gap-3">
           {dot}
-          <span className="w-16 text-[13px] font-semibold">{label}</span>
+          <span className="w-16 text-body font-semibold">{label}</span>
           <span className="flex-1" />
           <AnimatePresence mode="wait" initial={false}>
             <motion.span key={solved ? `ok-${cell.answer}` : none ? 'none' : 'open'} {...SWAP} className="flex min-w-0 items-center gap-2">
               {solved ? (
                 <>
-                  <span className="max-w-56 truncate font-mono text-[12.5px] font-bold text-green-600 dark:text-green-300">{cell.answer}</span>
+                  <span className="max-w-56 truncate font-mono text-caption font-bold text-fox-ok">{cell.answer}</span>
                   {poppable ? <SuccessBadge size={18} /> : <CookieBadge tone="ok" size={18} />}
                 </>
               ) : (
@@ -296,6 +296,12 @@ function AreaBody({ cell, label, onSave, onClear, mapRef }: { cell: HintCell; la
   const guess = guessAnswer ? parseGuess(guessAnswer.x, guessAnswer.y) : null;
   const canShowGuess = !!guess && (guess.kind === 'points' ? guess.points.length > 0 : !guess.wide);
 
+  // The lines under the field describe it (stable ids on their wrappers: the text inside swaps); the two ⚠ previews mark it invalid
+  const ids = { teammate: useId(), preview: useId(), guess: useId(), guessReason: useId() };
+  const showPreview = !!shown && !guessAnswer;
+  const describedBy = [editing && teammate && ids.teammate, showPreview && ids.preview, guessAnswer && ids.guess].filter(Boolean).join(' ') || undefined;
+  const invalid = showPreview && (shown.kind === 'invalid' || shown.kind === 'outside');
+
   // This row's guess on the map goes away once the field stops holding a guess or the row folds/unmounts. Only while
   // the Intel window is open: "Toon op kaart" closes the window, which unmounts every row, and that guess must stay
   // (the window is already closed by then). Only a field that held a guess clears: a row opening fresh (e.g. reopening
@@ -365,7 +371,7 @@ function AreaBody({ cell, label, onSave, onClear, mapRef }: { cell: HintCell; la
       {/* Mounts with the body (unfolds with it); folds away once the area is solved */}
       <Reveal>{cell.status === 'none' && <p className="pb-3 text-xs text-muted-foreground">Volgens de hint geen opdracht voor {label} deze ronde.</p>}</Reveal>
       {/* The snippet is the raw HTML of this area's part of the article (text, <br>, images) */}
-      {cell.snippet && <ArticleHtml html={cell.snippet} className="mb-3 px-0 font-mono text-[13.5px] leading-[1.7]" />}
+      {cell.snippet && <ArticleHtml html={cell.snippet} className="mb-3 px-0 font-mono text-body leading-[1.7]" />}
       <AnimatePresence mode="wait" initial={false}>
         {editing ? (
           <motion.div key="edit" {...SWAP} className="flex items-center gap-2">
@@ -392,25 +398,42 @@ function AreaBody({ cell, label, onSave, onClear, mapRef }: { cell: HintCell; la
               spellCheck={false}
               data-1p-ignore
               aria-label={`Antwoord ${label}`}
-              className="h-8 w-44 min-w-0 rounded-[10px] bg-beheer-window px-2.5 font-mono text-[13px] ring-1 ring-border outline-none placeholder:text-muted-foreground read-only:opacity-60 focus:ring-primary"
+              aria-describedby={describedBy}
+              aria-invalid={invalid || undefined}
+              className="h-8 w-44 min-w-0 rounded-md bg-beheer-window px-2.5 font-mono text-base ring-1 ring-input outline-none desk:text-body placeholder:text-muted-foreground read-only:opacity-60 focus:ring-2 focus:ring-ring"
             />
-            <Pill variant="primary" disabled={!answer.trim() || saving || !!guessAnswer || readOnly} onClick={() => void save()} morphKey={saving ? 'saving' : 'idle'} aria-label={saving ? 'Opslaan…' : undefined}>
+            {/* An answer with unknown digits can't be saved yet: aria-disabled with the reason, so it stays findable */}
+            <Pill
+              variant="primary"
+              disabled={!answer.trim() || readOnly}
+              busy={saving}
+              aria-disabled={!!guessAnswer || undefined}
+              aria-describedby={guessAnswer ? ids.guessReason : undefined}
+              onClick={() => void save()}
+              morphKey={saving ? 'saving' : 'idle'}
+              aria-label={saving ? 'Opslaan…' : undefined}
+            >
               {saving ? <Loader2Icon className="animate-spin" /> : 'Opslaan'}
             </Pill>
+            {guessAnswer && (
+              <span id={ids.guessReason} className="sr-only">
+                Vul eerst de onbekende cijfers in.
+              </span>
+            )}
           </motion.div>
         ) : (
           <motion.div key="done" {...SWAP} className="flex min-w-0 items-center gap-2">
-            <span className="min-w-0 truncate font-mono text-[13px] font-bold text-green-600 dark:text-green-300">{cell.answer}</span>
+            <span className="min-w-0 truncate font-mono text-body font-bold text-fox-ok">{cell.answer}</span>
             {popIn ? <SuccessBadge size={18} /> : <CookieBadge tone="ok" size={18} />}
             {cell.answerLocation && (
-              <IconPill aria-label="Op kaart" title="Op kaart" onClick={showOnMap}>
+              <IconPill aria-label={`Antwoord ${label} op kaart`} title="Op kaart" onClick={showOnMap}>
                 <MapIcon />
               </IconPill>
             )}
-            <IconPill aria-label="Wijzigen" title="Wijzigen" autoFocus={refocus} disabled={readOnly} onClick={startEdit}>
+            <IconPill aria-label={`Antwoord ${label} wijzigen`} title="Wijzigen" autoFocus={refocus} disabled={readOnly} onClick={startEdit}>
               <PencilIcon />
             </IconPill>
-            <IconPill aria-label="Wissen" title="Wissen" disabled={readOnly} onClick={() => onClear(cell, label)}>
+            <IconPill aria-label={`Antwoord ${label} wissen`} title="Wissen" disabled={readOnly} onClick={() => onClear(cell, label)}>
               <Trash2Icon />
             </IconPill>
           </motion.div>
@@ -418,14 +441,14 @@ function AreaBody({ cell, label, onSave, onClear, mapRef }: { cell: HintCell; la
       </AnimatePresence>
       <Reveal>
         {editing && teammate && (
-          <p className="pt-2 text-xs text-muted-foreground">
+          <p id={ids.teammate} className="pt-2 text-xs text-muted-foreground">
             Intussen ingevuld door een teamgenoot: <span className="font-mono font-semibold text-foreground">{teammate}</span>
           </p>
         )}
       </Reveal>
       <Reveal>
-        {shown && !guessAnswer && (
-          <div className="pt-2 text-xs">
+        {showPreview && (
+          <div id={ids.preview} className="pt-2 text-xs">
             <AnimatePresence mode="wait" initial={false}>
               <motion.p key={shown.kind} {...SWAP}>
                 <PreviewLine preview={shown} />
@@ -436,7 +459,7 @@ function AreaBody({ cell, label, onSave, onClear, mapRef }: { cell: HintCell; la
       </Reveal>
       <Reveal>
         {guessAnswer && (
-          <div className="pt-2 text-xs">
+          <div id={ids.guess} className="pt-2 text-xs">
             <GuessLine status={guessStatus(guess)} onShow={canShowGuess ? showGuess : undefined} />
           </div>
         )}
@@ -447,12 +470,12 @@ function AreaBody({ cell, label, onSave, onClear, mapRef }: { cell: HintCell; la
 
 function PreviewLine({ preview }: { preview: NonNullable<AnswerPreview> }) {
   if (preview.kind === 'text') return <span className="text-muted-foreground">Tekst-antwoord, geen marker</span>;
-  if (preview.kind === 'invalid') return <span className="text-amber-600 dark:text-amber-300">⚠ Geen geldige RD-coördinaat: cijfers omgedraaid?</span>;
+  if (preview.kind === 'invalid') return <span className="text-status-warn-text">⚠ Geen geldige RD-coördinaat: cijfers omgedraaid?</span>;
   const { x, y, lat, lng } = preview.rd;
-  if (preview.kind === 'outside') return <span className="text-amber-600 dark:text-amber-300">⚠ RD {x} {y} ligt buiten het speelgebied: cijfers omgedraaid?</span>;
+  if (preview.kind === 'outside') return <span className="text-status-warn-text">⚠ RD {x} {y} ligt buiten het speelgebied: cijfers omgedraaid?</span>;
   return (
     <span className="text-muted-foreground tabular-nums">
-      <span className="text-green-600 dark:text-green-300">✓</span> RD {x} {y} · {lat.toFixed(4)} N, {lng.toFixed(4)} E
+      <span className="text-fox-ok">✓</span> RD {x} {y} · {lat.toFixed(4)} N, {lng.toFixed(4)} E
     </span>
   );
 }
@@ -460,7 +483,7 @@ function PreviewLine({ preview }: { preview: NonNullable<AnswerPreview> }) {
 /** The preview line for an answer with unknown digits: how many candidates, and a button to see them on the map. */
 function GuessLine({ status, onShow }: { status: GuessStatus; onShow?: () => void }) {
   return (
-    <span className={cn('flex flex-wrap items-center gap-2', status.tone === 'warn' ? 'text-amber-600 dark:text-amber-300' : 'text-on-guess-container')}>
+    <span className={cn('flex flex-wrap items-center gap-2', status.tone === 'warn' ? 'text-status-warn-text' : 'text-on-guess-container')}>
       <AnimatePresence mode="wait" initial={false}>
         {/* No status.action: the map instruction is for the card, here the button shows the candidates */}
         <motion.span key={status.text} {...SWAP}>

@@ -3,34 +3,31 @@ import { MinusIcon, PlusIcon, RotateCcwIcon, XIcon } from 'lucide-react';
 import { CLOSE_BUTTON_CLASS } from '@/components/ui/close-button';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
+import { centerOn, LIGHTBOX_MAX_SCALE, LIGHTBOX_MIN_SCALE, LIGHTBOX_START, LIGHTBOX_STEP, LIGHTBOX_TAP_SLOP, type LightboxView, lightboxKey, zoomView } from '@/lib/lightbox';
 
-const MIN_SCALE = 1;
-const MAX_SCALE = 6;
-const STEP = 1.4;
-
-type View = { scale: number; x: number; y: number };
-const START: View = { scale: 1, x: 0, y: 0 };
-
-const clampScale = (scale: number) => Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale));
-
-/** The toolbar buttons: the close button's shape, dark and translucent so they read on any photo. */
-const TOOL_BUTTON = cn(CLOSE_BUTTON_CLASS, 'bg-black/50 text-white backdrop-blur hover:bg-black/65 disabled:opacity-40 disabled:pointer-events-none');
+const clampScale = (scale: number) => Math.min(LIGHTBOX_MAX_SCALE, Math.max(LIGHTBOX_MIN_SCALE, scale));
 
 /**
- * Full-screen photo viewer with zoom: mouse wheel, pinch, double click/tap and +/- buttons; drag to pan when zoomed.
+ * The toolbar buttons: the close button's shape, dark and translucent so they read on any photo. A button that can't
+ * act right now is aria-disabled (dimmed, does nothing) rather than disabled, so it keeps focus when it gets there.
+ */
+const TOOL_BUTTON = cn(CLOSE_BUTTON_CLASS, 'bg-black/50 text-white backdrop-blur hover:bg-black/65 aria-disabled:cursor-default aria-disabled:opacity-40 aria-disabled:hover:bg-black/50');
+
+/**
+ * Full-screen photo viewer with zoom: mouse wheel, pinch, double click/tap and +/- buttons; drag to pan when zoomed, or
+ * tap/click a spot to centre it (no drag needed). Keyboard: the photo takes focus; + / - / 0 zoom and reset, arrows pan.
  */
 
 export default function ImageLightbox({ src, alt, open, onOpenChange }: { src: string; alt: string; open: boolean; onOpenChange: (open: boolean) => void }) {
-  const [view, setView] = useState<View>(START);
+  const [view, setView] = useState<LightboxView>(LIGHTBOX_START);
   const [dragging, setDragging] = useState(false);
   const pointers = useRef(new Map<number, { x: number; y: number }>());
   const pinchStart = useRef<{ distance: number; scale: number } | null>(null);
+  // Where a single-pointer press started; cleared once it moves past the tap slop or a second finger joins
+  const tapStart = useRef<{ x: number; y: number } | null>(null);
 
   function zoom(factor: number) {
-    setView((current) => {
-      const scale = clampScale(current.scale * factor);
-      return scale === 1 ? START : { ...current, scale };
-    });
+    setView((current) => zoomView(current, factor));
   }
 
   function pointerDistance() {
@@ -42,6 +39,7 @@ export default function ImageLightbox({ src, alt, open, onOpenChange }: { src: s
     event.currentTarget.setPointerCapture(event.pointerId);
     pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
     setDragging(true);
+    tapStart.current = pointers.current.size === 1 ? { x: event.clientX, y: event.clientY } : null;
     if (pointers.current.size === 2) pinchStart.current = { distance: pointerDistance(), scale: view.scale };
   }
 
@@ -49,10 +47,12 @@ export default function ImageLightbox({ src, alt, open, onOpenChange }: { src: s
     const previous = pointers.current.get(event.pointerId);
     if (!previous) return;
     pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    const tap = tapStart.current;
+    if (tap && Math.hypot(event.clientX - tap.x, event.clientY - tap.y) > LIGHTBOX_TAP_SLOP) tapStart.current = null;
     const pinch = pinchStart.current;
     if (pinch && pointers.current.size === 2) {
       const scale = clampScale((pinch.scale * pointerDistance()) / pinch.distance);
-      setView((current) => (scale === 1 ? START : { ...current, scale }));
+      setView((current) => (scale === 1 ? LIGHTBOX_START : { ...current, scale }));
       return;
     }
     const dx = event.clientX - previous.x;
@@ -62,12 +62,20 @@ export default function ImageLightbox({ src, alt, open, onOpenChange }: { src: s
 
   function onPointerUp(event: React.PointerEvent<HTMLDivElement>) {
     pointers.current.delete(event.pointerId);
+    // A tap (no drag) on a zoomed photo: centre the view on that spot
+    if (event.type === 'pointerup' && tapStart.current && pointers.current.size === 0) {
+      const rect = event.currentTarget.getBoundingClientRect();
+      const dx = event.clientX - (rect.left + rect.width / 2);
+      const dy = event.clientY - (rect.top + rect.height / 2);
+      setView((current) => centerOn(current, dx, dy));
+    }
+    tapStart.current = null;
     if (pointers.current.size < 2) pinchStart.current = null;
     if (pointers.current.size === 0) setDragging(false);
   }
 
   function handleOpenChange(next: boolean) {
-    if (!next) setView(START);
+    if (!next) setView(LIGHTBOX_START);
     onOpenChange(next);
   }
 
@@ -75,11 +83,24 @@ export default function ImageLightbox({ src, alt, open, onOpenChange }: { src: s
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent showCloseButton={false} className="h-dvh w-screen max-w-none gap-0 rounded-none border-0 bg-black/95 p-0 sm:max-w-none">
         <DialogTitle className="sr-only">Foto</DialogTitle>
-        <DialogDescription className="sr-only">Zoom met scrollen, knijpen of dubbelklikken; sleep om te verschuiven.</DialogDescription>
+        <DialogDescription className="sr-only">Zoom met scrollen, knijpen of dubbelklikken; sleep of tik op een plek om te verschuiven. Toetsen: plus en min zoomen, 0 herstelt, pijltjes verschuiven.</DialogDescription>
         <div
-          className="relative h-full w-full cursor-grab touch-none overflow-hidden active:cursor-grabbing"
+          tabIndex={0}
+          // Its own keys (+/-/0/arrows): role=application passes them through screen readers' browse mode (role=img
+          // would swallow them); the roledescription says what it is
+          role="application"
+          aria-roledescription="zoombare foto"
+          aria-label={alt || 'Foto'}
+          onKeyDown={(event) => {
+            if (event.ctrlKey || event.metaKey || event.altKey) return;
+            const next = lightboxKey(view, event.key);
+            if (!next) return;
+            event.preventDefault();
+            setView(next);
+          }}
+          className="relative h-full w-full cursor-grab touch-none overflow-hidden outline-none focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset active:cursor-grabbing"
           onWheel={(event) => zoom(event.deltaY < 0 ? 1.15 : 1 / 1.15)}
-          onDoubleClick={() => setView((current) => (current.scale > 1 ? START : { ...current, scale: 2.5 }))}
+          onDoubleClick={() => setView((current) => (current.scale > 1 ? LIGHTBOX_START : { ...current, scale: 2.5 }))}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
@@ -87,20 +108,21 @@ export default function ImageLightbox({ src, alt, open, onOpenChange }: { src: s
         >
           <img
             src={src}
-            alt={alt}
+            alt=""
             draggable={false}
-            className="h-full w-full select-none object-contain"
+            // The inline transition eases zoom and tap-to-centre steps; motion-reduce turns it off (the class wins with !)
+            className="h-full w-full select-none object-contain motion-reduce:transition-none!"
             style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})`, transition: dragging ? 'none' : 'transform 120ms ease-out' }}
           />
         </div>
-        <div className="absolute right-3 top-3 flex gap-2">
-          <button type="button" className={TOOL_BUTTON} aria-label="Uitzoomen" onClick={() => zoom(1 / STEP)} disabled={view.scale <= MIN_SCALE}>
+        <div className="absolute right-3 top-[calc(env(safe-area-inset-top)+12px)] flex gap-2">
+          <button type="button" className={TOOL_BUTTON} aria-label="Uitzoomen" onClick={() => zoom(1 / LIGHTBOX_STEP)} aria-disabled={view.scale <= LIGHTBOX_MIN_SCALE}>
             <MinusIcon />
           </button>
-          <button type="button" className={TOOL_BUTTON} aria-label="Inzoomen" onClick={() => zoom(STEP)} disabled={view.scale >= MAX_SCALE}>
+          <button type="button" className={TOOL_BUTTON} aria-label="Inzoomen" onClick={() => zoom(LIGHTBOX_STEP)} aria-disabled={view.scale >= LIGHTBOX_MAX_SCALE}>
             <PlusIcon />
           </button>
-          <button type="button" className={TOOL_BUTTON} aria-label="Zoom herstellen" onClick={() => setView(START)} disabled={view.scale === 1}>
+          <button type="button" className={TOOL_BUTTON} aria-label="Zoom herstellen" onClick={() => setView(LIGHTBOX_START)} aria-disabled={view.scale === 1}>
             <RotateCcwIcon />
           </button>
           <button type="button" className={TOOL_BUTTON} aria-label="Sluiten" onClick={() => handleOpenChange(false)}>

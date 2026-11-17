@@ -57,4 +57,36 @@ describe('tour store', () => {
     store().start({ mode: 'replay', stepCount: 5 });
     expect(store()).toMatchObject({ stepIndex: 0, paused: false });
   });
+
+  test('takeOver stops auto-advance for the rest of the tour; a new tour starts automatic again', () => {
+    store().start({ mode: 'auto', stepCount: 4 });
+    expect(store().manual).toBe(false);
+    store().takeOver();
+    expect(store().manual).toBe(true);
+    store().next();
+    store().prev();
+    expect(store().manual).toBe(true);
+    store().skip();
+    expect(store().manual).toBe(false);
+    store().start({ mode: 'replay', stepCount: 4 });
+    expect(store().manual).toBe(false);
+  });
+
+  test('resumeAuto turns auto-advance back on, unpaused', () => {
+    store().start({ mode: 'auto', stepCount: 4 });
+    store().togglePause();
+    store().takeOver();
+    store().resumeAuto();
+    expect(store()).toMatchObject({ manual: false, paused: false });
+  });
+
+  test('resumeAuto without a tour does nothing', () => {
+    store().resumeAuto();
+    expect(store().active).toBe(false);
+  });
+
+  test('takeOver without a tour does nothing', () => {
+    store().takeOver();
+    expect(store().manual).toBe(false);
+  });
 });

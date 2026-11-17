@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { cn } from "cn"
+import { cn } from "@/lib/cn"
 import { Popover as PopoverPrimitive } from "radix-ui"
 
 import { MENU_MOTION, MENU_SURFACE } from "@/lib/menu-styles"

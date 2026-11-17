@@ -1,7 +1,12 @@
 import { RefObject, useRef, useState } from 'react';
 import { PauseIcon, TriangleAlertIcon } from 'lucide-react';
 import { MapRef } from '@/components/Map';
+import { AnimatePresence, motion } from 'motion/react';
 import { Skeleton } from '@/components/ui/skeleton';
+import LoadError from '@/components/LoadError';
+import { loadState } from '@/lib/load-state';
+import { SWAP } from '@/lib/motion';
+import { COARSE_HIT_AREA } from '@/lib/hit-area';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { usePredictions } from '@/hooks/predictions.hook';
 import { AGE_CLOCK_TICK_MS, useNow } from '@/hooks/now.hook';
@@ -18,6 +23,15 @@ function textColorOn(hex: string): string {
   return 0.299 * r + 0.587 * g + 0.114 * b > 150 ? '#18181b' : '#ffffff';
 }
 
+/**
+ * A coloured (active) chip's background and text. Stale: the area colour fades into the card behind it, and the text
+ * switches to the theme's foreground, which stays readable on that lighter (light theme) or darker (dark theme) tint.
+ */
+function chipColors(color: string, stale: boolean): { backgroundColor: string; color: string } {
+  if (stale) return { backgroundColor: `color-mix(in oklab, ${color} 45%, transparent)`, color: 'var(--foreground)' };
+  return { backgroundColor: color, color: textColorOn(color) };
+}
+
 /** Neutral 3-bar signal icon (no traffic-light colours, those mean fox status). */
 function ConfidenceBars({ confidence }: { confidence: Confidence }) {
   const level = CONFIDENCE_LEVEL[confidence];
@@ -32,23 +46,14 @@ function ConfidenceBars({ confidence }: { confidence: Confidence }) {
 
 /** One pill per fox team in its colour with the AI confidence; tap flies to the pin and shows the AI's reason in a tooltip. */
 export default function PredictionList({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
-  const { predictions } = usePredictions();
+  const { predictions, isError, retry } = usePredictions();
   const setSheetSnap = useSidebarStore((state) => state.setSheetSnap);
   const now = useNow(true, AGE_CLOCK_TICK_MS);
   const [openArea, setOpenArea] = useState<string | null>(null);
   // Radix closes a tooltip on pointerdown of its trigger; remember the state before that so a tap toggles
   const wasOpen = useRef(false);
 
-  if (!predictions) {
-    return (
-      <div className="flex flex-wrap gap-1.5">
-        {Array.from({ length: 9 }, (_, index) => (
-          <Skeleton key={index} className="h-7 w-20 rounded-badge" />
-        ))}
-      </div>
-    );
-  }
-  if (predictions.length === 0) return <p className="text-xs text-muted-foreground">Nog geen voorspellingen.</p>;
+  const view = loadState(predictions, isError);
 
   function flyTo(prediction: Prediction) {
     const point = prediction.pin ?? prediction.lastObservation;
@@ -59,51 +64,72 @@ export default function PredictionList({ mapRef }: { mapRef: RefObject<MapRef | 
   }
 
   return (
-    <div className="flex flex-wrap gap-1.5">
-      {predictions.map((prediction) => {
-        const color = getColorFromArea(prediction.area);
-        const status = predictionStatusText(prediction);
-        const active = !prediction.paused && !!prediction.pin;
-        const text = prediction.why || status || 'Geen toelichting';
-        return (
-          <Tooltip
-            key={prediction.area}
-            open={openArea === prediction.area}
-            onOpenChange={(open) => setOpenArea((current) => (open ? prediction.area : current === prediction.area ? null : current))}
-          >
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                data-prediction-area={prediction.area}
-                onPointerDown={() => (wasOpen.current = openArea === prediction.area)}
-                onClick={() => {
-                  setOpenArea(wasOpen.current ? null : prediction.area);
-                  if (!wasOpen.current) flyTo(prediction);
-                }}
-                className={cn(
-                  'inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-badge px-2.5 text-xs font-semibold transition-[transform,box-shadow,opacity] active:scale-95',
-                  !active && 'bg-muted text-muted-foreground',
-                  prediction.stale && 'opacity-60',
-                  openArea === prediction.area && 'ring-2 ring-offset-2 ring-offset-background',
-                )}
-                style={active ? { backgroundColor: color, color: textColorOn(color), ['--tw-ring-color' as string]: color } : { ['--tw-ring-color' as string]: color }}
+    <AnimatePresence mode="wait" initial={false}>
+      {view === 'loading' ? (
+        <motion.div key="loading" {...SWAP} className="flex flex-wrap gap-1.5" role="status" aria-label="Voorspellingen laden">
+          {Array.from({ length: 9 }, (_, index) => (
+            <Skeleton key={index} className="h-7 w-20 rounded-badge" />
+          ))}
+        </motion.div>
+      ) : view === 'error' ? (
+        <motion.div key="error" {...SWAP}>
+          <LoadError message="Voorspellingen konden niet worden geladen." onRetry={retry} />
+        </motion.div>
+      ) : !predictions || predictions.length === 0 ? (
+        <motion.p key="empty" {...SWAP} className="text-xs text-muted-foreground">
+          Nog geen voorspellingen.
+        </motion.p>
+      ) : (
+        // isolate: the chips' 44px touch areas on phones (COARSE_HIT_AREA) stay above the card's background
+        <motion.div key="list" {...SWAP} className="isolate flex flex-wrap gap-1.5">
+          {predictions.map((prediction) => {
+            const color = getColorFromArea(prediction.area);
+            const status = predictionStatusText(prediction);
+            const active = !prediction.paused && !!prediction.pin;
+            const text = prediction.why || status || 'Geen toelichting';
+            return (
+              <Tooltip
+                key={prediction.area}
+                open={openArea === prediction.area}
+                onOpenChange={(open) => setOpenArea((current) => (open ? prediction.area : current === prediction.area ? null : current))}
               >
-                {prediction.paused && <PauseIcon className="size-3" aria-label="Gepauzeerd" />}
-                {capitalizeFirstLetter(prediction.area)}
-                {active && prediction.confidence && <ConfidenceBars confidence={prediction.confidence} />}
-                {prediction.stale && <TriangleAlertIcon className="size-3" aria-label="Verouderd" />}
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" sideOffset={6} className="max-w-60">
-              <p className="font-semibold">
-                {capitalizeFirstLetter(prediction.area)} <span className="font-normal text-muted-foreground">· {ageLabel(prediction.updatedAt, now)}</span>
-              </p>
-              <p>{text}</p>
-              {prediction.stale && prediction.error && <p className="text-muted-foreground">{prediction.error}</p>}
-            </TooltipContent>
-          </Tooltip>
-        );
-      })}
-    </div>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    data-prediction-area={prediction.area}
+                    onPointerDown={() => (wasOpen.current = openArea === prediction.area)}
+                    onClick={() => {
+                      setOpenArea(wasOpen.current ? null : prediction.area);
+                      if (!wasOpen.current) flyTo(prediction);
+                    }}
+                    className={cn(
+                      // Keyboard focus: an outline in --ring, so it shows over the open state's area-coloured ring too
+                      'inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-badge px-2.5 text-xs font-semibold transition-[transform,box-shadow,background-color] outline-none motion-safe:active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+                      COARSE_HIT_AREA,
+                      // Stale: only the background softens; text and icons keep full contrast
+                      !active && (prediction.stale ? 'bg-beheer-row-high/60 text-muted-foreground' : 'bg-beheer-row-high text-muted-foreground'),
+                      openArea === prediction.area && 'ring-2 ring-offset-2 ring-offset-card',
+                    )}
+                    style={{ ...(active && chipColors(color, !!prediction.stale)), ...(openArea === prediction.area && { ['--tw-ring-color' as string]: color }) }}
+                  >
+                    {prediction.paused && <PauseIcon className="size-3" aria-label="Gepauzeerd" />}
+                    {capitalizeFirstLetter(prediction.area)}
+                    {active && prediction.confidence && <ConfidenceBars confidence={prediction.confidence} />}
+                    {prediction.stale && <TriangleAlertIcon className="size-3" aria-label="Verouderd" />}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" sideOffset={6} className="max-w-60">
+                  <p className="font-semibold">
+                    {capitalizeFirstLetter(prediction.area)} <span className="font-normal text-muted-foreground tabular-nums">· {ageLabel(prediction.updatedAt, now)}</span>
+                  </p>
+                  <p>{text}</p>
+                  {prediction.stale && prediction.error && <p className="text-muted-foreground">{prediction.error}</p>}
+                </TooltipContent>
+              </Tooltip>
+            );
+          })}
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

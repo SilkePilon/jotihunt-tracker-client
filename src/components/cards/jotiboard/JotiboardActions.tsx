@@ -27,10 +27,10 @@ interface JotiboardActionsProps {
 function Row({ icon, title, subtitle, danger, onClick }: { icon: ReactNode; title: string; subtitle: string; danger?: boolean; onClick: () => void }) {
   return (
     <button type="button" onClick={onClick} className="flex w-full items-center gap-2.5 border-t border-border px-0.5 py-2.5 text-left first:border-t-0 [&_svg]:size-4 [&_svg]:shrink-0">
-      <span className={cn(danger && 'text-destructive')}>{icon}</span>
+      <span className={cn(danger && 'text-destructive-text')}>{icon}</span>
       <span className="min-w-0 flex-1">
-        <span className={cn('block text-[13px] font-medium', danger && 'text-destructive')}>{title}</span>
-        <span className="block text-[11px] text-muted-foreground">{subtitle}</span>
+        <span className={cn('block text-body font-semibold', danger && 'text-destructive-text')}>{title}</span>
+        <span className="block text-xs text-muted-foreground desk:text-label">{subtitle}</span>
       </span>
       <ChevronRightIcon className="text-muted-foreground" />
     </button>
@@ -69,7 +69,7 @@ export default function JotiboardActions({ counts, canUnlink, canPurge, onUnlink
           {step !== 'list' && (
             <div className="flex flex-col py-2.5 text-left">
               <p className="text-sm font-bold">{step === 'purge' ? 'Data verwijderen?' : 'Jotiboard ontkoppelen?'}</p>
-              <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
+              <p className="mt-0.5 text-xs leading-snug text-muted-foreground desk:text-label">
                 {step === 'purge'
                   ? `${purgeText(counts)} van Jotiboard. Onze eigen markers en oplossingen blijven staan. Automatisch synchroniseren gaat uit.`
                   : 'De server vergeet de Jotiboard-sessie. Wat al geïmporteerd is blijft staan.'}
@@ -78,16 +78,18 @@ export default function JotiboardActions({ counts, canUnlink, canPurge, onUnlink
                 durationMs={1500}
                 busy={busy}
                 busyLabel={step === 'purge' ? 'Verwijderen…' : 'Ontkoppelen…'}
-                // Purge (mockup delete-icon): a light red track with a solid red fill; the label turns white where the fill has passed
-                className={cn('mt-2.5 h-10 rounded-lg text-[13px]', step === 'purge' ? 'bg-red-100 text-red-900 dark:bg-red-950 dark:text-red-100' : 'bg-zinc-800 text-white')}
-                fillClassName={step === 'purge' ? 'bg-destructive' : undefined}
+                // Purge (mockup delete-icon): the app's danger tint as track with a solid red fill; the label turns white where the
+                // fill has passed. red-800 in light (6.1:1 on the tint over bg-secondary; destructive-text was 4.4:1), destructive-text in dark (6.5:1)
+                // Unlink (not destructive): a tonal surface with a foreground-tinted fill
+                className={cn('mt-2.5 h-10 rounded-lg text-body', step === 'purge' ? 'bg-destructive/15 text-red-800 dark:text-destructive-text' : 'bg-beheer-row-high text-foreground')}
+                fillClassName={step === 'purge' ? 'bg-destructive' : 'bg-foreground/15'}
                 filledLabelClassName={step === 'purge' ? 'text-white' : undefined}
                 onConfirm={() => void confirm(step === 'purge' ? onPurge : onUnlink)}
               >
                 {step === 'purge' ? <Trash2Icon /> : <UnlinkIcon />}
                 Ingedrukt houden…
               </HoldButton>
-              <button type="button" className={cn(inlineLinkClass, 'mt-1.5 self-center text-[11px]')} disabled={busy} onClick={() => setStep('list')}>
+              <button type="button" className={cn(inlineLinkClass, 'mt-1.5 self-center text-xs desk:text-label')} disabled={busy} onClick={() => setStep('list')}>
                 annuleren
               </button>
             </div>

@@ -1,5 +1,8 @@
 import type { TelegramAdminStatus, TelegramMessages } from '@/types/Telegram';
 
+/** Telegram's brand blue (#229ED9) darkened (same hue) for fills under white text and icons: 4.66:1 with white instead of 3.02:1 */
+export const TELEGRAM_FILL = '#1b7caa';
+
 /** Can tegenhunts come in: linked and connected, linked but disconnected (reconnecting), or not linked at all. */
 export type TelegramLink = 'connected' | 'disconnected' | 'unlinked';
 

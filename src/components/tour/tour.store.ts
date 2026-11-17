@@ -12,18 +12,24 @@ interface TourState {
   direction: 1 | -1;
   /** Paused by the user (hover pauses are handled in the card) */
   paused: boolean;
+  /** The user has used the tour (pointer or keyboard): no more auto-advance, they drive it with Volgende (or resume it) */
+  manual: boolean;
   onEnd?: () => void;
   start: (opts: { mode: TourMode; stepCount: number; onEnd?: () => void }) => void;
   next: () => void;
   prev: () => void;
   togglePause: () => void;
+  /** First pointer/keyboard use of the tour: auto-advance stops (until {@link resumeAuto}) */
+  takeOver: () => void;
+  /** "Verder automatisch" after a takeover: auto-advance runs again, unpaused */
+  resumeAuto: () => void;
   skip: () => void;
   finish: () => void;
   /** End without reporting completion, e.g. when the layout unmounts. */
   stop: () => void;
 }
 
-const INACTIVE = { active: false, stepIndex: 0, stepCount: 0, direction: 1 as const, paused: false, onEnd: undefined };
+const INACTIVE = { active: false, stepIndex: 0, stepCount: 0, direction: 1 as const, paused: false, manual: false, onEnd: undefined };
 
 const useTourStore = create<TourState>()((set, get) => {
   function end() {
@@ -35,7 +41,7 @@ const useTourStore = create<TourState>()((set, get) => {
   return {
     ...INACTIVE,
     mode: 'auto',
-    start: ({ mode, stepCount, onEnd }) => set({ active: true, mode, stepCount, onEnd, stepIndex: 0, direction: 1, paused: false }),
+    start: ({ mode, stepCount, onEnd }) => set({ active: true, mode, stepCount, onEnd, stepIndex: 0, direction: 1, paused: false, manual: false }),
     next: () => {
       const { stepIndex, stepCount } = get();
       if (stepIndex >= stepCount - 1) end();
@@ -43,6 +49,12 @@ const useTourStore = create<TourState>()((set, get) => {
     },
     prev: () => set((state) => ({ stepIndex: Math.max(0, state.stepIndex - 1), direction: -1 })),
     togglePause: () => set((state) => ({ paused: !state.paused })),
+    takeOver: () => {
+      if (get().active && !get().manual) set({ manual: true });
+    },
+    resumeAuto: () => {
+      if (get().active) set({ manual: false, paused: false });
+    },
     skip: end,
     finish: end,
     stop: () => set(INACTIVE),

@@ -1,0 +1,85 @@
+/**
+ * Everything that stacks at the top centre of the map, laid out from measured heights so nothing overlaps: on phones the
+ * offline badge (fixed under the safe area, one or two lines), the happy-hour pill below it, an admin's night-area
+ * drawing toolbar below those status messages, a crashed dialog's error card (ErrorBoundary's floating fallback) below
+ * that, and the toasts below all of them (8px gaps). Desktop keeps toasts at
+ * the bottom right; there the badge, the pill and the drawing toolbar stack below the search / coordinates row.
+ */
+
+/** Measured heights in px; 0 when not shown. */
+export interface TopStackHeights {
+  /** The offline / stale-data badge */
+  badge: number;
+  /** The happy-hour pill */
+  pill: number;
+  /** The night-area drawing toolbar */
+  toolbar: number;
+  /** Phones: a floating ErrorBoundary card (a dialog crashed) */
+  error: number;
+}
+
+export type TopStackItem = keyof TopStackHeights;
+
+const GAP = 8;
+/** Phones, below the top safe area: the badge's top (StaleDataBadge) */
+export const BADGE_TOP = 8;
+/** Phones: the pill's highest top, under the badge row and the corner buttons */
+export const PILL_MIN_TOP = 40;
+/** Phones: the drawing toolbar's highest top */
+export const TOOLBAR_MIN_TOP = 12;
+/** Phones: where toasts start with nothing above them (under a one-line badge) */
+export const TOAST_MIN_TOP = 48;
+/** Desktop: the first status row's top (under the search / coordinates row): the badge, or the pill without one */
+export const DESKTOP_PILL_TOP = 52;
+/** Desktop: the drawing toolbar's highest top */
+export const DESKTOP_TOOLBAR_MIN_TOP = 56;
+
+export interface PhoneTopStack {
+  pillTop: number;
+  toolbarTop: number;
+  errorTop: number;
+  toastTop: number;
+}
+
+/** Phones: each item's top in px below the top safe area. */
+export function phoneTopStack({ badge, pill, toolbar, error }: TopStackHeights): PhoneTopStack {
+  // The first free row below what is shown so far
+  let next = badge ? BADGE_TOP + badge + GAP : 0;
+  const pillTop = Math.max(PILL_MIN_TOP, next);
+  if (pill) next = pillTop + pill + GAP;
+  const toolbarTop = Math.max(TOOLBAR_MIN_TOP, next);
+  if (toolbar) next = toolbarTop + toolbar + GAP;
+  // Where the toasts would start: the error card takes that place, and the toasts move below it
+  const errorTop = Math.max(TOAST_MIN_TOP, next);
+  if (error) next = errorTop + error + GAP;
+  return { pillTop, toolbarTop, errorTop, toastTop: Math.max(TOAST_MIN_TOP, next) };
+}
+
+export interface DesktopTopStack {
+  badgeTop: number;
+  pillTop: number;
+  toolbarTop: number;
+}
+
+/** Desktop: each item's top in px, below the search / coordinates row: the badge, the pill under it, then the toolbar. */
+export function desktopTopStack({ badge, pill }: Pick<TopStackHeights, 'badge' | 'pill'>): DesktopTopStack {
+  const badgeTop = DESKTOP_PILL_TOP;
+  const pillTop = badge ? badgeTop + badge + GAP : DESKTOP_PILL_TOP;
+  const next = pill ? pillTop + pill + GAP : badge ? badgeTop + badge + GAP : 0;
+  return { badgeTop, pillTop, toolbarTop: Math.max(DESKTOP_TOOLBAR_MIN_TOP, next) };
+}
+
+/** Desktop: the drawing toolbar's top in px, below the pill (and the badge) while they are shown. */
+export function desktopToolbarTop(pill: number, badge = 0): number {
+  return desktopTopStack({ badge, pill }).toolbarTop;
+}
+
+/** A top in px below the safe area, as CSS */
+export function belowSafeArea(px: number): string {
+  return `calc(env(safe-area-inset-top) + ${px}px)`;
+}
+
+/** Sonner offset for phones */
+export function phoneToastOffset(heights: TopStackHeights): { top: string } {
+  return { top: belowSafeArea(phoneTopStack(heights).toastTop) };
+}

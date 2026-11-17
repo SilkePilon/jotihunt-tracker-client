@@ -70,6 +70,7 @@ export const useAdmin = () => {
     users: asList(data),
     isLoading: !error && !data,
     isError: error,
+    retry: () => mutate(),
     updateUser,
     deleteUser,
     createRecoveryLink,

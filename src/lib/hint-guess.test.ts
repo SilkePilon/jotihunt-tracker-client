@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import {
   fillPattern, guessAnswerText, guessBounds, guessShapes, guessStatus, hasWildcard, lastFoxFix, normalizeWildcard,
-  parseGuess, parseGuessAnswer, rankGuess, sanitizeDigits, type Guess,
+  parseGuess, parseGuessAnswer, previewPoint, rankGuess, sanitizeDigits, splitPastedCoordinates, stripPasted, type Guess,
 } from './hint-guess';
 import { fromRD, isPlausibleRD } from './rd';
 import { isInNetherlands } from './netherlands';
@@ -19,10 +19,40 @@ describe('wildcard input', () => {
     expect(sanitizeDigits('15.2a00')).toBe('15?200');
     expect(sanitizeDigits('1234567')).toBe('123456');
   });
+  test('stripPasted drops separators instead of making them unknown digits', () => {
+    expect(stripPasted('155.000')).toBe('155000');
+    expect(stripPasted(' 155 000 ')).toBe('155000');
+    expect(stripPasted('15-5,0*0')).toBe('1550?0');
+    expect(stripPasted('x: 15?000')).toBe('15?000');
+  });
+  test('splitPastedCoordinates: 12 digits fill X and Y', () => {
+    expect(splitPastedCoordinates('155000 463000')).toEqual({ x: '155000', y: '463000' });
+    expect(splitPastedCoordinates('155.000, 463.000')).toEqual({ x: '155000', y: '463000' });
+    expect(splitPastedCoordinates('155000463000')).toEqual({ x: '155000', y: '463000' });
+    expect(splitPastedCoordinates('15?000 46300?')).toEqual({ x: '15?000', y: '46300?' });
+  });
+  test('splitPastedCoordinates: anything else only fills X', () => {
+    expect(splitPastedCoordinates('155.000')).toEqual({ x: '155000', y: null });
+    expect(splitPastedCoordinates('1550004630')).toEqual({ x: '155000', y: null });
+    expect(splitPastedCoordinates('1550004630001')).toEqual({ x: '155000', y: null });
+    expect(splitPastedCoordinates('')).toEqual({ x: '', y: null });
+  });
   test('hasWildcard and fillPattern', () => {
     expect(hasWildcard('155000', '46?000')).toBe(true);
     expect(hasWildcard('155000', '463000')).toBe(false);
     expect(fillPattern('15?000', 4)).toBe('154000');
+  });
+});
+
+describe('previewPoint', () => {
+  test('a complete pair in the Netherlands is a point', () => {
+    const [lng, lat] = fromRD(155000, 463000);
+    expect(previewPoint('155000', '463000')).toEqual({ lng, lat });
+  });
+  test('a wildcard, a short pattern or a point outside the Netherlands is not', () => {
+    expect(previewPoint('15?000', '463000')).toBeNull();
+    expect(previewPoint('15500', '463000')).toBeNull();
+    expect(previewPoint('000000', '000000')).toBeNull();
   });
 });
 

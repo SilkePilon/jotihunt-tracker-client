@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
-import { REVEAL_TRANSITION } from '@/lib/motion';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { revealTransition } from '@/lib/motion';
 
 interface RevealProps {
   /** Shown while truthy; the last content stays on screen while it folds away */
@@ -11,6 +11,9 @@ interface RevealProps {
 
 /** An inline line (error, hint) that unfolds in and folds away instead of popping. */
 export default function Reveal({ children, gap = 0 }: RevealProps) {
+  // Reduced motion: the line takes (or gives back) its room at once and only fades; MotionConfig's "user" setting skips
+  // transforms but would still animate the height, which moves everything below it
+  const reduced = useReducedMotion() ?? false;
   return (
     <AnimatePresence initial={false}>
       {children ? (
@@ -20,8 +23,8 @@ export default function Reveal({ children, gap = 0 }: RevealProps) {
           style={{ marginTop: -gap }}
           initial={{ height: 0, opacity: 0 }}
           animate={{ height: 'auto', opacity: 1 }}
-          exit={{ height: 0, opacity: 0 }}
-          transition={REVEAL_TRANSITION}
+          exit={{ height: 0, opacity: 0, transition: revealTransition(reduced, 'exit') }}
+          transition={revealTransition(reduced, 'enter')}
         >
           <div style={{ paddingTop: gap }}>{children}</div>
         </motion.div>

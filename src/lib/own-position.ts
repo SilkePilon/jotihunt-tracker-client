@@ -1,4 +1,4 @@
-import { isActive } from './tracker';
+import { ACTIVE_WINDOW_MS } from './tracker';
 import type { Device } from '@/types/Device';
 import type { Position } from '@/types/Position';
 
@@ -18,11 +18,31 @@ export function distanceMetres(a: LatLng, b: LatLng): number {
   return 2 * EARTH_RADIUS_M * Math.asin(Math.sqrt(h));
 }
 
-/** The own tracker's position, unless missing or stale (same 5 min rule as the hunter markers). Device id 0 is valid. */
-export function ownTrackerPosition(positions: Position[] | undefined, deviceId: number | undefined, now: number): LatLng | undefined {
+/**
+ * How old a tracker fix may be to count as "where I am now" (locate, own-position dot, distance from me). A phone that
+ * walked on for minutes would otherwise send you to where you were; older falls through to the browser's position.
+ * Longer than the Android app's slowest heartbeat (120 s in Zuinig) plus the 30 s positions poll, so a live tracker never
+ * flickers between tracker and browser position in between two fixes.
+ */
+export const OWN_POSITION_FRESH_MS = 150_000;
+
+/**
+ * How old a tracker fix may be for "Mijn locatie" and follow mode to trust it over the browser's own position. Between
+ * two heartbeats (up to 120 s) the phone moves on; an already-granted browser fix is then newer. The dot-vs-marker
+ * rule above keeps its 150 s, so the own marker doesn't flicker.
+ */
+export const OWN_POSITION_LIVE_MS = 20_000;
+
+/**
+ * The own tracker's position, unless missing or older than `maxAgeMs` (default: the 5 min rule of the hunter markers,
+ * used for greying them). Device id 0 is valid.
+ */
+export function ownTrackerPosition(positions: Position[] | undefined, deviceId: number | undefined, now: number, maxAgeMs = ACTIVE_WINDOW_MS): LatLng | undefined {
   if (deviceId === undefined) return undefined;
   const own = positions?.find((candidate) => candidate.deviceId === deviceId);
-  if (!own || !isActive(own.fixTime, now)) return undefined;
+  if (!own?.fixTime) return undefined;
+  const time = new Date(own.fixTime).getTime();
+  if (!Number.isFinite(time) || now - time > maxAgeMs) return undefined;
   return { lat: own.latitude, lng: own.longitude };
 }
 

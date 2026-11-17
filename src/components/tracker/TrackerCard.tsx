@@ -1,8 +1,12 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
+import LoadError from '@/components/LoadError';
 import { Skeleton } from '@/components/ui/skeleton';
+import { SWAP } from '@/lib/motion';
 import { usePairingCode } from '@/hooks/app-pairing.hook';
 import { notConfiguredText, trackerView } from '@/lib/tracker';
+import { isIOSDevice } from '@/lib/android-promo';
 import type { TrackerMe, Vehicle } from '@/types/Tracker';
 import type { User } from '@/types/User';
 import TrackerIdle from './TrackerIdle';
@@ -12,13 +16,15 @@ import TrackerPairing from './TrackerPairing';
 interface TrackerCardProps {
   status: TrackerMe | undefined;
   isError: boolean;
+  /** Refetch the status after a failed first load */
+  onRetry: () => Promise<unknown> | unknown;
   savingVehicle: boolean;
   onVehicleChange: (vehicle: Vehicle) => void;
   onOpenGuide: () => void;
 }
 
 /** Content of the "Mijn tracker" section: one view per state (see `trackerView`). */
-export default function TrackerCard({ status, isError, savingVehicle, onVehicleChange, onOpenGuide }: TrackerCardProps) {
+export default function TrackerCard({ status, isError, onRetry, savingVehicle, onVehicleChange, onOpenGuide }: TrackerCardProps) {
   const auth = useAuthUser<User>();
   const { pairing, creating, failed, create } = usePairingCode();
   const [pairingOpen, setPairingOpen] = useState(false);
@@ -33,27 +39,45 @@ export default function TrackerCard({ status, isError, savingVehicle, onVehicleC
   }
 
   function startPairing() {
+    // An iPhone/iPad can't run the Jotihunt app: (re)pairing goes through Traccar Client and its guide
+    if (isIOSDevice()) {
+      onOpenGuide();
+      return;
+    }
     setPairingOpen(true);
     void create();
   }
 
   const view = trackerView(status, isError, pairingOpen);
-  if (view === 'error') return <p className="text-xs text-muted-foreground">Trackerstatus kan niet worden geladen.</p>;
-  if (!status || view === 'loading') return <Skeleton className="h-40 rounded-md" />;
+  // Connected and no-signal are one view (TrackerLive); every other change of view swaps
+  const swapKey = view === 'connected' || view === 'no-signal' ? 'live' : view;
 
-  if (!status.configured) {
+  let content: ReactNode;
+  if (view === 'error') {
+    content = <LoadError message="Trackerstatus kon niet worden geladen." onRetry={onRetry} />;
+  } else if (!status || view === 'loading') {
+    content = <Skeleton className="h-40 rounded-md" role="status" aria-label="Trackerstatus laden" />;
+  } else if (!status.configured) {
     const text = notConfiguredText(status.reason, !!auth?.admin);
-    return (
+    content = (
       <div className="flex flex-col gap-1 text-xs text-muted-foreground" data-tracker-state="not-configured">
         <p>{text.title}</p>
         {text.hint && <p>{text.hint}</p>}
       </div>
     );
+  } else if (view === 'pairing') {
+    content = <TrackerPairing pairing={pairing} creating={creating} failed={failed} onRetry={() => void create()} onClose={() => setPairingOpen(false)} />;
+  } else if (view === 'idle') {
+    content = <TrackerIdle onPair={startPairing} onOpenGuide={onOpenGuide} ios={isIOSDevice()} />;
+  } else {
+    content = <TrackerLive status={status} savingVehicle={savingVehicle} onVehicleChange={onVehicleChange} onRepair={startPairing} />;
   }
 
-  if (view === 'pairing') {
-    return <TrackerPairing pairing={pairing} creating={creating} failed={failed} onRetry={() => void create()} onClose={() => setPairingOpen(false)} />;
-  }
-  if (view === 'idle') return <TrackerIdle onPair={startPairing} onOpenGuide={onOpenGuide} />;
-  return <TrackerLive status={status} savingVehicle={savingVehicle} onVehicleChange={onVehicleChange} onRepair={startPairing} />;
+  return (
+    <AnimatePresence mode="wait" initial={false}>
+      <motion.div key={swapKey} {...SWAP}>
+        {content}
+      </motion.div>
+    </AnimatePresence>
+  );
 }

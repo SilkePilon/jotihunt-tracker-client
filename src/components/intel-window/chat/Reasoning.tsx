@@ -1,8 +1,9 @@
 import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { ChevronRightIcon } from 'lucide-react';
 import Reveal from '@/components/motion/Reveal';
-import { REVEAL_TRANSITION, SWAP_TRANSITION } from '@/lib/motion';
+import { COARSE_HIT_AREA } from '@/lib/hit-area';
+import { revealTransition, SWAP_TRANSITION } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import ChatMarkdown from './ChatMarkdown';
 
@@ -38,15 +39,21 @@ export default function Reasoning({ text, thinking }: ReasoningProps) {
   const seconds = thoughtMs === null ? null : Math.max(1, Math.round(thoughtMs / 1000));
   const label = autoOpen ? 'Nadenken…' : seconds ? `Nagedacht · ${seconds} s` : 'Nagedacht';
   return (
-    <div className="flex flex-col items-start">
+    // isolate: the toggle's 44px touch area on phones (COARSE_HIT_AREA) stays above the message's background
+    <div className="isolate flex flex-col items-start">
       <button
         type="button"
         aria-expanded={open}
         disabled={autoOpen}
         onClick={() => setUserOpen(!userOpen)}
-        className="inline-flex items-center gap-1 rounded-[10px] py-0.5 pr-1 text-[12.5px] font-semibold text-muted-foreground outline-none transition-colors enabled:hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        className={cn(
+          COARSE_HIT_AREA,
+          'inline-flex items-center gap-1 rounded-md py-0.5 pr-1 text-caption font-semibold text-muted-foreground outline-none transition-colors enabled:hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring',
+        )}
       >
-        <span className="relative">
+        {/* The button's name; the animated labels are hidden (old and new would both be read during the swap) */}
+        <span className="sr-only">{label}</span>
+        <span className="relative" aria-hidden>
           <AnimatePresence mode="popLayout" initial={false}>
             <motion.span
               key={label}
@@ -55,23 +62,26 @@ export default function Reasoning({ text, thinking }: ReasoningProps) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
               transition={SWAP_TRANSITION}
-              role={autoOpen ? 'status' : undefined}
             >
               {label}
             </motion.span>
           </AnimatePresence>
         </span>
-        <motion.span className="grid" animate={{ rotate: open ? 90 : 0 }} transition={SWAP_TRANSITION}>
+        <motion.span aria-hidden className="grid" animate={{ rotate: open ? 90 : 0 }} transition={SWAP_TRANSITION}>
           <ChevronRightIcon className="size-3.5" />
         </motion.span>
       </button>
+      {/* Outside the button (a status inside one isn't announced) */}
+      <span role="status" className="sr-only">
+        {autoOpen ? label : ''}
+      </span>
       <div className="w-full">
         <Reveal>
           {open && (
             <div className="pt-1">
               <Grow>
                 <div ref={box} className="max-h-40 overflow-y-auto border-l-2 border-beheer-row-high pr-1 pl-3 [scrollbar-gutter:stable]">
-                  <ChatMarkdown text={text} className="text-[12px] leading-[1.5] text-muted-foreground" />
+                  <ChatMarkdown text={text} className="text-xs leading-[1.5] text-muted-foreground" />
                 </div>
               </Grow>
             </div>
@@ -86,6 +96,8 @@ export default function Reasoning({ text, thinking }: ReasoningProps) {
 function Grow({ children }: { children: ReactNode }) {
   const inner = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState<number | 'auto'>('auto');
+  // Reduced motion: the height follows at once (no sliding), as in revealTransition
+  const reduced = useReducedMotion() ?? false;
   useLayoutEffect(() => {
     const element = inner.current;
     if (!element) return;
@@ -94,7 +106,7 @@ function Grow({ children }: { children: ReactNode }) {
     return () => observer.disconnect();
   }, []);
   return (
-    <motion.div className="overflow-hidden" initial={false} animate={{ height }} transition={REVEAL_TRANSITION}>
+    <motion.div className="overflow-hidden" initial={false} animate={{ height }} transition={revealTransition(reduced, 'enter')}>
       <div ref={inner}>{children}</div>
     </motion.div>
   );

@@ -1,4 +1,4 @@
-import { XIcon } from 'lucide-react';
+import { CloseButton } from '@/components/ui/close-button';
 import { useMarkerPalette } from '@/components/layers/marker-icons';
 
 const BAR = ['ok', 'ok', 'warn', 'ok', 'error', 'ok'] as const;
@@ -9,13 +9,13 @@ export default function AndroidPromoHero({ onClose }: { onClose: () => void }) {
   const fill = { ok: p.okContainer, warn: p.warnContainer, error: p.errorContainer };
   return (
     <div className="relative h-[170px] overflow-hidden" style={{ background: `radial-gradient(circle at 30% 20%, color-mix(in oklab, var(--primary) 35%, transparent), transparent 60%), ${p.tertiaryContainer}` }}>
-      <button type="button" aria-label="Later herinneren" onClick={onClose} className="absolute right-2.5 top-2.5 z-10 grid size-[34px] place-items-center rounded-full bg-black/25 text-white">
-        <XIcon className="size-5" />
-      </button>
+      {/* On the illustration, not on a card: a dark translucent button with a white icon stands out from the tertiary
+          background in both themes (the card-surface grey would blend into it) */}
+      <CloseButton label="Later herinneren" onClick={onClose} className="absolute top-3 right-3 z-10 bg-black/35 text-white hover:bg-black/50" />
       <div className="absolute bottom-[-40px] left-1/2 h-[200px] w-[130px] -translate-x-1/2 -rotate-6 overflow-hidden rounded-[22px] bg-muted shadow-[0_0_0_5px_#111,0_14px_30px_rgb(0_0_0/.4)]" aria-hidden>
         <span className="absolute left-10 top-10 size-[22px] rounded-lg" style={{ background: p.okContainer, boxShadow: `0 0 0 2px ${p.surfaceContainerLowest}` }} />
         <span className="absolute left-20 top-20 size-[22px] rounded-full bg-primary" style={{ boxShadow: `0 0 0 2px ${p.surfaceContainerLowest}` }} />
-        <div className="absolute inset-x-2 bottom-[46px] h-11 rounded-[14px] bg-card p-[7px]">
+        <div className="absolute inset-x-2 bottom-[46px] h-11 rounded-(--radius-tile) bg-card p-[7px]">
           <div className="flex gap-0.5">
             {BAR.map((k, i) => (
               <i key={i} className="h-1.5 flex-1 rounded-sm" style={{ background: fill[k] }} />

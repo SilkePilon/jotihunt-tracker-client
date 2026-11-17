@@ -4,7 +4,7 @@ import { PauseIcon } from 'lucide-react';
 import FadeText from '@/components/motion/FadeText';
 import Reveal from '@/components/motion/Reveal';
 import CookieBadge from '@/components/tracker/CookieBadge';
-import { Switch } from '@/components/ui/switch';
+import BeheerSwitch from '@/components/beheer/controls/BeheerSwitch';
 import { useNow } from '@/hooks/now.hook';
 import { jotiboardSyncLine } from '@/lib/jotiboard';
 import { POP } from '@/lib/motion';
@@ -25,6 +25,8 @@ export function JotiboardLinked({ status, view, disabled, onSetSync }: { status:
   const [busy, setBusy] = useState(false);
 
   async function toggle(enabled: boolean) {
+    // aria-disabled (not disabled) while saving, so the switch keeps the focus: ignore taps until then
+    if (busy) return;
     setBusy(true);
     try {
       await onSetSync(enabled);
@@ -45,14 +47,14 @@ export function JotiboardLinked({ status, view, disabled, onSetSync }: { status:
       <FadeText swapKey={TITLE[view]} className="mt-2 text-base font-bold">
         {TITLE[view]}
       </FadeText>
-      <Reveal gap={2}>{view === 'failing' && status.lastError && <p className="text-xs font-medium text-amber-600 dark:text-amber-400">{status.lastError}</p>}</Reveal>
+      <Reveal gap={2}>{view === 'failing' && status.lastError && <p className="text-xs font-medium text-status-warn-text">{status.lastError}</p>}</Reveal>
       {/* Keyed on the view, so the ticking "… geleden" doesn't fade every second */}
       <FadeText swapKey={view} className="text-xs text-muted-foreground tabular-nums">
         {jotiboardSyncLine(status, now)}
       </FadeText>
       <label className={cn('mt-3 flex w-full cursor-pointer items-center justify-between gap-3 px-2.5 py-2', JOTIBOARD_BLOCK)}>
-        <span className="text-[13px] font-medium">Automatisch synchroniseren</span>
-        <Switch checked={status.syncEnabled} disabled={busy || disabled} onCheckedChange={(checked) => void toggle(checked)} className="data-[state=checked]:bg-green-600" />
+        <span className="text-body font-semibold">Automatisch synchroniseren</span>
+        <BeheerSwitch checked={status.syncEnabled} disabled={disabled} aria-disabled={busy || undefined} aria-busy={busy || undefined} onCheckedChange={(checked) => void toggle(checked)} />
       </label>
     </div>
   );

@@ -1,19 +1,58 @@
-import { type RefObject, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { AnimatePresence, motion, useTransform } from 'motion/react';
+import { lazy, type RefObject, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion, useMotionValue, useTransform } from 'motion/react';
+import { useShallow } from 'zustand/react/shallow';
 import type { MapRef } from '@/components/Map';
 import { useViewportInsets } from '@/hooks/viewport-insets.hook';
 import { useBackEntry } from '@/hooks/back-entry.hook';
+import { useHasMounted } from '@/hooks/has-mounted.hook';
+import { useLandscapePhone } from '@/hooks/media.hook';
+import ViewFocus from '@/components/motion/ViewFocus';
 import useSidebarStore from '@/stores/sidebar.store';
 import useMobileNavStore from '@/stores/mobile-nav.store';
-import { PANE_SLIDE, PANE_SLIDE_TRANSITION } from '@/lib/motion';
-import type { SnapHeights } from '@/lib/sheet-snaps';
+import { LAYOUT_SPRING, PANE_SLIDE, PANE_SLIDE_TRANSITION } from '@/lib/motion';
+import { cn } from '@/lib/utils';
+import { DOCK_GAP, dockCardMax, type SnapHeights } from '@/lib/sheet-snaps';
+import { useDockRow } from '@/hooks/dock-row.hook';
+import useViewportStore from '@/stores/viewport.store';
 import BottomSheet from './BottomSheet';
 import PeekStrip from './PeekStrip';
+import MyLocationButton from './MyLocationButton';
+import HuntHereButton from './HuntHereButton';
+import ResetNorthButton from './ResetNorthButton';
+import ZoomButtons from './ZoomButtons';
 import MobileMenu from './MobileMenu';
+import SearchDrawer from './SearchDrawer';
 import MobilePage from './MobilePage';
-import ViewportDebug from './ViewportDebug';
-import { DOCK_ID } from './DockedPopup';
+import { DOCK_CARD_MAX_VAR, DOCK_ID } from './DockedPopup';
 import { sheetVisibleHeight } from './sheet-motion';
+import { loadSavedPage, restoredSnap, savePage } from '@/lib/continuity';
+import type { MobilePageId } from '@/lib/mobile-nav';
+
+/** `?viewport-debug` only: a lazy chunk, so the debug overlay isn't in the main bundle */
+const ViewportDebug = lazy(() => import('./ViewportDebug'));
+const VIEWPORT_DEBUG = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('viewport-debug');
+
+/** Once per page load: leaving phone width and coming back still starts at the menu (see MobileShell) */
+let pageRestored = false;
+
+/**
+ * Session continuity: after a reload within 2 h the sheet opens on the page that was on top (at its snap, capped at
+ * half so the map isn't covered), and
+ * every change of the top page or snap is remembered for the next one.
+ */
+function usePageContinuity(topId: MobilePageId | undefined) {
+  const snap = useSidebarStore((s) => s.sheetSnap);
+  useLayoutEffect(() => {
+    if (pageRestored) return;
+    pageRestored = true;
+    const saved = loadSavedPage();
+    if (saved && useMobileNavStore.getState().stack.length === 0) useMobileNavStore.getState().push({ id: saved.id }, restoredSnap(saved.snap));
+  }, []);
+  useEffect(() => {
+    if (!pageRestored) return;
+    savePage(topId ? { id: topId, snap } : null);
+  }, [topId, snap]);
+}
 
 /** Lowers the sheet on Back. Rendered before the page entries so its history entry sits below theirs. */
 function SheetBackEntry() {
@@ -61,23 +100,86 @@ function useViewScroll(containerRef: RefObject<HTMLDivElement | null>, depth: nu
   }, [containerRef, depth, viewKey]);
 }
 
+/**
+ * The popup dock just above the sheet: the map tiles and a docked card. With room above the sheet the tiles stack
+ * above the card; with little room (half snap, short or sideways phones) the card stands beside them (useDockRow). The card never grows past the room left above the sheet (it scrolls inside).
+ * A phone held sideways has the sheet as a left column: the dock then stands on the bottom edge, right of it.
+ */
+function useDockLayout(tilesRef: RefObject<HTMLDivElement | null>) {
+  const { visibleH, safeTop, safeBottom } = useViewportStore(useShallow((s) => ({ visibleH: s.visibleH, safeTop: s.safeTop, safeBottom: s.safeBottom })));
+  const row = useDockRow();
+  const sideways = useLandscapePhone();
+  const sheetSide = useSidebarStore((s) => s.sheetSide);
+  // What the dock stands on: the sheet (-1: follow its live height), or the safe area at the bottom edge when sideways
+  const sidewaysBase = useMotionValue(-1);
+  useEffect(() => sidewaysBase.set(sideways ? safeBottom : -1), [sidewaysBase, sideways, safeBottom]);
+  const base = useTransform([sheetVisibleHeight, sidewaysBase], ([sheet, side]: number[]) => (side >= 0 ? side : sheet));
+  // Height the tiles take above the card (none in the row layout, where they stand beside it)
+  const tilesAbove = useMotionValue(0);
+  // Height above the sheet that isn't the safe area
+  const room = useMotionValue(visibleH - safeTop);
+  useEffect(() => room.set(visibleH - safeTop), [room, visibleH, safeTop]);
+  useLayoutEffect(() => {
+    const tiles = tilesRef.current;
+    if (!tiles) return;
+    const measure = () => tilesAbove.set(row ? 0 : tiles.offsetHeight);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(tiles);
+    return () => observer.disconnect();
+  }, [tilesRef, tilesAbove, row]);
+  const bottom = useTransform(base, (h) => h + DOCK_GAP);
+  const cardMax = useTransform([base, tilesAbove, room], ([sheet, tiles, height]: number[]) => `${dockCardMax({ visibleH: height, sheet, safeTop: 0, tiles })}px`);
+  return { row, style: { bottom, [DOCK_CARD_MAX_VAR]: cardMax, ...(sideways && sheetSide > 0 && { left: sheetSide + DOCK_GAP }) } };
+}
+
 /** Phones: the bottom sheet (peek strip + menu/page stack), camera button and popup dock. */
 export default function MobileShell({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
   useViewportInsets();
   const { stack, direction } = useMobileNavStore();
   const [heights, setHeights] = useState<SnapHeights>({ peek: 0, half: 0, full: 0 });
-  const dockBottom = useTransform(sheetVisibleHeight, (h) => h + 10);
+  const tilesRef = useRef<HTMLDivElement>(null);
+  const dock = useDockLayout(tilesRef);
   const top = stack[stack.length - 1];
   const viewKey = top ? `${stack.length}:${top.id}` : 'menu';
   const viewsRef = useRef<HTMLDivElement>(null);
   useViewScroll(viewsRef, stack.length, viewKey);
+  // The page on top until this render: a pop back to the menu puts focus on the row that opened it. Effects run
+  // child-first, so the arriving view still reads the previous top here.
+  const leftRef = useRef<string | null>(null);
+  useEffect(() => {
+    leftRef.current = top?.id ?? null;
+  }, [top]);
+  usePageContinuity(top?.id);
+  const mounted = useHasMounted();
+  const [searchOpen, setSearchOpen] = useState(false);
   // Leaving phone width unmounts the shell; the next phone visit starts at the menu
   useEffect(() => () => useMobileNavStore.getState().reset(), []);
 
   return (
     <>
-      <ViewportDebug snaps={heights} />
-      <motion.div id={DOCK_ID} className="pointer-events-none fixed inset-x-3 z-[45] flex flex-col gap-2" style={{ bottom: dockBottom }} />
+      {VIEWPORT_DEBUG && (
+        <Suspense fallback={null}>
+          <ViewportDebug snaps={heights} />
+        </Suspense>
+      )}
+      <motion.div
+        id={DOCK_ID}
+        data-dock={dock.row ? 'row' : 'column'}
+        className={cn('pointer-events-none fixed right-[max(0.75rem,env(safe-area-inset-right))] left-[max(0.75rem,env(safe-area-inset-left))] z-[45] flex gap-2', dock.row ? 'flex-row-reverse items-end' : 'flex-col')}
+        style={dock.style}
+      >
+        {/* Always the dock's first node: popups portal in after it, under the tiles (column) or left of them (row) */}
+        {/* Slides to its new place when the dock turns between row and column (only then: layoutDependency) */}
+        <motion.div ref={tilesRef} layout="position" layoutDependency={dock.row} transition={{ layout: LAYOUT_SPRING }} className="flex shrink-0 flex-col gap-2">
+          {/* Bottom to top: Mijn locatie, zoom + and −, and the reset tile while the map is turned or tilted (like the desktop stack) */}
+          <ResetNorthButton mapRef={mapRef} />
+          <ZoomButtons mapRef={mapRef} />
+          {/* While following (or just after a locate): mark a hunt where you stand */}
+          <HuntHereButton />
+          <MyLocationButton mapRef={mapRef} />
+        </motion.div>
+      </motion.div>
       <BottomSheet peek={<PeekStrip />} onHeights={setHeights}>
         {/* Effects run in sibling order: the sheet entry first, so Back closes pages before lowering the sheet */}
         <SheetBackEntry />
@@ -88,11 +190,14 @@ export default function MobileShell({ mapRef }: { mapRef: RefObject<MapRef | nul
         <div ref={viewsRef} className="relative">
           <AnimatePresence initial={false} custom={direction} mode="popLayout">
             <motion.div key={viewKey} data-view={viewKey} custom={direction} variants={PANE_SLIDE} initial="enter" animate="center" exit="exit" transition={PANE_SLIDE_TRANSITION}>
-              {top ? <MobilePage page={top} depth={stack.length} mapRef={mapRef} /> : <MobileMenu />}
+              <ViewFocus enabled={mounted} target={(root) => (top ? root.querySelector('[data-view-back]') : root.querySelector(`[data-nav-id="${leftRef.current}"]`))}>
+                {top ? <MobilePage page={top} depth={stack.length} mapRef={mapRef} /> : <MobileMenu onSearch={() => setSearchOpen(true)} />}
+              </ViewFocus>
             </motion.div>
           </AnimatePresence>
         </div>
       </BottomSheet>
+      <SearchDrawer mapRef={mapRef} open={searchOpen} onClose={() => setSearchOpen(false)} />
     </>
   );
 }

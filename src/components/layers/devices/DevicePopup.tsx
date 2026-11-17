@@ -2,6 +2,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import { BatteryIcon, GaugeIcon } from 'lucide-react';
 import MapPopup from '../../map/MapPopup';
+import ArchiveReadOnlyNote from '@/components/ArchiveReadOnlyNote';
 import MarkerRegistration from '../../map/MarkerRegistration';
 import MarkerGlyph from '../../map/popup/MarkerGlyph';
 import { PopupActions, RouteAction } from '../../map/popup/PopupActions';
@@ -34,7 +35,7 @@ export default function DevicePopup({ position, icon, onClose }: DevicePopupProp
   const age = formatDistanceToNow(position.fixTime, { locale: nl, addSuffix: true });
 
   return (
-    <MapPopup longitude={lng} latitude={lat} onClose={onClose} offset={POPUP_OFFSET}>
+    <MapPopup longitude={lng} latitude={lat} onClose={onClose} offset={POPUP_OFFSET} offsetScale="label">
       <PopupHeader
         icon={
           <PopupIcon background={palette.secondaryContainer} color={palette.onSecondaryContainer}>
@@ -53,8 +54,11 @@ export default function DevicePopup({ position, icon, onClose }: DevicePopupProp
       </PopupRows>
       <PopupActions>
         <RouteAction lat={lat} lng={lng} compact />
-        <MarkerRegistration lat={lat} lng={lng} />
+        {/* Registered here: done with this hunter's popup, it goes once the dialog has closed */}
+        <MarkerRegistration lat={lat} lng={lng} onRegistered={onClose} />
       </PopupActions>
+      {/* Hunt/Spot are greyed out in an archive edition: say why */}
+      <ArchiveReadOnlyNote className="pt-2 text-(--map-muted)" />
     </MapPopup>
   );
 }

@@ -24,9 +24,9 @@ export default function JourneyCard({ journey, mapRef }: { journey: OvJourneyRes
     </StopRow>
   );
   return (
-    <div className="overflow-hidden rounded-[18px] bg-beheer-row">
-      <div className="grid gap-2 px-3 py-2.5 text-[12.5px]">
-        <div className="flex min-w-0 items-center gap-2 text-[13px] font-semibold">
+    <div className="overflow-hidden rounded-2xl bg-beheer-row">
+      <div className="isolate grid gap-2 px-3 py-2.5 text-caption">
+        <div className="flex min-w-0 items-center gap-2 text-body font-semibold">
           <ModeIcon mode={journey.mode} />
           <LineChip line={journey.line} />
           <span className="truncate">→ {journey.destination}</span>
@@ -85,7 +85,7 @@ function CurrentRow({ current, mapRef }: { current: NonNullable<OvJourneyResult[
       <span className="font-semibold">
         Nu tussen {from} en {to}
       </span>
-      {current.note && <span className="text-[12px] text-muted-foreground">{current.note}</span>}
+      {current.note && <span className="text-xs text-muted-foreground">{current.note}</span>}
       <div className="flex flex-wrap gap-1.5">
         <ShowOnMapPill point={current} mapRef={mapRef} />
       </div>

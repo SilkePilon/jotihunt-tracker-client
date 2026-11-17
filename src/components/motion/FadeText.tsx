@@ -1,11 +1,12 @@
 import type { ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
+import { SWAP } from '@/lib/motion';
 
-/** Text that cross-fades when `swapKey` changes (not on every tick of its content). */
+/** Text that swaps (the shared SWAP) when `swapKey` changes, not on every tick of its content. */
 export default function FadeText({ swapKey, className, children }: { swapKey: string; className?: string; children: ReactNode }) {
   return (
     <AnimatePresence mode="wait" initial={false}>
-      <motion.p key={swapKey} className={className} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+      <motion.p key={swapKey} className={className} {...SWAP}>
         {children}
       </motion.p>
     </AnimatePresence>

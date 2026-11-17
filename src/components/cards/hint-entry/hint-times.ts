@@ -1,5 +1,8 @@
 import type { Marker } from '@/types/Marker';
 import { MarkerType } from '@/types/MarkerType';
+import { distanceMetres } from '@/lib/own-position';
+import { formatDistance } from '@/lib/tracker';
+import { areaOptions } from '@/lib/utils';
 
 /** One hour a hint can be registered for */
 export interface HintHour {
@@ -36,12 +39,14 @@ const hourKey = (date: Date) => `${dayKey(date)}T${pad(date.getHours())}`;
 
 /**
  * Every hour from the hunt start up to now (or the hunt end, whichever is first), marking the hours that already have
- * a hint for the area.
+ * a hint for the area. Without the markers (still loading, or the first load failed) it isn't known which hours are
+ * taken: null, so nothing counts as free.
  */
-export function buildHintHours(start: Date, end: Date, now: Date, markers: Marker[] | undefined, area: string): HintHour[] {
+export function buildHintHours(start: Date, end: Date, now: Date, markers: Marker[] | undefined, area: string): HintHour[] | null {
+  if (!markers) return null;
   const last = now < end ? now : end;
   const taken = new Set(
-    (markers ?? [])
+    markers
       .filter((marker) => marker.type === MarkerType.Hint && marker.area === area)
       .map((marker) => hourKey(new Date(marker.time))),
   );
@@ -76,7 +81,49 @@ export function shortLabel(iso: string): string {
   return `${SHORT_WEEKDAYS[date.getDay()]} ${pad(date.getHours())}:00`;
 }
 
-/** Whether a chosen hour is still listed and free (used when the area changes) */
-export function isFreeHour(hours: HintHour[], value: string): boolean {
-  return hours.some((hour) => hour.value === value && !hour.taken);
+/** Whether a chosen hour is still listed and free (used when the area changes); never while the hours are unknown */
+export function isFreeHour(hours: HintHour[] | null, value: string): boolean {
+  return !!hours && hours.some((hour) => hour.value === value && !hour.taken);
+}
+
+/** Whether the chosen hour is in the list but taken: a teammate registered a hint for it while this form was open. */
+export function isTakenHour(hours: HintHour[] | null, value: string): boolean {
+  return !!value && !!hours && hours.some((hour) => hour.value === value && hour.taken);
+}
+
+/**
+ * Why Registreren still waits once the coordinates are complete: the picks that are missing, said in the status line
+ * under the boxes (a greyed-out button alone gives no reason). Null when area and time are both chosen.
+ */
+export function missingPickText(area: string | undefined, time: string | undefined): string | null {
+  if (!area && !time) return 'Kies nog een gebied en tijd';
+  if (!area) return 'Kies nog een gebied';
+  if (!time) return 'Kies nog een tijd';
+  return null;
+}
+
+/**
+ * The check under the boxes once a typed hint lies in the Netherlands: how far it is from the area's previous hint
+ * ("3,2 km van vorige Alpha-hint"), so a typo that jumps across the map stands out. The previous hint is the newest
+ * hint of that area from before `at` (the chosen hour; any time when not chosen yet).
+ * @param location [lng, lat] of the typed hint
+ * @returns null without an area or without an earlier hint of that area (the card then says "Ligt in Nederland")
+ */
+export function previousHintText(markers: Marker[] | undefined, area: string, at: string, location: [number, number]): string | null {
+  const name = areaOptions.find((option) => option.value === area)?.label;
+  if (!name || !markers) return null;
+  const before = at ? Date.parse(at) : Infinity;
+  let previous: Marker | null = null;
+  let previousTime = -Infinity;
+  for (const marker of markers) {
+    if (marker.type !== MarkerType.Hint || marker.area?.toLowerCase() !== area) continue;
+    const time = new Date(marker.time).getTime();
+    if (!(time < before) || time <= previousTime) continue;
+    previous = marker;
+    previousTime = time;
+  }
+  if (!previous) return null;
+  const [lng, lat] = previous.location.coordinates;
+  const metres = distanceMetres({ lng, lat }, { lng: location[0], lat: location[1] });
+  return `${formatDistance(metres)} van vorige ${name}-hint`;
 }

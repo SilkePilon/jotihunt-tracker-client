@@ -1,5 +1,6 @@
+import { zoomScaled } from '@/lib/zoom-scale';
 import { useMemo, useState } from 'react';
-import { Layer, Source, useMap, type FillLayerSpecification, type SymbolLayerSpecification } from 'react-map-gl/maplibre';
+import { Layer, Source, useMap, type FillLayerSpecification, type LineLayerSpecification, type SymbolLayerSpecification } from 'react-map-gl/maplibre';
 import { isTeamWithApiId, useTeams } from '@/hooks/teams.hook';
 import { useAppConfig } from '@/hooks/app-config.hook';
 import { useAreas } from '@/hooks/areas.hook';
@@ -8,19 +9,27 @@ import useLayersStore from '@/stores/layers.store';
 import { TEAM_PINS_LAYER, teamCircles, teamPinFeatures } from '@/lib/map-layers';
 import { featureId, useLayerInteractions, usePopupSelection } from './map-interactions';
 import { themedIconExpression, type MarkerTheme } from '@/lib/marker-style';
+import { HOVER_ICON_SIZE, ICON_SIZE } from '@/lib/zoom-scale';
 import { useMarkerTheme } from './marker-icons';
 import TeamPopup from './teams/TeamPopup';
 import TeamTooltip from './teams/TeamTooltip';
 
 const TEAM_CIRCLES_SOURCE = 'team-circles';
 const TEAM_CIRCLES_PAINT: FillLayerSpecification['paint'] = { 'fill-color': ['get', 'color'], 'fill-opacity': 0.2 };
+// Thicker dashed rim in the area colour, so the edge of a group's circle reads at a glance (thinner when zoomed out)
+const TEAM_CIRCLES_OUTLINE_PAINT: LineLayerSpecification['paint'] = {
+  'line-color': ['get', 'color'],
+  'line-opacity': 0.85,
+  'line-width': zoomScaled(3),
+  'line-dasharray': [2, 1.5],
+};
 
 // All groups are one GeoJSON source + symbol layer instead of an HTML marker each: a circle in the area colour with a
 // home glyph, centred on the group
 const TEAM_PINS_SOURCE = 'team-pins';
 const TEAM_PINS_HOVER_LAYER = 'team-pins-hover';
 function teamPinsLayout(theme: MarkerTheme): SymbolLayerSpecification['layout'] {
-  return { 'icon-image': themedIconExpression(theme), 'icon-allow-overlap': true, 'icon-ignore-placement': true };
+  return { 'icon-image': themedIconExpression(theme), 'icon-size': ICON_SIZE, 'icon-allow-overlap': true, 'icon-ignore-placement': true };
 }
 const TEAM_INTERACTIVE_LAYERS = [TEAM_PINS_LAYER];
 
@@ -30,7 +39,7 @@ export default function Teams() {
   const theme = useMarkerTheme();
   const layout = useMemo(() => teamPinsLayout(theme), [theme]);
   // Hovered: 10% larger
-  const hoverLayout = useMemo<SymbolLayerSpecification['layout']>(() => ({ ...layout, 'icon-size': 1.1 }), [layout]);
+  const hoverLayout = useMemo<SymbolLayerSpecification['layout']>(() => ({ ...layout, 'icon-size': HOVER_ICON_SIZE }), [layout]);
   const { teams, setTeamArea } = useTeams();
   const { isVisible } = useAreas();
   const { visits } = useVisits();
@@ -71,6 +80,14 @@ export default function Teams() {
       const id = featureId(feature);
       setHoveredId(typeof id === 'string' ? id : undefined);
     },
+    // Opened from the group search: the caller already flies the map there
+    onOpen: (id) => {
+      const team = visibleTeams.find((candidate) => candidate._id === id);
+      if (!team) return false;
+      setHoveredId(undefined);
+      openPopup(team._id);
+      return true;
+    },
   });
 
   return (
@@ -78,6 +95,7 @@ export default function Teams() {
       {showGroupCircles && (
         <Source id={TEAM_CIRCLES_SOURCE} type="geojson" data={circles}>
           <Layer id="team-circles-fill" type="fill" source={TEAM_CIRCLES_SOURCE} paint={TEAM_CIRCLES_PAINT} />
+          <Layer id="team-circles-outline" type="line" source={TEAM_CIRCLES_SOURCE} paint={TEAM_CIRCLES_OUTLINE_PAINT} />
         </Source>
       )}
       <Source id={TEAM_PINS_SOURCE} type="geojson" data={pins}>

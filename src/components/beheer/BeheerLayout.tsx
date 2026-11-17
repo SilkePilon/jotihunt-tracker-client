@@ -1,11 +1,14 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { AnimatePresence, motion, useIsPresent, useReducedMotion } from 'motion/react';
 import { ChevronDownIcon, Loader2Icon, TriangleAlertIcon } from 'lucide-react';
+import LoadError from '@/components/LoadError';
 import AutoHeight from '@/components/motion/AutoHeight';
 import Reveal from '@/components/motion/Reveal';
-import { Skeleton } from '@/components/ui/skeleton';
 import { useIsMobile } from '@/hooks/media.hook';
-import { REVEAL_TRANSITION, SWAP, SWAP_TRANSITION } from '@/lib/motion';
+import { focusDropped } from '@/lib/focus';
+import { focusCardHeading, focusNeighbourRow } from './row-focus';
+import { PANE_TITLE, CARD_TITLE } from '@/lib/dialog-shell';
+import { SWAP, SWAP_TRANSITION, revealTransition } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { Pill } from './controls/Pill';
 
@@ -51,8 +54,8 @@ export function BeheerPane({ title, description, action, children }: { title: st
     <div className="flex flex-col">
       <div className="mb-[18px] flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <h2 className={isMobile ? 'sr-only' : 'text-[22px] leading-tight font-bold'}>{title}</h2>
-          <FadeSwap className="mt-0.5 text-[13px] text-muted-foreground">{description}</FadeSwap>
+          <h2 className={isMobile ? 'sr-only' : PANE_TITLE}>{title}</h2>
+          <FadeSwap className="mt-0.5 text-body text-muted-foreground">{description}</FadeSwap>
         </div>
         {action}
       </div>
@@ -96,12 +99,13 @@ export function BeheerCard({ title, count, description, right, onToggle, open = 
   if (heading && onToggle) {
     // The toggle sits inside the heading (a heading inside a button isn't valid HTML); spans only, as a button holds phrasing content
     header = (
-      <h3 className="text-[15px] font-bold">
+      <h3 className={CARD_TITLE}>
         <button
           type="button"
           aria-expanded={open}
           onClick={onToggle}
-          className="flex w-full items-center gap-2.5 rounded-2xl px-1 text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          data-card-heading
+          className="flex w-full items-center gap-2.5 rounded-2xl px-1 text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring"
         >
           <span className="block min-w-0 flex-1">
             <span className="block">{heading}</span>
@@ -116,7 +120,10 @@ export function BeheerCard({ title, count, description, right, onToggle, open = 
     header = (
       <div className="mx-1 flex items-center gap-2.5">
         <div className="min-w-0 flex-1">
-          <h3 className="text-[15px] font-bold">{heading}</h3>
+          {/* tabIndex -1: focus lands here when the row or question that held it in the card is gone */}
+          <h3 data-card-heading tabIndex={-1} className={`${CARD_TITLE} outline-none`}>
+            {heading}
+          </h3>
           {description && <p className="text-xs text-muted-foreground">{description}</p>}
         </div>
         {right}
@@ -125,7 +132,8 @@ export function BeheerCard({ title, count, description, right, onToggle, open = 
   }
 
   return (
-    <section className={cn('rounded-3xl bg-card p-4', className)}>
+    // isolate: the pills' 44px touch areas on phones (COARSE_HIT_AREA) stay above the card's background
+    <section className={cn('isolate rounded-3xl bg-card p-4', className)}>
       {header}
       {onToggle ? (
         <Reveal>{open && <div className="pt-3">{children}</div>}</Reveal>
@@ -163,24 +171,40 @@ const TONE: Record<RowTone, string> = {
   default: 'bg-beheer-row',
   open: 'bg-beheer-row-high',
   danger: 'bg-destructive/12',
-  // motion owns the block's opacity (fold in/out), so dim the content instead
-  muted: 'bg-beheer-row [&>*]:opacity-60',
+  // Dimmed by colour only: an opacity layer over already muted text drops it below 4.5:1 (motion also owns the block's opacity)
+  muted: 'bg-beheer-row text-muted-foreground',
   // The edition everyone sees (soft orange, like primary pills)
   shown: 'bg-primary-container text-on-primary-container [&_.text-muted-foreground]:text-on-primary-container/75',
 };
 
 /**
  * The tonal block every row kind sits in: folds in and away (height + opacity). The padding sits inside, so the height
- * animates to zero without a jump. `className` goes on the block (e.g. the new-invite ring).
+ * animates to zero without a jump. `className` goes on the block (e.g. the new-invite ring). A row that goes away
+ * (deleted, revoked) while it holds focus hands it to the next row, else the previous one, else the card heading.
  */
-export function RowFrame({ tone = 'default', className, children }: { tone?: RowTone; className?: string; children: ReactNode }) {
+export function RowFrame({ tone = 'default', className, children, ref }: { tone?: RowTone; className?: string; children: ReactNode; ref?: RefObject<HTMLDivElement | null> }) {
+  const reduced = useReducedMotion() ?? false;
+  const isPresent = useIsPresent();
+  const ownFrame = useRef<HTMLDivElement>(null);
+  const frame = ref ?? ownFrame;
+
+  useLayoutEffect(() => {
+    if (!isPresent && frame.current?.contains(document.activeElement)) focusNeighbourRow(frame.current);
+  }, [isPresent, frame]);
+
   return (
     <motion.div
-      className={cn('overflow-hidden rounded-md transition-colors duration-200 first:rounded-t-2xl last:rounded-b-2xl', TONE[tone], className)}
+      // isolate: the pills' 44px touch areas on phones (COARSE_HIT_AREA) stay above the block's background
+      className={cn('isolate overflow-hidden rounded-(--radius-segment) transition-colors duration-200 first:rounded-t-2xl last:rounded-b-2xl', TONE[tone], className)}
       initial={{ opacity: 0, height: 0 }}
       animate={{ opacity: 1, height: 'auto' }}
-      exit={{ opacity: 0, height: 0 }}
-      transition={REVEAL_TRANSITION}
+      exit={{ opacity: 0, height: 0, transition: revealTransition(reduced, 'exit') }}
+      // Reduced motion: the row takes and gives back its room at once and only fades
+      transition={revealTransition(reduced, 'enter')}
+      ref={frame}
+      data-row-frame
+      // Skipped when focus moves on from a row that goes away (focusNeighbourRow)
+      data-exiting={!isPresent || undefined}
     >
       {children}
     </motion.div>
@@ -192,7 +216,7 @@ function RowContent({ leading, title, meta, trailing }: { leading?: ReactNode; t
     <>
       {leading}
       <div className="min-w-0 flex-1">
-        <div className="flex min-w-0 items-center gap-1.5 text-[13.5px] font-semibold">{title}</div>
+        <div className="flex min-w-0 items-center gap-1.5 text-body font-semibold">{title}</div>
         {meta && <div className="text-xs text-muted-foreground">{meta}</div>}
       </div>
       {trailing && <div className="flex shrink-0 items-center gap-1.5">{trailing}</div>}
@@ -249,6 +273,29 @@ interface BeheerExpandableRowProps {
 /** A row that opens on tap (chevron turns); the open part unfolds under the row content and holds action pills. */
 export function BeheerExpandableRow({ id, leading, title, meta, trailing, children, indentClassName, bodyClassName, headerStatic, confirm, className }: BeheerExpandableRowProps) {
   const rows = useContext(RowsContext);
+  const frame = useRef<HTMLDivElement>(null);
+  const headerButton = useRef<HTMLButtonElement | null>(null);
+  // Set when a question closed while it held focus: the header takes it once it is back (after the question faded out)
+  const refocusHeader = useRef(false);
+  const was = useRef({ confirm: !!confirm, headerStatic: !!headerStatic });
+
+  // A question (InlineConfirm) or an inline edit (rename) that ends takes focus with it: give it to the row's header
+  useLayoutEffect(() => {
+    const confirmGone = was.current.confirm && !confirm;
+    const editGone = was.current.headerStatic && !headerStatic;
+    was.current = { confirm: !!confirm, headerStatic: !!headerStatic };
+    if ((!confirmGone && !editGone) || !holdsFocus(frame.current)) return;
+    if (headerButton.current && !confirmGone) headerButton.current.focus();
+    else refocusHeader.current = true;
+  }, [confirm, headerStatic]);
+
+  const headerRef = useCallback((button: HTMLButtonElement | null) => {
+    headerButton.current = button;
+    if (!button || !refocusHeader.current) return;
+    refocusHeader.current = false;
+    if (holdsFocus(frame.current)) button.focus();
+  }, []);
+
   const [ownOpen, setOwnOpen] = useState(false);
   const open = rows ? rows.openId === id : ownOpen;
   const toggle = () => (rows ? rows.setOpenId(open ? null : id) : setOwnOpen(!open));
@@ -261,7 +308,7 @@ export function BeheerExpandableRow({ id, leading, title, meta, trailing, childr
   );
 
   return (
-    <RowFrame tone={confirm ? 'danger' : open ? 'open' : 'default'} className={className}>
+    <RowFrame ref={frame} tone={confirm ? 'danger' : open ? 'open' : 'default'} className={className}>
       <AutoHeight scene={confirm ? 'confirm' : 'row'}>
         <AnimatePresence mode="wait" initial={false}>
           {confirm ? (
@@ -274,10 +321,12 @@ export function BeheerExpandableRow({ id, leading, title, meta, trailing, childr
                 <div className={headerClass}>{header}</div>
               ) : (
                 <button
+                  ref={headerRef}
                   type="button"
                   aria-expanded={open}
+                  data-row-header
                   onClick={toggle}
-                  className={cn(headerClass, 'outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset')}
+                  className={cn(headerClass, 'outline-none focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset')}
                 >
                   {header}
                 </button>
@@ -290,6 +339,11 @@ export function BeheerExpandableRow({ id, leading, title, meta, trailing, childr
       </AutoHeight>
     </RowFrame>
   );
+}
+
+/** Whether the element holds focus, or focus was just dropped (on <body>) by a change inside it */
+function holdsFocus(element: HTMLElement | null): boolean {
+  return !!element && (element.contains(document.activeElement) || focusDropped(document.activeElement, document.body));
 }
 
 interface InlineConfirmProps {
@@ -309,8 +363,23 @@ interface InlineConfirmProps {
 /** A red-tinted question in place of a row or a card section: question, consequence, "Annuleer" + a destructive pill. */
 export function InlineConfirm({ title, description, confirmLabel, confirmIcon, onCancel, onConfirm, className }: InlineConfirmProps) {
   const [busy, setBusy] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+  // The control that asked (focused while the question appears), to give focus back to when the question goes
+  const [opener] = useState(() => (document.activeElement instanceof HTMLElement && document.activeElement !== document.body ? document.activeElement : null));
+
+  // Gone (cancelled, or done) with focus lost along with it: back to the opener, else the card's heading. A row's
+  // question needs neither: BeheerExpandableRow already gave focus to its header (or the next row).
+  useEffect(() => {
+    const section = box.current?.closest('section') ?? null;
+    return () => {
+      if (!focusDropped(document.activeElement, document.body)) return;
+      if (opener?.isConnected && !opener.matches(':disabled')) opener.focus();
+      else focusCardHeading(section);
+    };
+  }, [opener]);
 
   async function confirm() {
+    if (busy) return;
     setBusy(true);
     try {
       await onConfirm();
@@ -322,6 +391,7 @@ export function InlineConfirm({ title, description, confirmLabel, confirmIcon, o
   return (
     // Escape cancels the question; data-inline-edit on its buttons keeps the window open meanwhile (keepOpenWhileEditing)
     <div
+      ref={box}
       role="alertdialog"
       aria-label={typeof title === 'string' ? title : undefined}
       className={cn('flex flex-wrap items-center gap-3', className)}
@@ -330,14 +400,15 @@ export function InlineConfirm({ title, description, confirmLabel, confirmIcon, o
       }}
     >
       <div className="min-w-0 flex-1 basis-48">
-        <p className="text-[13.5px] font-bold">{title}</p>
+        <p className="text-body font-bold">{title}</p>
         <p className="text-xs text-muted-foreground">{description}</p>
       </div>
       <div className="flex shrink-0 gap-1.5">
-        <Pill variant="secondary" data-inline-edit onClick={onCancel} disabled={busy} autoFocus>
+        {/* busy, not disabled: disabling the pill that has focus would drop it */}
+        <Pill variant="secondary" data-inline-edit onClick={onCancel} busy={busy} autoFocus>
           Annuleer
         </Pill>
-        <Pill variant="danger" data-inline-edit morphKey={busy ? 'busy' : 'idle'} onClick={() => void confirm()} disabled={busy}>
+        <Pill variant="danger" data-inline-edit morphKey={busy ? 'busy' : 'idle'} onClick={() => void confirm()} busy={busy}>
           {busy ? <Loader2Icon className="animate-spin" /> : confirmIcon}
           {confirmLabel}
         </Pill>
@@ -346,25 +417,30 @@ export function InlineConfirm({ title, description, confirmLabel, confirmIcon, o
   );
 }
 
-/** Stands in for a pane's cards while their data loads. */
-export function BeheerSkeleton({ groups = 1 }: { groups?: number }) {
+// In its own small module, so the Beheer window's loading fallback (outside the lazy chunk) can use it too
+export { BeheerSkeleton } from './BeheerSkeleton';
+
+/** A pane whose data failed to load (nothing to show yet): a card with the problem and "Opnieuw proberen". */
+export function BeheerLoadError({ message, onRetry }: { message: string; onRetry: () => unknown }) {
   return (
-    <div className="flex flex-col gap-3.5">
-      {Array.from({ length: groups }, (_, index) => (
-        <div key={index} className="flex flex-col gap-3 rounded-3xl bg-card p-4">
-          <Skeleton className="mx-1 h-5 w-28 bg-beheer-row-high" />
-          <Skeleton className="h-28 w-full rounded-2xl bg-beheer-row" />
-        </div>
-      ))}
-    </div>
+    <section className="rounded-3xl bg-card p-4">
+      <LoadError className="px-1 text-body" message={message} onRetry={onRetry} />
+    </section>
   );
 }
 
 /** Amber problem bar, as in the Koppelingen cards; folds in and out. */
 export function WarnBar({ children }: { children: ReactNode }) {
+  const reduced = useReducedMotion() ?? false;
   return (
-    <motion.div className="overflow-hidden" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={REVEAL_TRANSITION}>
-      <div className="mt-2.5 flex items-center gap-2.5 rounded-2xl bg-amber-500/15 px-3 py-2.5 text-[12.5px] text-amber-800 dark:text-amber-200">
+    <motion.div
+      className="overflow-hidden"
+      initial={{ height: 0, opacity: 0 }}
+      animate={{ height: 'auto', opacity: 1 }}
+      exit={{ height: 0, opacity: 0, transition: revealTransition(reduced, 'exit') }}
+      transition={revealTransition(reduced, 'enter')}
+    >
+      <div className="mt-2.5 flex items-center gap-2.5 rounded-2xl bg-warn-container px-3 py-2.5 text-caption text-status-warn-text">
         <TriangleAlertIcon className="size-4 shrink-0" />
         <span className="flex-1">{children}</span>
       </div>

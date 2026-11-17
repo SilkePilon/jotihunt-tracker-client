@@ -1,10 +1,13 @@
 import { type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { animate, motion, useTransform } from 'motion/react';
-import { computeSnapHeights, nextSnap, rubberBand, settleSnap, type SnapHeights } from '@/lib/sheet-snaps';
+import { animate, motion, useReducedMotion, useTransform } from 'motion/react';
+import { SHEET_SIDE_VAR, computeSnapHeights, grabLabel, landscapeSheetBox, nextSnap, rubberBand, settleSnap, type SnapHeights } from '@/lib/sheet-snaps';
+import { useLandscapePhone } from '@/hooks/media.hook';
+import { cn } from '@/lib/utils';
 import useSidebarStore from '@/stores/sidebar.store';
 import useViewportStore from '@/stores/viewport.store';
 import { tourTarget } from '@/components/tour/targets';
+import { WORK_AREA_ATTRIBUTE } from '@/stores/prompt-queue.store';
 import { sheetVisibleHeight } from './sheet-motion';
 
 const GRAB = 24;
@@ -37,7 +40,8 @@ function scrollerFor(target: Node, body: HTMLElement): HTMLElement {
 }
 
 /**
- * The phone sheet: fixed to bottom:0 (above bottom browser toolbars), moved only with translateY, three snaps.
+ * The phone sheet: fixed to bottom:0 (above bottom browser toolbars), moved only with translateY, three snaps. A phone
+ * held sideways gets it as a left column (at most 400px, half the screen) instead of the full width.
  * Drag from the grab/peek area; drag down from the body only when it is scrolled to the top. The body's height
  * follows the settled snap, so content scrolls at every height.
  */
@@ -46,8 +50,24 @@ export default function BottomSheet({ peek, children, onHeights }: { peek: React
   const setSnap = useSidebarStore((s) => s.setSheetSnap);
   const setSheetHeight = useSidebarStore((s) => s.setSheetHeight);
   const setSheetSnapHeights = useSidebarStore((s) => s.setSheetSnapHeights);
-  const { visibleH, safeTop, safeBottom, keyboard } = useViewportStore(
-    useShallow((s) => ({ visibleH: s.visibleH, safeTop: s.safeTop, safeBottom: s.safeBottom, keyboard: s.keyboard })),
+  const { visibleH, safeTop, safeBottom, keyboard, width, safeLeft } = useViewportStore(
+    useShallow((s) => ({ visibleH: s.visibleH, safeTop: s.safeTop, safeBottom: s.safeBottom, keyboard: s.keyboard, width: s.width, safeLeft: s.safeLeft })),
+  );
+  // Held sideways: a left column instead of the full width (the map keeps the rest; Map.tsx pads for it)
+  const landscape = useLandscapePhone();
+  const box = landscape ? landscapeSheetBox(width, safeLeft) : null;
+  const side = box ? box.left + box.width : 0;
+  const setSheetSide = useSidebarStore((s) => s.setSheetSide);
+  useEffect(() => setSheetSide(side), [side, setSheetSide]);
+  useEffect(() => () => setSheetSide(0), [setSheetSide]);
+  // The same for CSS on the root (--sheet-side: the column plus its left gap, 0px upright), so the top stack (offline
+  // badge, happy-hour pill) centres on the map beside the column instead of on the viewport
+  useEffect(() => document.documentElement.style.setProperty(SHEET_SIDE_VAR, `${side}px`), [side]);
+  useEffect(
+    () => () => {
+      document.documentElement.style.removeProperty(SHEET_SIDE_VAR);
+    },
+    [],
   );
   const peekRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -58,9 +78,18 @@ export default function BottomSheet({ peek, children, onHeights }: { peek: React
   // only once the collapse finishes, so content never vanishes mid-gesture. Growing uses the settled height at once.
   const [layoutHeight, setLayoutHeight] = useState(0);
   const animId = useRef(0);
+  // Reduced motion: a snap change that isn't the end of a drag (grab tap, a page opening, the keyboard) jumps there
+  // instead of springing; a released drag still springs on from the finger
+  const reduceMotion = useReducedMotion();
+  const releasing = useRef(false);
 
-  const springTo = useCallback((target: number) => {
+  const springTo = useCallback((target: number, instant = false) => {
     const id = ++animId.current;
+    if (instant) {
+      sheetVisibleHeight.jump(target);
+      setLayoutHeight(target);
+      return { stop: () => {} };
+    }
     const controls = animate(sheetVisibleHeight, target, SPRING);
     controls.then(() => {
       if (animId.current === id) setLayoutHeight(target);
@@ -88,10 +117,11 @@ export default function BottomSheet({ peek, children, onHeights }: { peek: React
 
   const settled = heights[snap];
   useEffect(() => {
-    const controls = springTo(settled);
+    const controls = springTo(settled, !!reduceMotion && !releasing.current);
+    releasing.current = false;
     setSheetHeight(settled);
     return () => controls.stop();
-  }, [settled, setSheetHeight, springTo]);
+  }, [settled, setSheetHeight, springTo, reduceMotion]);
   useEffect(() => () => setSheetHeight(0), [setSheetHeight]);
 
   const y = useTransform(sheetVisibleHeight, (h) => heights.full - h);
@@ -195,7 +225,10 @@ export default function BottomSheet({ peek, children, onHeights }: { peek: React
     if (!d.moved) return;
     const target = settleSnap(sheetVisibleHeight.get(), d.velocity, heights);
     if (target === snap) springTo(heights[target]);
-    else setSnap(target);
+    else {
+      releasing.current = true;
+      setSnap(target);
+    }
   }
 
   return (
@@ -203,9 +236,10 @@ export default function BottomSheet({ peek, children, onHeights }: { peek: React
       ref={sheetRef}
       {...tourTarget('sidebar.root')}
       role="region"
-      aria-label="Zijbalk"
-      className="fixed inset-x-0 bottom-0 z-40 flex select-none flex-col rounded-t-3xl bg-beheer-window shadow-[0_-6px_30px_rgb(0_0_0/.25)] [-webkit-touch-callout:none] [&_input]:select-text [&_textarea]:select-text"
-      style={{ height: heights.full, y, marginBottom: keyboard, paddingBottom: 'env(safe-area-inset-bottom)' }}
+      aria-label="Paneel"
+      {...{ [WORK_AREA_ATTRIBUTE]: '' }}
+      className={cn('fixed bottom-0 z-40 flex flex-col rounded-t-3xl bg-beheer-window [-webkit-touch-callout:none]', box ? 'shadow-(--shadow-dialog)' : 'inset-x-0 shadow-(--shadow-sheet)')}
+      style={{ height: heights.full, y, marginBottom: keyboard, paddingBottom: 'env(safe-area-inset-bottom)', ...(box && { left: box.left, width: box.width }) }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerEnd}
@@ -214,18 +248,23 @@ export default function BottomSheet({ peek, children, onHeights }: { peek: React
       {/* Fills the gap below the sheet when it is rubber-banded above full */}
       <div aria-hidden className="pointer-events-none absolute inset-x-0 top-full h-[50vh] bg-beheer-window" />
       <div className="flex shrink-0 flex-col" style={{ height: columnHeight }}>
+        {/* 24px tall in the layout (GRAB). Touch: the ::after reaches 8px up over the map edge (not more, so map taps just
+            above the sheet still reach the map) */}
         <button
           type="button"
-          aria-label="Zijbalk groter of kleiner maken"
-          onClick={() => setSnap(nextSnap(snap))}
-          className="flex h-6 shrink-0 cursor-grab touch-none items-center justify-center"
+          aria-label={grabLabel(snap)}
+          onClick={() => setSnap(nextSnap(snap, heights))}
+          className="relative flex h-6 shrink-0 cursor-grab touch-none select-none items-center justify-center rounded-t-3xl outline-none pointer-coarse:after:absolute pointer-coarse:after:-top-2 pointer-coarse:after:bottom-0 pointer-coarse:after:left-1/2 pointer-coarse:after:w-28 pointer-coarse:after:-translate-x-1/2 pointer-coarse:after:content-[''] focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset"
         >
-          <span className="h-[5px] w-9 rounded-full bg-muted-foreground/50" />
+          {/* /80: at least 3:1 on the light beheer-window background (/70 was borderline) */}
+          <span className="h-[5px] w-9 rounded-full bg-muted-foreground/80" />
         </button>
-        <div ref={peekRef} className="shrink-0 touch-none">
+        {/* Dragging the grab/peek must not select text; the body's text stays selectable (copy a coordinate, a code) */}
+        <div ref={peekRef} className="shrink-0 touch-none select-none [&_input]:select-text [&_textarea]:select-text">
           {peek}
         </div>
-        <div ref={bodyRef} data-sheet-body className="min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {/* Hidden behind the map edge while peeking: inert keeps Tab and screen readers out of what can't be seen */}
+        <div ref={bodyRef} data-sheet-body inert={snap === 'peek'} className="min-h-0 flex-1 select-text overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {children}
         </div>
       </div>

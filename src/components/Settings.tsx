@@ -10,14 +10,15 @@ import {
     UserRoundIcon,
     ShieldIcon,
     LayersIcon,
+    KeyboardIcon,
 } from 'lucide-react';
 import {siDiscord} from "simple-icons"
 import {cn} from '@/lib/utils';
-import {HEADER_BUTTON} from './sidebar/header-button';
+import {HEADER_BUTTON, HEADER_BUTTON_END} from './sidebar/header-button';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuTrigger} from './ui/dropdown-menu';
 import {AnimatePresence, motion} from 'motion/react';
 import {SWAP} from '@/lib/motion';
-import {MenuRow, MenuRows, MenuTile} from './settings/menu-parts';
+import {MenuCheckboxTile, MenuRow, MenuRows, MenuSwitchRow, MenuTile} from './settings/menu-parts';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import useSettingsStore from '@/stores/settings.store';
 import {User} from '@/types/User';
@@ -30,10 +31,12 @@ import useLayersDialogStore from '@/stores/layers-dialog.store';
 import useSettingsMenuStore from '@/stores/settings-menu.store';
 import useTourStore from '@/components/tour/tour.store';
 import {tourTarget} from '@/components/tour/targets';
-import {useLogout} from '@/hooks/logout.hook';
+import LogoutConfirmDialog from '@/components/account/LogoutConfirmDialog';
+import {useState} from 'react';
 import useAdminStore from '@/stores/admin.store';
 import {useIsMobile} from '@/hooks/media.hook';
 import {useAppConfig} from '@/hooks/app-config.hook';
+import NewTabHint from '@/components/NewTabHint';
 
 interface SettingsProps {
     /** Shows a "Rondleiding opnieuw" item when given */
@@ -56,12 +59,15 @@ export default function Settings({onReplayTour}: SettingsProps) {
     const openLayers = useLayersDialogStore((state) => state.setOpen);
     const soundMuted = useSettingsStore((state) => state.soundMuted);
     const setSoundMuted = useSettingsStore((state) => state.setSoundMuted);
+    const shortcutsEnabled = useSettingsStore((state) => state.shortcutsEnabled);
+    const setShortcutsEnabled = useSettingsStore((state) => state.setShortcutsEnabled);
     const {isStandalone, isInstallPromptSupported, promptInstall} = usePWA();
     const openAdminDialog = useAdminStore((state) => state.openDialog);
     const isMobile = useIsMobile();
 
     const auth = useAuthUser<User>();
-    const logout = useLogout();
+    // Same confirm as Account → "Dit apparaat" (with the lockout warning when there's no passkey yet)
+    const [logoutOpen, setLogoutOpen] = useState(false);
 
     return (
         <Dialog>
@@ -69,25 +75,27 @@ export default function Settings({onReplayTour}: SettingsProps) {
                 <DropdownMenuTrigger asChild>
                     {/* Right half of the header group; while open it turns light orange with all corners round */}
                     <button type="button" aria-label="Instellingen" title="Instellingen"
-                            className={cn(HEADER_BUTTON, 'rounded-l-[6px] rounded-r-lg data-[state=open]:rounded-lg data-[state=open]:bg-(--map-selected-bg) data-[state=open]:text-(--map-selected-fg)')}>
+                            className={cn(HEADER_BUTTON, HEADER_BUTTON_END, 'rounded-l-(--radius-segment) rounded-r-lg data-[state=open]:rounded-lg data-[state=open]:bg-(--map-selected-bg) data-[state=open]:text-(--map-selected-fg)')}>
                         <Settings2Icon className="size-[18px]"/>
                     </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-[290px]">
                     {/* Quick tiles for what you change most */}
                     <div className={cn('mb-1.5 grid gap-1.5', onReplayTour ? 'grid-cols-3' : 'grid-cols-2')}>
-                        <MenuTile onSelect={(e) => {
-                            e.preventDefault();
-                            setSoundMuted(!soundMuted);
-                        }}
-                                  className={cn(!soundMuted && 'bg-(--map-selected-bg) text-(--map-selected-fg) focus:bg-(--map-selected-bg) focus:text-(--map-selected-fg)')}>
+                        {/* A menuitemcheckbox: checked while the sound is on; the menu stays open on toggle. A fixed name
+                            ("Geluid"): the visible "Geluid aan/uit" swaps, the checked state already says which */}
+                        <MenuCheckboxTile checked={!soundMuted}
+                                          aria-label="Geluid"
+                                          onSelect={(e) => e.preventDefault()}
+                                          onCheckedChange={(on) => setSoundMuted(!on)}
+                                          className={cn(!soundMuted && 'bg-(--map-selected-bg) text-(--map-selected-fg) focus:bg-(--map-selected-bg) focus:text-(--map-selected-fg)')}>
                             <AnimatePresence mode="wait" initial={false}>
                                 <motion.span key={soundMuted ? 'off' : 'on'} {...SWAP} className="flex flex-col items-center gap-1.5">
                                     {soundMuted ? <VolumeXIcon className="size-5"/> : <Volume2Icon className="size-5 text-current"/>}
                                     {soundMuted ? 'Geluid uit' : 'Geluid aan'}
                                 </motion.span>
                             </AnimatePresence>
-                        </MenuTile>
+                        </MenuCheckboxTile>
                         <MenuTile onClick={() => openNotifications(true)}>
                             <BellIcon className="size-5"/>
                             Meldingen
@@ -111,6 +119,15 @@ export default function Settings({onReplayTour}: SettingsProps) {
                                 {auth?.name}{auth?.admin && ' · Admin'}
                             </span>
                         </MenuRow>
+                        {/* Laptop: the single-key shortcuts ("i" Intel, "/" groep zoeken) can be turned off (WCAG 2.1.4) */}
+                        {!isMobile && (
+                            <MenuSwitchRow checked={shortcutsEnabled}
+                                           onSelect={(e) => e.preventDefault()}
+                                           onCheckedChange={(on) => setShortcutsEnabled(on === true)}>
+                                <KeyboardIcon/>
+                                Sneltoetsen
+                            </MenuSwitchRow>
+                        )}
                         {!isStandalone && isInstallPromptSupported && (
                             <MenuRow onClick={promptInstall}>
                                 <DownloadIcon/>
@@ -147,15 +164,19 @@ export default function Settings({onReplayTour}: SettingsProps) {
                         {discordUrl && (
                             <MenuRow asChild>
                                 <a href={discordUrl} target="_blank" rel="noopener noreferrer">
-                                    <span className={"fill-muted-foreground [&>svg]:size-4"} dangerouslySetInnerHTML={{__html: siDiscord.svg}}></span>
+                                    <span aria-hidden className={"fill-muted-foreground [&>svg]:size-4"} dangerouslySetInnerHTML={{__html: siDiscord.svg}}></span>
                                     Join de Discord
+                                    <NewTabHint/>
                                 </a>
                             </MenuRow>
                         )}
                     </MenuRows>
 
                     <MenuRows className="mt-1.5">
-                        <MenuRow variant="destructive" onClick={logout}>
+                        <MenuRow variant="destructive" onClick={() => {
+                            setMenuOpen(false);
+                            setLogoutOpen(true);
+                        }}>
                             <LogOutIcon/>
                             Uitloggen
                         </MenuRow>
@@ -164,6 +185,7 @@ export default function Settings({onReplayTour}: SettingsProps) {
             </DropdownMenu>
 
             <DebugInfo/>
+            <LogoutConfirmDialog open={logoutOpen} onOpenChange={setLogoutOpen} noPasskey={auth?.passkeyCount === 0}/>
         </Dialog>
     );
 }

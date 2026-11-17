@@ -4,11 +4,12 @@ import { DefaultChatTransport, type FileUIPart, type UIMessage } from 'ai';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import { toast } from 'sonner';
-import { RATE_LIMIT_MESSAGE, chatErrorKind, chatRequestBody, fetchRetryingBusy } from '@/lib/intel-chat';
+import { RATE_LIMIT_MESSAGE, chatErrorKind, chatRequestBody, fetchRetryingBusy, offlineSendMessage } from '@/lib/intel-chat';
 import { fetcherWithMethod, useAuthSWR } from '@/lib/swr';
 import useIntelChatStore, { DEFAULT_CHAT_MODES } from '@/stores/intel-chat.store';
 import type { ChatModes } from '@/types/IntelChat';
 import type { User } from '@/types/User';
+import useChatDraftStore, { type ChatDraft } from '@/stores/chat-draft.store';
 
 /** The prompt box modes of the logged-in user (kept in localStorage per user) */
 export function useChatModes(): [ChatModes, (mode: keyof ChatModes, on: boolean) => void] {
@@ -32,6 +33,13 @@ export function useIntelChat(articleId: number) {
   const history = useAuthSWR<{ messages: UIMessage[]; running?: boolean }>(path, { revalidateOnFocus: false });
   const { mutate } = history;
   const [postUnavailable, setPostUnavailable] = useState(false);
+  /** The last question could not be sent (no connection): the notice saying where it went back into the prompt box */
+  const [sendFailed, setSendFailed] = useState<string | null>(null);
+  /** What the last send carried, to put back into the prompt box when it never reached the server */
+  const lastSent = useRef<ChatDraft | null>(null);
+  /** Stop was tapped and the server hasn't confirmed yet; the ref refuses a second tap within one render */
+  const [stopping, setStopping] = useState(false);
+  const stoppingRef = useRef(false);
 
   // useChat reads the transport of the latest render on every send, so a new token or mode applies right away
   const transport = useMemo(
@@ -52,6 +60,18 @@ export function useIntelChat(articleId: number) {
       const kind = chatErrorKind(error);
       if (kind === 'rate_limited') toast.error(RATE_LIMIT_MESSAGE);
       if (kind === 'ai_unavailable') setPostUnavailable(true);
+      // Never reached the server (offline): take the question out of the thread and back into the prompt box,
+      // instead of an error row whose "Opnieuw" would only fail again
+      if (kind === 'offline' && lastSent.current) {
+        const draft = lastSent.current;
+        lastSent.current = null;
+        chatRef.current?.setMessages((current) => {
+          const index = current.map((message) => message.role).lastIndexOf('user');
+          return index === -1 ? current : current.slice(0, index);
+        });
+        chatRef.current?.clearError();
+        setSendFailed(offlineSendMessage(useChatDraftStore.getState().restore(articleId, draft)));
+      }
     },
     // Keep the cached history in step, so coming back to this item shows the whole conversation at once. An errored
     // turn (429/503) wasn't saved by the server, so it stays out of the cache; an aborted one was (partly) saved.
@@ -60,6 +80,11 @@ export function useIntelChat(articleId: number) {
     },
   });
   const { setMessages, sendMessage, regenerate, resumeStream, stop, clearError } = chat;
+  // onError runs after this render; it reaches the chat through this ref
+  const chatRef = useRef<{ setMessages: typeof setMessages; clearError: typeof clearError } | null>(null);
+  useEffect(() => {
+    chatRef.current = { setMessages, clearError };
+  }, [setMessages, clearError]);
   const busyRef = useRef(false);
   useEffect(() => {
     busyRef.current = chat.status === 'submitted' || chat.status === 'streaming';
@@ -82,18 +107,37 @@ export function useIntelChat(articleId: number) {
     loading: !history.data && !history.error,
     loadError: loadKind !== null && loadKind !== 'ai_unavailable',
     unavailable: postUnavailable || loadKind === 'ai_unavailable',
+    sendFailed,
+    stopping,
     send(text: string, image?: FileUIPart) {
       touched.current = true;
+      setSendFailed(null);
+      lastSent.current = { text, image: image ? { url: image.url, name: image.filename ?? 'afbeelding.jpg' } : undefined };
       void sendMessage(image ? { text, files: [image] } : { text });
     },
     retry() {
       touched.current = true;
       void regenerate();
     },
-    /** Stop the turn on the server too (it runs on without a client); it saves what was produced */
-    stop() {
-      void stop();
-      fetcherWithMethod(`${path}/stop`, authHeader, 'POST').catch(() => undefined);
+    /**
+     * Stop the turn on the server (it runs on without a client; it saves what was produced), then locally. The answer
+     * keeps streaming until the server confirmed; when that fails it says so and keeps following the turn.
+     */
+    async stop() {
+      if (stoppingRef.current) return;
+      stoppingRef.current = true;
+      setStopping(true);
+      try {
+        await fetcherWithMethod(`${path}/stop`, authHeader, 'POST');
+        await stop();
+      } catch {
+        toast.error('Stoppen is mislukt: het antwoord loopt nog door. Probeer het opnieuw.');
+        // The turn runs on on the server: follow it again when the local stream ended meanwhile
+        if (!busyRef.current) void resumeStream();
+      } finally {
+        stoppingRef.current = false;
+        setStopping(false);
+      }
     },
     reload() {
       void mutate();

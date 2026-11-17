@@ -5,30 +5,94 @@ import Sidebar from '@/components/sidebar/Sidebar';
 import { tourTarget } from '@/components/tour/targets';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import HappyHourPill from '@/components/happy-hour/HappyHourPill';
+import { CrosshairIcon, SearchIcon, type LucideIcon } from 'lucide-react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { MAP_TILE } from '@/lib/map-chrome';
+import { TRIGGER_OPEN } from '@/lib/menu-styles';
+import { belowSafeArea, desktopTopStack, phoneTopStack } from '@/lib/top-stack';
+import { cn } from '@/lib/utils';
+import useTopStackStore from '@/stores/top-stack.store';
+
+const WIDE_QUERY = '(min-width: 1024px)';
+
+/**
+ * md–lg: a 44 px map tile whose popover holds the full card (the card is its own surface, so the popover has none).
+ * groupSearch marks the group search tile for the "/" shortcut (Layout.tsx), so it doesn't depend on the label text.
+ */
+function CompactCard({ icon: Icon, label, groupSearch, children }: { icon: LucideIcon; label: string; groupSearch?: boolean; children: (close: () => void) => ReactNode }) {
+  const [open, setOpen] = useState(false);
+  // Widening to lg hides this tile and shows the full cards; a popover left open would hang from a hidden trigger
+  useEffect(() => {
+    if (!open) return;
+    const media = window.matchMedia(WIDE_QUERY);
+    const onChange = () => media.matches && setOpen(false);
+    media.addEventListener('change', onChange);
+    return () => media.removeEventListener('change', onChange);
+  }, [open]);
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label={label}
+          title={label}
+          data-group-search-tile={groupSearch ? '' : undefined}
+          className={cn(MAP_TILE, 'grid size-11 cursor-pointer place-items-center rounded-xl outline-none transition-colors hover:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring [&_svg]:size-[18px]', TRIGGER_OPEN)}
+        >
+          <Icon aria-hidden />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end" collisionPadding={8} aria-label={label} className="w-auto rounded-xl bg-transparent p-0 shadow-none">
+        <ErrorBoundary>{children(() => setOpen(false))}</ErrorBoundary>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 function App() {
   const { mapRef } = useOutlet();
+  // Under the offline badge, lower while it wraps to two lines (lib/top-stack.ts); desktop: under the search row and the badge
+  const pillTop = useTopStackStore((state) => phoneTopStack(state.heights).pillTop);
+  const pillTopMd = useTopStackStore((state) => desktopTopStack(state.heights).pillTop);
 
   return (
     <>
-      {/* Desktop only: on phones the map stays free (search via the sidebar, groups via the map) */}
-      <div className="absolute right-2 top-2 z-30 hidden gap-2 md:flex" {...tourTarget('cards.topRight')}>
-        <div>
-          <ErrorBoundary>
-            <CoordinatesCard mapRef={mapRef} />
-          </ErrorBoundary>
+      {/* Desktop only (phones, also in landscape, open the same cards from the menu's Zoeken row). Between md and lg the
+          two 300 px cards would slide under the 320 px sidebar, so they fold into two icon tiles that open the same card */}
+      <div className="absolute top-[max(0.5rem,env(safe-area-inset-top))] right-[max(0.5rem,env(safe-area-inset-right))] z-30 hidden md:block shell-mobile:hidden" {...tourTarget('cards.topRight')}>
+        <div className="hidden gap-2 lg:flex">
+          <div>
+            <ErrorBoundary>
+              <CoordinatesCard mapRef={mapRef} />
+            </ErrorBoundary>
+          </div>
+          <div>
+            <ErrorBoundary>
+              <SearchCard mapRef={mapRef} />
+            </ErrorBoundary>
+          </div>
         </div>
-        <div>
-          <ErrorBoundary>
-            <SearchCard mapRef={mapRef} />
-          </ErrorBoundary>
+        <div className="flex gap-2 lg:hidden">
+          <CompactCard icon={CrosshairIcon} label="Zoek op coördinaat">
+            {(close) => <CoordinatesCard mapRef={mapRef} onDone={close} />}
+          </CompactCard>
+          <CompactCard icon={SearchIcon} label="Snel navigeren naar groep" groupSearch>
+            {(close) => <SearchCard mapRef={mapRef} onDone={close} />}
+          </CompactCard>
         </div>
       </div>
       {/*
         Centred over the map: right of the 320 px sidebar on desktop (half of its 328 px = 164 px) and under the
-        search / coordinates row; on phones under the offline badge and the attribution button.
+        search / coordinates row (and the offline badge, which sits there too); on phones under the offline badge and the
+        attribution button, held sideways centred on the map right of the sheet column (--sheet-side, BottomSheet). The
+        drawing toolbar and phone toasts start below it while it is shown (lib/top-stack.ts).
+        Eases to its new place when the badge above it comes, goes or wraps.
       */}
-      <div className="pointer-events-none absolute top-10 left-1/2 z-30 -translate-x-1/2 md:top-[52px] md:left-[calc(50%+164px)]">
+      <div
+        style={{ '--pill-top': belowSafeArea(pillTop), '--pill-top-md': `${pillTopMd}px` } as React.CSSProperties}
+        className="pointer-events-none absolute top-(--pill-top) left-1/2 z-30 -translate-x-1/2 transition-[top] duration-300 ease-out motion-reduce:transition-none md:top-(--pill-top-md) md:left-[calc(50%+164px)] shell-mobile:top-(--pill-top) shell-mobile:left-[calc(var(--sheet-side,0px)_+_(100vw_-_var(--sheet-side,0px))_/_2)] shell-mobile:max-w-[calc(100vw_-_var(--sheet-side,0px)_-_32px)]"
+      >
         <ErrorBoundary variant="inline">
           <HappyHourPill />
         </ErrorBoundary>

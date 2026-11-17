@@ -2,16 +2,21 @@ import { lazy, type ReactNode, RefObject, Suspense, useEffect, useLayoutEffect, 
 import { AnimatePresence, motion, useIsPresent, useReducedMotion } from 'motion/react';
 import { useSWRConfig } from 'swr';
 import { MapRef } from '@/components/Map';
+import ChunkBoundary from '@/components/ChunkBoundary';
 import ResponsiveDialog from '@/components/ResponsiveDialog';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Loader2Icon } from 'lucide-react';
 import { useArticles } from '@/hooks/articles.hook';
 import { useAssignments } from '@/hooks/assignments.hook';
 import { useHintBoard } from '@/hooks/hints.hook';
 import { useHasMounted } from '@/hooks/has-mounted.hook';
-import { useIsMobile } from '@/hooks/media.hook';
+import { useIntelAvailable } from '@/hooks/media.hook';
 import { useReadState } from '@/hooks/read-state.hook';
-import { DIALOG_SHELL } from '@/lib/dialog-shell';
+import { useViewFocus } from '@/hooks/view-focus.hook';
+import { DIALOG_SHELL, CARD_TITLE } from '@/lib/dialog-shell';
 import { keepOpenWhileEditing } from '@/lib/inline-edit';
 import { PUSH, buildIntelItems, filterByTab, unreadCount } from '@/lib/intel-window';
+import { loadState, type LoadState } from '@/lib/load-state';
 import { cn } from '@/lib/utils';
 import useIntelStore from '@/stores/intel.store';
 import type { HintCell } from '@/types/HintCell';
@@ -27,21 +32,22 @@ const IntelChat = lazy(loadIntelChat);
 
 /** Desktop window with hints, opdrachten and nieuws (phones keep the sidebar mini grid). */
 export default function IntelDialog({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
-  const isMobile = useIsMobile();
+  // Phones use the Hints page; a laptop window narrowed to phone width (split screen, fine pointer) keeps the window
+  const available = useIntelAvailable();
   const open = useIntelStore((state) => state.open);
   const close = useIntelStore((state) => state.close);
 
   // The store is global: Layout unmounts on /login, and a window left open would pop up again after the next login
   useEffect(() => () => useIntelStore.getState().close(), []);
-  // Shrinking the window to phone size closes it
+  // No longer offered here (e.g. a tablet turned to the phone layout): close it
   useEffect(() => {
-    if (isMobile && useIntelStore.getState().open) close();
-  }, [isMobile, close]);
+    if (!available && useIntelStore.getState().open) close();
+  }, [available, close]);
   useEffect(() => {
-    if (open && !isMobile) void loadIntelChat();
-  }, [open, isMobile]);
+    if (open && available) void loadIntelChat();
+  }, [open, available]);
 
-  if (isMobile) return null;
+  if (!available) return null;
   return (
     <ResponsiveDialog
       open={open}
@@ -49,6 +55,8 @@ export default function IntelDialog({ mapRef }: { mapRef: RefObject<MapRef | nul
       title="Intel"
       description="Hints, opdrachten en nieuws."
       hideHeader
+      // A laptop window narrowed to the phone layout (split screen) keeps the window, not a bottom drawer
+      alwaysDialog
       onEscapeKeyDown={(event) => {
         // Escape inside an inline editor (a hint answer being changed) only cancels the edit
         keepOpenWhileEditing(event);
@@ -75,7 +83,7 @@ export default function IntelDialog({ mapRef }: { mapRef: RefObject<MapRef | nul
 function IntelWindow({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
   const tab = useIntelStore((state) => state.tab);
   const area = useIntelStore((state) => state.area);
-  const { articles } = useArticles();
+  const { articles, error: articlesError, retry: retryArticles } = useArticles();
   const { board } = useHintBoard({ live: true });
   const cells = useMemo(() => board?.cells ?? [], [board]);
   const { assignments } = useAssignments();
@@ -136,11 +144,29 @@ function IntelWindow({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
         {/* No initial={false} here: motion would block the initial animation of everything inside the first view too
             (status card, bars, ring, chat empty state). PushView skips only its own push on the first view instead. */}
         <AnimatePresence custom={direction}>
-          <PushView key={`${view.key}-${view.gen}`} direction={direction} first={!mounted}>
+          <PushView
+            key={`${view.key}-${view.gen}`}
+            direction={direction}
+            first={!mounted}
+            // Focus sat in the view that leaves (now inert): the item's title, or back on the row that opened the item
+            focusTarget={(root) =>
+              selected ? root.querySelector('[data-view-focus]') : (root.querySelector(`[data-id="${shownIdRef.current}"]`) ?? root.querySelector('[data-id]'))
+            }
+          >
             {selected ? (
               <DetailView item={selected} area={area} mapRef={mapRef} entrance={!mounted} />
             ) : (
-              <TimelineView items={shown} allItems={items} cells={cells} tab={tab} memoryRef={timelineScroll} entrance={!mounted} onSelect={select} />
+              <TimelineView
+                items={shown}
+                allItems={items}
+                cells={cells}
+                tab={tab}
+                memoryRef={timelineScroll}
+                entrance={!mounted}
+                onSelect={select}
+                status={loadState(articles, articlesError)}
+                onRetry={retryArticles}
+              />
             )}
           </PushView>
         </AnimatePresence>
@@ -151,13 +177,16 @@ function IntelWindow({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
 
 /**
  * One view, pushed in and out sideways (PUSH, custom = direction). The leaving one sits underneath and takes no input.
- * `first` (read on mount): the window's first view, which arrives with the dialog instead of pushing in.
+ * `first` (read on mount): the window's first view, which arrives with the dialog instead of pushing in. A later view
+ * takes focus (`focusTarget`) when the push dropped it.
  */
-function PushView({ direction, first, children }: { direction: number; first: boolean; children: ReactNode }) {
+function PushView({ direction, first, focusTarget, children }: { direction: number; first: boolean; focusTarget: (root: HTMLDivElement) => Element | null; children: ReactNode }) {
   const isPresent = useIsPresent();
   const [initial] = useState(first ? false : 'enter');
+  const ref = useViewFocus<HTMLDivElement>(!first, focusTarget);
   return (
     <motion.div
+      ref={ref}
       custom={direction}
       variants={PUSH}
       initial={initial}
@@ -180,10 +209,12 @@ interface TimelineViewProps {
   /** Read on mount: the window just opened (the cards stagger in, the status card counts up); later the timeline just comes back */
   entrance: boolean;
   onSelect: (id: number) => void;
+  status: LoadState;
+  onRetry: () => unknown;
 }
 
 /** The scrolling timeline (remembers its scroll position per tab) and the status card. */
-function TimelineView({ items, allItems, cells, tab, memoryRef, entrance, onSelect }: TimelineViewProps) {
+function TimelineView({ items, allItems, cells, tab, memoryRef, entrance, onSelect, status, onRetry }: TimelineViewProps) {
   const ref = useRef<HTMLDivElement>(null);
   // Before the first paint: back to where the list was (same tab only)
   useLayoutEffect(() => {
@@ -206,10 +237,23 @@ function TimelineView({ items, allItems, cells, tab, memoryRef, entrance, onSele
         }}
         className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto [scrollbar-gutter:stable]"
       >
-        <IntelTimeline items={items} tab={tab} entrance={entrance} onSelect={onSelect} />
+        <IntelTimeline items={items} tab={tab} entrance={entrance} onSelect={onSelect} status={status} onRetry={onRetry} />
       </div>
       {/* Stats over every kind, whatever the tab */}
       <StatusCard items={allItems} cells={cells} entrance={entrance} />
+    </div>
+  );
+}
+
+/** The chat card while its chunk loads: same shell and title as IntelChat, a spinner where the conversation goes. */
+function ChatLoadingShell() {
+  return (
+    <div className="flex min-h-0 flex-1 flex-col gap-2.5 rounded-3xl bg-card p-3.5" role="status" aria-label="AI-chat laden">
+      <h3 className={`mx-1 ${CARD_TITLE}`}>Vraag de AI</h3>
+      <div className="grid min-h-0 flex-1 place-items-center">
+        <Loader2Icon className="size-5 animate-spin text-muted-foreground" />
+      </div>
+      <Skeleton className="h-[92px] w-full rounded-(--radius-panel) bg-beheer-row-high" />
     </div>
   );
 }
@@ -227,10 +271,13 @@ function DetailView({ item, area, mapRef, entrance }: { item: IntelItem; area: s
         <IntelDetail item={item} area={area} mapRef={mapRef} />
       </div>
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* While the chunk loads: the chat card's empty shell (IntelChat's root classes) */}
-        <Suspense fallback={<div className="flex min-h-0 flex-1 flex-col rounded-[24px] bg-card p-3.5" />}>
-          <IntelChat item={item} mapRef={mapRef} entrance={!firstPaint} />
-        </Suspense>
+        {/* While the chunk loads: the chat card's shell (IntelChat's root classes) with its header and a spinner; a chunk
+            that can't be fetched shows a reload state in the card */}
+        <ChunkBoundary name="De AI-chat" className="rounded-3xl bg-card">
+          <Suspense fallback={<ChatLoadingShell />}>
+            <IntelChat item={item} mapRef={mapRef} entrance={!firstPaint} />
+          </Suspense>
+        </ChunkBoundary>
       </div>
     </div>
   );

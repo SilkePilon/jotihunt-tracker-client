@@ -28,10 +28,17 @@ export interface TourStep {
   title: string;
   /** Dutch */
   body: string;
+  /** Phone wording when it differs ("Tik op Volgende" instead of "Klik"); stepsForPlatform puts it in `body` */
+  bodyMobile?: string;
   /** Run in order when the step is entered; undone in reverse when it is left */
   actions?: TourAction[];
   /** Overrides the length-based duration */
   durationMs?: number;
+  /**
+   * Doesn't auto-advance: waits for Volgende (the welcome). Using the card here isn't a takeover, so after Volgende the
+   * tour runs on by itself.
+   */
+  waitsForUser?: boolean;
   /** Default 'auto' */
   placement?: Placement;
   /** Only show on this platform */

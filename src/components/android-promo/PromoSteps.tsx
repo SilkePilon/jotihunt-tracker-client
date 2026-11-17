@@ -1,13 +1,14 @@
 // src/components/android-promo/PromoSteps.tsx
 import { useEffect, useEffectEvent, useRef, useState, type ReactNode } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
-import { LinkIcon, TriangleAlertIcon, XIcon } from 'lucide-react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { DownloadIcon, LinkIcon, TriangleAlertIcon } from 'lucide-react';
+import { CloseButton } from '@/components/ui/close-button';
 import { cookiePath, BADGE_COOKIE_DEPTH } from '@/lib/cookie-shape';
-import { appDidNotOpen } from '@/lib/android-promo';
-import { POP_SPRING, SWAP, SWAP_TRANSITION } from '@/lib/motion';
+import { POP_SPRING, SWAP, revealTransition } from '@/lib/motion';
 import type { PromoStep } from '@/stores/android-promo.store';
-import type { PairPhase } from './pair-launch';
+import { useAppOpenCheck, type PairPhase } from './pair-launch';
 import { cn } from '@/lib/utils';
+import { TONAL_HOVER } from '@/lib/tonal-button';
 
 const CHECK = cookiePath(72, BADGE_COOKIE_DEPTH);
 const STEP_INDEX: Partial<Record<PromoStep, number>> = { download: 0, install: 1, pair: 2 };
@@ -17,31 +18,42 @@ export function Stepper({ step }: { step: PromoStep }) {
   return (
     <div className="flex flex-1 gap-1.5">
       {[0, 1, 2].map((i) => (
-        <i key={i} className={cn('h-1 flex-1 rounded-sm transition-colors duration-300', i <= index ? 'bg-primary' : 'bg-beheer-row-high')} />
+        <i key={i} className={cn('h-1 flex-1 rounded-sm transition-colors duration-300', i <= index ? 'bg-primary-fill' : 'bg-beheer-row-high')} />
       ))}
     </div>
   );
 }
 
-/** The way out of every step after the intro: the hero's round X, on the plain step background */
+/** The way out of every step after the intro: the shared close button, a tonal step up from the window background */
 export function StepClose({ onClose }: { onClose: () => void }) {
-  return (
-    <button type="button" aria-label="Sluiten" onClick={onClose} className="grid size-[34px] shrink-0 place-items-center rounded-full bg-beheer-row-high text-muted-foreground transition-colors hover:text-foreground">
-      <XIcon className="size-5" />
-    </button>
-  );
+  return <CloseButton onClick={onClose} className={`bg-beheer-row-high ${TONAL_HOVER}`} />;
 }
 
-export function DownloadingStep({ onDone }: { onDone: () => void }) {
-  useEffect(() => {
-    const id = window.setTimeout(onDone, 1200);
-    return () => clearTimeout(id);
-  }, [onDone]);
+/**
+ * After the download tap. The browser gives no reliable "download finished" signal, so no fake progress: say it started,
+ * wait for an explicit Verder, and keep a real download link around for when nothing happened.
+ */
+export function DownloadingStep({ href, onNext }: { href: string; onNext: () => void }) {
   return (
-    <div className="flex items-center gap-3 py-2">
-      <span className="size-[22px] animate-spin rounded-full border-[3px] border-beheer-row-high border-t-primary" />
-      <b>Downloaden…</b>
-    </div>
+    <>
+      <div className="flex items-center gap-3 py-1">
+        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-primary-container text-on-primary-container">
+          <DownloadIcon className="size-5" />
+        </span>
+        <div className="min-w-0">
+          <b className="block text-[17px]">Download gestart</b>
+          <span className="text-body text-muted-foreground">Staat hij klaar in je meldingen of Downloads? Ga dan verder.</span>
+        </div>
+      </div>
+      <div className="mt-3.5 flex flex-col gap-2">
+        <button type="button" onClick={onNext} className="h-12 rounded-xl bg-primary-container font-semibold text-on-primary-container outline-none focus-visible:ring-[3px] focus-visible:ring-ring">
+          Verder
+        </button>
+        <a href={href} download className="grid h-10 place-items-center rounded-xl text-body font-semibold text-muted-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring">
+          Niets gebeurd? Opnieuw downloaden
+        </a>
+      </div>
+    </>
   );
 }
 
@@ -49,20 +61,20 @@ export function InstallStep({ onPair, onRedownload }: { onPair: () => void; onRe
   return (
     <>
       <b className="block text-[17px]">Installeer de app</b>
-      <p className="mb-3 mt-1 text-[13.5px] text-muted-foreground">
+      <p className="mb-3 mt-1 text-body text-muted-foreground">
         Tik op de download-melding en dan op <b className="text-foreground">Installeren</b>.
       </p>
-      <div className="flex gap-2.5 rounded-[14px] bg-[color-mix(in_oklab,#f59e0b_16%,var(--card))] px-3 py-2.5 text-[12.5px]">
-        <TriangleAlertIcon className="size-5 shrink-0 text-amber-500" />
+      <div className="flex gap-2.5 rounded-(--radius-tile) bg-warn-container px-3 py-2.5 text-caption">
+        <TriangleAlertIcon className="size-5 shrink-0 text-status-warn-text" />
         <div>
           Vraagt Android om toestemming? Kies <b>Instellingen → Toestaan van deze bron</b> voor Chrome, en ga terug.
         </div>
       </div>
       <div className="mt-3.5 flex flex-col gap-2">
-        <button type="button" onClick={onPair} className="flex h-12 items-center justify-center gap-2 rounded-xl bg-primary-container font-semibold text-on-primary-container">
+        <button type="button" onClick={onPair} className="flex h-12 items-center justify-center gap-2 rounded-xl bg-primary-container font-semibold text-on-primary-container outline-none focus-visible:ring-[3px] focus-visible:ring-ring">
           <LinkIcon className="size-5" /> Geïnstalleerd, koppel nu
         </button>
-        <button type="button" onClick={onRedownload} className="h-10 rounded-xl text-[13.5px] font-semibold text-muted-foreground">
+        <button type="button" onClick={onRedownload} className="h-10 rounded-xl text-body font-semibold text-muted-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring">
           Opnieuw downloaden
         </button>
       </div>
@@ -73,7 +85,7 @@ export function InstallStep({ onPair, onRedownload }: { onPair: () => void; onRe
 /**
  * Shows a pairing attempt (see usePairLaunch in ./pair-launch) and waits for a new app device on the account. Still visible 2.5 s
  * after navigating = the app didn't open. Not the tracker's `connected`: another client (Traccar Client) may
- * already be connected, which would show "Gekoppeld!" straight away.
+ * already be connected, which would show "App gekoppeld" straight away.
  */
 export function PairStep({ phase, startedAt, onPhase, onRetry, deviceCount, refresh, onPaired, onBack }: {
   phase: PairPhase;
@@ -92,7 +104,6 @@ export function PairStep({ phase, startedAt, onPhase, onRetry, deviceCount, refr
   const baseline = useRef<number | undefined>(undefined);
   const paired = useEffectEvent(onPaired);
   const reload = useEffectEvent(refresh);
-  const setPhase = useEffectEvent(onPhase);
   // Success = the account gained an app device since this step started
   useEffect(() => {
     if (deviceCount === undefined) return;
@@ -112,20 +123,7 @@ export function PairStep({ phase, startedAt, onPhase, onRetry, deviceCount, refr
     };
   }, []);
   // Only once the deep link was opened: no app within 2.5 s = failed; back from the app = waiting for it
-  useEffect(() => {
-    if (phase !== 'opening' || startedAt === null) return;
-    const id = window.setInterval(() => {
-      if (appDidNotOpen(startedAt, Date.now(), document.visibilityState === 'visible')) setPhase('failed');
-    }, 250);
-    const onVisible = () => {
-      if (document.visibilityState === 'visible') setPhase('waiting');
-    };
-    document.addEventListener('visibilitychange', onVisible);
-    return () => {
-      clearInterval(id);
-      document.removeEventListener('visibilitychange', onVisible);
-    };
-  }, [phase, startedAt]);
+  useAppOpenCheck(phase, startedAt, onPhase);
 
   return (
     <AnimatePresence mode="wait" initial={false}>
@@ -133,21 +131,21 @@ export function PairStep({ phase, startedAt, onPhase, onRetry, deviceCount, refr
         {phase === 'failed' || phase === 'error' ? (
           <div className="flex flex-col gap-2 py-2 text-center">
             <b>{phase === 'failed' ? 'App ging niet open?' : 'Kon geen koppelcode maken'}</b>
-            <span className="text-[13px] text-muted-foreground">{phase === 'failed' ? 'Installeer hem eerst.' : 'Controleer je verbinding.'}</span>
+            <span className="text-body text-muted-foreground">{phase === 'failed' ? 'Installeer hem eerst.' : 'Controleer je verbinding.'}</span>
             <div className="mt-2 flex gap-2">
               {phase === 'failed' && (
-                <button type="button" onClick={onBack} className="h-11 flex-1 rounded-xl bg-beheer-row-high font-semibold">Terug</button>
+                <button type="button" onClick={onBack} className="h-11 flex-1 rounded-xl bg-beheer-row-high font-semibold outline-none focus-visible:ring-[3px] focus-visible:ring-ring">Terug</button>
               )}
-              <button type="button" onClick={onRetry} className="h-11 flex-1 rounded-xl bg-primary-container font-semibold text-on-primary-container">Opnieuw proberen</button>
+              <button type="button" onClick={onRetry} className="h-11 flex-1 rounded-xl bg-primary-container font-semibold text-on-primary-container outline-none focus-visible:ring-[3px] focus-visible:ring-ring">Opnieuw proberen</button>
             </div>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-3 py-4">
             <span className="size-[22px] animate-spin rounded-full border-[3px] border-beheer-row-high border-t-primary" />
             <b>{phase === 'opening' ? 'App openen…' : 'Wachten op de app…'}</b>
-            <span className="text-[12.5px] text-muted-foreground">De app opent vanzelf</span>
+            <span className="text-caption text-muted-foreground">De app opent vanzelf</span>
             {phase === 'waiting' && (
-              <button type="button" onClick={onRetry} className="h-10 rounded-xl px-4 text-[13.5px] font-semibold text-muted-foreground">
+              <button type="button" onClick={onRetry} className="h-10 rounded-xl px-4 text-body font-semibold text-muted-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring">
                 Opnieuw proberen
               </button>
             )}
@@ -158,10 +156,15 @@ export function PairStep({ phase, startedAt, onPhase, onRetry, deviceCount, refr
   );
 }
 
-/** Animates its height to follow the content (measured), so the dialog grows and shrinks smoothly between steps */
-export function AutoHeight({ children }: { children: ReactNode }) {
+/**
+ * Animates its height to follow the content (measured), so the dialog grows and shrinks smoothly between steps. Reduced
+ * motion: the height settles at once and only the step's fade remains. `scrollClassName` caps the measured box (it
+ * scrolls inside), so the animated wrapper never flashes a scrollbar mid-resize.
+ */
+export function AutoHeight({ children, scrollClassName }: { children: ReactNode; scrollClassName?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState<number | 'auto'>('auto');
+  const reduced = useReducedMotion() ?? false;
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -170,8 +173,10 @@ export function AutoHeight({ children }: { children: ReactNode }) {
     return () => observer.disconnect();
   }, []);
   return (
-    <motion.div className="overflow-hidden" initial={false} animate={{ height }} transition={SWAP_TRANSITION}>
-      <div ref={ref}>{children}</div>
+    <motion.div className="overflow-hidden" initial={false} animate={{ height }} transition={revealTransition(reduced, 'enter')}>
+      <div ref={ref} className={scrollClassName}>
+        {children}
+      </div>
     </motion.div>
   );
 }
@@ -184,10 +189,14 @@ export function DoneStep({ onClose }: { onClose: () => void }) {
           <path d={CHECK} fill="#22c55e" />
           <path d="M22.3 36.7L31.7 46.1L49.7 27.4" fill="none" stroke="#fff" strokeWidth="6.5" strokeLinecap="round" strokeLinejoin="round" />
         </motion.svg>
-        <b className="mt-2 text-lg">Gekoppeld!</b>
-        <span className="text-[13px] text-muted-foreground">Je tracker staat nu in de app · live</span>
+        <b className="mt-2 text-lg">App gekoppeld</b>
+        {/* Pairing only adds the device; the tracker is live once the app has its permissions and tracking is started */}
+        <span className="text-body text-muted-foreground">
+          Rond in de app <b className="text-foreground">Bijna klaar</b> af (locatie: <b className="text-foreground">Altijd toestaan</b>) en tik op{' '}
+          <b className="text-foreground">Start tracking</b>. Dan sta je live op de kaart.
+        </span>
       </div>
-      <button type="button" onClick={onClose} className="mt-3.5 h-12 w-full rounded-xl bg-primary-container font-semibold text-on-primary-container">
+      <button type="button" onClick={onClose} className="mt-3.5 h-12 w-full rounded-xl bg-primary-container font-semibold text-on-primary-container outline-none focus-visible:ring-[3px] focus-visible:ring-ring">
         Klaar
       </button>
     </>

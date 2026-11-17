@@ -8,7 +8,8 @@ import {
   normalizeHuntLocation,
   normalizeSyncedHunt,
   syncedHuntForMarker,
-  huntEventTime, huntEventsPath, huntEventText, huntSyncLine, huntSyncSummary, huntSyncView, resultBarShares } from './hunt-sync';
+  HUNT_SYNC_TITLE,
+  huntEventTime, huntEventsPath, huntEventText, huntEventRowLabel, huntSyncLine, huntSyncSummary, huntSyncView, resultBarShares } from './hunt-sync';
 
 const NOW = Date.parse('2026-10-17T21:45:00Z');
 const ago = (ms: number) => new Date(NOW - ms).toISOString();
@@ -50,6 +51,11 @@ describe('huntSyncView', () => {
   });
 });
 
+test('a failing scrape is titled as failed, not as still syncing', () => {
+  expect(HUNT_SYNC_TITLE.failing).toBe('Sync mislukt');
+  expect(HUNT_SYNC_TITLE.syncing).toBe('Synchroniseert…');
+});
+
 describe('huntSyncLine', () => {
   test('synced', () => {
     expect(huntSyncLine(status(), NOW)).toBe('jotihunt.nl · 12 s geleden · 9 hunts · 70 pnt');
@@ -77,6 +83,11 @@ describe('event text', () => {
     expect(huntEventText(event({ area: 'delta', type: 'approved', points: 10 }))).toBe('Delta goedgekeurd +10');
     expect(huntEventText(event({ area: 'echo', type: 'rejected' }))).toBe('Echo afgekeurd');
     expect(huntEventText(event({ area: 'delta', type: 'points', points: 15 }))).toBe('Delta punten aangepast · 15');
+  });
+
+  test('row label starts with the visible time and line', () => {
+    expect(huntEventRowLabel(event({ area: 'delta', type: 'approved', points: 10 }), '21:43', true)).toBe('21:43 Delta goedgekeurd +10 — toon op de kaart');
+    expect(huntEventRowLabel(event(), '21:43', false)).toBe('21:43 Alpha binnengekomen, locatie volgt');
   });
 
   test('parts keep the points tag apart', () => {

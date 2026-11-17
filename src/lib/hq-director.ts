@@ -26,13 +26,13 @@ export type LngLat = [number, number];
 export { foxGroup, type FoxGroup };
 
 export const GROUP_LABEL = FOX_GROUP_LABEL;
-/** Text colour per fox group on the HQ screen. */
+/** Text colour per fox group on the HQ screen: the fox-* status tokens (light and dark in index.css). */
 export const GROUP_TEXT_CLASS: Record<FoxGroup, string> = {
-  green: 'text-green-700 dark:text-green-400',
-  orange: 'text-orange-700 dark:text-orange-300',
-  ov: 'text-indigo-700 dark:text-indigo-300',
-  red: 'text-red-700 dark:text-red-300',
-  cooldown: 'text-blue-700 dark:text-blue-300',
+  green: 'text-fox-ok',
+  orange: 'text-fox-warn',
+  ov: 'text-fox-ov',
+  red: 'text-fox-error',
+  cooldown: 'text-fox-cooldown',
 };
 
 /** One area's fox on the HQ screen. `key` is the lowercase area name. */

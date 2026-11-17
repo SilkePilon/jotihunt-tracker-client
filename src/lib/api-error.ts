@@ -27,3 +27,12 @@ export function apiErrorMessage(error: unknown, fallback: string): string {
   const body = error.response?.data;
   return text(body?.message) ?? text(body?.errors?.[0]?.msg) ?? fallback;
 }
+
+/**
+ * No answer came: offline, server unreachable or a timeout (an axios error without a response). Also a plain
+ * TypeError from fetch ("Failed to fetch"), as the AI chat and passkey calls use fetch instead of axios.
+ */
+export function isNetworkError(error: unknown): boolean {
+  if (isAxiosError(error)) return !error.response;
+  return error instanceof TypeError && /fetch|network|load failed/i.test(error.message);
+}

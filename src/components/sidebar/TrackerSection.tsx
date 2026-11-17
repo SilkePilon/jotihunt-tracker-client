@@ -13,7 +13,7 @@ import SidebarSection from './SidebarSection';
  * open when it connects; the user collapses it (persisted like the other sections).
  */
 export default function TrackerSection() {
-  const { status, isError, setVehicle } = useTrackerStatus();
+  const { status, isError, setVehicle, retry } = useTrackerStatus();
   const storedOpen = useSidebarStore((state) => state.openSections.tracking);
   const setSectionOpen = useSidebarStore((state) => state.setSectionOpen);
   const [guideOpen, setGuideOpen] = useState(false);
@@ -55,6 +55,7 @@ export default function TrackerSection() {
         <TrackerCard
           status={status}
           isError={isError}
+          onRetry={retry}
           savingVehicle={savingVehicle}
           onVehicleChange={changeVehicle}
           onOpenGuide={() => setGuideOpen(true)}

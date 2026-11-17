@@ -6,12 +6,14 @@ import { readFileSync } from 'fs';
 import path from 'path';
 import { viteEnvs } from 'vite-envs';
 import { VitePWA, VitePWAOptions } from 'vite-plugin-pwa';
+import { MAP_RUNTIME_CACHING } from './src/lib/map-tile-cache';
 
 const pwaManifest: Partial<VitePWAOptions> = {
   // main.tsx asks before reloading into a new version
   registerType: 'prompt',
   workbox: {
-    globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+    // mp3: notification sounds must play offline; webp: login background and layer previews
+    globPatterns: ['**/*.{js,css,html,ico,png,svg,mp3,webp}'],
     // The store screenshots are only for the install dialog, never needed offline
     globIgnores: ['**/screenshot_*'],
     // The map chunk (maplibre) is larger than workbox's 2 MB default
@@ -19,6 +21,8 @@ const pwaManifest: Partial<VitePWAOptions> = {
     importScripts: ['push-sw.js'],
     // The API shares the origin under /api (https://jotihunt.silkepilon.dev/api); its URLs (e.g. the APK download) are never app routes
     navigateFallbackDenylist: [/^\/api(\/|$)/],
+    // Base-map tiles, glyphs and sprites (OpenFreeMap, PDOK) stay drawable offline; /api is never cached (map-tile-cache.ts)
+    runtimeCaching: MAP_RUNTIME_CACHING,
     // Would follow build.sourcemap but reference the maps from sw.js; Sentry doesn't run in the service worker
     sourcemap: false,
   },
@@ -26,6 +30,13 @@ const pwaManifest: Partial<VitePWAOptions> = {
     name: 'Jotihunt Tracker',
     short_name: 'Jotihunt Tracker',
     description: 'Volg de Jotihunt in real-time met de Jotihunt Tracker!',
+    // A stable identity (installs survive a start_url change) and Dutch like index.html
+    id: '/',
+    lang: 'nl',
+    // Without these vite-plugin-pwa fills in its own green theme colour: the title bar and splash screen match the light
+    // theme instead (index.html's light theme-color meta and --background)
+    theme_color: '#ffffff',
+    background_color: '#ffffff',
     // Lets Chrome's getInstalledRelatedApps() see the Android app (the APK also needs an asset statement for this site)
     related_applications: [{ platform: 'play', url: 'https://play.google.com/store/apps/details?id=nl.jotihunt.tracker', id: 'nl.jotihunt.tracker' }],
     prefer_related_applications: false,
@@ -50,6 +61,20 @@ const pwaManifest: Partial<VitePWAOptions> = {
         sizes: '512x512',
         type: 'image/png',
         purpose: 'maskable',
+      },
+    ],
+    // Long-press menu on the home-screen icon: straight to a section (lib/launch-shortcut.ts reads ?open=)
+    shortcuts: [
+      {
+        name: 'Hint registreren',
+        short_name: 'Hint',
+        url: '/?open=hintEntry',
+        icons: [{ src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' }],
+      },
+      {
+        name: 'Vossen',
+        url: '/?open=foxes',
+        icons: [{ src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' }],
       },
     ],
     // Demo-mode data, light and dark (the install dialog shows them as a carousel)
@@ -134,9 +159,11 @@ export default defineConfig({
     inconsistentCjsInterop: true,
   },
   resolve: {
-    alias: {
-      '@': path.resolve(import.meta.dirname, './src'),
-    },
+    alias: [
+      { find: '@', replacement: path.resolve(import.meta.dirname, './src') },
+      // react-auth-kit only needs a BehaviorSubject; the full CommonJS rxjs build cost ~30 KB gzip in the entry chunk
+      { find: /^rxjs$/, replacement: path.resolve(import.meta.dirname, './src/lib/rxjs-shim.ts') },
+    ],
   },
   preview: {
     port: 80,

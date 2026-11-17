@@ -35,8 +35,8 @@ export const usePredictionSetting = () => {
 
 export const usePredictions = () => {
   const { enabled } = usePredictionSetting();
-  const { data, error } = useAuthSWR<Prediction[]>(enabled === false ? null : '/predictions', { refreshInterval: PREDICTION_REFRESH_MS });
-  return { predictions: asList(data), isLoading: !error && !data, isError: error };
+  const { data, error, mutate } = useAuthSWR<Prediction[]>(enabled === false ? null : '/predictions', { refreshInterval: PREDICTION_REFRESH_MS });
+  return { predictions: asList(data), isLoading: !error && !data, isError: error, retry: () => mutate() };
 };
 
 export const useVisits = () => {

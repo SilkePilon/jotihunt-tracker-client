@@ -8,7 +8,8 @@ import { apiErrorMessage } from '@/lib/api-error';
 import { classifyPasskeyError, PASSKEY_MESSAGES } from '@/lib/passkey';
 import InlineError from '@/components/InlineError';
 import { cn } from '@/lib/utils';
-import { DIALOG_SHELL } from '@/lib/dialog-shell';
+import { busyProps } from '@/lib/busy';
+import { DIALOG_ACTION, DIALOG_ACTION_CANCEL, DIALOG_SHELL } from '@/lib/dialog-shell';
 
 interface RenamePasskeyDialogProps {
   open: boolean;
@@ -54,7 +55,7 @@ export default function RenamePasskeyDialog({ open, name, onOpenChange, onSave }
 
   return (
     <Dialog open={open} onOpenChange={(next) => !saving && onOpenChange(next)}>
-      <DialogContent className={cn(DIALOG_SHELL, 'bg-card sm:max-w-sm')}>
+      <DialogContent className={cn(DIALOG_SHELL, 'bg-card p-5 sm:max-w-sm')}>
         <form onSubmit={submit} className="flex flex-col gap-4">
           <DialogHeader>
             <DialogTitle>Passkey hernoemen</DialogTitle>
@@ -70,11 +71,11 @@ export default function RenamePasskeyDialog({ open, name, onOpenChange, onSave }
               )}
             </Reveal>
           </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
+          <DialogFooter className="flex-row justify-end">
+            <Button type="button" variant="outline" className={DIALOG_ACTION_CANCEL} onClick={() => !saving && onOpenChange(false)} aria-disabled={saving || undefined}>
               Annuleren
             </Button>
-            <Button type="submit" disabled={saving || !trimmed}>
+            <Button type="submit" className={DIALOG_ACTION} disabled={!trimmed} {...busyProps(saving)}>
               {saving && <Loader2Icon className="animate-spin" />}
               Opslaan
             </Button>

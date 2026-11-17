@@ -7,11 +7,11 @@ import { asList } from '@/lib/response-shape';
 const TRACKER_REFRESH_MS = 3000;
 
 export const useDevices = () => {
-  const { data: positions, error: positionsError } = useAuthSWR<Position[]>('/tracker/positions', {
+  const { data: positions, error: positionsError, mutate: mutatePositions } = useAuthSWR<Position[]>('/tracker/positions', {
     refreshInterval: TRACKER_REFRESH_MS,
     dedupingInterval: TRACKER_REFRESH_MS,
   });
-  const { data: devices, error: devicesError } = useAuthSWR<Device[]>('/tracker/devices', {
+  const { data: devices, error: devicesError, mutate: mutateDevices } = useAuthSWR<Device[]>('/tracker/devices', {
     refreshInterval: TRACKER_REFRESH_MS,
     dedupingInterval: TRACKER_REFRESH_MS,
   });
@@ -21,5 +21,6 @@ export const useDevices = () => {
     devices: asList(devices),
     isLoading: !(positionsError || devicesError) && !(positions && devices),
     isError: positionsError || devicesError,
+    retry: () => Promise.all([mutatePositions(), mutateDevices()]),
   };
 };

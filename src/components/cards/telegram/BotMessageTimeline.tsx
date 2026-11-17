@@ -19,11 +19,11 @@ export default function BotMessageTimeline({ messages }: { messages: BotMessage[
           <div className="flex min-w-0 flex-1 flex-col">
             <div className="flex items-baseline justify-between gap-2">
               <span className="text-xs font-semibold">{botMessageStyle(message.kind).label}</span>
-              <time dateTime={message.receivedAt} className="shrink-0 text-[11px] text-muted-foreground tabular-nums">
+              <time dateTime={message.receivedAt} className="shrink-0 text-xs text-muted-foreground tabular-nums desk:text-label">
                 {formatClock(message.receivedAt)}
               </time>
             </div>
-            <p className="text-[13px] leading-snug whitespace-pre-line break-words text-muted-foreground">{message.text}</p>
+            <p className="text-body leading-snug whitespace-pre-line break-words text-muted-foreground">{message.text}</p>
           </div>
         </li>
       ))}

@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import {
   CircleCheckIcon,
   DownloadIcon,
@@ -11,10 +12,12 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import NewTabHint from '@/components/NewTabHint';
+import ResponsiveDialog from '@/components/ResponsiveDialog';
 import { useIsMobile } from '@/hooks/media.hook';
 import { DIALOG_SHELL } from '@/lib/dialog-shell';
 import { cn } from '@/lib/utils';
+import { SWAP } from '@/lib/motion';
 import { TRACCAR_APP_STORE_URL, TRACCAR_PLAY_STORE_URL } from '@/lib/tracker';
 import type { TrackerMe } from '@/types/Tracker';
 import TrackerQrCode from './TrackerQrCode';
@@ -24,7 +27,7 @@ type ConfiguredTracker = Extract<TrackerMe, { configured: true }>;
 function Step({ number, icon: Icon, title, children }: { number: number; icon: LucideIcon; title: string; children?: ReactNode }) {
   return (
     <li className="flex gap-3">
-      <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
+      <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary-container text-xs font-semibold text-on-primary-container">
         {number}
       </span>
       <div className="flex min-w-0 flex-1 flex-col gap-2 pt-0.5">
@@ -51,23 +54,31 @@ export default function TrackerGuideDialog({ open, onOpenChange, status }: Track
   const firstCommonStep = isMobile ? 3 : 4;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={cn(DIALOG_SHELL, 'max-h-[90dvh] overflow-y-auto bg-card sm:max-w-md')} data-tracker-guide>
-        <DialogHeader>
-          <DialogTitle>Je telefoon koppelen</DialogTitle>
-          <DialogDescription>Zo deelt je telefoon zijn locatie met het team. Dit hoef je maar één keer te doen.</DialogDescription>
-        </DialogHeader>
+    // Phones: the bottom drawer like the other dialogs (safe areas, Back closes it); desktop: the card dialog
+    <ResponsiveDialog
+      open={open}
+      onClose={() => onOpenChange(false)}
+      title="Je telefoon koppelen"
+      description="Zo deelt je telefoon zijn locatie met het team. Dit hoef je maar één keer te doen."
+      compact
+      className={cn(DIALOG_SHELL, 'bg-card p-5 sm:max-w-md')}
+      drawerClassName="bg-card"
+    >
+      {/* The steps scroll on short screens; the 4px inset keeps the buttons' focus rings inside the clip */}
+      <div className="-m-1 min-h-0 flex-1 overflow-y-auto overscroll-contain p-1" data-tracker-guide>
         <ol className="flex flex-col gap-4">
           <Step number={1} icon={DownloadIcon} title='Installeer de app "Traccar Client".'>
             <div className="flex gap-2">
               <Button asChild variant="outline" size="sm" className="flex-1">
                 <a href={TRACCAR_PLAY_STORE_URL} target="_blank" rel="noreferrer">
                   Google Play
+                  <NewTabHint />
                 </a>
               </Button>
               <Button asChild variant="outline" size="sm" className="flex-1">
                 <a href={TRACCAR_APP_STORE_URL} target="_blank" rel="noreferrer">
                   App Store
+                  <NewTabHint />
                 </a>
               </Button>
             </div>
@@ -98,25 +109,29 @@ export default function TrackerGuideDialog({ open, onOpenChange, status }: Track
           />
           <Step number={firstCommonStep + 1} icon={ToggleRightIcon} title='Zet de schakelaar "Continu volgen" (Service status) aan.' />
           <Step number={firstCommonStep + 2} icon={CircleCheckIcon} title='Wacht tot hieronder "Verbonden" verschijnt.'>
+            {/* Always mounted, so screen readers announce the change to "Verbonden"; the two lines cross-fade */}
             <div
-              className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm"
+              role="status"
+              className="rounded-2xl bg-beheer-row px-3 py-2 text-sm"
               data-tracker-live-status={status.connected ? 'connected' : 'waiting'}
             >
-              {status.connected ? (
-                <>
-                  <CircleCheckIcon className="size-4 text-green-500" />
-                  <span className="font-medium text-green-600 dark:text-green-500">Verbonden</span>
-                </>
-              ) : (
-                <>
-                  <LoaderCircleIcon className="size-4 animate-spin text-muted-foreground" />
-                  <span className="text-muted-foreground">Wachten op de eerste locatie…</span>
-                </>
-              )}
+              <AnimatePresence mode="wait" initial={false}>
+                {status.connected ? (
+                  <motion.span key="connected" {...SWAP} className="flex items-center gap-2">
+                    <CircleCheckIcon aria-hidden className="size-4 text-fox-ok" />
+                    <span className="font-medium text-fox-ok">Verbonden</span>
+                  </motion.span>
+                ) : (
+                  <motion.span key="waiting" {...SWAP} className="flex items-center gap-2">
+                    <LoaderCircleIcon aria-hidden className="size-4 animate-spin text-muted-foreground" />
+                    <span className="text-muted-foreground">Wachten op de eerste locatie…</span>
+                  </motion.span>
+                )}
+              </AnimatePresence>
             </div>
           </Step>
         </ol>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </ResponsiveDialog>
   );
 }

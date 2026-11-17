@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import type { Marker } from '@/types/Marker';
 import { MarkerType } from '@/types/MarkerType';
-import { filterMarkers, groupMarkersByArea, markerSplitTime } from './markers';
+import { filterMarkers, groupMarkersByArea, huntDays, latestAreaMarker, latestMarkerLabel, markerNoun, markerSaveLabel, markerSavedToast, markerVerb, markerDeleteDescription, markerMissingPick, markerSplitTime, markerTimeLabel } from './markers';
 
 function marker(id: string, area: string, time: string, type = MarkerType.Hint): Marker {
   return { _id: id, area, time: time as unknown as Date, type, location: { type: 'Point', coordinates: [5.9, 52] } };
@@ -56,5 +56,114 @@ describe('groupMarkersByArea', () => {
 
   test('empty input gives no groups', () => {
     expect(groupMarkersByArea([])).toEqual({});
+  });
+});
+
+describe('markerDeleteDescription', () => {
+  test('names the type, area and time', () => {
+    expect(markerDeleteDescription(marker('1', 'alpha', '2026-10-17T20:00:00Z', MarkerType.Hunt), '22:00')).toBe(
+      'De hunt van Alpha (22:00) verdwijnt voor iedereen van de kaart. Dit kan niet ongedaan worden gemaakt.',
+    );
+  });
+});
+
+describe('markerTimeLabel', () => {
+  // Saturday 17 October 2026, 14:00 in Amsterdam (CEST, UTC+2)
+  const now = Date.parse('2026-10-17T12:00:00Z');
+
+  test('under 2 hours old: clock time and age to the minute', () => {
+    expect(markerTimeLabel('2026-10-17T11:15:00Z', now)).toBe('13:15 · 45 min geleden');
+    expect(markerTimeLabel(new Date('2026-10-17T10:48:00Z'), now)).toBe('12:48 · 1 u 12 min geleden');
+    expect(markerTimeLabel('2026-10-17T11:00:00Z', now)).toBe('13:00 · 1 u geleden');
+    expect(markerTimeLabel('2026-10-17T11:59:30Z', now)).toBe('13:59 · zojuist');
+    expect(markerTimeLabel('2026-10-17T10:00:01Z', now)).toBe('12:00 · 1 u 59 min geleden');
+  });
+
+  test('2 hours or older today: only the clock time', () => {
+    expect(markerTimeLabel('2026-10-17T10:00:00Z', now)).toBe('12:00');
+  });
+
+  test('older today: the clock time', () => {
+    expect(markerTimeLabel('2026-10-17T08:12:00Z', now)).toBe('10:12');
+  });
+
+  test('another day: weekday and clock time', () => {
+    expect(markerTimeLabel('2026-10-16T21:30:00Z', now)).toBe('vr 23:30');
+  });
+
+  test('in the future: the clock time', () => {
+    expect(markerTimeLabel('2026-10-17T12:30:00Z', now)).toBe('14:30');
+  });
+});
+
+describe('latestAreaMarker', () => {
+  test('the newest hint or hunt marker of the area', () => {
+    expect(latestAreaMarker(markers, 'Alpha')?._id).toBe('a');
+    const withHunt = [...markers, marker('d', 'Alpha', new Date(2026, 9, 17, 23, 0).toISOString(), MarkerType.Hunt)];
+    expect(latestAreaMarker(withHunt, 'Alpha')?._id).toBe('d');
+  });
+  test('spots and other areas do not count', () => {
+    const withSpot = [...markers, marker('s', 'Alpha', new Date(2026, 9, 18, 1, 0).toISOString(), MarkerType.Spot)];
+    expect(latestAreaMarker(withSpot, 'Alpha')?._id).toBe('a');
+    expect(latestAreaMarker(markers, 'Delta')).toBeUndefined();
+  });
+  test('no markers yet', () => expect(latestAreaMarker(undefined, 'Alpha')).toBeUndefined());
+  test('the button says what it lands on', () => {
+    expect(latestMarkerLabel({ type: MarkerType.Hunt })).toBe('Naar laatste hunt');
+    expect(latestMarkerLabel({ type: MarkerType.Hint })).toBe('Naar laatste hint');
+  });
+});
+
+describe('huntDays', () => {
+  test('keeps the last day when the hunt ends earlier in the day than it started', () => {
+    const days = huntDays(new Date(2026, 9, 17, 9, 0), new Date(2026, 9, 18, 8, 0));
+    expect(days.map((day) => day.getDate())).toEqual([17, 18]);
+  });
+  test('one day per calendar day, at the start time', () => {
+    const days = huntDays(new Date(2026, 9, 17, 9, 0), new Date(2026, 9, 18, 17, 0));
+    expect(days.map((day) => [day.getDate(), day.getHours()])).toEqual([
+      [17, 9],
+      [18, 9],
+    ]);
+  });
+  test('a start and end on the same day give that day', () => {
+    expect(huntDays(new Date(2026, 9, 17, 9, 0), new Date(2026, 9, 17, 18, 0))).toHaveLength(1);
+  });
+});
+
+test('markerNoun', () => {
+  expect(markerNoun(MarkerType.Hunt)).toBe('Hunt');
+  expect(markerNoun(MarkerType.Spot)).toBe('Spot');
+  expect(markerNoun(MarkerType.Hint)).toBe('Hint');
+});
+
+describe('markerMissingPick', () => {
+  const areas = ['alpha', 'bravo'];
+  const day = new Date('2026-10-17T09:00:00');
+  test('names the first missing pick', () => {
+    expect(markerMissingPick({ area: '', day, time: day }, areas)).toBe('Kies eerst een deelgebied.');
+    expect(markerMissingPick({ area: 'alpha', day: new Date(NaN), time: day }, areas)).toBe('Kies eerst een dag.');
+    expect(markerMissingPick({ area: 'alpha', day, time: new Date(NaN) }, areas)).toBe('Vul eerst een tijd in.');
+  });
+  test('null once everything is picked', () => {
+    expect(markerMissingPick({ area: 'bravo', day, time: day }, areas)).toBeNull();
+  });
+});
+
+describe('Hunt / Spot dialog copy', () => {
+  test('a Hunt is marked, a Spot registered', () => {
+    expect(markerVerb(MarkerType.Hunt).busy).toBe('Markeren…');
+    expect(markerVerb(MarkerType.Spot).busy).toBe('Registreren…');
+    expect(markerSavedToast(MarkerType.Hunt)).toBe('Hunt gemarkeerd op de kaart');
+    expect(markerSavedToast(MarkerType.Spot)).toBe('Spot geregistreerd');
+  });
+
+  test('the main button names the type, the prefilled area and a retry', () => {
+    expect(markerSaveLabel(MarkerType.Hunt, { resave: false, area: 'Alpha' })).toBe('Hunt Alpha markeren');
+    expect(markerSaveLabel(MarkerType.Hunt, { resave: false })).toBe('Hunt markeren');
+    expect(markerSaveLabel(MarkerType.Spot, { resave: false, area: 'Alpha' })).toBe('Spot Alpha registreren');
+    expect(markerSaveLabel(MarkerType.Spot, { resave: false })).toBe('Registreren');
+    expect(markerSaveLabel(MarkerType.Hunt, { resave: true, area: 'Alpha' })).toBe('Opnieuw markeren');
+    expect(markerSaveLabel(MarkerType.Spot, { resave: true })).toBe('Opnieuw registreren');
   });
 });

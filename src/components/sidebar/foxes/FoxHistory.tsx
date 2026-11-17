@@ -1,40 +1,56 @@
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Fragment, type RefObject, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
-import { EyeIcon, EyeOffIcon, RotateCwIcon } from 'lucide-react';
+import { EyeIcon, EyeOffIcon, LockIcon, MapPinIcon } from 'lucide-react';
+import type { MapRef } from '@/components/Map';
 import AutoHeight from '@/components/motion/AutoHeight';
+import LoadError from '@/components/LoadError';
+import Reveal from '@/components/motion/Reveal';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAreaHistory } from '@/hooks/area-history.hook';
 import { useEdition } from '@/hooks/edition.hook';
+import { useMarkers } from '@/hooks/markers.hook';
 import { useNow } from '@/hooks/now.hook';
 import { historyModel, historyStatusLine } from '@/lib/fox-history';
 import type { SidebarFox } from '@/lib/fox-status';
-import { EASE_OUT, SWAP } from '@/lib/motion';
+import { activatedByKeyboard } from '@/lib/input-modality';
+import { FOX_MARKERS_LAYER } from '@/lib/map-layers';
+import { latestAreaMarker, latestMarkerLabel } from '@/lib/markers';
+import { EASE_OUT, POP, SWAP } from '@/lib/motion';
+import { TONAL_BUTTON } from '@/lib/tonal-button';
 import { cn, getColorFromArea } from '@/lib/utils';
+import useHuntFocusStore from '@/stores/hunt-focus.store';
+import useSidebarStore from '@/stores/sidebar.store';
 import FoxHistoryTimeline from './FoxHistoryTimeline';
 
 /** The window plays in once the panel's open spring has (mostly) settled. */
 const PLAY_DELAY_MS = 300;
 const MINUTE_MS = 60_000;
+const FLY_TO_ZOOM = 16;
+
+/** The fold-out's small tonal buttons: 28px (44px on touch) */
+const SMALL_TONAL = cn(
+  TONAL_BUTTON,
+  'inline-flex h-7 cursor-pointer items-center gap-1.5 px-2.5 text-xs font-semibold outline-none pointer-coarse:h-11 focus-visible:ring-[3px] focus-visible:ring-ring [&_svg]:size-3.5',
+);
 
 interface FoxHistoryProps {
   fox: SidebarFox;
   hidden: boolean;
+  /** Outside the areas our group may hunt (huntable areas): said in words under the status line, not only by the chip's lock */
+  forbidden?: boolean;
   onToggleHidden: () => void;
+  /** For "Naar laatste hint/hunt" (flies there and opens the marker's popup); without it the button doesn't show */
+  mapRef?: RefObject<MapRef | null>;
 }
 
-/** "Verberg op kaart" / "Toon op kaart": both labels share one grid cell, so the button keeps its width and only fades. */
+/** "Verberg op kaart" / "Weer tonen": both labels share one grid cell, so the button keeps its width and only fades. */
 function HideButton({ hidden, onClick }: { hidden: boolean; onClick: () => void }) {
   const options = [
     { on: !hidden, icon: EyeOffIcon, label: 'Verberg op kaart' },
-    { on: hidden, icon: EyeIcon, label: 'Toon op kaart' },
+    { on: hidden, icon: EyeIcon, label: 'Weer tonen' },
   ];
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={hidden ? 'Toon op kaart' : 'Verberg op kaart'}
-      className="inline-grid h-7 cursor-pointer rounded-[10px] bg-secondary px-2.5 text-xs font-semibold text-secondary-foreground transition-colors duration-150 outline-none hover:bg-[color-mix(in_oklab,var(--foreground)_12%,var(--card))] focus-visible:ring-[3px] focus-visible:ring-ring/50"
-    >
+    <button type="button" onClick={onClick} aria-label={hidden ? 'Weer tonen op kaart' : 'Verberg op kaart'} className={cn(SMALL_TONAL, 'inline-grid')}>
       {options.map(({ on, icon: Icon, label }) => (
         <span
           key={label}
@@ -44,7 +60,7 @@ function HideButton({ hidden, onClick }: { hidden: boolean; onClick: () => void 
             on ? 'opacity-100 blur-0' : 'opacity-0 blur-[2px]',
           )}
         >
-          <Icon className="size-3.5" />
+          <Icon />
           {label}
         </span>
       ))}
@@ -74,7 +90,39 @@ function TimelineSkeleton() {
  * The fold-out under a fox's chip: name, status line, the last three hours as a timeline and the hide-on-map button.
  * Fetches only while mounted; the window moves on every minute.
  */
-export default function FoxHistory({ fox, hidden, onToggleHidden }: FoxHistoryProps) {
+/**
+ * "Naar laatste hint" / "Naar laatste hunt": the area's newest hint or hunt marker. Lowers the phone sheet, flies there, pulses the spot and
+ * opens the marker's popup (like a hunt log row); hidden while the area has no such marker.
+ */
+function LatestMarkerButton({ area, mapRef }: { area: string; mapRef: RefObject<MapRef | null> }) {
+  const { markers } = useMarkers();
+  const latest = useMemo(() => latestAreaMarker(markers, area), [markers, area]);
+  const go = () => {
+    if (!latest?._id) return;
+    const [lng, lat] = latest.location.coordinates;
+    useSidebarStore.getState().setSheetSnap('peek');
+    mapRef.current?.flyTo({ center: [lng, lat], zoom: FLY_TO_ZOOM, duration: 1500 });
+    useHuntFocusStore.getState().show({ lng, lat, color: getColorFromArea(area) });
+    mapRef.current?.openFeature(FOX_MARKERS_LAYER, latest._id, { focus: activatedByKeyboard() });
+  };
+  return (
+    <AnimatePresence initial={false}>
+      {latest && (
+        <motion.button key="latest" type="button" onClick={go} {...POP} className={SMALL_TONAL}>
+          <MapPinIcon aria-hidden />
+          {/* Hint or hunt, whichever is newest: the word swaps when a newer one of the other kind comes in */}
+          <AnimatePresence mode="popLayout" initial={false}>
+            <motion.span key={latestMarkerLabel(latest)} {...SWAP}>
+              {latestMarkerLabel(latest)}
+            </motion.span>
+          </AnimatePresence>
+        </motion.button>
+      )}
+    </AnimatePresence>
+  );
+}
+
+export default function FoxHistory({ fox, hidden, forbidden = false, onToggleHidden, mapRef }: FoxHistoryProps) {
   const reduced = useReducedMotion() ?? false;
   const { history, error, mutate } = useAreaHistory(fox.area.name);
   const now = useNow(true, MINUTE_MS);
@@ -103,12 +151,12 @@ export default function FoxHistory({ fox, hidden, onToggleHidden }: FoxHistoryPr
 
   return (
     <div className="rounded-2xl bg-card p-2.5 text-foreground">
-      <div className="mx-0.5 flex items-baseline justify-between text-[12.5px] font-medium">
+      <div className="mx-0.5 flex items-baseline justify-between text-caption font-medium">
         <span className="inline-flex min-w-0 items-center gap-1.5">
           <span aria-hidden className="size-[7px] shrink-0 rounded-full" style={{ backgroundColor: getColorFromArea(fox.area.name) }} />
           <span className="truncate">{fox.name}</span>
         </span>
-        <span className="shrink-0 text-[11px] font-normal text-muted-foreground">laatste 3 uur</span>
+        <span className="shrink-0 text-xs font-normal text-muted-foreground desk:text-label">laatste 3 uur</span>
       </div>
 
       {/* Status line: the word shimmers and swaps (fade + blur-up) when the status changes */}
@@ -147,6 +195,15 @@ export default function FoxHistory({ fox, hidden, onToggleHidden }: FoxHistoryPr
         </AnimatePresence>
       </div>
 
+      <Reveal>
+        {forbidden && (
+          <p className="mx-0.5 mt-1 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+            <LockIcon aria-hidden className="size-3 shrink-0" strokeWidth={2.5} />
+            Niet toegestaan voor onze groep · 0 punten
+          </p>
+        )}
+      </Reveal>
+
       <AutoHeight scene={scene} className="mt-1">
         <AnimatePresence mode="wait" initial={false}>
           {model ? (
@@ -155,14 +212,8 @@ export default function FoxHistory({ fox, hidden, onToggleHidden }: FoxHistoryPr
             </motion.div>
           ) : scene === 'error' ? (
             <motion.div key="error" {...swap}>
-              <button
-                type="button"
-                onClick={retry}
-                className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl py-6 text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
-              >
-                Historie niet geladen
-                <RotateCwIcon aria-hidden className="size-3" />
-              </button>
+              {/* The shared "couldn't load" line + tonal retry button; a retry shows the skeleton again */}
+              <LoadError centered className="py-4" message="Historie kon niet worden geladen." onRetry={retry} />
             </motion.div>
           ) : (
             <motion.div key="loading" {...swap}>
@@ -172,7 +223,8 @@ export default function FoxHistory({ fox, hidden, onToggleHidden }: FoxHistoryPr
         </AnimatePresence>
       </AutoHeight>
 
-      <div className="mt-2 flex justify-end">
+      <div className="mt-2 flex flex-wrap justify-end gap-1.5">
+        {mapRef && <LatestMarkerButton area={fox.area.name} mapRef={mapRef} />}
         <HideButton hidden={hidden} onClick={onToggleHidden} />
       </div>
     </div>

@@ -25,6 +25,22 @@ export function pushPermission(): NotificationPermission | 'unsupported' {
   return isPushSupported() ? Notification.permission : 'unsupported';
 }
 
+/** Push on this device: 'on' (granted), 'off' (never asked: one tap turns it on), 'blocked' (denied in the browser),
+ * 'install' (iPhone browser tab: only the home-screen app gets push) or 'unsupported'. */
+export type DevicePush = 'on' | 'off' | 'blocked' | 'install' | 'unsupported';
+
+export function devicePush(permission: NotificationPermission | 'unsupported', iosInstall: boolean): DevicePush {
+  if (iosInstall) return 'install';
+  if (permission === 'unsupported') return 'unsupported';
+  return permission === 'granted' ? 'on' : permission === 'denied' ? 'blocked' : 'off';
+}
+
+/** This device's push state (see devicePush). */
+export function currentDevicePush(): DevicePush {
+  if (typeof window === 'undefined') return 'unsupported';
+  return devicePush(pushPermission(), needsIosInstall(navigator.userAgent, isStandalone()));
+}
+
 export function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
   const padded = (base64 + '='.repeat((4 - (base64.length % 4)) % 4)).replace(/-/g, '+').replace(/_/g, '/');
   const raw = atob(padded);
@@ -33,8 +49,34 @@ export function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
   return bytes;
 }
 
-/** Ask permission (must run from a click) and register this device for push. */
-export async function subscribePush(fetch: Fetch): Promise<PushResult> {
+/**
+ * Whether this device has a push subscription, as resyncPush / subscribePush / unsubscribePush last found it (false
+ * until resyncPush has looked). Permission alone isn't enough: a granted device without a subscription gets no pushes.
+ */
+let subscribed = false;
+
+/** Whether this device was last seen with a push subscription (see `subscribed`). */
+export function hasPushSubscription(): boolean {
+  return subscribed;
+}
+
+/** Longest Opslaan waits for the service worker; without one (dev, a failed install) `ready` never settles. */
+const SW_READY_TIMEOUT_MS = 8000;
+
+/** `promise`, or a rejection once `ms` has passed without it settling. */
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error('timeout')), ms);
+    }),
+  ]).finally(() => clearTimeout(timer));
+}
+
+/** Ask permission (must run from a click) and register this device for push. A service worker that never becomes ready
+ * counts as 'error' after `readyTimeoutMs`, so the caller (Meldingen's Opslaan) doesn't hang. */
+export async function subscribePush(fetch: Fetch, readyTimeoutMs = SW_READY_TIMEOUT_MS): Promise<PushResult> {
   if (!isPushSupported()) return 'unsupported';
   let publicKey: string;
   try {
@@ -44,10 +86,11 @@ export async function subscribePush(fetch: Fetch): Promise<PushResult> {
   }
   try {
     if ((await Notification.requestPermission()) !== 'granted') return 'denied';
-    const registration = await navigator.serviceWorker.ready;
+    const registration = await withTimeout(navigator.serviceWorker.ready, readyTimeoutMs);
     const subscription =
       (await registration.pushManager.getSubscription()) ??
       (await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(publicKey) }));
+    subscribed = true;
     await fetch('/push/subscribe', 'POST', subscription.toJSON());
     return 'subscribed';
   } catch (error) {
@@ -57,13 +100,28 @@ export async function subscribePush(fetch: Fetch): Promise<PushResult> {
 }
 
 /** On load: send an existing subscription again, so it belongs to the logged-in user (and survives an edition switch).
- * Quiet while an archive edition is shown: the server refuses it with 423 then. */
+ * Permission granted but no subscription (dropped by a logout, the browser or a cleared site) subscribes again, so push
+ * doesn't silently stay off on this device. Quiet while an archive edition is shown: the server refuses it with 423 then. */
 export async function resyncPush(fetch: Fetch): Promise<void> {
-  if (!isPushSupported() || Notification.permission !== 'granted') return;
+  if (!isPushSupported() || Notification.permission !== 'granted') {
+    subscribed = false;
+    return;
+  }
   try {
     const registration = await navigator.serviceWorker.getRegistration();
-    const subscription = await registration?.pushManager.getSubscription();
-    if (subscription) await fetch('/push/subscribe', 'POST', subscription.toJSON());
+    if (!registration) {
+      subscribed = false;
+      return;
+    }
+    let subscription = await registration.pushManager.getSubscription();
+    subscribed = !!subscription;
+    if (!subscription) {
+      // No permission prompt here: it's already granted, so subscribing needs no click
+      const { publicKey } = (await fetch<{ publicKey: string }>('/push/vapid-key')).data;
+      subscription = await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(publicKey) });
+      subscribed = true;
+    }
+    await fetch('/push/subscribe', 'POST', subscription.toJSON());
   } catch (error) {
     if (!isArchiveError(error)) console.warn('[push] resync failed', error);
   }
@@ -79,18 +137,12 @@ export async function unsubscribePush(fetch: Fetch, timeoutMs = UNSUBSCRIBE_TIME
     const registration = await navigator.serviceWorker.getRegistration();
     const subscription = await registration?.pushManager.getSubscription();
     if (!subscription) return;
-    let timer: ReturnType<typeof setTimeout> | undefined;
     try {
       // Bounded, so logout never hangs on a bad connection
-      await Promise.race([
-        fetch('/push/subscribe', 'DELETE', { endpoint: subscription.endpoint }),
-        new Promise<never>((_, reject) => {
-          timer = setTimeout(() => reject(new Error('timeout')), timeoutMs);
-        }),
-      ]);
+      await withTimeout(fetch('/push/subscribe', 'DELETE', { endpoint: subscription.endpoint }), timeoutMs);
     } finally {
-      clearTimeout(timer);
       // Always drop the browser subscription, even when the server couldn't be reached
+      subscribed = false;
       await subscription.unsubscribe();
     }
   } catch (error) {

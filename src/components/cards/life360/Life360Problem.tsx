@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useEdition } from '@/hooks/edition.hook';
 import { formatClock } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { busyProps } from '@/lib/busy';
 import type { Life360ProblemStatus } from '@/types/Life360';
 import Life360Logo from './Life360Logo';
 import { LIFE360_BUTTON } from './styles';
@@ -24,6 +25,7 @@ export default function Life360Problem({ status, onSendCode }: Life360ProblemPro
   const [error, setError] = useState<string | null>(null);
 
   async function sendCode() {
+    if (busy) return;
     setBusy(true);
     setError(null);
     setError(await onSendCode(status.email));
@@ -47,11 +49,11 @@ export default function Life360Problem({ status, onSendCode }: Life360ProblemPro
       <CookieBadge tone="warn" size={72} />
       <p className="mt-2 text-base font-bold">Uitgelogd</p>
       <p className="text-xs text-muted-foreground">Life360 heeft de sessie beëindigd. Laatste posities blijven grijs op de kaart.</p>
-      <Button size="lg" className={cn('mt-2.5 h-11 w-full rounded-lg text-sm font-semibold', LIFE360_BUTTON)} disabled={busy || readOnly} onClick={() => void sendCode()}>
+      <Button size="lg" className={cn('mt-2.5 h-11 w-full text-sm', LIFE360_BUTTON)} disabled={readOnly} {...busyProps(busy)} onClick={() => void sendCode()}>
         {busy ? <Loader2Icon className="animate-spin" /> : <Life360Logo className="size-5" />}
         Stuur nieuwe code
       </Button>
-      <p className="mt-1.5 max-w-full truncate text-[11px] text-muted-foreground">
+      <p className="mt-1.5 max-w-full truncate text-xs text-muted-foreground desk:text-label">
         naar <b className="font-semibold text-foreground">{status.email}</b>
       </p>
       {error && <InlineError>{error}</InlineError>}

@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 export type SidebarSectionId = 'foxes' | 'hints' | 'points' | 'hunts' | 'predictions' | 'hintEntry' | 'counterHunt' | 'telegram' | 'tracking' | 'life360' | 'jotiboard';
-import type { SheetSnap, SnapHeights } from '@/lib/sheet-snaps';
+import { normalizeSnap, type SheetSnap, type SnapHeights } from '@/lib/sheet-snaps';
 export type { SheetSnap };
 
 const DEFAULT_OPEN_SECTIONS: Record<SidebarSectionId, boolean> = {
@@ -38,6 +38,12 @@ interface SidebarState {
   /** Phone sheet height per snap (null on desktop), so a camera move can pad for a snap that is still springing */
   sheetSnapHeights: SnapHeights | null;
   setSheetSnapHeights: (heights: SnapHeights | null) => void;
+  /** Landscape phones: px from the left edge the sheet column covers (its left margin + width); 0 when it spans the width */
+  sheetSide: number;
+  setSheetSide: (side: number) => void;
+  /** Height of the card docked above the phone sheet in px (0 when none); the map pads for it too */
+  dockCardHeight: number;
+  setDockCardHeight: (height: number) => void;
 }
 
 const useSidebarStore = create<SidebarState>()(
@@ -55,11 +61,16 @@ const useSidebarStore = create<SidebarState>()(
             : { openSections: { ...state.openSections, [id]: true }, forcedOpenFor: { ...state.forcedOpenFor, [id]: event } },
         ),
       sheetSnap: 'peek',
-      setSheetSnap: (sheetSnap) => set({ sheetSnap }),
+      // A two-stop sheet has no real half (see normalizeSnap): callers asking for 'half' get 'full'
+      setSheetSnap: (sheetSnap) => set((state) => ({ sheetSnap: normalizeSnap(sheetSnap, state.sheetSnapHeights) })),
       sheetHeight: 0,
       setSheetHeight: (sheetHeight) => set({ sheetHeight }),
       sheetSnapHeights: null,
-      setSheetSnapHeights: (sheetSnapHeights) => set({ sheetSnapHeights }),
+      setSheetSnapHeights: (sheetSnapHeights) => set((state) => ({ sheetSnapHeights, sheetSnap: normalizeSnap(state.sheetSnap, sheetSnapHeights) })),
+      sheetSide: 0,
+      setSheetSide: (sheetSide) => set({ sheetSide }),
+      dockCardHeight: 0,
+      setDockCardHeight: (dockCardHeight) => set({ dockCardHeight }),
     }),
     {
       name: 'sidebar-storage',

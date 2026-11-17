@@ -1,17 +1,20 @@
-import { useEffect, useRef, useState, type ComponentType } from 'react';
+import { useEffect, useId, useRef, useState, type ComponentType } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { toast } from 'sonner';
 import { BrainIcon, CheckIcon, FileTextIcon, KeyRoundIcon, ListTreeIcon, Loader2Icon, MessageCircleIcon, PlayIcon, RadarIcon, WrenchIcon } from 'lucide-react';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import Reveal from '@/components/motion/Reveal';
 import { Input } from '@/components/ui/input';
 import { testAiSlot, useAdminConfig, useAiModels } from '@/hooks/app-config.hook';
-import { useIsMobile } from '@/hooks/media.hook';
+import { useElementWidth } from '@/hooks/element-width.hook';
 import { AI_SLOTS, type AiSlot } from '@/lib/app-config';
 import { apiErrorMessage } from '@/lib/api-error';
+import { aiRowsStacked } from '@/lib/beheer';
+import { focusDropped } from '@/lib/focus';
 import { POP, SWAP } from '@/lib/motion';
 import { cn } from '@/lib/utils';
-import { BeheerCard, BeheerPane, BeheerRow, BeheerRows, BeheerSkeleton, WarnBar } from './BeheerLayout';
+import { BeheerCard, BeheerLoadError, BeheerPane, BeheerRow, BeheerRows, BeheerSkeleton, WarnBar } from './BeheerLayout';
 import ModelPicker from './ModelPicker';
 import { Pill, Tag } from './controls/Pill';
 
@@ -56,18 +59,28 @@ function TestButton({ slot, compact }: { slot: AiSlot; compact?: boolean }) {
   }
 
   const key = typeof state === 'object' ? 'ok' : state;
+  const title = SLOT_INFO[slot].title;
+  const seconds = typeof state === 'object' ? `${(state.ms / 1000).toLocaleString('nl-NL', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} s` : null;
   return (
-    <Pill
-      variant="ghost"
-      morphKey={key}
-      className={cn(key === 'ok' && 'text-green-700 hover:text-green-700 dark:text-green-300 dark:hover:text-green-300')}
-      disabled={state === 'busy'}
-      onClick={() => void run()}
-      aria-label={`Test ${SLOT_INFO[slot].title}`}
-    >
-      {key === 'busy' ? <Loader2Icon className="animate-spin" /> : key === 'ok' ? <CheckIcon /> : <PlayIcon />}
-      {typeof state === 'object' ? `${(state.ms / 1000).toLocaleString('nl-NL', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} s` : key === 'busy' || compact ? null : 'Test'}
-    </Pill>
+    <>
+      <Pill
+        variant="ghost"
+        morphKey={key}
+        // tabular-nums: the latency ("1,4 s") doesn't wobble the pill's width between runs
+        className={cn('tabular-nums', key === 'ok' && 'text-status-ok-text hover:text-status-ok-text')}
+        busy={state === 'busy'}
+        onClick={() => void run()}
+        // The name carries the result too: the visible "✓ 0,8 s" would otherwise be hidden behind "Test …"
+        aria-label={seconds ? `Test ${title}: werkt, ${seconds}` : `Test ${title}`}
+      >
+        {key === 'busy' ? <Loader2Icon className="animate-spin" /> : key === 'ok' ? <CheckIcon /> : <PlayIcon />}
+        {seconds ?? (key === 'busy' || compact ? null : 'Test')}
+      </Pill>
+      {/* Always mounted, so the result is announced (failures come as a toast) */}
+      <span role="status" className="sr-only">
+        {seconds ? `${title} werkt, antwoord in ${seconds}` : ''}
+      </span>
+    </>
   );
 }
 
@@ -80,9 +93,19 @@ export default function AiPane() {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
   const [saving, setSaving] = useState(false);
-  const isMobile = useIsMobile();
+  const [clearOpen, setClearOpen] = useState(false);
+  const [clearing, setClearing] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const resetReasonId = useId();
+  // The model rows stack their controls by their own width (the Beheer dialog's content area), not the screen's
+  const [rowsElement, setRowsElement] = useState<HTMLDivElement | null>(null);
+  const stacked = aiRowsStacked(useElementWidth(rowsElement));
+  const keyPill = useRef<HTMLButtonElement>(null);
+  const editor = useRef<HTMLFormElement>(null);
 
   function closeEditor() {
+    // Focus was in the editor (it folds away): back to "Wijzigen", which opened it
+    if (editor.current?.contains(document.activeElement) || focusDropped(document.activeElement, document.body)) keyPill.current?.focus();
     setEditing(false);
     setDraft('');
   }
@@ -101,38 +124,66 @@ export default function AiPane() {
     }
   }
 
+  /** Runs from the confirm dialog (it stays open, buttons disabled, until this settles; open on failure) */
   async function clearKey() {
+    setClearing(true);
     try {
       await admin.clearSecret('geminiApiKey');
+      setClearOpen(false);
       closeEditor();
       toast.success('Gemini-sleutel gewist');
     } catch (error) {
       toast.error(apiErrorMessage(error, 'Wissen is mislukt.'));
+    } finally {
+      setClearing(false);
     }
   }
 
+  // Per slot: the model being saved. The picker shows it right away (rolled back on failure); the ref refuses a second
+  // pick for the same slot before the re-render
+  const [pendingModels, setPendingModels] = useState<Partial<Record<AiSlot, string>>>({});
+  const savingSlots = useRef(new Set<AiSlot>());
+
   async function pick(slot: AiSlot, id: string) {
+    if (savingSlots.current.has(slot)) return;
+    savingSlots.current.add(slot);
+    setPendingModels((current) => ({ ...current, [slot]: id }));
     try {
       // Picking the fallback stores nothing, so a later change of the server default carries through
       await admin.saveModels({ [slot]: id === DEFAULTS[slot] ? null : id });
     } catch (error) {
       toast.error(apiErrorMessage(error, 'Model opslaan is mislukt.'));
+    } finally {
+      savingSlots.current.delete(slot);
+      setPendingModels((current) => {
+        const next = { ...current };
+        delete next[slot];
+        return next;
+      });
     }
   }
 
   async function resetModels() {
+    if (resetting) return;
+    setResetting(true);
     try {
       await admin.saveModels(Object.fromEntries(AI_SLOTS.map((slot) => [slot, null])));
       toast.success('Standaardmodellen hersteld');
     } catch (error) {
       toast.error(apiErrorMessage(error, 'Herstellen is mislukt.'));
+    } finally {
+      setResetting(false);
     }
   }
 
   if (!config) {
     return (
       <BeheerPane title="AI" description="Gemini-sleutel en welk model wat doet.">
-        {admin.isError ? <p className="text-sm text-muted-foreground">De instellingen konden niet worden geladen.</p> : <BeheerSkeleton groups={2} />}
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div key={admin.isError ? 'error' : 'loading'} {...SWAP}>
+            {admin.isError ? <BeheerLoadError message="De instellingen konden niet worden geladen." onRetry={admin.retry} /> : <BeheerSkeleton groups={2} />}
+          </motion.div>
+        </AnimatePresence>
       </BeheerPane>
     );
   }
@@ -178,13 +229,20 @@ export default function AiPane() {
             }
             meta={key?.source === 'env' ? 'Opslaan hier gaat vóór de .env-waarde.' : undefined}
           >
-            <Pill variant={key?.set ? 'secondary' : 'primary'} morphKey={key?.set ? 'edit' : 'add'} disabled={!config.settingsKeyOk} onClick={() => (editing ? closeEditor() : setEditing(true))}>
+            <Pill
+              ref={keyPill}
+              variant={key?.set ? 'secondary' : 'primary'}
+              morphKey={key?.set ? 'edit' : 'add'}
+              disabled={!config.settingsKeyOk}
+              onClick={() => (editing ? closeEditor() : setEditing(true))}
+            >
               {key?.set ? 'Wijzigen' : 'Sleutel toevoegen'}
             </Pill>
             <AnimatePresence initial={false}>
               {key?.source === 'db' && (
                 <motion.span key="clear" {...POP}>
-                  <Pill variant="ghost" onClick={() => void clearKey()}>
+                  <Pill variant="ghost" morphKey={clearing ? 'busy' : 'idle'} busy={clearing} onClick={() => setClearOpen(true)}>
+                    {clearing && <Loader2Icon className="animate-spin" />}
                     Wissen
                   </Pill>
                 </motion.span>
@@ -195,6 +253,7 @@ export default function AiPane() {
         <Reveal>
           {editing && (
             <form
+              ref={editor}
               className="flex flex-wrap gap-2 pt-2.5"
               onSubmit={(event) => {
                 event.preventDefault();
@@ -213,14 +272,14 @@ export default function AiPane() {
                 }}
                 placeholder="AIza…"
                 aria-label="Nieuwe Gemini-sleutel"
-                className="h-9 min-w-48 flex-1 basis-48 rounded-xl border-0 bg-beheer-row font-mono text-[13px]"
+                className="h-9 min-w-48 flex-1 basis-48 rounded-xl border-0 bg-beheer-row font-mono text-base shadow-[inset_0_0_0_1px_var(--input)] desk:text-body dark:bg-beheer-row"
                 autoComplete="off"
                 spellCheck={false}
               />
               <Pill variant="secondary" size="md" onClick={closeEditor}>
                 Annuleer
               </Pill>
-              <Pill type="submit" variant="primary" size="md" disabled={!draft.trim() || saving} morphKey={saving ? 'busy' : 'idle'}>
+              <Pill type="submit" variant="primary" size="md" disabled={!draft.trim()} busy={saving} morphKey={saving ? 'busy' : 'idle'}>
                 {saving && <Loader2Icon className="animate-spin" />}
                 Opslaan
               </Pill>
@@ -246,15 +305,26 @@ export default function AiPane() {
                 </motion.span>
               )}
             </AnimatePresence>
-            <Pill variant="ghost" disabled={!key?.set || !hasCustomModels} onClick={() => void resetModels()}>
+            {/* Nothing to reset (also right after a reset): aria-disabled, so the focus stays on the pill */}
+            <Pill
+              variant="ghost"
+              disabled={!key?.set}
+              busy={resetting}
+              aria-disabled={!hasCustomModels || undefined}
+              aria-describedby={key?.set && !hasCustomModels && !resetting ? resetReasonId : undefined}
+              onClick={() => void resetModels()}
+            >
               Standaard herstellen
             </Pill>
+            <span id={resetReasonId} className="sr-only">
+              Alle functies gebruiken al het standaardmodel.
+            </span>
           </span>
         }
       >
         <AnimatePresence mode="wait" initial={false}>
           {key?.set ? (
-            <motion.div key="rows" {...SWAP}>
+            <motion.div key="rows" ref={setRowsElement} {...SWAP}>
               <BeheerRows>
                 {AI_SLOTS.map((slot) => {
                   const info = SLOT_INFO[slot];
@@ -262,18 +332,19 @@ export default function AiPane() {
                   const picker = (
                     <ModelPicker
                       label={info.title}
-                      value={config.ai[slot].value}
+                      value={pendingModels[slot] ?? config.ai[slot].value}
+                      saving={pendingModels[slot] !== undefined}
                       defaultId={DEFAULTS[slot]}
                       models={list.models}
                       fetchedAt={list.fetchedAt}
                       listError={list.error}
                       onRefresh={list.refresh}
                       onChange={(id) => void pick(slot, id)}
-                      className={isMobile ? 'w-auto min-w-0 flex-1' : undefined}
+                      className={stacked ? 'w-auto min-w-0 flex-1' : undefined}
                     />
                   );
-                  // Phones: the controls get their own full-width line under the text
-                  return isMobile ? (
+                  // Too narrow for title + Test + picker on one line: the controls get their own line under the text
+                  return stacked ? (
                     <BeheerRow
                       key={slot}
                       leading={<Icon className={ROW_ICON} />}
@@ -296,12 +367,28 @@ export default function AiPane() {
               </BeheerRows>
             </motion.div>
           ) : (
-            <motion.p key="nokey" {...SWAP} className="rounded-2xl bg-beheer-row px-3 py-2.5 text-[12.5px] text-muted-foreground">
+            <motion.p key="nokey" {...SWAP} className="rounded-2xl bg-beheer-row px-3 py-2.5 text-caption text-muted-foreground">
               Voeg eerst een sleutel toe; dan haalt de lijst de modellen op.
             </motion.p>
           )}
         </AnimatePresence>
       </BeheerCard>
+
+      <ConfirmDialog
+        open={clearOpen}
+        onOpenChange={setClearOpen}
+        title="Gemini-sleutel wissen?"
+        description="De sleutel geldt voor de hele groep. Staat er een sleutel in .env, dan wordt die weer gebruikt; anders gaan samenvattingen, hint-analyse en de AI-chat voor iedereen uit."
+        confirmLabel="Wissen"
+        destructive
+        onConfirm={clearKey}
+        // Cleared: the Wissen pill that opened the dialog folds away, so focus goes to the key's main pill
+        onCloseAutoFocus={(event) => {
+          if (key?.source === 'db') return;
+          event.preventDefault();
+          keyPill.current?.focus();
+        }}
+      />
     </BeheerPane>
   );
 }

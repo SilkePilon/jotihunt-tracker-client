@@ -21,7 +21,7 @@ const SECTOR_CENTRE_M = 250;
  * ends; the user collapses it (persisted like the other sections).
  */
 export default function CounterHuntSection({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
-  const { state, now } = useCounterHunt();
+  const { state, now, isError, retry } = useCounterHunt();
   const { link } = useTelegramMessages();
   const user = useAuthUser<User>();
   const homeTeam = useHomeTeam();
@@ -53,9 +53,11 @@ export default function CounterHuntSection({ mapRef }: { mapRef: RefObject<MapRe
       summary={summary?.text}
       open={open}
       onOpenChange={(next) => setSectionOpen('counterHunt', next)}
-      className={cn(active && 'bg-linear-160 from-red-500/18 to-red-500/4 outline outline-red-500/30')}
+      // Active: the fox-error tonal group with a red hairline. An outline, since the unlayered .card ring would override a
+      // ring utility; always present (transparent) so it fades in and out with the background
+      className={cn('outline outline-transparent transition-[background-color,outline-color] duration-300', active && 'bg-fox-error-group outline-fox-error/60')}
     >
-      <CounterHuntCard state={state} link={link} admin={!!user?.admin} now={now} onShowOnMap={homeTeam && direction !== null ? showOnMap : undefined} />
+      <CounterHuntCard state={state} isError={isError} onRetry={retry} link={link} admin={!!user?.admin} now={now} onShowOnMap={homeTeam && direction !== null ? showOnMap : undefined} />
     </SidebarSection>
   );
 }

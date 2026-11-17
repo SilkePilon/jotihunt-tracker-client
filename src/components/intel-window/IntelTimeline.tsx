@@ -6,10 +6,14 @@ import CookieBadge from '@/components/tracker/CookieBadge';
 import SuccessBadge from '@/components/auth/SuccessBadge';
 import { Tag } from '@/components/beheer/controls/Pill';
 import { formatClock } from '@/lib/format';
-import { type DeadlineTone, type MetaSegment, type MetaTone, assignmentMeta, assignmentStatusLabel, INTEL_TAB_ORDER, isHintDone, KIND_COLOR, KIND_LABEL, areaStates, deadlineLabel, deadlineTone, groupByDay, siteSubmission, solvedCount } from '@/lib/intel-window';
-import { EASE_OUT, REVEAL_TRANSITION, SWAP_TRANSITION } from '@/lib/motion';
+import { type DeadlineTone, type MetaSegment, type MetaTone, assignmentMeta, assignmentStatusLabel, INTEL_TAB_ORDER, isHintDone, KIND_COLOR, KIND_CONTAINER, KIND_LABEL, kindPrefix, areaStates, deadlineLabel, deadlineTone, groupByDay, siteSubmission, solvedCount } from '@/lib/intel-window';
+import { EASE_OUT, REVEAL_TRANSITION, revealTransition } from '@/lib/motion';
 import { useHasMounted } from '@/hooks/has-mounted.hook';
+import { OVERLINE } from '@/lib/menu-styles';
 import { areaOptions, cn, getColorFromArea } from '@/lib/utils';
+import LoadError from '@/components/LoadError';
+import { Skeleton } from '@/components/ui/skeleton';
+import type { LoadState } from '@/lib/load-state';
 import type { AreaState, AssignmentStatus, IntelItem, IntelKind, IntelTab } from '@/types/Intel';
 
 const STEP = 0.022;
@@ -52,12 +56,14 @@ function Fold({ children }: { children: ReactNode }) {
   const parentInserting = useContext(InsertContext);
   const [inserting] = useState(parentInserting);
   const mounted = useHasMounted();
+  const reduced = useReducedMotion() ?? false;
   return (
     <motion.div
       initial={inserting ? { height: 0, opacity: 0 } : false}
       animate={{ height: 'auto', opacity: 1 }}
-      exit={{ height: 0, opacity: 0 }}
-      transition={SWAP_TRANSITION}
+      exit={{ height: 0, opacity: 0, transition: revealTransition(reduced, 'exit') }}
+      // Reduced motion: the row takes and gives back its room at once and only fades
+      transition={revealTransition(reduced, 'enter')}
       className="overflow-y-clip [overflow-clip-margin:3px]"
     >
       <InsertContext.Provider value={mounted}>{children}</InsertContext.Provider>
@@ -77,10 +83,14 @@ interface TimelineProps {
   onSelect: (id: number) => void;
   /** Read on mount: the window just opened, so the cards stagger in */
   entrance: boolean;
+  /** Whether the articles are in: while loading a skeleton, after a failed first load an error with a retry */
+  status?: LoadState;
+  /** Refetch after a failed first load */
+  onRetry?: () => unknown;
 }
 
 /** Day-grouped timeline: per day one tonal card of rows. */
-export default function IntelTimeline({ items, tab, onSelect, entrance }: TimelineProps) {
+export default function IntelTimeline({ items, tab, onSelect, entrance, status = 'ready', onRetry }: TimelineProps) {
   const now = useMinute();
   const groups = groupByDay(items, now);
   // Derived during render: which way the last tab switch went, and whether there was one (only the first list may stagger in)
@@ -95,11 +105,28 @@ export default function IntelTimeline({ items, tab, onSelect, entrance }: Timeli
       <TimelineList key={tab} start={last.switched ? 'push' : stagger ? 'hidden' : false} direction={direction}>
         {/* Outside the padded list: centred in the whole window */}
         <AnimatePresence>
-          {groups.length === 0 && (
+          {groups.length === 0 && status === 'ready' && (
             <Fold key="empty">
               <motion.p variants={entry} className="py-10 text-center text-sm text-muted-foreground">
                 Nog niets gepubliceerd
               </motion.p>
+            </Fold>
+          )}
+          {groups.length === 0 && status === 'error' && (
+            <Fold key="error">
+              <motion.div variants={entry} className="py-10">
+                <LoadError centered message="Intel kon niet worden geladen." onRetry={() => onRetry?.()} />
+              </motion.div>
+            </Fold>
+          )}
+          {groups.length === 0 && status === 'loading' && (
+            <Fold key="loading">
+              <motion.div variants={entry} className="flex flex-col gap-0.5 pt-3.5 pr-2" role="status" aria-label="Intel laden">
+                <Skeleton className="mb-2 ml-1 h-3 w-24" />
+                {Array.from({ length: 4 }, (_, index) => (
+                  <Skeleton key={index} className={cn('h-16 w-full rounded-md bg-card', index === 0 && 'rounded-t-[20px]', index === 3 && 'rounded-b-[20px]')} />
+                ))}
+              </motion.div>
             </Fold>
           )}
         </AnimatePresence>
@@ -108,7 +135,7 @@ export default function IntelTimeline({ items, tab, onSelect, entrance }: Timeli
             {groups.map((group, index) => (
               <Fold key={group.key}>
                 <motion.section custom={groups.slice(0, index).reduce((sum, before) => sum + 1 + before.items.length, 0)} variants={day}>
-                  <motion.h3 variants={entry} className="sticky top-0 z-10 bg-linear-to-b from-beheer-window from-70% to-transparent pt-3.5 pb-2 pl-1 text-[11.5px] font-extrabold tracking-[0.06em] whitespace-nowrap text-muted-foreground uppercase">
+                  <motion.h3 variants={entry} className={cn('sticky top-0 z-10 bg-linear-to-b from-beheer-window from-70% to-transparent pt-3.5 pb-2 pl-1 whitespace-nowrap text-muted-foreground', OVERLINE)}>
                     {group.label}
                   </motion.h3>
                   {/* The window colour shows through the 2px gaps as row separators */}
@@ -157,12 +184,13 @@ function TimelineList({ start, direction, children }: { start: 'hidden' | 'push'
 
 const KIND_ICON: Record<IntelKind, LucideIcon> = { news: MegaphoneIcon, assignment: ClipboardListIcon, hint: LightbulbIcon };
 
+// Small text: the status text tokens keep >= 4.5:1 on the light rows (the 600/500 shades were 3.3-3.7:1)
 const META_TONE: Record<MetaTone, string> = {
   muted: '',
-  ok: 'text-green-600 dark:text-green-400',
-  info: 'text-blue-500 dark:text-blue-400',
-  warn: 'text-amber-600 dark:text-amber-400',
-  danger: 'text-red-600 dark:text-red-400',
+  ok: 'text-status-ok-text',
+  info: 'text-status-info-text',
+  warn: 'text-status-warn-text',
+  danger: 'text-destructive-text',
 };
 
 /**
@@ -174,12 +202,22 @@ function Row({ item, now, onSelect }: { item: IntelItem; now: number; onSelect: 
   return (
     <button
       type="button"
+      // IntelDialog puts focus back on this row when the item it opened is closed again
+      data-id={item.id}
       onClick={() => onSelect(item.id)}
-      className="flex w-full items-center gap-3 bg-(--row-bg) px-3.5 py-[11px] text-left outline-none transition-colors [--row-bg:var(--card)] hover:[--row-bg:var(--beheer-row)] focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset"
+      // scroll-mt: a row tabbed into view lands below the sticky day header, not under it
+      className="flex w-full scroll-mt-12 items-center gap-3 bg-(--row-bg) px-3.5 py-[11px] text-left outline-none transition-colors [--row-bg:var(--card)] hover:[--row-bg:var(--beheer-row)] focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset"
     >
       <KindTile kind={item.kind} unread={item.unread} done={done} />
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-bold">{item.title}</span>
+        <span className="block truncate text-sm font-bold">
+          {/* The kind tile's icon and colour are visual only */}
+          <span className="sr-only">{kindPrefix(item.kind, item.title)}</span>
+          {item.title}
+          {/* The dot and the check on the tile are visual only */}
+          {item.unread && <span className="sr-only">, ongelezen</span>}
+          {done && <span className="sr-only">, afgerond</span>}
+        </span>
         <span className="mt-0.5 block truncate text-xs text-muted-foreground">
           <span className="tabular-nums">{formatClock(item.publishAt)}</span>
           <RowMeta item={item} now={now} />
@@ -198,14 +236,14 @@ function KindTile({ kind, unread, done }: { kind: IntelKind; unread: boolean; do
   return (
     <span
       className="relative grid size-[34px] shrink-0 place-items-center rounded-xl"
-      style={{ color: KIND_COLOR[kind], backgroundColor: `color-mix(in oklab, ${KIND_COLOR[kind]} 16%, var(--card))` }}
+      style={{ color: KIND_COLOR[kind], backgroundColor: KIND_CONTAINER[kind] }}
     >
       <Icon className="size-[17px]" strokeWidth={2.2} />
       <AnimatePresence initial={false}>
         {unread && (
           <motion.span
             key="unread"
-            aria-label="ongelezen"
+            aria-hidden
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
@@ -318,7 +356,8 @@ const DEADLINE_TAG = { done: 'neutral', expired: 'danger', urgent: 'warn', calm:
 /** "nog 42 min": muted once submitted or skipped, red when expired, amber under an hour, else blue; the colour eases between them */
 export function DeadlineTag({ endTime, now, status, className }: { endTime: string; now: number; status: AssignmentStatus; className?: string }) {
   return (
-    <Tag tone={DEADLINE_TAG[deadlineTone(endTime, now, status)]} className={className}>
+    // tabular-nums: the countdown ticks every minute without the tag's width wobbling
+    <Tag tone={DEADLINE_TAG[deadlineTone(endTime, now, status)]} className={cn('tabular-nums', className)}>
       <ClockIcon />
       {deadlineLabel(endTime, now)}
     </Tag>
@@ -328,8 +367,8 @@ export function DeadlineTag({ endTime, now, status, className }: { endTime: stri
 export function KindTag({ kind }: { kind: IntelKind }) {
   return (
     <span
-      className="shrink-0 rounded-lg px-2 py-0.5 text-[11px] font-bold"
-      style={{ color: KIND_COLOR[kind], backgroundColor: `color-mix(in oklab, ${KIND_COLOR[kind]} 14%, transparent)` }}
+      className="shrink-0 rounded-lg px-2 py-0.5 text-label font-bold"
+      style={{ color: KIND_COLOR[kind], backgroundColor: KIND_CONTAINER[kind] }}
     >
       {KIND_LABEL[kind]}
     </span>

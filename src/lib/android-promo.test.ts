@@ -1,6 +1,6 @@
 // src/lib/android-promo.test.ts
 import { describe, expect, test } from 'bun:test';
-import { appDidNotOpen, isAndroidUserAgent, laterState, LATER_MS, readPromoState, shouldShowAndroidPromo, writePromoState } from './android-promo';
+import { appDidNotOpen, appOpenedOnReturn, isAndroidUserAgent, isIOSUserAgent, laterState, LATER_MS, readPromoState, shouldShowAndroidPromo, writePromoState } from './android-promo';
 
 const base = { isMobile: true, isAndroid: true, hasRelease: true, paired: false, installed: false, state: {}, now: 1_000_000 };
 
@@ -51,4 +51,24 @@ describe('appDidNotOpen', () => {
   test('page still visible after 2.5 s → the app did not open', () => expect(appDidNotOpen(0, 2500, true)).toBe(true));
   test('too early', () => expect(appDidNotOpen(0, 2000, true)).toBe(false));
   test('page hidden (the app took over)', () => expect(appDidNotOpen(0, 9000, false)).toBe(false));
+});
+
+describe('isIOSUserAgent', () => {
+  test('iPhone and iPad (also iPadOS posing as a Mac with touch)', () => {
+    expect(isIOSUserAgent('Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15')).toBe(true);
+    expect(isIOSUserAgent('Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X)')).toBe(true);
+    expect(isIOSUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15', 5)).toBe(true);
+  });
+
+  test('a real Mac, Android or Windows is not', () => {
+    expect(isIOSUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15', 0)).toBe(false);
+    expect(isIOSUserAgent('Mozilla/5.0 (Linux; Android 15; Pixel 9)')).toBe(false);
+    expect(isIOSUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64)')).toBe(false);
+  });
+});
+
+describe('appOpenedOnReturn', () => {
+  test('hidden after the launch, then visible → the app opened', () => expect(appOpenedOnReturn(true, true)).toBe(true));
+  test('visible again without a hidden change during this launch → not proof of anything', () => expect(appOpenedOnReturn(false, true)).toBe(false));
+  test('still hidden', () => expect(appOpenedOnReturn(true, false)).toBe(false));
 });
