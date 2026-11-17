@@ -287,7 +287,8 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
       <button type="button" className={popupActionClass('primary', 'min-w-0 flex-1')} disabled={readOnly} onClick={() => openDialog(MarkerType.Hunt)}>
         <LocateFixedIcon /> Hunt
       </button>
-      <button type="button" className={popupActionClass('primary', 'min-w-0 flex-1')} disabled={readOnly} onClick={() => openDialog(MarkerType.Spot)}>
+      {/* Hunt is the main action (soft primary); Spot the neutral tonal one, so the two read apart at a glance */}
+      <button type="button" className={popupActionClass('neutral', 'min-w-0 flex-1')} disabled={readOnly} onClick={() => openDialog(MarkerType.Spot)}>
         <GlassesIcon /> Spot
       </button>
     </>
