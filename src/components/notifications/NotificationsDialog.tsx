@@ -130,16 +130,17 @@ export default function NotificationsDialog() {
                 </p>
               )}
             </Reveal>
+            {/* The label names the switch ("Alles", the word on screen); the count is visual only, the tiles below say which are on */}
             <label className={cn('flex items-center gap-3 rounded-2xl bg-beheer-row px-3.5 py-3 transition-opacity duration-200 motion-reduce:transition-none', locked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer')}>
               <span className="flex-1 text-sm font-semibold">Alles</span>
               <AnimatePresence mode="popLayout" initial={false}>
                 {prefs && (
-                  <motion.span key="count" {...SWAP} className="text-xs font-semibold text-muted-foreground tabular-nums">
+                  <motion.span key="count" {...SWAP} aria-hidden className="text-xs font-semibold text-muted-foreground tabular-nums">
                     {onCount} van {total}
                   </motion.span>
                 )}
               </AnimatePresence>
-              <BeheerSwitch checked={onCount === total} onCheckedChange={(on) => setDisabled(setAllTypes(on))} disabled={locked} aria-label="Alle meldingen" className="disabled:opacity-100" />
+              <BeheerSwitch checked={onCount === total} onCheckedChange={(on) => setDisabled(setAllTypes(on))} disabled={locked} className="disabled:opacity-100" />
             </label>
 
             <AnimatePresence mode="wait" initial={false}>
