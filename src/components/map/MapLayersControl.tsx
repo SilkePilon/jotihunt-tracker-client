@@ -30,13 +30,13 @@ export default function MapLayersControl({ position = 'bottom-right' }: { positi
   return createPortal(
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button type="button" aria-label="Kaartstijl en lagen" title="Kaartstijl en lagen" {...tourTarget('map.layersButton')} className="flex! items-center justify-center text-foreground">
+        <button type="button" aria-label="Kaart & lagen" title="Kaart & lagen" {...tourTarget('map.layersButton')} className="flex! items-center justify-center text-foreground">
           <LayersIcon className="size-[18px]" />
         </button>
       </PopoverTrigger>
       {/* A work area for the prompt queue's quiet window (also covered by the shared popover-content selector) */}
       <PopoverContent
-        aria-label="Kaartstijl en lagen"
+        aria-label="Kaart & lagen"
         {...{ [WORK_AREA_ATTRIBUTE]: '' }}
         side="left"
         align="end"

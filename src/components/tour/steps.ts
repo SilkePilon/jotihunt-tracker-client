@@ -130,7 +130,7 @@ export const TOUR_STEPS: TourStep[] = [
   {
     id: 'map-layers',
     target: 'map.layersButton',
-    title: 'Kaartstijl en lagen',
+    title: 'Kaart & lagen',
     body: 'Wissel hier tussen kaartstijlen zoals satelliet, en zet lagen als groepen, markers en 3D-gebouwen aan of uit.',
     only: 'desktop',
   },
