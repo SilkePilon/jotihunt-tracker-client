@@ -13,6 +13,7 @@ import CenterCrosshair from './CenterCrosshair';
 import {nudgeDelta} from '@/lib/night-draw-keys';
 import {RULER_OFF_MESSAGE, RULER_ON_MESSAGE, rulerDroppedMessage, rulerTotalMetres, rulerUndoMessage} from '@/lib/ruler-keys';
 import {activatedByKeyboard} from '@/lib/input-modality';
+import {formatDistance} from '@/lib/tracker';
 
 /** A nudged point this close to the map's edge pans the map along (like NightAreaDraw) */
 const NUDGE_EDGE_PX = 40;
@@ -36,10 +37,13 @@ type CustomEventMap = {
     off(type: string, listener: () => void): unknown;
 };
 
+/** Ruler labels in Dutch notation like the rest of the app ("350 m", "1,3 km"); the package measures in kilometres */
+const dutchKilometres = (km: number) => formatDistance(km * 1000);
+
 export default function Ruler({position = 'bottom-right', onActivate, onDeactivate, disabled = false, ...options}: RulerProps) {
     // Add the control
     // The package is typed against mapbox-gl's style spec; the MapLibre one is the same for these layers
-    const control = useControl(() => withMaplibreClasses(labelled(new RulerControl(options as ConstructorParameters<typeof RulerControl>[0]))), {position});
+    const control = useControl(() => withMaplibreClasses(labelled(new RulerControl({labelFormat: dutchKilometres, ...options} as ConstructorParameters<typeof RulerControl>[0]))), {position});
 
     // Wire map events
     const {current: mapRef} = useMap();
