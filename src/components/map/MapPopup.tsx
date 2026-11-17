@@ -1,7 +1,8 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useId, useRef, type ReactNode } from 'react';
 import type { PositionAnchor } from 'maplibre-gl';
 import { Popup, useMap, type PopupProps } from 'react-map-gl/maplibre';
 import DockedPopup from '@/components/mobile/DockedPopup';
+import { PopupTitleIdContext, useAnnouncePopup } from '@/components/map/popup/popup-a11y';
 import { CloseButton } from '@/components/ui/close-button';
 import { useIsMobile } from '@/hooks/media.hook';
 import { useRestoreFocus } from '@/hooks/restore-focus.hook';
@@ -23,24 +24,28 @@ const defaultOffset: OffsetObject = { bottom: [0, -45] };
 /** Map card (248px, styled in index.css) above a point; on phones docked above the sheet instead. */
 export default function MapPopup({ longitude, latitude, onClose, offset = defaultOffset, children }: MapPopupProps) {
   const isMobile = useIsMobile();
-  if (isMobile) {
-    return (
-      <DockedPopup longitude={longitude} latitude={latitude} onClose={onClose}>
-        {children}
-      </DockedPopup>
-    );
-  }
+  // Labels the popup's dialog role: PopupHeader puts it on its title
+  const titleId = useId();
   return (
-    <FloatingPopup longitude={longitude} latitude={latitude} onClose={onClose} offset={offset}>
-      {children}
-    </FloatingPopup>
+    <PopupTitleIdContext.Provider value={titleId}>
+      {isMobile ? (
+        <DockedPopup longitude={longitude} latitude={latitude} onClose={onClose} titleId={titleId}>
+          {children}
+        </DockedPopup>
+      ) : (
+        <FloatingPopup longitude={longitude} latitude={latitude} onClose={onClose} offset={offset} titleId={titleId}>
+          {children}
+        </FloatingPopup>
+      )}
+    </PopupTitleIdContext.Provider>
   );
 }
 
 /** Desktop: the popup at the point. Escape closes it (when focus is in it, on the map or nowhere); focus then goes back. */
-function FloatingPopup({ longitude, latitude, onClose, offset, children }: Required<Omit<MapPopupProps, 'children'>> & { children: ReactNode }) {
+function FloatingPopup({ longitude, latitude, onClose, offset, titleId, children }: Required<Omit<MapPopupProps, 'children'>> & { titleId: string; children: ReactNode }) {
   const { current: map } = useMap();
   const content = useRef<HTMLDivElement>(null);
+  useAnnouncePopup(content, true);
   const onCloseRef = useRef(onClose);
   useEffect(() => {
     onCloseRef.current = onClose;
@@ -72,9 +77,10 @@ function FloatingPopup({ longitude, latitude, onClose, offset, children }: Requi
       maxWidth="248px"
       className="z-20"
     >
-      <CloseButton onClick={onClose} className="absolute top-3 right-3 z-10" />
-      <div ref={content} className="flex w-[220px] flex-col">
-        {children}
+      {/* Non-modal: focus stays where it is (the map), the popup is only named for screen readers */}
+      <div ref={content} role="dialog" aria-labelledby={titleId}>
+        <CloseButton onClick={onClose} className="absolute top-3 right-3 z-10" />
+        <div className="flex w-[220px] flex-col">{children}</div>
       </div>
     </Popup>
   );

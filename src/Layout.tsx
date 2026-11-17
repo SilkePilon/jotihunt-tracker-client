@@ -11,6 +11,7 @@ import EditionReloader from '@/components/EditionReloader';
 import AddPasskeyPrompt from './components/AddPasskeyPrompt';
 import ErrorBoundary from './components/ErrorBoundary';
 import StaleDataBadge from './components/StaleDataBadge';
+import PopupAnnouncer from './components/map/popup/PopupAnnouncer';
 import NotificationsDialog from './components/notifications/NotificationsDialog';
 import AccountDialog from './components/account/AccountDialog';
 import LayersDialog from './components/map/layers/LayersDialog';
@@ -159,14 +160,17 @@ export default function Layout() {
                 <AddPasskeyPrompt/>
                 {/* Here and not on the map page: hunts registered while another page is open are announced too */}
             </ErrorBoundary>
+            {/* Page heading for screen readers, before the sidebar's section headings (h2) in the outlet */}
+            <h1 className="sr-only">Jotihunt Tracker</h1>
             <ErrorBoundary name="Deze pagina" variant="floating">
                 <Outlet context={{mapRef} satisfies OutletContextType}/>
             </ErrorBoundary>
             {/* After the outlet: at the same z-index the later element is on top */}
             <StaleDataBadge/>
-            {/* Landmark + page heading for screen readers; <main> is unstyled, so the map's layout is unchanged */}
+            {/* Landmark for screen readers; <main> is unstyled, so the map's layout is unchanged */}
             <main>
-                <h1 className="sr-only">Jotihunt Tracker</h1>
+                {/* Always mounted: map popups announce "<titel> geopend" here */}
+                <PopupAnnouncer/>
                 <ErrorBoundary name="De kaart" className="mx-auto mt-[40dvh] w-fit">
                     <Map ref={mapRef}/>
                 </ErrorBoundary>

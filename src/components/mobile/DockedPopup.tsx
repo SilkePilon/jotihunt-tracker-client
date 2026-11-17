@@ -2,6 +2,7 @@ import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from 're
 import { createPortal } from 'react-dom';
 import { motion } from 'motion/react';
 import { useMap } from 'react-map-gl/maplibre';
+import { useAnnouncePopup } from '@/components/map/popup/popup-a11y';
 import { CloseButton } from '@/components/ui/close-button';
 import { useBackEntry } from '@/hooks/back-entry.hook';
 import { useRestoreFocus } from '@/hooks/restore-focus.hook';
@@ -47,6 +48,9 @@ function useExitGhost(dock: HTMLElement | null) {
         if (node.isConnected || !dock.isConnected) return;
         const ghost = node.cloneNode(true) as HTMLElement;
         ghost.setAttribute('aria-hidden', 'true');
+        // Not a second dialog, nor a second element with the (reused) title id
+        ghost.removeAttribute('role');
+        for (const element of ghost.querySelectorAll('[id]')) element.removeAttribute('id');
         ghost.style.cssText += ';position:absolute;left:0;right:0;bottom:0;pointer-events:none;';
         dock.appendChild(ghost);
         const animation = ghost.animate([{ opacity: 1, transform: 'translateY(0)' }, { opacity: 0, transform: 'translateY(16px)' }], {
@@ -66,7 +70,20 @@ function useExitGhost(dock: HTMLElement | null) {
  * Phones: a map popup as a card docked just above the sheet instead of floating at the point (where the sheet
  * would hide it). The map eases the point into view; the padding keeps it above the sheet. Back or X closes it.
  */
-export default function DockedPopup({ longitude, latitude, onClose, children }: { longitude: number; latitude: number; onClose: () => void; children: ReactNode }) {
+export default function DockedPopup({
+  longitude,
+  latitude,
+  onClose,
+  titleId,
+  children,
+}: {
+  longitude: number;
+  latitude: number;
+  onClose: () => void;
+  /** PopupHeader's title id, which names the card's dialog role */
+  titleId?: string;
+  children: ReactNode;
+}) {
   const { current: map } = useMap();
   const dock = useDock();
   // X and Back animate the card away first, then close for real
@@ -75,6 +92,7 @@ export default function DockedPopup({ longitude, latitude, onClose, children }: 
   const requestClose = () => setClosing(true);
   useBackEntry('popup', true, requestClose);
   const ref = useExitGhost(dock);
+  useAnnouncePopup(ref, dock);
   // Ease once per mount: live popups (hunters, Life360) get new coordinates on every GPS update and must not fight
   // the user's pan/zoom. Switching to another point remounts the popup (key), which eases again.
   const [center] = useState<[number, number]>(() => [longitude, latitude]);
@@ -97,6 +115,8 @@ export default function DockedPopup({ longitude, latitude, onClose, children }: 
         onClose();
       }}
       inert={closing}
+      role="dialog"
+      aria-labelledby={titleId}
       className="pointer-events-auto relative rounded-3xl bg-card p-3.5 text-[13px] leading-[1.35] text-card-foreground shadow-[0_0_0_1px_var(--border),0_18px_50px_rgb(0_0_0/.35)]"
     >
       <CloseButton onClick={requestClose} className="absolute top-3 right-3" />
