@@ -4,6 +4,7 @@ import { INTEL_TAB_ORDER } from '@/lib/intel-window';
 import { POP, POP_SPRING, SWAP_TRANSITION } from '@/lib/motion';
 import { COARSE_HIT_AREA } from '@/lib/hit-area';
 import { cn } from '@/lib/utils';
+import { SEGMENT_THUMB } from '@/components/beheer/controls/Segmented';
 import useIntelStore from '@/stores/intel.store';
 import type { IntelTab } from '@/types/Intel';
 
@@ -34,7 +35,7 @@ export default function IntelTopBar({ unread, detail, onBack }: { unread: Partia
       </motion.button>
       <h2 className="text-[17px] font-bold">Intel</h2>
       {/* A filter over one timeline (no separate panels): toggle buttons, not a tablist. Looks like beheer/controls/Segmented
-          (track, thumb shadow, spring); isolate keeps the 44px touch areas above the track */}
+          (track, SEGMENT_THUMB, spring); isolate keeps the 44px touch areas above the track */}
       <div role="group" aria-label="Soort" className="isolate flex gap-0.5 rounded-lg bg-beheer-row p-[3px]">
         {INTEL_TAB_ORDER.map((value) => {
           const active = value === tab;
@@ -51,7 +52,7 @@ export default function IntelTopBar({ unread, detail, onBack }: { unread: Partia
               )}
             >
               {active && (
-                <motion.span layoutId="intel-tab" className="absolute inset-0 rounded-[9px] bg-card shadow-[0_1px_3px_rgb(0_0_0/0.25)]" transition={POP_SPRING} />
+                <motion.span layoutId="intel-tab" className={cn('absolute inset-0 rounded-[9px]', SEGMENT_THUMB)} transition={POP_SPRING} />
               )}
               <span className="relative">{LABELS[value]}</span>
               <AnimatePresence>{unread[value] && <motion.span key="dot" {...POP} aria-hidden className="relative size-[7px] rounded-full bg-primary-text dark:bg-primary" />}</AnimatePresence>

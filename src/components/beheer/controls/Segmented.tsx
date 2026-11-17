@@ -27,7 +27,13 @@ interface SegmentedProps<T extends string> {
   className?: string;
 }
 
-/** Pill group on a soft background; the selected segment is card-coloured with a shadow and slides to a new choice. Wraps on narrow screens. */
+/**
+ * The selected segment: card-coloured with a hairline and a soft drop shadow. The card alone is ~1.1:1 against the
+ * beheer-row track; the hairline (input mixed 15% towards the foreground) is >= 3.9:1 against it in both themes.
+ */
+export const SEGMENT_THUMB = 'bg-card shadow-[inset_0_0_0_1.5px_color-mix(in_oklab,var(--input)_85%,var(--foreground)),0_1px_3px_rgb(0_0_0/0.25)]';
+
+/** Pill group on a soft background; the selected segment is card-coloured with a hairline and slides to a new choice. Wraps on narrow screens. */
 export default function Segmented<T extends string>({ value, options, onChange, label, disabled, busy, className }: SegmentedProps<T>) {
   const id = useId();
   return (
@@ -55,7 +61,7 @@ export default function Segmented<T extends string>({ value, options, onChange, 
               selected ? (option.selectedTextClassName ?? 'text-foreground') : 'text-muted-foreground hover:text-foreground',
             )}
           >
-            {selected && <motion.span layoutId={`${id}-selected`} aria-hidden className={cn('absolute inset-0 rounded-[9px] transition-colors', option.selectedClassName ?? 'bg-card shadow-[0_1px_3px_rgb(0_0_0/0.25)]')} transition={POP_SPRING} />}
+            {selected && <motion.span layoutId={`${id}-selected`} aria-hidden className={cn('absolute inset-0 rounded-[9px] transition-colors', option.selectedClassName ?? SEGMENT_THUMB)} transition={POP_SPRING} />}
             <span className="relative inline-flex items-center gap-1.5">
               {option.icon}
               {option.label}
