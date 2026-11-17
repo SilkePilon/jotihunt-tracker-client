@@ -1,4 +1,5 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { useNavigate, useParams } from 'react-router';
 import { KeyRoundIcon, Link2OffIcon, Loader2Icon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,7 +9,9 @@ import AuthSwap from '@/components/auth/AuthSwap';
 import WelcomeCard from '@/components/auth/WelcomeCard';
 import Reveal from '@/components/motion/Reveal';
 import { fetchRecovery, passkeysSupported, recoverWithoutPasskey, recoverWithPasskey } from '@/lib/auth-api';
-import { classifyPasskeyError, PASSKEY_MESSAGES } from '@/lib/passkey';
+import { classifyPasskeyError, isLinkGone, PASSKEY_MESSAGES, SESSION_NOT_STORED } from '@/lib/passkey';
+import { SWAP } from '@/lib/motion';
+import UnreachableCard from '@/components/auth/UnreachableCard';
 import { useStartSession } from '@/hooks/start-session.hook';
 import InlineError from '@/components/InlineError';
 
@@ -22,18 +25,40 @@ export default function Herstel() {
   const [done, setDone] = useState<{ name: string; withPasskey: boolean } | null>(null);
   const supported = passkeysSupported();
 
+  /** The link couldn't be checked (no answer, server error): retry, it isn't "expired" */
+  const [unreachable, setUnreachable] = useState(false);
+  /** Recovered, but the browser didn't keep the session: the button goes to login */
+  const [recovered, setRecovered] = useState(false);
+
+  const load = useCallback(
+    () =>
+      fetchRecovery(token).then(
+        (result) => {
+          setState(result);
+          setUnreachable(false);
+        },
+        (failure) => {
+          if (isLinkGone(failure)) setState({ valid: false });
+          else setUnreachable(true);
+        },
+      ),
+    [token],
+  );
   useEffect(() => {
-    fetchRecovery(token)
-      .then(setState)
-      .catch(() => setState({ valid: false }));
-  }, [token]);
+    void load();
+  }, [load]);
 
   async function handleClick() {
     setBusy(true);
     setError(null);
     try {
       const result = supported ? await recoverWithPasskey(token) : await recoverWithoutPasskey(token);
-      startSession(result);
+      // The link is used up now; a browser that won't keep the session gets told what to do instead of a welcome
+      if (!startSession(result)) {
+        setError(supported ? SESSION_NOT_STORED.withPasskey : SESSION_NOT_STORED.withoutPasskey);
+        setRecovered(true);
+        return;
+      }
       setDone({ name: result.user.name, withPasskey: supported });
     } catch (failure) {
       const kind = classifyPasskeyError(failure);
@@ -47,6 +72,7 @@ export default function Herstel() {
   let scene: string;
   let content: ReactNode;
   if (done) [scene, content] = ['done', <WelcomeCard name={done.name} withPasskey={done.withPasskey} />];
+  else if (unreachable && !state) [scene, content] = ['unreachable', <UnreachableCard onRetry={load} />];
   else if (!state) [scene, content] = ['loading', <Skeleton className="h-60 w-full max-w-sm rounded-xl" />];
   else if (!state.valid) [scene, content] = ['invalid', renderInvalid()];
   else [scene, content] = ['form', renderForm(state.name)];
@@ -85,9 +111,19 @@ export default function Herstel() {
         <p className="text-sm text-muted-foreground">
           {supported ? 'Je apparaat vraagt om je vingerafdruk, gezicht of schermvergrendeling. Daarna ben je ingelogd.' : 'Deze browser ondersteunt geen passkeys. Je wordt ingelogd zonder passkey.'}
         </p>
-        <Button size="lg" className="w-full" onClick={handleClick} disabled={busy}>
-          {busy ? <Loader2Icon className="animate-spin" /> : supported && <KeyRoundIcon />}
-          {supported ? 'Passkey maken' : 'Inloggen'}
+        <Button size="lg" className="w-full" onClick={recovered ? () => navigate('/login') : handleClick} disabled={busy}>
+          <AnimatePresence mode="popLayout" initial={false}>
+            <motion.span key={recovered ? 'login' : 'recover'} className="inline-flex items-center gap-2" {...SWAP}>
+              {recovered ? (
+                'Naar inloggen'
+              ) : (
+                <>
+                  {busy ? <Loader2Icon className="animate-spin" /> : supported && <KeyRoundIcon />}
+                  {supported ? 'Passkey maken' : 'Inloggen'}
+                </>
+              )}
+            </motion.span>
+          </AnimatePresence>
         </Button>
         <Reveal gap={16}>
           {error && (

@@ -51,3 +51,16 @@ export function inviteGoneReason(error: unknown): InviteReason | null {
   if (!reason) return null;
   return INVITE_REASONS.includes(reason as InviteReason) ? (reason as InviteReason) : 'unknown';
 }
+
+/** Whether a failed link check (GET /invites/:code, /herstel/:token) means the link is really gone (404/410), not just unreachable. */
+export function isLinkGone(error: unknown): boolean {
+  if (!isAxiosError(error)) return false;
+  const status = error.response?.status;
+  return status === 404 || status === 410;
+}
+
+/** The account (or new passkey) is there but this browser didn't keep the session (startSession returned false). */
+export const SESSION_NOT_STORED = {
+  withPasskey: 'Gelukt, maar inloggen op dit apparaat mislukte. Ga naar inloggen en gebruik je nieuwe passkey.',
+  withoutPasskey: 'Gelukt, maar inloggen op dit apparaat mislukte. Sta opslag/cookies voor deze site toe en vraag de organisatie om een herstel-link.',
+} as const;
