@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { toast } from 'sonner';
 import { CheckIcon, Loader2Icon } from 'lucide-react';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
@@ -12,7 +12,7 @@ import { useNow } from '@/hooks/now.hook';
 import { useTeams } from '@/hooks/teams.hook';
 import { apiErrorMessage } from '@/lib/api-error';
 import { apiAssetUrl, draftFrom, fromLocalInput, generalPatch, isDirty, timelineGeometry, type AdminConfig, type GeneralDraft } from '@/lib/app-config';
-import { POP, REVEAL_TRANSITION, SWAP_TRANSITION } from '@/lib/motion';
+import { POP, REVEAL_TRANSITION, revealTransition, SWAP_TRANSITION } from '@/lib/motion';
 import { VEHICLE_ICONS, VEHICLE_OPTIONS } from '@/lib/tracker';
 import { cn, getColorFromArea } from '@/lib/utils';
 import useAdminStore from '@/stores/admin.store';
@@ -136,6 +136,7 @@ function DateTimeInput({ id, value, invalid, disabled, onChange }: { id: string;
 
 /** Sticky at the bottom of the pane while there are changes; slides up, and the cards below make room smoothly. */
 function SaveBar({ show, saving, disabled, onReset, onSave }: { show: boolean; saving: boolean; disabled: boolean; onReset: () => void; onSave: () => void }) {
+  const reduced = useReducedMotion() ?? false;
   return (
     <AnimatePresence initial={false}>
       {show && (
@@ -146,8 +147,9 @@ function SaveBar({ show, saving, disabled, onReset, onSave }: { show: boolean; s
           style={{ overflow: 'hidden' }}
           initial={{ height: 0, opacity: 0 }}
           animate={{ height: 'auto', opacity: 1, transitionEnd: { overflow: 'visible' } }}
-          exit={{ height: 0, opacity: 0, overflow: 'hidden' }}
-          transition={SWAP_TRANSITION}
+          // Reduced motion: the bar takes (or gives back) its room at once and only fades
+          exit={{ height: 0, opacity: 0, overflow: 'hidden', transition: revealTransition(reduced, 'exit') }}
+          transition={revealTransition(reduced, 'enter')}
         >
           <div className="pt-3.5">
             <motion.div

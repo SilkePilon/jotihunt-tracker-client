@@ -5,7 +5,7 @@ import { useAreas } from '@/hooks/areas.hook';
 import { useHuntableAreas } from '@/hooks/huntable-areas.hook';
 import { FOX_GROUP_LABEL, FOX_GROUP_ORDER, groupCounts, legendGroups, type FoxGroup, type SidebarFox } from '@/lib/fox-status';
 import LoadError from '@/components/LoadError';
-import { EASE_OUT, REVEAL_TRANSITION, SWAP, SWAP_TRANSITION } from '@/lib/motion';
+import { EASE_OUT, revealTransition, SWAP, SWAP_TRANSITION } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import FoxChip from './FoxChip';
 import FoxHistory from './FoxHistory';
@@ -228,8 +228,9 @@ export default function FoxesCard() {
             layout="position"
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0, overflow: 'hidden' }}
-            transition={REVEAL_TRANSITION}
+            // Reduced motion: the group takes (or gives back) its room at once and only fades
+            exit={{ height: 0, opacity: 0, overflow: 'hidden', transition: revealTransition(reduced, 'exit') }}
+            transition={revealTransition(reduced, 'enter')}
             className="[&:last-child>div]:pb-0"
           >
             {/* clip only on exit (fold out); entering and resting groups stay overflow-visible so popping chips aren't cut off */}
