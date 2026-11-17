@@ -139,6 +139,8 @@ function SaveBar({ show, saving, disabled, onReset, onSave }: { show: boolean; s
       {show && (
         <motion.div
           key="savebar"
+          // The Beheer pane's scroller adds scroll padding while this is there (BeheerWindow, has-[[data-save-bar]])
+          data-save-bar
           // -14px cancels the column's gap, so the bar takes no room once folded away
           className="sticky bottom-4 z-10 -mt-3.5"
           style={{ overflow: 'hidden' }}

@@ -110,7 +110,8 @@ export default function BeheerWindow({ mapRef }: BeheerWindowProps) {
                 </IconPill>
                 <h2 className="text-lg font-bold">{titleOf(section)}</h2>
               </div>
-              <div className="min-h-0 flex-1 overflow-y-auto pb-4">
+              {/* While the sticky save bar shows (GeneralSettings), keyboard focus / scrollIntoView keeps fields clear of it */}
+              <div className="min-h-0 flex-1 overflow-y-auto pb-4 has-[[data-save-bar]]:scroll-pb-24">
                 <AnimatePresence mode="wait" initial={false}>
                   <motion.div key={section} {...SWAP}>
                     {pane}
@@ -135,7 +136,7 @@ export default function BeheerWindow({ mapRef }: BeheerWindowProps) {
       </nav>
       <div className="min-h-0 overflow-hidden">
         <AnimatePresence mode="wait" initial={false}>
-          <motion.div key={section} className="h-full overflow-y-auto px-7 py-6" {...SWAP}>
+          <motion.div key={section} className="h-full overflow-y-auto px-7 py-6 has-[[data-save-bar]]:scroll-pb-24" {...SWAP}>
             {pane}
           </motion.div>
         </AnimatePresence>
