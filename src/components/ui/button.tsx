@@ -21,16 +21,17 @@ const buttonVariants = cva(
         link: "text-primary-text underline-offset-4 hover:underline",
       },
       size: {
-        default: "h-9 px-4 py-2 has-[>svg]:px-3",
+        // default / lg / icon-lg are under 44px too: the same invisible touch area, so dense layouts keep their size
+        default: `${COARSE_HIT_AREA} h-9 px-4 py-2 has-[>svg]:px-3`,
         xs: "h-6 gap-1 rounded-md px-2 text-xs has-[>svg]:px-1.5 [&_svg:not([class*='size-'])]:size-3",
         // sm / icon / icon-sm are under 44px: on phones COARSE_HIT_AREA grows the touch area (parent needs `isolate`)
         sm: `${COARSE_HIT_AREA} h-8 gap-1.5 rounded-md px-3 has-[>svg]:px-2.5`,
-        lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
+        lg: `${COARSE_HIT_AREA} h-10 rounded-md px-6 has-[>svg]:px-4`,
         icon: `${COARSE_HIT_AREA} size-9`,
         // 24px button, 44px tall hit area that never overlaps a neighbour 4px away (ICON_XS_HIT_AREA)
         "icon-xs": `${ICON_XS_HIT_AREA} rounded-md [&_svg:not([class*='size-'])]:size-3`,
         "icon-sm": `${COARSE_HIT_AREA} size-8`,
-        "icon-lg": "size-10",
+        "icon-lg": `${COARSE_HIT_AREA} size-10`,
       },
     },
     defaultVariants: {

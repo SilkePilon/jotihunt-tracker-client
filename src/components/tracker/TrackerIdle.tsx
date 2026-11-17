@@ -18,7 +18,8 @@ export default function TrackerIdle({ onPair, onOpenGuide }: TrackerIdleProps) {
   return (
     <div className="flex flex-col gap-2.5" data-tracker-state="idle">
       <p className="text-xs text-muted-foreground">Deel je locatie met het team zodat iedereen ziet waar je bent.</p>
-      <Button size="lg" onClick={onPair}>
+      {/* The card's main action: a full 44px on touch screens */}
+      <Button size="lg" className="pointer-coarse:h-11" onClick={onPair}>
         <SmartphoneIcon />
         Koppel je telefoon
       </Button>
