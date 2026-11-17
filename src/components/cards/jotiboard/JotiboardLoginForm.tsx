@@ -1,5 +1,6 @@
-import { FormEvent, useId, useState } from 'react';
-import { Loader2Icon, XIcon } from 'lucide-react';
+import { FormEvent, useId, useRef, useState } from 'react';
+import { XIcon } from 'lucide-react';
+import BusyIcon from '@/components/motion/BusyIcon';
 import Reveal from '@/components/motion/Reveal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,13 +24,16 @@ export default function JotiboardLoginForm({ fixedUsername, submitLabel, onSubmi
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
+  // Enter pressed twice before the re-render: one login per tap
+  const pending = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const errorId = useId();
   const user = fixedUsername ?? username;
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (!user.trim() || !password || busy) return;
+    if (!user.trim() || !password || pending.current) return;
+    pending.current = true;
     setBusy(true);
     setError(null);
     let message: string | null;
@@ -38,6 +42,7 @@ export default function JotiboardLoginForm({ fixedUsername, submitLabel, onSubmi
     } catch {
       message = 'Koppelen is mislukt, probeer het opnieuw.';
     } finally {
+      pending.current = false;
       setBusy(false);
     }
     setError(message);
@@ -49,13 +54,13 @@ export default function JotiboardLoginForm({ fixedUsername, submitLabel, onSubmi
       {onCancel && (
         <div className="flex items-center justify-between">
           <span className="text-xs font-semibold">Inloggen bij Jotiboard</span>
-          <Button type="button" variant="ghost" size="icon" className="relative size-6 text-muted-foreground after:absolute after:-inset-2.5" aria-label="Koppelen annuleren" onClick={onCancel}>
+          <Button type="button" variant="ghost" size="icon" className="relative size-6 text-muted-foreground after:absolute after:-inset-2.5" aria-label="Koppelen annuleren" onClick={onCancel} disabled={busy}>
             <XIcon />
           </Button>
         </div>
       )}
       {fixedUsername === undefined && (
-        <Input autoFocus autoComplete="username" placeholder="Gebruikersnaam" aria-label="Gebruikersnaam" value={username} onChange={(event) => setUsername(event.target.value)} />
+        <Input autoFocus autoComplete="username" placeholder="Gebruikersnaam" aria-label="Gebruikersnaam" readOnly={busy} value={username} onChange={(event) => setUsername(event.target.value)} />
       )}
       <Input
         type="password"
@@ -65,6 +70,7 @@ export default function JotiboardLoginForm({ fixedUsername, submitLabel, onSubmi
         autoFocus={fixedUsername !== undefined}
         aria-invalid={!!error}
         aria-describedby={error ? errorId : undefined}
+        readOnly={busy}
         value={password}
         onChange={(event) => setPassword(event.target.value)}
       />
@@ -75,8 +81,8 @@ export default function JotiboardLoginForm({ fixedUsername, submitLabel, onSubmi
           </InlineError>
         )}
       </Reveal>
-      <Button type="submit" className={cn('h-9 w-full rounded-lg font-semibold', JOTIBOARD_BUTTON)} disabled={!user.trim() || !password || busy}>
-        {busy && <Loader2Icon className="animate-spin" />}
+      <Button type="submit" className={cn('h-9 w-full rounded-lg font-semibold', JOTIBOARD_BUTTON)} disabled={!user.trim() || !password || busy} aria-busy={busy}>
+        <BusyIcon busy={busy} />
         {submitLabel}
       </Button>
       {!hideNote && <p className="text-[11px] leading-snug text-muted-foreground">Het wachtwoord wordt niet bewaard, alleen een versleutelde sessie.</p>}

@@ -72,7 +72,7 @@ export default function Life360Card({ status, isError, members, onRefresh, onUnl
           emailPrefill={emailPrefill}
           onOpenEmail={() => setEmailStep(true)}
           onCloseEmail={() => setEmailStep(false)}
-          onOtherAddress={() => void otherAddress()}
+          onOtherAddress={otherAddress}
           {...actions}
         />
       );

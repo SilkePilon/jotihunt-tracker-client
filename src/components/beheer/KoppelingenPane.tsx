@@ -536,7 +536,7 @@ export default function KoppelingenPane({ mapRef }: { mapRef: RefObject<MapRef |
               emailPrefill={emailPrefill}
               onOpenEmail={() => setEmailStep(true)}
               onCloseEmail={() => setEmailStep(false)}
-              onOtherAddress={() => void otherAddress()}
+              onOtherAddress={otherAddress}
               onSendCode={(email) => errorText(() => life360.sendCode(email), 'Code versturen is mislukt, probeer het opnieuw.')}
               onVerifyCode={(code) => errorText(() => life360.verifyCode(code), 'Koppelen is mislukt, probeer het opnieuw.')}
               onChooseCircle={(circleId) => errorText(() => life360.chooseCircle(circleId), 'Cirkel kiezen is mislukt, probeer het opnieuw.')}
