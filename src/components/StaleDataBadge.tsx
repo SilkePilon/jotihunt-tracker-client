@@ -57,9 +57,10 @@ export default function StaleDataBadge() {
             // Centred through motion's x, since motion owns the transform. md+: centred over the map area right of the
             // 320px sidebar (left 8px + 320px, like the happy-hour pill in App.tsx), so it never covers the sidebar
             style={{ x: '-50%' }}
-            className="pointer-events-none fixed left-1/2 top-[calc(env(safe-area-inset-top)+8px)] z-50 flex w-max max-w-[min(calc(100vw-32px),420px)] items-center md:left-[calc(50%+164px)] md:max-w-[min(calc(100vw-360px),420px)] gap-1.5 rounded-badge bg-destructive px-2.5 py-1 text-xs font-semibold text-white shadow-md"
+            className="pointer-events-none fixed left-1/2 top-[calc(env(safe-area-inset-top)+8px)] z-50 flex w-max max-w-[min(calc(100vw-32px),420px)] items-center md:left-[calc(50%+164px)] md:max-w-[min(calc(100vw-360px),420px)] gap-2 rounded-full bg-fox-error-container py-1.5 pr-3.5 pl-2.5 text-[13px] font-bold text-fox-on-error shadow-md"
           >
-            <WifiOffIcon className="size-3.5 shrink-0" />
+            {/* Round tonal pill like the happy-hour pill: dark red on the light red container (7.2:1, both themes) */}
+            <WifiOffIcon className="size-4 shrink-0" />
             {/* Wraps to a second line on narrow phones instead of cutting off the feed or the age */}
             <span className="min-w-0 text-center leading-snug text-balance">{label}</span>
           </motion.div>
