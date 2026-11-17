@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import type { Marker } from '@/types/Marker';
 import { MarkerType } from '@/types/MarkerType';
-import { filterMarkers, groupMarkersByArea, huntDays, latestAreaMarker, markerNoun, markerDeleteDescription, markerSplitTime, markerTimeLabel } from './markers';
+import { filterMarkers, groupMarkersByArea, huntDays, latestAreaMarker, markerNoun, markerDeleteDescription, markerMissingPick, markerSplitTime, markerTimeLabel } from './markers';
 
 function marker(id: string, area: string, time: string, type = MarkerType.Hint): Marker {
   return { _id: id, area, time: time as unknown as Date, type, location: { type: 'Point', coordinates: [5.9, 52] } };
@@ -131,4 +131,17 @@ test('markerNoun', () => {
   expect(markerNoun(MarkerType.Hunt)).toBe('Hunt');
   expect(markerNoun(MarkerType.Spot)).toBe('Spot');
   expect(markerNoun(MarkerType.Hint)).toBe('Hint');
+});
+
+describe('markerMissingPick', () => {
+  const areas = ['alpha', 'bravo'];
+  const day = new Date('2026-10-17T09:00:00');
+  test('names the first missing pick', () => {
+    expect(markerMissingPick({ area: '', day, time: day }, areas)).toBe('Kies eerst een deelgebied.');
+    expect(markerMissingPick({ area: 'alpha', day: new Date(NaN), time: day }, areas)).toBe('Kies eerst een dag.');
+    expect(markerMissingPick({ area: 'alpha', day, time: new Date(NaN) }, areas)).toBe('Vul eerst een tijd in.');
+  });
+  test('null once everything is picked', () => {
+    expect(markerMissingPick({ area: 'bravo', day, time: day }, areas)).toBeNull();
+  });
 });

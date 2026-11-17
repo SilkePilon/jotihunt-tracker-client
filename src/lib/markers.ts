@@ -103,3 +103,15 @@ export function markerDeleteDescription(marker: Pick<Marker, 'area' | 'type' | '
   const area = marker.area.charAt(0).toUpperCase() + marker.area.slice(1);
   return `De ${marker.type} van ${area} (${clock}) verdwijnt voor iedereen van de kaart. Dit kan niet ongedaan worden gemaakt.`;
 }
+
+/**
+ * Why the Hunt/Spot dialog's Registreren is greyed out, in words (the first missing pick), or null when it can be sent.
+ * @param areas The valid Deelgebied values
+ */
+export function markerMissingPick({ area, day, time }: { area: string; day: unknown; time: unknown }, areas: readonly string[]): string | null {
+  if (!areas.includes(area)) return 'Kies eerst een deelgebied.';
+  // The same check as the form's resolver (validDate), so the line and the greyed-out button agree
+  if (!(day instanceof Date) || Number.isNaN(day.getTime())) return 'Kies eerst een dag.';
+  if (!(time instanceof Date) || Number.isNaN(time.getTime())) return 'Vul eerst een tijd in.';
+  return null;
+}

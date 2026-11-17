@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import AreaPicker from '../cards/hint-entry/AreaPicker';
 import { areaOptions, capitalizeFirstLetter, cn } from '@/lib/utils';
 import { DIALOG_ACTION, DIALOG_ACTION_CANCEL, DIALOG_SHELL } from '@/lib/dialog-shell';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { fieldsResolver, oneOf, validDate } from '@/lib/form-resolver';
 import { Field, FieldError, FieldGroup, FieldLabel } from '../ui/field';
 import { Input } from '../ui/input';
@@ -21,7 +21,7 @@ import InlineError from '../InlineError';
 import Reveal from '../motion/Reveal';
 import { popupActionClass } from './popup/PopupActions';
 import BusyIcon from '../motion/BusyIcon';
-import { huntDays, markerNoun } from '@/lib/markers';
+import { huntDays, markerMissingPick, markerNoun } from '@/lib/markers';
 import useMarkerDraftStore, { draftElsewhere, draftKey, keyOfDraft, sameMarkerValues, type MarkerDraft, type MarkerDraftValues } from '@/stores/marker-draft.store';
 import { AnimatePresence, motion } from 'motion/react';
 import { SWAP } from '@/lib/motion';
@@ -51,8 +51,13 @@ const sentValues = (draft: MarkerDraft): MarkerDraftValues => ({ area: draft.sen
 /** A dashed info line above the fields (like the HQ line in Meldingen) */
 const NOTE = 'flex items-start gap-2 rounded-[14px] border border-dashed px-3 py-2.5 text-xs text-muted-foreground';
 
+/** The Hunt button's full name and the Hunt dialog's title: it marks our own hunt on the map */
+const HUNT_ACTION_LABEL = 'Hunt markeren op kaart';
+
+const AREA_VALUES = areaOptions.map((option) => option.value);
+
 const formResolver = fieldsResolver<FormValues>({
-  area: oneOf(areaOptions.map((option) => option.value), 'Geen geldig deelgebied.'),
+  area: oneOf(AREA_VALUES, 'Geen geldig deelgebied.'),
   day: validDate('Geen geldige dag.'),
   time: validDate('Geen geldige tijd.'),
 });
@@ -259,6 +264,10 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
   // says it isn't there ('absent': save again)
   const primary = pending?.outcome === 'unknown' ? 'recheck' : pending ? 'resave' : 'save';
   const busy = isSubmitting || checking;
+  // Why Registreren is greyed out, said under the buttons (the first missing pick); not for Opnieuw controleren
+  const [areaValue, dayValue, timeValue] = useWatch({ control: form.control, name: ['area', 'day', 'time'] });
+  const missing = primary === 'recheck' || readOnly ? null : markerMissingPick({ area: areaValue, day: dayValue, time: timeValue }, AREA_VALUES);
+  const missingId = `${fieldId}-missing`;
 
   const renderForm = () => (
     <form onSubmit={form.handleSubmit(onSubmit)} className="flex min-h-0 flex-1 flex-col">
@@ -388,8 +397,15 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
           </Reveal>
         </FieldGroup>
       </div>
-      {/* Phones: side by side at full width (like Meldingen); desktop: right-aligned */}
-      <div className="mt-4 flex shrink-0 gap-2 *:flex-1 sm:justify-end sm:*:flex-none">
+      <Reveal>
+        {missing && (
+          <p id={missingId} className="pt-3 text-xs text-muted-foreground desk:text-right">
+            {missing}
+          </p>
+        )}
+      </Reveal>
+      {/* Phones (landscape too): side by side at full width (like Meldingen); desktop: right-aligned */}
+      <div className="mt-4 flex shrink-0 gap-2 *:flex-1 desk:justify-end desk:*:flex-none">
         <Button variant="outline" type="button" className={cn(DIALOG_ACTION_CANCEL, 'pointer-coarse:h-11')} disabled={busy} onClick={close}>
           Annuleren
         </Button>
@@ -399,7 +415,8 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
           type={primary === 'recheck' ? 'button' : 'submit'}
           onClick={primary === 'recheck' ? recheck : undefined}
           className={cn(DIALOG_ACTION, 'pointer-coarse:h-11')}
-          disabled={busy || (primary !== 'recheck' && (!form.formState.isValid || readOnly))}
+          disabled={busy || (primary !== 'recheck' && (!!missing || !form.formState.isValid || readOnly))}
+          aria-describedby={missing ? missingId : undefined}
           aria-busy={busy}
         >
           <PrimaryLabel id={primary}>
@@ -425,7 +442,8 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
       <ResponsiveDialog
         open={dialogOpen}
         onClose={close}
-        title={`${capitalizeFirstLetter(markerType ?? '')} registreren`}
+        // A Hunt here is our own marking, not the official hunt (that comes in from jotihunt.nl): the title says so
+        title={markerType === MarkerType.Hunt ? HUNT_ACTION_LABEL : `${capitalizeFirstLetter(markerType ?? '')} registreren`}
         description={markerType === MarkerType.Spot ? 'Je hebt de vos hier gezien.' : 'Eigen markering op de kaart. Officiële hunts komen vanzelf binnen van jotihunt.nl.'}
         compact
         className={cn(DIALOG_SHELL, 'bg-card sm:max-w-lg')}
@@ -450,7 +468,7 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
           document.getElementById(`${fieldId}-area`)?.focus();
         }}
       />
-      <button type="button" className={popupActionClass('primary', 'min-w-0 flex-1')} disabled={readOnly} onClick={() => openDialog(MarkerType.Hunt)}>
+      <button type="button" className={popupActionClass('primary', 'min-w-0 flex-1')} disabled={readOnly} title={HUNT_ACTION_LABEL} aria-label={HUNT_ACTION_LABEL} onClick={() => openDialog(MarkerType.Hunt)}>
         <CrosshairIcon /> Hunt
       </button>
       {/* Hunt is the main action (soft primary); Spot the neutral tonal one, so the two read apart at a glance */}
