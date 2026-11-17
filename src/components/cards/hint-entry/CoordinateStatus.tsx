@@ -7,7 +7,8 @@ import { cn } from '@/lib/utils';
 export type CoordinateState = 'idle' | 'inside' | 'outside';
 
 const STATES = {
-  idle: { Icon: KeyboardIcon, text: 'Tik op de vakjes om te typen', className: 'text-muted-foreground' },
+  // A phone's number pad has no '?': its '.' types an unknown digit (lib/hint-guess.ts WILDCARD_KEYS), said up front
+  idle: { Icon: KeyboardIcon, text: 'Tik op de vakjes · . = onbekend cijfer', className: 'text-muted-foreground' },
   inside: { Icon: CircleCheckIcon, text: 'Ligt in Nederland', className: 'text-fox-ok' },
   outside: { Icon: TriangleAlertIcon, text: 'Buiten Nederland', className: 'text-fox-error' },
 } as const;
