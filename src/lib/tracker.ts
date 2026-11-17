@@ -146,8 +146,8 @@ function ageText(iso: string | undefined, now: number): string | undefined {
   return minutes < 60 ? `${minutes} min` : `${Math.round(minutes / 60)} u`;
 }
 
-/** The pair action on an iPhone/iPad (no Android app there): it opens the Traccar Client guide */
-export const IOS_PAIR_LABEL = 'Koppel je iPhone (Traccar)';
+/** The pair action on an iPhone/iPad (no Android app there): it opens the Traccar Client guide. No device name: isIOSDevice() covers both */
+export const IOS_PAIR_LABEL = 'Koppel via Traccar';
 
 /** First line of the phone sheet's peek strip. `isError`: the last fetch failed; without a status yet that's a failed
  * first load, and a tap opens the tracker page (its LoadError retries). */
