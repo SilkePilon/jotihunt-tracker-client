@@ -6,6 +6,7 @@ import AutoHeight from '@/components/motion/AutoHeight';
 import Reveal from '@/components/motion/Reveal';
 import { useIsMobile } from '@/hooks/media.hook';
 import { focusDropped, neighbourIndex } from '@/lib/focus';
+import { PANE_TITLE } from '@/lib/dialog-shell';
 import { SWAP, SWAP_TRANSITION, revealTransition } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { Pill } from './controls/Pill';
@@ -52,7 +53,7 @@ export function BeheerPane({ title, description, action, children }: { title: st
     <div className="flex flex-col">
       <div className="mb-[18px] flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <h2 className={isMobile ? 'sr-only' : 'text-[22px] leading-tight font-bold'}>{title}</h2>
+          <h2 className={isMobile ? 'sr-only' : PANE_TITLE}>{title}</h2>
           <FadeSwap className="mt-0.5 text-body text-muted-foreground">{description}</FadeSwap>
         </div>
         {action}

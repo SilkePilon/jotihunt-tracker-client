@@ -1,6 +1,7 @@
 import type { RefObject } from 'react';
 import { MapRef } from '@/components/Map';
 import { useNow } from '@/hooks/now.hook';
+import { PANE_TITLE } from '@/lib/dialog-shell';
 import { formatClock } from '@/lib/format';
 import { earnedPoints, solvedCount } from '@/lib/intel-window';
 import type { AssignmentStatus, IntelItem } from '@/types/Intel';
@@ -25,7 +26,7 @@ export default function IntelDetail({ item, area, mapRef }: IntelDetailProps) {
     <div className="flex flex-col gap-3">
       <div className="rounded-3xl bg-card px-6 pt-5 pb-[18px]">
         {/* Takes focus when the item pushes in (IntelDialog), so keyboard users land on what they opened; no ring for that */}
-        <h2 tabIndex={-1} data-view-focus className="text-[21px] leading-tight font-bold outline-none">
+        <h2 tabIndex={-1} data-view-focus className={`${PANE_TITLE} outline-none`}>
           {item.title}
         </h2>
         <div className="mt-2 flex flex-wrap items-center gap-2 text-caption text-muted-foreground">
