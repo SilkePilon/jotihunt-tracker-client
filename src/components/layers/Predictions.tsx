@@ -7,6 +7,7 @@ import { predictionAreaCircles, PREDICTION_PINS_LAYER, predictionPinFeatures } f
 import { themedIconExpression, type MarkerPalette } from '@/lib/marker-style';
 import { buildPredictionMap } from '@/lib/prediction';
 import { getColorFromArea } from '@/lib/utils';
+import { ICON_SIZE, zoomScaled } from '@/lib/zoom-scale';
 import { useMarkerPalette, useMarkerTheme } from './marker-icons';
 
 const LINES_SOURCE = 'prediction-lines';
@@ -17,9 +18,9 @@ const AREAS_SOURCE = 'prediction-areas';
 // to the pin, and a dashed circle (lightly filled) where the fox probably is.
 function predictionPaint({ tertiary }: MarkerPalette) {
   return {
-    line: { 'line-color': tertiary, 'line-width': 2.5, 'line-opacity': 0.8, 'line-dasharray': [2, 2] } satisfies LineLayerSpecification['paint'],
+    line: { 'line-color': tertiary, 'line-width': zoomScaled(2.5), 'line-opacity': 0.8, 'line-dasharray': [2, 2] } satisfies LineLayerSpecification['paint'],
     areaFill: { 'fill-color': tertiary, 'fill-opacity': 0.1 } satisfies FillLayerSpecification['paint'],
-    areaLine: { 'line-color': tertiary, 'line-width': 2, 'line-dasharray': [2, 1.5] } satisfies LineLayerSpecification['paint'],
+    areaLine: { 'line-color': tertiary, 'line-width': zoomScaled(2), 'line-dasharray': [2, 1.5] } satisfies LineLayerSpecification['paint'],
   };
 }
 const PINS_SOURCE = 'prediction-pins';
@@ -36,7 +37,7 @@ export default function Predictions() {
   const data = useMemo(() => buildPredictionMap((predictions ?? []).filter((prediction) => isVisible(prediction.area)), getColorFromArea), [predictions, isVisible]);
   const pins = useMemo(() => predictionPinFeatures(data.pins, isForbidden), [data.pins, isForbidden]);
   const areas = useMemo(() => predictionAreaCircles(data.pins), [data.pins]);
-  const pinLayout = useMemo<SymbolLayerSpecification['layout']>(() => ({ 'icon-image': themedIconExpression(theme), 'icon-allow-overlap': true, 'icon-ignore-placement': true }), [theme]);
+  const pinLayout = useMemo<SymbolLayerSpecification['layout']>(() => ({ 'icon-image': themedIconExpression(theme), 'icon-size': ICON_SIZE, 'icon-allow-overlap': true, 'icon-ignore-placement': true }), [theme]);
 
   return (
     <>

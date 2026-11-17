@@ -6,6 +6,7 @@ import { useTrails } from '@/hooks/trails.hook';
 import { ROUTED_TRAIL_LAYERS, TRAIL_BADGE_LAYER, TRAILS_HIT_LAYER } from '@/lib/map-layers';
 import { badgePoints, changedLegIds, legLooks, visibleTrails, type LegLooks } from '@/lib/trails';
 import { getColorFromArea } from '@/lib/utils';
+import { ICON_SIZE, zoomScaled } from '@/lib/zoom-scale';
 import { featureId, useLayerInteractions, usePopupSelection } from '../map-interactions';
 import LegPopup from './LegPopup';
 import { addTrailBadge } from './trail-badges';
@@ -28,17 +29,17 @@ const FADE_MS = 400;
 const FADE: ExpressionSpecification = ['number', ['feature-state', 'fade'], 1];
 const faded = (opacity: number): ExpressionSpecification => (opacity === 1 ? FADE : ['*', opacity, FADE]);
 
-const CASING_PAINT: LineLayerSpecification['paint'] = { 'line-color': '#ffffff', 'line-width': 6, 'line-opacity': faded(0.9) };
-const WALK_PAINT: LineLayerSpecification['paint'] = { 'line-color': ['get', 'color'], 'line-width': 3.5, 'line-opacity': FADE };
+const CASING_PAINT: LineLayerSpecification['paint'] = { 'line-color': '#ffffff', 'line-width': zoomScaled(6), 'line-opacity': faded(0.9) };
+const WALK_PAINT: LineLayerSpecification['paint'] = { 'line-color': ['get', 'color'], 'line-width': zoomScaled(3.5), 'line-opacity': FADE };
 // Round caps on near-zero dashes: dots
-const CAR_PAINT: LineLayerSpecification['paint'] = { 'line-color': ['get', 'color'], 'line-width': 3.5, 'line-dasharray': [0.1, 2], 'line-opacity': FADE };
-const FALLBACK_PAINT: LineLayerSpecification['paint'] = { 'line-color': '#a8a29e', 'line-width': 2, 'line-dasharray': [1, 2], 'line-opacity': FADE };
+const CAR_PAINT: LineLayerSpecification['paint'] = { 'line-color': ['get', 'color'], 'line-width': zoomScaled(3.5), 'line-dasharray': [0.1, 2], 'line-opacity': FADE };
+const FALLBACK_PAINT: LineLayerSpecification['paint'] = { 'line-color': '#a8a29e', 'line-width': zoomScaled(2), 'line-dasharray': [1, 2], 'line-opacity': FADE };
 const BADGE_PAINT: SymbolLayerSpecification['paint'] = { 'icon-opacity': FADE };
 const HIT_PAINT: LineLayerSpecification['paint'] = { 'line-color': '#000000', 'line-width': 16, 'line-opacity': 0 };
 const BADGE_LAYOUT: SymbolLayerSpecification['layout'] = {
   'symbol-placement': 'point',
   'icon-image': ['get', 'badge'],
-  'icon-size': 1,
+  'icon-size': ICON_SIZE,
   'icon-allow-overlap': true,
   'icon-ignore-placement': true,
   'icon-rotation-alignment': 'viewport',

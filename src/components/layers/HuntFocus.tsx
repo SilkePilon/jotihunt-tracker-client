@@ -22,7 +22,7 @@ export default function HuntFocus() {
       {focus && (
         <Marker key={focus.id} longitude={focus.lng} latitude={focus.lat} anchor="center">
           <motion.span className="pointer-events-none block" initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
-            <span className="block size-16 rounded-full border-[3px] motion-safe:animate-[hq-pulse_1.6s_ease-out_infinite]" style={{ borderColor: focus.color }} />
+            <span className="block size-16 rounded-full border-[3px] [scale:var(--map-marker-scale,1)] motion-safe:animate-[hq-pulse_1.6s_ease-out_infinite]" style={{ borderColor: focus.color }} />
           </motion.span>
         </Marker>
       )}

@@ -6,6 +6,7 @@ import { useNow } from '@/hooks/now.hook';
 import { shownBrands } from '@/lib/fastfood';
 import { FASTFOOD_HOVER_LAYER, FASTFOOD_LAYER, fastfoodFeatures } from '@/lib/map-layers';
 import { themedIconExpression } from '@/lib/marker-style';
+import { HOVER_ICON_SIZE, ICON_SIZE } from '@/lib/zoom-scale';
 import useLayersStore from '@/stores/layers.store';
 import { useBrandLogosReady } from './brand-logos';
 import { featureId, useLayerInteractions, usePopupSelection } from './map-interactions';
@@ -30,8 +31,8 @@ export default function FastFood() {
   const nowMs = useNow(true, TICK_MS);
   const map = useMap().current?.getMap();
   const theme = useMarkerTheme();
-  const layout = useMemo<SymbolLayerSpecification['layout']>(() => ({ 'icon-image': themedIconExpression(theme), 'icon-allow-overlap': true, 'icon-ignore-placement': true }), [theme]);
-  const hoverLayout = useMemo<SymbolLayerSpecification['layout']>(() => ({ ...layout, 'icon-size': 1.1 }), [layout]);
+  const layout = useMemo<SymbolLayerSpecification['layout']>(() => ({ 'icon-image': themedIconExpression(theme), 'icon-size': ICON_SIZE, 'icon-allow-overlap': true, 'icon-ignore-placement': true }), [theme]);
+  const hoverLayout = useMemo<SymbolLayerSpecification['layout']>(() => ({ ...layout, 'icon-size': HOVER_ICON_SIZE }), [layout]);
 
   const { active, open: openPopup, close: closePopup, dismiss: dismissPopup } = usePopupSelection<string>();
   const [hoveredId, setHoveredId] = useState<string>();

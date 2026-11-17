@@ -11,6 +11,7 @@ import { allFallback } from '@/lib/trails';
 import { FOX_MARKERS_LAYER, markerFeatures, trailLines } from '@/lib/map-layers';
 import { filterMarkers, groupMarkersByArea, markerSplitTime } from '@/lib/markers';
 import { areaKey, HINT_LABEL_MS, hintNumbering, themedIconExpression, type MarkerTheme } from '@/lib/marker-style';
+import { zoomScaled } from '@/lib/zoom-scale';
 import { MarkerType } from '@/types/MarkerType';
 import { HINT_ANCHOR_OFFSET, useMarkerTheme } from './marker-icons';
 import { featureId, useLayerInteractions, usePopupSelection } from './map-interactions';
@@ -23,7 +24,7 @@ const MAX_TIMEOUT_MS = 2 ** 31 - 1;
 
 const TRAILS_SOURCE = 'marker-trails';
 const TRAILS_LAYER = 'marker-trails-line';
-const TRAILS_PAINT: LineLayerSpecification['paint'] = { 'line-color': ['get', 'color'], 'line-width': 3 };
+const TRAILS_PAINT: LineLayerSpecification['paint'] = { 'line-color': ['get', 'color'], 'line-width': zoomScaled(3) };
 
 // All foxes are one GeoJSON source + symbol layer: hundreds of HTML markers made panning stutter. Spots, hunts and
 // unknown types are centred on their point; hint labels hang above it with their anchor dot on the point.
@@ -31,9 +32,13 @@ const FOX_SOURCE = 'fox-markers';
 const FOX_HOVER_LAYER = 'fox-markers-hover';
 // Null-safe: features without the property count as no hint
 const IS_HINT: ExpressionSpecification = ['==', ['get', 'hint'], true];
+// Smaller when zoomed out; hint labels carry text, so they stop shrinking at a readable size
+const FOX_ICON_SIZE = zoomScaled(1, IS_HINT);
+const FOX_HOVER_ICON_SIZE = zoomScaled(1.1, IS_HINT);
 function foxLayout(theme: MarkerTheme): SymbolLayerSpecification['layout'] {
   return {
     'icon-image': themedIconExpression(theme),
+    'icon-size': FOX_ICON_SIZE,
     'icon-anchor': ['case', IS_HINT, 'bottom-left', 'center'],
     'icon-offset': ['case', IS_HINT, ['literal', HINT_ANCHOR_OFFSET], ['literal', [0, 0]]],
     // Hint labels above the fox markers, like the Android app's separate hint layer
@@ -83,7 +88,7 @@ export default function Markers({ part1, part2 }: MarkersProps) {
   const numbering = useMemo(() => hintNumbering(board, hunt), [board, hunt]);
   const features = useMemo(() => markerFeatures(visibleMarkers, { statusOf, numbering, nowMs, isForbidden }), [visibleMarkers, statusOf, numbering, nowMs, isForbidden]);
   const layout = useMemo(() => foxLayout(theme), [theme]);
-  const hoverLayout = useMemo<SymbolLayerSpecification['layout']>(() => ({ ...layout, 'icon-size': 1.1 }), [layout]);
+  const hoverLayout = useMemo<SymbolLayerSpecification['layout']>(() => ({ ...layout, 'icon-size': FOX_HOVER_ICON_SIZE }), [layout]);
   const hoverFilter = useMemo<SymbolLayerSpecification['filter']>(() => ['==', ['get', 'id'], hoveredId ?? ''], [hoveredId]);
 
   // Hint labels turn into dots after six hours: rebuild the features only when the next one does (not every minute)
