@@ -1,6 +1,6 @@
 import { useState, type RefObject } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { ArrowLeftIcon, ExternalLinkIcon, MapPinIcon, MegaphoneIcon, MonitorIcon, PlugIcon, SlidersHorizontalIcon, SparklesIcon, UserPlusIcon, UsersIcon } from 'lucide-react';
+import { ArrowLeftIcon, ExternalLinkIcon, MonitorIcon } from 'lucide-react';
 import type { MapRef } from '@/components/Map';
 import ViewFocus from '@/components/motion/ViewFocus';
 import { useHasMounted } from '@/hooks/has-mounted.hook';
@@ -15,24 +15,15 @@ import HuntersPane from './HuntersPane';
 import InvitesPane from './InvitesPane';
 import KoppelingenPane from './KoppelingenPane';
 import UsersPane from './UsersPane';
-import { NavItem, type NavIcon } from './WindowNav';
+import { NavItem } from './WindowNav';
+import { BEHEER_SECTIONS } from './sections';
 
 interface BeheerWindowProps {
   /** For the Hunters pane's "Toon op kaart" */
   mapRef: RefObject<MapRef | null>;
 }
 
-const SECTIONS: { id: AdminDialogId; title: string; icon: NavIcon }[] = [
-  { id: 'algemeen', title: 'Algemeen', icon: SlidersHorizontalIcon },
-  { id: 'ai', title: 'AI', icon: SparklesIcon },
-  { id: 'users', title: 'Gebruikers', icon: UsersIcon },
-  { id: 'invites', title: 'Invites', icon: UserPlusIcon },
-  { id: 'hunters', title: 'Hunters', icon: MapPinIcon },
-  { id: 'broadcast', title: 'Bericht versturen', icon: MegaphoneIcon },
-  { id: 'koppelingen', title: 'Koppelingen', icon: PlugIcon },
-];
-
-const titleOf = (id: AdminDialogId) => SECTIONS.find((section) => section.id === id)?.title ?? '';
+const titleOf = (id: AdminDialogId) => BEHEER_SECTIONS.find((section) => section.id === id)?.title ?? '';
 
 function openHq() {
   window.open('/hq', '_blank', 'noopener');
@@ -104,7 +95,7 @@ export default function BeheerWindow({ mapRef }: BeheerWindowProps) {
           >
             <ViewFocus enabled={mounted} target={(root) => root.querySelector(`[data-nav-id="${section}"]`)}>
               <h2 className="px-3 pt-1 pb-3 text-lg font-bold">Beheer</h2>
-              {SECTIONS.map(({ id, title, icon }) => (
+              {BEHEER_SECTIONS.map(({ id, title, icon }) => (
                 <NavItem key={id} data-nav-id={id} icon={icon} title={title} onClick={() => select(id)} className="h-12 text-foreground" />
               ))}
               <NavItem icon={MonitorIcon} title="HQ-scherm" trailing={hqTrailing} onClick={openHq} className="mt-auto h-12 text-foreground" />
@@ -137,7 +128,7 @@ export default function BeheerWindow({ mapRef }: BeheerWindowProps) {
     <div className="grid min-h-0 flex-1 grid-cols-[220px_1fr] grid-rows-[minmax(0,1fr)]">
       <nav className="flex flex-col gap-0.5 px-3 py-[18px]" aria-label="Beheer">
         <h2 className="px-3 pt-0.5 pb-3.5 text-[17px] font-bold">Beheer</h2>
-        {SECTIONS.map(({ id, title, icon }) => (
+        {BEHEER_SECTIONS.map(({ id, title, icon }) => (
           <NavItem key={id} icon={icon} title={title} active={id === section} indicatorId="beheer-nav-active" onClick={() => openDialog(id)} />
         ))}
         <NavItem icon={MonitorIcon} title="HQ-scherm" trailing={hqTrailing} onClick={openHq} className="mt-auto" />

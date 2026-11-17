@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { SWAP } from '@/lib/motion';
-import { BellIcon, ChevronRightIcon, CrosshairIcon, FlagIcon, Grid3x3Icon, KeyRoundIcon, LayoutDashboardIcon, MapPinIcon, MessageSquareIcon, PawPrintIcon, PenLineIcon, ShieldIcon, SmartphoneIcon, TrophyIcon, UsersIcon } from 'lucide-react';
+import { BellIcon, ChevronRightIcon, CrosshairIcon, Grid3x3Icon, KeyRoundIcon, LayoutDashboardIcon, MapPinIcon, MessageSquareIcon, PawPrintIcon, PenLineIcon, SmartphoneIcon, TrophyIcon, UsersIcon } from 'lucide-react';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import type { User } from '@/types/User';
 import SidebarHeader from '@/components/sidebar/SidebarHeader';
@@ -23,7 +23,9 @@ import { telegramHeaderSummary } from '@/lib/bot-messages';
 import { useCounterHunt } from '@/hooks/counter-hunt.hook';
 import { counterHuntSummary } from '@/lib/counter-hunt';
 import useMobileNavStore from '@/stores/mobile-nav.store';
-import useAdminStore, { type AdminDialogId } from '@/stores/admin.store';
+import useAdminStore from '@/stores/admin.store';
+import { BEHEER_SECTIONS } from '@/components/beheer/sections';
+import { NOTIFICATION_ICON } from '@/components/notifications/notification-icons';
 import useAccountDialogStore from '@/stores/account-dialog.store';
 import useNotificationsDialogStore from '@/stores/notifications-dialog.store';
 import type { MobilePageId } from '@/lib/mobile-nav';
@@ -76,15 +78,8 @@ function MenuCard({ title, rows }: { title: string; rows: Row[] }) {
   );
 }
 
-const BEHEER: [AdminDialogId, string][] = [
-  ['algemeen', 'Algemeen'],
-  ['ai', 'AI'],
-  ['users', 'Gebruikers'],
-  ['invites', 'Invites'],
-  ['hunters', 'Hunters'],
-  ['broadcast', 'Bericht versturen'],
-  ['koppelingen', 'Koppelingen'],
-];
+/** The tegenhunt siren of its toast and Meldingen tile */
+const CounterHuntIcon = NOTIFICATION_ICON['counter-hunt'];
 
 /** Home of the phone sheet: header card + menu cards with live summaries. */
 export default function MobileMenu() {
@@ -118,9 +113,9 @@ export default function MobileMenu() {
     ...(predictionEnabled !== false ? [{ key: 'predictions', icon: <MapPinIcon className={icon} />, title: 'Voorspelling', meta: predictionSummary(predictions), onSelect: page('predictions') }] : []),
     { key: 'hints', icon: <Grid3x3Icon className={icon} />, title: 'Hints', meta: progress ? `${progress.solved}/${progress.total} opgelost` : undefined, onSelect: page('hints') },
     ...(score?.configured ? [{ key: 'points', icon: <TrophyIcon className={icon} />, title: 'Punten', meta: scoreSummary(score), onSelect: page('points') }] : []),
-    ...(homeTeamApiId !== null ? [{ key: 'counterHunt', icon: <FlagIcon className={icon} />, title: 'Tegenhunt',
-        // A running tegenhunt reads red (fox-on-error: ≥ 9:1 on the row in light and dark); the rest stays muted
-        meta: counterHuntMeta && (counterHuntMeta.tone === 'danger' ? <span className="font-semibold text-fox-on-error">{counterHuntMeta.text}</span> : counterHuntMeta.text),
+    ...(homeTeamApiId !== null ? [{ key: 'counterHunt', icon: <CounterHuntIcon className={icon} />, title: 'Tegenhunt',
+        // A running tegenhunt reads red (destructive-text, the app's red text: >= 5.3:1 on the row); the rest stays muted
+        meta: counterHuntMeta && (counterHuntMeta.tone === 'danger' ? <span className="font-semibold text-destructive-text">{counterHuntMeta.text}</span> : counterHuntMeta.text),
         onSelect: page('counterHunt') }] : []),
   ];
   const jij: Row[] = [
@@ -131,7 +126,7 @@ export default function MobileMenu() {
     { key: 'meldingen', icon: <BellIcon className={icon} />, title: 'Meldingen', meta: pushMeta, onSelect: () => useNotificationsDialogStore.getState().setOpen(true), dialog: true },
     { key: 'account', icon: <KeyRoundIcon className={icon} />, title: 'Account', onSelect: () => useAccountDialogStore.getState().setOpen(true), dialog: true },
   ];
-  const beheer: Row[] = BEHEER.map(([id, title]) => ({ key: id, icon: <ShieldIcon className={icon} />, title, onSelect: () => useAdminStore.getState().openDialog(id), dialog: true }));
+  const beheer: Row[] = BEHEER_SECTIONS.map(({ id, title, icon: SectionIcon }) => ({ key: id, icon: <SectionIcon className={icon} />, title, onSelect: () => useAdminStore.getState().openDialog(id), dialog: true }));
 
   return (
     <div className="flex flex-col gap-3 pr-[max(0.75rem,env(safe-area-inset-right))] pb-8 pl-[max(0.75rem,env(safe-area-inset-left))]">
