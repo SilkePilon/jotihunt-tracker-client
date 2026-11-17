@@ -29,8 +29,8 @@ const pill = cva(
         whatsapp: 'bg-[#25D366]/15 text-teal-800 hover:bg-[#25D366]/25 dark:text-[#4ade80]',
       },
       size: {
-        sm: 'h-8 px-3 text-[12.5px]',
-        md: 'h-9 px-4 text-[13px]',
+        sm: 'h-8 px-3 text-caption',
+        md: 'h-9 px-4 text-body',
       },
     },
     defaultVariants: { variant: 'secondary', size: 'sm' },
@@ -114,7 +114,7 @@ export function IconPill({ variant, className, type = 'button', ...props }: Comp
   return <button type={type} className={cn(iconPill({ variant }), className)} {...props} />;
 }
 
-const tag = cva('inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs leading-4 font-extrabold desk:text-[10.5px] transition-colors duration-300 [&_svg]:size-3', {
+const tag = cva('inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs leading-4 font-extrabold desk:text-label transition-colors duration-300 [&_svg]:size-3', {
   variants: {
     tone: {
       // The small (12px phone, 10.5px desktop) text needs >= 4.5:1 on its tint over card, beheer-row and beheer-row-high

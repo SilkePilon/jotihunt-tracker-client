@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { Command as CommandPrimitive } from "cmdk"
-import { cn } from "cn"
+import { cn } from "@/lib/cn"
 import { SearchIcon } from "lucide-react"
 
 import { MENU_ROW_BASE } from "@/lib/menu-styles"
@@ -76,7 +76,7 @@ function CommandInput({
       <CommandPrimitive.Input
         data-slot="command-input"
         className={cn(
-          "flex h-10 w-full bg-transparent text-base outline-hidden desk:text-[13px] placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50",
+          "flex h-10 w-full bg-transparent text-base outline-hidden desk:text-body placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50",
           className
         )}
         {...props}
@@ -107,7 +107,7 @@ function CommandEmpty({
   return (
     <CommandPrimitive.Empty
       data-slot="command-empty"
-      className="py-6 text-center text-[13px] text-muted-foreground"
+      className="py-6 text-center text-body text-muted-foreground"
       {...props}
     />
   )
@@ -122,7 +122,7 @@ function CommandGroup({
       data-slot="command-group"
       className={cn(
         "overflow-hidden text-foreground [&+&]:mt-2 [&_[cmdk-group-items]]:flex [&_[cmdk-group-items]]:flex-col [&_[cmdk-group-items]]:gap-0.5",
-        "[&_[cmdk-group-heading]]:px-1 [&_[cmdk-group-heading]]:pt-1 [&_[cmdk-group-heading]]:pb-1.5 [&_[cmdk-group-heading]]:text-[11px] [&_[cmdk-group-heading]]:font-bold [&_[cmdk-group-heading]]:tracking-wide [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group-heading]]:uppercase",
+        "[&_[cmdk-group-heading]]:px-1 [&_[cmdk-group-heading]]:pt-1 [&_[cmdk-group-heading]]:pb-1.5 [&_[cmdk-group-heading]]:text-label [&_[cmdk-group-heading]]:font-bold [&_[cmdk-group-heading]]:tracking-wide [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group-heading]]:uppercase",
         className
       )}
       {...props}

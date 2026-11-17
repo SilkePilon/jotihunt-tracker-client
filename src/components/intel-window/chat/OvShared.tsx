@@ -16,7 +16,7 @@ export function ModeIcon({ mode, className }: { mode: OvMode; className?: string
 
 /** Line number as a small tonal chip */
 export function LineChip({ line }: { line: string }) {
-  return <span className="inline-flex min-w-7 shrink-0 justify-center rounded-md bg-fox-ok-container px-1.5 py-px text-[11px] leading-4 font-extrabold text-fox-on-ok tabular-nums">{line}</span>;
+  return <span className="inline-flex min-w-7 shrink-0 justify-center rounded-md bg-fox-ok-container px-1.5 py-px text-label leading-4 font-extrabold text-fox-on-ok tabular-nums">{line}</span>;
 }
 
 /**

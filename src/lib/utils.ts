@@ -1,7 +1,7 @@
 import * as turf from '@turf/turf';
 
-// Class-name merging (clsx + tailwind-merge compatible), the same helper the shadcn components use
-export {cn} from 'cn';
+// Class-name merging (clsx + tailwind-merge compatible) that knows the named type scale, the same helper the shadcn components use
+export {cn} from './cn';
 
 /**
  * Convert knots to km/h

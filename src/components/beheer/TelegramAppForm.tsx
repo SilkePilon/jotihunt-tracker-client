@@ -9,8 +9,8 @@ import NewTabHint from '@/components/NewTabHint';
 
 // Same field as GeneralSettings: inset outline instead of a border, 16px text on phones (no iOS zoom on focus)
 /** Ids and tokens: monospace, a bit smaller than the default 13px field text on desktop */
-const FIELD = 'font-mono desk:text-[12.5px]';
-const LABEL = 'mb-1 ml-0.5 block text-xs desk:text-[11.5px] font-semibold text-muted-foreground';
+const FIELD = 'font-mono desk:text-caption';
+const LABEL = 'mb-1 ml-0.5 block text-xs desk:text-label font-semibold text-muted-foreground';
 
 /**
  * T1: API ID / hash / bot of the group's Telegram app (my.telegram.org), as step 1 of "Koppelen" or to change them later.

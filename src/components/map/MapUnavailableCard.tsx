@@ -25,7 +25,7 @@ export default function MapUnavailableCard({ className }: { className?: string }
         <h2 id={MAP_UNAVAILABLE_HEADING_ID} tabIndex={-1} className="text-sm font-bold leading-tight outline-none">
           Kaart niet beschikbaar
         </h2>
-        <p className="text-[12.5px] text-muted-foreground">Controleer je verbinding.</p>
+        <p className="text-caption text-muted-foreground">Controleer je verbinding.</p>
       </div>
       {/* The map can't re-fetch a style (TileJSON) that failed at start; a reload can */}
       <Button variant="ghost" className={cn(TONAL_BUTTON, 'shrink-0 px-3')} onClick={() => window.location.reload()}>

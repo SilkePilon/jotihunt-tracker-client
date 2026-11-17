@@ -102,7 +102,7 @@ function UserMessage({ message, text }: { message: UIMessage; text: string }) {
           <ImageLightbox src={image.url} alt="" open={zoom} onOpenChange={setZoom} />
         </>
       )}
-      {text && <div className="max-w-[85%] rounded-[16px_16px_6px_16px] bg-beheer-row-high px-3 py-2 text-[13px] break-words whitespace-pre-wrap">{text}</div>}
+      {text && <div className="max-w-[85%] rounded-[16px_16px_6px_16px] bg-beheer-row-high px-3 py-2 text-body break-words whitespace-pre-wrap">{text}</div>}
     </div>
   );
 }

@@ -251,7 +251,7 @@ export default function HintGuess() {
                 // dots crowd together so a tap always goes to the nearest dot
                 style={{ '--hit': `${hit}px` } as CSSProperties}
                 className={cn(
-                  "relative flex size-[22px] cursor-pointer items-center justify-center rounded-full text-[11px] font-bold tabular-nums shadow-md outline-none transition-[background-color,color,box-shadow] duration-200 before:absolute before:top-1/2 before:left-1/2 before:size-[min(32px,var(--hit))] before:-translate-x-1/2 before:-translate-y-1/2 before:rounded-full before:content-[''] pointer-coarse:before:size-(--hit) focus-visible:ring-[3px] focus-visible:ring-ring",
+                  "relative flex size-[22px] cursor-pointer items-center justify-center rounded-full text-label font-bold tabular-nums shadow-md outline-none transition-[background-color,color,box-shadow] duration-200 before:absolute before:top-1/2 before:left-1/2 before:size-[min(32px,var(--hit))] before:-translate-x-1/2 before:-translate-y-1/2 before:rounded-full before:content-[''] pointer-coarse:before:size-(--hit) focus-visible:ring-[3px] focus-visible:ring-ring",
                   role === 'best'
                     ? 'bg-guess text-card ring-4 ring-guess/30'
                     : role === 'out'

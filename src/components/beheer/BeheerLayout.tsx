@@ -53,7 +53,7 @@ export function BeheerPane({ title, description, action, children }: { title: st
       <div className="mb-[18px] flex items-start justify-between gap-4">
         <div className="min-w-0">
           <h2 className={isMobile ? 'sr-only' : 'text-[22px] leading-tight font-bold'}>{title}</h2>
-          <FadeSwap className="mt-0.5 text-[13px] text-muted-foreground">{description}</FadeSwap>
+          <FadeSwap className="mt-0.5 text-body text-muted-foreground">{description}</FadeSwap>
         </div>
         {action}
       </div>
@@ -204,7 +204,7 @@ function RowContent({ leading, title, meta, trailing }: { leading?: ReactNode; t
     <>
       {leading}
       <div className="min-w-0 flex-1">
-        <div className="flex min-w-0 items-center gap-1.5 text-[13.5px] font-semibold">{title}</div>
+        <div className="flex min-w-0 items-center gap-1.5 text-body font-semibold">{title}</div>
         {meta && <div className="text-xs text-muted-foreground">{meta}</div>}
       </div>
       {trailing && <div className="flex shrink-0 items-center gap-1.5">{trailing}</div>}
@@ -414,7 +414,7 @@ export function InlineConfirm({ title, description, confirmLabel, confirmIcon, o
       }}
     >
       <div className="min-w-0 flex-1 basis-48">
-        <p className="text-[13.5px] font-bold">{title}</p>
+        <p className="text-body font-bold">{title}</p>
         <p className="text-xs text-muted-foreground">{description}</p>
       </div>
       <div className="flex shrink-0 gap-1.5">
@@ -438,7 +438,7 @@ export { BeheerSkeleton } from './BeheerSkeleton';
 export function BeheerLoadError({ message, onRetry }: { message: string; onRetry: () => unknown }) {
   return (
     <section className="rounded-3xl bg-card p-4">
-      <LoadError className="px-1 text-[13px]" message={message} onRetry={onRetry} />
+      <LoadError className="px-1 text-body" message={message} onRetry={onRetry} />
     </section>
   );
 }
@@ -454,7 +454,7 @@ export function WarnBar({ children }: { children: ReactNode }) {
       exit={{ height: 0, opacity: 0, transition: revealTransition(reduced, 'exit') }}
       transition={revealTransition(reduced, 'enter')}
     >
-      <div className="mt-2.5 flex items-center gap-2.5 rounded-2xl bg-warn-container px-3 py-2.5 text-[12.5px] text-status-warn-text">
+      <div className="mt-2.5 flex items-center gap-2.5 rounded-2xl bg-warn-container px-3 py-2.5 text-caption text-status-warn-text">
         <TriangleAlertIcon className="size-4 shrink-0" />
         <span className="flex-1">{children}</span>
       </div>

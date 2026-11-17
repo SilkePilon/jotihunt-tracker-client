@@ -1,6 +1,6 @@
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
-import { cn } from "cn"
+import { cn } from "@/lib/cn"
 import { Slot } from "radix-ui"
 import { COARSE_HIT_AREA, ICON_XS_HIT_AREA } from "@/lib/hit-area"
 

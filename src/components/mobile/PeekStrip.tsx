@@ -33,7 +33,7 @@ function TrackerLine({ onOpen }: { onOpen: () => void }) {
     onOpen();
   };
   return (
-    <button type="button" onClick={open} className={cn('flex min-h-9 items-center gap-2 text-left text-[13.5px] outline-none focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset rounded-md', COARSE_HIT_AREA)}>
+    <button type="button" onClick={open} className={cn('flex min-h-9 items-center gap-2 text-left text-body outline-none focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset rounded-md', COARSE_HIT_AREA)}>
       <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden className="shrink-0">
         <path d={COOKIE_16} fill={TONE_FILL[line.tone]} />
       </svg>

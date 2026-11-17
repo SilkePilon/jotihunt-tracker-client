@@ -85,7 +85,7 @@ export default function CoordinatesCard({ mapRef, onDone, fluid }: { mapRef: Rea
                 <button
                     type="submit"
                     disabled={empty}
-                    className={cn(COARSE_HIT_AREA, "h-8 shrink-0 rounded-[9px] bg-primary-container px-3 text-[13px] font-semibold text-on-primary-container transition-[background-color,opacity] hover:bg-[color-mix(in_oklab,var(--on-primary-container)_10%,var(--primary-container))] focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-primary-container")}
+                    className={cn(COARSE_HIT_AREA, "h-8 shrink-0 rounded-[9px] bg-primary-container px-3 text-body font-semibold text-on-primary-container transition-[background-color,opacity] hover:bg-[color-mix(in_oklab,var(--on-primary-container)_10%,var(--primary-container))] focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-primary-container")}
                 >
                     Bekijk
                 </button>

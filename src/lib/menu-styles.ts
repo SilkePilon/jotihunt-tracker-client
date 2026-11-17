@@ -16,7 +16,7 @@ export const MENU_GROUP = 'flex flex-col gap-0.5';
 /** Tonal row, 6px corners and 16px on the outer ends of its group. Keyboard focus adds an inset ring on top of the tonal
  * step (background alone is too subtle). Callers add their own disabled dimming (Radix vs cmdk differ). */
 export const MENU_ROW_BASE =
-  "relative flex cursor-default items-center gap-2.5 rounded-(--radius-segment) bg-beheer-row px-3 py-2.5 text-[13.5px] font-semibold outline-hidden select-none transition-colors duration-150 first:rounded-t-2xl last:rounded-b-2xl focus:bg-beheer-row-high focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-muted-foreground";
+  "relative flex cursor-default items-center gap-2.5 rounded-(--radius-segment) bg-beheer-row px-3 py-2.5 text-body font-semibold outline-hidden select-none transition-colors duration-150 first:rounded-t-2xl last:rounded-b-2xl focus:bg-beheer-row-high focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-muted-foreground";
 
 /** Radix rows: dim while disabled. (cmdk items use data-[disabled=true] instead.) */
 export const MENU_ROW_DISABLED = 'data-[disabled]:pointer-events-none data-[disabled]:opacity-50';
@@ -26,7 +26,7 @@ export const MENU_ROW_CHECKED = 'data-[state=checked]:bg-(--map-selected-bg) dat
 
 /** The overline type of every small uppercase label (menu headers, map layer groups, popup row labels, Intel tiles and
  * day headers): 12px on phones, 11px on the desktop shell. Callers add the colour and spacing. */
-export const OVERLINE = 'text-xs desk:text-[11px] font-bold tracking-wide uppercase';
+export const OVERLINE = 'text-xs desk:text-label font-bold tracking-wide uppercase';
 
 /** Small header above a group of rows. */
 export const MENU_LABEL = `px-1 pt-1 pb-1.5 ${OVERLINE} text-muted-foreground`;

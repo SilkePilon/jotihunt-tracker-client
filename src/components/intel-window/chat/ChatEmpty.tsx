@@ -27,7 +27,7 @@ export default function ChatEmpty({ item, disabled, onPick, delay = 0, stagger =
       <motion.p variants={CHAT_EMPTY_PART} className="text-[15px] font-bold">
         Samen puzzelen
       </motion.p>
-      <motion.p variants={CHAT_EMPTY_PART} className="max-w-[260px] text-[12.5px] leading-relaxed text-muted-foreground">
+      <motion.p variants={CHAT_EMPTY_PART} className="max-w-[260px] text-caption leading-relaxed text-muted-foreground">
         Ik ken dit item, de kaart, groepen en vossen, en kan op internet zoeken.
       </motion.p>
       <motion.div variants={CHAT_EMPTY_PART} className="relative mt-1 flex flex-wrap justify-center gap-1.5">

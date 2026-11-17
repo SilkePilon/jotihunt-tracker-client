@@ -74,7 +74,7 @@ export default function LoadError({ message, onRetry, centered, scale, blocking,
         onClick={() => void retry()}
         className={cn(
           'inline-flex shrink-0 items-center bg-beheer-row-high font-semibold text-foreground outline-none transition-colors hover:bg-[color-mix(in_oklab,var(--foreground)_14%,var(--card))] focus-visible:ring-[3px] focus-visible:ring-ring aria-disabled:pointer-events-none aria-disabled:opacity-70',
-          scale ? 'h-[2.25rem] gap-[0.4rem] px-[0.85rem] text-[0.875rem] [&_svg]:size-[1.1rem]' : 'h-8 gap-1.5 px-3 text-[12.5px] [&_svg]:size-4',
+          scale ? 'h-[2.25rem] gap-[0.4rem] px-[0.85rem] text-[0.875rem] [&_svg]:size-[1.1rem]' : 'h-8 gap-1.5 px-3 text-caption [&_svg]:size-4',
           // 44px touch area on phones, same look
           COARSE_HIT_AREA,
         )}

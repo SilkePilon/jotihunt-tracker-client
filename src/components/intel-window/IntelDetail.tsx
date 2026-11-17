@@ -28,7 +28,7 @@ export default function IntelDetail({ item, area, mapRef }: IntelDetailProps) {
         <h2 tabIndex={-1} data-view-focus className="text-[21px] leading-tight font-bold outline-none">
           {item.title}
         </h2>
-        <div className="mt-2 flex flex-wrap items-center gap-2 text-[12.5px] text-muted-foreground">
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-caption text-muted-foreground">
           <KindTag kind={item.kind} />
           <span className="tabular-nums">{formatClock(item.publishAt)}</span>
           {count && count.total > 0 && (

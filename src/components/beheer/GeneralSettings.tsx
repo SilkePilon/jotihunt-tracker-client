@@ -30,7 +30,7 @@ function Field({ label, htmlFor, error, className, children }: { label: ReactNod
   const reduced = useReducedMotion() ?? false;
   return (
     <div className={cn('min-w-0', className)}>
-      <label htmlFor={htmlFor} className="mb-1 ml-0.5 flex items-center gap-1.5 text-xs desk:text-[11.5px] font-semibold text-muted-foreground">
+      <label htmlFor={htmlFor} className="mb-1 ml-0.5 flex items-center gap-1.5 text-xs desk:text-label font-semibold text-muted-foreground">
         {label}
       </label>
       {children}
@@ -85,7 +85,7 @@ function Timeline({ startMs, endMs, now }: { startMs: number; endMs: number; now
   const end = geo.left + geo.width;
   // Leave out the "nu" label when it would run into a time label
   const nowLabel = geo.now !== null && Math.abs(geo.now - geo.left) > 9 && Math.abs(geo.now - end) > 9;
-  const label = 'absolute top-[30px] -translate-x-1/2 text-[10.5px] whitespace-nowrap text-muted-foreground tabular-nums';
+  const label = 'absolute top-[30px] -translate-x-1/2 text-label whitespace-nowrap text-muted-foreground tabular-nums';
   return (
     <div className="relative mx-2 mt-1.5 mb-0.5 h-11" aria-hidden>
       <div className="absolute inset-x-0 top-[18px] h-2 rounded-md bg-beheer-row" />
@@ -158,7 +158,7 @@ function SaveBar({ show, saving, disabled, onReset, onSave }: { show: boolean; s
               transition={SWAP_TRANSITION}
               className="flex items-center gap-2.5 rounded-2xl bg-beheer-row-high py-2.5 pr-2.5 pl-4 shadow-(--shadow-menu)"
             >
-              <span className="min-w-0 flex-1 text-[13px] font-medium">Niet-opgeslagen wijzigingen</span>
+              <span className="min-w-0 flex-1 text-body font-medium">Niet-opgeslagen wijzigingen</span>
               <Pill variant="ghost" disabled={saving} onClick={onReset}>
                 Terugzetten
               </Pill>

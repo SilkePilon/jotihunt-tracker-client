@@ -122,7 +122,7 @@ export default function BuildingsCard({ mapRef }: { mapRef: RefObject<MapRef | n
         </span>
         <div className="min-w-0 flex-1">
           <h3 className="text-[15px] font-bold">3D-gebouwen</h3>
-          <FadeSwap className="text-[12.5px] text-muted-foreground">{summary ?? (isError ? 'Status ophalen is mislukt.' : <Skeleton className="mt-1 h-3 w-40" />)}</FadeSwap>
+          <FadeSwap className="text-caption text-muted-foreground">{summary ?? (isError ? 'Status ophalen is mislukt.' : <Skeleton className="mt-1 h-3 w-40" />)}</FadeSwap>
           <Reveal>{status && <FadeSwap className="text-xs text-muted-foreground">{dates}</FadeSwap>}</Reveal>
         </div>
       </div>
@@ -168,7 +168,7 @@ export default function BuildingsCard({ mapRef }: { mapRef: RefObject<MapRef | n
               disabled={locked}
               onClick={() => setRadiusKm(radius)}
               className={cn(
-                'inline-flex h-8 items-center rounded-lg px-3 text-[12.5px] font-semibold tabular-nums outline-none transition-[background-color,color,transform] duration-200 focus-visible:ring-[3px] focus-visible:ring-ring active:scale-[0.97] disabled:opacity-50 motion-reduce:transition-none',
+                'inline-flex h-8 items-center rounded-lg px-3 text-caption font-semibold tabular-nums outline-none transition-[background-color,color,transform] duration-200 focus-visible:ring-[3px] focus-visible:ring-ring active:scale-[0.97] disabled:opacity-50 motion-reduce:transition-none',
                 radius === radiusKm ? 'bg-foreground/12 text-foreground' : 'bg-beheer-row text-muted-foreground',
               )}
             >

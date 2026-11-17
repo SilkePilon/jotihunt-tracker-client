@@ -29,7 +29,7 @@ export function NavItem({ icon: ItemIcon, leading, title, active, trailing, indi
       aria-current={active ? 'page' : undefined}
       onClick={onClick}
       className={cn(
-        'relative flex h-10 items-center rounded-xl px-3 text-left text-[13.5px] outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring',
+        'relative flex h-10 items-center rounded-xl px-3 text-left text-body outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring',
         active ? 'font-semibold text-foreground' : 'text-muted-foreground hover:bg-beheer-row-high/50 hover:text-foreground active:bg-beheer-row-high',
         className,
       )}

@@ -69,7 +69,7 @@ export function PromptInputTextarea({ className, onKeyDown, ...props }: Omit<Com
         }
       }}
       className={cn(
-        'block min-h-[38px] w-full resize-none overflow-y-auto bg-transparent px-2.5 py-2 text-base leading-snug desk:text-[13.5px] outline-none placeholder:text-muted-foreground disabled:opacity-60',
+        'block min-h-[38px] w-full resize-none overflow-y-auto bg-transparent px-2.5 py-2 text-base leading-snug desk:text-body outline-none placeholder:text-muted-foreground disabled:opacity-60',
         className,
       )}
     />
@@ -114,7 +114,7 @@ export function ModeToggle({ on, onToggle, icon, label, tone, tooltip }: ModeTog
         aria-label={label}
         onClick={() => onToggle(!on)}
         className={cn(
-          'flex h-8 items-center rounded-xl px-2 text-[12.5px] font-semibold outline-none transition-colors duration-200 focus-visible:ring-[3px] focus-visible:ring-ring',
+          'flex h-8 items-center rounded-xl px-2 text-caption font-semibold outline-none transition-colors duration-200 focus-visible:ring-[3px] focus-visible:ring-ring',
           on ? TOGGLE_ON[tone] : 'text-muted-foreground hover:bg-foreground/5 hover:text-foreground',
         )}
       >

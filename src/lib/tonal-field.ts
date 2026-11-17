@@ -4,4 +4,4 @@
  * default; pass extra classes to Input's className.
  */
 export const TONAL_FIELD =
-  'rounded-lg border-0 bg-beheer-row-high text-base shadow-[inset_0_0_0_1px_var(--input)] desk:text-[13px] dark:bg-beheer-row-high';
+  'rounded-lg border-0 bg-beheer-row-high text-base shadow-[inset_0_0_0_1px_var(--input)] desk:text-body dark:bg-beheer-row-high';

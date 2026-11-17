@@ -144,8 +144,8 @@ function IntegrationCard({ name, brand, logo, view, isError, onRetry, action, ac
           </div>
           {/* "Gekoppeld als <e-mail>": a long address breaks anywhere instead of pushing past the card at 360px */}
           <AnimatePresence mode="wait" initial={false}>
-            <motion.div key={view ? `line:${view.line}` : isError ? 'error' : 'loading'} className="text-[12.5px] text-muted-foreground [overflow-wrap:anywhere]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
-              {view ? view.line : isError ? <LoadError className="mt-1 text-[12.5px]" message="Status ophalen is mislukt." onRetry={onRetry} /> : <Skeleton className="mt-1 h-3 w-40" />}
+            <motion.div key={view ? `line:${view.line}` : isError ? 'error' : 'loading'} className="text-caption text-muted-foreground [overflow-wrap:anywhere]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+              {view ? view.line : isError ? <LoadError className="mt-1 text-caption" message="Status ophalen is mislukt." onRetry={onRetry} /> : <Skeleton className="mt-1 h-3 w-40" />}
             </motion.div>
           </AnimatePresence>
         </div>
@@ -174,7 +174,7 @@ function IntegrationCard({ name, brand, logo, view, isError, onRetry, action, ac
           <div className="pt-3">
             <div className="flex flex-wrap items-center gap-2.5 rounded-2xl bg-warn-container px-3 py-2.5 text-status-warn-text">
               <TriangleAlertIcon className="size-4 shrink-0" />
-              <span className="min-w-0 flex-1 basis-48 text-[12.5px]">{view.problem}</span>
+              <span className="min-w-0 flex-1 basis-48 text-caption">{view.problem}</span>
               {view.canRelink && onRelink && (
                 <Pill variant="warn" disabled={readOnly} onClick={onRelink}>
                   Opnieuw koppelen

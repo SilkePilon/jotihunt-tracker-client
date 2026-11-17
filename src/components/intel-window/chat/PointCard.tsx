@@ -30,7 +30,7 @@ export default function PointCard({ point, proposal, mapRef }: PointCardProps) {
   return (
     <div className="overflow-hidden rounded-2xl bg-beheer-row">
       {point && <MiniMap point={point.latLng} label={point.label} />}
-      <div className="grid gap-1.5 px-3 py-2.5 text-[12.5px]">
+      <div className="grid gap-1.5 px-3 py-2.5 text-caption">
         {proposal && (
           <Row name={`Antwoord ${areaLabel(proposal.area)}`}>
             <span className="truncate font-mono">{proposal.answer}</span>

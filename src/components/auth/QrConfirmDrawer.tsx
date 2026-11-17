@@ -46,7 +46,7 @@ const BADGE = 48;
 function ReadyMeta({ where, name }: { where: string; name: string | undefined }) {
   if (!where && !name) return null;
   return (
-    <p className="text-[13.5px] text-muted-foreground">
+    <p className="text-body text-muted-foreground">
       {where}
       {where && name ? ' · ' : null}
       {name ? (
@@ -237,7 +237,7 @@ export default function QrConfirmDrawer({ code, onClose }: { code: string; onClo
                 <ProblemBadge />
                 <div className="min-w-0">
                   <h2 className="text-lg font-bold">Dat lukte niet</h2>
-                  <p className="text-[13px] text-muted-foreground">{view.problem.message}</p>
+                  <p className="text-body text-muted-foreground">{view.problem.message}</p>
                 </div>
               </div>
               <div className="mt-1 flex flex-col gap-2">

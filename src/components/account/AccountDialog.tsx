@@ -453,14 +453,14 @@ function Row({
             {Icon && <IconTile className={cn(highlight && 'bg-(--map-selected-bg) text-(--map-selected-fg)')}><Icon /></IconTile>}
             <div className="min-w-0 flex-1">
               <div className="flex min-w-0 items-center gap-1.5">
-                <span className="truncate text-[13.5px] font-semibold">{title}</span>
+                <span className="truncate text-body font-semibold">{title}</span>
                 {chip && (
-                  <span className="inline-flex h-[18px] flex-none items-center rounded-full bg-(--map-selected-bg) px-[7px] text-xs font-bold text-(--map-selected-fg) desk:text-[10.5px]">
+                  <span className="inline-flex h-[18px] flex-none items-center rounded-full bg-(--map-selected-bg) px-[7px] text-xs font-bold text-(--map-selected-fg) desk:text-label">
                     {chip}
                   </span>
                 )}
               </div>
-              <div className="text-xs leading-snug text-muted-foreground desk:text-[11.5px]">{meta}</div>
+              <div className="text-xs leading-snug text-muted-foreground desk:text-label">{meta}</div>
             </div>
             {children}
           </div>
@@ -489,7 +489,7 @@ function SmallButton({ icon, className, ...props }: ComponentProps<'button'> & {
     <button
       type="button"
       className={cn(
-        'inline-flex h-8 flex-none items-center justify-center gap-1.5 rounded-xl bg-beheer-row-high text-[12.5px] font-semibold transition-colors outline-none',
+        'inline-flex h-8 flex-none items-center justify-center gap-1.5 rounded-xl bg-beheer-row-high text-caption font-semibold transition-colors outline-none',
         'hover:bg-[color-mix(in_oklab,var(--foreground)_14%,var(--card))] focus-visible:ring-[3px] focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4',
         icon ? 'w-[34px]' : 'px-3',
         COARSE_HIT_AREA,
@@ -506,7 +506,7 @@ function ActionRow({ icon, iconClassName, className, children, ...props }: Compo
     <button
       type="button"
       className={cn(
-        'flex w-full items-center gap-3 px-3 py-2.5 text-left text-[13.5px] font-semibold transition-colors outline-none',
+        'flex w-full items-center gap-3 px-3 py-2.5 text-left text-body font-semibold transition-colors outline-none',
         'hover:bg-beheer-row-high focus-visible:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset disabled:pointer-events-none disabled:opacity-60 aria-disabled:pointer-events-none aria-disabled:opacity-60',
         className,
       )}

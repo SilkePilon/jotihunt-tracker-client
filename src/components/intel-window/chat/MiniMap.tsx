@@ -53,7 +53,7 @@ export default function MiniMap({ point, label }: { point: LatLng; label: string
           </motion.div>
         )}
       </AnimatePresence>
-      <span className="pointer-events-none absolute bottom-1.5 left-2 max-w-[70%] truncate rounded-md bg-black/55 px-1.5 py-0.5 text-[10.5px] font-medium text-white">{label}</span>
+      <span className="pointer-events-none absolute bottom-1.5 left-2 max-w-[70%] truncate rounded-md bg-black/55 px-1.5 py-0.5 text-label font-medium text-white">{label}</span>
     </div>
   );
 }

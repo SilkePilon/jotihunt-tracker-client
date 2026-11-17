@@ -177,7 +177,7 @@ function AreaRow({ cell, area, label, open, onToggle, onSave, onClear, mapRef, h
   if (!cell) {
     return (
       <RowFrame tone="muted">
-        <div className="flex items-center gap-3 px-3 py-2.5 text-[13px]">
+        <div className="flex items-center gap-3 px-3 py-2.5 text-body">
           {dot}
           <span className="w-16 font-semibold">{label}</span>
           <span className="text-xs text-muted-foreground">geen hint</span>
@@ -200,13 +200,13 @@ function AreaRow({ cell, area, label, open, onToggle, onSave, onClear, mapRef, h
       >
         <motion.span initial={false} animate={{ opacity: none ? 0.6 : 1 }} transition={SWAP.transition} className="flex min-w-0 flex-1 items-center gap-3">
           {dot}
-          <span className="w-16 text-[13px] font-semibold">{label}</span>
+          <span className="w-16 text-body font-semibold">{label}</span>
           <span className="flex-1" />
           <AnimatePresence mode="wait" initial={false}>
             <motion.span key={solved ? `ok-${cell.answer}` : none ? 'none' : 'open'} {...SWAP} className="flex min-w-0 items-center gap-2">
               {solved ? (
                 <>
-                  <span className="max-w-56 truncate font-mono text-[12.5px] font-bold text-fox-ok">{cell.answer}</span>
+                  <span className="max-w-56 truncate font-mono text-caption font-bold text-fox-ok">{cell.answer}</span>
                   {poppable ? <SuccessBadge size={18} /> : <CookieBadge tone="ok" size={18} />}
                 </>
               ) : (
@@ -365,7 +365,7 @@ function AreaBody({ cell, label, onSave, onClear, mapRef }: { cell: HintCell; la
       {/* Mounts with the body (unfolds with it); folds away once the area is solved */}
       <Reveal>{cell.status === 'none' && <p className="pb-3 text-xs text-muted-foreground">Volgens de hint geen opdracht voor {label} deze ronde.</p>}</Reveal>
       {/* The snippet is the raw HTML of this area's part of the article (text, <br>, images) */}
-      {cell.snippet && <ArticleHtml html={cell.snippet} className="mb-3 px-0 font-mono text-[13.5px] leading-[1.7]" />}
+      {cell.snippet && <ArticleHtml html={cell.snippet} className="mb-3 px-0 font-mono text-body leading-[1.7]" />}
       <AnimatePresence mode="wait" initial={false}>
         {editing ? (
           <motion.div key="edit" {...SWAP} className="flex items-center gap-2">
@@ -392,7 +392,7 @@ function AreaBody({ cell, label, onSave, onClear, mapRef }: { cell: HintCell; la
               spellCheck={false}
               data-1p-ignore
               aria-label={`Antwoord ${label}`}
-              className="h-8 w-44 min-w-0 rounded-md bg-beheer-window px-2.5 font-mono text-base ring-1 ring-input outline-none desk:text-[13px] placeholder:text-muted-foreground read-only:opacity-60 focus:ring-2 focus:ring-ring"
+              className="h-8 w-44 min-w-0 rounded-md bg-beheer-window px-2.5 font-mono text-base ring-1 ring-input outline-none desk:text-body placeholder:text-muted-foreground read-only:opacity-60 focus:ring-2 focus:ring-ring"
             />
             <Pill variant="primary" disabled={!answer.trim() || !!guessAnswer || readOnly} busy={saving} onClick={() => void save()} morphKey={saving ? 'saving' : 'idle'} aria-label={saving ? 'Opslaan…' : undefined}>
               {saving ? <Loader2Icon className="animate-spin" /> : 'Opslaan'}
@@ -400,7 +400,7 @@ function AreaBody({ cell, label, onSave, onClear, mapRef }: { cell: HintCell; la
           </motion.div>
         ) : (
           <motion.div key="done" {...SWAP} className="flex min-w-0 items-center gap-2">
-            <span className="min-w-0 truncate font-mono text-[13px] font-bold text-fox-ok">{cell.answer}</span>
+            <span className="min-w-0 truncate font-mono text-body font-bold text-fox-ok">{cell.answer}</span>
             {popIn ? <SuccessBadge size={18} /> : <CookieBadge tone="ok" size={18} />}
             {cell.answerLocation && (
               <IconPill aria-label="Op kaart" title="Op kaart" onClick={showOnMap}>

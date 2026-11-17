@@ -20,7 +20,7 @@ import { COARSE_HIT_AREA } from "@/lib/hit-area"
 const DESKTOP_OFFSET = { right: "calc(env(safe-area-inset-right) + 60px)" }
 
 /** Action / cancel buttons: `!` beats sonner's own [data-button] rules */
-const TOAST_BUTTON = `${COARSE_HIT_AREA} h-8! rounded-xl! px-3! text-[13px]! font-semibold! focus-visible:ring-[3px]! focus-visible:ring-ring!`
+const TOAST_BUTTON = `${COARSE_HIT_AREA} h-8! rounded-xl! px-3! text-body! font-semibold! focus-visible:ring-[3px]! focus-visible:ring-ring!`
 
 const Toaster = ({ ...props }: ToasterProps) => {
   // Follow the app's own dark mode (body.dark), which can differ from the OS

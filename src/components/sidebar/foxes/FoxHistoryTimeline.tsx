@@ -409,7 +409,7 @@ export default function FoxHistoryTimeline({ model, playKey, play = true }: { mo
         />
 
         {/* Axis */}
-        <div aria-hidden className="relative text-xs text-muted-foreground desk:text-[10.5px] tabular-nums" style={{ height: AXIS }}>
+        <div aria-hidden className="relative text-xs text-muted-foreground desk:text-label tabular-nums" style={{ height: AXIS }}>
           <span className="absolute top-1 whitespace-nowrap" style={{ left: x(0) }}>
             {ticks[0]}
           </span>
@@ -440,7 +440,7 @@ export default function FoxHistoryTimeline({ model, playKey, play = true }: { mo
             >
               <AnimatePresence mode="popLayout" initial={false}>
                 <motion.div key={activeBlock.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={reduced ? { duration: 0 } : { duration: 0.16, ease: ENTER }}>
-                  <div className="text-[13px] font-medium">{activeBlock.card.title}</div>
+                  <div className="text-body font-medium">{activeBlock.card.title}</div>
                   <div className="mt-0.5 text-muted-foreground tabular-nums">{activeBlock.card.meta}</div>
                   {activeBlock.card.note && <div className="mt-1 text-muted-foreground">{activeBlock.card.note}</div>}
                 </motion.div>
@@ -451,7 +451,7 @@ export default function FoxHistoryTimeline({ model, playKey, play = true }: { mo
       </div>
 
       {/* Legend */}
-      <div aria-hidden className="col-span-2 mx-0.5 mt-1 flex flex-wrap gap-x-2.5 gap-y-1 text-xs text-muted-foreground desk:text-[10.5px]">
+      <div aria-hidden className="col-span-2 mx-0.5 mt-1 flex flex-wrap gap-x-2.5 gap-y-1 text-xs text-muted-foreground desk:text-label">
         {LEGEND.map(({ label, style }) => (
           <span key={label} className="inline-flex items-center gap-1">
             <i className="inline-block h-1.5 w-2.5 rounded-[2px]" style={style} />

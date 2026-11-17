@@ -1,5 +1,5 @@
 import * as React from "react"
-import { cn } from "cn"
+import { cn } from "@/lib/cn"
 import { TONAL_FIELD } from "@/lib/tonal-field"
 
 function Textarea({ className, ...props }: React.ComponentProps<"textarea">) {

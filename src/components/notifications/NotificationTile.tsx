@@ -39,8 +39,8 @@ export default function NotificationTile({ icon: Icon, label, short, description
           </motion.span>
         )}
       </AnimatePresence>
-      <span className={cn('text-[13px] font-semibold transition-colors duration-200 motion-reduce:transition-none', !on && 'text-foreground')}>{label}</span>
-      <span className="-mt-1 text-xs leading-snug desk:text-[11px]">{short}</span>
+      <span className={cn('text-body font-semibold transition-colors duration-200 motion-reduce:transition-none', !on && 'text-foreground')}>{label}</span>
+      <span className="-mt-1 text-xs leading-snug desk:text-label">{short}</span>
     </button>
   );
 }

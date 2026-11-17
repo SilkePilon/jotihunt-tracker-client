@@ -25,8 +25,8 @@ export default function JourneyCard({ journey, mapRef }: { journey: OvJourneyRes
   );
   return (
     <div className="overflow-hidden rounded-2xl bg-beheer-row">
-      <div className="isolate grid gap-2 px-3 py-2.5 text-[12.5px]">
-        <div className="flex min-w-0 items-center gap-2 text-[13px] font-semibold">
+      <div className="isolate grid gap-2 px-3 py-2.5 text-caption">
+        <div className="flex min-w-0 items-center gap-2 text-body font-semibold">
           <ModeIcon mode={journey.mode} />
           <LineChip line={journey.line} />
           <span className="truncate">→ {journey.destination}</span>

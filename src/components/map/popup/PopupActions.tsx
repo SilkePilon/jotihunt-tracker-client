@@ -4,7 +4,7 @@ import { googleRouteUrl } from '@/lib/hunters';
 import { cn } from '@/lib/utils';
 
 const BASE =
-  'inline-flex h-10 min-w-11 pointer-coarse:h-11 items-center justify-center gap-1.5 rounded-xl px-3 text-[13px] font-semibold outline-none transition-[filter,background-color,color] duration-200 hover:brightness-105 disabled:pointer-events-none disabled:opacity-50 focus-visible:ring-[3px] focus-visible:ring-ring [&_svg]:size-4 [&_svg]:shrink-0';
+  'inline-flex h-10 min-w-11 pointer-coarse:h-11 items-center justify-center gap-1.5 rounded-xl px-3 text-body font-semibold outline-none transition-[filter,background-color,color] duration-200 hover:brightness-105 disabled:pointer-events-none disabled:opacity-50 focus-visible:ring-[3px] focus-visible:ring-ring [&_svg]:size-4 [&_svg]:shrink-0';
 
 const VARIANTS = {
   neutral: 'bg-beheer-row-high text-(--map-on-surface)',

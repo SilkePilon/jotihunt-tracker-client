@@ -341,7 +341,7 @@ export default function NightAreaDraw() {
                     aria-describedby={nameMissing ? 'night-area-name-error' : undefined}
                     maxLength={60}
                     autoFocus
-                    className="h-10 w-[min(280px,calc(100vw-32px))] rounded-xl bg-card px-3.5 text-base shadow-[0_0_0_1px_var(--input),0_4px_14px_rgb(0_0_0/0.22)] desk:text-[13px] outline-none placeholder:text-muted-foreground focus-visible:ring-[3px] focus-visible:ring-ring aria-invalid:shadow-[0_0_0_1px_var(--destructive),0_4px_14px_rgb(0_0_0/0.22)] aria-invalid:focus-visible:ring-destructive/40"
+                    className="h-10 w-[min(280px,calc(100vw-32px))] rounded-xl bg-card px-3.5 text-base shadow-[0_0_0_1px_var(--input),0_4px_14px_rgb(0_0_0/0.22)] desk:text-body outline-none placeholder:text-muted-foreground focus-visible:ring-[3px] focus-visible:ring-ring aria-invalid:shadow-[0_0_0_1px_var(--destructive),0_4px_14px_rgb(0_0_0/0.22)] aria-invalid:focus-visible:ring-destructive/40"
                   />
                   <Reveal>
                     {nameMissing && (

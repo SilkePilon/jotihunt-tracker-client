@@ -75,7 +75,7 @@ function Tile({ label, sub, onClick, children }: { label: string; sub: string; o
     >
       <span className={cn(OVERLINE, 'text-muted-foreground')}>{label}</span>
       <span className={BIG}>{children}</span>
-      <span className="text-[11.5px] text-muted-foreground">{sub}</span>
+      <span className="text-label text-muted-foreground">{sub}</span>
     </button>
   );
 }
@@ -98,7 +98,7 @@ function NextHintTile({ next }: { next: ReturnType<typeof useNextHint> }) {
           {next.label}
         </motion.span>
       </AnimatePresence>
-      <span className="min-h-[1lh] text-[11.5px] opacity-80">{next.nextAt ? `om ${formatClock(next.nextAt)}` : ''}</span>
+      <span className="min-h-[1lh] text-label opacity-80">{next.nextAt ? `om ${formatClock(next.nextAt)}` : ''}</span>
     </div>
   );
 }
@@ -147,7 +147,7 @@ const SolveChart = memo(function SolveChart({ slots, avgSolveMs, nextMs, entranc
         <span className={cn(OVERLINE, 'text-muted-foreground')}>Oplos-tempo</span>
         <AnimatePresence mode="wait" initial={false}>
           {side && (
-            <motion.span key={side} {...SWAP} className="text-[11.5px] text-muted-foreground">
+            <motion.span key={side} {...SWAP} className="text-label text-muted-foreground">
               {side}
             </motion.span>
           )}
@@ -205,7 +205,7 @@ const SolveChart = memo(function SolveChart({ slots, avgSolveMs, nextMs, entranc
                     </motion.div>
                     <span
                       className={cn(
-                        'mt-1.5 text-center text-[11px] tabular-nums transition-colors duration-300',
+                        'mt-1.5 text-center text-label tabular-nums transition-colors duration-300',
                         column.kind === 'next' ? 'font-bold text-primary-text' : slotTime === newestPast ? 'font-bold text-foreground' : 'text-muted-foreground',
                       )}
                     >
@@ -218,7 +218,7 @@ const SolveChart = memo(function SolveChart({ slots, avgSolveMs, nextMs, entranc
           </motion.div>
         )}
       </AnimatePresence>
-      <div className="mt-2 flex gap-3.5 text-[11.5px] text-muted-foreground">
+      <div className="mt-2 flex gap-3.5 text-label text-muted-foreground">
         <span className="flex items-center gap-1.5">
           <span className="size-2 rounded-full bg-green-400 dark:bg-green-500/80" aria-hidden />
           opgelost

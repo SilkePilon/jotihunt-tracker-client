@@ -42,7 +42,7 @@ function ScoreLegend({ parts, known }: { parts: ScoreParts; known: boolean }) {
   return (
     <div className="mt-2.5 grid grid-cols-2 gap-x-3.5 gap-y-1 tabular-nums">
       {scoreLegend(parts, known).map((entry) => (
-        <div key={entry.key} className="flex items-center gap-1.5 px-1 py-0.5 text-[12.5px]">
+        <div key={entry.key} className="flex items-center gap-1.5 px-1 py-0.5 text-caption">
           <span className={cn('size-2 shrink-0 rounded-[2px]', entry.fill)} />
           <span className="flex-1 text-muted-foreground">{entry.label}</span>
           {/* "?" ↔ a number cross-fades when the site judges the hints */}
