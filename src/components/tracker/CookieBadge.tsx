@@ -17,16 +17,25 @@ interface CookieBadgeProps {
 }
 
 const FILL: Record<CookieTone, string> = {
-  ok: 'fill-green-500',
-  warn: 'fill-amber-500',
+  ok: 'fill-cookie-ok',
+  warn: 'fill-cookie-warn',
   danger: '',
   neutral: 'fill-zinc-200 dark:fill-zinc-700',
+};
+
+/** The glyph colour paired with each fill (check, exclamation mark, text, icons); SuccessBadge uses the ok one too */
+const GLYPH: Record<CookieTone, string> = {
+  ok: 'text-on-cookie-ok',
+  warn: 'text-on-cookie-warn',
+  // White on the tegenhunt red is 4.8:1
+  danger: 'text-white',
+  neutral: 'text-zinc-500 dark:text-zinc-400',
 };
 
 /** Flat Material cookie badge, the same shape as the Android app and the visited pins on the map. */
 export default function CookieBadge({ tone, size: s, glyph, outline, className }: CookieBadgeProps) {
   const path = useMemo(() => cookiePath(s, BADGE_COOKIE_DEPTH), [s]);
-  const glyphClass = tone === 'neutral' ? 'text-zinc-500 dark:text-zinc-400' : 'text-white';
+  const glyphClass = GLYPH[tone];
   const shape = (
     <>
       {outline && <path d={path} className="fill-card stroke-card" strokeWidth={outline * 2} strokeLinejoin="round" />}
@@ -56,7 +65,7 @@ export default function CookieBadge({ tone, size: s, glyph, outline, className }
         <path
           d={`M${s * 0.31} ${s * 0.51}L${s * 0.44} ${s * 0.64}L${s * 0.69} ${s * 0.38}`}
           fill="none"
-          stroke="white"
+          stroke="currentColor"
           strokeWidth={s * 0.09}
           strokeLinecap="round"
           strokeLinejoin="round"

@@ -84,6 +84,12 @@
   /* Happy hour's own amber (pill, toast, tile) and the status dots on the phone's tracker line */
   --happy-hour: #f59e0b;
   --on-happy-hour: #1c1300;
+  /* Cookie badges (CookieBadge, SuccessBadge): the green/amber fills with a dark glyph on them; white was ~2.2:1,
+     these are >= 6:1. The same in both themes, like the fills */
+  --cookie-ok: #22c55e;
+  --on-cookie-ok: #052e16;
+  --cookie-warn: #f59e0b;
+  --on-cookie-warn: #1c1300;
   --status-ok-dot: #22c55e;
   --status-warn-dot: #f59e0b;
   --status-warn-text: #92400e;
@@ -222,6 +228,10 @@
   --color-primary-text: var(--primary-text);
   --color-happy-hour: var(--happy-hour);
   --color-on-happy-hour: var(--on-happy-hour);
+  --color-cookie-ok: var(--cookie-ok);
+  --color-on-cookie-ok: var(--on-cookie-ok);
+  --color-cookie-warn: var(--cookie-warn);
+  --color-on-cookie-warn: var(--on-cookie-warn);
   --color-status-warn-text: var(--status-warn-text);
   --color-beheer-window: var(--beheer-window);
   --color-beheer-row: var(--beheer-row);
