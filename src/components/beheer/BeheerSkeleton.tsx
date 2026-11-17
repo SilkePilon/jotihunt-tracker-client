@@ -1,9 +1,12 @@
 import { Skeleton } from '@/components/ui/skeleton';
 
-/** Stands in for a pane's cards while their data loads. */
-export function BeheerSkeleton({ groups = 1 }: { groups?: number }) {
+/**
+ * Stands in for a pane's cards while their data loads; a loading status for screen readers. `status={false}` inside
+ * something that already is one (BeheerWindowSkeleton), so live regions don't nest.
+ */
+export function BeheerSkeleton({ groups = 1, status = true }: { groups?: number; status?: boolean }) {
   return (
-    <div className="flex flex-col gap-3.5">
+    <div className="flex flex-col gap-3.5" {...(status ? { role: 'status', 'aria-label': 'Laden' } : {})}>
       {Array.from({ length: groups }, (_, index) => (
         <div key={index} className="flex flex-col gap-3 rounded-3xl bg-card p-4">
           <Skeleton className="mx-1 h-5 w-28 bg-beheer-row-high" />
@@ -36,7 +39,7 @@ export function BeheerWindowSkeleton({ mobile }: { mobile: boolean }) {
       </div>
       <div className="flex flex-col gap-4 px-7 py-6">
         <Skeleton className="h-6 w-40" />
-        <BeheerSkeleton groups={2} />
+        <BeheerSkeleton groups={2} status={false} />
       </div>
     </div>
   );
