@@ -96,7 +96,7 @@ function HqScreen({ onUnauthorized }: { onUnauthorized: () => void }) {
   if (!user?.admin) return <Navigate to="/" replace />;
 
   return (
-    <main className="grid h-dvh w-dvw grid-cols-[58fr_42fr] overflow-hidden bg-background text-foreground">
+    <main className="grid h-dvh w-dvw grid-cols-[58fr_42fr] overflow-hidden bg-beheer-window text-foreground">
       {/* sr-only (absolutely positioned): not a grid item */}
       <h1 className="sr-only">HQ-scherm</h1>
       <div className="relative min-h-0 overflow-hidden rounded-r-2xl">
