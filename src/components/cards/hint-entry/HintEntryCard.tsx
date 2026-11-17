@@ -5,6 +5,7 @@ import {AnimatePresence, motion} from 'motion/react';
 import InlineError from '@/components/InlineError';
 import LoadError from '@/components/LoadError';
 import Reveal from '@/components/motion/Reveal';
+import ArchiveReadOnlyNote from '@/components/ArchiveReadOnlyNote';
 import {SWAP} from '@/lib/motion';
 import useHintDraftStore, {EMPTY_HINT_DRAFT} from '@/stores/hint-draft.store';
 import {useMarkers} from '@/hooks/markers.hook.ts';
@@ -25,7 +26,7 @@ import AreaPicker from './AreaPicker';
 import TimePicker from './TimePicker';
 import DigitBoxes from './DigitBoxes';
 import CoordinateStatus, {type CoordinateState} from './CoordinateStatus';
-import {buildHintHours, groupByDay, isFreeHour, isTakenHour} from './hint-times';
+import {buildHintHours, groupByDay, isFreeHour, isTakenHour, missingPickText} from './hint-times';
 import {formatClock} from '@/lib/format';
 import {SOFT_PRIMARY_BUTTON} from '@/lib/tonal-button';
 import {fieldsResolver, nonEmptyString, oneOf, stringOfLength} from '@/lib/form-resolver';
@@ -384,7 +385,7 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
                     )}
                 </Reveal>
                 <div className="isolate mt-0.5 flex items-center justify-between gap-2">
-                    <CoordinateStatus state={coordinateState} guess={status}/>
+                    <CoordinateStatus state={coordinateState} guess={status} missing={missingPickText(selectedArea, timeValue)}/>
                     <button type="button" onClick={clearCoordinates}
                             className={`${COARSE_HIT_AREA} inline-flex items-center gap-1.5 rounded-lg px-1 text-xs font-semibold text-primary-text md:text-[11px] outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring`}>
                         <EraserIcon aria-hidden className="size-3"/> Wissen
@@ -404,6 +405,8 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
                     </motion.span>
                 </AnimatePresence>
             </Button>
+            {/* Why Registreren is greyed out in an archive edition */}
+            <ArchiveReadOnlyNote gap={12}/>
             <Reveal gap={12}>
                 {submitError && <InlineError role="alert">{submitError}</InlineError>}
             </Reveal>

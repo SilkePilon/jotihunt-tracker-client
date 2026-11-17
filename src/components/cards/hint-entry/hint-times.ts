@@ -87,3 +87,14 @@ export function isFreeHour(hours: HintHour[] | null, value: string): boolean {
 export function isTakenHour(hours: HintHour[] | null, value: string): boolean {
   return !!value && !!hours && hours.some((hour) => hour.value === value && hour.taken);
 }
+
+/**
+ * Why Registreren still waits once the coordinates are complete: the picks that are missing, said in the status line
+ * under the boxes (a greyed-out button alone gives no reason). Null when area and time are both chosen.
+ */
+export function missingPickText(area: string | undefined, time: string | undefined): string | null {
+  if (!area && !time) return 'Kies nog een gebied en tijd';
+  if (!area) return 'Kies nog een gebied';
+  if (!time) return 'Kies nog een tijd';
+  return null;
+}
