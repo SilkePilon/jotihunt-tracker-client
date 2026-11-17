@@ -63,7 +63,7 @@ export default function CoordinatesCard({ mapRef, onDone, fluid }: { mapRef: Rea
                 className={cn(
                     MAP_TILE,
                     // isolate: the Bekijk button's phone hit area stays above the tile's background
-                    "isolate flex h-11 w-full items-center gap-2.5 rounded-[14px] px-1.5 outline-2 outline-transparent transition-[outline-color] duration-150 focus-within:outline-ring",
+                    "isolate flex h-11 w-full items-center gap-2.5 rounded-(--radius-tile) px-1.5 outline-2 outline-transparent transition-[outline-color] duration-150 focus-within:outline-ring",
                     error && "outline-destructive focus-within:outline-destructive",
                 )}
             >

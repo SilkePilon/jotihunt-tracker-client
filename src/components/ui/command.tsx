@@ -70,7 +70,7 @@ function CommandInput({
     // Inset ring: the Command root clips overflow, so an outer ring would be cut off at its edges
     <div
       data-slot="command-input-wrapper"
-      className="mb-2 flex h-10 shrink-0 items-center gap-2 rounded-[14px] bg-beheer-row-high px-3 transition-[box-shadow] duration-150 focus-within:ring-2 focus-within:ring-ring focus-within:ring-inset"
+      className="mb-2 flex h-10 shrink-0 items-center gap-2 rounded-(--radius-tile) bg-beheer-row-high px-3 transition-[box-shadow] duration-150 focus-within:ring-2 focus-within:ring-ring focus-within:ring-inset"
     >
       <SearchIcon className="size-4 shrink-0 opacity-50" />
       <CommandPrimitive.Input

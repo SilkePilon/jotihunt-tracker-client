@@ -28,7 +28,7 @@ export default function IntelButton() {
       title={`${INTEL_LABEL} (I)`}
       aria-keyshortcuts="i"
       onClick={() => openIntel()}
-      className={cn(HEADER_BUTTON, HEADER_BUTTON_START, 'rounded-l-lg rounded-r-[6px] [&_svg]:size-[18px]')}
+      className={cn(HEADER_BUTTON, HEADER_BUTTON_START, 'rounded-l-lg rounded-r-(--radius-segment) [&_svg]:size-[18px]')}
     >
       <NewspaperIcon aria-hidden />
       <span className="sr-only">
