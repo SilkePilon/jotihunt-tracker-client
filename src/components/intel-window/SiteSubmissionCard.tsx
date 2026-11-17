@@ -1,4 +1,5 @@
 import { BeheerCard, FadeSwap } from '@/components/beheer/BeheerLayout';
+import NewTabHint from '@/components/NewTabHint';
 import { ratingStars } from '@/lib/intel-window';
 import type { AssignmentSite } from '@/types/Intel';
 
@@ -13,6 +14,7 @@ export default function SiteSubmissionCard({ site }: { site: AssignmentSite }) {
       {site.imageUrl && (
         <a href={site.imageUrl} target="_blank" rel="noopener noreferrer" className="mt-2.5 block overflow-hidden rounded-2xl bg-beheer-row outline-none focus-visible:ring-[3px] focus-visible:ring-ring">
           <img src={site.imageUrl} alt="Ingestuurde foto" loading="lazy" decoding="async" className="max-h-80 w-full object-cover transition-transform duration-300 motion-safe:hover:scale-[1.02]" />
+          <NewTabHint />
         </a>
       )}
       {site.answerText && (

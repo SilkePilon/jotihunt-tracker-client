@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { motion } from 'motion/react';
 import { ChevronDownIcon, ChevronRightIcon, GlobeIcon } from 'lucide-react';
 import Reveal from '@/components/motion/Reveal';
+import NewTabHint from '@/components/NewTabHint';
 import { type ChatSource, groupSources, type SourceGroup } from '@/lib/intel-chat';
 import { SWAP_TRANSITION } from '@/lib/motion';
 import { cn } from '@/lib/utils';
@@ -84,6 +85,7 @@ function SiteRow({ group }: { group: SourceGroup }) {
       {count === 1 ? (
         <a href={group.sources[0].url} target="_blank" rel="noopener noreferrer" title={group.sources[0].title} className={ROW}>
           {label}
+          <NewTabHint />
           <ChevronRightIcon className="size-3.5 text-muted-foreground" aria-hidden />
         </a>
       ) : (
@@ -106,6 +108,7 @@ function SiteRow({ group }: { group: SourceGroup }) {
                 className="truncate py-1 pr-3 pl-[38px] text-xs text-muted-foreground outline-none hover:text-foreground focus-visible:text-foreground focus-visible:underline"
               >
                 {source.title.toLowerCase() === group.site ? `Bron ${index + 1}` : source.title}
+                <NewTabHint />
               </a>
             ))}
           </div>

@@ -12,6 +12,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import NewTabHint from '@/components/NewTabHint';
 import ResponsiveDialog from '@/components/ResponsiveDialog';
 import { useIsMobile } from '@/hooks/media.hook';
 import { DIALOG_SHELL } from '@/lib/dialog-shell';
@@ -71,11 +72,13 @@ export default function TrackerGuideDialog({ open, onOpenChange, status }: Track
               <Button asChild variant="outline" size="sm" className="flex-1">
                 <a href={TRACCAR_PLAY_STORE_URL} target="_blank" rel="noreferrer">
                   Google Play
+                  <NewTabHint />
                 </a>
               </Button>
               <Button asChild variant="outline" size="sm" className="flex-1">
                 <a href={TRACCAR_APP_STORE_URL} target="_blank" rel="noreferrer">
                   App Store
+                  <NewTabHint />
                 </a>
               </Button>
             </div>

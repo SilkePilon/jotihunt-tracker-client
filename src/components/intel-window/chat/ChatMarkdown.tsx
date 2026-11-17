@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import Markdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import NewTabHint from '@/components/NewTabHint';
 import { cn } from '@/lib/utils';
 
 /** Links open in a new tab; raw HTML in the answer is never rendered (react-markdown default, no rehype-raw) */
@@ -8,6 +9,7 @@ const COMPONENTS: Components = {
   a: ({ href, children }) => (
     <a href={href} target="_blank" rel="noopener noreferrer">
       {children}
+      <NewTabHint />
     </a>
   ),
   // Wide tables scroll sideways inside the bubble instead of stretching it

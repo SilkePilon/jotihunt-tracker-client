@@ -36,7 +36,7 @@ export function RouteAction({ lat, lng, compact }: { lat: number; lng: number; c
       target="_blank"
       rel="noreferrer"
       href={googleRouteUrl(lat, lng)}
-      aria-label="Route in Google Maps"
+      aria-label="Route in Google Maps (opent in nieuw tabblad)"
       title={compact ? 'Route in Google Maps' : undefined}
       className={compact ? popupActionClass('neutral', ICON_ACTION) : popupActionClass('primary', 'min-w-0 flex-1')}
     >
