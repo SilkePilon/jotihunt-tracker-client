@@ -219,6 +219,8 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
         if (!sameDraft(form.getValues(), data)) {
             toast.success('Vorige hint geregistreerd — je nieuwe invoer is nog niet verzonden', {
                 description: lateNote,
+                // Longer than the default 4 s: time to read it and reach Toon
+                duration: 10000,
                 action: {label: 'Toon', onClick: flyToHint},
             });
             return;

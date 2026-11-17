@@ -87,8 +87,10 @@ export default function UsersPane() {
         toast.success(`Herstel-link voor ${user.name} gekopieerd`, { description });
       } else {
         // iOS Safari refuses clipboard writes this long after the tap: offer a copy button (a fresh tap)
+        // Stays until closed: the link is only reachable through this button
         toast.success(`Herstel-link voor ${user.name} gemaakt`, {
           description,
+          duration: Infinity,
           action: { label: 'Kopieer link', onClick: () => void copyToClipboard(link.url, 'Link gekopieerd') },
         });
       }

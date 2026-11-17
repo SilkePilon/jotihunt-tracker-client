@@ -129,7 +129,8 @@ export default function InvitesPane() {
       setHighlightId(invite._id);
       // One toast: iOS Safari refuses clipboard writes this long after the tap, so then offer a copy button (a fresh tap)
       if (await writeClipboard(invite.url)) toast.success('Invite gemaakt', { description: 'De link staat op je klembord.' });
-      else toast.success('Invite gemaakt', { action: { label: 'Kopieer link', onClick: () => void copyToClipboard(invite.url, 'Link gekopieerd') } });
+      // Stays until closed: the link is only reachable through this button
+      else toast.success('Invite gemaakt', { duration: Infinity, action: { label: 'Kopieer link', onClick: () => void copyToClipboard(invite.url, 'Link gekopieerd') } });
     } catch (failure) {
       setCreateError(apiErrorMessage(failure, 'Invite maken is mislukt.'));
     } finally {
