@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import type { Marker } from '@/types/Marker';
 import { MarkerType } from '@/types/MarkerType';
-import { filterMarkers, groupMarkersByArea, markerSplitTime } from './markers';
+import { filterMarkers, groupMarkersByArea, markerDeleteDescription, markerSplitTime } from './markers';
 
 function marker(id: string, area: string, time: string, type = MarkerType.Hint): Marker {
   return { _id: id, area, time: time as unknown as Date, type, location: { type: 'Point', coordinates: [5.9, 52] } };
@@ -56,5 +56,13 @@ describe('groupMarkersByArea', () => {
 
   test('empty input gives no groups', () => {
     expect(groupMarkersByArea([])).toEqual({});
+  });
+});
+
+describe('markerDeleteDescription', () => {
+  test('names the type, area and time', () => {
+    expect(markerDeleteDescription(marker('1', 'alpha', '2026-10-17T20:00:00Z', MarkerType.Hunt), '22:00')).toBe(
+      'De hunt van Alpha (22:00) verdwijnt voor iedereen van de kaart. Dit kan niet ongedaan worden gemaakt.',
+    );
   });
 });

@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
 import { isUnauthorized } from '@/lib/session';
 import { fetcherWithMethod } from '@/lib/swr';
-import { isRecent, mergeFeed, pickSound, shouldAlert, toastKind, type AppNotification } from '@/lib/notifications';
+import { isRecent, mergeFeed, pickSound, shouldAlert, toastAction, toastKind, type AppNotification } from '@/lib/notifications';
 import { playNotificationSound } from '@/lib/notification-sounds';
 import { showHighlightToast } from '@/components/notifications/HighlightToast';
 import { useNotificationPrefs } from '@/hooks/notification-prefs.hook';
@@ -26,21 +26,23 @@ interface FeedOptions {
   onUnauthorized?: () => void;
   /** Desktop: hint/news toasts get an "Openen" button that opens the article */
   openArticle?: (articleId: number) => void;
+  /** Phone: hint toasts get an "Openen" button that opens the Hints page */
+  openHints?: () => void;
 }
 
 /**
  * Poll the server's notification feed and alert (sound + toast) for new ones. Starts at "now": notifications
  * from before the page loaded are never replayed.
  */
-export function useNotificationFeed({ respectPreferences = true, toasts = true, onPoll, onUnauthorized, openArticle }: FeedOptions = {}) {
+export function useNotificationFeed({ respectPreferences = true, toasts = true, onPoll, onUnauthorized, openArticle, openHints }: FeedOptions = {}) {
   const authHeader = useAuthHeader() || '';
   const { disabledTypes } = useNotificationPrefs();
   const soundMuted = useSettingsStore((state) => state.soundMuted);
 
   // Read inside the interval, so changing a setting doesn't restart polling
-  const latest = useRef({ disabledTypes, soundMuted, respectPreferences, toasts, onPoll, onUnauthorized, openArticle });
+  const latest = useRef({ disabledTypes, soundMuted, respectPreferences, toasts, onPoll, onUnauthorized, openArticle, openHints });
   useEffect(() => {
-    latest.current = { disabledTypes, soundMuted, respectPreferences, toasts, onPoll, onUnauthorized, openArticle };
+    latest.current = { disabledTypes, soundMuted, respectPreferences, toasts, onPoll, onUnauthorized, openArticle, openHints };
   });
 
   useEffect(() => {
@@ -80,9 +82,7 @@ export function useNotificationFeed({ respectPreferences = true, toasts = true, 
           for (const notification of alertable) {
             const duration = notification.urgent ? 30_000 : 8000;
             if (showHighlightToast(notification, duration)) continue;
-            const articleId = notification.data.articleId;
-            const open = options.openArticle;
-            const action = open && articleId !== undefined && (notification.type === 'hint' || notification.type === 'article') ? { label: 'Openen', onClick: () => open(articleId) } : undefined;
+            const action = toastAction(notification, options);
             toast[toastKind(notification)](notification.title, { description: notification.body || undefined, duration, action });
           }
         }

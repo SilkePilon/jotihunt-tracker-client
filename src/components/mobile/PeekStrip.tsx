@@ -12,6 +12,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAreas } from '@/hooks/areas.hook';
 import { SWAP_TRANSITION } from '@/lib/motion';
+import { COARSE_HIT_AREA } from '@/lib/hit-area';
 
 const COOKIE_16 = cookiePath(16, BADGE_COOKIE_DEPTH);
 const TONE_FILL = { ok: '#22c55e', warn: '#f59e0b', muted: 'var(--muted-foreground)' } as const;
@@ -22,7 +23,7 @@ function TrackerLine({ onOpen }: { onOpen: () => void }) {
   const now = useNow(true);
   const line = trackerPeekLine(status, now);
   return (
-    <button type="button" onClick={onOpen} className="flex min-h-9 items-center gap-2 text-left text-[13.5px]">
+    <button type="button" onClick={onOpen} className={cn('flex min-h-9 items-center gap-2 text-left text-[13.5px]', COARSE_HIT_AREA)}>
       <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden className="shrink-0">
         <path d={COOKIE_16} fill={TONE_FILL[line.tone]} />
       </svg>
@@ -45,13 +46,14 @@ export default function PeekStrip() {
   const scene = foxes && foxes.length > 0 ? 'bar' : foxes ? 'empty' : isError ? 'error' : 'loading';
 
   return (
-    <div className="flex flex-col gap-2 px-4 pb-3">
+    // isolate: the buttons' 44px touch areas (COARSE_HIT_AREA) stay above the sheet's background
+    <div className="isolate flex flex-col gap-2 px-4 pb-3">
       <TrackerLine onOpen={() => push({ id: 'tracking' })} />
       <div className="relative h-8">
         <AnimatePresence initial={false}>
           <motion.div key={scene} className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={SWAP_TRANSITION}>
             {scene === 'bar' && foxes && counts ? (
-              <button type="button" onClick={() => push({ id: 'foxes' })} className="flex w-full flex-col gap-1.5 text-left">
+              <button type="button" onClick={() => push({ id: 'foxes' })} className={cn('flex w-full flex-col gap-1.5 text-left', COARSE_HIT_AREA)}>
                 <FoxStatusBar foxes={foxes} size="full" isForbidden={isForbidden} />
                 {/* The visible counts are part of the button's name; the sr-only prefix says what a tap does */}
                 <span className="sr-only">Vossen openen: </span>
@@ -69,7 +71,7 @@ export default function PeekStrip() {
                 <Skeleton className="h-4 w-full" />
               </div>
             ) : (
-              <button type="button" onClick={() => push({ id: 'foxes' })} className="flex h-full w-full items-center text-left text-xs text-muted-foreground">
+              <button type="button" onClick={() => push({ id: 'foxes' })} className={cn('flex h-full w-full items-center text-left text-xs text-muted-foreground', COARSE_HIT_AREA)}>
                 {scene === 'error' ? 'Vossen niet geladen — tik om te openen' : 'Nog geen vossen'}
               </button>
             )}

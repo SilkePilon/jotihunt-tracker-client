@@ -4,6 +4,7 @@ import {lazy, Suspense, useEffect, useMemo, useRef, useState} from 'react';
 import {mutate, SWRConfig, type SWRConfiguration} from 'swr';
 import Map, {MapRef} from './components/Map';
 import PWAPrompt from 'react-ios-pwa-prompt';
+import {Loader2Icon} from 'lucide-react';
 import BeheerDialog from './components/beheer/BeheerDialog';
 import IntelDialog from './components/intel-window/IntelDialog';
 import EditionReloader from '@/components/EditionReloader';
@@ -19,6 +20,7 @@ import {useTheme} from "@/hooks/theme.hook.ts";
 import {useNotificationFeed} from '@/hooks/notification-feed.hook';
 import {useIsMobile} from '@/hooks/media.hook';
 import useIntelStore from '@/stores/intel.store';
+import useMobileNavStore from '@/stores/mobile-nav.store';
 import {useFetcher} from '@/hooks/utils/api.hook';
 import {isUnauthorized} from '@/lib/session';
 import {useSessionExpired} from '@/hooks/session.hook';
@@ -50,7 +52,6 @@ export default function Layout() {
 
     useTheme();
     const isMobile = useIsMobile();
-    useNotificationFeed({onUnauthorized: sessionExpired, openArticle: isMobile ? undefined : (articleId) => useIntelStore.getState().openIntel(articleId)});
     const {fetch} = useFetcher();
     useEffect(() => {
         void resyncPush(fetch);
@@ -61,6 +62,19 @@ export default function Layout() {
     const location = useLocation();
     const {pathname} = location;
     const navigate = useNavigate();
+
+    /** Phone: the Hints page on top of the sheet (push also raises the sheet to full; already on top stays as is) */
+    function openHintsPage() {
+        if (pathname !== '/') navigate('/');
+        useMobileNavStore.getState().push({id: 'hints'});
+    }
+
+    // Laptop: "Openen" on a hint/news toast opens the article; phone: a hint toast opens the Hints page (solving stays laptop-only)
+    useNotificationFeed({
+        onUnauthorized: sessionExpired,
+        openArticle: isMobile ? undefined : (articleId) => useIntelStore.getState().openIntel(articleId),
+        openHints: isMobile ? openHintsPage : undefined,
+    });
     // Set by /l/:code: a laptop's QR code was scanned with this phone
     const qrLogin = (location.state as {qrLogin?: unknown} | null)?.qrLogin;
     const tour = useTourAutoStart();
@@ -80,14 +94,45 @@ export default function Layout() {
         console.warn(`[SWR] ${key} failed`, error);
         // One toast per outage, and not again within a minute when the connection flaps
         if (!errorToast.error(key)) return;
-        const {title, description} = fetchErrorToastText(error);
+        errorToastText.current = fetchErrorToastText(error);
+        showErrorToast(false);
+    }
+
+    // The toast's copy for this outage, kept for the pending state of "Opnieuw"
+    const errorToastText = useRef({title: '', description: ''});
+    const retrying = useRef(false);
+
+    function showErrorToast(pending: boolean) {
+        const {title, description} = errorToastText.current;
         toast.error(title, {
             id: FETCH_ERROR_TOAST_ID,
             duration: Infinity,
             description,
-            // Refetch everything now instead of waiting for the next polls; the toast goes once the failing keys load
-            action: {label: 'Opnieuw', onClick: () => void mutate(() => true)},
-        })
+            action: {
+                label: pending ? (
+                    <span className="inline-flex items-center gap-1.5"><Loader2Icon className="size-3.5 animate-spin" aria-hidden/>Opnieuw proberen…</span>
+                ) : 'Opnieuw',
+                onClick: (event) => {
+                    // The toast stays: it goes by itself once the failing keys load
+                    event.preventDefault();
+                    void retryFailing();
+                },
+            },
+        });
+    }
+
+    /** Refetch only the keys that are failing now instead of waiting for their next poll; repeat taps wait for it */
+    async function retryFailing() {
+        if (retrying.current) return;
+        retrying.current = true;
+        showErrorToast(true);
+        try {
+            await Promise.allSettled(errorToast.failingKeys().map((key) => mutate(key)));
+        } finally {
+            retrying.current = false;
+            // Still failing: back to "Opnieuw" (when everything loaded, onSWRSuccess already dismissed the toast)
+            if (errorToast.showing()) showErrorToast(false);
+        }
     }
 
     function onSWRSuccess(_data: unknown, key: string) {

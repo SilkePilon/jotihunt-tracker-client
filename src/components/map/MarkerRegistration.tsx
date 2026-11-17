@@ -17,6 +17,7 @@ import { useEdition } from '@/hooks/edition.hook';
 import {toast} from "sonner";
 import { apiErrorMessage } from '@/lib/api-error';
 import { popupActionClass } from './popup/PopupActions';
+import BusyIcon from '../motion/BusyIcon';
 
 
 type FormValues = { area: string; day: Date; time: Date };
@@ -90,6 +91,8 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
    * @param open Whether the dialog is open.
    */
   function handleOpenChange(open: boolean) {
+    // While the marker is being saved, Annuleren, Esc and the backdrop leave the dialog open
+    if (!open && form.formState.isSubmitting) return;
     setDialogOpen(open);
     form.reset();
   }
@@ -124,13 +127,16 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
 
     const error = await createMarker(marker);
     if (!error) {
-      handleOpenChange(false);
+      setDialogOpen(false);
+      form.reset();
       toast.success('Marker geplaatst!', { description: 'De marker is succesvol geplaatst.' });
     } else {
       // The server's message for e.g. a 429 (too many markers in a row)
       toast.error('Er is iets misgegaan.', { description: apiErrorMessage(error, 'Er is een fout opgetreden bij het plaatsen van de marker, probeer het later opnieuw.') });
     }
   }
+
+  const { isSubmitting } = form.formState;
 
   const renderForm = () => (
     <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -224,12 +230,12 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
           />
         </div>
         <DialogFooter className="gap-2">
-          <Button variant="outline" type="button" onClick={() => handleOpenChange(false)}>
+          <Button variant="outline" type="button" disabled={isSubmitting} onClick={() => handleOpenChange(false)}>
             Annuleren
           </Button>
-          <Button variant="default" type="submit" disabled={!form.formState.isValid || readOnly}>
-            <PinIcon data-icon="inline-start" />
-            Opslaan
+          <Button variant="default" type="submit" className="px-3" disabled={!form.formState.isValid || readOnly || isSubmitting} aria-busy={isSubmitting}>
+            <BusyIcon busy={isSubmitting} icon={<PinIcon data-icon="inline-start" />} />
+            {isSubmitting ? 'Opslaan…' : 'Opslaan'}
           </Button>
         </DialogFooter>
       </FieldGroup>

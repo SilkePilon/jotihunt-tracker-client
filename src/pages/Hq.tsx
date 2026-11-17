@@ -72,7 +72,7 @@ function HqScreen({ onUnauthorized }: { onUnauthorized: () => void }) {
   const now = useNow(true);
   const { areas } = useAreas();
   const { hunts } = useSyncedHunts();
-  const { events } = useHuntEvents();
+  const { events, isError: eventsError, retry: retryEvents } = useHuntEvents();
   const { predictions } = usePredictions();
   const { teams } = useTeams();
   useAppConfig(); // re-render when the home team is configured
@@ -112,7 +112,7 @@ function HqScreen({ onUnauthorized }: { onUnauthorized: () => void }) {
           <FoxBoard foxes={foxes} focusArea={director.focusArea} />
         </ErrorBoundary>
         <ErrorBoundary>
-          <HqHunts events={events} />
+          <HqHunts events={events} isError={eventsError} onRetry={retryEvents} />
         </ErrorBoundary>
       </aside>
       {!audioUnlocked && <AudioUnlock onUnlock={() => setAudioUnlocked(true)} />}

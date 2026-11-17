@@ -57,10 +57,13 @@ import {useAppConfig} from '@/hooks/app-config.hook';
 import {tourTarget} from '@/components/tour/targets';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import {AnimatePresence} from 'motion/react';
+import {cn} from '@/lib/utils';
 import type {User} from '@/types/User';
 import {useNightDraw} from '@/stores/night-draw.store';
 import NightAreaDraw from './layers/trails/NightAreaDraw';
 import NightAreasLayer from './layers/trails/NightAreasLayer';
+import MapUnavailableCard from './map/MapUnavailableCard';
+import {useMapAvailability} from './map/useMapAvailability';
 
 // MapLibre resolves its worker relative to its own module, which bundlers don't emit;
 // let Vite bundle the worker and hand MapLibre the resulting URL. Here, not in main.tsx, so the
@@ -235,6 +238,9 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
     );
     const [hybridSatellite, setHybridSatellite] = useState<StyleSpecification>();
     const resolvedMapStyle = mapStyle === MapStyle.Satellite && hybridSatellite ? hybridSatellite : staticStyle;
+    // The style's own sources, to tell a base-map failure from an overlay's (null for a style URL: any source counts)
+    const baseSourceIds = useMemo(() => (typeof resolvedMapStyle === 'string' ? null : new Set(Object.keys(resolvedMapStyle.sources))), [resolvedMapStyle]);
+    const availability = useMapAvailability(baseSourceIds);
 
     useEffect(() => {
         if (mapStyle !== MapStyle.Satellite) return;
@@ -257,7 +263,7 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
     }
 
     return (
-        <div className={className ?? "w-dvw h-dvh"} style={wrapperStyle} {...tourTarget('map')}>
+        <div className={cn('relative', className ?? "w-dvw h-dvh")} style={wrapperStyle} {...tourTarget('map')}>
             <Maplibre
                 ref={mapRef}
                 reuseMaps
@@ -275,6 +281,8 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
                 // No symbol fade: every tracker poll moves the hunter icons, which then faded in again (about 20 extra
                 // full map repaints per poll); the HTML markers they replace moved instantly
                 fadeDuration={0}
+                onError={availability.onError}
+                onSourceData={availability.onSourceData}
                 // Phones and the HQ wall: start with the credits collapsed to the (i) button; MapLibre opens them on load
                 onLoad={(event) => {
                     if (isMobile || wall) event.target.getContainer().querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show');
@@ -324,6 +332,10 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
                 <LayerStack/>
                 {overlay}
             </Maplibre>
+            {/* Style or tiles failed (offline cold start, tile server down): say so instead of a blank map */}
+            <div className="pointer-events-none absolute inset-x-4 top-[30%] z-10 flex justify-center">
+                <AnimatePresence>{availability.unavailable && <MapUnavailableCard key="unavailable"/>}</AnimatePresence>
+            </div>
         </div>
     );
 }));

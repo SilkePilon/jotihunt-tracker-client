@@ -15,5 +15,5 @@ export const useTrackerStatus = () => {
     return status;
   }
 
-  return { status: data, isError: !!error, setVehicle };
+  return { status: data, isError: !!error, setVehicle, retry: () => mutate() };
 };

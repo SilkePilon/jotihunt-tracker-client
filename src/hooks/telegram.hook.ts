@@ -25,8 +25,8 @@ export function revalidateHappyHour() {
 
 /** The @Jotihunt_bot messages (newest first), whether the group's Telegram account is linked and connected. */
 export function useTelegramMessages() {
-  const { data, error } = useAuthSWR<TelegramMessages>(TELEGRAM_MESSAGES_URL, { refreshInterval: TELEGRAM_MESSAGES_POLL_MS });
-  return { messages: data?.messages, linked: data?.linked, link: telegramLink(data), isError: !!error };
+  const { data, error, mutate } = useAuthSWR<TelegramMessages>(TELEGRAM_MESSAGES_URL, { refreshInterval: TELEGRAM_MESSAGES_POLL_MS });
+  return { messages: data?.messages, linked: data?.linked, link: telegramLink(data), isError: !!error, retry: () => mutate() };
 }
 
 /**

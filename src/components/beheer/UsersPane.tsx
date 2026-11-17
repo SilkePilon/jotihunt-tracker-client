@@ -31,7 +31,8 @@ export default function UsersPane() {
   const openDialog = useAdminStore((state) => state.openDialog);
   const now = useNow(true, SLOW_CLOCK_TICK_MS);
   const [renamingId, setRenamingId] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  // One question at a time per row: delete the user, or take away their admin rights
+  const [confirming, setConfirming] = useState<{ id: string; kind: 'delete' | 'revoke' } | null>(null);
   const [linkBusyId, setLinkBusyId] = useState<string | null>(null);
   const [linkDoneId, setLinkDone] = useTimedValue<string>(LINK_DONE_MS);
 
@@ -43,18 +44,25 @@ export default function UsersPane() {
   const adminSaving = useRef(new Set<string>());
   const [adminBusy, setAdminBusy] = useState<ReadonlySet<string>>(new Set());
 
-  async function toggleAdmin(user: User) {
-    if (adminSaving.current.has(user._id)) return;
+  /** Resolves to whether it was saved */
+  async function toggleAdmin(user: User): Promise<boolean> {
+    if (adminSaving.current.has(user._id)) return false;
     adminSaving.current.add(user._id);
     setAdminBusy(new Set(adminSaving.current));
     try {
       const error = await updateUser(user._id, { admin: !user.admin });
       if (error) toast.error(apiErrorMessage(error, 'Opslaan is mislukt.'));
       else toast.success(user.admin ? `${user.name} is geen admin meer` : `${user.name} is nu admin`);
+      return !error;
     } finally {
       adminSaving.current.delete(user._id);
       setAdminBusy(new Set(adminSaving.current));
     }
+  }
+
+  async function confirmRevoke(user: User) {
+    // On failure the question stays, so trying again is one tap
+    if (await toggleAdmin(user)) setConfirming(null);
   }
 
   async function confirmDelete(user: User) {
@@ -132,16 +140,28 @@ export default function UsersPane() {
           </>
         }
         confirm={
-          deletingId === user._id && (
+          confirming?.id === user._id &&
+          (confirming.kind === 'delete' ? (
             <InlineConfirm
+              key="delete"
               title={`${user.name} verwijderen?`}
               description="Account en alle sessies worden verwijderd."
               confirmLabel="Verwijder"
               confirmIcon={<Trash2Icon />}
-              onCancel={() => setDeletingId(null)}
+              onCancel={() => setConfirming(null)}
               onConfirm={() => confirmDelete(user)}
             />
-          )
+          ) : (
+            <InlineConfirm
+              key="revoke"
+              title={`${user.name} geen admin meer?`}
+              description="Deze gebruiker verliest de admin-rechten, zoals Beheer en het HQ-scherm."
+              confirmLabel="Geen admin meer"
+              confirmIcon={<ShieldOffIcon />}
+              onCancel={() => setConfirming(null)}
+              onConfirm={() => confirmRevoke(user)}
+            />
+          ))
         }
       >
         <Pill morphKey={linkDone ? 'done' : linkBusy ? 'busy' : 'idle'} variant={linkDone ? 'success' : 'secondary'} disabled={linkBusy} onClick={() => void recoveryLink(user)}>
@@ -172,12 +192,13 @@ export default function UsersPane() {
               morphKey={adminBusy.has(user._id) ? 'busy' : user.admin ? 'revoke' : 'grant'}
               disabled={adminBusy.has(user._id)}
               aria-busy={adminBusy.has(user._id)}
-              onClick={() => void toggleAdmin(user)}
+              // Granting is harmless; taking admin away asks first
+              onClick={() => (user.admin ? setConfirming({ id: user._id, kind: 'revoke' }) : void toggleAdmin(user))}
             >
               {adminBusy.has(user._id) ? <Loader2Icon className="animate-spin" /> : user.admin ? <ShieldOffIcon /> : <ShieldIcon />}
               {adminBusy.has(user._id) ? 'Opslaan…' : user.admin ? 'Geen admin meer' : 'Admin maken'}
             </Pill>
-            <Pill variant="danger-outline" onClick={() => setDeletingId(user._id)}>
+            <Pill variant="danger-outline" onClick={() => setConfirming({ id: user._id, kind: 'delete' })}>
               <Trash2Icon />
               Verwijderen
             </Pill>

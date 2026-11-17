@@ -1,5 +1,10 @@
 import { useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import LoadError from '@/components/LoadError';
+import { Skeleton } from '@/components/ui/skeleton';
+import type { LoadState } from '@/lib/load-state';
+import { SWAP } from '@/lib/motion';
 import { inlineLinkClass } from '@/components/tracker/styles';
 import { useEdition } from '@/hooks/edition.hook';
 import { cn } from '@/lib/utils';
@@ -17,12 +22,15 @@ export interface TelegramAdminProps extends TelegramLinkActions {
 interface TelegramCardProps {
   /** Newest first; undefined while loading */
   messages: BotMessage[] | undefined;
+  /** The messages' first load: skeleton while loading, a retry when it failed */
+  loadState: LoadState;
+  onRetry: () => Promise<unknown> | unknown;
   /** Only for admins: linking and unlinking */
   admin?: TelegramAdminProps;
 }
 
 /** "Jotihunt-berichten": every @Jotihunt_bot message as a timeline; admins link the Telegram account here. */
-export default function TelegramCard({ messages, admin }: TelegramCardProps) {
+export default function TelegramCard({ messages, loadState, onRetry, admin }: TelegramCardProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   // Unlinking is refused while an archive edition is shown (423)
   const { readOnly } = useEdition();
@@ -37,11 +45,34 @@ export default function TelegramCard({ messages, admin }: TelegramCardProps) {
   return (
     <div className="flex flex-col gap-3" data-telegram-card>
       {admin && status && linking && <TelegramLinkPanel status={status} onLink={admin.onLink} onCancel={admin.onCancel} onSubmitPassword={admin.onSubmitPassword} />}
-      {messages && messages.length > 0 && <BotMessageTimeline messages={messages} />}
-      {/* An admin who still has to link sees the link panel instead */}
-      {messages?.length === 0 && !(linking && status?.state !== 'unavailable') && (
-        <p className="text-center text-xs text-muted-foreground">Nog geen berichten van @Jotihunt_bot</p>
-      )}
+      <AnimatePresence mode="wait" initial={false}>
+        {loadState === 'loading' ? (
+          <motion.div key="loading" {...SWAP} className="flex flex-col gap-3" role="status" aria-label="Berichten laden">
+            {Array.from({ length: 3 }, (_, index) => (
+              <div key={index} className="flex gap-2.5">
+                <Skeleton className="size-8 shrink-0 rounded-full" />
+                <div className="flex min-w-0 flex-1 flex-col gap-1.5 pt-0.5">
+                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="h-3 w-full" />
+                </div>
+              </div>
+            ))}
+          </motion.div>
+        ) : loadState === 'error' ? (
+          <motion.div key="error" {...SWAP}>
+            <LoadError message="Berichten konden niet worden geladen." onRetry={onRetry} />
+          </motion.div>
+        ) : messages && messages.length > 0 ? (
+          <motion.div key="list" {...SWAP}>
+            <BotMessageTimeline messages={messages} />
+          </motion.div>
+        ) : /* An admin who still has to link sees the link panel instead */
+        !(linking && status?.state !== 'unavailable') ? (
+          <motion.p key="empty" {...SWAP} className="text-center text-xs text-muted-foreground">
+            Nog geen berichten van @Jotihunt_bot
+          </motion.p>
+        ) : null}
+      </AnimatePresence>
       {admin && status?.state === 'linked' && (
         <>
           <div className="h-px bg-border" />

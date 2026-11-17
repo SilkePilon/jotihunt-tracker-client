@@ -43,6 +43,15 @@ export function createFetchErrorToastState() {
             shownThisOutage = false;
             return wasShown;
         },
+        /** The keys that are failing now (what "Opnieuw" refetches), stale ones left out */
+        failingKeys(now = Date.now()): string[] {
+            pruneStale(now);
+            return [...failing.keys()];
+        },
+        /** Whether this outage's toast is up */
+        showing(): boolean {
+            return shownThisOutage;
+        },
     };
 }
 

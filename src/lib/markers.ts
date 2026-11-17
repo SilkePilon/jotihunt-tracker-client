@@ -37,3 +37,9 @@ export function groupMarkersByArea(markers: Marker[]): Record<string, Marker[]> 
   }
   return groups;
 }
+
+/** The delete confirmation's consequence line: which marker goes, for everyone, for good. */
+export function markerDeleteDescription(marker: Pick<Marker, 'area' | 'type' | 'time'>, clock: string): string {
+  const area = marker.area.charAt(0).toUpperCase() + marker.area.slice(1);
+  return `De ${marker.type} van ${area} (${clock}) verdwijnt voor iedereen van de kaart. Dit kan niet ongedaan worden gemaakt.`;
+}

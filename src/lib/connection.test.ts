@@ -81,3 +81,20 @@ describe('reporting', () => {
     expect(feedKey('/hunts?since=1')).toBe('/hunts');
   });
 });
+
+describe('per-feed tracking of the sidebar feeds', () => {
+  test('hints, predictions and bot messages (query left off) are tracked and named', () => {
+    resetConnection(NOW - 120_000);
+    reportFetchSuccess('/hints/board', NOW - 90_000);
+    reportFetchError('/hints/board', NOW - 2000);
+    reportFetchSuccess('/predictions', NOW - 90_000);
+    reportFetchError('/predictions', NOW - 2000);
+    reportFetchSuccess('/telegram/messages?limit=50', NOW - 1000);
+    reportFetchSuccess('/areas', NOW - 1000);
+    const snapshot = connectionSnapshot();
+    expect(Object.keys(snapshot.feeds).sort()).toEqual(['/areas', '/hints/board', '/predictions', '/telegram/messages']);
+    const problem = connectionProblem(snapshot, true, NOW);
+    expect(problem).toEqual({ ageMs: 90_000, feeds: ['hints', 'voorspellingen'] });
+    expect(problemLabel(problem!)).toBe('Hints en voorspellingen niet bijgewerkt — 1 min oud');
+  });
+});
