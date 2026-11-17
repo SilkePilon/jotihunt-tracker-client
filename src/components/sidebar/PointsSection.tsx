@@ -21,7 +21,7 @@ function ScoreBar({ parts }: { parts: ScoreParts }) {
   const room = BAR_WIDTH - GAP * Math.max(0, visible - 1);
 
   return (
-    <div className={cn('mx-auto mt-3 flex h-2.5 rounded-[5px] transition-colors', visible === 0 && 'bg-secondary')} style={{ width: BAR_WIDTH }} aria-hidden>
+    <div className={cn('mx-auto mt-3 flex h-2.5 rounded-[5px] transition-colors', visible === 0 && 'bg-beheer-row-high')} style={{ width: BAR_WIDTH }} aria-hidden>
       {segments.map((segment, index) => {
         const gapBefore = segment.share > 0 && segments.slice(0, index).some((previous) => previous.share > 0) ? GAP : 0;
         return (

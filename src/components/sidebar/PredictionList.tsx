@@ -107,7 +107,7 @@ export default function PredictionList({ mapRef }: { mapRef: RefObject<MapRef | 
                       'inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-badge px-2.5 text-xs font-semibold transition-[transform,box-shadow,background-color] outline-none active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
                       COARSE_HIT_AREA,
                       // Stale: only the background softens; text and icons keep full contrast
-                      !active && (prediction.stale ? 'bg-muted/60 text-muted-foreground' : 'bg-muted text-muted-foreground'),
+                      !active && (prediction.stale ? 'bg-beheer-row-high/60 text-muted-foreground' : 'bg-beheer-row-high text-muted-foreground'),
                       openArea === prediction.area && 'ring-2 ring-offset-2 ring-offset-card',
                     )}
                     style={{ ...(active && chipColors(color, !!prediction.stale)), ...(openArea === prediction.area && { ['--tw-ring-color' as string]: color }) }}

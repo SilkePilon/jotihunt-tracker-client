@@ -29,7 +29,7 @@ export default function EditionBadge() {
                 onClick={(event) => setOpen(event.detail === 0 ? !open : !wasOpen.current)}
                 className={cn(
                   COARSE_HIT_AREA,
-                  'cursor-default rounded-badge bg-muted px-2 py-0.5 text-xs font-bold tracking-wide text-muted-foreground tabular-nums outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+                  'cursor-default rounded-badge bg-beheer-row-high px-2 py-0.5 text-xs font-bold tracking-wide text-muted-foreground tabular-nums outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
                 )}
               >
                 {year}

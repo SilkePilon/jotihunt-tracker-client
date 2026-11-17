@@ -131,7 +131,7 @@ export default function BuildingsCard({ mapRef }: { mapRef: RefObject<MapRef | n
         {job && (
           // Lined up with the text (44px icon + 12px gap)
           <div className="pt-3 pl-14">
-            <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+            <div className="h-1.5 overflow-hidden rounded-full bg-beheer-row-high">
               <motion.div
                 className="h-full rounded-full bg-primary-text dark:bg-primary"
                 initial={false}

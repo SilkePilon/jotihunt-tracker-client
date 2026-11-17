@@ -21,7 +21,7 @@ export function BeheerWindowSkeleton({ mobile }: { mobile: boolean }) {
       <div className="flex min-h-0 flex-1 flex-col gap-0.5" role="status" aria-label="Beheer laden">
         <Skeleton className="mx-3 mt-1 mb-3 h-6 w-24" />
         {Array.from({ length: 7 }, (_, index) => (
-          <Skeleton key={index} className="h-12 w-full rounded-xl bg-beheer-row" />
+          <Skeleton key={index} className="h-12 w-full rounded-xl bg-card" />
         ))}
       </div>
     );
@@ -31,7 +31,7 @@ export function BeheerWindowSkeleton({ mobile }: { mobile: boolean }) {
       <div className="flex flex-col gap-1.5 px-3 py-[18px]">
         <Skeleton className="mx-3 mb-3 h-5 w-20" />
         {Array.from({ length: 7 }, (_, index) => (
-          <Skeleton key={index} className="h-9 w-full rounded-xl bg-beheer-row" />
+          <Skeleton key={index} className="h-9 w-full rounded-xl bg-card" />
         ))}
       </div>
       <div className="flex flex-col gap-4 px-7 py-6">
