@@ -11,8 +11,8 @@ import {MAP_CHIP, MAP_TILE} from "@/lib/map-chrome.ts";
 import {SWAP_TRANSITION} from "@/lib/motion.ts";
 import {COARSE_HIT_AREA} from "@/lib/hit-area.ts";
 
-/** `onDone`: after showing a valid coordinate, e.g. to close the md popover that holds this card */
-export default function CoordinatesCard({ mapRef, onDone }: { mapRef: React.RefObject<MapRef | null>; onDone?: () => void }) {
+/** `onDone`: after showing a valid coordinate, e.g. to close the md popover that holds this card; `fluid`: fill the parent (phone drawer) instead of 300 px */
+export default function CoordinatesCard({ mapRef, onDone, fluid }: { mapRef: React.RefObject<MapRef | null>; onDone?: () => void; fluid?: boolean }) {
 
     const [inputValue, setInputValue] = useState("");
     // Shown under the field until the next edit (no toast: it belongs to this field)
@@ -56,7 +56,7 @@ export default function CoordinatesCard({ mapRef, onDone }: { mapRef: React.RefO
     }
 
     return (
-        <div className="relative w-[300px]">
+        <div className={cn("relative", fluid ? "w-full" : "w-[300px]")}>
             <form
                 onSubmit={onSubmit}
                 className={cn(

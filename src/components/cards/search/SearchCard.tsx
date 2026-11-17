@@ -31,8 +31,8 @@ import {activatedByKeyboard} from "@/lib/input-modality.ts";
 /** Placeholder rows while the groups load, about as wide as group names */
 const SKELETON_WIDTHS = ['70%', '55%', '80%', '62%', '48%'];
 
-/** `onDone`: after flying to a group, e.g. to close the md popover that holds this card */
-export default function SearchCard({ mapRef, onDone }: { mapRef: React.RefObject<MapRef | null>; onDone?: () => void }) {
+/** `onDone`: after flying to a group, e.g. to close the md popover that holds this card; `fluid`: fill the parent (phone drawer) instead of 300 px */
+export default function SearchCard({ mapRef, onDone, fluid }: { mapRef: React.RefObject<MapRef | null>; onDone?: () => void; fluid?: boolean }) {
     const [open, setOpen] = React.useState(false)
     const {teams, isError, retry} = useTeams();
     // A failed later poll keeps the last list; only a first load that is still running or failed replaces it
@@ -58,7 +58,8 @@ export default function SearchCard({ mapRef, onDone }: { mapRef: React.RefObject
                     type="button"
                     className={cn(
                         MAP_TILE,
-                        "group flex h-11 w-[300px] items-center gap-2.5 rounded-[14px] pr-3 pl-1.5 text-left transition-colors hover:bg-beheer-row focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:outline-none",
+                        "group flex h-11 items-center gap-2.5 rounded-[14px] pr-3 pl-1.5 text-left transition-colors hover:bg-beheer-row focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:outline-none",
+                        fluid ? "w-full" : "w-[300px]",
                         TRIGGER_OPEN,
                     )}
                 >

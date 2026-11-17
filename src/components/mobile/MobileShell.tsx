@@ -14,6 +14,7 @@ import PeekStrip from './PeekStrip';
 import MyLocationButton from './MyLocationButton';
 import ResetNorthButton from './ResetNorthButton';
 import MobileMenu from './MobileMenu';
+import SearchDrawer from './SearchDrawer';
 import MobilePage from './MobilePage';
 import ViewportDebug from './ViewportDebug';
 import { DOCK_ID } from './DockedPopup';
@@ -82,6 +83,7 @@ export default function MobileShell({ mapRef }: { mapRef: RefObject<MapRef | nul
     leftRef.current = top?.id ?? null;
   }, [top]);
   const mounted = useHasMounted();
+  const [searchOpen, setSearchOpen] = useState(false);
   // Leaving phone width unmounts the shell; the next phone visit starts at the menu
   useEffect(() => () => useMobileNavStore.getState().reset(), []);
 
@@ -107,12 +109,13 @@ export default function MobileShell({ mapRef }: { mapRef: RefObject<MapRef | nul
           <AnimatePresence initial={false} custom={direction} mode="popLayout">
             <motion.div key={viewKey} data-view={viewKey} custom={direction} variants={PANE_SLIDE} initial="enter" animate="center" exit="exit" transition={PANE_SLIDE_TRANSITION}>
               <ViewFocus enabled={mounted} target={(root) => (top ? root.querySelector('[data-view-back]') : root.querySelector(`[data-nav-id="${leftRef.current}"]`))}>
-                {top ? <MobilePage page={top} depth={stack.length} mapRef={mapRef} /> : <MobileMenu />}
+                {top ? <MobilePage page={top} depth={stack.length} mapRef={mapRef} /> : <MobileMenu onSearch={() => setSearchOpen(true)} />}
               </ViewFocus>
             </motion.div>
           </AnimatePresence>
         </div>
       </BottomSheet>
+      <SearchDrawer mapRef={mapRef} open={searchOpen} onClose={() => setSearchOpen(false)} />
     </>
   );
 }

@@ -54,8 +54,8 @@ function App() {
 
   return (
     <>
-      {/* Desktop only: on phones the map stays free (search via the sidebar, groups via the map). Between md and lg the
-          two 300 px cards would slide under the 320 px sidebar, so they fold into two icon tiles that open the same card */}
+      {/* Desktop only (phones open the same cards from the menu's Zoeken row). Between md and lg the two 300 px cards
+          would slide under the 320 px sidebar, so they fold into two icon tiles that open the same card */}
       <div className="absolute top-[max(0.5rem,env(safe-area-inset-top))] right-[max(0.5rem,env(safe-area-inset-right))] z-30 hidden md:block" {...tourTarget('cards.topRight')}>
         <div className="hidden gap-2 lg:flex">
           <div>
