@@ -2,7 +2,10 @@ import { lazy, type ReactNode, RefObject, Suspense, useEffect, useLayoutEffect, 
 import { AnimatePresence, motion, useIsPresent, useReducedMotion } from 'motion/react';
 import { useSWRConfig } from 'swr';
 import { MapRef } from '@/components/Map';
+import ChunkBoundary from '@/components/ChunkBoundary';
 import ResponsiveDialog from '@/components/ResponsiveDialog';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Loader2Icon } from 'lucide-react';
 import { useArticles } from '@/hooks/articles.hook';
 import { useAssignments } from '@/hooks/assignments.hook';
 import { useHintBoard } from '@/hooks/hints.hook';
@@ -227,6 +230,19 @@ function TimelineView({ items, allItems, cells, tab, memoryRef, entrance, onSele
   );
 }
 
+/** The chat card while its chunk loads: same shell and title as IntelChat, a spinner where the conversation goes. */
+function ChatLoadingShell() {
+  return (
+    <div className="flex min-h-0 flex-1 flex-col gap-2.5 rounded-[24px] bg-card p-3.5" role="status" aria-label="AI-chat laden">
+      <h3 className="mx-1 text-[15px] font-bold">Vraag de AI</h3>
+      <div className="grid min-h-0 flex-1 place-items-center">
+        <Loader2Icon className="size-5 animate-spin text-muted-foreground" />
+      </div>
+      <Skeleton className="h-[92px] w-full rounded-[20px] bg-beheer-row-high" />
+    </div>
+  );
+}
+
 /**
  * The open item: left its column (title card, summary, pane; scrolls on its own), right the AI chat card. Both start at
  * the top of the body, so the title card and the chat card line up. Another item replaces the whole view (a push).
@@ -240,10 +256,13 @@ function DetailView({ item, area, mapRef, entrance }: { item: IntelItem; area: s
         <IntelDetail item={item} area={area} mapRef={mapRef} />
       </div>
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* While the chunk loads: the chat card's empty shell (IntelChat's root classes) */}
-        <Suspense fallback={<div className="flex min-h-0 flex-1 flex-col rounded-[24px] bg-card p-3.5" />}>
-          <IntelChat item={item} mapRef={mapRef} entrance={!firstPaint} />
-        </Suspense>
+        {/* While the chunk loads: the chat card's shell (IntelChat's root classes) with its header and a spinner; a chunk
+            that can't be fetched shows a reload state in the card */}
+        <ChunkBoundary name="De AI-chat" className="rounded-[24px] bg-card">
+          <Suspense fallback={<ChatLoadingShell />}>
+            <IntelChat item={item} mapRef={mapRef} entrance={!firstPaint} />
+          </Suspense>
+        </ChunkBoundary>
       </div>
     </div>
   );

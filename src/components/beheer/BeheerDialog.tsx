@@ -1,7 +1,10 @@
 import { lazy, Suspense, useEffect, type RefObject } from 'react';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import type { MapRef } from '@/components/Map';
+import ChunkBoundary from '@/components/ChunkBoundary';
 import ResponsiveDialog from '@/components/ResponsiveDialog';
+import { useIsMobile } from '@/hooks/media.hook';
+import { BeheerWindowSkeleton } from './BeheerSkeleton';
 import { DIALOG_SHELL } from '@/lib/dialog-shell';
 import { cn } from '@/lib/utils';
 import useAdminStore from '@/stores/admin.store';
@@ -21,6 +24,7 @@ export default function BeheerDialog({ mapRef }: BeheerDialogProps) {
   const user = useAuthUser<User>();
   const open = useAdminStore((state) => state.dialog !== null);
   const close = useAdminStore((state) => state.close);
+  const isMobile = useIsMobile();
 
   // The store is global: Layout unmounts on /login, and a window left open would pop up again after the next login
   useEffect(() => () => useAdminStore.getState().close(), []);
@@ -42,9 +46,11 @@ export default function BeheerDialog({ mapRef }: BeheerDialogProps) {
       drawerClassName="bg-beheer-window"
     >
       {/* Only mounted while the window is open (or closing) */}
-      <Suspense fallback={<div className="min-h-0 flex-1" />}>
-        <BeheerWindow mapRef={mapRef} />
-      </Suspense>
+      <ChunkBoundary name="Beheer">
+        <Suspense fallback={<BeheerWindowSkeleton mobile={isMobile} />}>
+          <BeheerWindow mapRef={mapRef} />
+        </Suspense>
+      </ChunkBoundary>
     </ResponsiveDialog>
   );
 }
