@@ -77,7 +77,7 @@ export default function ChatInput({ kind, busy, disabled, onSend, onStop }: Chat
       onValueChange={setValue}
       onSubmit={submit}
       disabled={disabled}
-      className={cn(dragging && 'ring-[3px] ring-ring/50')}
+      className={cn(dragging && 'ring-[3px] ring-ring')}
       onDragOver={(event) => {
         if (!event.dataTransfer.types.includes('Files')) return;
         event.preventDefault();
@@ -153,7 +153,7 @@ export default function ChatInput({ kind, busy, disabled, onSend, onStop }: Chat
             aria-label="Afbeelding toevoegen"
             disabled={disabled}
             onClick={() => fileInput.current?.click()}
-            className="grid size-8 place-items-center rounded-xl text-muted-foreground outline-none transition-colors hover:bg-foreground/5 hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4"
+            className="grid size-8 place-items-center rounded-xl text-muted-foreground outline-none transition-colors hover:bg-foreground/5 hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4"
           >
             <PaperclipIcon />
           </button>

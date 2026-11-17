@@ -175,7 +175,7 @@ function Row({ item, now, onSelect }: { item: IntelItem; now: number; onSelect: 
     <button
       type="button"
       onClick={() => onSelect(item.id)}
-      className="flex w-full items-center gap-3 bg-(--row-bg) px-3.5 py-[11px] text-left outline-none transition-colors [--row-bg:var(--card)] hover:[--row-bg:var(--beheer-row)] focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset"
+      className="flex w-full items-center gap-3 bg-(--row-bg) px-3.5 py-[11px] text-left outline-none transition-colors [--row-bg:var(--card)] hover:[--row-bg:var(--beheer-row)] focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset"
     >
       <KindTile kind={item.kind} unread={item.unread} done={done} />
       <span className="min-w-0 flex-1">

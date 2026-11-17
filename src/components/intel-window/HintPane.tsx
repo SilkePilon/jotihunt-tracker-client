@@ -196,7 +196,7 @@ function AreaRow({ cell, area, label, open, onToggle, onSave, onClear, mapRef, h
         type="button"
         aria-expanded={open}
         onClick={onToggle}
-        className="flex w-full items-center px-3 py-2.5 text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset"
+        className="flex w-full items-center px-3 py-2.5 text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset"
       >
         <motion.span initial={false} animate={{ opacity: none ? 0.6 : 1 }} transition={SWAP.transition} className="flex min-w-0 flex-1 items-center gap-3">
           {dot}
@@ -392,7 +392,7 @@ function AreaBody({ cell, label, onSave, onClear, mapRef }: { cell: HintCell; la
               spellCheck={false}
               data-1p-ignore
               aria-label={`Antwoord ${label}`}
-              className="h-8 w-44 min-w-0 rounded-[10px] bg-beheer-window px-2.5 font-mono text-[13px] ring-1 ring-border outline-none placeholder:text-muted-foreground read-only:opacity-60 focus:ring-primary"
+              className="h-8 w-44 min-w-0 rounded-[10px] bg-beheer-window px-2.5 font-mono text-[13px] ring-1 ring-border outline-none placeholder:text-muted-foreground read-only:opacity-60 focus:ring-2 focus:ring-ring"
             />
             <Pill variant="primary" disabled={!answer.trim() || saving || !!guessAnswer || readOnly} onClick={() => void save()} morphKey={saving ? 'saving' : 'idle'} aria-label={saving ? 'Opslaan…' : undefined}>
               {saving ? <Loader2Icon className="animate-spin" /> : 'Opslaan'}

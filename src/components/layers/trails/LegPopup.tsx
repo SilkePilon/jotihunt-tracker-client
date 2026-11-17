@@ -91,7 +91,7 @@ export default function LegPopup({ leg, longitude, latitude, onClose, onSetMode 
             <button
               type="button"
               disabled={saving || readOnly}
-              className="mt-1.5 w-full rounded-md py-1 text-center text-xs text-(--map-muted) underline-offset-2 outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-50"
+              className="mt-1.5 w-full rounded-md py-1 text-center text-xs text-(--map-muted) underline-offset-2 outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring disabled:opacity-50"
               onClick={() => void apply(null)}
             >
               Terug naar automatisch

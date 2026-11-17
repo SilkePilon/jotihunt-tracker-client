@@ -35,7 +35,7 @@ interface PromptInputProps extends Omit<ComponentProps<'div'>, 'onSubmit'> {
 export function PromptInput({ value, onValueChange, onSubmit, maxHeight = 160, disabled = false, className, children, ...props }: PromptInputProps) {
   return (
     <PromptInputContext.Provider value={{ value, setValue: onValueChange, maxHeight, onSubmit, disabled }}>
-      <div className={cn('rounded-[20px] bg-beheer-row-high p-1.5 transition-shadow duration-200 focus-within:ring-[3px] focus-within:ring-ring/50', className)} {...props}>
+      <div className={cn('rounded-[20px] bg-beheer-row-high p-1.5 transition-shadow duration-200 focus-within:ring-[3px] focus-within:ring-ring', className)} {...props}>
         {children}
       </div>
     </PromptInputContext.Provider>
@@ -114,7 +114,7 @@ export function ModeToggle({ on, onToggle, icon, label, tone, tooltip }: ModeTog
         aria-label={label}
         onClick={() => onToggle(!on)}
         className={cn(
-          'flex h-8 items-center rounded-xl px-2 text-[12.5px] font-semibold outline-none transition-colors duration-200 focus-visible:ring-[3px] focus-visible:ring-ring/50',
+          'flex h-8 items-center rounded-xl px-2 text-[12.5px] font-semibold outline-none transition-colors duration-200 focus-visible:ring-[3px] focus-visible:ring-ring',
           on ? TOGGLE_ON[tone] : 'text-muted-foreground hover:bg-foreground/5 hover:text-foreground',
         )}
       >
@@ -153,7 +153,7 @@ export function SendButton({ state, onSend, onStop }: { state: 'idle' | 'ready' 
         animate={{ scale: state === 'ready' ? 1.04 : 1 }}
         transition={POP_SPRING}
         className={cn(
-          'ml-auto grid size-[34px] place-items-center rounded-xl outline-none transition-colors duration-200 focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none',
+          'ml-auto grid size-[34px] place-items-center rounded-xl outline-none transition-colors duration-200 focus-visible:ring-[3px] focus-visible:ring-ring disabled:pointer-events-none',
           state === 'idle' ? 'text-muted-foreground' : 'bg-primary-container text-on-primary-container hover:bg-[color-mix(in_oklab,var(--on-primary-container)_10%,var(--primary-container))]',
         )}
       >

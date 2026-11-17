@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 /** Tile in a picker grid; picked = orange tonal fill with a primary ring, taken = crossed out. */
 export function pickerTileClass(selected: boolean, taken = false): string {
   return cn(
-    'flex items-center justify-center gap-1.5 rounded-[14px] text-[13px] font-semibold outline-none transition-[background-color,color,box-shadow] duration-150 focus-visible:ring-[3px] focus-visible:ring-ring/50',
+    'flex items-center justify-center gap-1.5 rounded-[14px] text-[13px] font-semibold outline-none transition-[background-color,color,box-shadow] duration-150 focus-visible:ring-[3px] focus-visible:ring-ring',
     selected
       ? 'bg-primary-container text-on-primary-container shadow-[inset_0_0_0_2px_var(--primary)]'
       : 'bg-beheer-row hover:bg-beheer-row-high',
@@ -29,7 +29,7 @@ export function PickerTrigger({ lead, placeholder, label, invalid, className, ..
       type="button"
       aria-invalid={invalid || undefined}
       className={cn(
-        'group flex h-8 w-full min-w-0 items-center gap-1.5 rounded-lg bg-card px-2 text-left text-[13px] outline-none transition-[background-color,color,box-shadow,opacity] duration-150 hover:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-card data-[state=open]:bg-(--map-selected-bg) data-[state=open]:text-(--map-selected-fg) data-[state=open]:hover:bg-(--map-selected-bg) aria-invalid:shadow-[inset_0_0_0_2px_var(--destructive)]',
+        'group flex h-8 w-full min-w-0 items-center gap-1.5 rounded-lg bg-card px-2 text-left text-[13px] outline-none transition-[background-color,color,box-shadow,opacity] duration-150 hover:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:bg-card data-[state=open]:bg-(--map-selected-bg) data-[state=open]:text-(--map-selected-fg) data-[state=open]:hover:bg-(--map-selected-bg) aria-invalid:shadow-[inset_0_0_0_2px_var(--destructive)]',
         className,
       )}
       {...props}

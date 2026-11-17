@@ -27,7 +27,7 @@ export default function IntelTopBar({ unread, detail, onBack }: { unread: Partia
         initial={false}
         animate={detail ? { width: 34, marginRight: 0, opacity: 1 } : { width: 0, marginRight: -12, opacity: 0 }}
         transition={SWAP_TRANSITION}
-        className="grid h-8 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-xl bg-beheer-row-high text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        className="grid h-8 shrink-0 cursor-pointer place-items-center overflow-hidden rounded-xl bg-beheer-row-high text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring"
       >
         <ArrowLeftIcon className="size-4" />
       </motion.button>
@@ -42,7 +42,7 @@ export default function IntelTopBar({ unread, detail, onBack }: { unread: Partia
               type="button"
               aria-selected={active}
               onClick={() => setTab(value)}
-              className={cn('relative flex h-8 items-center gap-1.5 rounded-[9px] px-3 text-[13px] font-semibold outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50', active ? 'text-foreground' : 'text-muted-foreground hover:text-foreground')}
+              className={cn('relative flex h-8 items-center gap-1.5 rounded-[9px] px-3 text-[13px] font-semibold outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring', active ? 'text-foreground' : 'text-muted-foreground hover:text-foreground')}
             >
               {active && <motion.span layoutId="intel-tab" className="absolute inset-0 rounded-[9px] bg-card shadow-[0_1px_2px_rgb(0_0_0/0.06)]" transition={{ type: 'spring', stiffness: 500, damping: 38 }} />}
               <span className="relative">{LABELS[value]}</span>

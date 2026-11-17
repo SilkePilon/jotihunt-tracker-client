@@ -135,7 +135,7 @@ export default function HintGuess() {
                 exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.2 } }}
                 // before: an invisible ~32 px tap target around the 22 px dot
                 className={cn(
-                  "relative flex size-[22px] cursor-pointer items-center justify-center rounded-full text-[11px] font-bold tabular-nums shadow-md outline-none transition-[background-color,color,box-shadow] duration-200 before:absolute before:-inset-[5px] before:rounded-full before:content-[''] focus-visible:ring-[3px] focus-visible:ring-ring/50",
+                  "relative flex size-[22px] cursor-pointer items-center justify-center rounded-full text-[11px] font-bold tabular-nums shadow-md outline-none transition-[background-color,color,box-shadow] duration-200 before:absolute before:-inset-[5px] before:rounded-full before:content-[''] focus-visible:ring-[3px] focus-visible:ring-ring",
                   role === 'best' ? 'bg-guess text-card ring-4 ring-guess/30' : 'bg-card text-on-guess-container ring-2 ring-guess',
                 )}
               >

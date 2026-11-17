@@ -44,7 +44,7 @@ export default function Segmented<T extends string>({ value, options, onChange, 
             key={option.value}
             value={option.value}
             className={cn(
-              'relative inline-flex h-[30px] items-center rounded-[9px] px-3 text-[12.5px] font-semibold outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-50 [&_svg]:size-3.5 [&_svg]:shrink-0',
+              'relative inline-flex h-[30px] items-center rounded-[9px] px-3 text-[12.5px] font-semibold outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring disabled:opacity-50 [&_svg]:size-3.5 [&_svg]:shrink-0',
               selected ? (option.selectedTextClassName ?? 'text-foreground') : 'text-muted-foreground hover:text-foreground',
             )}
           >

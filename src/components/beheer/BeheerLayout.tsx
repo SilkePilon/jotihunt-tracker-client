@@ -101,7 +101,7 @@ export function BeheerCard({ title, count, description, right, onToggle, open = 
           type="button"
           aria-expanded={open}
           onClick={onToggle}
-          className="flex w-full items-center gap-2.5 rounded-2xl px-1 text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          className="flex w-full items-center gap-2.5 rounded-2xl px-1 text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring"
         >
           <span className="block min-w-0 flex-1">
             <span className="block">{heading}</span>
@@ -277,7 +277,7 @@ export function BeheerExpandableRow({ id, leading, title, meta, trailing, childr
                   type="button"
                   aria-expanded={open}
                   onClick={toggle}
-                  className={cn(headerClass, 'outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset')}
+                  className={cn(headerClass, 'outline-none focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset')}
                 >
                   {header}
                 </button>

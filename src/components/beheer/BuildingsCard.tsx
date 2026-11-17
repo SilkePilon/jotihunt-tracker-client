@@ -168,7 +168,7 @@ export default function BuildingsCard({ mapRef }: { mapRef: RefObject<MapRef | n
               disabled={locked}
               onClick={() => setRadiusKm(radius)}
               className={cn(
-                'inline-flex h-8 items-center rounded-lg px-3 text-[12.5px] font-semibold tabular-nums outline-none transition-[background-color,color,transform] duration-200 focus-visible:ring-[3px] focus-visible:ring-ring/50 active:scale-[0.97] disabled:opacity-50 motion-reduce:transition-none',
+                'inline-flex h-8 items-center rounded-lg px-3 text-[12.5px] font-semibold tabular-nums outline-none transition-[background-color,color,transform] duration-200 focus-visible:ring-[3px] focus-visible:ring-ring active:scale-[0.97] disabled:opacity-50 motion-reduce:transition-none',
                 radius === radiusKm ? 'bg-foreground/12 text-foreground' : 'bg-beheer-row text-muted-foreground',
               )}
             >

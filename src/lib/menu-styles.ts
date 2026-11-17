@@ -13,9 +13,10 @@ export const MENU_MOTION =
 /** Rows sit in a column with 2px seams; first/last rows round to 16px. */
 export const MENU_GROUP = 'flex flex-col gap-0.5';
 
-/** Tonal row, 6px corners and 16px on the outer ends of its group. Callers add their own disabled dimming (Radix vs cmdk differ). */
+/** Tonal row, 6px corners and 16px on the outer ends of its group. Keyboard focus adds an inset ring on top of the tonal
+ * step (background alone is too subtle). Callers add their own disabled dimming (Radix vs cmdk differ). */
 export const MENU_ROW_BASE =
-  "relative flex cursor-default items-center gap-2.5 rounded-md bg-beheer-row px-3 py-2.5 text-[13.5px] font-semibold outline-hidden select-none transition-colors duration-150 first:rounded-t-2xl last:rounded-b-2xl focus:bg-beheer-row-high [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-muted-foreground";
+  "relative flex cursor-default items-center gap-2.5 rounded-md bg-beheer-row px-3 py-2.5 text-[13.5px] font-semibold outline-hidden select-none transition-colors duration-150 first:rounded-t-2xl last:rounded-b-2xl focus:bg-beheer-row-high focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 [&_svg:not([class*='text-'])]:text-muted-foreground";
 
 /** Radix rows: dim while disabled. (cmdk items use data-[disabled=true] instead.) */
 export const MENU_ROW_DISABLED = 'data-[disabled]:pointer-events-none data-[disabled]:opacity-50';

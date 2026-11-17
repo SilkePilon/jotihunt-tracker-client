@@ -187,7 +187,7 @@ export default function HoldButton({ durationMs = 1000, onConfirm, disabled, bus
       // A long press must not open the context menu or select the label
       onContextMenu={(event) => event.preventDefault()}
       className={cn(
-        'relative flex h-12 w-full items-center justify-center overflow-hidden rounded-xl bg-primary-container px-4 text-[14.5px] font-semibold text-on-primary-container outline-none select-none [-webkit-touch-callout:none] transition-[transform,opacity] focus-visible:ring-[3px] focus-visible:ring-ring/50 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-70',
+        'relative flex h-12 w-full items-center justify-center overflow-hidden rounded-xl bg-primary-container px-4 text-[14.5px] font-semibold text-on-primary-container outline-none select-none [-webkit-touch-callout:none] transition-[transform,opacity] focus-visible:ring-[3px] focus-visible:ring-ring active:scale-[0.97] disabled:pointer-events-none disabled:opacity-70',
         className,
       )}
     >

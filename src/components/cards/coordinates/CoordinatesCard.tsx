@@ -57,7 +57,7 @@ export default function CoordinatesCard({ mapRef }: { mapRef: React.RefObject<Ma
             onSubmit={onSubmit}
             className={cn(
                 MAP_TILE,
-                "flex h-11 w-[300px] items-center gap-2.5 rounded-[14px] px-1.5 outline-2 outline-transparent transition-[outline-color] duration-150 focus-within:outline-ring/50",
+                "flex h-11 w-[300px] items-center gap-2.5 rounded-[14px] px-1.5 outline-2 outline-transparent transition-[outline-color] duration-150 focus-within:outline-ring",
                 hasError && "outline-destructive focus-within:outline-destructive",
             )}
         >
@@ -72,7 +72,7 @@ export default function CoordinatesCard({ mapRef }: { mapRef: React.RefObject<Ma
             />
             <button
                 type="submit"
-                className="h-8 shrink-0 rounded-[9px] bg-primary-container px-3 text-[13px] font-semibold text-on-primary-container transition-colors hover:bg-[color-mix(in_oklab,var(--on-primary-container)_10%,var(--primary-container))] focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
+                className="h-8 shrink-0 rounded-[9px] bg-primary-container px-3 text-[13px] font-semibold text-on-primary-container transition-colors hover:bg-[color-mix(in_oklab,var(--on-primary-container)_10%,var(--primary-container))] focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:outline-none"
             >
                 Bekijk
             </button>
