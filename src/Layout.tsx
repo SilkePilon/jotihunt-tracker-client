@@ -37,10 +37,39 @@ import {createFetchErrorToastState, ERROR_TOAST_DELAY_MS, fetchErrorToastText} f
 import {isNetworkError} from '@/lib/api-error';
 import {isCriticalFeedKey} from '@/lib/connection';
 import AndroidPromoAutoOpen from './components/android-promo/AndroidPromoAutoOpen';
+import {LAYER_SELECTOR, shortcutFor, TYPING_SELECTOR} from '@/lib/shortcuts';
 
 const QrConfirmDrawer = lazy(() => import('./components/auth/QrConfirmDrawer'));
 
 const FETCH_ERROR_TOAST_ID = 'fetch-error';
+
+/** Frames to wait for the group search card inside the md compact tile's popover to mount */
+const SEARCH_MOUNT_FRAMES = 10;
+
+const isShown = (element: Element) => element.getClientRects().length > 0;
+
+/**
+ * "/": open the group search (its popover focuses the search field). Between md and lg the card sits folded in a tile:
+ * open that first, then the card once it has mounted.
+ */
+function openGroupSearch() {
+    const findCard = () => [...document.querySelectorAll<HTMLElement>('[data-group-search]')].find(isShown);
+    const card = findCard();
+    if (card) {
+        card.click();
+        return;
+    }
+    const tile = [...document.querySelectorAll<HTMLElement>('button[aria-label="Snel navigeren naar groep"]')].find(isShown);
+    if (!tile) return;
+    tile.click();
+    let frames = 0;
+    const waitForCard = () => {
+        const mounted = findCard();
+        if (mounted) mounted.click();
+        else if (++frames < SEARCH_MOUNT_FRAMES) requestAnimationFrame(waitForCard);
+    };
+    requestAnimationFrame(waitForCard);
+}
 
 /**
  * The desktop "Naar de kaart" skip link: out of sight (and unclickable) until it has focus, then a map tile sliding in
@@ -87,6 +116,26 @@ export default function Layout() {
     const location = useLocation();
     const {pathname} = location;
     const navigate = useNavigate();
+
+    // Laptop shortcuts: "/" the group search (map page), "i" the Intel window (lib/shortcuts.ts says when not)
+    useEffect(() => {
+        if (isMobile) return;
+        const onKeyDown = (event: KeyboardEvent) => {
+            const target = event.target instanceof Element ? event.target : null;
+            const shortcut = shortcutFor(event, {
+                typing: !!target?.closest(TYPING_SELECTOR),
+                layerOpen: !!document.querySelector(LAYER_SELECTOR),
+            });
+            // The group search is on the map page only; elsewhere "/" stays the browser's
+            if (!shortcut || (shortcut === 'search' && pathname !== '/')) return;
+            // "/" is Firefox's quick find otherwise
+            event.preventDefault();
+            if (shortcut === 'search') openGroupSearch();
+            else useIntelStore.getState().openIntel();
+        };
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, [isMobile, pathname]);
 
     /** Phone: the Hints page on top of the sheet (push also raises the sheet to full; already on top stays as is) */
     function openHintsPage() {
