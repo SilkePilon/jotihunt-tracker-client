@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import usePromptQueueStore, { AFTER_TOUR_QUIET_MS, nextPromptStep, PROMPT_GAP_MS, type PromptQueueTimes } from './prompt-queue.store';
 
 const T = 1_000_000;
-const idle: PromptQueueTimes = { waiting: {}, active: null, held: false, readyAt: 0, tourEndedAt: null, mapTouchedAt: null };
+const idle: PromptQueueTimes = { waiting: {}, active: null, held: false, openModals: 0, readyAt: 0, tourEndedAt: null, mapTouchedAt: null };
 const queue = () => usePromptQueueStore.getState();
 
 describe('nextPromptStep', () => {
@@ -22,10 +22,15 @@ describe('nextPromptStep', () => {
     expect(nextPromptStep({ ...idle, waiting, active: 'passkey' }, T)).toBeNull();
   });
 
-  test('a fixed order: notifications, then the Android promo, then the passkey', () => {
-    const waiting = { passkey: T - 9000, 'android-promo': T - 8000, notifications: T - 5000 };
+  test('an open dialog or drawer: nothing shows', () => {
+    expect(nextPromptStep({ ...idle, waiting: { notifications: T - 10_000 }, openModals: 1 }, T)).toBeNull();
+  });
+
+  test('a fixed order: notifications, the Android promo, the iOS install prompt, then the passkey', () => {
+    const waiting = { passkey: T - 9000, 'pwa-install': T - 8500, 'android-promo': T - 8000, notifications: T - 5000 };
     expect(nextPromptStep({ ...idle, waiting }, T)).toEqual({ show: 'notifications' });
-    expect(nextPromptStep({ ...idle, waiting: { passkey: T - 9000, 'android-promo': T - 8000 } }, T)).toEqual({ show: 'android-promo' });
+    expect(nextPromptStep({ ...idle, waiting: { passkey: T - 9000, 'pwa-install': T - 8500, 'android-promo': T - 8000 } }, T)).toEqual({ show: 'android-promo' });
+    expect(nextPromptStep({ ...idle, waiting: { passkey: T - 9000, 'pwa-install': T - 8500 } }, T)).toEqual({ show: 'pwa-install' });
   });
 
   test('after the tour, map use holds prompts back for the first seconds', () => {
@@ -79,6 +84,38 @@ describe('prompt queue store', () => {
     queue().pump(T + 1000 + PROMPT_GAP_MS);
     expect(queue().active).toBeNull();
     queue().pump(T + 1000 + AFTER_TOUR_QUIET_MS);
+    expect(queue().active).toBe('notifications');
+  });
+
+  test('a dialog the user opened holds the queue; the prompt follows a gap after the last one closes', () => {
+    queue().request('passkey', T);
+    queue().modalOpened();
+    queue().modalOpened();
+    queue().pump(T + 30_000);
+    expect(queue().active).toBeNull();
+    queue().modalClosed(T + 30_000);
+    queue().pump(T + 30_000 + PROMPT_GAP_MS);
+    // One (e.g. a confirm over Beheer) is still open
+    expect(queue().active).toBeNull();
+    queue().modalClosed(T + 40_000);
+    queue().pump(T + 40_000 + PROMPT_GAP_MS - 1);
+    expect(queue().active).toBeNull();
+    queue().pump(T + 40_000 + PROMPT_GAP_MS);
+    expect(queue().active).toBe('passkey');
+  });
+
+  test('closing more dialogs than were opened never goes below zero', () => {
+    queue().modalClosed(T);
+    expect(queue().openModals).toBe(0);
+    queue().modalOpened();
+    expect(queue().openModals).toBe(1);
+  });
+
+  test('a prompt that opens its own dialog keeps its turn', () => {
+    queue().request('notifications', T);
+    queue().pump(T + PROMPT_GAP_MS);
+    expect(queue().active).toBe('notifications');
+    queue().modalOpened();
     expect(queue().active).toBe('notifications');
   });
 

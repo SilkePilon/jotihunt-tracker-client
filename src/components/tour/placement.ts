@@ -63,3 +63,16 @@ export function placeCard({ target, card, viewport, placement = 'auto', isMobile
 
   return { x: Math.round(clamp(raw.x, CARD_MARGIN, maxX)), y: Math.round(clamp(raw.y, CARD_MARGIN, maxY)) };
 }
+
+/** Gap between the panel and the top of the screen (below the safe area), as in the overlay's top-[…+12px] */
+export const PANEL_TOP = 12;
+
+/**
+ * Phones: the panel sits at the top and the card docks at the bottom, so the panel may only grow down to just above
+ * the card (plus the spotlight padding around the panel and the usual gap). Pixels, without the top safe area, which
+ * the overlay subtracts in CSS.
+ */
+export function phonePanelMaxHeight(viewportHeight: number, cardHeight: number, spotlightPadding: number): number {
+  const cardTop = viewportHeight - cardHeight - CARD_MARGIN;
+  return Math.max(0, Math.round(cardTop - CARD_GAP - spotlightPadding - PANEL_TOP));
+}

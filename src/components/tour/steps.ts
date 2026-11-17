@@ -1,5 +1,5 @@
 import NotificationSoundsPanel from './panels/NotificationSoundsPanel';
-import { flyToOverview, openSettings, resetToMenu, scrollSidebarToTop, sheetSnap, showSection } from './actions';
+import { flyToOverview, openSettings, pointAtSection, resetToMenu, scrollSidebarToTop, sheetSnap, showSection } from './actions';
 import type { TourStep } from './types';
 
 /**
@@ -11,7 +11,8 @@ export const TOUR_VERSION = 1;
 /**
  * The onboarding tour, in order. To add a step: add its target id to targets.ts, put {...tourTarget(id)}
  * on the element, and add an entry here. New UI interactions go in actions.ts.
- * On phones every sidebar step first pulls the sheet up so the section is visible.
+ * Phones get the peek strip and the menu first; a section step then points at its menu row, and only Hint registreren
+ * and Hunts push their page (showSection). Every sidebar step first pulls the sheet up so the section is visible.
  * Steps that point at a sidebar section are shown in the order the platform shows the sections (laptop sidebar or
  * phone menu, see stepsForPlatform); here they follow the laptop sidebar.
  */
@@ -30,25 +31,41 @@ export const TOUR_STEPS: TourStep[] = [
     actions: [sheetSnap('peek'), flyToOverview()],
   },
   {
+    id: 'peek',
+    target: 'mobile.peek',
+    title: 'Altijd in beeld',
+    body: 'Onderin zie je altijd hoe je eigen tracker ervoor staat en hoe de vossen ervoor staan. Tik op een van de twee om meer te zien.',
+    actions: [resetToMenu(), sheetSnap('peek')],
+    only: 'mobile',
+  },
+  {
+    id: 'menu',
+    target: 'sidebar.root',
+    title: 'Het menu',
+    body: 'Schuif het paneel omhoog voor het menu: alles wat je nodig hebt staat hier. Tik op een regel om dat onderdeel te openen; met "Menu" bovenaan ga je terug.',
+    actions: [resetToMenu(), sheetSnap('half'), scrollSidebarToTop()],
+    only: 'mobile',
+  },
+  {
     id: 'sidebar',
     target: 'sidebar.root',
     title: 'Het zijpaneel',
-    body: 'Alles wat je nodig hebt staat in dit paneel. Elk blok klapt open en dicht. Op je telefoon schuif je het paneel omhoog en omlaag.',
-    actions: [sheetSnap('half')],
+    body: 'Alles wat je nodig hebt staat in dit paneel. Elk blok klapt open en dicht.',
+    only: 'desktop',
   },
   {
     id: 'foxes',
-    target: 'sidebar.foxes',
+    target: { desktop: 'sidebar.foxes', mobile: 'menu.foxes' },
     title: 'Vossen',
     body: 'De status van elk deelgebied: rood, oranje of groen. Tik op een vos voor zijn laatste 3 uur; daar kun je hem ook op de kaart verbergen.',
-    actions: [sheetSnap('full'), showSection('foxes')],
+    actions: [sheetSnap('full'), pointAtSection('foxes')],
   },
   {
     id: 'hints',
-    target: 'sidebar.hints',
+    target: { desktop: 'sidebar.hints', mobile: 'menu.hints' },
     title: 'Hints',
     body: 'De laatste hints per deelgebied in één oogopslag: groen is opgelost, grijs staat nog open. Op een laptop open je met "Open hints" het venster met alle hints, opdrachten en nieuws.',
-    actions: [sheetSnap('full'), showSection('hints')],
+    actions: [sheetSnap('full'), pointAtSection('hints')],
   },
   {
     id: 'hunts',
@@ -59,10 +76,10 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     id: 'predictions',
-    target: 'sidebar.predictions',
+    target: { desktop: 'sidebar.predictions', mobile: 'menu.predictions' },
     title: 'Voorspelling',
     body: 'Een AI-voorspelling van waar de vossen waarschijnlijk zijn. Tik op een voorspelling om ernaartoe te gaan op de kaart.',
-    actions: [sheetSnap('full'), showSection('predictions')],
+    actions: [sheetSnap('full'), pointAtSection('predictions')],
     optional: true,
   },
   {
@@ -74,18 +91,18 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     id: 'counter-hunt',
-    target: 'sidebar.counterHunt',
+    target: { desktop: 'sidebar.counterHunt', mobile: 'menu.counterHunt' },
     title: 'Tegenhunt',
     body: 'Wordt ons clubhuis gehunt? Dan zie je hier automatisch uit welke richting, en op de kaart.',
-    actions: [sheetSnap('full'), showSection('counterHunt')],
+    actions: [sheetSnap('full'), pointAtSection('counterHunt')],
     optional: true,
   },
   {
     id: 'tracker',
-    target: 'sidebar.tracking',
+    target: { desktop: 'sidebar.tracking', mobile: 'menu.tracking' },
     title: 'Mijn tracker',
     body: 'Koppel je telefoon als GPS-tracker, zodat iedereen ziet waar je bent. Kies hier ook of je loopt, fietst of rijdt.',
-    actions: [sheetSnap('full'), showSection('tracking')],
+    actions: [sheetSnap('full'), pointAtSection('tracking')],
   },
   {
     id: 'map-tools',

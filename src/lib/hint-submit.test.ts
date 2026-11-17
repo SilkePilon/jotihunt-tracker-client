@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { isSameHint, sameDraft, lostResponseMessage, lostResponseOutcome } from './hint-submit';
+import { isSameMarker, sameDraft, lostResponseMessage, lostResponseOutcome, markerLostResponseMessage } from './hint-submit';
 import { MarkerType } from '@/types/MarkerType';
 import type { Marker } from '@/types/Marker';
 
@@ -14,21 +14,21 @@ const sent: Marker = {
 const fromServer = (overrides: Partial<Marker> & { time?: Date | string } = {}): Marker =>
   ({ ...sent, _id: 'm1', time: '2026-10-17T12:00:00.000Z', location: { type: 'Point', coordinates: [5.123456789 + 1e-12, 52.987654321 - 1e-12] }, ...overrides }) as Marker;
 
-describe('isSameHint', () => {
+describe('isSameMarker', () => {
   test('matches the hint the server saved (string time, float round-trip)', () => {
-    expect(isSameHint(fromServer(), sent)).toBe(true);
+    expect(isSameMarker(fromServer(), sent)).toBe(true);
   });
 
   test('another area, hour, spot or marker type is not it', () => {
-    expect(isSameHint(fromServer({ area: 'Bravo' }), sent)).toBe(false);
-    expect(isSameHint(fromServer({ time: '2026-10-17T13:00:00.000Z' }), sent)).toBe(false);
-    expect(isSameHint(fromServer({ location: { type: 'Point', coordinates: [5.2, 52.98765432] } }), sent)).toBe(false);
-    expect(isSameHint(fromServer({ type: MarkerType.Hunt }), sent)).toBe(false);
+    expect(isSameMarker(fromServer({ area: 'Bravo' }), sent)).toBe(false);
+    expect(isSameMarker(fromServer({ time: '2026-10-17T13:00:00.000Z' }), sent)).toBe(false);
+    expect(isSameMarker(fromServer({ location: { type: 'Point', coordinates: [5.2, 52.98765432] } }), sent)).toBe(false);
+    expect(isSameMarker(fromServer({ type: MarkerType.Hunt }), sent)).toBe(false);
   });
 
   test('a marker without a valid time or location is not it', () => {
-    expect(isSameHint(fromServer({ time: 'nonsense' }), sent)).toBe(false);
-    expect(isSameHint({ ...fromServer(), location: undefined } as unknown as Marker, sent)).toBe(false);
+    expect(isSameMarker(fromServer({ time: 'nonsense' }), sent)).toBe(false);
+    expect(isSameMarker({ ...fromServer(), location: undefined } as unknown as Marker, sent)).toBe(false);
   });
 });
 
@@ -44,6 +44,25 @@ describe('lostResponseOutcome', () => {
 
   test('no fresh list (still offline): unknown', () => {
     expect(lostResponseOutcome(undefined, sent)).toBe('unknown');
+  });
+});
+
+describe('a lost Hunt/Spot', () => {
+  const hunt: Marker = { ...sent, type: MarkerType.Hunt, time: new Date('2026-10-17T12:34:00.000Z') };
+  const savedHunt = fromServer({ type: MarkerType.Hunt, time: '2026-10-17T12:34:00.000Z' });
+
+  test('found in the fresh list by type, area, time and spot', () => {
+    expect(lostResponseOutcome([savedHunt], hunt)).toBe('registered');
+  });
+
+  test('a spot or hint at the same place and time is not the hunt', () => {
+    expect(lostResponseOutcome([{ ...savedHunt, type: MarkerType.Spot }, { ...savedHunt, type: MarkerType.Hint }], hunt)).toBe('absent');
+    expect(lostResponseOutcome([fromServer({ type: MarkerType.Hunt, time: '2026-10-17T12:35:00.000Z' })], hunt)).toBe('absent');
+  });
+
+  test('messages', () => {
+    expect(markerLostResponseMessage('unknown')).toBe('Geen antwoord ontvangen. Controleer eerst of de marker op de kaart staat.');
+    expect(markerLostResponseMessage('absent')).toContain('niet geplaatst');
   });
 });
 

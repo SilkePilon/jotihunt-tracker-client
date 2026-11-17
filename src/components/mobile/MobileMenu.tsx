@@ -18,6 +18,7 @@ import useAdminStore, { type AdminDialogId } from '@/stores/admin.store';
 import useAccountDialogStore from '@/stores/account-dialog.store';
 import useNotificationsDialogStore from '@/stores/notifications-dialog.store';
 import type { MobilePageId } from '@/lib/mobile-nav';
+import { menuRowTourTarget } from '@/components/tour/targets';
 
 interface Row {
   key: string;
@@ -39,6 +40,8 @@ function MenuCard({ title, rows }: { title: string; rows: Row[] }) {
             type="button"
             // MobileShell puts focus back on this row when the page it opened is popped
             data-nav-id={row.key}
+            // The tour points at a section's row on phones
+            {...menuRowTourTarget(row.key)}
             onClick={row.onSelect}
             className="flex min-h-14 items-center gap-3 rounded-(--radius-segment) bg-beheer-row px-3 py-2.5 text-left outline-none transition-colors first:rounded-t-2xl last:rounded-b-2xl focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset active:bg-beheer-row-high"
           >

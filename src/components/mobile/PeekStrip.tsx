@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useAreas } from '@/hooks/areas.hook';
 import { SWAP_TRANSITION } from '@/lib/motion';
 import { COARSE_HIT_AREA } from '@/lib/hit-area';
+import { tourTarget } from '@/components/tour/targets';
 
 const COOKIE_16 = cookiePath(16, BADGE_COOKIE_DEPTH);
 const TONE_FILL = { ok: 'var(--status-ok-dot)', warn: 'var(--status-warn-dot)', muted: 'var(--muted-foreground)' } as const;
@@ -48,7 +49,7 @@ export default function PeekStrip() {
 
   return (
     // isolate: the buttons' 44px touch areas (COARSE_HIT_AREA) stay above the sheet's background
-    <div className="isolate flex flex-col gap-2 pr-[max(1rem,env(safe-area-inset-right))] pb-3 pl-[max(1rem,env(safe-area-inset-left))]">
+    <div {...tourTarget('mobile.peek')} className="isolate flex flex-col gap-2 pr-[max(1rem,env(safe-area-inset-right))] pb-3 pl-[max(1rem,env(safe-area-inset-left))]">
       <TrackerLine onOpen={() => push({ id: 'tracking' })} />
       <div className="relative h-8">
         <AnimatePresence initial={false}>

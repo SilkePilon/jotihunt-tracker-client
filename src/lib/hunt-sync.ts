@@ -25,7 +25,7 @@ function succeededSinceLastAttempt(status: HuntSyncStatus): boolean {
 export const HUNT_SYNC_TITLE: Record<HuntSyncView, string> = {
   synced: 'Gesynchroniseerd',
   syncing: 'Synchroniseert…',
-  failing: 'Synchroniseert',
+  failing: 'Sync mislukt',
   unlinked: 'Niet gekoppeld',
 };
 

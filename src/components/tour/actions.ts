@@ -39,6 +39,20 @@ export function showSection(id: SidebarSectionId): TourAction {
   };
 }
 
+/**
+ * Point at a sidebar section without opening it on the phone: on desktop expand it (like showSection), on the phone go
+ * back to the menu, where the step's target is the section's row (the tour scrolls it into view).
+ */
+export function pointAtSection(id: SidebarSectionId): TourAction {
+  return {
+    name: `pointAtSection(${id})`,
+    run: (ctx) => {
+      if (!ctx.isMobile) return openSection(id).run(ctx);
+      useMobileNavStore.getState().reset();
+    },
+  };
+}
+
 /** Phones: back to the menu (no-op on desktop). */
 export function resetToMenu(): TourAction {
   return {
