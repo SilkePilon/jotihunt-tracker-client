@@ -22,6 +22,28 @@ export function computeSnapHeights({ visibleH, safeTop, safeBottom, peekContent 
   return { peek, half: half - peek < HALF_MIN_STEP ? full : half, full };
 }
 
+/** Space between the sheet and the docked card, and between the card and the point the camera keeps above it */
+export const DOCK_GAP = 10;
+/** The map always keeps at least this much height above the bottom padding */
+export const MIN_MAP_ROOM = 60;
+
+/**
+ * Phones: the map's bottom padding, so a camera centre lands above the sheet and, while a card is docked, above that
+ * card too (sheet + gap + card + gap). Never so much that less than {@link MIN_MAP_ROOM} of the map is left.
+ */
+export function dockedPadding(sheet: number, card: number, mapHeight: number): number {
+  const padding = card > 0 ? sheet + DOCK_GAP + card + DOCK_GAP : sheet;
+  return Math.max(0, Math.min(padding, Math.max(sheet, mapHeight - MIN_MAP_ROOM)));
+}
+
+/**
+ * Phones: the most height the docked card may take: what is left above the sheet, the dock gap, the safe area, an 8px
+ * margin and (when the map tiles stack above the card) the tiles. Never negative.
+ */
+export function dockCardMax({ visibleH, sheet, safeTop, tiles }: { visibleH: number; sheet: number; safeTop: number; tiles: number }): number {
+  return Math.max(0, Math.round(visibleH - sheet - DOCK_GAP - safeTop - 8 - (tiles > 0 ? tiles + 8 : 0)));
+}
+
 export function rubberBand(h: number, min: number, max: number): number {
   if (h > max) return max + (h - max) * 0.25;
   if (h < min) return min - (min - h) * 0.4;

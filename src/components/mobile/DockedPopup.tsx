@@ -8,8 +8,12 @@ import { useBackEntry } from '@/hooks/back-entry.hook';
 import { useRestoreFocus } from '@/hooks/restore-focus.hook';
 import { ownsKey } from '@/lib/focus';
 import { EASE_OUT } from '@/lib/motion';
+import { dockedPadding } from '@/lib/sheet-snaps';
+import useSidebarStore from '@/stores/sidebar.store';
 
 export const DOCK_ID = 'map-popup-dock';
+/** CSS variable on the dock: the most height a docked card may take (MobileShell keeps it in step with the sheet) */
+export const DOCK_CARD_MAX_VAR = '--dock-card-max';
 
 /** The dock element; re-renders once it exists when the popup mounts before the dock does. */
 function useDock() {
@@ -41,7 +45,19 @@ function useExitGhost(dock: HTMLElement | null) {
     // Runs again once the dock exists (the card only renders then)
     const node = ref.current;
     if (!node || !dock) return;
+    let left = 0;
+    let width = 0;
+    // Measured while still laid out (a detached node has no box): on every resize, and once now
+    const measure = () => {
+      left = node.offsetLeft;
+      width = node.offsetWidth;
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
     return () => {
+      observer.disconnect();
+      measure();
       // Closed via X/Back: the card is inert and has already animated away
       if (node.inert) return;
       // StrictMode's simulated unmount keeps the node in the DOM; a real unmount has detached it by now
@@ -53,7 +69,8 @@ function useExitGhost(dock: HTMLElement | null) {
         // Not a second dialog, nor a second element with the (reused) title id
         ghost.removeAttribute('role');
         for (const element of ghost.querySelectorAll('[id]')) element.removeAttribute('id');
-        ghost.style.cssText += ';position:absolute;left:0;right:0;bottom:0;pointer-events:none;';
+        // Where the card was: full width in the column dock, beside the tiles in the row dock (short screens)
+        ghost.style.cssText += `;position:absolute;left:${left}px;width:${width}px;bottom:0;pointer-events:none;`;
         dock.appendChild(ghost);
         // Reduced motion: only the fade (MotionConfig skips the slide for motion's own exits; this is plain WAAPI)
         const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -101,14 +118,47 @@ export default function DockedPopup({
   useBackEntry('popup', true, requestClose);
   const ref = useExitGhost(dock);
   useAnnouncePopup(ref, dock);
+  // The map pads for the card while it is docked (Map.tsx), so its point stays visible above it
+  const setDockCardHeight = useSidebarStore((s) => s.setDockCardHeight);
+  useLayoutEffect(() => {
+    const node = ref.current;
+    if (!node || !dock) return;
+    const measure = () => setDockCardHeight(node.offsetHeight);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => {
+      observer.disconnect();
+      setDockCardHeight(0);
+    };
+  }, [dock, ref, setDockCardHeight]);
   // Ease once per mount: live popups (hunters, Life360) get new coordinates on every GPS update and must not fight
   // the user's pan/zoom. Switching to another point remounts the popup (key), which eases again.
   const [center] = useState<[number, number]>(() => [longitude, latitude]);
   useEffect(() => {
-    // A list that opened this popup (Life360, hunt log) already flies there with a zoom: an ease now would cancel it
-    if (!map || map.isMoving()) return;
-    map.easeTo({ center, duration: 500 });
-  }, [map, center]);
+    // A list that opened this popup (Life360, hunt log) already flies there with a zoom: an ease now would cancel it.
+    // Waits for the card, so the ease carries the padding for it (the map's padding effect then has nothing to do).
+    if (!map || !dock || map.isMoving()) return;
+    const { sheetSnapHeights, sheetSnap, dockCardHeight } = useSidebarStore.getState();
+    const bottom = sheetSnapHeights ? dockedPadding(sheetSnapHeights[sheetSnap], dockCardHeight, window.innerHeight) : undefined;
+    map.easeTo({ center, duration: 500, ...(bottom === undefined ? {} : { padding: { top: 0, left: 0, right: 0, bottom } }) });
+  }, [map, center, dock]);
+  // A map tap closes it like the desktop popup (instead of a second "Gekozen locatie" card stacking up); the exit
+  // ghost animates it away. Added after the tap that opened it and after the layers' own click handlers, so tapping
+  // the next marker still swaps the card (usePopupSelection).
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
+  useEffect(() => {
+    const instance = map?.getMap();
+    if (!instance) return;
+    const onClick = () => onCloseRef.current();
+    instance.on('click', onClick);
+    return () => {
+      instance.off('click', onClick);
+    };
+  }, [map]);
   // Focus goes back where it came from (else the map) once the card is gone, unless a tap elsewhere already moved it
   const setOpener = useRestoreFocus(() => map?.getCanvas());
   useTakePopupFocus(ref, dock, takeFocus, setOpener);
@@ -139,10 +189,12 @@ export default function DockedPopup({
       role="dialog"
       aria-labelledby={titleId}
       tabIndex={-1}
-      className="pointer-events-auto relative outline-none rounded-3xl bg-card p-3.5 text-[13px] leading-[1.35] text-card-foreground shadow-[0_0_0_1px_var(--border),0_18px_50px_rgb(0_0_0/.35)]"
+      style={{ maxHeight: `var(${DOCK_CARD_MAX_VAR}, none)` }}
+      className="pointer-events-auto relative flex min-w-0 flex-col overflow-hidden outline-none rounded-3xl bg-card text-[13px] leading-[1.35] text-card-foreground shadow-[0_0_0_1px_var(--border),0_18px_50px_rgb(0_0_0/.35)] [[data-dock=row]_&]:max-w-[360px] [[data-dock=row]_&]:flex-1"
     >
-      <CloseButton onClick={requestClose} className="absolute top-3 right-3" />
-      <div className="flex flex-col">{children}</div>
+      {/* Outside the scroller, so the X stays put while a tall card scrolls (short landscape screens) */}
+      <CloseButton onClick={requestClose} className="absolute top-3 right-3 z-10" />
+      <div className="flex min-h-0 flex-col overflow-y-auto overscroll-contain p-3.5">{children}</div>
     </motion.div>,
     dock,
   );

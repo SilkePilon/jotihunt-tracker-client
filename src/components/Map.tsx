@@ -50,6 +50,7 @@ import Ruler from "@/components/map/RulerControl.tsx";
 import {MAP_LOCALE_NL} from "@/lib/map-locale";
 import type {SymbolLayerSpecification} from '@maplibre/maplibre-gl-style-spec';
 import {DEFAULT_VIEW} from '@/lib/map-view';
+import {dockedPadding} from '@/lib/sheet-snaps';
 import {FASTFOOD_LAYER, FOX_MARKERS_LAYER, HUNTER_ARROWS_LAYER, HUNTERS_LAYER, LIFE360_LAYER, TEAM_PINS_LAYER, TRAILS_HIT_LAYER} from '@/lib/map-layers';
 import LayerStack from './layers/LayerStack';
 import MarkerImages from './layers/MarkerImages';
@@ -141,10 +142,13 @@ const RULER_LABEL_PAINT = {'text-color': '#fff', 'text-halo-color': RULER_COLOR,
 // Clicks on these canvas layers open their own popup instead of the location popup
 const INTERACTIVE_LAYER_IDS = [FOX_MARKERS_LAYER, TEAM_PINS_LAYER, HUNTERS_LAYER, HUNTER_ARROWS_LAYER, LIFE360_LAYER, FASTFOOD_LAYER, TRAILS_HIT_LAYER];
 
-/** Bottom map padding for the phone sheet's current snap (undefined on desktop, the HQ wall, or before the sheet measured) */
+/**
+ * Bottom map padding for the phone sheet's current snap and a docked card (undefined on desktop, the HQ wall, or
+ * before the sheet measured)
+ */
 function phonePaddingFor(wall: boolean): number | undefined {
-    const {sheetSnapHeights, sheetSnap} = useSidebarStore.getState();
-    return wall || !sheetSnapHeights ? undefined : sheetSnapHeights[sheetSnap];
+    const {sheetSnapHeights, sheetSnap, dockCardHeight} = useSidebarStore.getState();
+    return wall || !sheetSnapHeights ? undefined : dockedPadding(sheetSnapHeights[sheetSnap], dockCardHeight, window.innerHeight);
 }
 
 // Memoized: Layout re-renders often and the map's props (ref, the HQ wall's memoized overlay) rarely change
@@ -235,9 +239,11 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
     const mapStyle = useSettingsStore((state) => state.mapStyle);
     const isDarkMode = useDarkMode();
     const isMobile = useIsMobile();
-    // Phones: the bottom sheet covers the lower part of the map; padding keeps every flyTo/easeTo centre above it
+    // Phones: the bottom sheet covers the lower part of the map; padding keeps every flyTo/easeTo centre above it, and
+    // above the card docked on the sheet while one is open (so the point it belongs to isn't under it)
     const sheetHeight = useSidebarStore((state) => state.sheetHeight);
-    const bottomPadding = isMobile && !wall ? sheetHeight : 0;
+    const dockCardHeight = useSidebarStore((state) => state.dockCardHeight);
+    const bottomPadding = isMobile && !wall ? dockedPadding(sheetHeight, dockCardHeight, window.innerHeight) : 0;
     useEffect(() => {
         const map = mapRef.current?.getMap();
         if (!map) return;

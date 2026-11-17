@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { computeSnapHeights, grabLabel, nextSnap, rubberBand, settleSnap } from './sheet-snaps';
+import { computeSnapHeights, dockCardMax, dockedPadding, grabLabel, nextSnap, rubberBand, settleSnap } from './sheet-snaps';
 
 describe('computeSnapHeights', () => {
   test('iPhone-like viewport', () => {
@@ -68,4 +68,21 @@ test('grabLabel names the current snap', () => {
   expect(grabLabel('peek')).toBe('Paneel groter of kleiner maken, nu ingeklapt');
   expect(grabLabel('half')).toContain('half open');
   expect(grabLabel('full')).toContain('helemaal open');
+});
+
+describe('dockedPadding', () => {
+  test('only the sheet without a docked card', () => expect(dockedPadding(380, 0, 800)).toBe(380));
+  test('sheet + gap + card + gap while a card is docked', () => expect(dockedPadding(170, 200, 800)).toBe(390));
+  test('leaves at least 60px of map', () => expect(dockedPadding(141, 200, 360)).toBe(300));
+  test('never below the sheet itself', () => expect(dockedPadding(340, 200, 360)).toBe(340));
+});
+
+describe('dockCardMax', () => {
+  test('what is left above the sheet, the gap, the safe area and the margin', () => {
+    expect(dockCardMax({ visibleH: 360, sheet: 141, safeTop: 0, tiles: 0 })).toBe(201);
+  });
+  test('minus the tile stack (and its gap) when the tiles sit above the card', () => {
+    expect(dockCardMax({ visibleH: 760, sheet: 380, safeTop: 47, tiles: 146 })).toBe(161);
+  });
+  test('never negative', () => expect(dockCardMax({ visibleH: 400, sheet: 388, safeTop: 0, tiles: 0 })).toBe(0));
 });
