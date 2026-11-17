@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { focusDropped, focusRestoreTarget, ownsKey, trapTabIndex } from './focus';
+import { focusDropped, focusRestoreTarget, neighbourIndex, ownsKey, trapTabIndex } from './focus';
 
 const node = (isConnected = true) => ({ isConnected });
 const box = (...children: unknown[]) => ({ contains: (other: unknown) => children.includes(other) });
@@ -91,5 +91,22 @@ describe('trapTabIndex', () => {
     expect(trapTabIndex(3, 2, false)).toBe(0);
     expect(trapTabIndex(3, 0, true)).toBe(2);
     expect(trapTabIndex(3, 2, true)).toBe(1);
+  });
+});
+
+describe('neighbourIndex', () => {
+  test('prefers the next usable item', () => {
+    expect(neighbourIndex([true, true, true], 1)).toBe(2);
+    expect(neighbourIndex([true, true, false, true], 1)).toBe(3);
+  });
+
+  test('falls back to the previous usable item', () => {
+    expect(neighbourIndex([true, true, true], 2)).toBe(1);
+    expect(neighbourIndex([true, false, true, false], 2)).toBe(0);
+  });
+
+  test('-1 when nothing else is usable', () => {
+    expect(neighbourIndex([true], 0)).toBe(-1);
+    expect(neighbourIndex([false, true, false], 1)).toBe(-1);
   });
 });

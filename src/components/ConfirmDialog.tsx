@@ -21,6 +21,8 @@ const CONTENT =
 const HEADER = 'place-items-start gap-1.5 text-left';
 const BUTTON = 'h-10 rounded-xl px-[18px] font-semibold shadow-none';
 const CANCEL = `${BUTTON} border-0 bg-beheer-row-high text-foreground hover:bg-[color-mix(in_oklab,var(--foreground)_14%,var(--card))] hover:text-foreground dark:bg-beheer-row-high dark:hover:bg-[color-mix(in_oklab,var(--foreground)_14%,var(--card))]`;
+/** Looks like disabled (aria-disabled keeps the focus) */
+const BUSY = 'aria-disabled:pointer-events-none aria-disabled:opacity-50';
 const DESTRUCTIVE = 'dark:bg-[color-mix(in_oklab,var(--destructive)_75%,black)] dark:hover:bg-[color-mix(in_oklab,var(--destructive)_65%,black)]';
 
 interface ConfirmDialogProps {
@@ -39,13 +41,19 @@ interface ConfirmDialogProps {
   onConfirm: () => Promise<unknown> | unknown;
   /** Extra content between the description and the buttons */
   children?: React.ReactNode;
+  /**
+   * Where focus goes after closing (Radix returns it to the opener by default): preventDefault and focus something
+   * else when the opener went away with the confirmed action (e.g. the row of a removed session).
+   */
+  onCloseAutoFocus?: (event: Event) => void;
 }
 
 /** Confirmation dialog (shadcn AlertDialog) that stays open and busy while the confirmed action runs. */
-export default function ConfirmDialog({ open, onOpenChange, title, description, confirmLabel, cancelLabel = 'Annuleren', destructive, onConfirm, children }: ConfirmDialogProps) {
+export default function ConfirmDialog({ open, onOpenChange, title, description, confirmLabel, cancelLabel = 'Annuleren', destructive, onConfirm, children, onCloseAutoFocus }: ConfirmDialogProps) {
   const [busy, setBusy] = useState(false);
 
   async function confirm() {
+    if (busy) return;
     setBusy(true);
     try {
       await onConfirm();
@@ -63,7 +71,7 @@ export default function ConfirmDialog({ open, onOpenChange, title, description, 
         if (!busy) onOpenChange(next);
       }}
     >
-      <AlertDialogContent className={CONTENT}>
+      <AlertDialogContent className={CONTENT} onCloseAutoFocus={onCloseAutoFocus}>
         <AlertDialogHeader className={HEADER}>
           <AlertDialogTitle className="text-lg font-bold tracking-tight">{title}</AlertDialogTitle>
           <AlertDialogDescription className="leading-relaxed">{description}</AlertDialogDescription>
@@ -71,15 +79,18 @@ export default function ConfirmDialog({ open, onOpenChange, title, description, 
         {children && <div className="mt-4">{children}</div>}
         <AlertDialogFooter className="mt-6 flex-row justify-end">
           <AlertDialogPrimitive.Cancel asChild>
-            <Button variant="outline" className={CANCEL} disabled={busy}>
+            {/* aria-disabled, not disabled, while busy: disabling the focused button would drop the focus out of the dialog.
+                Clicks are ignored: onOpenChange above refuses to close while busy. */}
+            <Button variant="outline" className={cn(CANCEL, BUSY)} aria-disabled={busy || undefined}>
               {cancelLabel}
             </Button>
           </AlertDialogPrimitive.Cancel>
           <AlertDialogPrimitive.Action asChild>
             <Button
               variant={destructive ? 'destructive' : 'default'}
-              className={cn(BUTTON, destructive && DESTRUCTIVE)}
-              disabled={busy}
+              className={cn(BUTTON, destructive && DESTRUCTIVE, BUSY)}
+              aria-disabled={busy || undefined}
+              aria-busy={busy || undefined}
               onClick={(event) => {
                 // Keep the dialog open until onConfirm is done
                 event.preventDefault();

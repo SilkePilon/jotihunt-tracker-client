@@ -10,6 +10,7 @@ import { testAiSlot, useAdminConfig, useAiModels } from '@/hooks/app-config.hook
 import { useIsMobile } from '@/hooks/media.hook';
 import { AI_SLOTS, type AiSlot } from '@/lib/app-config';
 import { apiErrorMessage } from '@/lib/api-error';
+import { focusDropped } from '@/lib/focus';
 import { POP, SWAP } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { BeheerCard, BeheerLoadError, BeheerPane, BeheerRow, BeheerRows, BeheerSkeleton, WarnBar } from './BeheerLayout';
@@ -57,19 +58,28 @@ function TestButton({ slot, compact }: { slot: AiSlot; compact?: boolean }) {
   }
 
   const key = typeof state === 'object' ? 'ok' : state;
+  const title = SLOT_INFO[slot].title;
+  const seconds = typeof state === 'object' ? `${(state.ms / 1000).toLocaleString('nl-NL', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} s` : null;
   return (
-    <Pill
-      variant="ghost"
-      morphKey={key}
-      // tabular-nums: the latency ("1,4 s") doesn't wobble the pill's width between runs
-      className={cn('tabular-nums', key === 'ok' && 'text-green-700 hover:text-green-700 dark:text-green-300 dark:hover:text-green-300')}
-      disabled={state === 'busy'}
-      onClick={() => void run()}
-      aria-label={`Test ${SLOT_INFO[slot].title}`}
-    >
-      {key === 'busy' ? <Loader2Icon className="animate-spin" /> : key === 'ok' ? <CheckIcon /> : <PlayIcon />}
-      {typeof state === 'object' ? `${(state.ms / 1000).toLocaleString('nl-NL', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} s` : key === 'busy' || compact ? null : 'Test'}
-    </Pill>
+    <>
+      <Pill
+        variant="ghost"
+        morphKey={key}
+        // tabular-nums: the latency ("1,4 s") doesn't wobble the pill's width between runs
+        className={cn('tabular-nums', key === 'ok' && 'text-green-800 hover:text-green-800 dark:text-green-300 dark:hover:text-green-300')}
+        busy={state === 'busy'}
+        onClick={() => void run()}
+        // The name carries the result too: the visible "✓ 0,8 s" would otherwise be hidden behind "Test …"
+        aria-label={seconds ? `Test ${title}: werkt, ${seconds}` : `Test ${title}`}
+      >
+        {key === 'busy' ? <Loader2Icon className="animate-spin" /> : key === 'ok' ? <CheckIcon /> : <PlayIcon />}
+        {seconds ?? (key === 'busy' || compact ? null : 'Test')}
+      </Pill>
+      {/* Always mounted, so the result is announced (failures come as a toast) */}
+      <span role="status" className="sr-only">
+        {seconds ? `${title} werkt, antwoord in ${seconds}` : ''}
+      </span>
+    </>
   );
 }
 
@@ -85,8 +95,12 @@ export default function AiPane() {
   const [clearOpen, setClearOpen] = useState(false);
   const [clearing, setClearing] = useState(false);
   const isMobile = useIsMobile();
+  const keyPill = useRef<HTMLButtonElement>(null);
+  const editor = useRef<HTMLFormElement>(null);
 
   function closeEditor() {
+    // Focus was in the editor (it folds away): back to "Wijzigen", which opened it
+    if (editor.current?.contains(document.activeElement) || focusDropped(document.activeElement, document.body)) keyPill.current?.focus();
     setEditing(false);
     setDraft('');
   }
@@ -191,13 +205,19 @@ export default function AiPane() {
             }
             meta={key?.source === 'env' ? 'Opslaan hier gaat vóór de .env-waarde.' : undefined}
           >
-            <Pill variant={key?.set ? 'secondary' : 'primary'} morphKey={key?.set ? 'edit' : 'add'} disabled={!config.settingsKeyOk} onClick={() => (editing ? closeEditor() : setEditing(true))}>
+            <Pill
+              ref={keyPill}
+              variant={key?.set ? 'secondary' : 'primary'}
+              morphKey={key?.set ? 'edit' : 'add'}
+              disabled={!config.settingsKeyOk}
+              onClick={() => (editing ? closeEditor() : setEditing(true))}
+            >
               {key?.set ? 'Wijzigen' : 'Sleutel toevoegen'}
             </Pill>
             <AnimatePresence initial={false}>
               {key?.source === 'db' && (
                 <motion.span key="clear" {...POP}>
-                  <Pill variant="ghost" morphKey={clearing ? 'busy' : 'idle'} disabled={clearing} onClick={() => setClearOpen(true)}>
+                  <Pill variant="ghost" morphKey={clearing ? 'busy' : 'idle'} busy={clearing} onClick={() => setClearOpen(true)}>
                     {clearing && <Loader2Icon className="animate-spin" />}
                     Wissen
                   </Pill>
@@ -209,6 +229,7 @@ export default function AiPane() {
         <Reveal>
           {editing && (
             <form
+              ref={editor}
               className="flex flex-wrap gap-2 pt-2.5"
               onSubmit={(event) => {
                 event.preventDefault();
@@ -234,7 +255,7 @@ export default function AiPane() {
               <Pill variant="secondary" size="md" onClick={closeEditor}>
                 Annuleer
               </Pill>
-              <Pill type="submit" variant="primary" size="md" disabled={!draft.trim() || saving} morphKey={saving ? 'busy' : 'idle'}>
+              <Pill type="submit" variant="primary" size="md" disabled={!draft.trim()} busy={saving} morphKey={saving ? 'busy' : 'idle'}>
                 {saving && <Loader2Icon className="animate-spin" />}
                 Opslaan
               </Pill>
@@ -325,6 +346,12 @@ export default function AiPane() {
         confirmLabel="Wissen"
         destructive
         onConfirm={clearKey}
+        // Cleared: the Wissen pill that opened the dialog folds away, so focus goes to the key's main pill
+        onCloseAutoFocus={(event) => {
+          if (key?.source === 'db') return;
+          event.preventDefault();
+          keyPill.current?.focus();
+        }}
       />
     </BeheerPane>
   );

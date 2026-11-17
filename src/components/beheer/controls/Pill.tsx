@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 const pill = cva(
   [
     COARSE_HIT_AREA,
-    "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg font-semibold whitespace-nowrap outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+    "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg font-semibold whitespace-nowrap outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   ],
   {
     variants: {
@@ -43,13 +43,23 @@ type PillProps = Omit<HTMLMotionProps<'button'>, 'children'> &
      * eases to its new width. Leave undefined for a pill whose label never changes.
      */
     morphKey?: string;
+    /**
+     * Working on it (saving, sending): looks disabled and ignores clicks, but stays focusable (aria-disabled), so a
+     * keyboard or screen-reader user keeps their place. Use `disabled` only for a pill that can't be used at all.
+     */
+    busy?: boolean;
   };
 
 /** Beheer's text button: a full pill. */
-export function Pill({ variant, size, className, children, morphKey, style, type = 'button', ...props }: PillProps) {
+export function Pill({ variant, size, className, children, morphKey, style, busy, onClick, type = 'button', 'aria-disabled': ariaDisabled, ...props }: PillProps) {
+  const inert = busy || ariaDisabled === true || ariaDisabled === 'true';
   return (
     <motion.button
       type={type}
+      aria-disabled={inert || undefined}
+      aria-busy={busy || undefined}
+      // preventDefault: a busy submit pill doesn't submit its form either
+      onClick={inert ? (event) => event.preventDefault() : onClick}
       layout={morphKey !== undefined}
       // Set as a style so motion corrects the corners while the width animates
       style={{ borderRadius: 12, ...style }}
@@ -87,8 +97,8 @@ const iconPill = cva(
       variant: {
         ghost: 'text-muted-foreground hover:bg-beheer-row-high hover:text-foreground',
         soft: 'bg-beheer-row-high text-foreground hover:bg-beheer-row-high/70',
-        success: 'bg-green-500/20 text-green-700 dark:text-green-300',
-        active: 'bg-primary/20 text-orange-700 dark:text-orange-300',
+        success: 'bg-green-500/20 text-green-800 dark:text-green-300',
+        active: 'bg-primary/20 text-orange-800 dark:text-orange-300',
         'danger-soft': 'bg-destructive/15 text-destructive-text hover:bg-destructive/20',
       },
     },
@@ -104,11 +114,12 @@ export function IconPill({ variant, className, type = 'button', ...props }: Comp
 const tag = cva('inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[10.5px] leading-4 font-extrabold transition-colors duration-300 [&_svg]:size-3', {
   variants: {
     tone: {
-      primary: 'bg-primary/20 text-orange-700 dark:text-orange-300',
+      // -800 in light: the 10.5px text needs >= 4.5:1 on its tint over the rows (-700 was below)
+      primary: 'bg-primary/20 text-orange-800 dark:text-orange-300',
       neutral: 'bg-beheer-row-high text-muted-foreground',
-      ok: 'bg-green-500/15 text-green-700 dark:text-green-300',
-      warn: 'bg-amber-500/20 text-amber-700 dark:text-amber-300',
-      info: 'bg-sky-500/15 text-sky-700 dark:text-sky-300',
+      ok: 'bg-green-500/15 text-green-800 dark:text-green-300',
+      warn: 'bg-amber-500/20 text-amber-800 dark:text-amber-300',
+      info: 'bg-sky-500/15 text-sky-800 dark:text-sky-300',
       danger: 'bg-destructive/15 text-destructive-text',
     },
   },

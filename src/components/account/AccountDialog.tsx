@@ -1,4 +1,4 @@
-import { useEffect, useState, type ComponentProps, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ComponentProps, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { toast } from 'sonner';
 import { EllipsisIcon, KeyRoundIcon, LaptopIcon, Loader2Icon, LogOutIcon, PencilIcon, PlusIcon, SmartphoneIcon, TabletIcon, Trash2Icon, type LucideIcon } from 'lucide-react';
@@ -18,6 +18,7 @@ import { deviceMeta, logoutDescription, orderSessions, passkeyMeta, sessionDevic
 import { apiErrorMessage } from '@/lib/api-error';
 import { addPasskey, passkeysSupported } from '@/lib/auth-api';
 import { DIALOG_SHELL } from '@/lib/dialog-shell';
+import { neighbourIndex } from '@/lib/focus';
 import { COARSE_HIT_AREA } from '@/lib/hit-area';
 import { TRIGGER_OPEN } from '@/lib/menu-styles';
 import { REVEAL_TRANSITION, SWAP } from '@/lib/motion';
@@ -51,6 +52,8 @@ export default function AccountDialog() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [renaming, setRenaming] = useState<AccountPasskey | null>(null);
   const [renameOpen, setRenameOpen] = useState(false);
+  // The row whose confirmed removal closed the confirm: focus goes to its neighbour instead of the vanishing button
+  const removedRow = useRef<string | null>(null);
 
   // The store is global: Layout unmounts on /login (logout, or a 401 after "Alle andere browsers uitloggen" elsewhere),
   // and a dialog left open would pop up again right after the next login
@@ -87,6 +90,7 @@ export default function AccountDialog() {
       action: async () => {
         try {
           await removePasskey(passkey.id);
+          removedRow.current = `passkey-${passkey.id}`;
           setConfirmOpen(false);
           toast.success('Passkey verwijderd');
         } catch (failure) {
@@ -148,7 +152,7 @@ export default function AccountDialog() {
                     </Row>
                   )}
                   {passkeys.map((passkey) => (
-                    <Row key={passkey.id} icon={KeyRoundIcon} highlight title={passkey.name} meta={passkeyMeta(passkey, now)}>
+                    <Row key={passkey.id} rowKey={`passkey-${passkey.id}`} icon={KeyRoundIcon} highlight title={passkey.name} meta={passkeyMeta(passkey, now)}>
                       <DropdownMenu modal={false}>
                         <DropdownMenuTrigger asChild>
                           <SmallButton icon className={TRIGGER_OPEN} aria-label={`Opties voor ${passkey.name}`}>
@@ -205,6 +209,7 @@ export default function AccountDialog() {
                   {sessions.map((session) => (
                     <Row
                       key={`session-${session.id}`}
+                      rowKey={`session-${session.id}`}
                       icon={DEVICE_ICONS[sessionDevice(session.label)]}
                       highlight={session.current}
                       title={session.label}
@@ -236,6 +241,7 @@ export default function AccountDialog() {
                                   action: async () => {
                                     try {
                                       await removeSession(session.id);
+                                      removedRow.current = `session-${session.id}`;
                                       setConfirmOpen(false);
                                       toast.success(`Uitgelogd op ${session.label}`);
                                     } catch (failure) {
@@ -253,7 +259,7 @@ export default function AccountDialog() {
                     </Row>
                   ))}
                   {hasOtherSessions && (
-                    <Row key="logout-others">
+                    <Row key="logout-others" rowKey="logout-others">
                       <ActionRow
                         className="text-destructive-text"
                         iconClassName="text-destructive-text"
@@ -269,6 +275,7 @@ export default function AccountDialog() {
                             action: async () => {
                               try {
                                 const removed = await removeOtherSessions();
+                                removedRow.current = 'logout-others';
                                 setConfirmOpen(false);
                                 toast.success(removed === 1 ? '1 browser uitgelogd' : `${removed} browsers uitgelogd`);
                               } catch (failure) {
@@ -291,7 +298,7 @@ export default function AccountDialog() {
                   <Group title="Gekoppelde telefoons">
                     <AnimatePresence initial={false}>
                       {devices.map((device) => (
-                        <Row key={`device-${device.id}`} icon={SmartphoneIcon} title={device.name} meta={deviceMeta(device, now)}>
+                        <Row key={`device-${device.id}`} rowKey={`device-${device.id}`} icon={SmartphoneIcon} title={device.name} meta={deviceMeta(device, now)}>
                           <SmallButton
                             onClick={() =>
                               ask({
@@ -302,6 +309,7 @@ export default function AccountDialog() {
                                 action: async () => {
                                   try {
                                     await removeDevice(device.id);
+                                    removedRow.current = `device-${device.id}`;
                                     setConfirmOpen(false);
                                     toast.success(`${device.name} ontkoppeld`);
                                   } catch (failure) {
@@ -334,6 +342,18 @@ export default function AccountDialog() {
         confirmLabel={confirm?.confirmLabel}
         destructive={confirm?.destructive}
         onConfirm={() => confirm?.action()}
+        onCloseAutoFocus={(event) => {
+          const key = removedRow.current;
+          removedRow.current = null;
+          // Rows still listed; the others are folding away (e.g. every other session after "Alle andere browsers uitloggen")
+          const listed = new Set([
+            ...passkeys.map((passkey) => `passkey-${passkey.id}`),
+            ...sessions.map((session) => `session-${session.id}`),
+            ...devices.map((device) => `device-${device.id}`),
+            ...(hasOtherSessions ? ['logout-others'] : []),
+          ]);
+          if (key && focusRowNeighbour(key, listed)) event.preventDefault();
+        }}
       />
       <RenamePasskeyDialog
         open={renameOpen}
@@ -358,7 +378,10 @@ export default function AccountDialog() {
 function Group({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section>
-      <h3 className="mx-1.5 mb-1.5 text-xs font-semibold text-muted-foreground">{title}</h3>
+      {/* tabIndex -1: focus lands here when the group's last removed row took it along (focusRowNeighbour) */}
+      <h3 tabIndex={-1} className="mx-1.5 mb-1.5 text-xs font-semibold text-muted-foreground outline-none">
+        {title}
+      </h3>
       {/* The corners sit on each row's inner surface, so they stay right while a neighbour folds away */}
       <div className="flex flex-col gap-0.5 [&>*:first-child>*]:rounded-t-[18px] [&>*:last-child>*]:rounded-b-[18px]">{children}</div>
     </section>
@@ -366,7 +389,29 @@ function Group({ title, children }: { title: string; children: ReactNode }) {
 }
 
 /** One tonal row; unfolds in and folds away. With a `title` it shows an icon tile, title (+ chip), meta and the action on the right. */
+/**
+ * After a removal: focus the next row's control in the group (else the previous one's, else the group heading) instead
+ * of the removed row's button; rows no longer `listed` are leaving too and are skipped. False when the row is gone
+ * already (then the dialog's default applies).
+ */
+function focusRowNeighbour(key: string, listed: ReadonlySet<string>): boolean {
+  const row = Array.from(document.querySelectorAll<HTMLElement>('[data-account-row]')).find((element) => element.dataset.accountRow === key);
+  const list = row?.parentElement;
+  if (!row || !list) return false;
+  const rows = Array.from(list.children);
+  const targets = rows.map((element) => {
+    const other = element instanceof HTMLElement ? element.dataset.accountRow : undefined;
+    if (element === row || (other !== undefined && !listed.has(other))) return null;
+    return element.querySelector<HTMLElement>('button:not(:disabled)');
+  });
+  const index = neighbourIndex(targets.map(Boolean), rows.indexOf(row));
+  const target = index >= 0 ? targets[index] : list.closest('section')?.querySelector<HTMLElement>('h3');
+  target?.focus();
+  return !!target;
+}
+
 function Row({
+  rowKey,
   icon: Icon,
   highlight,
   title,
@@ -374,6 +419,8 @@ function Row({
   meta,
   children,
 }: {
+  /** Finds the row again after its removal (focusRowNeighbour) */
+  rowKey?: string;
   icon?: LucideIcon;
   /** Orange icon tile: your passkeys and this browser */
   highlight?: boolean;
@@ -384,6 +431,7 @@ function Row({
 }) {
   return (
     <motion.div
+      data-account-row={rowKey}
       className="overflow-hidden"
       initial={{ opacity: 0, height: 0 }}
       animate={{ opacity: 1, height: 'auto' }}

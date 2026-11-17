@@ -22,22 +22,26 @@ interface SegmentedProps<T extends string> {
   /** Accessible name of the group, e.g. "Geldig" */
   label: string;
   disabled?: boolean;
+  /** Saving a choice: looks disabled and ignores taps, but keeps the focus (aria-disabled instead of disabled) */
+  busy?: boolean;
   className?: string;
 }
 
 /** Pill group on a soft background; the selected segment is card-coloured with a shadow and slides to a new choice. Wraps on narrow screens. */
-export default function Segmented<T extends string>({ value, options, onChange, label, disabled, className }: SegmentedProps<T>) {
+export default function Segmented<T extends string>({ value, options, onChange, label, disabled, busy, className }: SegmentedProps<T>) {
   const id = useId();
   return (
     <ToggleGroupPrimitive.Root
       type="single"
       value={value ?? ''}
       // Radix sends '' when the selected segment is tapped again: keep one selected
-      onValueChange={(next) => next && onChange(next as T)}
+      onValueChange={(next) => next && !busy && onChange(next as T)}
       aria-label={label}
       disabled={disabled}
+      aria-disabled={busy || undefined}
+      aria-busy={busy || undefined}
       // isolate: the segments' 44px touch areas (COARSE_HIT_AREA) stay above the group's background
-      className={cn('isolate inline-flex max-w-full flex-wrap gap-0.5 rounded-lg bg-beheer-row p-[3px]', className)}
+      className={cn('group/segmented isolate inline-flex max-w-full flex-wrap gap-0.5 rounded-lg bg-beheer-row p-[3px]', className)}
     >
       {options.map((option) => {
         const selected = option.value === value;
@@ -47,7 +51,7 @@ export default function Segmented<T extends string>({ value, options, onChange, 
             value={option.value}
             className={cn(
               COARSE_HIT_AREA,
-              'inline-flex h-[30px] items-center rounded-[9px] px-3 text-[12.5px] font-semibold outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring disabled:opacity-50 [&_svg]:size-3.5 [&_svg]:shrink-0',
+              'inline-flex h-[30px] items-center rounded-[9px] px-3 text-[12.5px] font-semibold outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring disabled:opacity-50 group-aria-disabled/segmented:pointer-events-none group-aria-disabled/segmented:opacity-50 [&_svg]:size-3.5 [&_svg]:shrink-0',
               selected ? (option.selectedTextClassName ?? 'text-foreground') : 'text-muted-foreground hover:text-foreground',
             )}
           >

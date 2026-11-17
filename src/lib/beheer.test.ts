@@ -16,6 +16,7 @@ import {
   SEND_CONFIRM_MS,
   SEND_DONE_MS,
   sendButtonLabel,
+  sendConfirmAnnouncement,
   sendTransition,
   splitUsers,
   stoppedInviteMeta,
@@ -231,8 +232,15 @@ describe('send button (two taps)', () => {
     expect(sendButtonLabel('sent', 12)).toBe('Verstuurd');
   });
 
+  test('confirm announcement', () => {
+    expect(sendConfirmAnnouncement(12)).toBe('Tik nog eens om naar 12 mensen te sturen');
+    expect(sendConfirmAnnouncement(1)).toBe('Tik nog eens om naar 1 persoon te sturen');
+    expect(sendConfirmAnnouncement(undefined)).toBe('Tik nog eens om naar iedereen te sturen');
+    expect(sendConfirmAnnouncement(0)).toBe('Tik nog eens om naar iedereen te sturen');
+  });
+
   test('timings', () => {
-    expect(SEND_CONFIRM_MS).toBe(3000);
+    expect(SEND_CONFIRM_MS).toBe(8000);
     expect(SEND_DONE_MS).toBe(1600);
   });
 });

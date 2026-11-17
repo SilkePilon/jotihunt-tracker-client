@@ -136,7 +136,7 @@ export default function UsersPane() {
         }
         meta={
           <>
-            <span className={cn(!user.passkeyCount && 'text-amber-700 dark:text-amber-300')}>{passkeyText(user.passkeyCount)}</span> · {userActivity(user, now)}
+            <span className={cn(!user.passkeyCount && 'text-amber-800 dark:text-amber-300')}>{passkeyText(user.passkeyCount)}</span> · {userActivity(user, now)}
           </>
         }
         confirm={
@@ -190,8 +190,7 @@ export default function UsersPane() {
           <>
             <Pill
               morphKey={adminBusy.has(user._id) ? 'busy' : user.admin ? 'revoke' : 'grant'}
-              disabled={adminBusy.has(user._id)}
-              aria-busy={adminBusy.has(user._id)}
+              busy={adminBusy.has(user._id)}
               // Granting is harmless; taking admin away asks first
               onClick={() => (user.admin ? setConfirming({ id: user._id, kind: 'revoke' }) : void toggleAdmin(user))}
             >

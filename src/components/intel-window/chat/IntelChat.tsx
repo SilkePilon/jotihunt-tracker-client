@@ -137,7 +137,8 @@ function ChatThread({ chat, mapRef }: { chat: IntelChatState; mapRef: RefObject<
   const [wasBusy, setWasBusy] = useState(busy);
   if (busy !== wasBusy) {
     setWasBusy(busy);
-    setAnnouncement(!busy && chat.status === 'ready' ? answerAnnouncement(chat.messages) : '');
+    // A failed turn is announced too: the error row below only fades in, which a screen reader doesn't notice
+    setAnnouncement(busy ? '' : chat.status === 'ready' ? answerAnnouncement(chat.messages) : chat.status === 'error' && !chat.unavailable ? turnErrorMessage(chat) : '');
   }
   return (
     <div ref={scrollerRef} onScroll={onScroll} className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1 [scrollbar-gutter:stable]">
@@ -155,10 +156,15 @@ function ChatThread({ chat, mapRef }: { chat: IntelChatState; mapRef: RefObject<
           </AnimatePresence>
         </ChatScrollerContext.Provider>
         <ToolStatus label={chatStatusLabel(chat.messages, chat.status)} />
-        <Reveal>{chat.status === 'error' && !chat.unavailable && <ErrorRow message={chat.errorKind === 'busy' ? BUSY_MESSAGE : chat.errorKind === 'offline' ? 'Geen verbinding, probeer het opnieuw' : 'Er ging iets mis'} onRetry={chat.retry} />}</Reveal>
+        <Reveal>{chat.status === 'error' && !chat.unavailable && <ErrorRow message={turnErrorMessage(chat)} onRetry={chat.retry} />}</Reveal>
       </div>
     </div>
   );
+}
+
+/** The failed turn's line in the error row (and the announcement) */
+function turnErrorMessage(chat: IntelChatState): string {
+  return chat.errorKind === 'busy' ? BUSY_MESSAGE : chat.errorKind === 'offline' ? 'Geen verbinding, probeer het opnieuw' : 'Er ging iets mis';
 }
 
 function ErrorRow({ message, onRetry }: { message: string; onRetry: () => void }) {

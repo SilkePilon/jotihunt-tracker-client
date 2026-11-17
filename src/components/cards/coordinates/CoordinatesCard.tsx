@@ -72,7 +72,7 @@ export default function CoordinatesCard({ mapRef, onDone }: { mapRef: React.RefO
                     placeholder="Zoek op coördinaat..."
                     onChange={onChange}
                     value={inputValue}
-                    className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                    className="min-w-0 flex-1 bg-transparent text-base outline-none md:text-sm placeholder:text-muted-foreground"
                 />
                 <button
                     type="submit"

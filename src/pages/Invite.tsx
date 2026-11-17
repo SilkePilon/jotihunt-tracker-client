@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { KeyRoundIcon, Link2OffIcon, Loader2Icon, UsersIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -48,6 +48,9 @@ export default function Invite() {
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** The error is about the name field (empty): it is marked invalid and describes itself with the error line */
+  const [nameInvalid, setNameInvalid] = useState(false);
+  const nameInput = useRef<HTMLInputElement>(null);
   /** Why the server refused the signup (410); the invite info loaded earlier is stale then */
   const [goneReason, setGoneReason] = useState<InviteReason | null>(null);
   const [done, setDone] = useState<{ name: string; withPasskey: boolean } | null>(null);
@@ -81,10 +84,13 @@ export default function Invite() {
     const trimmed = name.trim();
     if (!trimmed) {
       setError('Vul je naam in.');
+      setNameInvalid(true);
+      nameInput.current?.focus();
       return;
     }
     setBusy(true);
     setError(null);
+    setNameInvalid(false);
     try {
       const result = supported ? await registerWithInvite(code, trimmed) : await registerWithInviteWithoutPasskey(code, trimmed);
       const withPasskey = (result.user.passkeyCount ?? 0) > 0;
@@ -145,7 +151,24 @@ export default function Invite() {
             <label htmlFor="invite-name" className="text-sm font-medium">
               Hoe heet je?
             </label>
-            <Input id="invite-name" value={name} maxLength={40} autoComplete="nickname" placeholder="Je naam" onChange={(event) => setName(event.target.value)} />
+            <Input
+              ref={nameInput}
+              id="invite-name"
+              value={name}
+              maxLength={40}
+              autoComplete="nickname"
+              placeholder="Je naam"
+              aria-invalid={nameInvalid || undefined}
+              aria-describedby={nameInvalid && error ? 'invite-error' : undefined}
+              onChange={(event) => {
+                setName(event.target.value);
+                // Typing a name fixes it: the field is no longer invalid and the "Vul je naam in." line folds away
+                if (nameInvalid && event.target.value.trim()) {
+                  setNameInvalid(false);
+                  setError(null);
+                }
+              }}
+            />
           </div>
           <Button type={signupDone ? 'button' : 'submit'} size="lg" className="w-full" disabled={busy} onClick={signupDone ? () => navigate('/login') : undefined}>
             <AnimatePresence mode="popLayout" initial={false}>
@@ -163,7 +186,7 @@ export default function Invite() {
           </Button>
           <Reveal gap={16}>
             {error && (
-              <InlineError role="alert">
+              <InlineError id="invite-error" role="alert">
                 {error}
               </InlineError>
             )}
