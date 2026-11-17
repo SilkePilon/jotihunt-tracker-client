@@ -14,6 +14,8 @@ export interface NightDrawState {
   start(kind?: 'closed' | 'open'): void;
   setKind(kind: 'closed' | 'open'): void;
   addPoint(p: [number, number]): void;
+  /** Moves the last corner (keyboard nudge); nothing once the ring is closed */
+  moveLast(p: [number, number]): void;
   /** Reopens a closed ring, else drops the last corner */
   undo(): void;
   /** Closes the ring (needs 3 corners) */
@@ -31,6 +33,7 @@ export const useNightDraw = create<NightDrawState>()((set) => ({
   start: (kind = 'closed') => set({ active: true, kind, points: [], closed: false }),
   setKind: (kind) => set({ kind }),
   addPoint: (p) => set((s) => (s.closed ? s : { points: [...s.points, p] })),
+  moveLast: (p) => set((s) => (s.closed || !s.points.length ? s : { points: [...s.points.slice(0, -1), p] })),
   undo: () => set((s) => (s.closed ? { closed: false } : { points: s.points.slice(0, -1) })),
   close: () => set((s) => (s.points.length >= 3 ? { closed: true } : s)),
   cancel: () => set({ active: false, points: [], closed: false }),

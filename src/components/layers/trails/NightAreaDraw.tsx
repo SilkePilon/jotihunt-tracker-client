@@ -13,6 +13,7 @@ import { useNightAreas } from '@/hooks/night-areas.hook';
 import { useIsMobile } from '@/hooks/media.hook';
 import { NIGHT_DRAW_LAYERS, NIGHT_FILL, NIGHT_LINE } from '@/lib/map-layers';
 import { SWAP, SWAP_TRANSITION } from '@/lib/motion';
+import { CLOSED_MESSAGE, droppedMessage, KEYBOARD_DRAW_HINT, MOVE_FIRST_MESSAGE, nudgeDelta, UNDO_MESSAGE } from '@/lib/night-draw-keys';
 import { belowSafeArea, desktopToolbarTop, phoneTopStack } from '@/lib/top-stack';
 import useAdminStore from '@/stores/admin.store';
 import { ringFromPoints, useNightDraw } from '@/stores/night-draw.store';
@@ -29,6 +30,9 @@ const KIND_OPTIONS: SegmentOption<NightAreaKind>[] = [
   { value: 'closed', label: "Dicht 's nachts", selectedClassName: 'bg-fox-error-container', selectedTextClassName: 'text-fox-on-error' },
   { value: 'open', label: "Open 's nachts", selectedClassName: 'bg-fox-ok-container', selectedTextClassName: 'text-fox-on-ok' },
 ];
+
+/** Keep a nudged corner this far (px) inside the map's edge; past it the map pans along */
+const NUDGE_EDGE_PX = 40;
 
 /** ConfirmDialog's close animation (data-[state=closed]:duration-150) plus a margin, before draw mode unmounts it */
 const CONFIRM_CLOSE_MS = 180;
@@ -62,6 +66,10 @@ export default function NightAreaDraw() {
   const toolbarRef = usePublishTopHeight('toolbar', isPresent);
   const toolbarTop = useTopStackStore((state) => phoneTopStack(state.heights).toolbarTop);
   const toolbarTopMd = useTopStackStore((state) => desktopToolbarTop(state.heights.pill));
+  // Keyboard drawing (lib/night-draw-keys.ts): the map has keyboard focus, and what the live region last said. `n` makes
+  // the same sentence twice still a change, so it is read out again
+  const [keyboardFocus, setKeyboardFocus] = useState(false);
+  const [said, setSaid] = useState({ text: '', n: 0 });
 
   useEffect(() => {
     if (!map) return;
@@ -97,6 +105,73 @@ export default function NightAreaDraw() {
       map.off('dblclick', onDblClick);
       map.doubleClickZoom.enable();
       canvas.style.cursor = previousCursor;
+    };
+  }, [map]);
+
+  // Keyboard alternative to tapping: Enter drops a corner in the middle of the map, arrows nudge the last one, Enter on an
+  // unmoved corner closes, Backspace undoes. Captured on the canvas container, before MapLibre's own arrow-key panning
+  useEffect(() => {
+    if (!map) return;
+    const container = map.getCanvasContainer();
+    const canvas = map.getCanvas();
+    // The corner Enter dropped last. While it is still the last corner, unmoved (moveLast and taps make new arrays),
+    // another Enter closes, like a double tap
+    let dropped: [number, number] | null = null;
+    const say = (text: string) => setSaid((prev) => ({ text, n: prev.n + 1 }));
+    const handled = (e: KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.altKey || e.ctrlKey || e.metaKey) return;
+      const state = useNightDraw.getState();
+      if (!state.active || state.closed) return;
+      if (e.key === 'Enter') {
+        handled(e);
+        if (dropped && state.points.at(-1) === dropped) {
+          if (state.points.length >= 3) {
+            state.close();
+            say(CLOSED_MESSAGE);
+          } else say(MOVE_FIRST_MESSAGE);
+          return;
+        }
+        const center = map.getCenter();
+        dropped = [center.lng, center.lat];
+        state.addPoint(dropped);
+        say(droppedMessage(state.points.length + 1));
+        return;
+      }
+      if (e.key === 'Backspace') {
+        if (!state.points.length) return;
+        handled(e);
+        state.undo();
+        say(UNDO_MESSAGE);
+        return;
+      }
+      const delta = nudgeDelta(e.key, e.shiftKey);
+      const last = state.points.at(-1);
+      // No corner yet: the arrows pan the map as usual, to pick the spot for the first one
+      if (!delta || !last) return;
+      handled(e);
+      const at = map.project(last);
+      const next = map.unproject([at.x + delta[0], at.y + delta[1]]);
+      state.moveLast([next.lng, next.lat]);
+      // Near the edge the map pans along, so the corner stays in view
+      const { clientWidth: width, clientHeight: height } = canvas;
+      const x = at.x + delta[0];
+      const y = at.y + delta[1];
+      if (x < NUDGE_EDGE_PX || y < NUDGE_EDGE_PX || x > width - NUDGE_EDGE_PX || y > height - NUDGE_EDGE_PX) map.panBy(delta, { duration: 150 });
+    };
+    // The hint shows the keys only while the map has keyboard focus (a mouse click on the map focuses it too)
+    const onFocus = () => setKeyboardFocus(canvas.matches(':focus-visible'));
+    const onBlur = () => setKeyboardFocus(false);
+    container.addEventListener('keydown', onKeyDown, { capture: true });
+    canvas.addEventListener('focus', onFocus);
+    canvas.addEventListener('blur', onBlur);
+    return () => {
+      container.removeEventListener('keydown', onKeyDown, { capture: true });
+      canvas.removeEventListener('focus', onFocus);
+      canvas.removeEventListener('blur', onBlur);
     };
   }, [map]);
 
@@ -228,12 +303,17 @@ export default function NightAreaDraw() {
                   />
                 </motion.form>
               ) : (
-                <motion.div key="hint" {...SWAP} className="rounded-[10px] bg-[rgb(12_10_9/0.82)] px-3 py-1.5 text-xs whitespace-nowrap text-white">
-                  Tik punten op de kaart · dubbeltik om te sluiten
+                <motion.div key={keyboardFocus ? 'keys' : 'hint'} {...SWAP} className="rounded-[10px] bg-[rgb(12_10_9/0.82)] px-3 py-1.5 text-xs whitespace-nowrap text-white">
+                  {keyboardFocus ? KEYBOARD_DRAW_HINT : 'Tik punten op de kaart · dubbeltik om te sluiten'}
                 </motion.div>
               )}
             </AnimatePresence>
           </motion.div>
+          {/* Always mounted, so each keyboard step is read out (a freshly mounted region often isn't) */}
+          <div role="status" aria-live="polite" className="sr-only">
+            {said.text}
+            {said.n % 2 ? '\u00a0' : ''}
+          </div>
         </>,
         document.body,
       )}
