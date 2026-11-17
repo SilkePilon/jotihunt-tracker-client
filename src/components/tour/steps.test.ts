@@ -86,6 +86,18 @@ describe('TOUR_STEPS', () => {
     }
   });
 
+  test('phones: a short tour; hints, predictions, counter-hunt and tracker are laptop steps, named in the menu step', () => {
+    const phone = stepsForPlatform(TOUR_STEPS, 'mobile');
+    const ids = phone.map((step) => step.id);
+    expect(ids.length).toBeLessThanOrEqual(10);
+    for (const id of ['hints', 'predictions', 'counter-hunt', 'tracker']) {
+      expect(ids).not.toContain(id);
+      expect(stepsForPlatform(TOUR_STEPS, 'desktop').map((step) => step.id)).toContain(id);
+    }
+    const menu = phone.find((step) => step.id === 'menu')!;
+    for (const word of ['hints', 'voorspelling', 'tegenhunt', 'tracker']) expect(menu.body).toContain(word);
+  });
+
   test('phones: peek strip and menu come first, before any section', () => {
     const ids = stepsForPlatform(TOUR_STEPS, 'mobile').map((step) => step.id);
     const firstSection = stepsForPlatform(TOUR_STEPS, 'mobile').findIndex((step) => sectionOfTarget(targetFor(step, 'mobile') ?? 'map') !== null);

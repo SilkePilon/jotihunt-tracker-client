@@ -18,8 +18,9 @@ export const TAP_OR_CLICK_TO_CONTINUE = 'Tik of klik nu op het uitgelichte deel 
 /**
  * The onboarding tour, in order. To add a step: add its target id to targets.ts, put {...tourTarget(id)}
  * on the element, and add an entry here. New UI interactions go in actions.ts.
- * Phones get the peek strip and the menu first; a section step then points at its menu row, and only Hint registreren
- * and Hunts push their page (showSection). Every sidebar step first pulls the sheet up so the section is visible.
+ * Phones get a short tour (~10 steps): the peek strip and the menu first (its copy names the sections that are
+ * laptop-only steps: hints, predictions, counter-hunt, tracker); a section step then points at its menu row, and only
+ * Hint registreren and Hunts push their page (showSection). Every sidebar step first pulls the sheet up so the section is visible.
  * Steps that point at a sidebar section are shown in the order the platform shows the sections (laptop sidebar or
  * phone menu, see stepsForPlatform); here they follow the laptop sidebar.
  */
@@ -50,7 +51,8 @@ export const TOUR_STEPS: TourStep[] = [
     id: 'menu',
     target: 'sidebar.root',
     title: 'Het menu',
-    body: `Schuif het paneel omhoog voor het menu: alles wat je nodig hebt staat hier. Straks tik je op een regel om dat onderdeel te openen; met "Menu" bovenaan ga je terug. ${TAP_TO_CONTINUE}`,
+    // The hints, predictions, counter-hunt and tracker steps are laptop-only (a short phone tour): named here instead
+    body: `Schuif het paneel omhoog voor het menu: alles wat je nodig hebt staat hier, ook de hints, de AI-voorspelling, een tegenhunt bij ons clubhuis en je eigen tracker. Straks tik je op een regel om dat onderdeel te openen; met "Menu" bovenaan ga je terug. ${TAP_TO_CONTINUE}`,
     actions: [resetToMenu(), sheetSnap('half'), scrollSidebarToTop()],
     only: 'mobile',
   },
@@ -70,10 +72,11 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     id: 'hints',
-    target: { desktop: 'sidebar.hints', mobile: 'menu.hints' },
+    target: 'sidebar.hints',
     title: 'Hints',
-    body: 'De laatste hints per deelgebied in één oogopslag: groen is opgelost, grijs staat nog open. Op een laptop open je met "Open hints" het venster met alle hints, opdrachten en nieuws.',
-    actions: [sheetSnap('full'), pointAtSection('hints')],
+    body: 'De laatste hints per deelgebied in één oogopslag: groen is opgelost, grijs staat nog open. Met "Open hints" open je het venster met alle hints, opdrachten en nieuws.',
+    actions: [pointAtSection('hints')],
+    only: 'desktop',
   },
   {
     id: 'hunts',
@@ -84,11 +87,12 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     id: 'predictions',
-    target: { desktop: 'sidebar.predictions', mobile: 'menu.predictions' },
+    target: 'sidebar.predictions',
     title: 'Voorspelling',
     body: `Een AI-voorspelling van waar de vossen waarschijnlijk zijn. Straks tik of klik je op een voorspelling om ernaartoe te gaan op de kaart. ${TAP_OR_CLICK_TO_CONTINUE}`,
-    actions: [sheetSnap('full'), pointAtSection('predictions')],
+    actions: [pointAtSection('predictions')],
     optional: true,
+    only: 'desktop',
   },
   {
     id: 'hint-entry',
@@ -99,18 +103,20 @@ export const TOUR_STEPS: TourStep[] = [
   },
   {
     id: 'counter-hunt',
-    target: { desktop: 'sidebar.counterHunt', mobile: 'menu.counterHunt' },
+    target: 'sidebar.counterHunt',
     title: 'Tegenhunt',
     body: 'Wordt ons clubhuis gehunt? Dan zie je hier automatisch uit welke richting, en op de kaart.',
-    actions: [sheetSnap('full'), pointAtSection('counterHunt')],
+    actions: [pointAtSection('counterHunt')],
     optional: true,
+    only: 'desktop',
   },
   {
     id: 'tracker',
-    target: { desktop: 'sidebar.tracking', mobile: 'menu.tracking' },
+    target: 'sidebar.tracking',
     title: 'Mijn tracker',
     body: 'Koppel je telefoon als GPS-tracker, zodat iedereen ziet waar je bent. Kies hier ook of je loopt, fietst of rijdt.',
-    actions: [sheetSnap('full'), pointAtSection('tracking')],
+    actions: [pointAtSection('tracking')],
+    only: 'desktop',
   },
   {
     id: 'map-tools',
