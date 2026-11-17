@@ -3,7 +3,6 @@ import { motion } from 'motion/react';
 import { ChevronUpIcon, ClockIcon, DownloadIcon, EyeOffIcon } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { EASE_OUT } from '@/lib/motion';
-import { cn } from '@/lib/utils';
 
 /**
  * M3 Expressive split button: Download, with ▾ for "Later herinneren" / "Niet meer tonen". The menu is the shared
@@ -28,10 +27,8 @@ export default function DownloadSplitButton({ version, onDownload, onLater, onNe
             aria-label="Meer opties"
             animate={{ borderRadius: menuOpen ? '24px 24px 24px 24px' : '4px 12px 12px 4px' }}
             transition={{ duration: 0.3, ease: EASE_OUT }}
-            className={cn(
-              'grid h-12 w-12 place-items-center outline-none transition-colors duration-200 focus-visible:ring-[3px] focus-visible:ring-ring',
-              menuOpen ? 'bg-(--map-selected-bg) text-(--map-selected-fg)' : 'bg-primary-container text-on-primary-container',
-            )}
+            // Stays primary-container while open, like its Download half: only the shape and the chevron move
+            className="grid h-12 w-12 place-items-center bg-primary-container text-on-primary-container outline-none focus-visible:ring-[3px] focus-visible:ring-ring"
           >
             <motion.span animate={{ rotate: menuOpen ? 0 : 180 }} transition={{ duration: 0.3, ease: EASE_OUT }}>
               <ChevronUpIcon className="size-5" />
