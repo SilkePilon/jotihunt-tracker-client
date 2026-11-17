@@ -1,4 +1,5 @@
 import { CheckIcon } from 'lucide-react';
+import { useId } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { POP } from '@/lib/motion';
 import { cn } from '@/lib/utils';
@@ -18,12 +19,14 @@ interface NotificationTileProps {
 
 /** Toggle tile in the Meldingen dialog: light orange with a check badge when on, tonal grey when off. */
 export default function NotificationTile({ icon: Icon, label, short, description, on, onToggle, disabled }: NotificationTileProps) {
+  const descriptionId = useId();
   return (
     <button
       type="button"
       aria-pressed={on}
-      // The description: title is not part of the name (label + short), so screen readers read it once, as the description
+      // Tooltip for the mouse; screen readers (mobile ones skip title) get the same text as the description, read once
       title={description}
+      aria-describedby={descriptionId}
       onClick={onToggle}
       disabled={disabled}
       className={cn(
@@ -41,6 +44,10 @@ export default function NotificationTile({ icon: Icon, label, short, description
       </AnimatePresence>
       <span className={cn('text-body font-semibold transition-colors duration-200 motion-reduce:transition-none', !on && 'text-foreground')}>{label}</span>
       <span className="-mt-1 text-xs leading-snug desk:text-label">{short}</span>
+      {/* Hidden, so it stays out of the button's name; aria-describedby still reads a hidden element */}
+      <span id={descriptionId} hidden>
+        {description}
+      </span>
     </button>
   );
 }
