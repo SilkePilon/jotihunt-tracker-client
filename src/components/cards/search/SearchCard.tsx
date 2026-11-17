@@ -1,5 +1,5 @@
 import * as React from "react"
-import {ChevronDownIcon, NavigationIcon} from "lucide-react"
+import {ChevronDownIcon, SearchIcon} from "lucide-react"
 import {AnimatePresence, motion} from "motion/react"
 
 import {
@@ -62,7 +62,7 @@ export default function SearchCard({ mapRef, onDone }: { mapRef: React.RefObject
                         TRIGGER_OPEN,
                     )}
                 >
-                    <span className={cn(MAP_CHIP, "transition-colors group-data-[state=open]:bg-[color-mix(in_oklab,var(--map-selected-fg)_12%,var(--map-selected-bg))]")}><NavigationIcon/></span>
+                    <span className={cn(MAP_CHIP, "transition-colors group-data-[state=open]:bg-[color-mix(in_oklab,var(--map-selected-fg)_12%,var(--map-selected-bg))]")}><SearchIcon/></span>
                     <span className="min-w-0 flex-1 truncate text-sm font-medium">Snel navigeren naar groep…</span>
                     <ChevronDownIcon data-chevron className="size-4 shrink-0 opacity-50" />
                 </button>

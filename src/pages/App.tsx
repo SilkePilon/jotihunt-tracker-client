@@ -5,7 +5,7 @@ import Sidebar from '@/components/sidebar/Sidebar';
 import { tourTarget } from '@/components/tour/targets';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import HappyHourPill from '@/components/happy-hour/HappyHourPill';
-import { NavigationIcon, SearchIcon, type LucideIcon } from 'lucide-react';
+import { CrosshairIcon, SearchIcon, type LucideIcon } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { MAP_TILE } from '@/lib/map-chrome';
@@ -70,10 +70,10 @@ function App() {
           </div>
         </div>
         <div className="flex gap-2 lg:hidden">
-          <CompactCard icon={SearchIcon} label="Zoek op coördinaat">
+          <CompactCard icon={CrosshairIcon} label="Zoek op coördinaat">
             {(close) => <CoordinatesCard mapRef={mapRef} onDone={close} />}
           </CompactCard>
-          <CompactCard icon={NavigationIcon} label="Snel navigeren naar groep">
+          <CompactCard icon={SearchIcon} label="Snel navigeren naar groep">
             {(close) => <SearchCard mapRef={mapRef} onDone={close} />}
           </CompactCard>
         </div>
