@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { Layer, Source, useMap, type CircleLayerSpecification, type FillLayerSpecification, type LineLayerSpecification } from 'react-map-gl/maplibre';
 import type { MapMouseEvent } from 'maplibre-gl';
 import type { Feature, FeatureCollection, LineString, Point, Polygon } from 'geojson';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, motion, useIsPresent } from 'motion/react';
 import { Loader2Icon, Undo2Icon } from 'lucide-react';
 import { toast } from 'sonner';
 import { Pill, IconPill } from '@/components/beheer/controls/Pill';
@@ -12,9 +12,11 @@ import { useNightAreas } from '@/hooks/night-areas.hook';
 import { useIsMobile } from '@/hooks/media.hook';
 import { NIGHT_DRAW_LAYERS, NIGHT_FILL, NIGHT_LINE } from '@/lib/map-layers';
 import { SWAP, SWAP_TRANSITION } from '@/lib/motion';
+import { belowSafeArea, desktopToolbarTop, phoneTopStack } from '@/lib/top-stack';
 import useAdminStore from '@/stores/admin.store';
 import { ringFromPoints, useNightDraw } from '@/stores/night-draw.store';
 import useSidebarStore from '@/stores/sidebar.store';
+import useTopStackStore, { usePublishTopHeight } from '@/stores/top-stack.store';
 import type { NightAreaKind } from '@/types/Trail';
 
 const SOURCE = 'night-draw';
@@ -47,6 +49,11 @@ export default function NightAreaDraw() {
   const isMobile = useIsMobile();
   // Phones: the hint sits above the bottom sheet
   const sheetHeight = useSidebarStore((state) => state.sheetHeight);
+  // The toolbar sits below the status messages (offline badge, happy-hour pill); phone toasts below the toolbar
+  const isPresent = useIsPresent();
+  const toolbarRef = usePublishTopHeight('toolbar', isPresent);
+  const toolbarTop = useTopStackStore((state) => phoneTopStack(state.heights).toolbarTop);
+  const toolbarTopMd = useTopStackStore((state) => desktopToolbarTop(state.heights.pill));
 
   useEffect(() => {
     if (!map) return;
@@ -146,9 +153,11 @@ export default function NightAreaDraw() {
       {createPortal(
         <>
           <motion.div
+            ref={toolbarRef}
             role="toolbar"
             aria-label="Nachtgebied tekenen"
-            className="fixed top-[calc(env(safe-area-inset-top)+12px)] left-1/2 z-40 flex max-w-[calc(100vw-16px)] -translate-x-1/2 flex-wrap items-center justify-center gap-1.5 rounded-2xl bg-card p-1.5 shadow-[0_0_0_1px_var(--border),0_8px_24px_rgb(0_0_0/0.18)] md:top-[56px] md:left-[calc(50%+164px)]"
+            style={{ '--toolbar-top': belowSafeArea(toolbarTop), '--toolbar-top-md': `${toolbarTopMd}px` } as React.CSSProperties}
+            className="fixed top-(--toolbar-top) left-1/2 z-40 flex max-w-[calc(100vw-16px)] -translate-x-1/2 flex-wrap items-center justify-center gap-1.5 rounded-2xl bg-card p-1.5 shadow-[0_0_0_1px_var(--border),0_8px_24px_rgb(0_0_0/0.18)] transition-[top] duration-300 ease-out motion-reduce:transition-none md:top-(--toolbar-top-md) md:left-[calc(50%+164px)]"
             initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}

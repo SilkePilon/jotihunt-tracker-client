@@ -1,18 +1,17 @@
-import { useEffect } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import MaterialGlyph from '@/components/MaterialGlyph';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useHappyHour } from '@/hooks/happy-hour.hook';
 import { useNow } from '@/hooks/now.hook';
 import { LAYOUT_SPRING, SWAP_TRANSITION, swapPreset } from '@/lib/motion';
-import useHappyHourPillStore from '@/stores/happy-hour-pill.store';
+import { usePublishTopHeight } from '@/stores/top-stack.store';
 import { happyHourExplanation, happyHourPill, happyHourPillText, happyHourWindow, type HappyHourWindow } from '@/lib/happy-hour';
 
 /**
  * Amber pill (flat): "Happy hour · 2× punten · nog 34 min"; tap for the explanation and the bot's message. The amber is
  * happy hour's own colour (also its toast and notification tile), deliberately not a fox status token.
  */
-function HappyHourPillView({ hour, now }: { hour: HappyHourWindow; now: number }) {
+function HappyHourPillView({ hour, now, measureRef }: { hour: HappyHourWindow; now: number; measureRef: (node: HTMLElement | null) => void }) {
   const { title, countdown } = happyHourPill(hour, now);
   // Reduced motion: no blur (and MotionConfig skips the slide), so the swap is a plain fade
   const swap = swapPreset(useReducedMotion() ?? false);
@@ -20,6 +19,7 @@ function HappyHourPillView({ hour, now }: { hour: HappyHourWindow; now: number }
     <Popover>
       <PopoverTrigger asChild>
         <motion.button
+          ref={measureRef}
           type="button"
           aria-label={happyHourPillText(hour, now)}
           // Fades in and out with the happy hour (AnimatePresence below); eases to its new width when the label swaps
@@ -59,11 +59,7 @@ export default function HappyHourPill() {
   // Ticks while there is a happy hour; a new or changed one renders with the current time right away
   const now = useNow(!!view && view.state !== 'none');
   const hour = happyHourWindow(view, now);
-  // Phone toasts make room below the pill while it is shown
-  const shown = !!hour;
-  useEffect(() => {
-    useHappyHourPillStore.getState().setVisible(shown);
-    return () => useHappyHourPillStore.getState().setVisible(false);
-  }, [shown]);
-  return <AnimatePresence>{hour && <HappyHourPillView key="pill" hour={hour} now={now} />}</AnimatePresence>;
+  // The drawing toolbar and phone toasts make room below the pill while it is shown (lib/top-stack.ts)
+  const measureRef = usePublishTopHeight('pill', !!hour);
+  return <AnimatePresence>{hour && <HappyHourPillView key="pill" hour={hour} now={now} measureRef={measureRef} />}</AnimatePresence>;
 }

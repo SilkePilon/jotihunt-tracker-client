@@ -9,8 +9,8 @@ import { Toaster as Sonner, type ToasterProps } from "sonner"
 
 import { useDarkMode } from "@/hooks/utils/darkmode.hook.ts"
 import { useIsMobile } from "@/hooks/media.hook"
-import { phoneToastOffset } from "@/lib/toast-offset"
-import useHappyHourPillStore from "@/stores/happy-hour-pill.store"
+import { phoneToastOffset } from "@/lib/top-stack"
+import useTopStackStore from "@/stores/top-stack.store"
 
 /**
  * Desktop (bottom-right): left of the 40px map control column (8px margin + 40px + 12px gap, plus the landscape-phone
@@ -25,15 +25,15 @@ const Toaster = ({ ...props }: ToasterProps) => {
   const isDarkMode = useDarkMode()
   // Phones: the bottom sheet owns the bottom edge
   const isMobile = useIsMobile()
-  // Phones (top-center): below the offline badge, and below the happy-hour pill while it is shown (see toast-offset).
-  // Sonner only applies mobileOffset under 600px; offset covers the 600–767px phone widths.
-  const pillVisible = useHappyHourPillStore((s) => s.visible)
-  const phoneOffset = phoneToastOffset(pillVisible)
+  // Phones (top-center): below the offline badge, the happy-hour pill and the drawing toolbar while they are shown
+  // (lib/top-stack.ts). Sonner only applies mobileOffset under 600px; offset covers the 600–767px phone widths.
+  const heights = useTopStackStore((s) => s.heights)
+  const phoneOffset = phoneToastOffset(heights)
 
   return (
     <Sonner
       theme={isDarkMode ? "dark" : "light"}
-      // The stack eases down/up when the happy-hour pill comes or goes (sonner's own transform transition kept)
+      // The stack eases down/up when the badge, pill or toolbar above it comes or goes (sonner's own transform transition kept)
       className="toaster group transition-[top,transform]! duration-300! ease-out! motion-reduce:transition-none!"
       icons={{
         success: <CircleCheckIcon className="size-4" />,

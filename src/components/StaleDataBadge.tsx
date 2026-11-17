@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { connectionProblem, connectionSnapshot, problemLabel } from '@/lib/connection';
 import { problemAnnouncement } from '@/lib/stale-announcement';
 import { SWAP_TRANSITION } from '@/lib/motion';
+import { usePublishTopHeight } from '@/stores/top-stack.store';
 
 const CHECK_MS = 5000;
 
@@ -17,6 +18,8 @@ export default function StaleDataBadge() {
   const [label, setLabel] = useState<string | null>(null);
   // Strings, so a check that finds the same problem doesn't re-render
   const [announcement, setAnnouncement] = useState('');
+  // Phones: the happy-hour pill, the drawing toolbar and toasts stack below the badge (one or two lines, lib/top-stack.ts)
+  const measureRef = usePublishTopHeight('badge', label !== null);
 
   useEffect(() => {
     const check = () => {
@@ -44,6 +47,7 @@ export default function StaleDataBadge() {
         {label !== null && (
           <motion.div
             key="stale"
+            ref={measureRef}
             // Read out through the region above (without the minute-by-minute age)
             aria-hidden
             initial={{ opacity: 0, y: -8 }}
