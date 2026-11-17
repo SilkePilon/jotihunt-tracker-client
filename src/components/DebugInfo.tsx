@@ -1,5 +1,5 @@
 import { useAppConfig } from '@/hooks/app-config.hook';
-import { DIALOG_SHELL } from '@/lib/dialog-shell';
+import { DIALOG_ACTION, DIALOG_SHELL } from '@/lib/dialog-shell';
 import { cn } from '@/lib/utils';
 import { Button } from './ui/button';
 import { DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
@@ -36,7 +36,7 @@ export default function DebugInfo() {
 
       <DialogFooter>
         <DialogClose asChild>
-          <Button>Sluiten</Button>
+          <Button className={DIALOG_ACTION}>Sluiten</Button>
         </DialogClose>
       </DialogFooter>
     </DialogContent>

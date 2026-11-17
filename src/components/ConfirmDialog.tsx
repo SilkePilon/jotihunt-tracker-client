@@ -10,6 +10,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { DIALOG_ACTION, DIALOG_ACTION_CANCEL } from '@/lib/dialog-shell';
 import { cn } from '@/lib/utils';
 
 // Option A: same shell as DIALOG_SHELL (28px, window surface), tonal 12px buttons, pop-in with a slight overshoot.
@@ -19,8 +20,6 @@ import { cn } from '@/lib/utils';
 const CONTENT =
   'gap-0 rounded-[28px] border-0 bg-beheer-window p-6 shadow-[0_0_0_1px_var(--border),0_18px_50px_rgb(0_0_0/0.35)] data-[size=default]:sm:max-w-[400px] data-[state=open]:duration-[320ms] data-[state=open]:ease-[cubic-bezier(0.2,0.9,0.3,1.2)] data-[state=open]:zoom-in-[0.92] data-[state=open]:slide-in-from-bottom-2 data-[state=closed]:duration-150 data-[state=closed]:ease-[cubic-bezier(0.3,0,0.8,0.15)] data-[state=closed]:zoom-out-[0.92] data-[state=closed]:slide-out-to-bottom-2 motion-reduce:animate-none';
 const HEADER = 'place-items-start gap-1.5 text-left';
-const BUTTON = 'h-10 rounded-xl px-[18px] font-semibold shadow-none';
-const CANCEL = `${BUTTON} border-0 bg-beheer-row-high text-foreground hover:bg-[color-mix(in_oklab,var(--foreground)_14%,var(--card))] hover:text-foreground dark:bg-beheer-row-high dark:hover:bg-[color-mix(in_oklab,var(--foreground)_14%,var(--card))]`;
 /** Looks like disabled (aria-disabled keeps the focus) */
 const BUSY = 'aria-disabled:pointer-events-none aria-disabled:opacity-50';
 const DESTRUCTIVE = 'dark:bg-[color-mix(in_oklab,var(--destructive)_75%,black)] dark:hover:bg-[color-mix(in_oklab,var(--destructive)_65%,black)]';
@@ -81,14 +80,14 @@ export default function ConfirmDialog({ open, onOpenChange, title, description, 
           <AlertDialogPrimitive.Cancel asChild>
             {/* aria-disabled, not disabled, while busy: disabling the focused button would drop the focus out of the dialog.
                 Clicks are ignored: onOpenChange above refuses to close while busy. */}
-            <Button variant="outline" className={cn(CANCEL, BUSY)} aria-disabled={busy || undefined}>
+            <Button variant="outline" className={cn(DIALOG_ACTION_CANCEL, BUSY)} aria-disabled={busy || undefined}>
               {cancelLabel}
             </Button>
           </AlertDialogPrimitive.Cancel>
           <AlertDialogPrimitive.Action asChild>
             <Button
               variant={destructive ? 'destructive' : 'default'}
-              className={cn(BUTTON, destructive && DESTRUCTIVE, BUSY)}
+              className={cn(DIALOG_ACTION, destructive && DESTRUCTIVE, BUSY)}
               aria-disabled={busy || undefined}
               aria-busy={busy || undefined}
               onClick={(event) => {

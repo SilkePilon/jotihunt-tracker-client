@@ -5,7 +5,7 @@ import { MarkerType } from '@/types/MarkerType';
 import { useId, useState } from 'react';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { areaOptions, capitalizeFirstLetter, cn } from '@/lib/utils';
-import { DIALOG_SHELL } from '@/lib/dialog-shell';
+import { DIALOG_ACTION, DIALOG_ACTION_CANCEL, DIALOG_SHELL } from '@/lib/dialog-shell';
 import { Controller, useForm } from 'react-hook-form';
 import { fieldsResolver, oneOf, validDate } from '@/lib/form-resolver';
 import { Field, FieldError, FieldGroup, FieldLabel } from '../ui/field';
@@ -230,10 +230,10 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
           />
         </div>
         <DialogFooter className="gap-2">
-          <Button variant="outline" type="button" disabled={isSubmitting} onClick={() => handleOpenChange(false)}>
+          <Button variant="outline" type="button" className={DIALOG_ACTION_CANCEL} disabled={isSubmitting} onClick={() => handleOpenChange(false)}>
             Annuleren
           </Button>
-          <Button variant="default" type="submit" className="px-3" disabled={!form.formState.isValid || readOnly || isSubmitting} aria-busy={isSubmitting}>
+          <Button variant="default" type="submit" className={DIALOG_ACTION} disabled={!form.formState.isValid || readOnly || isSubmitting} aria-busy={isSubmitting}>
             <BusyIcon busy={isSubmitting} icon={<PinIcon data-icon="inline-start" />} />
             {isSubmitting ? 'Opslaan…' : 'Opslaan'}
           </Button>

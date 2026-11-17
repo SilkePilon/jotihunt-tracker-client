@@ -8,7 +8,7 @@ import { apiErrorMessage } from '@/lib/api-error';
 import { classifyPasskeyError, PASSKEY_MESSAGES } from '@/lib/passkey';
 import InlineError from '@/components/InlineError';
 import { cn } from '@/lib/utils';
-import { DIALOG_SHELL } from '@/lib/dialog-shell';
+import { DIALOG_ACTION, DIALOG_ACTION_CANCEL, DIALOG_SHELL } from '@/lib/dialog-shell';
 
 interface RenamePasskeyDialogProps {
   open: boolean;
@@ -70,11 +70,11 @@ export default function RenamePasskeyDialog({ open, name, onOpenChange, onSave }
               )}
             </Reveal>
           </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
+          <DialogFooter className="flex-row justify-end">
+            <Button type="button" variant="outline" className={DIALOG_ACTION_CANCEL} onClick={() => onOpenChange(false)} disabled={saving}>
               Annuleren
             </Button>
-            <Button type="submit" disabled={saving || !trimmed}>
+            <Button type="submit" className={DIALOG_ACTION} disabled={saving || !trimmed}>
               {saving && <Loader2Icon className="animate-spin" />}
               Opslaan
             </Button>
