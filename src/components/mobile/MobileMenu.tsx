@@ -40,7 +40,7 @@ function MenuCard({ title, rows }: { title: string; rows: Row[] }) {
             // MobileShell puts focus back on this row when the page it opened is popped
             data-nav-id={row.key}
             onClick={row.onSelect}
-            className="flex min-h-14 items-center gap-3 rounded-(--radius-segment) bg-beheer-row px-3 py-2.5 text-left transition-colors first:rounded-t-2xl last:rounded-b-2xl active:bg-beheer-row-high"
+            className="flex min-h-14 items-center gap-3 rounded-(--radius-segment) bg-beheer-row px-3 py-2.5 text-left outline-none transition-colors first:rounded-t-2xl last:rounded-b-2xl focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset active:bg-beheer-row-high"
           >
             <span className="grid size-[18px] shrink-0 place-items-center text-muted-foreground">{row.icon}</span>
             <span className="min-w-0 flex-1">
