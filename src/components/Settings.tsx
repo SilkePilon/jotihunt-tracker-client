@@ -35,6 +35,7 @@ import {useState} from 'react';
 import useAdminStore from '@/stores/admin.store';
 import {useIsMobile} from '@/hooks/media.hook';
 import {useAppConfig} from '@/hooks/app-config.hook';
+import NewTabHint from '@/components/NewTabHint';
 
 interface SettingsProps {
     /** Shows a "Rondleiding opnieuw" item when given */
@@ -151,6 +152,7 @@ export default function Settings({onReplayTour}: SettingsProps) {
                                 <a href={discordUrl} target="_blank" rel="noopener noreferrer">
                                     <span aria-hidden className={"fill-muted-foreground [&>svg]:size-4"} dangerouslySetInnerHTML={{__html: siDiscord.svg}}></span>
                                     Join de Discord
+                                    <NewTabHint/>
                                 </a>
                             </MenuRow>
                         )}

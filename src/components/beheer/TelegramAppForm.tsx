@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { useAdminConfig } from '@/hooks/app-config.hook';
 import { apiErrorMessage } from '@/lib/api-error';
 import { Pill, Tag } from './controls/Pill';
+import NewTabHint from '@/components/NewTabHint';
 
 // Same field as GeneralSettings: inset outline instead of a border, 16px text on phones (no iOS zoom on focus)
 /** Ids and tokens: monospace, a bit smaller than the default 13px field text on desktop */
@@ -85,6 +86,7 @@ export default function TelegramAppForm({ step, onSaved, onCancel }: { step?: bo
         Maak een app op{' '}
         <a className="underline" href="https://my.telegram.org/apps" target="_blank" rel="noopener noreferrer">
           my.telegram.org
+          <NewTabHint />
         </a>{' '}
         → API development tools. {plain?.telegramApiId.source === 'env' && <Tag tone="info">uit .env</Tag>}
       </p>
