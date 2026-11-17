@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate } from 'react-router';
 import { SWRConfig } from 'swr';
+import { AnimatePresence } from 'motion/react';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import Map, { type MapRef } from '@/components/Map';
 import AudioUnlock from '@/components/hq/AudioUnlock';
@@ -95,7 +96,9 @@ function HqScreen({ onUnauthorized }: { onUnauthorized: () => void }) {
   if (!user?.admin) return <Navigate to="/" replace />;
 
   return (
-    <div className="grid h-dvh w-dvw grid-cols-[58fr_42fr] overflow-hidden bg-background text-foreground">
+    <main className="grid h-dvh w-dvw grid-cols-[58fr_42fr] overflow-hidden bg-background text-foreground">
+      {/* sr-only (absolutely positioned): not a grid item */}
+      <h1 className="sr-only">HQ-scherm</h1>
       <div className="relative min-h-0 overflow-hidden rounded-r-2xl">
         <ErrorBoundary name="De kaart" className="m-auto w-fit">
           <Map ref={mapRef} wall className="absolute inset-0" overlay={mapOverlay} />
@@ -118,7 +121,7 @@ function HqScreen({ onUnauthorized }: { onUnauthorized: () => void }) {
           <HqHunts events={events} isError={eventsError} onRetry={retryEvents} />
         </ErrorBoundary>
       </aside>
-      {!audioUnlocked && <AudioUnlock onUnlock={() => setAudioUnlocked(true)} />}
-    </div>
+      <AnimatePresence>{!audioUnlocked && <AudioUnlock key="audio" onUnlock={() => setAudioUnlocked(true)} />}</AnimatePresence>
+    </main>
   );
 }
