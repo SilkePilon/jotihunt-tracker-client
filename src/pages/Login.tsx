@@ -28,6 +28,8 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
   const supported = passkeysSupported();
   const [error, setError] = useState<string | null>(null);
+  // Cancelled passkey prompts in a row: from the second, a phone also gets the QR code (another phone can log it in)
+  const [cancelled, setCancelled] = useState(0);
   // Without passkeys the button can't work: say what does, for this device (shown until another error replaces it)
   const shownError = error ?? (supported ? null : unsupportedLoginText(isMobile));
   const next = nextAfterLogin(searchParams.get('next'));
@@ -49,6 +51,7 @@ export default function Login() {
       if (isInstallPromptSupported && !isStandalone && isMobileDevice) promptInstall();
     } catch (failure) {
       const kind = classifyPasskeyError(failure);
+      setCancelled((count) => (kind === 'cancelled' ? count + 1 : 0));
       setError(kind === 'unsupported' ? unsupportedLoginText(isMobile) : PASSKEY_MESSAGES[kind]);
     } finally {
       setBusy(false);
@@ -98,21 +101,24 @@ export default function Login() {
               </InlineError>
             )}
           </Reveal>
-          <p className="text-xs text-muted-foreground">Geen account? Vraag de organisatie om een invite-link.</p>
+          <p className="text-xs text-muted-foreground">Geen account of passkey kwijt? Vraag de organisatie om een invite- of herstel-link.</p>
         </div>
         {/* Phones log in with their own passkey; only laptops and the beamer need the code, and a phone whose browser
-            has no passkeys (then below the button, for another phone that is logged in to scan) */}
+            has no passkeys or whose passkey prompt was cancelled twice (then below the button, for another phone that is
+            logged in to scan) */}
         {!isMobile ? (
           <>
             <div className="my-8 w-px bg-border" />
             <QrLoginPanel onApproved={handleQrApproved} />
           </>
         ) : (
-          !supported && (
-            <div className="flex justify-center border-t">
-              <QrLoginPanel onApproved={handleQrApproved} />
-            </div>
-          )
+          <Reveal>
+            {(!supported || cancelled >= 2) && (
+              <div className="flex justify-center border-t">
+                <QrLoginPanel onApproved={handleQrApproved} />
+              </div>
+            )}
+          </Reveal>
         )}
       </motion.div>
     </AuthScreen>
