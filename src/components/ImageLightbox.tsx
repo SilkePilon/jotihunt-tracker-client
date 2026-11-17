@@ -93,7 +93,7 @@ export default function ImageLightbox({ src, alt, open, onOpenChange }: { src: s
             style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})`, transition: dragging ? 'none' : 'transform 120ms ease-out' }}
           />
         </div>
-        <div className="absolute right-3 top-3 flex gap-2">
+        <div className="absolute right-3 top-[calc(env(safe-area-inset-top)+12px)] flex gap-2">
           <button type="button" className={TOOL_BUTTON} aria-label="Uitzoomen" onClick={() => zoom(1 / STEP)} disabled={view.scale <= MIN_SCALE}>
             <MinusIcon />
           </button>

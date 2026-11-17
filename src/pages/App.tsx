@@ -28,7 +28,7 @@ function App() {
         Centred over the map: right of the 320 px sidebar on desktop (half of its 328 px = 164 px) and under the
         search / coordinates row; on phones under the offline badge and the attribution button.
       */}
-      <div className="pointer-events-none absolute top-10 left-1/2 z-30 -translate-x-1/2 md:top-[52px] md:left-[calc(50%+164px)]">
+      <div className="pointer-events-none absolute top-[calc(env(safe-area-inset-top)+40px)] left-1/2 z-30 -translate-x-1/2 md:top-[52px] md:left-[calc(50%+164px)]">
         <ErrorBoundary variant="inline">
           <HappyHourPill />
         </ErrorBoundary>
