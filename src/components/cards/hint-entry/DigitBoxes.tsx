@@ -48,7 +48,7 @@ export default function DigitBoxes({ id, label, bad, onChange, onComplete, ...fi
   );
 }
 
-/** Card-coloured box; the box being typed in gets a primary ring, filled boxes an orange (or red) tonal fill, an unknown digit a dashed purple one. */
+/** Card-coloured box; the box being typed in gets the focus ring colour, filled boxes an orange (or red) tonal fill, an unknown digit a dashed purple one. */
 function DigitSlot({ index, bad }: { index: number; bad: boolean }) {
   const { char, hasFakeCaret, isActive } = useContext(OTPInputContext).slots[index];
   return (
@@ -62,7 +62,7 @@ function DigitSlot({ index, bad }: { index: number; bad: boolean }) {
             : bad
               ? 'bg-fox-error-container text-fox-on-error'
               : 'bg-primary-container text-on-primary-container',
-        isActive && 'shadow-[inset_0_0_0_2px_var(--primary)]',
+        isActive && 'shadow-[inset_0_0_0_2px_var(--ring)]',
       )}
     >
       {char}
