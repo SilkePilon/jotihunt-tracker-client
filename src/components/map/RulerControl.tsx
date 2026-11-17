@@ -29,7 +29,7 @@ type CustomEventMap = {
 export default function Ruler({position = 'bottom-right', onActivate, onDeactivate, disabled = false, ...options}: RulerProps) {
     // Add the control
     // The package is typed against mapbox-gl's style spec; the MapLibre one is the same for these layers
-    const control = useControl(() => withMaplibreClasses(new RulerControl(options as ConstructorParameters<typeof RulerControl>[0])), {position});
+    const control = useControl(() => withMaplibreClasses(labelled(new RulerControl(options as ConstructorParameters<typeof RulerControl>[0]))), {position});
 
     // Wire map events
     const {current: mapRef} = useMap();
@@ -45,6 +45,21 @@ export default function Ruler({position = 'bottom-right', onActivate, onDeactiva
             if (onDeactivate) map.off('ruler.off', onDeactivate);
         };
     }, [mapRef, onActivate, onDeactivate]);
+
+    // A toggle: aria-pressed follows the ruler (also when it's switched off by `disabled` or Escape)
+    useEffect(() => {
+        const map = mapRef?.getMap() as unknown as CustomEventMap | undefined;
+        const button = control.button;
+        if (!map || !button) return;
+        const sync = () => button.setAttribute('aria-pressed', String(control.isActive));
+        sync();
+        map.on('ruler.on', sync);
+        map.on('ruler.off', sync);
+        return () => {
+            map.off('ruler.on', sync);
+            map.off('ruler.off', sync);
+        };
+    }, [mapRef, control]);
 
     useEffect(() => {
         const map = mapRef?.getMap() as unknown as CustomEventMap | undefined;
@@ -66,4 +81,12 @@ export default function Ruler({position = 'bottom-right', onActivate, onDeactiva
     }, [mapRef, control, disabled]);
 
     return null;
+}
+
+/** Dutch name for the package's button (it says "Ruler"), and a toggle state from the start. */
+function labelled(control: RulerControl): RulerControl {
+    control.button?.setAttribute('aria-label', 'Afstand meten');
+    control.button?.setAttribute('title', 'Afstand meten');
+    control.button?.setAttribute('aria-pressed', 'false');
+    return control;
 }
