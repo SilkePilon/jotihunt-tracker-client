@@ -4,7 +4,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useAreas } from '@/hooks/areas.hook';
 import { useHuntableAreas } from '@/hooks/huntable-areas.hook';
 import { FOX_GROUP_LABEL, FOX_GROUP_ORDER, groupCounts, legendGroups, type FoxGroup, type SidebarFox } from '@/lib/fox-status';
-import { EASE_OUT, REVEAL_TRANSITION } from '@/lib/motion';
+import { EASE_OUT, REVEAL_TRANSITION, SWAP } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import FoxChip from './FoxChip';
 import FoxHistory from './FoxHistory';
@@ -13,12 +13,12 @@ import OvBlock from './OvBlock';
 import { GROUP_CLASS } from './styles';
 import { useSidebarFoxes } from './useSidebarFoxes';
 
-/** A number that swaps with a short vertical fade when it changes. */
+/** A number that swaps (the shared SWAP) when it changes. */
 function Count({ value, className }: { value: number; className?: string }) {
   return (
     <span className={cn('relative inline-grid tabular-nums', className)}>
       <AnimatePresence mode="popLayout" initial={false}>
-        <motion.span key={value} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.18 }}>
+        <motion.span key={value} {...SWAP}>
           {value}
         </motion.span>
       </AnimatePresence>

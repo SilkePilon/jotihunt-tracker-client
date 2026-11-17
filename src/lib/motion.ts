@@ -6,13 +6,25 @@ export const EASE_OUT = [0.22, 1, 0.36, 1] as const;
 
 export const SWAP_TRANSITION: Transition = { duration: 0.22, ease: EASE_OUT };
 
+/**
+ * SWAP's targets. With reduced motion the 4px blur is left out: MotionConfig reducedMotion="user" only skips transforms
+ * (the 8px slide), a filter would still animate. What remains is a plain fade.
+ */
+export function swapPreset(reduced: boolean) {
+  const blur = (px: number) => (reduced ? {} : { filter: `blur(${px}px)` });
+  return {
+    initial: { opacity: 0, y: 8, ...blur(4) },
+    animate: { opacity: 1, y: 0, ...blur(0) },
+    exit: { opacity: 0, y: -8, ...blur(4) },
+    transition: SWAP_TRANSITION,
+  } satisfies { initial: TargetAndTransition; animate: TargetAndTransition; exit: TargetAndTransition; transition: Transition };
+}
+
+/** The OS setting when the app loads (no window in tests) */
+const prefersReducedMotion = typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 /** One state's content replaced by another; use inside `<AnimatePresence mode="wait" initial={false}>`, keyed by the state */
-export const SWAP = {
-  initial: { opacity: 0, y: 8, filter: 'blur(4px)' },
-  animate: { opacity: 1, y: 0, filter: 'blur(0px)' },
-  exit: { opacity: 0, y: -8, filter: 'blur(4px)' },
-  transition: SWAP_TRANSITION,
-} satisfies { initial: TargetAndTransition; animate: TargetAndTransition; exit: TargetAndTransition; transition: Transition };
+export const SWAP = swapPreset(prefersReducedMotion);
 
 export const POP_SPRING: Transition = { type: 'spring', stiffness: 420, damping: 24 };
 
