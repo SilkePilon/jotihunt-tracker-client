@@ -8,6 +8,7 @@ import { useIsMobile } from '@/hooks/media.hook';
 import { useRestoreFocus } from '@/hooks/restore-focus.hook';
 import { ownsKey } from '@/lib/focus';
 import { popupFocusRequested } from '@/lib/popup-focus';
+import { popupPan } from '@/lib/popup-pan';
 import { offsetScaleAt, scaleOffset, type OffsetScale } from '@/lib/zoom-scale';
 import { POPUP_FADE_MS, useMapElementFade } from './map-fade';
 
@@ -102,6 +103,34 @@ function FloatingPopup({
     instance.on('click', onClick);
     return () => {
       instance.off('click', onClick);
+    };
+  }, [map]);
+
+  // Opened near an edge (behind the sidebar, under the top bar, past the controls): pan once so it shows whole. Once
+  // per mount, after a running camera move lands; a live popup that moves later doesn't pull the map along.
+  useEffect(() => {
+    const instance = map?.getMap();
+    if (!instance) return;
+    let frame = 0;
+    const fit = () => {
+      frame = requestAnimationFrame(() => {
+        const popup = content.current?.closest<HTMLElement>('.maplibregl-popup');
+        if (!popup) return;
+        // The fade-in scales from the bottom centre: take that point from the box and the size unscaled
+        const box = popup.getBoundingClientRect();
+        const frameBox = instance.getContainer().getBoundingClientRect();
+        const width = popup.offsetWidth;
+        const height = popup.offsetHeight;
+        const rect = { left: box.left + box.width / 2 - width / 2 - frameBox.left, top: box.bottom - height - frameBox.top, width, height };
+        const [x, y] = popupPan(rect, { width: frameBox.width, height: frameBox.height });
+        if (x || y) instance.panBy([x, y], { duration: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 300 });
+      });
+    };
+    if (instance.isMoving()) instance.once('moveend', fit);
+    else fit();
+    return () => {
+      instance.off('moveend', fit);
+      cancelAnimationFrame(frame);
     };
   }, [map]);
 
