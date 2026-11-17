@@ -1,4 +1,4 @@
-import { useId, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { toast } from 'sonner';
 import { CheckIcon, Loader2Icon } from 'lucide-react';
@@ -15,6 +15,7 @@ import { apiAssetUrl, draftFrom, fromLocalInput, generalPatch, isDirty, timeline
 import { POP, REVEAL_TRANSITION, SWAP_TRANSITION } from '@/lib/motion';
 import { VEHICLE_ICONS, VEHICLE_OPTIONS } from '@/lib/tracker';
 import { cn, getColorFromArea } from '@/lib/utils';
+import useAdminStore from '@/stores/admin.store';
 import type { Vehicle } from '@/types/Tracker';
 import { BeheerCard, BeheerLoadError, BeheerSkeleton, WarnBar } from './BeheerLayout';
 import { Pill, Tag } from './controls/Pill';
@@ -217,6 +218,12 @@ export default function GeneralSettings() {
   const { readOnly } = useEdition();
 
   const config = admin.config;
+  // Shared with the window, so closing it (or switching section) asks before throwing the changes away
+  const hasChanges = !!config && edited !== null && isDirty(draftFrom(config), edited);
+  const setStoreDirty = useAdminStore((state) => state.setDirty);
+  useEffect(() => setStoreDirty(hasChanges), [hasChanges, setStoreDirty]);
+  useEffect(() => () => setStoreDirty(false), [setStoreDirty]);
+
   if (!config) {
     return admin.isError ? <BeheerLoadError message="De instellingen konden niet worden geladen." onRetry={admin.retry} /> : <BeheerSkeleton groups={2} />;
   }
@@ -249,13 +256,19 @@ export default function GeneralSettings() {
   const groups = traccar.groups ?? [];
 
   async function save() {
+    // The fields stay editable while saving: only the submitted values count as saved, typing after the tap stays an edit
+    const submitted = edited;
     setSaving(true);
     try {
       const patch = generalPatch(saved, draft);
       if (Object.keys(patch).length) await admin.saveGeneral(patch);
       if (draft.jotihuntWebUsername !== saved.jotihuntWebUsername) await admin.savePlain({ jotihuntWebUsername: draft.jotihuntWebUsername.trim() || null });
       if (draft.jotihuntWebPassword) await admin.saveSecret('jotihuntWebPassword', draft.jotihuntWebPassword);
-      setEdited(null);
+      // Typed on while saving: keep those edits (the saved values drop out against the reloaded config); the password
+      // field empties when it still holds the one just stored
+      setEdited((current) =>
+        current === submitted || !current || !submitted ? null : current.jotihuntWebPassword === submitted.jotihuntWebPassword ? { ...current, jotihuntWebPassword: '' } : current,
+      );
       toast.success('Opgeslagen');
     } catch (error) {
       toast.error(apiErrorMessage(error, 'Opslaan is mislukt.'));
