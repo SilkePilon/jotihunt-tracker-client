@@ -6,6 +6,7 @@ import type { Team } from '@/types/Team';
 import type { SyncedHunt } from '@/types/HuntSync';
 import {
   accuracyCircles,
+  ownAccuracyCircle,
   fastfoodFeatures,
   hunterFeatures,
   huntAccuracyCircles,
@@ -68,6 +69,19 @@ describe('accuracyCircles', () => {
   test('skips positions without a usable accuracy (device id 0 is kept)', () => {
     const fc = accuracyCircles([position(0, 15), position(2, 0), position(3, Number.NaN)]);
     expect(fc.features.map((f) => f.properties.deviceId)).toEqual([0]);
+  });
+});
+
+describe('ownAccuracyCircle', () => {
+  test('one circle around a fix with a usable accuracy', () => {
+    expect(ownAccuracyCircle({ lat: 52, lng: 6 }, 45).features).toHaveLength(1);
+  });
+
+  test('nothing without a fix or a usable accuracy', () => {
+    expect(ownAccuracyCircle(null, 45).features).toHaveLength(0);
+    expect(ownAccuracyCircle({ lat: 52, lng: 6 }, null).features).toHaveLength(0);
+    expect(ownAccuracyCircle({ lat: 52, lng: 6 }, 0).features).toHaveLength(0);
+    expect(ownAccuracyCircle({ lat: 52, lng: 6 }, Number.NaN).features).toHaveLength(0);
   });
 });
 

@@ -5,6 +5,7 @@ import type { MapRef } from '@/components/Map';
 import { useViewportInsets } from '@/hooks/viewport-insets.hook';
 import { useBackEntry } from '@/hooks/back-entry.hook';
 import { useHasMounted } from '@/hooks/has-mounted.hook';
+import { useLandscapePhone } from '@/hooks/media.hook';
 import ViewFocus from '@/components/motion/ViewFocus';
 import useSidebarStore from '@/stores/sidebar.store';
 import useMobileNavStore from '@/stores/mobile-nav.store';
@@ -76,10 +77,17 @@ const ROW_DOCK_BELOW = 500;
 /**
  * The popup dock just above the sheet: the map tiles and a docked card. Tall screens stack the tiles above the card;
  * short ones put the card beside them. The card never grows past the room left above the sheet (it scrolls inside).
+ * A phone held sideways has the sheet as a left column: the dock then stands on the bottom edge, right of it.
  */
 function useDockLayout(tilesRef: RefObject<HTMLDivElement | null>) {
-  const { visibleH, safeTop } = useViewportStore(useShallow((s) => ({ visibleH: s.visibleH, safeTop: s.safeTop })));
+  const { visibleH, safeTop, safeBottom } = useViewportStore(useShallow((s) => ({ visibleH: s.visibleH, safeTop: s.safeTop, safeBottom: s.safeBottom })));
   const row = visibleH < ROW_DOCK_BELOW;
+  const sideways = useLandscapePhone();
+  const sheetSide = useSidebarStore((s) => s.sheetSide);
+  // What the dock stands on: the sheet (-1: follow its live height), or the safe area at the bottom edge when sideways
+  const sidewaysBase = useMotionValue(-1);
+  useEffect(() => sidewaysBase.set(sideways ? safeBottom : -1), [sidewaysBase, sideways, safeBottom]);
+  const base = useTransform([sheetVisibleHeight, sidewaysBase], ([sheet, side]: number[]) => (side >= 0 ? side : sheet));
   // Height the tiles take above the card (none in the row layout, where they stand beside it)
   const tilesAbove = useMotionValue(0);
   // Height above the sheet that isn't the safe area
@@ -94,9 +102,9 @@ function useDockLayout(tilesRef: RefObject<HTMLDivElement | null>) {
     observer.observe(tiles);
     return () => observer.disconnect();
   }, [tilesRef, tilesAbove, row]);
-  const bottom = useTransform(sheetVisibleHeight, (h) => h + DOCK_GAP);
-  const cardMax = useTransform([sheetVisibleHeight, tilesAbove, room], ([sheet, tiles, height]: number[]) => `${dockCardMax({ visibleH: height, sheet, safeTop: 0, tiles })}px`);
-  return { row, style: { bottom, [DOCK_CARD_MAX_VAR]: cardMax } };
+  const bottom = useTransform(base, (h) => h + DOCK_GAP);
+  const cardMax = useTransform([base, tilesAbove, room], ([sheet, tiles, height]: number[]) => `${dockCardMax({ visibleH: height, sheet, safeTop: 0, tiles })}px`);
+  return { row, style: { bottom, [DOCK_CARD_MAX_VAR]: cardMax, ...(sideways && sheetSide > 0 && { left: sheetSide + DOCK_GAP }) } };
 }
 
 /** Phones: the bottom sheet (peek strip + menu/page stack), camera button and popup dock. */

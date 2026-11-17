@@ -171,6 +171,15 @@ export function accuracyCircles(positions: Position[]): FeatureCollection<Polygo
   );
 }
 
+/** Below this accuracy (m) the own-position dot needs no accuracy circle: it would hide under the dot anyway. */
+export const OWN_ACCURACY_MIN_M = 30;
+
+/** The browser fix's accuracy circle around the own-position dot (empty without a fix or a usable accuracy). */
+export function ownAccuracyCircle(position: { lat: number; lng: number } | null, accuracy: number | null): FeatureCollection<Polygon, Record<string, never>> {
+  if (!position || accuracy === null || !Number.isFinite(accuracy) || accuracy <= 0) return collection([]);
+  return collection([circle(position.lng, position.lat, accuracy, {})]);
+}
+
 /** One line per area through its (time-sorted) markers; areas with a single marker have no line. */
 export function trailLines(groups: Record<string, Marker[]>, colorFor: (area: string) => string = getColorFromArea): FeatureCollection<LineString, TrailProperties> {
   return collection(

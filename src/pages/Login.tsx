@@ -78,7 +78,7 @@ export default function Login() {
   return (
     <AuthScreen>
       <motion.div
-        className={cn(AUTH_CARD, 'w-full max-w-sm md:grid md:max-w-3xl md:grid-cols-[1fr_auto_auto]')}
+        className={cn(AUTH_CARD, 'w-full max-w-sm', !isMobile && 'md:grid md:max-w-3xl md:grid-cols-[1fr_auto_auto]')}
         initial={CARD_ENTER.initial}
         animate={leaving ? { opacity: 0, y: 0, scale: 0.98 } : { ...CARD_ENTER.animate, scale: 1 }}
         transition={leaving ? { duration: LEAVE_MS / 1000, ease: EASE_OUT } : CARD_ENTER.transition}

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Layer, Source, useMap, type FillLayerSpecification, type SymbolLayerSpecification } from 'react-map-gl/maplibre';
 import { useDevices } from '@/hooks/devices.hook';
+import { AGE_CLOCK_TICK_MS, useNow } from '@/hooks/now.hook';
 import { useAppConfig } from '@/hooks/app-config.hook';
 import { vehicleGroupIds } from '@/lib/app-config';
 import { vehicleForGroupId, type VehicleGroupIds } from '@/lib/hunters';
@@ -73,8 +74,9 @@ export default function Devices() {
   /** Device id -> icon for its vehicle group (phone when the group isn't a vehicle) */
   const iconByDevice = useMemo(() => new Map((devices ?? []).map((device) => [device.id, iconForGroup(device.groupId, groups)])), [devices, groups]);
   const circles = useMemo(() => accuracyCircles(positions ?? []), [positions]);
-  // Stale (greyed out) is decided on each poll, like before
-  const features = useMemo(() => hunterFeatures(positions ?? [], (deviceId) => iconByDevice.get(deviceId) ?? 'phone', (fixTime) => !isActive(fixTime)), [positions, iconByDevice]);
+  // Stale (greyed out) is decided on each poll and on a clock, so a hunter whose data stops changing still greys out
+  const now = useNow(true, AGE_CLOCK_TICK_MS);
+  const features = useMemo(() => hunterFeatures(positions ?? [], (deviceId) => iconByDevice.get(deviceId) ?? 'phone', (fixTime) => !isActive(fixTime, now)), [positions, iconByDevice, now]);
   const hoverFilter = useMemo<SymbolLayerSpecification['filter']>(() => ['==', ['get', 'id'], hoveredId ?? -1], [hoveredId]);
 
   // Click → popup, hover → tooltip + slightly larger icon

@@ -36,6 +36,31 @@ export function dockedPadding(sheet: number, card: number, mapHeight: number): n
   return Math.max(0, Math.min(padding, Math.max(sheet, mapHeight - MIN_MAP_ROOM)));
 }
 
+export interface CameraPadding {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
+/**
+ * Phones: the map's camera padding for the sheet and a docked card (see {@link dockedPadding}). Held sideways
+ * (`sheetSide` > 0) the sheet is a left column: the left pads for it, the bottom only for a card docked at the
+ * bottom edge (above the safe area) right of it.
+ */
+export function phoneMapPadding({ sheet, card, mapHeight, sheetSide = 0, safeBottom = 0 }: { sheet: number; card: number; mapHeight: number; sheetSide?: number; safeBottom?: number }): CameraPadding {
+  if (sheetSide > 0) return { top: 0, right: 0, left: sheetSide, bottom: card > 0 ? dockedPadding(safeBottom, card, mapHeight) : 0 };
+  return { top: 0, right: 0, left: 0, bottom: dockedPadding(sheet, card, mapHeight) };
+}
+
+/** Landscape phones: the widest the sheet column gets (and never more than half the screen) */
+export const LANDSCAPE_SHEET_MAX_W = 400;
+
+/** Landscape phones: the sheet column's left edge (8px, or clear of the notch) and width, in px. */
+export function landscapeSheetBox(viewportWidth: number, safeLeft: number): { left: number; width: number } {
+  return { left: Math.max(8, Math.round(safeLeft)), width: Math.round(Math.min(LANDSCAPE_SHEET_MAX_W, viewportWidth / 2)) };
+}
+
 /**
  * Phones: the most height the docked card may take: what is left above the sheet, the dock gap, the safe area, an 8px
  * margin and (when the map tiles stack above the card) the tiles. Never negative.

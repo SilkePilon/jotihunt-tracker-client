@@ -22,7 +22,7 @@ export default function ZoomButtons({ mapRef }: { mapRef: RefObject<MapRef | nul
   return (
     <AnimatePresence initial={false}>
       {sheetSnap !== 'full' && (
-        <motion.div key="zoom" {...POP} className="pointer-events-auto mr-[env(safe-area-inset-right)] flex shrink-0 flex-col gap-0.5 self-end">
+        <motion.div key="zoom" {...POP} className="pointer-events-auto flex shrink-0 flex-col gap-0.5 self-end">
           <button type="button" aria-label="Inzoomen" title="Inzoomen" onClick={() => mapRef.current?.zoomBy(1)} className={cn(TILE, 'rounded-t-2xl rounded-b-[4px]')}>
             <PlusIcon />
           </button>

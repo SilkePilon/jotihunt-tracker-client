@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { PositionAnchor } from 'maplibre-gl';
 import { Popup, useMap, type PopupProps } from 'react-map-gl/maplibre';
 import DockedPopup from '@/components/mobile/DockedPopup';
@@ -7,6 +7,7 @@ import { CloseButton } from '@/components/ui/close-button';
 import { useIsMobile } from '@/hooks/media.hook';
 import { useRestoreFocus } from '@/hooks/restore-focus.hook';
 import { ownsKey } from '@/lib/focus';
+import { trackOpenPopup } from '@/lib/open-popups';
 import { popupFocusRequested } from '@/lib/popup-focus';
 import { popupPan } from '@/lib/popup-pan';
 import { offsetScaleAt, scaleOffset, type OffsetScale } from '@/lib/zoom-scale';
@@ -38,6 +39,8 @@ export default function MapPopup({ longitude, latitude, onClose, offset = defaul
   const titleId = useId();
   // Opened from a list with the keyboard: the popup takes focus (decided once, on mount)
   const [takeFocus] = useState(popupFocusRequested);
+  // Counted as open, so a map tap now only closes it instead of also picking a location (Map.tsx)
+  useLayoutEffect(() => trackOpenPopup(), []);
   return (
     <PopupTitleIdContext.Provider value={titleId}>
       {isMobile ? (

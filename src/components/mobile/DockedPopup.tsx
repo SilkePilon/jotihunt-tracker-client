@@ -8,8 +8,9 @@ import { useBackEntry } from '@/hooks/back-entry.hook';
 import { useRestoreFocus } from '@/hooks/restore-focus.hook';
 import { ownsKey } from '@/lib/focus';
 import { EASE_OUT } from '@/lib/motion';
-import { dockedPadding } from '@/lib/sheet-snaps';
+import { currentPhonePadding, pointHiddenByDock, setPaddingInPlace } from '@/lib/dock-camera';
 import useSidebarStore from '@/stores/sidebar.store';
+import useViewportStore from '@/stores/viewport.store';
 
 export const DOCK_ID = 'map-popup-dock';
 /** CSS variable on the dock: the most height a docked card may take (MobileShell keeps it in step with the sheet) */
@@ -90,7 +91,7 @@ function useExitGhost(dock: HTMLElement | null) {
 
 /**
  * Phones: a map popup as a card docked just above the sheet instead of floating at the point (where the sheet
- * would hide it). The map eases the point into view; the padding keeps it above the sheet. Back, Escape or X closes it.
+ * would hide it). The map eases the point into view when the card would hide it; the padding keeps it above the sheet. Back, Escape or X closes it.
  */
 export default function DockedPopup({
   longitude,
@@ -137,11 +138,20 @@ export default function DockedPopup({
   const [center] = useState<[number, number]>(() => [longitude, latitude]);
   useEffect(() => {
     // A list that opened this popup (Life360, hunt log) already flies there with a zoom: an ease now would cancel it.
-    // Waits for the card, so the ease carries the padding for it (the map's padding effect then has nothing to do).
+    // Waits for the card, so the camera carries the padding for it (the map's padding effect then has nothing to do).
     if (!map || !dock || map.isMoving()) return;
-    const { sheetSnapHeights, sheetSnap, dockCardHeight } = useSidebarStore.getState();
-    const bottom = sheetSnapHeights ? dockedPadding(sheetSnapHeights[sheetSnap], dockCardHeight, window.innerHeight) : undefined;
-    map.easeTo({ center, duration: 500, ...(bottom === undefined ? {} : { padding: { top: 0, left: 0, right: 0, bottom } }) });
+    const instance = map.getMap();
+    const container = instance.getContainer();
+    const padding = currentPhonePadding(container.clientHeight);
+    if (!padding) {
+      map.easeTo({ center, duration: 500 });
+      return;
+    }
+    // Only a point the card (or sheet, or notch) would hide is brought into view; a tapped point that stays visible
+    // keeps its place on screen, so every tap doesn't slide the map around
+    const size = { width: container.clientWidth, height: container.clientHeight };
+    if (pointHiddenByDock(instance.project(center), size, padding, useViewportStore.getState().safeTop)) map.easeTo({ center, duration: 500, padding });
+    else setPaddingInPlace(instance, padding);
   }, [map, center, dock]);
   // A map tap closes it like the desktop popup (instead of a second "Gekozen locatie" card stacking up); the exit
   // ghost animates it away. Added after the tap that opened it and after the layers' own click handlers, so tapping

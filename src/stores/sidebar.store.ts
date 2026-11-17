@@ -38,6 +38,9 @@ interface SidebarState {
   /** Phone sheet height per snap (null on desktop), so a camera move can pad for a snap that is still springing */
   sheetSnapHeights: SnapHeights | null;
   setSheetSnapHeights: (heights: SnapHeights | null) => void;
+  /** Landscape phones: px from the left edge the sheet column covers (its left margin + width); 0 when it spans the width */
+  sheetSide: number;
+  setSheetSide: (side: number) => void;
   /** Height of the card docked above the phone sheet in px (0 when none); the map pads for it too */
   dockCardHeight: number;
   setDockCardHeight: (height: number) => void;
@@ -63,6 +66,8 @@ const useSidebarStore = create<SidebarState>()(
       setSheetHeight: (sheetHeight) => set({ sheetHeight }),
       sheetSnapHeights: null,
       setSheetSnapHeights: (sheetSnapHeights) => set({ sheetSnapHeights }),
+      sheetSide: 0,
+      setSheetSide: (sheetSide) => set({ sheetSide }),
       dockCardHeight: 0,
       setDockCardHeight: (dockCardHeight) => set({ dockCardHeight }),
     }),

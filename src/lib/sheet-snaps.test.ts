@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { computeSnapHeights, dockCardMax, dockedPadding, grabLabel, nextSnap, rubberBand, settleSnap } from './sheet-snaps';
+import { computeSnapHeights, dockCardMax, dockedPadding, grabLabel, landscapeSheetBox, nextSnap, phoneMapPadding, rubberBand, settleSnap } from './sheet-snaps';
 
 describe('computeSnapHeights', () => {
   test('iPhone-like viewport', () => {
@@ -68,6 +68,29 @@ test('grabLabel names the current snap', () => {
   expect(grabLabel('peek')).toBe('Paneel groter of kleiner maken, nu ingeklapt');
   expect(grabLabel('half')).toContain('half open');
   expect(grabLabel('full')).toContain('helemaal open');
+});
+
+describe('phoneMapPadding', () => {
+  test('pads the bottom for the sheet and a docked card', () => {
+    expect(phoneMapPadding({ sheet: 380, card: 0, mapHeight: 800 })).toEqual({ top: 0, right: 0, bottom: 380, left: 0 });
+    expect(phoneMapPadding({ sheet: 380, card: 100, mapHeight: 800 })).toEqual({ top: 0, right: 0, bottom: dockedPadding(380, 100, 800), left: 0 });
+  });
+
+  test('landscape: the left pads for the sheet column, the bottom only for a docked card', () => {
+    expect(phoneMapPadding({ sheet: 300, card: 0, mapHeight: 390, sheetSide: 408, safeBottom: 20 })).toEqual({ top: 0, right: 0, bottom: 0, left: 408 });
+    expect(phoneMapPadding({ sheet: 300, card: 120, mapHeight: 390, sheetSide: 408, safeBottom: 20 })).toEqual({ top: 0, right: 0, bottom: 20 + 10 + 120 + 10, left: 408 });
+  });
+});
+
+describe('landscapeSheetBox', () => {
+  test('at most 400px wide and never more than half the screen', () => {
+    expect(landscapeSheetBox(932, 0)).toEqual({ left: 8, width: 400 });
+    expect(landscapeSheetBox(700, 0)).toEqual({ left: 8, width: 350 });
+  });
+
+  test('clear of the notch', () => {
+    expect(landscapeSheetBox(932, 47)).toEqual({ left: 47, width: 400 });
+  });
 });
 
 describe('dockedPadding', () => {
