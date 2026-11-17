@@ -68,7 +68,7 @@ export function groupMarkersByArea(markers: Marker[]): Record<string, Marker[]> 
   return groups;
 }
 
-/** The newest hint or hunt marker of an area (spots don't count), for "Naar laatste hint"; undefined when it has none. */
+/** The newest hint or hunt marker of an area (spots don't count), for "Naar laatste hint/hunt"; undefined when it has none. */
 export function latestAreaMarker(markers: readonly Marker[] | undefined, area: string): Marker | undefined {
   let latest: Marker | undefined;
   for (const marker of markers ?? []) {
@@ -76,6 +76,11 @@ export function latestAreaMarker(markers: readonly Marker[] | undefined, area: s
     if (!latest || new Date(marker.time).getTime() > new Date(latest.time).getTime()) latest = marker;
   }
   return latest;
+}
+
+/** The button to {@link latestAreaMarker}: named after what it lands on, so it doesn't promise a hint and open a hunt. */
+export function latestMarkerLabel(marker: Pick<Marker, 'type'>): string {
+  return marker.type === MarkerType.Hunt ? 'Naar laatste hunt' : 'Naar laatste hint';
 }
 
 /** "Hunt" / "Spot" / "Hint": the marker type as a word for toasts ("Hunt geregistreerd"). */

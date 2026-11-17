@@ -14,7 +14,7 @@ import { historyModel, historyStatusLine } from '@/lib/fox-history';
 import type { SidebarFox } from '@/lib/fox-status';
 import { activatedByKeyboard } from '@/lib/input-modality';
 import { FOX_MARKERS_LAYER } from '@/lib/map-layers';
-import { latestAreaMarker } from '@/lib/markers';
+import { latestAreaMarker, latestMarkerLabel } from '@/lib/markers';
 import { EASE_OUT, POP, SWAP } from '@/lib/motion';
 import { TONAL_BUTTON } from '@/lib/tonal-button';
 import { cn, getColorFromArea } from '@/lib/utils';
@@ -39,7 +39,7 @@ interface FoxHistoryProps {
   /** Outside the areas our group may hunt (huntable areas): said in words under the status line, not only by the chip's lock */
   forbidden?: boolean;
   onToggleHidden: () => void;
-  /** For "Naar laatste hint" (flies there and opens the marker's popup); without it the button doesn't show */
+  /** For "Naar laatste hint/hunt" (flies there and opens the marker's popup); without it the button doesn't show */
   mapRef?: RefObject<MapRef | null>;
 }
 
@@ -91,7 +91,7 @@ function TimelineSkeleton() {
  * Fetches only while mounted; the window moves on every minute.
  */
 /**
- * "Naar laatste hint": the area's newest hint or hunt marker. Lowers the phone sheet, flies there, pulses the spot and
+ * "Naar laatste hint" / "Naar laatste hunt": the area's newest hint or hunt marker. Lowers the phone sheet, flies there, pulses the spot and
  * opens the marker's popup (like a hunt log row); hidden while the area has no such marker.
  */
 function LatestMarkerButton({ area, mapRef }: { area: string; mapRef: RefObject<MapRef | null> }) {
@@ -110,7 +110,12 @@ function LatestMarkerButton({ area, mapRef }: { area: string; mapRef: RefObject<
       {latest && (
         <motion.button key="latest" type="button" onClick={go} {...POP} className={SMALL_TONAL}>
           <MapPinIcon aria-hidden />
-          Naar laatste hint
+          {/* Hint or hunt, whichever is newest: the word swaps when a newer one of the other kind comes in */}
+          <AnimatePresence mode="popLayout" initial={false}>
+            <motion.span key={latestMarkerLabel(latest)} {...SWAP}>
+              {latestMarkerLabel(latest)}
+            </motion.span>
+          </AnimatePresence>
         </motion.button>
       )}
     </AnimatePresence>
