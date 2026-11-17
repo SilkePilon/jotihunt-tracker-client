@@ -19,6 +19,7 @@ import AndroidPromoDialog from './components/android-promo/AndroidPromoDialog';
 import {useNotificationsPrompt} from './components/notifications/useNotificationsPrompt';
 import {useTheme} from "@/hooks/theme.hook.ts";
 import {useNotificationFeed} from '@/hooks/notification-feed.hook';
+import {routePushClick} from '@/lib/notifications';
 import {useIsMobile} from '@/hooks/media.hook';
 import {MAP_TILE} from '@/lib/map-chrome';
 import {cn} from '@/lib/utils';
@@ -143,6 +144,22 @@ export default function Layout() {
         if (pathname !== '/') navigate('/');
         useMobileNavStore.getState().push({id: 'hints'});
     }
+
+    // A tapped push notification while the app was open in the background: the service worker focuses it and posts what was
+    // tapped; open it like the toast's "Openen" would (public/push-sw.js)
+    const openHintsPageRef = useRef(openHintsPage);
+    useEffect(() => {
+        openHintsPageRef.current = openHintsPage;
+    });
+    useEffect(() => {
+        const worker = navigator.serviceWorker;
+        if (!worker) return;
+        const onMessage = (event: MessageEvent) => {
+            routePushClick(event.data, isMobile ? {openHints: () => openHintsPageRef.current()} : {openIntel: (articleId) => useIntelStore.getState().openIntel(articleId)});
+        };
+        worker.addEventListener('message', onMessage);
+        return () => worker.removeEventListener('message', onMessage);
+    }, [isMobile]);
 
     // Laptop: "Openen" on a hint/news toast opens the article; phone: a hint toast opens the Hints page (solving stays laptop-only)
     useNotificationFeed({

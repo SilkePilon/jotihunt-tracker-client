@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
 import { isUnauthorized } from '@/lib/session';
 import { fetcherWithMethod } from '@/lib/swr';
-import { isRecent, mergeFeed, missedSummary, pickSound, shouldAlert, toastAction, toastKind, type AppNotification } from '@/lib/notifications';
+import { isRecent, mergeFeed, missedSummary, pickSound, shouldAlert, toastAction, toastDuration, toastKind, type AppNotification } from '@/lib/notifications';
 import { playNotificationSound } from '@/lib/notification-sounds';
 import { currentDevicePush } from '@/lib/push';
 import { showHighlightToast } from '@/components/notifications/HighlightToast';
@@ -88,7 +88,7 @@ export function useNotificationFeed({ respectPreferences = true, toasts = true, 
         if (sound && !options.soundMuted) playNotificationSound(sound);
         if (options.toasts) {
           for (const notification of alertable) {
-            const duration = notification.urgent ? 30_000 : 8000;
+            const duration = toastDuration(notification);
             if (showHighlightToast(notification, duration)) continue;
             const action = toastAction(notification, options);
             toast[toastKind(notification)](notification.title, { description: notification.body || undefined, duration, action });

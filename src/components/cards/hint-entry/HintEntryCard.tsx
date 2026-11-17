@@ -31,6 +31,7 @@ import {formatClock} from '@/lib/format';
 import {SOFT_PRIMARY_BUTTON} from '@/lib/tonal-button';
 import {fieldsResolver, nonEmptyString, oneOf, stringOfLength} from '@/lib/form-resolver';
 import {COARSE_HIT_AREA} from '@/lib/hit-area';
+import {ERROR_TOAST_MS} from '@/lib/markers';
 import {type GuessStatus, guessStatus, hasWildcard, parseGuess} from '@/lib/hint-guess';
 import useHintGuessStore from '@/stores/hint-guess.store';
 import useSidebarStore from '@/stores/sidebar.store';
@@ -200,13 +201,13 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
         if (!isPlausibleRD(x, y)) {
             form.setError('x', {message: 'Ongeldige coördinaten'});
             form.setError('y', {message: 'Ongeldige coördinaten'});
-            toast.error('Ongeldige coördinaten', {description: "Deze coördinaten zijn ongeldig. Controleer of de ingevoerde waarden correct zijn."});
+            toast.error('Ongeldige coördinaten', {description: "Deze coördinaten zijn ongeldig. Controleer of de ingevoerde waarden correct zijn.", duration: ERROR_TOAST_MS});
             return;
         }
         const converted = fromRD(x, y);
         if (!isInNetherlands(converted[0], converted[1])) {
             form.setError('y', {message: 'Dit coördinaat ligt buiten Nederland'});
-            toast.error('Coördinaat buiten Nederland', {description: 'Controleer de X- en Y-waarden; een hint ligt altijd in Nederland.'});
+            toast.error('Coördinaat buiten Nederland', {description: 'Controleer de X- en Y-waarden; een hint ligt altijd in Nederland.', duration: ERROR_TOAST_MS});
             return;
         }
 
@@ -224,8 +225,11 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
         setPending(null);
         const error = await createMarker(marker);
         if (error && isNetworkError(error)) {
-            // No answer (offline, timeout) doesn't mean it failed: the server may have saved it. A fresh list tells.
+            // No answer (offline, timeout) doesn't mean it failed: the server may have saved it. A fresh list tells (the
+            // button says "Controleren…" meanwhile)
+            setChecking(true);
             const outcome = lostResponseOutcome(await fetchFreshMarkers(), marker);
+            setChecking(false);
             if (outcome !== 'registered') {
                 // The typed hint stays in the form (and the draft); a later poll that finds it still confirms it
                 setPending({sent: marker, values: data, outcome});
@@ -236,7 +240,8 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
             return;
         } else if (error) {
             toast.error('Hint registreren is mislukt', {
-                description: apiErrorMessage(error, 'Probeer het opnieuw.')
+                description: apiErrorMessage(error, 'Probeer het opnieuw.'),
+                duration: ERROR_TOAST_MS,
             });
             return;
         }
@@ -314,7 +319,7 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
         setPending({...lost, outcome});
         setSubmitError(lostResponseMessage(outcome));
         // Same answer as before: the line doesn't change, so say it once more
-        if (outcome === 'unknown') toast.error('Nog steeds geen antwoord', {description: 'Controleer je verbinding en probeer het zo nog eens.'});
+        if (outcome === 'unknown') toast.error('Nog steeds geen antwoord', {description: 'Controleer je verbinding en probeer het zo nog eens.', duration: ERROR_TOAST_MS});
     }
 
     const submitting = form.formState.isSubmitting;
@@ -424,11 +429,11 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
                     disabled={primary === 'register' && (!canSubmit || readOnly)}
                     aria-disabled={busy || undefined} aria-busy={busy || undefined}>
                 <AnimatePresence mode="popLayout" initial={false}>
-                    <motion.span key={`${primary}-${busy ? 'busy' : 'idle'}`} className="inline-flex items-center gap-2" {...SWAP}>
+                    <motion.span key={`${primary}-${checking ? 'check' : busy ? 'busy' : 'idle'}`} className="inline-flex items-center gap-2" {...SWAP}>
                         {busy ? <Loader2Icon className="animate-spin"/> : primary === 'recheck' ? <RefreshCwIcon/> : <Pin/>}
                         {primary === 'recheck'
                             ? (checking ? 'Controleren…' : 'Opnieuw controleren')
-                            : (submitting ? 'Registreren…' : 'Registreren')}
+                            : (submitting ? (checking ? 'Controleren…' : 'Registreren…') : 'Registreren')}
                     </motion.span>
                 </AnimatePresence>
             </Button>

@@ -175,3 +175,34 @@ describe('isCriticalFeedKey', () => {
     expect(isCriticalFeedKey(null)).toBe(false);
   });
 });
+
+describe('offline signal', () => {
+  test('the browser going offline shows "Geen verbinding" at once, with the age only once the data is old', () => {
+    resetConnection(NOW - 100_000);
+    reportFetchSuccess('/areas', NOW - 5000);
+    expect(connectionProblem(connectionSnapshot(), false, NOW)).toEqual({ ageMs: null, feeds: [], offline: true });
+    expect(problemLabel(connectionProblem(connectionSnapshot(), false, NOW)!)).toBe('Geen verbinding');
+    expect(problemLabel(connectionProblem(connectionSnapshot(), false, NOW + 180_000)!)).toBe('Geen verbinding — gegevens 3 min oud');
+  });
+
+  test('requests without an answer flag the data after 20 s, not a minute', () => {
+    resetConnection(NOW - 100_000);
+    reportFetchSuccess('/areas', NOW - 25_000);
+    reportFetchError('/areas', NOW - 1000, true);
+    expect(connectionProblem(connectionSnapshot(), true, NOW)).toEqual({ ageMs: null, feeds: [], offline: true });
+    // Under 20 s: not yet
+    expect(connectionProblem(connectionSnapshot(), true, NOW - 10_000)).toBeNull();
+  });
+
+  test('an HTTP error or a network error from before the last success does not use the short threshold', () => {
+    resetConnection(NOW - 100_000);
+    reportFetchSuccess('/areas', NOW - 25_000);
+    reportFetchError('/areas', NOW - 1000, false);
+    expect(connectionProblem(connectionSnapshot(), true, NOW)).toBeNull();
+    resetConnection(NOW - 100_000);
+    reportFetchSuccess('/areas', NOW - 40_000);
+    reportFetchError('/areas', NOW - 30_000, true);
+    reportFetchSuccess('/areas', NOW - 25_000);
+    expect(connectionProblem(connectionSnapshot(), true, NOW)).toBeNull();
+  });
+});

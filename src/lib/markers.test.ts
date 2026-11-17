@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import type { Marker } from '@/types/Marker';
 import { MarkerType } from '@/types/MarkerType';
-import { filterMarkers, groupMarkersByArea, huntDays, latestAreaMarker, markerNoun, markerDeleteDescription, markerMissingPick, markerSplitTime, markerTimeLabel } from './markers';
+import { filterMarkers, groupMarkersByArea, huntDays, latestAreaMarker, latestMarkerLabel, markerNoun, markerDeleteDescription, markerMissingPick, markerSplitTime, markerTimeLabel } from './markers';
 
 function marker(id: string, area: string, time: string, type = MarkerType.Hint): Marker {
   return { _id: id, area, time: time as unknown as Date, type, location: { type: 'Point', coordinates: [5.9, 52] } };
@@ -108,6 +108,10 @@ describe('latestAreaMarker', () => {
     expect(latestAreaMarker(markers, 'Delta')).toBeUndefined();
   });
   test('no markers yet', () => expect(latestAreaMarker(undefined, 'Alpha')).toBeUndefined());
+  test('the button says what it lands on', () => {
+    expect(latestMarkerLabel({ type: MarkerType.Hunt })).toBe('Naar laatste hunt');
+    expect(latestMarkerLabel({ type: MarkerType.Hint })).toBe('Naar laatste hint');
+  });
 });
 
 describe('huntDays', () => {

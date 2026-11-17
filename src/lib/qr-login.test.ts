@@ -48,6 +48,13 @@ describe('qrProblem', () => {
     expect(qrProblem(Object.assign(new Error('x'), { name: 'NotAllowedError' })).message).toBe('Niet afgerond. Probeer het opnieuw.');
     expect(qrProblem(new AxiosError('offline')).message).toBe('Kan de server niet bereiken, controleer je verbinding.');
   });
+
+  test('only no answer (offline, server down) offers "Opnieuw proberen"', () => {
+    expect(qrProblem(new AxiosError('offline')).retry).toBe(true);
+    expect(qrProblem(httpError(503)).retry).toBe(true);
+    expect(qrProblem(httpError(401, { code: 'PASSKEY_FAILED' })).retry).toBe(false);
+    expect(qrProblem(httpError(404, { code: 'QR_GONE' })).retry).toBeFalsy();
+  });
 });
 
 describe('canRetryConfirm', () => {

@@ -85,6 +85,15 @@ export function toastKind(notification: Pick<AppNotification, 'type' | 'data'>):
   return 'info';
 }
 
+/**
+ * How long the toast stays: an HQ broadcast or a tegenhunt until it is closed (its close button), since missing one
+ * costs; urgent ones 30 s, the rest 8 s.
+ */
+export function toastDuration(notification: Pick<AppNotification, 'type' | 'urgent'>): number {
+  if (notification.type === 'broadcast' || notification.type === 'counter-hunt') return Infinity;
+  return notification.urgent ? 30_000 : 8000;
+}
+
 export interface ToastOpeners {
   /** Laptop: open the hint/news article in the Intel window */
   openArticle?: (articleId: number) => void;
@@ -98,6 +107,38 @@ export function toastAction(notification: Pick<AppNotification, 'type' | 'data'>
   if (openArticle && articleId !== undefined && (notification.type === 'hint' || notification.type === 'article')) return { label: 'Openen', onClick: () => openArticle(articleId) };
   if (openHints && notification.type === 'hint') return { label: 'Openen', onClick: openHints };
   return undefined;
+}
+
+/** What the push service worker posts to an open window when its notification is tapped (public/push-sw.js). */
+export const NOTIFICATION_CLICK_MESSAGE = 'notification-click';
+
+export interface PushClickOpeners {
+  /** Laptop: the Intel window, on the article when the push carried one */
+  openIntel?: (articleId?: number) => void;
+  /** Phone: the Hints page in the sheet */
+  openHints?: () => void;
+}
+
+/**
+ * A tapped push notification, posted by the service worker to the window it focuses: open what the toast's "Openen"
+ * would (a hint on a phone: the Hints page; a hint or news item on a laptop: the Intel window). False when the message
+ * is something else or there is nothing to open (the app just comes to the front).
+ */
+export function routePushClick(message: unknown, { openIntel, openHints }: PushClickOpeners): boolean {
+  if (typeof message !== 'object' || message === null) return false;
+  const { type, data } = message as { type?: unknown; data?: unknown };
+  if (type !== NOTIFICATION_CLICK_MESSAGE || typeof data !== 'object' || data === null) return false;
+  const { type: notificationType, articleId } = data as { type?: unknown; articleId?: unknown };
+  const article = typeof articleId === 'number' && Number.isFinite(articleId) ? articleId : undefined;
+  if (openIntel && (notificationType === 'hint' || notificationType === 'article')) {
+    openIntel(article);
+    return true;
+  }
+  if (openHints && notificationType === 'hint') {
+    openHints();
+    return true;
+  }
+  return false;
 }
 
 /** Highest first: what the one sound of a poll (and the HQ banner) goes by. */
