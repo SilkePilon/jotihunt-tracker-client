@@ -38,18 +38,22 @@ export default function UsersPane() {
   const view = users ? 'content' : isError ? 'error' : 'loading';
   const { admins, members } = splitUsers(users ?? []);
 
-  // Users whose admin change is on its way: a second tap meanwhile is ignored
+  // Users whose admin change is on its way: their button is disabled and spins (the ref also stops a double tap
+  // within the same render)
   const adminSaving = useRef(new Set<string>());
+  const [adminBusy, setAdminBusy] = useState<ReadonlySet<string>>(new Set());
 
   async function toggleAdmin(user: User) {
     if (adminSaving.current.has(user._id)) return;
     adminSaving.current.add(user._id);
+    setAdminBusy(new Set(adminSaving.current));
     try {
       const error = await updateUser(user._id, { admin: !user.admin });
       if (error) toast.error(apiErrorMessage(error, 'Opslaan is mislukt.'));
       else toast.success(user.admin ? `${user.name} is geen admin meer` : `${user.name} is nu admin`);
     } finally {
       adminSaving.current.delete(user._id);
+      setAdminBusy(new Set(adminSaving.current));
     }
   }
 
@@ -164,9 +168,14 @@ export default function UsersPane() {
         </Pill>
         {!isMe && (
           <>
-            <Pill onClick={() => void toggleAdmin(user)}>
-              {user.admin ? <ShieldOffIcon /> : <ShieldIcon />}
-              {user.admin ? 'Geen admin meer' : 'Admin maken'}
+            <Pill
+              morphKey={adminBusy.has(user._id) ? 'busy' : user.admin ? 'revoke' : 'grant'}
+              disabled={adminBusy.has(user._id)}
+              aria-busy={adminBusy.has(user._id)}
+              onClick={() => void toggleAdmin(user)}
+            >
+              {adminBusy.has(user._id) ? <Loader2Icon className="animate-spin" /> : user.admin ? <ShieldOffIcon /> : <ShieldIcon />}
+              {adminBusy.has(user._id) ? 'Opslaan…' : user.admin ? 'Geen admin meer' : 'Admin maken'}
             </Pill>
             <Pill variant="danger-outline" onClick={() => setDeletingId(user._id)}>
               <Trash2Icon />
