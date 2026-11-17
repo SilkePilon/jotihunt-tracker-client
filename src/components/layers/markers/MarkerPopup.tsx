@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Trash2Icon } from 'lucide-react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { toast } from 'sonner';
 import MapPopup from '../../map/MapPopup';
 import CoordRows from '../../map/popup/CoordRows';
@@ -16,7 +16,7 @@ import { apiErrorMessage, isNetworkError } from '@/lib/api-error';
 import { formatClock, joinParts } from '@/lib/format';
 import { huntLocationNote, syncedHuntForMarker } from '@/lib/hunt-sync';
 import { markerDeleteDescription } from '@/lib/markers';
-import { REVEAL_TRANSITION } from '@/lib/motion';
+import { revealTransition } from '@/lib/motion';
 import { areaKey, areaLetter } from '@/lib/marker-style';
 import { capitalizeFirstLetter, getColorFromArea } from '@/lib/utils';
 import type { Marker } from '@/types/Marker';
@@ -36,6 +36,7 @@ interface MarkerPopupProps {
 
 /** Marker details (WGS84 + RD coordinates), Route and delete (with confirmation). */
 export default function MarkerPopup({ marker, onClose, deleteMarker }: MarkerPopupProps) {
+  const reduced = useReducedMotion() ?? false;
   const [confirmOpen, setConfirmOpen] = useState(false);
   // Why the last delete failed: the confirmation stays open with it and "Opnieuw proberen"
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -81,8 +82,8 @@ export default function MarkerPopup({ marker, onClose, deleteMarker }: MarkerPop
             className="overflow-hidden pl-[46px] text-xs leading-snug text-(--map-muted)"
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={REVEAL_TRANSITION}
+            exit={{ height: 0, opacity: 0, transition: revealTransition(reduced, 'exit') }}
+            transition={revealTransition(reduced, 'enter')}
           >
             {locationNote}
           </motion.p>

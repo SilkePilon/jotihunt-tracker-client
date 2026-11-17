@@ -1,5 +1,5 @@
 import { RefObject } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { MapRef } from '@/components/Map';
 import HintEntryCard from '@/components/cards/hint-entry/HintEntryCard';
 import { useAppConfig } from '@/hooks/app-config.hook';
@@ -7,7 +7,7 @@ import { useHintBoard } from '@/hooks/hints.hook';
 import { useScore } from '@/hooks/score.hook';
 import { usePredictions, usePredictionSetting } from '@/hooks/predictions.hook';
 import { hintProgress } from '@/lib/hints';
-import { REVEAL_TRANSITION } from '@/lib/motion';
+import { revealTransition } from '@/lib/motion';
 import { predictionSummary } from '@/lib/prediction';
 import HuntsSyncCard from '@/components/hunts/HuntsSyncCard';
 import SidebarSection from './SidebarSection';
@@ -28,6 +28,7 @@ const SECTION_GAP_PX = 6;
 
 /** All sidebar sections; `only` renders just one of them (a phone page). */
 export default function SidebarSections({ mapRef, only }: { mapRef: RefObject<MapRef | null>; only?: SidebarSectionId }) {
+  const reduced = useReducedMotion() ?? false;
   const show = (id: SidebarSectionId) => !only || only === id;
   const { homeTeamApiId } = useAppConfig();
   const { board } = useHintBoard();
@@ -56,8 +57,8 @@ export default function SidebarSections({ mapRef, only }: { mapRef: RefObject<Ma
             style={{ marginTop: -SECTION_GAP_PX }}
             initial={{ height: 0, opacity: 0, overflow: 'hidden' }}
             animate={{ height: 'auto', opacity: 1, transitionEnd: { overflow: 'visible' } }}
-            exit={{ height: 0, opacity: 0, overflow: 'hidden' }}
-            transition={REVEAL_TRANSITION}
+            exit={{ height: 0, opacity: 0, overflow: 'hidden', transition: revealTransition(reduced, 'exit') }}
+            transition={revealTransition(reduced, 'enter')}
           >
             <div style={{ paddingTop: SECTION_GAP_PX }}>
               <ErrorBoundary name="Punten">
@@ -90,8 +91,8 @@ export default function SidebarSections({ mapRef, only }: { mapRef: RefObject<Ma
             style={{ marginTop: -SECTION_GAP_PX }}
             initial={{ height: 0, opacity: 0, overflow: 'hidden' }}
             animate={{ height: 'auto', opacity: 1, transitionEnd: { overflow: 'visible' } }}
-            exit={{ height: 0, opacity: 0, overflow: 'hidden' }}
-            transition={REVEAL_TRANSITION}
+            exit={{ height: 0, opacity: 0, overflow: 'hidden', transition: revealTransition(reduced, 'exit') }}
+            transition={revealTransition(reduced, 'enter')}
           >
             <div style={{ paddingTop: SECTION_GAP_PX }}>
               <ErrorBoundary name="Tegenhunt">

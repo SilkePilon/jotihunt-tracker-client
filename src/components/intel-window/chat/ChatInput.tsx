@@ -1,12 +1,12 @@
 import { useId, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import type { FileUIPart } from 'ai';
 import { BrainIcon, GlobeIcon, Loader2Icon, PaperclipIcon, XIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { COARSE_HIT_AREA } from '@/lib/hit-area';
 import { prepareChatImage } from '@/lib/image';
 import { CHAT_IMAGE_MAX_BYTES, CHAT_IMAGE_MAX_SIDE, CHAT_IMAGE_QUALITY, PLACEHOLDER, chatImageProblem, dataUrlBytes } from '@/lib/intel-chat';
-import { POP, REVEAL_TRANSITION } from '@/lib/motion';
+import { POP, revealTransition } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import type { IntelKind } from '@/types/Intel';
 import { ModeToggle, PromptInput, PromptInputAction, PromptInputActions, PromptInputTextarea, SendButton } from './prompt-input';
@@ -31,6 +31,7 @@ type ChatImage = { status: 'loading' } | { status: 'ready'; url: string; name: s
 
 /** T1 prompt box: one image (paperclip, paste while focused, drop), textarea, Web and Denk diep (kept per user), send ↔ stop */
 export default function ChatInput({ itemId, kind, busy, disabled, onSend, onStop, stopping }: ChatInputProps) {
+  const reduced = useReducedMotion() ?? false;
   const draft = useChatDraftStore((state) => state.drafts[itemId]);
   const value = draft?.text ?? '';
   const setValue = (text: string) => useChatDraftStore.getState().setText(itemId, text);
@@ -114,8 +115,8 @@ export default function ChatInput({ itemId, kind, busy, disabled, onSend, onStop
             className="overflow-hidden"
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={REVEAL_TRANSITION}
+            exit={{ height: 0, opacity: 0, transition: revealTransition(reduced, 'exit') }}
+            transition={revealTransition(reduced, 'enter')}
           >
             <div className="px-1.5 pt-1.5 pb-1">
               <motion.div {...POP} className="relative size-14 overflow-hidden rounded-xl bg-beheer-row">
