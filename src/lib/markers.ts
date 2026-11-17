@@ -95,6 +95,33 @@ export function markerNoun(type: MarkerType): string {
 }
 
 /**
+ * The verb the Hunt / Spot dialog uses: a Hunt here is our own marking on the map ("Hunt markeren", "Hunt gemarkeerd op
+ * de kaart"), a Spot (and a hint) is registered.
+ */
+export function markerVerb(type: MarkerType): { infinitive: string; past: string; busy: string } {
+  return type === MarkerType.Hunt
+    ? { infinitive: 'markeren', past: 'gemarkeerd', busy: 'Markeren…' }
+    : { infinitive: 'registreren', past: 'geregistreerd', busy: 'Registreren…' };
+}
+
+/** The Hunt / Spot dialog's success toast: "Hunt gemarkeerd op de kaart", "Spot geregistreerd" */
+export function markerSavedToast(type: MarkerType): string {
+  return type === MarkerType.Hunt ? 'Hunt gemarkeerd op de kaart' : `${markerNoun(type)} geregistreerd`;
+}
+
+/**
+ * The dialog's main button: "Hunt Alpha markeren" / "Hunt markeren", "Spot Alpha registreren" / "Registreren", and
+ * "Opnieuw markeren" / "Opnieuw registreren" after a save that didn't go through.
+ * @param area The prefilled area's label (the last one sent), when the form still shows it
+ */
+export function markerSaveLabel(type: MarkerType, { resave, area }: { resave: boolean; area?: string }): string {
+  const { infinitive } = markerVerb(type);
+  if (resave) return `Opnieuw ${infinitive}`;
+  if (area) return `${markerNoun(type)} ${area} ${infinitive}`;
+  return type === MarkerType.Hunt ? 'Hunt markeren' : 'Registreren';
+}
+
+/**
  * Every day from the hunt start to its end, as dates at the start's time of day. Compared by calendar day, so the last
  * day counts even when the hunt ends earlier in the day than it started (start Sat 09:00, end Sun 08:00).
  */

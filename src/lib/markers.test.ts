@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import type { Marker } from '@/types/Marker';
 import { MarkerType } from '@/types/MarkerType';
-import { filterMarkers, groupMarkersByArea, huntDays, latestAreaMarker, latestMarkerLabel, markerNoun, markerDeleteDescription, markerMissingPick, markerSplitTime, markerTimeLabel } from './markers';
+import { filterMarkers, groupMarkersByArea, huntDays, latestAreaMarker, latestMarkerLabel, markerNoun, markerSaveLabel, markerSavedToast, markerVerb, markerDeleteDescription, markerMissingPick, markerSplitTime, markerTimeLabel } from './markers';
 
 function marker(id: string, area: string, time: string, type = MarkerType.Hint): Marker {
   return { _id: id, area, time: time as unknown as Date, type, location: { type: 'Point', coordinates: [5.9, 52] } };
@@ -147,5 +147,23 @@ describe('markerMissingPick', () => {
   });
   test('null once everything is picked', () => {
     expect(markerMissingPick({ area: 'bravo', day, time: day }, areas)).toBeNull();
+  });
+});
+
+describe('Hunt / Spot dialog copy', () => {
+  test('a Hunt is marked, a Spot registered', () => {
+    expect(markerVerb(MarkerType.Hunt).busy).toBe('Markeren…');
+    expect(markerVerb(MarkerType.Spot).busy).toBe('Registreren…');
+    expect(markerSavedToast(MarkerType.Hunt)).toBe('Hunt gemarkeerd op de kaart');
+    expect(markerSavedToast(MarkerType.Spot)).toBe('Spot geregistreerd');
+  });
+
+  test('the main button names the type, the prefilled area and a retry', () => {
+    expect(markerSaveLabel(MarkerType.Hunt, { resave: false, area: 'Alpha' })).toBe('Hunt Alpha markeren');
+    expect(markerSaveLabel(MarkerType.Hunt, { resave: false })).toBe('Hunt markeren');
+    expect(markerSaveLabel(MarkerType.Spot, { resave: false, area: 'Alpha' })).toBe('Spot Alpha registreren');
+    expect(markerSaveLabel(MarkerType.Spot, { resave: false })).toBe('Registreren');
+    expect(markerSaveLabel(MarkerType.Hunt, { resave: true, area: 'Alpha' })).toBe('Opnieuw markeren');
+    expect(markerSaveLabel(MarkerType.Spot, { resave: true })).toBe('Opnieuw registreren');
   });
 });

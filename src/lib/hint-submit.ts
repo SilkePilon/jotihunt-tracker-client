@@ -1,4 +1,5 @@
 import type { Marker } from '@/types/Marker';
+import { MarkerType } from '@/types/MarkerType';
 
 /**
  * What a fresh marker list says about a marker whose save got no answer (offline, timeout): the server may still
@@ -42,13 +43,25 @@ export function lostResponseMessage(outcome: Exclude<LostResponseOutcome, 'regis
 }
 
 /**
- * The Hunt/Spot dialog's inline error for a marker that got no answer and wasn't confirmed ('registered' closes it).
- * The dialog covers the map, so 'unknown' points at its own "Opnieuw controleren" instead of at the map.
+ * The Hunt/Spot dialog's inline error for a hunt or spot that got no answer and wasn't confirmed ('registered' closes
+ * it). The dialog covers the map, so 'unknown' points at its own "Opnieuw controleren" instead of at the map.
  */
-export function markerLostResponseMessage(outcome: Exclude<LostResponseOutcome, 'registered'>): string {
+export function markerLostResponseMessage(outcome: Exclude<LostResponseOutcome, 'registered'>, type: MarkerType = MarkerType.Hunt): string {
+  const noun = type === MarkerType.Spot ? 'spot' : 'hunt';
   return outcome === 'unknown'
-    ? 'Geen antwoord ontvangen. Misschien is de marker toch geplaatst: controleer het opnieuw voordat je nog eens opslaat.'
-    : 'Geen antwoord ontvangen en de marker staat niet op de kaart: hij is niet geplaatst. Probeer het opnieuw.';
+    ? `Geen antwoord ontvangen. Misschien is de ${noun} toch geplaatst: controleer het opnieuw voordat je nog eens opslaat.`
+    : `Geen antwoord ontvangen en de ${noun} staat niet op de kaart: hij is niet geplaatst. Probeer het opnieuw.`;
+}
+
+/** Said instead of a lost-response message when the device was offline at Registreren: nothing went out */
+export const OFFLINE_NOT_SENT_MESSAGE = 'Je bent offline — niet verstuurd. Je invoer blijft staan.';
+
+/**
+ * Whether the browser knows it has no connection right now (`navigator.onLine` false). Only a "no" is trusted: true
+ * can still mean a dead network, which the lost-response check handles. No navigator (tests): online.
+ */
+export function isKnownOffline(nav: Pick<Navigator, 'onLine'> | undefined = typeof navigator === 'undefined' ? undefined : navigator): boolean {
+  return nav?.onLine === false;
 }
 
 /** The hint form's fields */
