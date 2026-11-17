@@ -53,7 +53,10 @@ function useExitGhost(dock: HTMLElement | null) {
         for (const element of ghost.querySelectorAll('[id]')) element.removeAttribute('id');
         ghost.style.cssText += ';position:absolute;left:0;right:0;bottom:0;pointer-events:none;';
         dock.appendChild(ghost);
-        const animation = ghost.animate([{ opacity: 1, transform: 'translateY(0)' }, { opacity: 0, transform: 'translateY(16px)' }], {
+        // Reduced motion: only the fade (MotionConfig skips the slide for motion's own exits; this is plain WAAPI)
+        const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const keyframes = reduced ? [{ opacity: 1 }, { opacity: 0 }] : [{ opacity: 1, transform: 'translateY(0)' }, { opacity: 0, transform: 'translateY(16px)' }];
+        const animation = ghost.animate(keyframes, {
           duration: EXIT_TRANSITION.duration * 1000,
           easing: `cubic-bezier(${EASE_OUT.join(',')})`,
           fill: 'forwards',
