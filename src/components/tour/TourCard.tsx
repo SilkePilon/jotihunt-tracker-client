@@ -2,6 +2,7 @@ import { forwardRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { ChevronLeftIcon, ChevronRightIcon, PauseIcon, PlayIcon } from 'lucide-react';
 import { SWAP_TRANSITION } from '@/lib/motion';
+import { MENU_SURFACE } from '@/lib/menu-styles';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
@@ -74,7 +75,8 @@ const TourCard = forwardRef<HTMLDivElement, TourCardProps>(function TourCard(pro
         setAnnounce(false);
       }}
       className={cn(
-        'pointer-events-auto fixed left-0 top-0 z-[70] w-[min(340px,calc(100vw-24px))] gap-3 overflow-hidden py-4 shadow-2xl outline-none will-change-transform',
+        MENU_SURFACE,
+        'pointer-events-auto fixed left-0 top-0 z-[70] w-[min(340px,calc(100vw-24px))] gap-3 overflow-hidden py-4 outline-none will-change-transform',
         hidden && 'invisible',
       )}
       // Hover counts only after real movement: a card gliding under a parked cursor fires synthetic
@@ -111,8 +113,9 @@ const TourCard = forwardRef<HTMLDivElement, TourCardProps>(function TourCard(pro
       <span aria-live="polite" className="sr-only">
         {announce && contentVisible ? `${title}. ${body}` : ''}
       </span>
-      <div className="flex items-center gap-1 px-4">
-        <Button variant="ghost" size="sm" onClick={onSkip} className="mr-auto">
+      {/* One 32px row: Overslaan, the timer button, Vorige and Volgende (isolate: the phone hit areas sit below the buttons) */}
+      <div className="isolate flex items-center gap-1 px-4">
+        <Button variant="ghost" size="sm" onClick={onSkip} className="mr-auto rounded-xl">
           Overslaan
         </Button>
         <TimerRing className="size-9" durationMs={durationMs} runKey={stepIndex} paused={paused || hovered || keyboardInside} onDone={onTimeUp}>
@@ -141,10 +144,10 @@ const TourCard = forwardRef<HTMLDivElement, TourCardProps>(function TourCard(pro
             </AnimatePresence>
           </Button>
         </TimerRing>
-        <Button variant="outline" size="icon" aria-label="Vorige" onClick={onPrev} disabled={stepIndex === 0}>
+        <Button variant="outline" size="icon-sm" aria-label="Vorige" onClick={onPrev} disabled={stepIndex === 0}>
           <ChevronLeftIcon />
         </Button>
-        <Button size="sm" onClick={onNext} className={cn(isLast && 'px-4')}>
+        <Button size="sm" onClick={onNext} className={cn('rounded-xl', isLast && 'px-4')}>
           {isLast ? 'Klaar' : 'Volgende'}
           {!isLast && <ChevronRightIcon data-icon="inline-end" />}
         </Button>
