@@ -117,7 +117,7 @@ export default function ChatInput({ kind, busy, disabled, onSend, onStop }: Chat
                   type="button"
                   aria-label="Afbeelding weghalen"
                   onClick={clearImage}
-                  className="absolute top-1 right-1 grid size-5 place-items-center rounded-full bg-black/60 text-white outline-none focus-visible:ring-2 focus-visible:ring-white [&_svg]:size-3"
+                  className="absolute top-1 right-1 grid size-5 place-items-center rounded-full bg-black/60 text-white outline-none after:absolute after:-inset-3 focus-visible:ring-2 focus-visible:ring-white [&_svg]:size-3"
                 >
                   <XIcon />
                 </button>

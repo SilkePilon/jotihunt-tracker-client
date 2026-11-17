@@ -49,7 +49,7 @@ export default function JotiboardLoginForm({ fixedUsername, submitLabel, onSubmi
       {onCancel && (
         <div className="flex items-center justify-between">
           <span className="text-xs font-semibold">Inloggen bij Jotiboard</span>
-          <Button type="button" variant="ghost" size="icon" className="size-6 text-muted-foreground" aria-label="Koppelen annuleren" onClick={onCancel}>
+          <Button type="button" variant="ghost" size="icon" className="relative size-6 text-muted-foreground after:absolute after:-inset-2.5" aria-label="Koppelen annuleren" onClick={onCancel}>
             <XIcon />
           </Button>
         </div>

@@ -25,7 +25,8 @@ const buttonVariants = cva(
         sm: "h-8 gap-1.5 rounded-md px-3 has-[>svg]:px-2.5",
         lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
         icon: "size-9",
-        "icon-xs": "size-6 rounded-md [&_svg:not([class*='size-'])]:size-3",
+        // 24px button, 44px tall hit area (32px wide, so neighbouring icon buttons don't overlap much)
+        "icon-xs": "relative size-6 rounded-md after:absolute after:-inset-x-1 after:-inset-y-2.5 [&_svg:not([class*='size-'])]:size-3",
         "icon-sm": "size-8",
         "icon-lg": "size-10",
       },
