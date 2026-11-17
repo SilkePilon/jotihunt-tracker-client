@@ -191,7 +191,7 @@ export default function NightAreaDraw() {
                     aria-label="Naam van het gebied"
                     maxLength={60}
                     autoFocus
-                    className="h-10 w-[min(280px,calc(100vw-32px))] rounded-xl bg-card px-3.5 text-[13px] shadow-[0_0_0_1px_var(--border),0_8px_24px_rgb(0_0_0/0.18)] outline-none placeholder:text-muted-foreground focus-visible:ring-[3px] focus-visible:ring-ring"
+                    className="h-10 w-[min(280px,calc(100vw-32px))] rounded-xl bg-card px-3.5 text-base shadow-[0_0_0_1px_var(--input),0_8px_24px_rgb(0_0_0/0.18)] md:text-[13px] outline-none placeholder:text-muted-foreground focus-visible:ring-[3px] focus-visible:ring-ring"
                   />
                 </motion.form>
               ) : (
