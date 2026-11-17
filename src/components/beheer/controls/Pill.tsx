@@ -23,7 +23,7 @@ const pill = cva(
           'text-destructive-text shadow-[inset_0_0_0_1.5px_color-mix(in_oklab,var(--destructive)_60%,transparent)] hover:bg-destructive/10',
         // White: 4.83:1 on the fill; hover darkens (6.4:1) instead of /90, which lightened it to 4.3:1 over the card
         danger: 'bg-destructive text-white hover:bg-[color-mix(in_oklab,var(--destructive)_88%,black)]',
-        success: 'bg-green-500/20 text-status-ok-text',
+        success: 'bg-green-500/15 text-status-ok-text',
         // The warning-text colour as a fill: white on #92400e (7.1:1); dark mode the card colour on #fcd34d (11:1)
         warn: 'bg-status-warn-text text-card hover:bg-status-warn-text/90',
         // teal-800 / green-800: >= 4.5:1 on their tinted fills in light mode (green-700 and WhatsApp's #128C7E were below)
@@ -100,7 +100,7 @@ const iconPill = cva(
       variant: {
         ghost: 'text-muted-foreground hover:bg-beheer-row-high hover:text-foreground',
         soft: `bg-beheer-row-high text-foreground ${TONAL_HOVER}`,
-        success: 'bg-green-500/20 text-status-ok-text',
+        success: 'bg-green-500/15 text-status-ok-text',
         // M3 tonal "on" state: on-primary-container on primary-container (10:1 light, 8.3:1 dark)
         active: 'bg-primary-container text-on-primary-container',
         'danger-soft': 'bg-destructive/15 text-destructive-text hover:bg-destructive/20',
@@ -118,7 +118,7 @@ export function IconPill({ variant, className, type = 'button', ...props }: Comp
 const tag = cva('inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs leading-4 font-extrabold desk:text-label transition-colors duration-300 [&_svg]:size-3', {
   variants: {
     tone: {
-      // The small (12px phone, 10.5px desktop) text needs >= 4.5:1 on its tint over card, beheer-row and beheer-row-high
+      // The small (12px phone, 11px desktop) text needs >= 4.5:1 on its tint over card, beheer-row and beheer-row-high
       primary: 'bg-primary-container text-on-primary-container',
       neutral: 'bg-beheer-row-high text-muted-foreground',
       ok: 'bg-green-500/15 text-status-ok-text',
