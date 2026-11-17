@@ -100,6 +100,9 @@ export interface MapRef {
      */
     openFeature(layer: string, id: string | number, options?: OpenFeatureOptions): boolean;
 
+    /** Move keyboard focus onto the map canvas (the desktop skip link); false while the map isn't created yet. */
+    focusCanvas(): boolean;
+
     /** The map's centre; null while the map isn't created yet. */
     getCenter(): LngLat | null;
 
@@ -193,6 +196,11 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
         openFeature: (layer: string, id: string | number, options?: OpenFeatureOptions) => {
             const map = mapRef.current?.getMap();
             return !!map && !wall && openLayerFeature(map, layer, id, options);
+        },
+        focusCanvas: () => {
+            const canvas = mapRef.current?.getMap().getCanvas();
+            canvas?.focus();
+            return !!canvas;
         },
         getCenter: () => mapRef.current?.getCenter() ?? null,
         getZoom: () => mapRef.current?.getZoom() ?? null,
