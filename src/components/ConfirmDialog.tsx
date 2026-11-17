@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils';
 // Radix Cancel/Action around our own Button (not the shadcn wrappers): Slot concatenates classes without cn, so the
 // wrappers' outline/destructive dark classes would beat these.
 const CONTENT =
-  'gap-0 rounded-[28px] border-0 bg-beheer-window p-6 shadow-[0_0_0_1px_var(--border),0_18px_50px_rgb(0_0_0/0.35)] data-[size=default]:sm:max-w-[400px] data-[state=open]:duration-[320ms] data-[state=open]:ease-[cubic-bezier(0.2,0.9,0.3,1.2)] data-[state=open]:zoom-in-[0.92] data-[state=open]:slide-in-from-bottom-2 data-[state=closed]:duration-150 data-[state=closed]:ease-[cubic-bezier(0.3,0,0.8,0.15)] data-[state=closed]:zoom-out-[0.92] data-[state=closed]:slide-out-to-bottom-2';
+  'gap-0 rounded-[28px] border-0 bg-beheer-window p-6 shadow-(--shadow-dialog) data-[size=default]:sm:max-w-[400px] data-[state=open]:duration-[320ms] data-[state=open]:ease-[cubic-bezier(0.2,0.9,0.3,1.2)] data-[state=open]:zoom-in-[0.92] data-[state=open]:slide-in-from-bottom-2 data-[state=closed]:duration-150 data-[state=closed]:ease-[cubic-bezier(0.3,0,0.8,0.15)] data-[state=closed]:zoom-out-[0.92] data-[state=closed]:slide-out-to-bottom-2';
 const HEADER = 'place-items-start gap-1.5 text-left';
 /** Looks like disabled (aria-disabled keeps the focus) */
 const BUSY = 'aria-disabled:pointer-events-none aria-disabled:opacity-50';

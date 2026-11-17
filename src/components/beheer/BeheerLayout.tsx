@@ -454,7 +454,7 @@ export function WarnBar({ children }: { children: ReactNode }) {
       exit={{ height: 0, opacity: 0, transition: revealTransition(reduced, 'exit') }}
       transition={revealTransition(reduced, 'enter')}
     >
-      <div className="mt-2.5 flex items-center gap-2.5 rounded-2xl bg-amber-500/15 px-3 py-2.5 text-[12.5px] text-status-warn-text">
+      <div className="mt-2.5 flex items-center gap-2.5 rounded-2xl bg-warn-container px-3 py-2.5 text-[12.5px] text-status-warn-text">
         <TriangleAlertIcon className="size-4 shrink-0" />
         <span className="flex-1">{children}</span>
       </div>

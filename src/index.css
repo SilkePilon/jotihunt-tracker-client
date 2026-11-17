@@ -105,6 +105,8 @@
   --status-ok-dot: #22c55e;
   --status-warn-dot: #f59e0b;
   --status-warn-text: #92400e;
+  /* Amber notice bar (Beheer problems, Koppelingen): amber-500 over the card, status-warn-text on it is >= 6:1 in both themes */
+  --warn-container: color-mix(in oklab, #f59e0b 16%, var(--card));
   /* Positive small text (points, "werkt"): green-800, >= 5.4:1 on card and the tonal rows (green-700 is 3.8:1 on row-high) */
   --status-ok-text: #166534;
   /* Intel kinds (hint orange, opdracht blue, nieuws purple): the -800 shades as text/icons on their own tonal tile
@@ -177,6 +179,7 @@
   /* --primary is 3.6:1 on beheer-row-high and 3:1 on primary-container; this lighter orange is >= 4.5:1 on card, rows and containers */
   --primary-text: #fb923c;
   --status-warn-text: #fcd34d;
+  --warn-container: color-mix(in oklab, #f59e0b 16%, var(--card));
   /* green-400: >= 7.3:1 on card and the tonal rows */
   --status-ok-text: #4ade80;
   --intel-hint: #fb923c;
@@ -250,6 +253,7 @@
   --color-cookie-warn: var(--cookie-warn);
   --color-on-cookie-warn: var(--on-cookie-warn);
   --color-status-warn-text: var(--status-warn-text);
+  --color-warn-container: var(--warn-container);
   --color-status-ok-text: var(--status-ok-text);
   --color-beheer-window: var(--beheer-window);
   --color-beheer-row: var(--beheer-row);
@@ -360,6 +364,15 @@ body.dark {
 /* Beheer window: in light mode the window is a step darker than its (white) cards; rows are a tonal step above the
    card (M3 surface containers). Declared on body because the theme's `.dark` class sits on body. */
 body {
+  /* Elevation of the shared surfaces: a 1px hairline in the border colour + a soft drop shadow. Use as shadow-(--shadow-…)
+     (cn merges that with a caller's shadow-none; a named @theme shadow it can't). On body, not in @theme (emitted on
+     :root): the theme's .dark class sits on body, so only here var(--border) resolves to the dark value.
+     tile: map tiles/buttons (MAP_TILE); tooltip: tooltips; menu: menus, popovers, toasts (MENU_SURFACE); dialog:
+     dialogs, map popups, HQ event card (DIALOG_SHELL) */
+  --shadow-tile: 0 0 0 1px var(--border), 0 4px 14px rgb(0 0 0 / 0.22);
+  --shadow-tooltip: 0 0 0 1px var(--border), 0 4px 12px rgb(0 0 0 / 0.25);
+  --shadow-menu: 0 0 0 1px var(--border), 0 10px 30px rgb(0 0 0 / 0.28);
+  --shadow-dialog: 0 0 0 1px var(--border), 0 18px 50px rgb(0 0 0 / 0.35);
   --beheer-window: color-mix(in oklab, var(--foreground) 5%, var(--background));
   --beheer-row: color-mix(in oklab, var(--foreground) 4%, var(--card));
   --beheer-row-high: color-mix(in oklab, var(--foreground) 9%, var(--card));
@@ -379,9 +392,7 @@ body.dark {
   line-height: 1.35;
   border-radius: 24px !important;
   padding: 14px;
-  box-shadow:
-    0 0 0 1px var(--map-hairline),
-    0 18px 50px rgb(0 0 0 / 0.35);
+  box-shadow: var(--shadow-dialog);
 }
 
 .maplibregl-popup-tip {
@@ -406,7 +417,7 @@ body.dark {
   @apply flex flex-col gap-0.5 overflow-visible! rounded-none! border-0! bg-transparent! shadow-none!;
 
   > button {
-    @apply size-10! rounded-[4px]! bg-card! shadow-[0_0_0_1px_var(--border),0_4px_14px_rgb(0_0_0/0.22)]! transition-colors! duration-150! hover:bg-beheer-row-high!;
+    @apply size-10! rounded-[4px]! bg-card! shadow-(--shadow-tile)! transition-colors! duration-150! hover:bg-beheer-row-high!;
   }
 
   > button:first-child {
@@ -522,9 +533,28 @@ body.dark {
      so the native date/time picker icon is already light; inverting it made it dark on dark */
 }
 
-.card {
-  /* From https://css.glass */
-  backdrop-filter: blur(5px);
+/* Desktop sidebar: while there is more below (data-more-below, Sidebar.tsx) its bottom 24px fade out, a hint to scroll.
+   The fade size is a registered property so it eases in and out; at 0px the mask is solid (no fade). */
+@property --sidebar-fade {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+.sidebar-scroll-fade {
+  --sidebar-fade: 0px;
+  mask-image: linear-gradient(to bottom, #000 calc(100% - var(--sidebar-fade)), transparent);
+  transition: --sidebar-fade 200ms ease-out;
+}
+
+.sidebar-scroll-fade[data-more-below] {
+  --sidebar-fade: 24px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-scroll-fade {
+    transition: none;
+  }
 }
 
 /* Onboarding tour: the progress ring around the pause button doubles as the auto-advance timer (animationend = next step) */

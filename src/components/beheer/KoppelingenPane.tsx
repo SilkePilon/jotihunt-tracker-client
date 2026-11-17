@@ -172,7 +172,7 @@ function IntegrationCard({ name, brand, logo, view, isError, onRetry, action, ac
       <Reveal>
         {view?.problem && (
           <div className="pt-3">
-            <div className="flex flex-wrap items-center gap-2.5 rounded-2xl bg-amber-500/15 px-3 py-2.5 text-status-warn-text">
+            <div className="flex flex-wrap items-center gap-2.5 rounded-2xl bg-warn-container px-3 py-2.5 text-status-warn-text">
               <TriangleAlertIcon className="size-4 shrink-0" />
               <span className="min-w-0 flex-1 basis-48 text-[12.5px]">{view.problem}</span>
               {view.canRelink && onRelink && (

@@ -64,7 +64,7 @@ function MenuCard({ title, rows }: { title: string; rows: Row[] }) {
               {/* The summaries come in with their polls: fade in instead of popping (the row keeps its 56px height) */}
               <AnimatePresence initial={false}>
                 {row.meta && (
-                  <motion.span key="meta" {...SWAP} className="block truncate text-xs text-muted-foreground">
+                  <motion.span key="meta" {...SWAP} className="block truncate text-xs text-muted-foreground tabular-nums">
                     {row.meta}
                   </motion.span>
                 )}

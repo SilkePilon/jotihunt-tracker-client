@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Loader2Icon, RotateCwIcon } from 'lucide-react';
 import { SWAP_TRANSITION } from '@/lib/motion';
@@ -14,6 +14,8 @@ interface LoadErrorProps {
   centered?: boolean;
   /** HQ wall: the button sizes in rem, so it grows with the wall's viewport-scaled root font like the text around it */
   scale?: boolean;
+  /** The failure blocks what the user is doing (e.g. hint entry without the markers): announced at once as an alert */
+  blocking?: boolean;
   className?: string;
 }
 
@@ -22,8 +24,16 @@ interface LoadErrorProps {
  * "Opnieuw proberen" button. Not for a later poll that fails while older data is still on screen (the stale badge
  * covers that).
  */
-export default function LoadError({ message, onRetry, centered, scale, className }: LoadErrorProps) {
+export default function LoadError({ message, onRetry, centered, scale, blocking, className }: LoadErrorProps) {
   const [busy, setBusy] = useState(false);
+  // A polite status region mounted with its text in it is often not read: it mounts empty and gets the message a frame
+  // later (a screen-reader-only copy, so the visible line doesn't flicker). Blocking failures use role="alert" instead
+  const [announced, setAnnounced] = useState('');
+  useEffect(() => {
+    if (blocking) return;
+    const frame = requestAnimationFrame(() => setAnnounced(message));
+    return () => cancelAnimationFrame(frame);
+  }, [message, blocking]);
 
   async function retry() {
     if (busy) return;
@@ -40,9 +50,20 @@ export default function LoadError({ message, onRetry, centered, scale, className
   return (
     // Only the message is the status: the retry button (and its spinner swap) isn't re-read with it
     <div className={cn('isolate flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted-foreground', centered && 'flex-col justify-center text-center', className)}>
-      <span role="status" className="min-w-0">
-        {message}
-      </span>
+      {blocking ? (
+        <span role="alert" className="min-w-0">
+          {message}
+        </span>
+      ) : (
+        <>
+          <span aria-hidden className="min-w-0">
+            {message}
+          </span>
+          <span role="status" className="sr-only">
+            {announced}
+          </span>
+        </>
+      )}
       <motion.button
         type="button"
         layout

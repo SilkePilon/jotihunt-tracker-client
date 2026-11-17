@@ -6,7 +6,8 @@ import { useHuntableAreas } from '@/hooks/huntable-areas.hook';
 import { useNow } from '@/hooks/now.hook';
 import { useReach } from '@/hooks/reach.hook';
 import { REACH_CONE_LAYER, REACH_FILL_LAYER, REACH_LINE_LAYER, REACH_SOURCE, reachChipText, reachFeatures, type AreaReach } from '@/lib/reach';
-import { getColorFromArea } from '@/lib/utils';
+import { MAP_TILE } from '@/lib/map-chrome';
+import { cn, getColorFromArea } from '@/lib/utils';
 import { zoomScaled } from '@/lib/zoom-scale';
 
 const AREA_FILTER: FillLayerSpecification['filter'] = ['==', ['get', 'role'], 'area'];
@@ -59,8 +60,9 @@ export default function Reach({ visible }: { visible: boolean }) {
               // Scales around the dot's centre (on the point); text keeps a readable minimum size when zoomed out
               className="flex origin-[7px_50%] items-center gap-1.5 [scale:var(--map-label-scale,1)]"
             >
-              <span className="size-3.5 rounded-full shadow-md ring-[2.5px] ring-card" style={{ backgroundColor: getColorFromArea(reach.area) }} />
-              <span className="rounded-full bg-card px-2.5 py-1 text-xs font-semibold whitespace-nowrap text-foreground tabular-nums shadow-md">
+              {/* The map surfaces' hairline (MAP_TILE) just outside the white ring, so the dot reads on light tiles too */}
+              <span className="size-3.5 rounded-full shadow-[0_0_0_3.5px_var(--border),0_2px_6px_rgb(0_0_0/0.25)] ring-[2.5px] ring-card" style={{ backgroundColor: getColorFromArea(reach.area) }} />
+              <span className={cn(MAP_TILE, 'rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap tabular-nums')}>
                 {reachChipText(reach, now)}
               </span>
             </motion.div>

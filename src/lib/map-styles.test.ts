@@ -19,10 +19,18 @@ describe('resolveStaticMapStyle in the dark theme', () => {
     expect(rasterPaint(resolveStaticMapStyle(MapStyle.Satellite, true), 'pdok-luchtfoto')).toEqual({ 'raster-brightness-max': 0.85 });
   });
 
-  test('light theme unchanged; streets is a URL either way', () => {
+  test('light theme unchanged; streets is the Liberty URL', () => {
     expect(rasterPaint(resolveStaticMapStyle(MapStyle.Outdoors), 'pdok-brt')).toBeUndefined();
     expect(rasterPaint(resolveStaticMapStyle(MapStyle.Satellite, false), 'pdok-luchtfoto')).toBeUndefined();
-    expect(typeof resolveStaticMapStyle(MapStyle.Streets, true)).toBe('string');
+    expect(typeof resolveStaticMapStyle(MapStyle.Streets, false)).toBe('string');
+  });
+
+  test('streets: the darkened Liberty copy, built once', () => {
+    const style = resolveStaticMapStyle(MapStyle.Streets, true);
+    expect(typeof style).toBe('object');
+    expect(resolveStaticMapStyle(MapStyle.Streets, true)).toBe(style);
+    const background = (style as StyleSpecification).layers.find((layer) => layer.type === 'background') as { paint: Record<string, string> };
+    expect(background.paint['background-color']).not.toBe('#f8f4f0');
   });
 });
 

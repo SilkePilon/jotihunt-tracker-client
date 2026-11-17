@@ -381,7 +381,7 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
                 {/* The first marker load failed: which hours are free is unknown, so time and Registreren wait for a retry */}
                 <Reveal gap={4}>
                     {markersFailed && (
-                        <LoadError message="Hints konden niet worden geladen, dus de vrije tijden zijn onbekend." onRetry={retryMarkers} className="py-1"/>
+                        <LoadError blocking message="Hints konden niet worden geladen, dus de vrije tijden zijn onbekend." onRetry={retryMarkers} className="py-1"/>
                     )}
                 </Reveal>
                 <div className="isolate mt-0.5 flex items-center justify-between gap-2">
