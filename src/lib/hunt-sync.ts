@@ -91,6 +91,15 @@ export function huntEventText(event: HuntSyncEvent): string {
   return [area, text, points].filter(Boolean).join(' ');
 }
 
+/**
+ * A log row's accessible name. Starts with the visible time and line (speech input users say what they see), then
+ * what a tap does, or that the location is still coming.
+ */
+export function huntEventRowLabel(event: HuntSyncEvent, clock: string, located: boolean): string {
+  const line = `${clock} ${huntEventText(event)}`;
+  return located ? `${line} — toon op de kaart` : `${line}, locatie volgt`;
+}
+
 /** The result bar's segments, as fractions of the bar (0 when there are no hunts yet). */
 export function resultBarShares(counts: HuntSyncStatus['counts']): { approved: number; pending: number; rejected: number } {
   const sum = counts.approved + counts.pending + counts.rejected;
