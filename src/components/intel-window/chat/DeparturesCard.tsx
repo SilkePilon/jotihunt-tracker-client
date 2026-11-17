@@ -15,7 +15,7 @@ export default function DeparturesCard({ departures: result }: { departures: OvD
     <div className="overflow-hidden rounded-[18px] bg-beheer-row">
       <div className="grid gap-1.5 px-3 py-2.5 text-[12.5px]">
         <div className="truncate text-[13px] font-semibold">Vertrek {result.stop.name}</div>
-        {result.note && <p className="text-[12px] text-muted-foreground">{result.note}</p>}
+        {result.note && <p className="text-xs text-muted-foreground">{result.note}</p>}
         {departures.length === 0 ? (
           <p className="text-muted-foreground">Geen vertrekken</p>
         ) : (

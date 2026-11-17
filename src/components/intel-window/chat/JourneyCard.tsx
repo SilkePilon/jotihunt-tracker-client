@@ -85,7 +85,7 @@ function CurrentRow({ current, mapRef }: { current: NonNullable<OvJourneyResult[
       <span className="font-semibold">
         Nu tussen {from} en {to}
       </span>
-      {current.note && <span className="text-[12px] text-muted-foreground">{current.note}</span>}
+      {current.note && <span className="text-xs text-muted-foreground">{current.note}</span>}
       <div className="flex flex-wrap gap-1.5">
         <ShowOnMapPill point={current} mapRef={mapRef} />
       </div>

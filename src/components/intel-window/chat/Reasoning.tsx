@@ -81,7 +81,7 @@ export default function Reasoning({ text, thinking }: ReasoningProps) {
             <div className="pt-1">
               <Grow>
                 <div ref={box} className="max-h-40 overflow-y-auto border-l-2 border-beheer-row-high pr-1 pl-3 [scrollbar-gutter:stable]">
-                  <ChatMarkdown text={text} className="text-[12px] leading-[1.5] text-muted-foreground" />
+                  <ChatMarkdown text={text} className="text-xs leading-[1.5] text-muted-foreground" />
                 </div>
               </Grow>
             </div>

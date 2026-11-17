@@ -37,8 +37,8 @@ type View =
 const AUTO_CLOSE_MS = 1800;
 
 /** 48 px, rounded-xl like Beheer */
-const PRIMARY = 'h-12 w-full rounded-xl text-[14.5px] font-semibold';
-const SECONDARY = 'h-12 w-full rounded-xl bg-beheer-row-high text-[14.5px] font-semibold text-foreground hover:bg-beheer-row-high/70';
+const PRIMARY = 'h-12 w-full rounded-xl text-[15px] font-semibold';
+const SECONDARY = 'h-12 w-full rounded-xl bg-beheer-row-high text-[15px] font-semibold text-foreground hover:bg-beheer-row-high/70';
 
 const BADGE = 48;
 
@@ -180,7 +180,7 @@ export default function QrConfirmDrawer({ code, onClose }: { code: string; onClo
           {view.step === 'ready' && (
             <motion.div key="ready" className="flex flex-col" {...SWAP}>
               <QrLinkIllustration />
-              <h2 className="text-[19px] leading-[1.25] font-bold">Inloggen op {view.scan.requester.label}?</h2>
+              <h2 className="text-lg leading-[1.25] font-bold">Inloggen op {view.scan.requester.label}?</h2>
               <ReadyMeta where={joinParts(view.scan.requester.location, formatLastUpdate(view.scan.createdAt, now))} name={user?.name} />
               <Reveal>
                 {view.error && (

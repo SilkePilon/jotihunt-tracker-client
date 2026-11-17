@@ -115,7 +115,7 @@ function Description({ text }: { text: string }) {
             type="button"
             aria-expanded={open}
             onClick={() => setOpen(!open)}
-            className="mt-0.5 rounded-md text-[12px] font-semibold text-foreground outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring"
+            className="mt-0.5 rounded-md text-xs font-semibold text-foreground outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring"
             {...SWAP}
           >
             <AnimatePresence mode="wait" initial={false}>

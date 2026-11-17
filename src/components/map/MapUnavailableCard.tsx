@@ -21,7 +21,7 @@ export default function MapUnavailableCard({ className }: { className?: string }
         <MapIcon className="size-5" />
       </div>
       <div className="min-w-0">
-        <p className="text-[14px] font-bold leading-tight">Kaart niet beschikbaar</p>
+        <p className="text-sm font-bold leading-tight">Kaart niet beschikbaar</p>
         <p className="text-[12.5px] text-muted-foreground">Controleer je verbinding.</p>
       </div>
       {/* The map can't re-fetch a style (TileJSON) that failed at start; a reload can */}
