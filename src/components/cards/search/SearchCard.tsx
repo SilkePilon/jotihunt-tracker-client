@@ -27,6 +27,8 @@ import {loadState} from "@/lib/load-state.ts";
 import {SWAP} from "@/lib/motion.ts";
 import {TEAM_PINS_LAYER} from "@/lib/map-layers.ts";
 import {activatedByKeyboard} from "@/lib/input-modality.ts";
+import {shortcutTitle} from "@/lib/shortcuts.ts";
+import useSettingsStore from "@/stores/settings.store.ts";
 
 /** Placeholder rows while the groups load, about as wide as group names */
 const SKELETON_WIDTHS = ['70%', '55%', '80%', '62%', '48%'];
@@ -34,6 +36,7 @@ const SKELETON_WIDTHS = ['70%', '55%', '80%', '62%', '48%'];
 /** `onDone`: after flying to a group, e.g. to close the md popover that holds this card; `fluid`: fill the parent (phone drawer) instead of 300 px */
 export default function SearchCard({ mapRef, onDone, fluid }: { mapRef: React.RefObject<MapRef | null>; onDone?: () => void; fluid?: boolean }) {
     const [open, setOpen] = React.useState(false)
+    const shortcutsEnabled = useSettingsStore((state) => state.shortcutsEnabled);
     const {teams, isError, retry} = useTeams();
     // A failed later poll keeps the last list; only a first load that is still running or failed replaces it
     const state = loadState(teams, isError);
@@ -58,8 +61,8 @@ export default function SearchCard({ mapRef, onDone, fluid }: { mapRef: React.Re
                     type="button"
                     // The "/" shortcut (Layout.tsx) finds and opens it
                     data-group-search
-                    title="Snel navigeren naar groep (/)"
-                    aria-keyshortcuts="/"
+                    title={shortcutTitle("Snel navigeren naar groep", "/", shortcutsEnabled)}
+                    aria-keyshortcuts={shortcutsEnabled ? "/" : undefined}
                     className={cn(
                         MAP_TILE,
                         "group flex h-11 items-center gap-2.5 rounded-(--radius-tile) pr-3 pl-1.5 text-left transition-colors hover:bg-beheer-row focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:outline-none",

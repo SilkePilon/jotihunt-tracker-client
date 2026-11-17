@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { shortcutFor, type ShortcutKey } from './shortcuts';
+import { shortcutFor, shortcutTitle, TYPING_SELECTOR, type ShortcutKey } from './shortcuts';
 
 const key = (value: string, extra: Partial<ShortcutKey> = {}): ShortcutKey => ({
   key: value, ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, repeat: false, isComposing: false, defaultPrevented: false, ...extra,
@@ -34,5 +34,21 @@ describe('shortcutFor', () => {
   test('not with a dialog or other layer open, nor when something else handled the key', () => {
     expect(shortcutFor(key('/'), { typing: false, layerOpen: true })).toBeNull();
     expect(shortcutFor(key('i', { defaultPrevented: true }), free)).toBeNull();
+  });
+});
+
+describe('shortcutTitle', () => {
+  test('names the key while shortcuts are on, only the label when off', () => {
+    expect(shortcutTitle('Intel', 'I', true)).toBe('Intel (I)');
+    expect(shortcutTitle('Intel', 'I', false)).toBe('Intel');
+  });
+});
+
+describe('TYPING_SELECTOR', () => {
+  test('covers text fields and the ARIA widgets that take letter keys themselves', () => {
+    const parts = TYPING_SELECTOR.split(',').map((part) => part.trim());
+    for (const part of ['input', 'textarea', 'select', '[role="combobox"]', '[role="textbox"]', '[role="searchbox"]', '[role="slider"]', '[role="spinbutton"]']) {
+      expect(parts).toContain(part);
+    }
   });
 });

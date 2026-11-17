@@ -25,8 +25,21 @@ export function shortcutFor(event: ShortcutKey, { typing, layerOpen }: ShortcutC
   return null;
 }
 
-/** Focus targets that take text: a shortcut key there is typed, not a shortcut */
-export const TYPING_SELECTOR = 'input, textarea, select, [contenteditable]:not([contenteditable="false"])';
+/**
+ * A control's tooltip with its shortcut key in brackets ("Intel (I)"), or the plain label when the user turned the
+ * shortcuts off in the settings menu (then the key does nothing, so it isn't advertised).
+ */
+export function shortcutTitle(label: string, key: string, enabled: boolean): string {
+  return enabled ? `${label} (${key})` : label;
+}
+
+/**
+ * Focus targets that take text or keys: a shortcut key there is typed, not a shortcut. Besides real text fields, the
+ * ARIA widgets that use letter keys themselves: comboboxes and Radix Select's typeahead, textboxes/searchboxes,
+ * sliders and spinbuttons.
+ */
+export const TYPING_SELECTOR =
+  'input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="combobox"], [role="textbox"], [role="searchbox"], [role="slider"], [role="spinbutton"]';
 
 /** Open layers that own the keyboard: Radix dialogs/drawers/popovers, alert dialogs, menus, listboxes, the tour */
 export const LAYER_SELECTOR = '[role="dialog"][data-state="open"], [role="alertdialog"], [aria-modal="true"], [role="menu"], [role="listbox"]';

@@ -25,6 +25,7 @@ import {MAP_TILE} from '@/lib/map-chrome';
 import {cn} from '@/lib/utils';
 import useIntelStore from '@/stores/intel.store';
 import useMobileNavStore from '@/stores/mobile-nav.store';
+import useSettingsStore from '@/stores/settings.store';
 import {useFetcher} from '@/hooks/utils/api.hook';
 import {isUnauthorized} from '@/lib/session';
 import {useSessionExpired} from '@/hooks/session.hook';
@@ -119,9 +120,11 @@ export default function Layout() {
     const {pathname} = location;
     const navigate = useNavigate();
 
-    // Laptop shortcuts: "/" the group search (map page), "i" the Intel window (lib/shortcuts.ts says when not)
+    // Laptop shortcuts: "/" the group search (map page), "i" the Intel window (lib/shortcuts.ts says when not); the
+    // settings menu's "Sneltoetsen" switch turns them off (WCAG 2.1.4: speech input can type these letters by accident)
+    const shortcutsEnabled = useSettingsStore((state) => state.shortcutsEnabled);
     useEffect(() => {
-        if (isMobile) return;
+        if (isMobile || !shortcutsEnabled) return;
         const onKeyDown = (event: KeyboardEvent) => {
             const target = event.target instanceof Element ? event.target : null;
             const shortcut = shortcutFor(event, {
@@ -137,7 +140,7 @@ export default function Layout() {
         };
         window.addEventListener('keydown', onKeyDown);
         return () => window.removeEventListener('keydown', onKeyDown);
-    }, [isMobile, pathname]);
+    }, [isMobile, pathname, shortcutsEnabled]);
 
     /** Phone: the Hints page on top of the sheet (push also raises the sheet to full; already on top stays as is) */
     function openHintsPage() {

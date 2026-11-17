@@ -11,9 +11,12 @@ interface SettingsState {
   mapStyle: MapStyle;
   darkMode?: boolean;
   soundMuted: boolean;
+  /** Laptop single-key shortcuts ("i" Intel, "/" group search; Layout.tsx). Off for speech input and switch users (WCAG 2.1.4). */
+  shortcutsEnabled: boolean;
   setMapStyle: (mapStyle: MapStyle) => void;
   setDarkMode: (darkMode?: boolean) => void;
   setSoundMuted: (soundMuted: boolean) => void;
+  setShortcutsEnabled: (shortcutsEnabled: boolean) => void;
 }
 
 // Bumped when the shape/meaning of persisted fields changes in a
@@ -31,6 +34,7 @@ const useSettingsStore = create<SettingsState>()(
       mapStyle: '' as MapStyle,
       darkMode: undefined,
       soundMuted: false,
+      shortcutsEnabled: true,
       setMapStyle: (mapStyle: MapStyle) => {
         set({ mapStyle });
       },
@@ -39,6 +43,9 @@ const useSettingsStore = create<SettingsState>()(
       },
       setSoundMuted: (soundMuted: boolean) => {
         set({ soundMuted });
+      },
+      setShortcutsEnabled: (shortcutsEnabled: boolean) => {
+        set({ shortcutsEnabled });
       },
     }),
     {
@@ -51,6 +58,7 @@ const useSettingsStore = create<SettingsState>()(
         return {
           ...state,
           soundMuted: state?.soundMuted ?? false,
+          shortcutsEnabled: state?.shortcutsEnabled ?? true,
           // '' means "automatic", otherwise it must be a known MapStyle id.
           mapStyle: mapStyle === '' || isMapStyle(mapStyle) ? mapStyle : ('' as MapStyle),
         } as SettingsState;
