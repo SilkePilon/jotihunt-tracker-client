@@ -297,7 +297,7 @@ function NameInput({ user, onDone, updateUser }: { user: User; onDone: () => voi
         onChange={(event) => setValue(event.target.value)}
         onKeyDown={onKeyDown}
         onBlur={() => void save()}
-        className="h-7 w-40 rounded-lg border-[1.5px] border-primary bg-card px-2 text-[13.5px] font-semibold outline-none read-only:opacity-60"
+        className="h-7 w-40 rounded-lg border-[1.5px] border-primary bg-card px-2 text-base font-semibold md:text-[13.5px] outline-none read-only:opacity-60"
       />
       {saving && <Loader2Icon className="size-3.5 animate-spin text-muted-foreground" />}
     </span>

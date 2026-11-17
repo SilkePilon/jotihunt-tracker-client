@@ -19,8 +19,11 @@ import type { Vehicle } from '@/types/Tracker';
 import { BeheerCard, BeheerLoadError, BeheerSkeleton, WarnBar } from './BeheerLayout';
 import { Pill, Tag } from './controls/Pill';
 
-/** Text inputs and select triggers: 36px, 12px corners, tonal fill */
-const FIELD = 'h-9 rounded-lg border-0 bg-beheer-row-high text-[13px] shadow-none md:text-[13px] dark:bg-beheer-row-high';
+/**
+ * Text inputs: 36px, 12px corners, tonal fill with a 1px inset outline (the fill alone is ~1.2:1 against the card).
+ * 16px text on phones: smaller text makes iOS zoom in on focus.
+ */
+const FIELD = 'h-9 rounded-lg border-0 bg-beheer-row-high text-base shadow-[inset_0_0_0_1px_var(--input)] md:text-[13px] dark:bg-beheer-row-high';
 const NO_GROUP = 'none';
 const NEEDS_PASSWORD_HINT = 'Vul ook het wachtwoord in om de nieuwe gebruikersnaam te testen.';
 const TIMELINE_TICK_MS = 60_000;

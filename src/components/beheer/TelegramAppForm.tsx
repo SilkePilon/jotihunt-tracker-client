@@ -6,7 +6,8 @@ import { useAdminConfig } from '@/hooks/app-config.hook';
 import { apiErrorMessage } from '@/lib/api-error';
 import { Pill, Tag } from './controls/Pill';
 
-const FIELD = 'h-9 rounded-lg bg-beheer-row-high font-mono text-[12.5px]';
+// Same field as GeneralSettings: inset outline instead of a border, 16px text on phones (no iOS zoom on focus)
+const FIELD = 'h-9 rounded-lg border-0 bg-beheer-row-high font-mono text-base shadow-[inset_0_0_0_1px_var(--input)] md:text-[12.5px] dark:bg-beheer-row-high';
 const LABEL = 'mb-1 ml-0.5 block text-[11.5px] font-semibold text-muted-foreground';
 
 /**

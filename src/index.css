@@ -95,7 +95,8 @@
   --destructive: hsl(0 72.2% 50.6%);
   --destructive-foreground: hsl(60 9.1% 97.8%);
   --border: hsl(240 4% 22%);
-  --input: hsl(240 4% 22%);
+  /* Field outlines: >= 3:1 against the card (22% was 1.3:1); fills use bg-input/10 so they stay dark */
+  --input: hsl(240 4% 46%);
   --ring: hsl(20.5 90.2% 48.2%);
   --chart-1: hsl(220 70% 50%);
   --chart-2: hsl(160 60% 45%);
@@ -130,7 +131,8 @@
   --ai-on-think-container: #f0dbff;
   --primary-container: #6b2b05;
   --on-primary-container: #ffdcc6;
-  --primary-text: var(--primary);
+  /* --primary is 3.6:1 on beheer-row-high and 3:1 on primary-container; this lighter orange is >= 4.5:1 on card, rows and containers */
+  --primary-text: #fb923c;
 }
 
 @theme inline {

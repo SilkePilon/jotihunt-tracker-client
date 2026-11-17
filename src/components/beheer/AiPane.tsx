@@ -226,7 +226,7 @@ export default function AiPane() {
                 }}
                 placeholder="AIza…"
                 aria-label="Nieuwe Gemini-sleutel"
-                className="h-9 min-w-48 flex-1 basis-48 rounded-xl border-0 bg-beheer-row font-mono text-[13px]"
+                className="h-9 min-w-48 flex-1 basis-48 rounded-xl border-0 bg-beheer-row font-mono text-base shadow-[inset_0_0_0_1px_var(--input)] md:text-[13px] dark:bg-beheer-row"
                 autoComplete="off"
                 spellCheck={false}
               />
