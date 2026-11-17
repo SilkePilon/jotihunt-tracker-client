@@ -70,10 +70,11 @@ function ChatPanel({ item, mapRef, entrance }: IntelChatProps) {
         {chat.messages.length > 0 && (
           <motion.div
             key="new"
-            className="-mb-2.5 flex justify-end overflow-hidden"
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0, transition: revealTransition(reduced, 'exit') }}
+            className="-mb-2.5 flex justify-end"
+            // Clipped only while it unfolds or folds: once open, IconPill's 44px touch area may reach past the row
+            initial={{ height: 0, opacity: 0, overflow: 'hidden' }}
+            animate={{ height: 'auto', opacity: 1, transitionEnd: { overflow: 'visible' } }}
+            exit={{ height: 0, opacity: 0, overflow: 'hidden', transition: revealTransition(reduced, 'exit') }}
             transition={revealTransition(reduced, 'enter')}
           >
             <IconPill aria-label="Nieuw gesprek" title="Nieuw gesprek" onClick={() => setConfirmReset(true)}>
