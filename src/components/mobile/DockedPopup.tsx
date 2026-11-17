@@ -190,7 +190,7 @@ export default function DockedPopup({
       aria-labelledby={titleId}
       tabIndex={-1}
       style={{ maxHeight: `var(${DOCK_CARD_MAX_VAR}, none)` }}
-      className="pointer-events-auto relative flex min-w-0 flex-col overflow-hidden outline-none rounded-3xl bg-card text-[13px] leading-[1.35] text-card-foreground shadow-[0_0_0_1px_var(--border),0_18px_50px_rgb(0_0_0/.35)] [[data-dock=row]_&]:max-w-[360px] [[data-dock=row]_&]:flex-1"
+      className="pointer-events-auto relative flex min-w-0 flex-col overflow-hidden outline-none rounded-3xl bg-card text-[13px] leading-[1.35] text-card-foreground shadow-(--shadow-dialog) [[data-dock=row]_&]:max-w-[360px] [[data-dock=row]_&]:flex-1"
     >
       {/* Outside the scroller, so the X stays put while a tall card scrolls (short landscape screens) */}
       <CloseButton onClick={requestClose} className="absolute top-3 right-3 z-10" />
