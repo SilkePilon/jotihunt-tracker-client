@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion, useReducedMotion, type Transition } from 'motion/react';
-import { LockIcon } from 'lucide-react';
+import { EyeOffIcon, LockIcon } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAreas } from '@/hooks/areas.hook';
 import { useHuntableAreas } from '@/hooks/huntable-areas.hook';
@@ -144,7 +144,7 @@ function GroupBlock({ group, foxes, count, popIn, openKey, panelFox, onOpen }: G
 /** "Vossen" card (mockup C2): status bar, count legend, one tonal block per non-empty group with area chips. */
 export default function FoxesCard() {
   const foxes = useSidebarFoxes();
-  const { isError: areasError, retry: retryAreas } = useAreas();
+  const { isError: areasError, retry: retryAreas, isHidden } = useAreas();
   const { isForbidden } = useHuntableAreas();
   const reduced = useReducedMotion() ?? false;
   // One fox open per card: `openKey` follows the taps at once (ring), `panelKey` lags while the old panel folds away
@@ -210,6 +210,8 @@ export default function FoxesCard() {
   const counts = groupCounts(foxes);
   // The chips' lock gets a legend entry while any fox is outside our huntable areas
   const anyForbidden = foxes.some((fox) => isForbidden(fox.area.name));
+  // And the eye: how many foxes are hidden on the map (chosen in their history panel)
+  const hiddenCount = foxes.filter((fox) => isHidden(fox.area.name)).length;
   const panelFox = panelKey === null ? undefined : foxes.find((fox) => fox.key === panelKey);
   return (
     // Fades in when it takes over from the skeleton (or the empty line)
@@ -230,6 +232,13 @@ export default function FoxesCard() {
             <motion.span key="forbidden" layout="position" {...POP} className="inline-flex items-center gap-1">
               <LockIcon aria-hidden className="size-3" strokeWidth={2.75} />
               niet toegestaan
+            </motion.span>
+          )}
+          {hiddenCount > 0 && (
+            <motion.span key="hidden" layout="position" {...POP} className="inline-flex items-center gap-1">
+              <EyeOffIcon aria-hidden className="size-3" strokeWidth={2.75} />
+              <Count value={hiddenCount} className="font-semibold text-foreground" />
+              verborgen
             </motion.span>
           )}
         </AnimatePresence>

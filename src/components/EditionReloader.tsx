@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useEdition } from '@/hooks/edition.hook';
+import useHiddenAreasStore from '@/stores/hiddenareas.store';
 
 /** Reloads the page when another edition is shown (e.g. an admin switched it) while the app is open. */
 export default function EditionReloader() {
@@ -10,6 +11,8 @@ export default function EditionReloader() {
 
   useEffect(() => {
     if (year === undefined) return;
+    // Foxes hidden in another edition are visible again in this one
+    useHiddenAreasStore.getState().syncEdition(year);
     if (initial.current === undefined) initial.current = year;
     else if (year !== initial.current) window.location.reload();
   }, [year]);

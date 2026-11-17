@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { LockIcon } from 'lucide-react';
+import { EyeOffIcon, LockIcon } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import { useEdition } from '@/hooks/edition.hook';
@@ -74,10 +74,14 @@ function FoxChip({ fox, hidden, forbidden, popIn, open, onOpen }: FoxChipProps) 
           hidden ? 'opacity-70' : forbidden && 'opacity-75',
         )}
       >
-        {/* Fixed box so the swap doesn't shift the name; dot and lock pop out/in in place */}
+        {/* Fixed box so the swap doesn't shift the name; dot, lock and eye (hidden on the map) pop out/in in place */}
         <span className="relative grid size-2.5 shrink-0 place-items-center">
           <AnimatePresence initial={false}>
-            {forbidden ? (
+            {hidden ? (
+              <motion.span key="hidden" className="absolute inset-0 grid place-items-center" initial={POP.initial} animate={POP.animate} exit={POP.exit} transition={POP.transition}>
+                <EyeOffIcon aria-hidden className="size-2.5" strokeWidth={2.75} />
+              </motion.span>
+            ) : forbidden ? (
               <motion.span key="lock" className="absolute inset-0 grid place-items-center" initial={POP.initial} animate={POP.animate} exit={POP.exit} transition={POP.transition}>
                 <LockIcon aria-hidden className="size-2.5" strokeWidth={2.75} />
               </motion.span>

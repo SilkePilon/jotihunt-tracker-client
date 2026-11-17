@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'motion/react';
-import { LockIcon, TrainFrontIcon } from 'lucide-react';
+import { EyeOffIcon, LockIcon, TrainFrontIcon } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import { useNow } from '@/hooks/now.hook';
@@ -64,7 +64,11 @@ function OvRow({ fox, hidden, forbidden, popIn, now, open, onOpen }: OvRowProps)
           <span className="inline-flex min-w-0 items-center gap-1.5">
             <span className="relative grid size-2.5 shrink-0 place-items-center">
               <AnimatePresence initial={false}>
-                {forbidden ? (
+                {hidden ? (
+                  <motion.span key="hidden" className="absolute inset-0 grid place-items-center" initial={POP.initial} animate={POP.animate} exit={POP.exit} transition={POP.transition}>
+                    <EyeOffIcon aria-hidden className="size-2.5" strokeWidth={2.75} />
+                  </motion.span>
+                ) : forbidden ? (
                   <motion.span key="lock" className="absolute inset-0 grid place-items-center" initial={POP.initial} animate={POP.animate} exit={POP.exit} transition={POP.transition}>
                     <LockIcon aria-hidden className="size-2.5" strokeWidth={2.75} />
                   </motion.span>

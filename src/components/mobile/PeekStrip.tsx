@@ -10,6 +10,7 @@ import { FOX_GROUP_LABEL, groupCounts, legendGroups, legendInitials, legendIniti
 import useMobileNavStore from '@/stores/mobile-nav.store';
 import { cn } from '@/lib/utils';
 import { AnimatePresence, motion } from 'motion/react';
+import { EyeOffIcon } from 'lucide-react';
 import { useLayoutEffect, useRef, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAreas } from '@/hooks/areas.hook';
@@ -59,16 +60,19 @@ function useWidth<T extends HTMLElement>() {
  * else the counts per group ("2 actief"). A colour swatch before each ties it to the bar; without room for those either
  * (narrow phones with an OV group), plain counts.
  */
-function PeekLegend({ foxes, counts }: { foxes: SidebarFox[]; counts: Record<FoxGroup, number> }) {
+function PeekLegend({ foxes, counts, hidden }: { foxes: SidebarFox[]; counts: Record<FoxGroup, number>; hidden: number }) {
   const [ref, width] = useWidth<HTMLSpanElement>();
   const initials = legendInitials(foxes);
   const groups = legendGroups(counts);
-  const countChars = groups.reduce((sum, group) => sum + String(counts[group]).length + 1 + FOX_GROUP_LABEL[group].length + 3, 0);
-  const mode = width === 0 ? 'counts' : legendInitialsChars(initials) * LEGEND_CHAR_PX <= width ? 'initials' : countChars * LEGEND_CHAR_PX <= width ? 'counts' : 'plain';
+  // "⊘ 2 verborgen" at the end while foxes are hidden on the map: icon, count, label and a gap
+  const hiddenChars = hidden > 0 ? 1 + String(hidden).length + 1 + 'verborgen'.length + 3 : 0;
+  const countChars = groups.reduce((sum, group) => sum + String(counts[group]).length + 1 + FOX_GROUP_LABEL[group].length + 3, 0) + hiddenChars;
+  const mode = width === 0 ? 'counts' : (legendInitialsChars(initials) + hiddenChars) * LEGEND_CHAR_PX <= width ? 'initials' : countChars * LEGEND_CHAR_PX <= width ? 'counts' : 'plain';
   return (
     <span ref={ref} className="relative block h-4 text-xs text-muted-foreground tabular-nums">
       <AnimatePresence initial={false}>
-        <motion.span key={mode} {...SWAP} className={cn('absolute inset-0 flex items-center whitespace-nowrap', mode === 'initials' ? 'gap-3' : 'justify-between')}>
+        {/* Cross-fades when the layout changes or the hidden entry comes or goes */}
+        <motion.span key={`${mode}:${hidden > 0}`} {...SWAP} className={cn('absolute inset-0 flex items-center whitespace-nowrap', mode === 'initials' ? 'gap-3' : 'justify-between')}>
           {mode === 'initials'
             ? initials.map((item) => (
                 <span key={item.group} className="inline-flex items-center gap-1">
@@ -82,6 +86,13 @@ function PeekLegend({ foxes, counts }: { foxes: SidebarFox[]; counts: Record<Fox
                   <b className="font-semibold text-foreground">{counts[group]}</b> {FOX_GROUP_LABEL[group].toLowerCase()}
                 </span>
               ))}
+          {/* Plain (no room): the eye and the count only, the word for screen readers */}
+          {hidden > 0 && (
+            <span className="inline-flex items-center gap-1">
+              <EyeOffIcon aria-hidden className="size-3" strokeWidth={2.75} />
+              <b className="font-semibold text-foreground">{hidden}</b> <span className={cn(mode === 'plain' && 'sr-only')}>verborgen</span>
+            </span>
+          )}
         </motion.span>
       </AnimatePresence>
     </span>
@@ -95,10 +106,11 @@ function PeekLegend({ foxes, counts }: { foxes: SidebarFox[]; counts: Record<Fox
  */
 export default function PeekStrip() {
   const foxes = useSidebarFoxes();
-  const { isError } = useAreas();
+  const { isError, isHidden } = useAreas();
   const { isForbidden } = useHuntableAreas();
   const push = useMobileNavStore((s) => s.push);
   const counts = foxes ? groupCounts(foxes) : undefined;
+  const hidden = foxes ? foxes.filter((fox) => isHidden(fox.area.name)).length : 0;
   const scene = foxes && foxes.length > 0 ? 'bar' : foxes ? 'empty' : isError ? 'error' : 'loading';
 
   return (
@@ -113,7 +125,7 @@ export default function PeekStrip() {
                 <FoxStatusBar foxes={foxes} size="full" isForbidden={isForbidden} />
                 {/* The visible counts are part of the button's name; the sr-only prefix says what a tap does */}
                 <span className="sr-only">Vossen openen: </span>
-                <PeekLegend foxes={foxes} counts={counts} />
+                <PeekLegend foxes={foxes} counts={counts} hidden={hidden} />
               </button>
             ) : scene === 'loading' ? (
               <div className="flex flex-col gap-1.5" role="status" aria-label="Vossen laden">
