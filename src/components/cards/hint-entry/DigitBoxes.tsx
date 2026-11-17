@@ -56,7 +56,8 @@ function DigitSlot({ index, bad }: { index: number; bad: boolean }) {
       className={cn(
         'relative flex h-9 items-center justify-center rounded-lg text-lg font-semibold tabular-nums transition-[background-color,color,box-shadow] duration-150',
         !char
-          ? 'bg-card'
+          ? // A 1px --input edge, so an empty box stands out >= 3:1 from the tonal block
+            'bg-card shadow-[inset_0_0_0_1px_var(--input)]'
           : char === '?'
             ? 'bg-guess-container text-on-guess-container [outline:1.5px_dashed_var(--guess)] [outline-offset:-1.5px]'
             : bad
