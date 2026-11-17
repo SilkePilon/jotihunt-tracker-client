@@ -12,6 +12,8 @@ import { usePending } from '@/hooks/pending.hook';
 import { useIsMobile } from '@/hooks/media.hook';
 import { SLOW_CLOCK_TICK_MS, useNow } from '@/hooks/now.hook';
 import { apiErrorMessage } from '@/lib/api-error';
+import { activatedByKeyboard } from '@/lib/input-modality';
+import { HUNTERS_LAYER } from '@/lib/map-layers';
 import { googleMapsUrl, hunterIcon, hunterMeta, hunterRows, huntersSummary, isLowBattery, type HunterRow } from '@/lib/hunters';
 import { vehicleGroupIds } from '@/lib/app-config';
 import { useAppConfig } from '@/hooks/app-config.hook';
@@ -35,7 +37,7 @@ const VEHICLE_SEGMENTS: SegmentOption<Vehicle>[] = VEHICLE_OPTIONS.map(({ value,
   icon: <MarkerGlyph name={vehicleGlyph(value)} />,
 }));
 
-type ShowOnMap = (lng: number, lat: number) => void;
+type ShowOnMap = (deviceId: number, lng: number, lat: number) => void;
 
 /** The map's hunter marker look: the vehicle glyph in the secondary-container circle; grey and dimmed when not live. */
 function HunterMarker({ row }: { row: HunterRow }) {
@@ -82,10 +84,12 @@ export default function HuntersPane({ mapRef }: { mapRef: RefObject<MapRef | nul
   const live = rows.filter((row) => row.active);
   const notLive = rows.filter((row) => !row.active);
 
-  function showOnMap(lng: number, lat: number) {
+  function showOnMap(deviceId: number, lng: number, lat: number) {
     close();
     if (isMobile) useSidebarStore.getState().setSheetSnap('peek');
     mapRef.current?.flyTo({ center: [lng, lat], duration: 2000, zoom: 16 });
+    // The hunter's popup, as if its map icon was clicked (nothing when the hunters layer is off); focused for keyboard users
+    mapRef.current?.openFeature(HUNTERS_LAYER, deviceId, { focus: activatedByKeyboard() });
   }
 
   const row = (hunter: HunterRow) => (
@@ -169,7 +173,7 @@ function HunterActions({ row, onShowOnMap }: { row: HunterRow; onShowOnMap: Show
 
   return (
     <>
-      <Pill disabled={!position} onClick={() => position && onShowOnMap(position.longitude, position.latitude)}>
+      <Pill disabled={!position} onClick={() => position && onShowOnMap(row.device.id, position.longitude, position.latitude)}>
         <LocateFixedIcon />
         Toon op kaart
       </Pill>

@@ -85,6 +85,13 @@ export default function Devices() {
       const id = featureId(feature);
       setHoveredId(typeof id === 'number' ? id : undefined);
     },
+    // Opened from Beheer → Hunters (Toon op kaart): the caller already flies the map there
+    onOpen: (id) => {
+      if (typeof id !== 'number' || !positions?.some((position) => position.deviceId === id)) return false;
+      setHoveredId(undefined);
+      openPopup(id);
+      return true;
+    },
   });
 
   return (
