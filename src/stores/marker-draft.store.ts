@@ -30,9 +30,12 @@ export interface MarkerDraft {
 export const DRAFT_MAX_AGE_MS = 48 * 60 * 60 * 1000;
 
 /** When a draft was kept: its stamp, else (kept before stamps existed) the time the marker was sent; NaN when unknown */
+function keptAt(draft: MarkerDraft): number {
+  return typeof draft.savedAt === 'number' ? draft.savedAt : new Date(draft.sent?.time ?? NaN).getTime();
+}
+
 function draftAge(draft: MarkerDraft, now: number): number {
-  const at = typeof draft.savedAt === 'number' ? draft.savedAt : new Date(draft.sent?.time ?? NaN).getTime();
-  return now - at;
+  return now - keptAt(draft);
 }
 
 /** Pure: the kept drafts that are at most DRAFT_MAX_AGE_MS old at `now` (an unreadable age counts as too old). */
@@ -184,10 +187,22 @@ export function pendingDraftLine(drafts: Record<string, MarkerDraft>): string | 
   return `${parts.join(' en ')} niet bevestigd — tik om te controleren`;
 }
 
-/** The draft the line's tap opens: the latest one kept (the one most likely still on the user's mind) */
+/**
+ * The draft the line's tap opens: the latest one kept (the one most likely still on the user's mind). By its `savedAt`
+ * stamp, not the object order: keeping a draft again under an existing key replaces it in place. Ties (and drafts
+ * without a readable time) go to the one kept last.
+ */
 export function latestDraft(drafts: Record<string, MarkerDraft>): MarkerDraft | null {
-  const all = Object.values(drafts);
-  return all.length ? all[all.length - 1] : null;
+  let latest: MarkerDraft | null = null;
+  let latestAt = -Infinity;
+  for (const draft of Object.values(drafts)) {
+    const at = keptAt(draft);
+    if (latest === null || !(at < latestAt)) {
+      latest = draft;
+      if (!Number.isNaN(at)) latestAt = at;
+    }
+  }
+  return latest;
 }
 
 /**

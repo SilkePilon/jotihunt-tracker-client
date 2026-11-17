@@ -103,6 +103,16 @@ describe('kept drafts outside the dialog', () => {
     expect(store().request?.id).toBe(2);
   });
 
+  test('latestDraft goes by when a draft was kept, not by key order', () => {
+    // Keeping a draft again under its existing key replaces it in place: it stays first in the object, yet is newest
+    const older = { ...spot, savedAt: 200 };
+    const renewed = { ...draft, savedAt: 300 };
+    expect(latestDraft({ [keyOfDraft(renewed)]: renewed, [keyOfDraft(older)]: older })).toBe(renewed);
+    // Drafts from before the stamp fall back to when they were sent
+    const unstamped = { ...hunt2, savedAt: undefined };
+    expect(latestDraft({ a: unstamped, b: { ...spot, savedAt: 1 } })).toBe(unstamped);
+  });
+
   test('settleDrafts clears what did save, marks the rest absent, and never guesses without a list', () => {
     store().keep(draft);
     store().keep(spot);
