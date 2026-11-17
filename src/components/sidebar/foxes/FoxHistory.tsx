@@ -1,7 +1,8 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
-import { EyeIcon, EyeOffIcon, RotateCwIcon } from 'lucide-react';
+import { EyeIcon, EyeOffIcon, LockIcon, RotateCwIcon } from 'lucide-react';
 import AutoHeight from '@/components/motion/AutoHeight';
+import Reveal from '@/components/motion/Reveal';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAreaHistory } from '@/hooks/area-history.hook';
 import { useEdition } from '@/hooks/edition.hook';
@@ -19,6 +20,8 @@ const MINUTE_MS = 60_000;
 interface FoxHistoryProps {
   fox: SidebarFox;
   hidden: boolean;
+  /** Outside the areas our group may hunt (huntable areas): said in words under the status line, not only by the chip's lock */
+  forbidden?: boolean;
   onToggleHidden: () => void;
 }
 
@@ -74,7 +77,7 @@ function TimelineSkeleton() {
  * The fold-out under a fox's chip: name, status line, the last three hours as a timeline and the hide-on-map button.
  * Fetches only while mounted; the window moves on every minute.
  */
-export default function FoxHistory({ fox, hidden, onToggleHidden }: FoxHistoryProps) {
+export default function FoxHistory({ fox, hidden, forbidden = false, onToggleHidden }: FoxHistoryProps) {
   const reduced = useReducedMotion() ?? false;
   const { history, error, mutate } = useAreaHistory(fox.area.name);
   const now = useNow(true, MINUTE_MS);
@@ -146,6 +149,15 @@ export default function FoxHistory({ fox, hidden, onToggleHidden }: FoxHistoryPr
           )}
         </AnimatePresence>
       </div>
+
+      <Reveal>
+        {forbidden && (
+          <p className="mx-0.5 mt-1 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+            <LockIcon aria-hidden className="size-3 shrink-0" strokeWidth={2.5} />
+            Niet toegestaan voor onze groep · 0 punten
+          </p>
+        )}
+      </Reveal>
 
       <AutoHeight scene={scene} className="mt-1">
         <AnimatePresence mode="wait" initial={false}>
