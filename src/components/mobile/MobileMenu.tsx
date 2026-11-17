@@ -79,12 +79,13 @@ export default function MobileMenu() {
 
   const spel: Row[] = [
     { key: 'foxes', icon: <PawPrintIcon className={icon} />, title: 'Vossen', meta: <FoxesSummary />, onSelect: page('foxes') },
+    // A hunter's main action: right under Vossen instead of at the end of the list
+    { key: 'hintEntry', icon: <PenLineIcon className={icon} />, title: 'Hint registreren', onSelect: page('hintEntry') },
     { key: 'hunts', icon: <CrosshairIcon className={icon} />, title: 'Hunts', onSelect: page('hunts') },
     { key: 'telegram', icon: <MessageSquareIcon className={icon} />, title: 'Jotihunt-berichten', onSelect: page('telegram') },
     ...(predictionEnabled !== false ? [{ key: 'predictions', icon: <MapPinIcon className={icon} />, title: 'Voorspelling', meta: predictionSummary(predictions), onSelect: page('predictions') }] : []),
     { key: 'hints', icon: <Grid3x3Icon className={icon} />, title: 'Hints', meta: progress ? `${progress.solved}/${progress.total} opgelost` : undefined, onSelect: page('hints') },
     ...(score?.configured ? [{ key: 'points', icon: <TrophyIcon className={icon} />, title: 'Punten', meta: scoreSummary(score), onSelect: page('points') }] : []),
-    { key: 'hintEntry', icon: <PenLineIcon className={icon} />, title: 'Hint registreren', onSelect: page('hintEntry') },
     ...(homeTeamApiId !== null ? [{ key: 'counterHunt', icon: <FlagIcon className={icon} />, title: 'Tegenhunt', onSelect: page('counterHunt') }] : []),
   ];
   const jij: Row[] = [
