@@ -1,10 +1,11 @@
-import { ReactNode } from 'react';
+import { ReactNode, useContext } from 'react';
 import { ChevronDownIcon } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import useSidebarStore, { SidebarSectionId } from '@/stores/sidebar.store';
 import { cn } from '@/lib/utils';
 import { tourTarget } from '@/components/tour/targets';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import { SidebarSectionVariantContext } from './section-variant';
 
 interface SidebarSectionProps {
   id: SidebarSectionId;
@@ -24,6 +25,21 @@ export default function SidebarSection({ id, title, summary, open: openProp, onO
   const storedOpen = useSidebarStore((state) => state.openSections[id]);
   const toggleSection = useSidebarStore((state) => state.toggleSection);
   const open = openProp ?? storedOpen;
+  const variant = useContext(SidebarSectionVariantContext);
+
+  // Phone page: the section is the page, laid out like the phone menu's cards (rounded-3xl, p-2, 15px bold heading)
+  // and always open
+  if (variant === 'page') {
+    return (
+      <section {...tourTarget(`sidebar.${id}`)} className={cn('rounded-3xl bg-card p-2 text-card-foreground', className)}>
+        <h2 className="px-3 pt-1.5 pb-2 text-[15px] font-bold">{title}</h2>
+        {/* px-1: the content keeps the card's 12px inset, like in the sidebar */}
+        <div className="px-1 pb-1">
+          <ErrorBoundary variant="inline">{children}</ErrorBoundary>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <Collapsible {...tourTarget(`sidebar.${id}`)} open={open} onOpenChange={onOpenChange ?? (() => toggleSection(id))} className={cn('card rounded-xl bg-card px-3 pb-1 text-card-foreground', className)}>

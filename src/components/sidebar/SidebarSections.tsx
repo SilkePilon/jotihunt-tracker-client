@@ -22,6 +22,7 @@ import Life360Section from './Life360Section';
 import PointsSection from './PointsSection';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import type { SidebarSectionId } from '@/stores/sidebar.store';
+import { SidebarSectionVariantContext } from './section-variant';
 
 /** The parent column's flex gap (gap-1.5), folded into the reveal so the sections below don't jump by a gap */
 const SECTION_GAP_PX = 6;
@@ -38,7 +39,8 @@ export default function SidebarSections({ mapRef, only }: { mapRef: RefObject<Ma
   const { score, isError: scoreError, retry: retryScore } = useScore();
 
   return (
-    <>
+    // A phone page (`only`) renders its section as the static page card
+    <SidebarSectionVariantContext value={only ? 'page' : 'card'}>
       {show('foxes') && (
         <SidebarSection id="foxes" title="Vossen" summary={<FoxesSummary />}>
           <FoxesCard />
@@ -122,6 +124,6 @@ export default function SidebarSections({ mapRef, only }: { mapRef: RefObject<Ma
           <JotiboardSection />
         </ErrorBoundary>
       )}
-    </>
+    </SidebarSectionVariantContext>
   );
 }
