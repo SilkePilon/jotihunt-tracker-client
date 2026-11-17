@@ -1,4 +1,4 @@
-import { motion } from 'motion/react';
+import { motion, useReducedMotion } from 'motion/react';
 import { CheckIcon, ClockIcon, XIcon } from 'lucide-react';
 import CountUp from '@/components/motion/CountUp';
 import { LAYOUT_SPRING } from '@/lib/motion';
@@ -25,6 +25,8 @@ export default function HuntResultBar({ counts }: { counts: HuntSyncStatus['coun
   const sum = values.reduce((total, value) => total + value, 0);
   const visible = values.filter((value) => value > 0).length;
   const room = BAR_WIDTH - GAP * Math.max(0, visible - 1);
+  // Width isn't a transform, so MotionConfig's reducedMotion doesn't stop it: under reduced motion the segments jump
+  const reduced = useReducedMotion() ?? false;
 
   return (
     <div className="mt-2.5 flex items-center justify-center gap-2" role="img" aria-label={SEGMENTS.map((segment, index) => `${values[index]} ${segment.label}`).join(', ')}>
@@ -38,7 +40,7 @@ export default function HuntResultBar({ counts }: { counts: HuntSyncStatus['coun
               className={cn('block h-full shrink-0 rounded-[5px]', segment.fill)}
               initial={false}
               animate={{ width: sum === 0 ? 0 : (value / sum) * room, marginLeft: gapBefore }}
-              transition={LAYOUT_SPRING}
+              transition={reduced ? { duration: 0 } : LAYOUT_SPRING}
             />
           );
         })}

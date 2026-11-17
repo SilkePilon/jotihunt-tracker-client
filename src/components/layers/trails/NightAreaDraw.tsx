@@ -300,13 +300,23 @@ export default function NightAreaDraw() {
             transition={SWAP_TRANSITION}
           >
             <Segmented label="Soort gebied" value={kind} options={KIND_OPTIONS} onChange={setKind} />
-            <IconPill variant="soft" aria-label="Ongedaan maken" title="Ongedaan maken" disabled={!points.length || saving} onClick={undo} className="size-8">
+            {/* aria-disabled, not disabled: undoing the last corner (or saving) keeps the focus on the button */}
+            <IconPill
+              variant="soft"
+              aria-label="Ongedaan maken"
+              title="Ongedaan maken"
+              aria-disabled={!points.length || saving || undefined}
+              onClick={() => {
+                if (points.length && !saving) undo();
+              }}
+              className="size-8"
+            >
               <Undo2Icon />
             </IconPill>
-            <Pill variant="secondary" onClick={requestLeave} disabled={saving}>
+            <Pill variant="secondary" onClick={requestLeave} aria-disabled={saving || undefined}>
               Annuleren
             </Pill>
-            <Pill variant="primary" morphKey={saving ? 'busy' : 'idle'} disabled={!closed || saving} onClick={() => void submit()}>
+            <Pill variant="primary" morphKey={saving ? 'busy' : 'idle'} busy={saving} disabled={!closed} onClick={() => void submit()}>
               {saving && <Loader2Icon className="animate-spin" />}
               Opslaan
             </Pill>

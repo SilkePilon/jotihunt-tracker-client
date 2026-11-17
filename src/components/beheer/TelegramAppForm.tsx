@@ -94,7 +94,7 @@ export default function TelegramAppForm({ step, onSaved, onCancel }: { step?: bo
         <Pill variant="secondary" onClick={onCancel}>
           Annuleer
         </Pill>
-        <Pill type="submit" variant="primary" disabled={!valid || saving || !admin.config?.settingsKeyOk} morphKey={saving ? 'busy' : 'idle'}>
+        <Pill type="submit" variant="primary" disabled={!valid || !admin.config?.settingsKeyOk} busy={saving} morphKey={saving ? 'busy' : 'idle'}>
           {saving && <Loader2Icon className="animate-spin" />}
           {step ? 'Volgende' : 'Opslaan'}
         </Pill>

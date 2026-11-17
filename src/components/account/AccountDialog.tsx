@@ -165,11 +165,20 @@ export default function AccountDialog() {
                             <PencilIcon />
                             Hernoemen
                           </DropdownMenuItem>
-                          <DropdownMenuItem variant="destructive" disabled={lastPasskey} onSelect={() => askRemovePasskey(passkey)}>
+                          {/* The last passkey: aria-disabled, not disabled, so keyboard and screen-reader users still reach the reason */}
+                          <DropdownMenuItem
+                            variant="destructive"
+                            aria-disabled={lastPasskey || undefined}
+                            className="aria-disabled:opacity-50"
+                            onSelect={(event) => {
+                              if (lastPasskey) event.preventDefault();
+                              else askRemovePasskey(passkey);
+                            }}
+                          >
                             <Trash2Icon />
                             <div className="flex flex-col">
                               <span>Verwijderen</span>
-                              {lastPasskey && <span className="text-xs text-(--map-danger-fg)/70">Je laatste passkey kan niet weg</span>}
+                              {lastPasskey && <span className="text-xs text-(--map-danger-fg)">Je laatste passkey kan niet weg</span>}
                             </div>
                           </DropdownMenuItem>
                         </DropdownMenuContent>

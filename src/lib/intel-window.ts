@@ -13,6 +13,15 @@ export const KIND_COLOR: Record<IntelKind, string> = { hint: 'var(--intel-hint)'
 export const KIND_CONTAINER: Record<IntelKind, string> = { hint: 'var(--intel-hint-container)', assignment: 'var(--intel-assignment-container)', news: 'var(--intel-news-container)' };
 export const KIND_LABEL: Record<IntelKind, string> = { hint: 'Hint', assignment: 'Opdracht', news: 'Nieuws' };
 
+/**
+ * The kind a timeline row says before its title for screen readers (the tile's icon and colour are visual only):
+ * "Opdracht: ", or nothing when the title already starts with it ("Hint 3", "Opdracht 4").
+ */
+export function kindPrefix(kind: IntelKind, title: string): string {
+  const label = KIND_LABEL[kind];
+  return title.trim().toLowerCase().startsWith(label.toLowerCase()) ? '' : `${label}: `;
+}
+
 const AREAS = areaOptions.map((area) => area.value);
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;

@@ -4,7 +4,7 @@ import { AxiosError, AxiosHeaders } from 'axios';
 import type { Article } from '@/types/Article';
 import type { HintCell } from '@/types/HintCell';
 import type { Assignment, IntelItem } from '@/types/Intel';
-import { KIND_COLOR, KIND_CONTAINER, answerPreview, areaStates, assignmentMeta, assignmentStatusLabel, earnedPoints, chartColumns, initialOpenArea, buildIntelItems, deadlineLabel, deadlineTone, filterByTab, formatSolveTime, groupByDay, hasExistingMarker, intelStats, isDeadlineUrgent, isHintDone, nextOpenArea, ratingStars, siteSubmission, solvedCount, statusAuthor, unreadCount, unreadLabel, unreadTab } from './intel-window';
+import { KIND_COLOR, KIND_CONTAINER, answerPreview, areaStates, assignmentMeta, assignmentStatusLabel, earnedPoints, chartColumns, initialOpenArea, buildIntelItems, deadlineLabel, deadlineTone, filterByTab, formatSolveTime, groupByDay, hasExistingMarker, intelStats, isDeadlineUrgent, isHintDone, kindPrefix, nextOpenArea, ratingStars, siteSubmission, solvedCount, statusAuthor, unreadCount, unreadLabel, unreadTab } from './intel-window';
 
 const article = (id: number, type: string, publishAt: string, extra: Partial<Article> = {}) =>
   ({ id, title: `A${id}`, type, publishAt: new Date(publishAt), content: '<p>x</p>', messageType: '', maxPoints: 0, endTime: new Date(publishAt), ...extra }) as Article;
@@ -353,5 +353,19 @@ describe('kind colours', () => {
       expect(block(':root')).toContain(`${name}:`);
       expect(block('.dark')).toContain(`${name}:`);
     }
+  });
+});
+
+describe('kindPrefix', () => {
+  test('names the kind before a title that does not', () => {
+    expect(kindPrefix('news', 'Belangrijke mededeling')).toBe('Nieuws: ');
+    expect(kindPrefix('assignment', 'Bouw een vlot')).toBe('Opdracht: ');
+    expect(kindPrefix('hint', 'Vossenjacht ronde 2')).toBe('Hint: ');
+  });
+
+  test('nothing when the title already starts with the kind (any case)', () => {
+    expect(kindPrefix('hint', 'Hint 3')).toBe('');
+    expect(kindPrefix('assignment', 'opdracht 4: vlot')).toBe('');
+    expect(kindPrefix('news', '  Nieuws van de organisatie')).toBe('');
   });
 });

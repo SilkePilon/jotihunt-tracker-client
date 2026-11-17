@@ -42,7 +42,6 @@ export function AudioUnlockTile({ onUnlock }: { onUnlock: () => void }) {
     <motion.button
       type="button"
       onClick={onUnlock}
-      aria-label="Klik om geluid aan te zetten"
       className={cn(
         MAP_TILE,
         'absolute right-4 top-4 z-20 flex items-center gap-2 rounded-2xl py-2 pl-3 pr-4 outline-none focus-visible:ring-[3px] focus-visible:ring-ring',
@@ -50,7 +49,8 @@ export function AudioUnlockTile({ onUnlock }: { onUnlock: () => void }) {
       {...POP}
     >
       <VolumeXIcon className="size-5 text-primary-text" aria-hidden />
-      <span className="font-semibold">Geluid aan — klik</span>
+      {/* The visible text is the button's name (no aria-label that says something else) */}
+      <span className="font-semibold">Geluid aanzetten</span>
     </motion.button>
   );
 }

@@ -15,6 +15,7 @@ import {
   life360MembersRefreshInterval,
   life360View,
   membersPillText,
+  refreshWaitText,
 } from './life360';
 
 const NOW = Date.parse('2026-10-17T12:00:00Z');
@@ -129,5 +130,26 @@ test('the linked fixture counts its live members like the server (≤ 15 min)', 
 describe('LIFE360_FILL', () => {
   test('white text on it meets WCAG AA (4.5:1)', () => {
     expect(contrastRatio(LIFE360_FILL, '#ffffff')).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
+describe('refreshWaitText', () => {
+  const at = (ms: number) => new Date(NOW + ms).toISOString();
+
+  test('null when refreshing is allowed (no limit, passed, unreadable)', () => {
+    expect(refreshWaitText(null, NOW)).toBeNull();
+    expect(refreshWaitText(at(-1000), NOW)).toBeNull();
+    expect(refreshWaitText(at(0), NOW)).toBeNull();
+    expect(refreshWaitText('nonsense', NOW)).toBeNull();
+  });
+
+  test('seconds left, rounded up', () => {
+    expect(refreshWaitText(at(41_200), NOW)).toBe('Weer mogelijk over 42 s');
+    expect(refreshWaitText(at(1), NOW)).toBe('Weer mogelijk over 1 s');
+  });
+
+  test('whole minutes from a minute on', () => {
+    expect(refreshWaitText(at(60_000), NOW)).toBe('Weer mogelijk over 1 min');
+    expect(refreshWaitText(at(61_000), NOW)).toBe('Weer mogelijk over 2 min');
   });
 });

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { CheckIcon, LinkIcon, Loader2Icon, RefreshCwIcon, TriangleAlertIcon, UnlinkIcon } from 'lucide-react';
 import { toast } from 'sonner';
@@ -21,7 +21,7 @@ import { revalidateTelegramViews, useTelegramAdmin } from '@/hooks/telegram.hook
 import { apiErrorMessage } from '@/lib/api-error';
 import { JOTIBOARD_SLATE } from '@/lib/jotiboard';
 import { jotiboardIntegration, life360Integration, telegramIntegration, type IntegrationTone, type IntegrationView } from '@/lib/koppelingen';
-import { LIFE360_FILL, refreshAllowed } from '@/lib/life360';
+import { LIFE360_FILL, refreshWaitText } from '@/lib/life360';
 import { TELEGRAM_FILL } from '@/lib/telegram';
 import { POP } from '@/lib/motion';
 import { cn } from '@/lib/utils';
@@ -74,9 +74,13 @@ const JOTIBOARD_STEPS = ['unlinked', 'loggedOut'];
 function RefreshButton({ status, disabled, onRefresh }: { status: Life360LinkedStatus; disabled?: boolean; onRefresh: () => Promise<void> }) {
   const now = useNow(true);
   const [refreshing, setRefreshing] = useState(false);
-  const canRefresh = !refreshing && refreshAllowed(status.refreshAvailableAt, now);
+  const waitText = refreshWaitText(status.refreshAvailableAt, now);
+  const waitId = useId();
+  // Busy or waiting: looks disabled but keeps focus (aria-disabled), so the button isn't lost right after a refresh
+  const inert = refreshing || waitText !== null;
 
   async function refresh() {
+    if (inert) return;
     setRefreshing(true);
     try {
       await onRefresh();
@@ -86,9 +90,25 @@ function RefreshButton({ status, disabled, onRefresh }: { status: Life360LinkedS
   }
 
   return (
-    <IconPill className="size-[26px]" aria-label="Life360 verversen" disabled={!canRefresh || disabled} onClick={() => void refresh()}>
-      <RefreshCwIcon className={cn('size-3.5', refreshing && 'animate-spin')} />
-    </IconPill>
+    <>
+      <IconPill
+        className="size-[26px]"
+        aria-label="Life360 verversen"
+        // The reason is read when the button gets focus; it isn't live, so the countdown isn't announced every second
+        aria-describedby={waitText && !refreshing ? waitId : undefined}
+        aria-disabled={inert || undefined}
+        aria-busy={refreshing || undefined}
+        disabled={disabled}
+        onClick={() => void refresh()}
+      >
+        <RefreshCwIcon className={cn('size-3.5', refreshing && 'animate-spin')} />
+      </IconPill>
+      {waitText && !refreshing && (
+        <span id={waitId} className="sr-only">
+          {waitText}
+        </span>
+      )}
+    </>
   );
 }
 
@@ -398,8 +418,9 @@ export default function KoppelingenPane({ mapRef }: { mapRef: RefObject<MapRef |
       <Pill
         variant="primary"
         morphKey={telegramStarting ? 'busy' : 'idle'}
+        busy={telegramStarting}
         // Without SETTINGS_KEY the app details (step 1) can't be saved
-        disabled={telegramStarting || (needsAppCredentials && settingsKeyMissing) || readOnly}
+        disabled={(needsAppCredentials && settingsKeyMissing) || readOnly}
         onClick={() => void startTelegram()}
       >
         {telegramStarting ? <Loader2Icon className="animate-spin" /> : <LinkIcon />}

@@ -82,8 +82,10 @@ export default function Settings({onReplayTour}: SettingsProps) {
                 <DropdownMenuContent align="start" className="w-[290px]">
                     {/* Quick tiles for what you change most */}
                     <div className={cn('mb-1.5 grid gap-1.5', onReplayTour ? 'grid-cols-3' : 'grid-cols-2')}>
-                        {/* A menuitemcheckbox: checked while the sound is on; the menu stays open on toggle */}
+                        {/* A menuitemcheckbox: checked while the sound is on; the menu stays open on toggle. A fixed name
+                            ("Geluid"): the visible "Geluid aan/uit" swaps, the checked state already says which */}
                         <MenuCheckboxTile checked={!soundMuted}
+                                          aria-label="Geluid"
                                           onSelect={(e) => e.preventDefault()}
                                           onCheckedChange={(on) => setSoundMuted(!on)}
                                           className={cn(!soundMuted && 'bg-(--map-selected-bg) text-(--map-selected-fg) focus:bg-(--map-selected-bg) focus:text-(--map-selected-fg)')}>
