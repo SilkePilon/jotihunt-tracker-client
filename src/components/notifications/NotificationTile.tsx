@@ -33,7 +33,7 @@ export default function NotificationTile({ icon: Icon, label, short, description
       <Icon className="size-5" aria-hidden />
       <AnimatePresence initial={false}>
         {on && (
-          <motion.span key="check" {...POP} aria-hidden className="absolute top-2.5 right-2.5 grid size-5 place-items-center rounded-full bg-primary text-primary-foreground">
+          <motion.span key="check" {...POP} aria-hidden className="absolute top-2.5 right-2.5 grid size-5 place-items-center rounded-full bg-primary-text text-primary-foreground dark:bg-primary">
             <CheckIcon className="size-3" strokeWidth={3} />
           </motion.span>
         )}

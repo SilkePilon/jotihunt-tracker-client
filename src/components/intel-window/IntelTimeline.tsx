@@ -189,7 +189,7 @@ const META_TONE: Record<MetaTone, string> = {
   ok: 'text-green-700 dark:text-green-400',
   info: 'text-blue-700 dark:text-blue-400',
   warn: 'text-amber-700 dark:text-amber-300',
-  danger: 'text-red-600 dark:text-red-400',
+  danger: 'text-red-700 dark:text-red-400',
 };
 
 /**
