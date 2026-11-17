@@ -72,6 +72,8 @@ import NightAreaDraw from './layers/trails/NightAreaDraw';
 import NightAreasLayer from './layers/trails/NightAreasLayer';
 import MapUnavailableCard from './map/MapUnavailableCard';
 import BrowserLocationDot from './map/BrowserLocationDot';
+import FollowMe from './map/FollowMe';
+import useFollowMeStore from '@/stores/follow-me.store';
 import {featureNear, openLayerFeature, type OpenFeatureOptions} from './layers/map-interactions';
 import {useMapAvailability} from './map/useMapAvailability';
 import KeyboardLocationPick from './map/KeyboardLocationPick';
@@ -173,8 +175,12 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
 
     // Make map fly available to other components
     const mapRef = useRef<MaplibreRef>(null);
+    // Another part of the app moving the camera ("show on map", a list row) ends "Mijn locatie" following, or the next
+    // own fix would pull the map straight back (MyLocationButton starts following after its own flight)
+    const stopFollowing = () => useFollowMeStore.getState().stop();
     useImperativeHandle(ref, () => ({
         flyTo: (options: FlyToOpts) => {
+            stopFollowing();
             if (mapRef.current) {
                 // Phones: fly with the padding of the snap the sheet is heading to (a caller lowering the sheet sets the
                 // snap first), so the point lands above the sheet and the padding effect has nothing left to ease
@@ -184,6 +190,7 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
         },
         fitBounds: (bounds, options) => {
             if (!mapRef.current) return false;
+            stopFollowing();
             mapRef.current.fitBounds(bounds, options);
             return true;
         },
@@ -442,6 +449,8 @@ const Map = memo(forwardRef<MapRef, MapProps>(({className, wall = false, overlay
                 {!wall && <HintGuess/>}
                 {/* Phones: own position from the browser after a "Mijn locatie" tap (the desktop has MapLibre's geolocate) */}
                 {isMobile && !wall && <BrowserLocationDot/>}
+                {/* Phones: "Mijn locatie" keeps the map on the own position until the map is moved by hand */}
+                {isMobile && !wall && <FollowMe/>}
                 {isAdmin && <NightAreasLayer/>}
                 <AnimatePresence>{drawing && <NightAreaDraw key="draw"/>}</AnimatePresence>
                 <LayerStack/>
