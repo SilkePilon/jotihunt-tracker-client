@@ -53,6 +53,8 @@
   --destructive-foreground: hsl(60 9.1% 97.8%);
   /* Red as small text (errors, danger rows, penalties): >= 4.5:1 on white, the tonal rows and bg-destructive/15 */
   --destructive-text: hsl(0 72.2% 44%);
+  /* Solid red fill under white text (destructive Button, ConfirmDialog action, danger Pill): 4.8:1 */
+  --destructive-fill: var(--destructive);
   --border: hsl(20 0% 90%);
   /* Text field outlines (border-input): >= 3:1 against white so the field's boundary is visible */
   --input: hsl(20 0% 54%);
@@ -63,9 +65,15 @@
   /* Inner corners of segmented rows (Beheer rows, menu rows, phone menu: M3 segmented list, outer ends 16px). Used as
      rounded-(--radius-segment), which tailwind-merge still lets a caller's rounded-* override */
   --radius-segment: 6px;
-  /* Tiles: the map's square icon tiles, search and coordinate rows, tonal note boxes, picker buttons. Used as
+  /* The tighter inner corners of the map's segmented button stacks (zoom, my location / fullscreen / ruler) */
+  --radius-segment-tight: 4px;
+  /* Tiles: search and coordinate rows, the command list rows, tonal note boxes, picker buttons. Used as
      rounded-(--radius-tile) like the segment radius above */
   --radius-tile: 14px;
+  /* Inner controls inside a tile or track: segmented tabs and their thumb, the Bekijk button, map style thumbnails */
+  --radius-inner: 9px;
+  /* Intel panels: the chat input, the AI-off note and the summary skeleton */
+  --radius-panel: 20px;
   /* Vossen card: M3 status roles of the map markers (marker-style.ts) + a cooldown blue */
   --fox-ok: #2f6b2c;
   --fox-ok-container: #b7f2ae;
@@ -158,6 +166,8 @@
   --destructive-foreground: hsl(60 9.1% 97.8%);
   /* --destructive is 3.3:1 on the dark card; red-300 is >= 6.5:1 on card, rows and bg-destructive/15 */
   --destructive-text: #fca5a5;
+  /* The solid red fill a step darker on the dark window: white text 8.7:1 */
+  --destructive-fill: color-mix(in oklab, var(--destructive) 75%, black);
   --border: hsl(240 4% 22%);
   /* Field outlines: >= 3:1 against the card (22% was 1.3:1); fills use bg-input/10 so they stay dark */
   --input: hsl(240 4% 46%);
@@ -228,6 +238,7 @@
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-destructive-text: var(--destructive-text);
+  --color-destructive-fill: var(--destructive-fill);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -282,12 +293,14 @@
   --color-score-hints: var(--score-hints);
   --color-score-penalty: var(--score-penalty);
 
-  /* Named type scale for the off-Tailwind sizes (text-label / text-caption / text-body; text-xs 12px, text-sm 14px and
-     up stay Tailwind's). label: overlines, meta and tags on the desktop shell; caption: secondary lines; body: the
-     desktop body text of rows, dialogs and cards. Sizes only: callers add leading. */
-  --text-label: 11px;
-  --text-caption: 12.5px;
-  --text-body: 13px;
+  /* Named type scale for the off-Tailwind sizes (text-label / text-caption / text-body / text-title; text-xs 12px,
+     text-sm 14px and up stay Tailwind's). label: overlines, meta and tags on the desktop shell; caption: secondary
+     lines; body: the desktop body text of rows, dialogs and cards; title: card titles (CARD_TITLE) and big CTA labels.
+     In rem like Tailwind's own sizes, so they follow the root size (the HQ wall). Sizes only: callers add leading. */
+  --text-label: 0.6875rem; /* 11px */
+  --text-caption: 0.78125rem; /* 12.5px */
+  --text-body: 0.8125rem; /* 13px */
+  --text-title: 0.9375rem; /* 15px */
 
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
@@ -422,9 +435,9 @@ body.dark {
   background: var(--map-surface) !important;
   color: var(--map-on-surface);
   font-family: var(--map-font);
-  font-size: 13px;
+  font-size: var(--text-body);
   line-height: 1.35;
-  border-radius: 24px !important;
+  border-radius: var(--radius-3xl) !important;
   padding: 14px;
   box-shadow: var(--shadow-dialog);
 }
@@ -451,7 +464,7 @@ body.dark {
   @apply flex flex-col gap-0.5 overflow-visible! rounded-none! border-0! bg-transparent! shadow-none!;
 
   > button {
-    @apply size-10! rounded-[4px]! bg-card! shadow-(--shadow-tile)! transition-colors! duration-150! hover:bg-beheer-row-high!;
+    @apply size-10! rounded-(--radius-segment-tight)! bg-card! shadow-(--shadow-tile)! transition-colors! duration-150! hover:bg-beheer-row-high!;
   }
 
   > button:first-child {
@@ -532,15 +545,15 @@ body.dark {
 
 /* My location + fullscreen + ruler read as one stack */
 .maplibregl-ctrl-group:has(> .maplibregl-ctrl-geolocate) > button {
-  @apply rounded-t-xl! rounded-b-[4px]!;
+  @apply rounded-t-xl! rounded-b-(--radius-segment-tight)!;
 }
 
 .maplibregl-ctrl-group:has(> .maplibregl-ctrl-fullscreen, > .maplibregl-ctrl-shrink) > button {
-  @apply rounded-[4px]!;
+  @apply rounded-(--radius-segment-tight)!;
 }
 
 .maplibregl-ctrl-group.mapbox-ctrl-ruler > button {
-  @apply rounded-t-[4px]! rounded-b-xl!;
+  @apply rounded-t-(--radius-segment-tight)! rounded-b-xl!;
 }
 
 .maplibregl-ctrl-bottom-right .maplibregl-ctrl {

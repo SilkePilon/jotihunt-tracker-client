@@ -21,7 +21,7 @@ export default function UnreachableCard({ onRetry }: { onRetry: () => Promise<un
 
   return (
     <div role="alert" className={cn(AUTH_CARD, 'flex w-full max-w-sm flex-col items-center gap-3 p-7 text-center')}>
-      <div className="flex size-10 items-center justify-center rounded-lg bg-muted">
+      <div className="flex size-10 items-center justify-center rounded-lg bg-beheer-row-high">
         <WifiOffIcon className="size-5 text-muted-foreground" />
       </div>
       <h1 className="text-lg font-bold tracking-tight">Server niet bereikbaar</h1>

@@ -21,8 +21,8 @@ const pill = cva(
         'danger-soft': 'bg-destructive/15 text-destructive-text hover:bg-destructive/20',
         'danger-outline':
           'text-destructive-text shadow-[inset_0_0_0_1.5px_color-mix(in_oklab,var(--destructive)_60%,transparent)] hover:bg-destructive/10',
-        // White: 4.83:1 on the fill; hover darkens (6.4:1) instead of /90, which lightened it to 4.3:1 over the card
-        danger: 'bg-destructive text-white hover:bg-[color-mix(in_oklab,var(--destructive)_88%,black)]',
+        // White on --destructive-fill (4.8:1 light, 8.7:1 dark); hover darkens instead of /90, which lightened it to 4.3:1
+        danger: 'bg-destructive-fill text-white hover:bg-[color-mix(in_oklab,var(--destructive-fill)_88%,black)]',
         success: 'bg-green-500/15 text-status-ok-text',
         // The warning-text colour as a fill: white on #92400e (7.1:1); dark mode the card colour on #fcd34d (11:1)
         warn: 'bg-status-warn-text text-card hover:bg-status-warn-text/90',
@@ -53,7 +53,7 @@ type PillProps = Omit<HTMLMotionProps<'button'>, 'children'> &
     busy?: boolean;
   };
 
-/** Beheer's text button: a full pill. */
+/** Beheer's text button, 8px corners. */
 export function Pill({ variant, size, className, children, morphKey, style, busy, onClick, type = 'button', 'aria-disabled': ariaDisabled, ...props }: PillProps) {
   const inert = busy || ariaDisabled === true || ariaDisabled === 'true';
   return (
@@ -110,7 +110,7 @@ const iconPill = cva(
   },
 );
 
-/** Round 34px icon button; always give it an aria-label. */
+/** 34px icon button with 8px corners; always give it an aria-label. */
 export function IconPill({ variant, className, type = 'button', ...props }: ComponentProps<'button'> & VariantProps<typeof iconPill> & { 'aria-label': string }) {
   return <button type={type} className={cn(iconPill({ variant }), className)} {...props} />;
 }

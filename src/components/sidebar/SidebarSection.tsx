@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { tourTarget } from '@/components/tour/targets';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { SidebarSectionVariantContext } from './section-variant';
+import { CARD_TITLE } from '@/lib/dialog-shell';
 
 interface SidebarSectionProps {
   id: SidebarSectionId;
@@ -34,7 +35,7 @@ export default function SidebarSection({ id, title, summary, open: openProp, onO
   if (variant === 'page') {
     return (
       <section {...tourTarget(`sidebar.${id}`)} className={cn('rounded-3xl bg-card p-2 text-card-foreground', className)}>
-        <h2 className="px-3 pt-1.5 pb-2 text-[15px] font-bold">{title}</h2>
+        <h2 className={`px-3 pt-1.5 pb-2 ${CARD_TITLE}`}>{title}</h2>
         {/* px-1: the content keeps the card's 12px inset, like in the sidebar */}
         <div className="px-1 pb-1">
           <ErrorBoundary variant="inline">{children}</ErrorBoundary>
@@ -51,7 +52,7 @@ export default function SidebarSection({ id, title, summary, open: openProp, onO
           44px tall */}
       <h2>
         <CollapsibleTrigger className="relative -mx-3 flex w-[calc(100%+1.5rem)] cursor-pointer items-center justify-between gap-2 rounded-xl px-3 pt-2 pb-1 text-left outline-none pointer-coarse:min-h-11 focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset after:absolute after:inset-x-0 after:top-full after:h-1 after:content-['']">
-          <span className="text-sm font-semibold">{title}</span>
+          <span className="text-sm font-bold">{title}</span>
           <span className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
             {/* The summary fades out as the section opens and back in as it closes (and when it first arrives with its poll) */}
             <AnimatePresence initial={false}>

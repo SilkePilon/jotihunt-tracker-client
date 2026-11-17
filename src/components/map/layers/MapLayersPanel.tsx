@@ -16,6 +16,7 @@ import { OVERLINE } from '@/lib/menu-styles';
 import { cn } from '@/lib/utils';
 import useSettingsStore from '@/stores/settings.store';
 import { MapStyle } from '@/types/MapStyle';
+import { CARD_TITLE } from '@/lib/dialog-shell';
 
 /**
  * '' = automatic: the Material map, light or dark with the theme. Thumbnails show Wageningen at z13. `name` (when set)
@@ -68,7 +69,7 @@ function StyleBar() {
   const isDarkMode = useDarkMode();
   return (
     <section>
-      <h3 className="mx-1 mb-2 text-[15px] font-bold">Kaartstijl</h3>
+      <h3 className={`mx-1 mb-2 ${CARD_TITLE}`}>Kaartstijl</h3>
       <RadioGroupPrimitive.Root
         aria-label="Kaartstijl"
         value={mapStyle || AUTO_VALUE}
@@ -89,7 +90,7 @@ function StyleBar() {
                 src={isDarkMode && style.darkThumb ? style.darkThumb : style.thumb}
                 alt=""
                 draggable={false}
-                className="relative aspect-[1.3] w-full rounded-[9px] object-cover transition-transform duration-200 motion-safe:group-hover:scale-[1.04]"
+                className="relative aspect-[1.3] w-full rounded-(--radius-inner) object-cover transition-transform duration-200 motion-safe:group-hover:scale-[1.04]"
               />
               <span className={cn('relative text-xs transition-colors desk:text-label', selected ? 'font-semibold text-on-primary-container' : 'text-muted-foreground')}>{style.label}</span>
             </RadioGroupPrimitive.Item>
@@ -119,7 +120,7 @@ function LayerRowView({ row }: { row: LayerRow }) {
       <div className="flex items-center gap-2.5 px-3 py-2">
         <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
         <span className="flex-1 text-body font-semibold">{row.label}</span>
-        <div className="flex gap-0.5 rounded-[9px] bg-card p-0.5">
+        <div className="flex gap-0.5 rounded-(--radius-inner) bg-card p-0.5">
           {row.parts.map((part) => (
             <button
               key={part.id}
@@ -157,7 +158,7 @@ function FoodButton({ toggle }: { toggle: FoodToggle }) {
       )}
     >
       <span
-        className={cn('grid size-7 place-items-center rounded-[9px] border-2 border-white shadow-[0_1px_3px_rgb(0_0_0/0.25)] transition-[filter,opacity] duration-200', !toggle.checked && 'opacity-45 grayscale')}
+        className={cn('grid size-7 place-items-center rounded-(--radius-inner) border-2 border-white shadow-[0_1px_3px_rgb(0_0_0/0.25)] transition-[filter,opacity] duration-200', !toggle.checked && 'opacity-45 grayscale')}
         style={{ background: BRAND_COLOR[toggle.brand] }}
       >
         {/* 2px smaller than on the 28px marker: the white rim sits inside this tile's box */}

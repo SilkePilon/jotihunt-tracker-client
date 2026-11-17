@@ -13,7 +13,7 @@ export default function DebugInfo() {
   const formatTime = (iso: string | null) => (iso ? new Date(iso).toLocaleString('nl-NL') : '–');
 
   return (
-    <DialogContent className={cn(DIALOG_SHELL, 'bg-card')}>
+    <DialogContent className={cn(DIALOG_SHELL, 'bg-card p-5')}>
       <DialogHeader>
         <DialogTitle>Debug informatie</DialogTitle>
         <DialogDescription>Informatie voor ontwikkelaars</DialogDescription>

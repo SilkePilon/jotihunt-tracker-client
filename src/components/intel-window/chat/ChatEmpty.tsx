@@ -4,6 +4,7 @@ import { CHAT_EMPTY, CHAT_EMPTY_PART } from '@/lib/intel-window';
 import { POP } from '@/lib/motion';
 import { TONAL_HOVER } from '@/lib/tonal-button';
 import type { IntelItem } from '@/types/Intel';
+import { CARD_TITLE } from '@/lib/dialog-shell';
 
 interface ChatEmptyProps {
   item: IntelItem;
@@ -22,10 +23,10 @@ export default function ChatEmpty({ item, disabled, onPick, delay = 0, stagger =
   const chips = suggestionChips(item);
   return (
     <motion.div variants={CHAT_EMPTY} custom={delay} initial={stagger ? 'hidden' : false} animate="shown" className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2.5 px-4 text-center">
-      <motion.div variants={CHAT_EMPTY_PART} aria-hidden className="grid size-[54px] place-items-center rounded-[18px] bg-fox-warn-container text-[26px] text-fox-on-warn">
+      <motion.div variants={CHAT_EMPTY_PART} aria-hidden className="grid size-[54px] place-items-center rounded-2xl bg-fox-warn-container text-[26px] text-fox-on-warn">
         ✦
       </motion.div>
-      <motion.p variants={CHAT_EMPTY_PART} className="text-[15px] font-bold">
+      <motion.p variants={CHAT_EMPTY_PART} className={CARD_TITLE}>
         Samen puzzelen
       </motion.p>
       <motion.p variants={CHAT_EMPTY_PART} className="max-w-[260px] text-caption leading-relaxed text-muted-foreground">

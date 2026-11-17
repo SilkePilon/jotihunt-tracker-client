@@ -62,9 +62,10 @@ export default function CoordinatesCard({ mapRef, onDone, fluid }: { mapRef: Rea
                 onSubmit={onSubmit}
                 className={cn(
                     MAP_TILE,
-                    // isolate: the Bekijk button's phone hit area stays above the tile's background
-                    "isolate flex h-11 w-full items-center gap-2.5 rounded-(--radius-tile) px-1.5 outline-2 outline-transparent transition-[outline-color] duration-150 focus-within:outline-ring",
-                    error && "outline-destructive focus-within:outline-destructive",
+                    // isolate: the Bekijk button's phone hit area stays above the tile's background. Focus: the 3px ring
+                    // of the search rows (SearchCard); an error keeps a red ring, 3px while focused
+                    "isolate flex h-11 w-full items-center gap-2.5 rounded-(--radius-tile) px-1.5 ring-ring transition-shadow duration-150 focus-within:ring-[3px]",
+                    error && "ring-2 ring-destructive",
                 )}
             >
                 <span className={cn(MAP_CHIP, "text-muted-foreground")}><CrosshairIcon/></span>
@@ -85,7 +86,7 @@ export default function CoordinatesCard({ mapRef, onDone, fluid }: { mapRef: Rea
                 <button
                     type="submit"
                     disabled={empty}
-                    className={cn(COARSE_HIT_AREA, "h-8 shrink-0 rounded-[9px] bg-primary-container px-3 text-body font-semibold text-on-primary-container transition-[background-color,opacity] hover:bg-[color-mix(in_oklab,var(--on-primary-container)_10%,var(--primary-container))] focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-primary-container")}
+                    className={cn(COARSE_HIT_AREA, "h-8 shrink-0 rounded-(--radius-inner) bg-primary-container px-3 text-body font-semibold text-on-primary-container transition-[background-color,opacity] hover:bg-[color-mix(in_oklab,var(--on-primary-container)_10%,var(--primary-container))] focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-primary-container")}
                 >
                     Bekijk
                 </button>

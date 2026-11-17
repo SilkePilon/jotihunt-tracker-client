@@ -10,7 +10,7 @@ import Reveal from '@/components/motion/Reveal';
 import { apiErrorMessage } from '@/lib/api-error';
 import { BUSY_MESSAGE, CONTEXT_LABEL, answerAnnouncement, chatStatusLabel, lastUserMessageId } from '@/lib/intel-chat';
 import { CHAT_EMPTY_ENTRANCE_DELAY, CHAT_MESSAGE } from '@/lib/intel-window';
-import { POP, SWAP } from '@/lib/motion';
+import { POP, SWAP, SWAP_TRANSITION } from '@/lib/motion';
 import type { IntelItem, IntelKind } from '@/types/Intel';
 import ChatEmpty from './ChatEmpty';
 import ChatInput from './ChatInput';
@@ -18,6 +18,7 @@ import ChatMessage from './ChatMessage';
 import ToolStatus from './ToolStatus';
 import { ChatScrollerContext, useStickToBottom } from './stick-to-bottom';
 import { type IntelChatState, useIntelChat } from './useIntelChat';
+import { CARD_TITLE } from '@/lib/dialog-shell';
 
 interface IntelChatProps {
   item: IntelItem;
@@ -94,7 +95,7 @@ function ChatPanel({ item, mapRef, entrance }: IntelChatProps) {
             </Pill>
           </motion.div>
         ) : scene === 'empty' ? (
-          <motion.div key="empty" className="flex min-h-0 flex-1 flex-col" initial={mounted ? { opacity: 0 } : false} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
+          <motion.div key="empty" className="flex min-h-0 flex-1 flex-col" initial={mounted ? { opacity: 0 } : false} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={SWAP_TRANSITION}>
             <ChatEmpty item={item} disabled={busy || chat.unavailable} onPick={chat.send} delay={emptyDelay ? CHAT_EMPTY_ENTRANCE_DELAY : 0} stagger={mounted || emptyDelay} />
           </motion.div>
         ) : (
@@ -120,7 +121,7 @@ function ChatPanel({ item, mapRef, entrance }: IntelChatProps) {
 function ChatHeader({ kind, action }: { kind: IntelKind; action?: ReactNode }) {
   return (
     <div className="mx-1 flex items-center gap-2">
-      <h3 className="text-[15px] font-bold">Vraag de AI</h3>
+      <h3 className={CARD_TITLE}>Vraag de AI</h3>
       <span className="ml-auto rounded-lg bg-beheer-row-high px-2 py-0.5 text-label font-semibold text-muted-foreground">{CONTEXT_LABEL[kind]}</span>
       {action}
     </div>
@@ -184,7 +185,7 @@ function ChatFooter({ chat, itemId, kind, busy }: { chat: IntelChatState; itemId
   return (
     <AnimatePresence mode="wait" initial={false}>
       {chat.unavailable ? (
-        <motion.div key="off" {...SWAP} className="rounded-[20px] bg-beheer-row-high px-3.5 py-3 text-body text-muted-foreground">
+        <motion.div key="off" {...SWAP} className="rounded-(--radius-panel) bg-beheer-row-high px-3.5 py-3 text-body text-muted-foreground">
           AI is niet ingesteld
         </motion.div>
       ) : (

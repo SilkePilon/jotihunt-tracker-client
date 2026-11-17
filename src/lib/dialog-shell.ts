@@ -1,4 +1,4 @@
-import { TONAL_HOVER, TONAL_HOVER_DARK } from './tonal-button';
+import { TONAL_HOVER } from './tonal-button';
 
 /**
  * Desktop dialog shell (Account, Meldingen, Intel): 28px card without border, the layers-popover shadow, and the built-in
@@ -14,7 +14,10 @@ export const DIALOG_SHELL =
 export const DIALOG_ACTION = 'h-10 rounded-xl px-[18px] font-semibold shadow-none';
 
 /** The secondary (Annuleren) action: a tonal row-high button; put it on a Button with variant="outline" */
-export const DIALOG_ACTION_CANCEL = `${DIALOG_ACTION} border-0 bg-beheer-row-high text-foreground ${TONAL_HOVER} hover:text-foreground dark:bg-beheer-row-high ${TONAL_HOVER_DARK}`;
+export const DIALOG_ACTION_CANCEL = `${DIALOG_ACTION} border-0 bg-beheer-row-high text-foreground ${TONAL_HOVER} hover:text-foreground`;
 
 /** Title of a window's open pane (Beheer pane, Intel item header): 22px bold, tight leading. */
 export const PANE_TITLE = 'text-[22px] leading-tight font-bold';
+
+/** Title of a card or panel section (Beheer cards, map layers, popups, sidebar sections): 15px bold. */
+export const CARD_TITLE = 'text-title font-bold';

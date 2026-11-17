@@ -7,6 +7,7 @@ import { isChunkLoadError } from '@/lib/chunk-error';
 import { SWAP } from '@/lib/motion';
 import { TONAL_BUTTON } from '@/lib/tonal-button';
 import { cn } from '@/lib/utils';
+import { CARD_TITLE } from '@/lib/dialog-shell';
 
 interface ChunkBoundaryProps {
   /** E.g. "Beheer", for the message */
@@ -47,7 +48,7 @@ export default class ChunkBoundary extends Component<ChunkBoundaryProps, { error
           <WifiOffIcon className="size-5" />
         </div>
         <div className="max-w-xs space-y-1">
-          <p className="text-[15px] font-bold">{this.props.name} kon niet worden geladen</p>
+          <p className={CARD_TITLE}>{this.props.name} kon niet worden geladen</p>
           <p className="text-body text-muted-foreground">{chunk ? 'Controleer je verbinding en laad de app opnieuw.' : 'Er ging iets mis. Laad de app opnieuw.'}</p>
         </div>
         <Button variant="ghost" className={cn(TONAL_BUTTON, 'px-4')} onClick={() => window.location.reload()}>

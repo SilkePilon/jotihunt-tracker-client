@@ -16,7 +16,7 @@ export default function DownloadSplitButton({ version, onDownload, onLater, onNe
       <button
         type="button"
         onClick={onDownload}
-        className="flex h-12 flex-1 items-center justify-center gap-2 rounded-l-xl rounded-r-[4px] bg-primary-container text-[15px] font-semibold text-on-primary-container outline-none focus-visible:ring-[3px] focus-visible:ring-ring active:scale-[.98]"
+        className="flex h-12 flex-1 items-center justify-center gap-2 rounded-l-xl rounded-r-[4px] bg-primary-container text-title font-semibold text-on-primary-container outline-none focus-visible:ring-[3px] focus-visible:ring-ring active:scale-[.98]"
       >
         <DownloadIcon className="size-5" /> Download · {version}
       </button>

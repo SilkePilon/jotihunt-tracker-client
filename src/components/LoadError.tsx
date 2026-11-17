@@ -4,6 +4,7 @@ import { Loader2Icon, RotateCwIcon } from 'lucide-react';
 import { SWAP_TRANSITION } from '@/lib/motion';
 import { COARSE_HIT_AREA } from '@/lib/hit-area';
 import { cn } from '@/lib/utils';
+import { TONAL_HOVER } from '@/lib/tonal-button';
 
 interface LoadErrorProps {
   /** What failed, e.g. "Hints konden niet worden geladen." */
@@ -73,8 +74,9 @@ export default function LoadError({ message, onRetry, centered, scale, blocking,
         aria-busy={busy || undefined}
         onClick={() => void retry()}
         className={cn(
-          'inline-flex shrink-0 items-center bg-beheer-row-high font-semibold text-foreground outline-none transition-colors hover:bg-[color-mix(in_oklab,var(--foreground)_14%,var(--card))] focus-visible:ring-[3px] focus-visible:ring-ring aria-disabled:pointer-events-none aria-disabled:opacity-70',
+          'inline-flex shrink-0 items-center bg-beheer-row-high font-semibold text-foreground outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring aria-disabled:pointer-events-none aria-disabled:opacity-70',
           scale ? 'h-[2.25rem] gap-[0.4rem] px-[0.85rem] text-[0.875rem] [&_svg]:size-[1.1rem]' : 'h-8 gap-1.5 px-3 text-caption [&_svg]:size-4',
+          TONAL_HOVER,
           // 44px touch area on phones, same look
           COARSE_HIT_AREA,
         )}

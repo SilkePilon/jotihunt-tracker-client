@@ -12,16 +12,17 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: "bg-primary-container text-on-primary-container hover:bg-[color-mix(in_oklab,var(--on-primary-container)_10%,var(--primary-container))]",
-        // White text: 4.83:1 on the light fill, 8.4:1 on the dark /60 fill. Hover darkens (6.4:1); the old /90 lightened to 4.3:1
+        // --destructive-fill: white text 4.8:1 light, 8.7:1 on the darker dark fill. Hover darkens; /90 lightened to 4.3:1
         destructive:
-          "bg-destructive text-white hover:bg-[color-mix(in_oklab,var(--destructive)_88%,black)] focus-visible:ring-destructive dark:bg-destructive/60 dark:hover:bg-destructive/70",
+          "bg-destructive-fill text-white hover:bg-[color-mix(in_oklab,var(--destructive-fill)_88%,black)] focus-visible:ring-destructive",
         // Secondary action: the grey tonal sidebar button (TONAL_BUTTON) without border or shadow
         outline:
           `border-0 bg-beheer-row-high text-foreground shadow-none ${TONAL_HOVER} hover:text-foreground`,
+        // Grey tonal pill (VehicleMenu, Life360 members, Jotiboard menu): row-high with the shared tonal hover
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+          `bg-beheer-row-high text-foreground ${TONAL_HOVER}`,
         ghost:
-          "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
+          "hover:bg-beheer-row-high hover:text-foreground",
         link: "text-primary-text underline-offset-4 hover:underline",
       },
       size: {

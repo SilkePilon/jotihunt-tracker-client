@@ -4,6 +4,7 @@ import { RotateCwIcon } from 'lucide-react';
 import ImageLightbox from '@/components/ImageLightbox';
 import type { MapRef } from '@/components/Map';
 import { SWAP, SWAP_TRANSITION } from '@/lib/motion';
+import { TONAL_HOVER } from '@/lib/tonal-button';
 import type { LookAtPointResult } from '@/types/IntelChat';
 import { Row, ShowOnMapPill } from './PointCard';
 
@@ -36,7 +37,7 @@ export default function LookCard({ look, mapRef }: { look: LookAtPointResult; ma
                 <button
                   type="button"
                   onClick={retry}
-                  className="inline-flex h-6 items-center gap-1 rounded-lg bg-beheer-row px-2 text-label font-semibold text-foreground outline-none transition-colors hover:bg-[color-mix(in_oklab,var(--foreground)_10%,var(--card))] focus-visible:ring-[3px] focus-visible:ring-ring"
+                  className={`inline-flex h-6 items-center gap-1 rounded-lg bg-beheer-row px-2 text-label font-semibold text-foreground outline-none transition-colors ${TONAL_HOVER} focus-visible:ring-[3px] focus-visible:ring-ring`}
                 >
                   <RotateCwIcon className="size-3" />
                   Opnieuw

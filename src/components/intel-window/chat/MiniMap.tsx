@@ -9,6 +9,7 @@ import useSettingsStore from '@/stores/settings.store';
 import type { LatLng } from '@/types/IntelChat';
 import { useDarkShields } from '@/components/layers/dark-shields';
 import { ChatScrollerContext } from './stick-to-bottom';
+import { SWAP_TRANSITION } from '@/lib/motion';
 
 /** The dark theme's road shields (drawn on demand, like on the big map). */
 function DarkShields() {
@@ -34,7 +35,7 @@ export default function MiniMap({ point, label }: { point: LatLng; label: string
     <div ref={ref} className="relative h-24 overflow-hidden bg-beheer-row-high">
       <AnimatePresence>
         {near && (
-          <motion.div key="map" className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
+          <motion.div key="map" className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={SWAP_TRANSITION}>
             <Maplibre
               initialViewState={{ longitude: point.lng, latitude: point.lat, zoom: 14 }}
               mapStyle={style}

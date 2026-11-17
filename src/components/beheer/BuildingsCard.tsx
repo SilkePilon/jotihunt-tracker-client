@@ -13,6 +13,7 @@ import { EASE_OUT, SWAP_TRANSITION } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { BeheerCard, CountSwap, FadeSwap, InlineConfirm } from './BeheerLayout';
 import { Pill } from './controls/Pill';
+import { CARD_TITLE } from '@/lib/dialog-shell';
 
 /** The inline confirm sits in the card as a red box (as in KoppelingenPane) */
 const CONFIRM_BOX = 'rounded-2xl bg-destructive/12 px-3.5 py-3';
@@ -121,7 +122,7 @@ export default function BuildingsCard({ mapRef }: { mapRef: RefObject<MapRef | n
           <Building2Icon className="size-[22px]" />
         </span>
         <div className="min-w-0 flex-1">
-          <h3 className="text-[15px] font-bold">3D-gebouwen</h3>
+          <h3 className={CARD_TITLE}>3D-gebouwen</h3>
           <FadeSwap className="text-caption text-muted-foreground">{summary ?? (isError ? 'Status ophalen is mislukt.' : <Skeleton className="mt-1 h-3 w-40" />)}</FadeSwap>
           <Reveal>{status && <FadeSwap className="text-xs text-muted-foreground">{dates}</FadeSwap>}</Reveal>
         </div>

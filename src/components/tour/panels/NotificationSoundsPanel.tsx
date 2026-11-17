@@ -7,6 +7,7 @@ import type { SoundKey } from '@/lib/notifications';
 import { MENU_GROUP } from '@/lib/menu-styles';
 import { cn } from '@/lib/utils';
 import useSettingsStore from '@/stores/settings.store';
+import { CARD_TITLE } from '@/lib/dialog-shell';
 
 interface SoundItem {
   key: SoundKey;
@@ -63,7 +64,7 @@ export default function NotificationSoundsPanel() {
           <Volume2Icon className="size-5" />
         </div>
         <div className="min-w-0">
-          <p className="text-[15px] font-bold leading-tight">Leer de geluiden</p>
+          <p className={`${CARD_TITLE} leading-tight`}>Leer de geluiden</p>
           <p className="text-xs text-muted-foreground">Tik op een melding om te horen hoe hij klinkt.</p>
         </div>
       </div>

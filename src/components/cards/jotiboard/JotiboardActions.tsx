@@ -29,7 +29,7 @@ function Row({ icon, title, subtitle, danger, onClick }: { icon: ReactNode; titl
     <button type="button" onClick={onClick} className="flex w-full items-center gap-2.5 border-t border-border px-0.5 py-2.5 text-left first:border-t-0 [&_svg]:size-4 [&_svg]:shrink-0">
       <span className={cn(danger && 'text-destructive-text')}>{icon}</span>
       <span className="min-w-0 flex-1">
-        <span className={cn('block text-body font-medium', danger && 'text-destructive-text')}>{title}</span>
+        <span className={cn('block text-body font-semibold', danger && 'text-destructive-text')}>{title}</span>
         <span className="block text-xs text-muted-foreground desk:text-label">{subtitle}</span>
       </span>
       <ChevronRightIcon className="text-muted-foreground" />

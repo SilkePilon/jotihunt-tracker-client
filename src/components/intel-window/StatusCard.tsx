@@ -54,7 +54,7 @@ export default function StatusCard({ items, cells, entrance }: { items: IntelIte
         </Tile>
         <Tile label="Opdrachten" onClick={() => setTab('assignment')} sub={assignments.total ? `ingeleverd${assignments.judged ? ` · ${assignments.points} pt verdiend` : ''}` : 'nog geen opdrachten'}>
           <CountUp value={assignments.submitted} from={from} />
-          <span className="text-[15px] text-muted-foreground">/{assignments.total}</span>
+          <span className="text-title text-muted-foreground">/{assignments.total}</span>
         </Tile>
         <Tile label="Ongelezen" onClick={() => setTab(unreadTab(unread))} sub={unreadLabel(unread)}>
           <CountUp value={unread.news + unread.assignment} from={from} />
