@@ -52,8 +52,10 @@ export default function AreaPicker({ id, value, onChange, invalid, afterPick, pl
         className="w-[300px] p-2.5"
         // After a pick, focus goes on to the time picker instead of back to this trigger
         onCloseAutoFocus={(event) => {
-          if (!picked.current || !afterPick) return;
+          // Cleared on every close, so a later close without a pick never counts as one (even if afterPick arrives later)
+          const didPick = picked.current;
           picked.current = false;
+          if (!didPick || !afterPick) return;
           event.preventDefault();
           afterPick();
         }}
