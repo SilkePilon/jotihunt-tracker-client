@@ -2,8 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { motion } from 'motion/react';
 import { KeyRoundIcon, Loader2Icon } from 'lucide-react';
-import usePWA from 'react-pwa-install-prompt';
-import { isMobile as isMobileDevice } from 'react-device-detect';
 import { Button } from '@/components/ui/button';
 import AuthScreen from '@/components/auth/AuthScreen';
 import { AUTH_CARD } from '@/components/auth/auth-card';
@@ -27,7 +25,6 @@ export default function Login() {
   const [searchParams] = useSearchParams();
   const startSession = useStartSession();
   const isMobile = useIsMobile();
-  const { isStandalone, isInstallPromptSupported, promptInstall } = usePWA();
   const [busy, setBusy] = useState(false);
   const supported = passkeysSupported();
   const [error, setError] = useState<string | null>(null);
@@ -51,8 +48,8 @@ export default function Login() {
     setBusy(true);
     setError(null);
     try {
+      // No install prompt right after signing in; the gear menu keeps "Installeer app"
       enter(await passkeyLogin());
-      if (isInstallPromptSupported && !isStandalone && isMobileDevice) promptInstall();
     } catch (failure) {
       const kind = classifyPasskeyError(failure);
       setCancelled((count) => (kind === 'cancelled' ? count + 1 : 0));
