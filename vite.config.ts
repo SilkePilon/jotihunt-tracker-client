@@ -11,7 +11,8 @@ const pwaManifest: Partial<VitePWAOptions> = {
   // main.tsx asks before reloading into a new version
   registerType: 'prompt',
   workbox: {
-    globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+    // mp3: notification sounds must play offline; webp: login background and layer previews
+    globPatterns: ['**/*.{js,css,html,ico,png,svg,mp3,webp}'],
     // The store screenshots are only for the install dialog, never needed offline
     globIgnores: ['**/screenshot_*'],
     // The map chunk (maplibre) is larger than workbox's 2 MB default
