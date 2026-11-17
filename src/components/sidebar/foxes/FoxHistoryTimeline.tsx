@@ -300,7 +300,7 @@ export default function FoxHistoryTimeline({ model, playKey, play = true }: { mo
                       onBlur={() => setActive((current) => (current?.touch ? current : null))}
                       onClick={onBlockTap(block)}
                       className={cn(
-                        'fox-history-block absolute grid cursor-pointer place-items-center overflow-hidden rounded-[4px] text-white transition-[filter] duration-150 hover:brightness-110 hover:saturate-110 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring',
+                        'fox-history-block absolute grid cursor-pointer place-items-center overflow-hidden rounded-[4px] transition-[filter] duration-150 hover:brightness-110 hover:saturate-110 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring',
                         live && 'fox-history-live',
                       )}
                       style={{

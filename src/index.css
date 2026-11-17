@@ -757,8 +757,12 @@ html.flashbang::view-transition-new(root) {
   --fox-history-orange: #f97316;
   --fox-history-red: #ef4444;
   --fox-history-blue: #6366f1;
+  /* Icon on a solid block (hunt goedgekeurd check): white on the deep light-mode blue, a dark on-colour on the light
+     dark-mode blue (white on #93ccff is only 1.7:1) */
+  --fox-history-on-solid: #fff;
 }
 .dark .fox-history {
+  --fox-history-on-solid: #00325a;
   --fox-history-pastel: 34%;
   --fox-history-green: color-mix(in oklab, #22c55e 80%, var(--card));
   --fox-history-orange: color-mix(in oklab, #f97316 80%, var(--card));
@@ -767,6 +771,7 @@ html.flashbang::view-transition-new(root) {
 }
 .fox-history-block {
   background: var(--c);
+  color: var(--fox-history-on-solid);
 }
 .fox-history-block[data-kind='green'] {
   background: var(--fox-history-green);
