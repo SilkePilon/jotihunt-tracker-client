@@ -99,7 +99,8 @@ export default function AssignmentPane({ item }: { item: IntelItem }) {
                     size="sm"
                     aria-label="Eigenaar"
                     aria-busy={ownerWrite.pending || undefined}
-                    className="px-3 text-[12.5px] font-semibold"
+                    // Bounded, the name truncates: a long name would otherwise push the row wider than the pane
+                    className="max-w-48 min-w-0 px-3 text-[12.5px] font-semibold *:data-[slot=select-value]:block *:data-[slot=select-value]:min-w-0 *:data-[slot=select-value]:truncate"
                   >
                     <SelectValue />
                   </SelectTrigger>
