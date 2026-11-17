@@ -122,8 +122,7 @@ const tag = cva('inline-flex items-center gap-1 whitespace-nowrap rounded-full p
       neutral: 'bg-beheer-row-high text-muted-foreground',
       ok: 'bg-green-500/15 text-status-ok-text',
       warn: 'bg-amber-500/20 text-status-warn-text',
-      // No info token: sky-800 / sky-300 are >= 5:1 / >= 6.2:1 on the tint over every row
-      info: 'bg-sky-500/15 text-sky-800 dark:text-sky-300',
+      info: 'bg-sky-500/15 text-status-info-text',
       // red-800 in light (5.6:1 on row-high; destructive-text was 3.7:1 there); destructive-text in dark (6.4:1)
       danger: 'bg-destructive/10 text-red-800 dark:text-destructive-text',
     },

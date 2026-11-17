@@ -184,11 +184,11 @@ function TimelineList({ start, direction, children }: { start: 'hidden' | 'push'
 
 const KIND_ICON: Record<IntelKind, LucideIcon> = { news: MegaphoneIcon, assignment: ClipboardListIcon, hint: LightbulbIcon };
 
-// Small text: the 700 shades (green: the status-ok token) keep >= 4.5:1 on the light rows (600/500 were 3.3-3.7:1)
+// Small text: the status text tokens keep >= 4.5:1 on the light rows (the 600/500 shades were 3.3-3.7:1)
 const META_TONE: Record<MetaTone, string> = {
   muted: '',
   ok: 'text-status-ok-text',
-  info: 'text-blue-700 dark:text-blue-400',
+  info: 'text-status-info-text',
   warn: 'text-status-warn-text',
   danger: 'text-destructive-text',
 };
