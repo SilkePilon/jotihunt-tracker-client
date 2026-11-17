@@ -11,11 +11,12 @@ import InlineError from '@/components/InlineError';
 import Reveal from '@/components/motion/Reveal';
 import { useDistanceFromMe } from '@/hooks/distance-from-me.hook';
 import { useEdition } from '@/hooks/edition.hook';
+import { AGE_CLOCK_TICK_MS, useNow } from '@/hooks/now.hook';
 import { useSyncedHunts } from '@/hooks/hunt-sync.hook';
 import { apiErrorMessage, isNetworkError } from '@/lib/api-error';
 import { formatClock, joinParts } from '@/lib/format';
 import { huntLocationNote, syncedHuntForMarker } from '@/lib/hunt-sync';
-import { markerDeleteDescription } from '@/lib/markers';
+import { markerDeleteDescription, markerTimeLabel } from '@/lib/markers';
 import { revealTransition } from '@/lib/motion';
 import { areaKey, areaLetter } from '@/lib/marker-style';
 import { capitalizeFirstLetter, getColorFromArea } from '@/lib/utils';
@@ -43,6 +44,8 @@ export default function MarkerPopup({ marker, onClose, deleteMarker }: MarkerPop
   const { readOnly } = useEdition();
   const [lng, lat] = marker.location.coordinates;
   const distance = useDistanceFromMe(lat, lng);
+  // "45 min geleden" moves while the popup is open
+  const now = useNow(true, AGE_CLOCK_TICK_MS);
   const { hunts } = useSyncedHunts();
   const locationNote = huntLocationNote(syncedHuntForMarker(marker, hunts)?.location);
 
@@ -72,7 +75,7 @@ export default function MarkerPopup({ marker, onClose, deleteMarker }: MarkerPop
           </PopupIcon>
         }
         title={`${capitalizeFirstLetter(marker.area)} · ${capitalizeFirstLetter(marker.type)}`}
-        subtitle={joinParts(formatClock(marker.time), distance, marker.source === 'jotiboard' ? 'via Jotiboard' : undefined)}
+        subtitle={joinParts(markerTimeLabel(marker.time, now), distance, marker.source === 'jotiboard' ? 'via Jotiboard' : undefined)}
       />
       {/* A synced hunt placed from our own trackers (jotihunt.nl shows no location): muted, under the title */}
       <AnimatePresence initial={false}>

@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import type { Marker } from '@/types/Marker';
 import { MarkerType } from '@/types/MarkerType';
-import { filterMarkers, groupMarkersByArea, markerDeleteDescription, markerSplitTime } from './markers';
+import { filterMarkers, groupMarkersByArea, markerDeleteDescription, markerSplitTime, markerTimeLabel } from './markers';
 
 function marker(id: string, area: string, time: string, type = MarkerType.Hint): Marker {
   return { _id: id, area, time: time as unknown as Date, type, location: { type: 'Point', coordinates: [5.9, 52] } };
@@ -64,5 +64,27 @@ describe('markerDeleteDescription', () => {
     expect(markerDeleteDescription(marker('1', 'alpha', '2026-10-17T20:00:00Z', MarkerType.Hunt), '22:00')).toBe(
       'De hunt van Alpha (22:00) verdwijnt voor iedereen van de kaart. Dit kan niet ongedaan worden gemaakt.',
     );
+  });
+});
+
+describe('markerTimeLabel', () => {
+  // Saturday 17 October 2026, 14:00 in Amsterdam (CEST, UTC+2)
+  const now = Date.parse('2026-10-17T12:00:00Z');
+
+  test('under 2 hours old: relative', () => {
+    expect(markerTimeLabel('2026-10-17T11:15:00Z', now)).toBe('45 min geleden');
+    expect(markerTimeLabel(new Date('2026-10-17T10:01:00Z'), now)).toBe('1 uur geleden');
+  });
+
+  test('older today: the clock time', () => {
+    expect(markerTimeLabel('2026-10-17T08:12:00Z', now)).toBe('10:12');
+  });
+
+  test('another day: weekday and clock time', () => {
+    expect(markerTimeLabel('2026-10-16T21:30:00Z', now)).toBe('vr 23:30');
+  });
+
+  test('in the future: the clock time', () => {
+    expect(markerTimeLabel('2026-10-17T12:30:00Z', now)).toBe('14:30');
   });
 });
