@@ -84,14 +84,15 @@ export default function ResponsiveDialog({ open, onClose, title, description, ch
             className={cn('fixed inset-x-0 bottom-0 z-50 flex flex-col', compact ? 'max-h-[92dvh]' : 'h-[92dvh]', 'rounded-t-3xl border-0 bg-beheer-window shadow-[0_-6px_30px_rgb(0_0_0/.25)] outline-none', drawerClassName)}
           >
             <Drawer.Handle className="mx-auto mb-1 mt-2" />
-            <div className={hideHeader ? 'sr-only' : 'px-4 pr-14 pb-3 pt-1'}>
+            {/* Landscape phones: the sides clear the notch / rounded corners (safe areas), never less than the 16px gutter */}
+            <div className={hideHeader ? 'sr-only' : 'pb-3 pl-[max(1rem,env(safe-area-inset-left))] pr-[calc(max(1rem,env(safe-area-inset-right))+2.5rem)] pt-1'}>
               <Drawer.Title className="text-lg font-semibold">{title}</Drawer.Title>
               <Drawer.Description className="text-sm text-muted-foreground">{description}</Drawer.Description>
             </div>
-            <div className="flex min-h-0 flex-1 flex-col px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">{mounted && children}</div>
+            <div className="flex min-h-0 flex-1 flex-col pb-[max(1rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]">{mounted && children}</div>
             {/* The handle is decorative (aria-hidden) and a swipe is no option for VoiceOver or an iOS PWA without Back:
                 a visible close button, last in the DOM so opening still focuses the content first (as the desktop dialog does) */}
-            <CloseButton onClick={onClose} className="absolute top-[18px] right-4" />
+            <CloseButton onClick={onClose} className="absolute top-[18px] right-[max(1rem,env(safe-area-inset-right))]" />
           </Drawer.Content>
         </Drawer.Portal>
       </Drawer.Root>
