@@ -66,6 +66,8 @@ function feed(url: string | undefined): FeedState | null {
 
 export function reportFetchSuccess(url?: string, now = Date.now()) {
   state.overall.lastSuccessAt = now;
+  // An answer came, so an earlier "no answer" no longer describes the connection
+  state.overall.networkError = false;
   anySuccess = true;
   const record = feed(url);
   if (record) record.lastSuccessAt = now;
