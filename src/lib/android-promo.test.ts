@@ -1,6 +1,6 @@
 // src/lib/android-promo.test.ts
 import { describe, expect, test } from 'bun:test';
-import { appDidNotOpen, isAndroidUserAgent, isIOSUserAgent, laterState, LATER_MS, readPromoState, shouldShowAndroidPromo, writePromoState } from './android-promo';
+import { appDidNotOpen, appOpenedOnReturn, isAndroidUserAgent, isIOSUserAgent, laterState, LATER_MS, readPromoState, shouldShowAndroidPromo, writePromoState } from './android-promo';
 
 const base = { isMobile: true, isAndroid: true, hasRelease: true, paired: false, installed: false, state: {}, now: 1_000_000 };
 
@@ -65,4 +65,10 @@ describe('isIOSUserAgent', () => {
     expect(isIOSUserAgent('Mozilla/5.0 (Linux; Android 15; Pixel 9)')).toBe(false);
     expect(isIOSUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64)')).toBe(false);
   });
+});
+
+describe('appOpenedOnReturn', () => {
+  test('hidden after the launch, then visible → the app opened', () => expect(appOpenedOnReturn(true, true)).toBe(true));
+  test('visible again without a hidden change during this launch → not proof of anything', () => expect(appOpenedOnReturn(false, true)).toBe(false));
+  test('still hidden', () => expect(appOpenedOnReturn(true, false)).toBe(false));
 });

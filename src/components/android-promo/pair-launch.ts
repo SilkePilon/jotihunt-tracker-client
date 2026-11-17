@@ -1,5 +1,5 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
-import { appDidNotOpen } from '@/lib/android-promo';
+import { appDidNotOpen, appOpenedOnReturn } from '@/lib/android-promo';
 
 export type PairPhase = 'opening' | 'waiting' | 'failed' | 'error';
 
@@ -33,7 +33,8 @@ export function usePairLaunch(createUrl: () => Promise<string | null>, stillWant
 
 /**
  * After the deep link was opened (`startedAt`): still visible 2.5 s later = the app didn't open ('failed'); hidden and
- * back again = the app opened and the page waits for it ('waiting'). Only while the attempt is 'opening'.
+ * back again = the app opened and the page waits for it ('waiting'). Only a hidden change seen during this attempt
+ * counts (appOpenedOnReturn). Only while the attempt is 'opening'.
  */
 export function useAppOpenCheck(phase: PairPhase, startedAt: number | null, onPhase: (phase: PairPhase) => void) {
   const setPhase = useEffectEvent(onPhase);
@@ -42,13 +43,17 @@ export function useAppOpenCheck(phase: PairPhase, startedAt: number | null, onPh
     const id = window.setInterval(() => {
       if (appDidNotOpen(startedAt, Date.now(), document.visibilityState === 'visible')) setPhase('failed');
     }, 250);
-    const onVisible = () => {
-      if (document.visibilityState === 'visible') setPhase('waiting');
+    // Per attempt: a new `startedAt` starts over
+    let hiddenSinceLaunch = false;
+    const onVisibility = () => {
+      const visible = document.visibilityState === 'visible';
+      if (!visible) hiddenSinceLaunch = true;
+      else if (appOpenedOnReturn(hiddenSinceLaunch, visible)) setPhase('waiting');
     };
-    document.addEventListener('visibilitychange', onVisible);
+    document.addEventListener('visibilitychange', onVisibility);
     return () => {
       clearInterval(id);
-      document.removeEventListener('visibilitychange', onVisible);
+      document.removeEventListener('visibilitychange', onVisibility);
     };
   }, [phase, startedAt]);
 }

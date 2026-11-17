@@ -66,6 +66,14 @@ export function unreadCount(items: IntelItem[], kind?: IntelKind): number {
   return items.filter((item) => item.unread && (!kind || item.kind === kind)).length;
 }
 
+/**
+ * The header dot: news or an opdracht unread. Without the read state (still loading, or its fetch failed) nothing is
+ * known to be read, and every item would count; that says nothing, so no dot until it is there.
+ */
+export function hasUnreadIntel(articles: Article[] | undefined, readState: ReadState | undefined): boolean {
+  return readState !== undefined && unreadCount(buildIntelItems({ articles, readState })) > 0;
+}
+
 const dayKey = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Amsterdam', year: 'numeric', month: '2-digit', day: '2-digit' });
 const dayName = new Intl.DateTimeFormat('nl-NL', { timeZone: 'Europe/Amsterdam', weekday: 'long', day: 'numeric', month: 'short' });
 

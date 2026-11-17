@@ -5,7 +5,9 @@ import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { SWAP } from '@/lib/motion';
 import { MENU_SURFACE } from '@/lib/menu-styles';
+import { belowSafeArea, phoneTopStack } from '@/lib/top-stack';
 import { cn } from '@/lib/utils';
+import useTopStackStore, { usePublishTopHeight } from '@/stores/top-stack.store';
 
 type Variant = 'page' | 'section' | 'inline' | 'floating';
 
@@ -40,6 +42,30 @@ const FALLBACK_ENTER = {
   },
   transition: SWAP.transition,
 };
+
+/**
+ * The floating fallback. The phone shell's peek strip sits at the bottom: there the card goes to the top, into the
+ * top stack (lib/top-stack.ts) under the offline badge, the happy-hour pill and the drawing toolbar, with the toasts
+ * moving below it, and slides down into place instead of up.
+ */
+function FloatingFallback({ className, children }: { className?: string; children: ReactNode }) {
+  const atTop = typeof document !== 'undefined' && document.documentElement.dataset.shell === 'mobile';
+  const publish = usePublishTopHeight('error', atTop);
+  const errorTop = useTopStackStore((state) => phoneTopStack(state.heights).errorTop);
+  const enter = atTop ? { ...FALLBACK_ENTER, initial: { ...FALLBACK_ENTER.initial, y: -8 } } : FALLBACK_ENTER;
+  return (
+    // Above the home indicator on desktop-shell touch screens (safe area), never closer than 1rem
+    <motion.div
+      ref={publish}
+      {...enter}
+      role="alert"
+      style={atTop ? { top: belowSafeArea(errorTop), bottom: 'auto' } : undefined}
+      className={cn(MENU_SURFACE, 'fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-[60] flex w-[min(24rem,calc(100vw-2rem))] -translate-x-1/2 flex-col gap-2 p-3 text-sm', className)}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
 /** Catches a render crash in its children, so one broken part shows a message instead of white-screening the whole app. */
 export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
@@ -93,19 +119,14 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
     );
 
     if (variant === 'floating') {
-      // The phone shell's peek strip sits at the bottom: there the card goes to the top, under the map's top bar, and
-      // slides down into place instead of up
-      const atTop = typeof document !== 'undefined' && document.documentElement.dataset.shell === 'mobile';
-      const enter = atTop ? { ...FALLBACK_ENTER, initial: { ...FALLBACK_ENTER.initial, y: -8 } } : FALLBACK_ENTER;
       return (
-        // Above the home indicator on desktop-shell touch screens (safe area), never closer than 1rem
-        <motion.div {...enter} role="alert" className={cn(MENU_SURFACE, 'fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-[60] flex w-[min(24rem,calc(100vw-2rem))] -translate-x-1/2 flex-col gap-2 p-3 text-sm shell-mobile:top-[calc(env(safe-area-inset-top)+48px)] shell-mobile:bottom-auto', className)}>
+        <FloatingFallback className={className}>
           <p className="flex items-center gap-2 font-medium">
             <TriangleAlertIcon className="size-4 shrink-0 text-destructive" />
             {message}
           </p>
           {actions}
-        </motion.div>
+        </FloatingFallback>
       );
     }
 

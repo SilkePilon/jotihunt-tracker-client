@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { NewspaperIcon } from 'lucide-react';
 import { useArticles } from '@/hooks/articles.hook';
 import { useReadState } from '@/hooks/read-state.hook';
-import { buildIntelItems, unreadCount } from '@/lib/intel-window';
+import { hasUnreadIntel } from '@/lib/intel-window';
 import { POP } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { shortcutTitle } from '@/lib/shortcuts';
@@ -23,7 +23,7 @@ export default function IntelButton() {
   const shortcutsEnabled = useSettingsStore((state) => state.shortcutsEnabled);
   const { articles } = useArticles();
   const { readState } = useReadState();
-  const unread = useMemo(() => unreadCount(buildIntelItems({ articles, readState })) > 0, [articles, readState]);
+  const unread = useMemo(() => hasUnreadIntel(articles, readState), [articles, readState]);
 
   return (
     <button

@@ -21,7 +21,8 @@ export function LineChip({ line }: { line: string }) {
 
 /**
  * Small text toggle under a list; its label swaps ("Toon alle 12" ↔ "Minder"). Phones get a 44px touch area
- * (COARSE_HIT_AREA): give its parent `isolate`.
+ * (COARSE_HIT_AREA): give its parent `isolate`. That area reaches 14px below the 16px line; the cards' 10px bottom
+ * padding plus a 4px margin on touch screens keeps it inside their `overflow-hidden` when the toggle is last.
  */
 export function MoreToggle({ open, onToggle, more, less = 'Minder' }: { open: boolean; onToggle: () => void; more: string; less?: string }) {
   return (
@@ -29,7 +30,7 @@ export function MoreToggle({ open, onToggle, more, less = 'Minder' }: { open: bo
       type="button"
       aria-expanded={open}
       onClick={onToggle}
-      className={cn(COARSE_HIT_AREA, 'self-start rounded-md text-xs font-semibold text-foreground outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring')}
+      className={cn(COARSE_HIT_AREA, 'self-start rounded-md pointer-coarse:mb-1 text-xs font-semibold text-foreground outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring')}
     >
       <AnimatePresence mode="wait" initial={false}>
         <motion.span key={open ? 'less' : 'more'} className="block" {...SWAP}>

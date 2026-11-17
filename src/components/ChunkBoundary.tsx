@@ -1,7 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import * as Sentry from '@sentry/react';
 import { motion } from 'motion/react';
-import { RotateCwIcon, WifiOffIcon } from 'lucide-react';
+import { RotateCwIcon, TriangleAlertIcon, WifiOffIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { isChunkLoadError } from '@/lib/chunk-error';
 import { SWAP } from '@/lib/motion';
@@ -45,7 +45,8 @@ export default class ChunkBoundary extends Component<ChunkBoundaryProps, { error
     return (
       <motion.div role="alert" className={cn('flex min-h-0 flex-1 flex-col items-center justify-center gap-3 p-6 text-center', this.props.className)} {...SWAP}>
         <div className="grid size-10 place-items-center rounded-xl bg-beheer-row-high text-muted-foreground">
-          <WifiOffIcon className="size-5" />
+          {/* Offline only for a failed download; a crash is an error, not the connection */}
+          {chunk ? <WifiOffIcon className="size-5" /> : <TriangleAlertIcon className="size-5" />}
         </div>
         <div className="max-w-xs space-y-1">
           <p className={CARD_TITLE}>{this.props.name} kon niet worden geladen</p>
