@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { openAssignment, isHqWall } from './hq';
+import { HQ_FEED_MIN, hqFeedSize, openAssignment, isHqWall } from './hq';
 import type { Article } from '@/types/Article';
 
 const now = new Date('2026-10-17T19:00:00Z').getTime();
@@ -32,5 +32,22 @@ describe('isHqWall', () => {
     expect(isHqWall('/')).toBe(false);
     expect(isHqWall('/hqx')).toBe(false);
     expect(isHqWall('/beheer/hq')).toBe(false);
+  });
+});
+
+describe('hqFeedSize', () => {
+  test('whole rows that fit the card', () => {
+    expect(hqFeedSize(400, 36)).toBe(11);
+    expect(hqFeedSize(359, 36)).toBe(9);
+  });
+
+  test('never fewer than the minimum', () => {
+    expect(hqFeedSize(50, 36)).toBe(HQ_FEED_MIN);
+    expect(hqFeedSize(0, 36)).toBe(HQ_FEED_MIN);
+  });
+
+  test('not measured yet: the minimum', () => {
+    expect(hqFeedSize(400, 0)).toBe(HQ_FEED_MIN);
+    expect(hqFeedSize(Number.NaN, 36)).toBe(HQ_FEED_MIN);
   });
 });
