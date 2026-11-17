@@ -67,7 +67,7 @@ export default function AndroidPromoDialog() {
   const never = () => {
     const undo = neverWithUndo();
     toast('Deze popup komt niet meer terug', {
-      description: 'De app download je ook via Mijn tracker in de zijbalk.',
+      description: 'De app download je later ook nog via Mijn tracker.',
       // Longer than the default 4 s: time to read it and reach the undo
       duration: 10000,
       action: { label: 'Ongedaan maken', onClick: undo },

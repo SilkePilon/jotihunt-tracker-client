@@ -89,3 +89,37 @@ test('subscribePush gives up with "error" when the service worker never becomes 
     Object.defineProperty(globalThis, 'navigator', { configurable: true, value: original.navigator });
   }
 });
+
+test('resyncPush subscribes again when permission is granted but the subscription is gone', async () => {
+  const calls: string[] = [];
+  const g = globalThis as unknown as Record<string, unknown>;
+  const original = { window: g.window, navigator: g.navigator, Notification: g.Notification };
+  const fresh = { endpoint: 'https://push.example/2', toJSON: () => ({ endpoint: 'https://push.example/2' }) };
+  g.window = { PushManager: {}, Notification: {} };
+  g.Notification = { permission: 'granted' };
+  const pushManager = {
+    getSubscription: async () => null,
+    subscribe: async (options: { userVisibleOnly: boolean }) => {
+      calls.push(`subscribe ${options.userVisibleOnly}`);
+      return fresh;
+    },
+  };
+  Object.defineProperty(globalThis, 'navigator', { configurable: true, value: { serviceWorker: { getRegistration: async () => ({ pushManager }) } } });
+  try {
+    const fetch = (async (url: string, method?: string, body?: unknown) => {
+      calls.push(`${method ?? 'GET'} ${url}${body ? ` ${JSON.stringify(body)}` : ''}`);
+      return { data: { publicKey: 'AQID' } };
+    }) as never;
+    await resyncPush(fetch);
+    expect(calls).toEqual(['GET /push/vapid-key', 'subscribe true', 'POST /push/subscribe {"endpoint":"https://push.example/2"}']);
+    // not granted: nothing happens
+    calls.length = 0;
+    g.Notification = { permission: 'default' };
+    await resyncPush(fetch);
+    expect(calls).toEqual([]);
+  } finally {
+    g.window = original.window;
+    g.Notification = original.Notification;
+    Object.defineProperty(globalThis, 'navigator', { configurable: true, value: original.navigator });
+  }
+});

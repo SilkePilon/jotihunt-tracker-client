@@ -66,10 +66,13 @@ export default function TourOverlay({ mapRef }: { mapRef: RefObject<MapRef | nul
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active]);
 
-  // The step list depends on the platform, so crossing the breakpoint mid-tour invalidates stepCount and stepIndex
+  // The step list depends on the platform, so crossing the breakpoint mid-tour (rotating a tablet, resizing the window)
+  // invalidates stepCount and stepIndex: end it as skipped (marked seen), so it doesn't start over on every load
   useEffect(() => {
-    if (active && (!step || startPlatform.current !== platform)) stop();
-  }, [active, step, platform, stop]);
+    if (!active) return;
+    if (startPlatform.current !== platform) skip();
+    else if (!step) stop();
+  }, [active, step, platform, skip, stop]);
 
   // Run the step's actions; undo them when leaving the step (next, prev, skip, finish, unmount)
   useEffect(() => {

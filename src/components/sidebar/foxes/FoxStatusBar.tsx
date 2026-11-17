@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react';
 import type { CSSProperties } from 'react';
-import type { SidebarFox } from '@/lib/fox-status';
+import type { FoxGroup, SidebarFox } from '@/lib/fox-status';
 import { LAYOUT_SPRING } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { GROUP_CLASS } from './styles';
@@ -39,4 +39,9 @@ export default function FoxStatusBar({ foxes, size, isForbidden }: { foxes: Side
       })}
     </span>
   );
+}
+
+/** 8px swatch in a group's bar colour, before a legend count, so the legend reads as the key to the bar's colours. */
+export function GroupSwatch({ group, className }: { group: FoxGroup; className?: string }) {
+  return <span aria-hidden className={cn('inline-block size-2 shrink-0 rounded-[3px] transition-colors duration-300 motion-reduce:transition-none', GROUP_CLASS[group].bar, className)} />;
 }

@@ -8,12 +8,16 @@ interface AreaPickerProps {
   value: string;
   onChange: (area: string) => void;
   invalid?: boolean;
-  /** Runs once the popover has closed after a pick (opens the time picker) */
+  /** Runs once the popover has closed after a pick (opens the time picker); without it focus returns to the trigger */
   afterPick?: () => void;
+  /** Shown while nothing is picked */
+  placeholder?: string;
+  /** Trigger size for other forms (the Hunt / Spot dialog's 36px fields) */
+  className?: string;
 }
 
 /** Deelgebied picker: trigger with the area's map colour, popover with a 3×3 grid of area tiles. */
-export default function AreaPicker({ id, value, onChange, invalid, afterPick }: AreaPickerProps) {
+export default function AreaPicker({ id, value, onChange, invalid, afterPick, placeholder = 'Gebied', className }: AreaPickerProps) {
   const [open, setOpen] = useState(false);
   const picked = useRef(false);
   const current = areaOptions.find((option) => option.value === value);
@@ -24,7 +28,8 @@ export default function AreaPicker({ id, value, onChange, invalid, afterPick }: 
         <PickerTrigger
           id={id}
           invalid={invalid}
-          placeholder="Gebied"
+          placeholder={placeholder}
+          className={className}
           label={current?.label}
           aria-label={current ? `Gebied: ${current.label}` : 'Gebied kiezen'}
           lead={<span aria-hidden className="size-2.5 shrink-0 rounded-full transition-colors duration-200" style={{ background: current ? getColorFromArea(current.value) : 'var(--border)' }} />}
@@ -37,10 +42,10 @@ export default function AreaPicker({ id, value, onChange, invalid, afterPick }: 
         className="w-[300px] p-2.5"
         // After a pick, focus goes on to the time picker instead of back to this trigger
         onCloseAutoFocus={(event) => {
-          if (!picked.current) return;
+          if (!picked.current || !afterPick) return;
           picked.current = false;
           event.preventDefault();
-          afterPick?.();
+          afterPick();
         }}
       >
         <div className="grid grid-cols-3 gap-1">

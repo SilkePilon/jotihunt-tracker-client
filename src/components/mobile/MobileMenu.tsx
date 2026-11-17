@@ -13,6 +13,7 @@ import { usePredictions, usePredictionSetting } from '@/hooks/predictions.hook';
 import { predictionSummary } from '@/lib/prediction';
 import { useTrackerStatus } from '@/hooks/tracker.hook';
 import { trackerSummary } from '@/lib/tracker';
+import { currentDevicePush } from '@/lib/push';
 import useMobileNavStore from '@/stores/mobile-nav.store';
 import useAdminStore, { type AdminDialogId } from '@/stores/admin.store';
 import useAccountDialogStore from '@/stores/account-dialog.store';
@@ -82,6 +83,10 @@ export default function MobileMenu() {
   const { status } = useTrackerStatus();
   const { score } = useScore();
   const page = (id: MobilePageId) => () => push({ id });
+  // Read again when the Meldingen dialog closes (saving there can switch push on)
+  useNotificationsDialogStore((s) => s.open);
+  const devicePush = currentDevicePush();
+  const pushMeta = devicePush !== 'on' && devicePush !== 'unsupported' ? 'Push uit op dit apparaat' : undefined;
   const icon = 'size-[18px]';
 
   const spel: Row[] = [
@@ -99,7 +104,7 @@ export default function MobileMenu() {
     { key: 'tracking', icon: <SmartphoneIcon className={icon} />, title: 'Mijn tracker', meta: trackerSummary(status), onSelect: page('tracking') },
     { key: 'life360', icon: <UsersIcon className={icon} />, title: 'Life360', onSelect: page('life360') },
     ...(user?.admin ? [{ key: 'jotiboard', icon: <LayoutDashboardIcon className={icon} />, title: 'Jotiboard', onSelect: page('jotiboard') }] : []),
-    { key: 'meldingen', icon: <BellIcon className={icon} />, title: 'Meldingen', onSelect: () => useNotificationsDialogStore.getState().setOpen(true), dialog: true },
+    { key: 'meldingen', icon: <BellIcon className={icon} />, title: 'Meldingen', meta: pushMeta, onSelect: () => useNotificationsDialogStore.getState().setOpen(true), dialog: true },
     { key: 'account', icon: <KeyRoundIcon className={icon} />, title: 'Account', onSelect: () => useAccountDialogStore.getState().setOpen(true), dialog: true },
   ];
   const beheer: Row[] = BEHEER.map(([id, title]) => ({ key: id, icon: <ShieldIcon className={icon} />, title, onSelect: () => useAdminStore.getState().openDialog(id), dialog: true }));

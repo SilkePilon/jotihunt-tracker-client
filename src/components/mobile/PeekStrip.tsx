@@ -4,14 +4,15 @@ import { trackerPeekLine } from '@/lib/tracker';
 import { cookiePath, BADGE_COOKIE_DEPTH } from '@/lib/cookie-shape';
 import { useSidebarFoxes } from '@/components/sidebar/foxes/useSidebarFoxes';
 import { useHuntableAreas } from '@/hooks/huntable-areas.hook';
-import FoxStatusBar from '@/components/sidebar/foxes/FoxStatusBar';
-import { FOX_GROUP_LABEL, groupCounts, legendGroups } from '@/lib/fox-status';
+import FoxStatusBar, { GroupSwatch } from '@/components/sidebar/foxes/FoxStatusBar';
+import { FOX_GROUP_LABEL, groupCounts, legendGroups, legendInitials, legendInitialsChars, type FoxGroup, type SidebarFox } from '@/lib/fox-status';
 import useMobileNavStore from '@/stores/mobile-nav.store';
 import { cn } from '@/lib/utils';
 import { AnimatePresence, motion } from 'motion/react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAreas } from '@/hooks/areas.hook';
-import { SWAP_TRANSITION } from '@/lib/motion';
+import { SWAP, SWAP_TRANSITION } from '@/lib/motion';
 import { COARSE_HIT_AREA } from '@/lib/hit-area';
 import { tourTarget } from '@/components/tour/targets';
 
@@ -31,6 +32,58 @@ function TrackerLine({ onOpen }: { onOpen: () => void }) {
       </svg>
       <span className={cn('truncate font-semibold tabular-nums', line.tone === 'warn' && 'text-status-warn-text')}>{line.text}</span>
     </button>
+  );
+}
+
+/** Rough px per character of the 12px legend (a little wide, so a borderline fit falls back rather than overflowing) */
+const LEGEND_CHAR_PX = 7;
+
+/** Width of an element, kept up to date (0 until measured). */
+function useWidth<T extends HTMLElement>() {
+  const ref = useRef<T>(null);
+  const [width, setWidth] = useState(0);
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    setWidth(element.clientWidth);
+    const observer = new ResizeObserver(() => setWidth(element.clientWidth));
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+  return [ref, width] as const;
+}
+
+/**
+ * Legend under the peek's fox bar: which foxes are in which group ("A D actief  B onderweg") when that fits on one line,
+ * else the counts per group ("2 actief"). A colour swatch before each ties it to the bar; without room for those either
+ * (narrow phones with an OV group), plain counts.
+ */
+function PeekLegend({ foxes, counts }: { foxes: SidebarFox[]; counts: Record<FoxGroup, number> }) {
+  const [ref, width] = useWidth<HTMLSpanElement>();
+  const initials = legendInitials(foxes);
+  const groups = legendGroups(counts);
+  const countChars = groups.reduce((sum, group) => sum + String(counts[group]).length + 1 + FOX_GROUP_LABEL[group].length + 3, 0);
+  const mode = width === 0 ? 'counts' : legendInitialsChars(initials) * LEGEND_CHAR_PX <= width ? 'initials' : countChars * LEGEND_CHAR_PX <= width ? 'counts' : 'plain';
+  return (
+    <span ref={ref} className="relative block h-4 text-xs text-muted-foreground tabular-nums">
+      <AnimatePresence initial={false}>
+        <motion.span key={mode} {...SWAP} className={cn('absolute inset-0 flex items-center whitespace-nowrap', mode === 'initials' ? 'gap-3' : 'justify-between')}>
+          {mode === 'initials'
+            ? initials.map((item) => (
+                <span key={item.group} className="inline-flex items-center gap-1">
+                  <GroupSwatch group={item.group} />
+                  <b className="font-semibold text-foreground">{item.initials.join(' ')}</b> {FOX_GROUP_LABEL[item.group].toLowerCase()}
+                </span>
+              ))
+            : groups.map((group) => (
+                <span key={group} className="inline-flex items-center gap-1">
+                  {mode === 'counts' && <GroupSwatch group={group} />}
+                  <b className="font-semibold text-foreground">{counts[group]}</b> {FOX_GROUP_LABEL[group].toLowerCase()}
+                </span>
+              ))}
+        </motion.span>
+      </AnimatePresence>
+    </span>
   );
 }
 
@@ -59,13 +112,7 @@ export default function PeekStrip() {
                 <FoxStatusBar foxes={foxes} size="full" isForbidden={isForbidden} />
                 {/* The visible counts are part of the button's name; the sr-only prefix says what a tap does */}
                 <span className="sr-only">Vossen openen: </span>
-                <span className="flex justify-between text-xs text-muted-foreground tabular-nums">
-                  {legendGroups(counts).map((group) => (
-                    <span key={group}>
-                      <b className="font-semibold text-foreground">{counts[group]}</b> {FOX_GROUP_LABEL[group].toLowerCase()}
-                    </span>
-                  ))}
-                </span>
+                <PeekLegend foxes={foxes} counts={counts} />
               </button>
             ) : scene === 'loading' ? (
               <div className="flex flex-col gap-1.5" role="status" aria-label="Vossen laden">

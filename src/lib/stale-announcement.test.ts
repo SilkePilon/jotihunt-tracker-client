@@ -25,3 +25,7 @@ describe('problemAnnouncement', () => {
     expect(problemAnnouncement({ ageMs: 60_000, feeds: ['vossen'], offline: true })).toBe(problemAnnouncement({ ageMs: 600_000, feeds: ['vossen'], offline: true }));
   });
 });
+
+test('catching up after the background is announced without the age', () => {
+  expect(problemAnnouncement({ ageMs: 720_000, feeds: [], offline: false, refreshing: true })).toBe('Gegevens worden bijgewerkt');
+});

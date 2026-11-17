@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import type { Area } from '@/types/Area';
 import type { SyncedHunt } from '@/types/HuntSync';
-import { formatOvDuration, FOX_GROUP_ORDER, foxGroup, groupCounts, huntCooldownMs, HUNT_COOLDOWN_MS, lastCooldownEnd, lastHuntTimeFor, legendGroups, sameSidebarFox, sidebarFoxes, statusPillClass } from './fox-status';
+import { formatOvDuration, FOX_GROUP_ORDER, foxGroup, groupCounts, huntCooldownMs, HUNT_COOLDOWN_MS, lastCooldownEnd, lastHuntTimeFor, legendGroups, legendInitials, legendInitialsChars, sameSidebarFox, sidebarFoxes, statusPillClass } from './fox-status';
 
 function hunt(area: string, statusText: string, huntTime: string | null): SyncedHunt {
   return { _id: area + huntTime, siteKey: area + huntTime, area, huntTime, status: 'approved', statusText, points: 1, location: null, firstSeenAt: '2026-10-17T10:00:00Z', statusChangedAt: null };
@@ -158,5 +158,27 @@ describe('sameSidebarFox', () => {
     expect(sameSidebarFox(alpha(before), alpha(after))).toBe(true);
     expect(sameSidebarFox(bravo(before), bravo(after))).toBe(false);
     expect(sameSidebarFox(alpha(before), { ...alpha(before), area: { ...areas[0], status: 'red' } })).toBe(false);
+  });
+});
+
+describe('legendInitials', () => {
+  test('groups with foxes in display order, with their initials', () => {
+    const foxes = [
+      { name: 'Alpha', group: 'green' as const },
+      { name: 'Delta', group: 'green' as const },
+      { name: 'Bravo', group: 'orange' as const },
+      { name: 'Oscar', group: 'ov' as const },
+      { name: 'Echo', group: 'red' as const },
+    ];
+    const items = legendInitials(foxes);
+    expect(items).toEqual([
+      { group: 'green', initials: ['A', 'D'] },
+      { group: 'orange', initials: ['B'] },
+      { group: 'ov', initials: ['O'] },
+      { group: 'red', initials: ['E'] },
+    ]);
+    // "▪A D Actief" 1+4+6, "  ▪B Onderweg" 2+1+2+8, "  ▪O OV" 2+1+2+2, "  ▪E Inactief" 2+1+2+8
+    expect(legendInitialsChars(items)).toBe(11 + 13 + 7 + 13);
+    expect(legendInitials([])).toEqual([]);
   });
 });

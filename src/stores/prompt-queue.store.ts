@@ -3,7 +3,8 @@ import { create } from 'zustand';
 
 /**
  * The follow-up prompts after sign-in / the tour. Each decides on its own whether it is due (eligibility stays in its
- * hook); this queue only decides when it may show, so they never stack: at most one at a time, in this order.
+ * hook); this queue only decides when it may show, so they never stack: one at a time, in this order, and at most
+ * PROMPTS_PER_SESSION per page session.
  */
 export const PROMPTS = ['notifications', 'android-promo', 'pwa-install', 'passkey'] as const;
 export type PromptId = (typeof PROMPTS)[number];
@@ -16,6 +17,8 @@ export const PROMPT_GAP_MS = 1500;
  * prompt closing, so follow-ups never chain while the user is at work.
  */
 export const QUIET_MS = 10_000;
+/** Modal prompts per page session: the rest wait for the next one (a reload or the app opened again), not one after another */
+export const PROMPTS_PER_SESSION = 1;
 
 export interface PromptQueueTimes {
   /** Waiting prompts, with when each was asked for */
@@ -38,6 +41,10 @@ export interface PromptQueueTimes {
   workHolds: number;
   /** Focus is in a text field outside a dialog (typing a search, a hint): nothing shows */
   fieldFocused: boolean;
+  /** The page is in the background (another tab, the phone locked): nothing shows until it's back and quiet again */
+  hidden: boolean;
+  /** Prompts shown this page session (see PROMPTS_PER_SESSION) */
+  shownCount: number;
 }
 
 /** What the queue does now: show a prompt, check again after `waitMs`, or nothing (idle, held or one is on screen). */
@@ -45,7 +52,8 @@ export type QueueStep = { show: PromptId } | { waitMs: number } | null;
 
 /** Pure: the next step of the queue at `now`. */
 export function nextPromptStep(times: PromptQueueTimes, now: number): QueueStep {
-  if (times.held || times.active || times.openModals > 0 || times.workHolds > 0 || times.fieldFocused) return null;
+  if (times.held || times.active || times.openModals > 0 || times.workHolds > 0 || times.fieldFocused || times.hidden) return null;
+  if (times.shownCount >= PROMPTS_PER_SESSION) return null;
   const id = PROMPTS.find((prompt) => times.waiting[prompt] !== undefined);
   if (!id) return null;
   let at = Math.max(times.readyAt, times.waiting[id]! + PROMPT_GAP_MS);
@@ -78,6 +86,8 @@ interface PromptQueueState extends PromptQueueTimes {
   workEnded: (now?: number) => void;
   /** Focus entered or left a text field; leaving one starts the quiet window */
   setFieldFocused: (focused: boolean, now?: number) => void;
+  /** The page went to the background or came back; coming back starts the quiet window (like an interaction) */
+  setHidden: (hidden: boolean, now?: number) => void;
   /** Re-check (timer); tests pass `now` */
   pump: (now?: number) => void;
   /** Tests only */
@@ -95,6 +105,8 @@ const INITIAL: PromptQueueTimes = {
   interactedAt: null,
   workHolds: 0,
   fieldFocused: false,
+  hidden: false,
+  shownCount: 0,
 };
 
 let timer: ReturnType<typeof setTimeout> | undefined;
@@ -151,6 +163,12 @@ const usePromptQueueStore = create<PromptQueueState>()((set, get) => ({
     set(focused ? { fieldFocused: true } : { fieldFocused: false, interactedAt: now });
     get().pump(now);
   },
+  setHidden: (hidden, now = Date.now()) => {
+    if (hidden === get().hidden) return;
+    set({ hidden });
+    if (hidden) get().pump(now);
+    else get().interacted(now);
+  },
   pump: (now = Date.now()) => {
     clearTimeout(timer);
     timer = undefined;
@@ -162,7 +180,7 @@ const usePromptQueueStore = create<PromptQueueState>()((set, get) => ({
     }
     const waiting = { ...get().waiting };
     delete waiting[step.show];
-    set({ active: step.show, waiting });
+    set({ active: step.show, waiting, shownCount: get().shownCount + 1 });
   },
   reset: () => {
     clearTimeout(timer);
@@ -248,8 +266,8 @@ function isWorkField(element: Element | null): boolean {
 const FIELD_RECHECK_MS = 2000;
 
 /**
- * Hold the queue while `held` (the tour is due or running) or while a text field has focus, and restart the quiet
- * window on every interaction with the map or the sheet. Mounted once (Layout).
+ * Hold the queue while `held` (the tour is due or running), while a text field has focus or while the page is hidden,
+ * and restart the quiet window on every interaction with the map or the sheet (and on coming back). Mounted once (Layout).
  */
 export function usePromptQueueHold(held: boolean) {
   useEffect(() => {
@@ -270,6 +288,9 @@ export function usePromptQueueHold(held: boolean) {
       clearTimeout(pending);
       pending = setTimeout(() => queue().setFieldFocused(isWorkField(document.activeElement)));
     };
+    // A prompt never opens in a background tab (nobody sees it arrive); back in front, the quiet window starts again
+    const onVisibility = () => queue().setHidden(document.hidden);
+    onVisibility();
     const recheck = setInterval(() => {
       if (queue().fieldFocused && !isWorkField(document.activeElement)) queue().setFieldFocused(false);
     }, FIELD_RECHECK_MS);
@@ -278,7 +299,9 @@ export function usePromptQueueHold(held: boolean) {
     window.addEventListener('wheel', onInput, { capture: true, passive: true });
     window.addEventListener('focusin', onFocusIn, true);
     window.addEventListener('focusout', onFocusOut, true);
+    document.addEventListener('visibilitychange', onVisibility);
     return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
       clearTimeout(pending);
       clearInterval(recheck);
       window.removeEventListener('pointerdown', onInput, true);

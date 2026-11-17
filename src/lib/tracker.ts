@@ -46,9 +46,19 @@ export function trackerRefreshInterval(status: TrackerMe | undefined): number {
   return status.connected ? TRACKER_POLL_CONNECTED_MS : TRACKER_POLL_NOT_CONNECTED_MS;
 }
 
+/**
+ * Live now: the server says connected and the last update (when readable) is within {@link ACTIVE_WINDOW_MS}. The server's
+ * flag is only refreshed with its poll, so a phone that stopped minutes ago could still read "Verbonden" in green.
+ */
+export function isTrackerLive(status: TrackerMe | undefined, now = Date.now()): boolean {
+  if (!status?.configured || !status.connected) return false;
+  const time = status.stats.lastUpdate ? Date.parse(status.stats.lastUpdate) : NaN;
+  return Number.isNaN(time) || isActive(time, now);
+}
+
 /** Paired before (Traccar has an update) but nothing in the last 5 minutes: the app stopped or lost signal. */
-function hasSignalLost(status: TrackerMe | undefined): boolean {
-  return !!status?.configured && !status.connected && !!status.stats.lastUpdate;
+function hasSignalLost(status: TrackerMe | undefined, now = Date.now()): boolean {
+  return !!status?.configured && !!status.stats.lastUpdate && !isTrackerLive(status, now);
 }
 
 /** Collapsed-section summary. */
@@ -142,10 +152,10 @@ export function trackerPeekLine(status: TrackerMe | undefined, now = Date.now(),
   if (!status) return isError ? { tone: 'warn', text: 'Tracker niet geladen — tik om opnieuw te proberen' } : { tone: 'muted', text: 'Tracker laden…' };
   if (!status.configured) return { tone: 'muted', text: status.reason === 'unreachable' ? 'Tracker niet bereikbaar' : 'Tracker niet ingesteld' };
   const age = ageText(status.stats.lastUpdate, now);
-  if (status.connected) {
+  if (isTrackerLive(status, now)) {
     const vehicle = VEHICLE_OPTIONS.find((option) => option.value === status.vehicle)?.phrase.toLowerCase();
     return { tone: 'ok', text: joinParts('Verbonden', vehicle, age) };
   }
-  if (hasSignalLost(status)) return { tone: 'warn', text: joinParts('Geen signaal', age) };
+  if (hasSignalLost(status, now)) return { tone: 'warn', text: joinParts('Geen signaal', age) };
   return { tone: 'warn', text: 'Koppel je telefoon' };
 }

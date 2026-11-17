@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { toast } from 'sonner';
-import { BadgeCheckIcon, FlagIcon, InboxIcon, LightbulbIcon, MegaphoneIcon, NewspaperIcon, PartyPopperIcon, SwordsIcon, TimerIcon, type LucideIcon } from 'lucide-react';
+import { BadgeCheckIcon, BellOffIcon, FlagIcon, InboxIcon, LightbulbIcon, MegaphoneIcon, NewspaperIcon, PartyPopperIcon, SwordsIcon, TimerIcon, type LucideIcon } from 'lucide-react';
 import BeheerSwitch from '@/components/beheer/controls/BeheerSwitch';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import LoadError from '@/components/LoadError';
@@ -17,7 +17,8 @@ import { useNotificationPrefs } from '@/hooks/notification-prefs.hook';
 import { apiErrorMessage } from '@/lib/api-error';
 import { DIALOG_SHELL } from '@/lib/dialog-shell';
 import { SWAP } from '@/lib/motion';
-import { isPushSupported, isStandalone, needsIosInstall, pushPermission, subscribePush, type PushResult } from '@/lib/push';
+import { markDevicePrompted } from '@/lib/notifications-prompt';
+import { currentDevicePush, subscribePush, type PushResult } from '@/lib/push';
 import useNotificationsDialogStore from '@/stores/notifications-dialog.store';
 import { cn } from '@/lib/utils';
 
@@ -57,10 +58,13 @@ export default function NotificationsDialog() {
 
   // Local edits start from the server prefs each time the dialog opens; reset once it has faded out, so the switches don't snap back mid-close
   const current = disabled ?? prefs?.disabledTypes ?? [];
-  const iosInstall = needsIosInstall(navigator.userAgent, isStandalone());
+  const push = currentDevicePush();
+  const iosInstall = push === 'install';
   const total = NOTIFICATION_OPTIONS.length;
   const onCount = NOTIFICATION_OPTIONS.filter((option) => !current.includes(option.type)).length;
-  const blocked = !iosInstall && pushPermission() === 'denied';
+  const blocked = push === 'blocked';
+  // Push-capable but never switched on here (e.g. saved on a laptop, first time on this phone): one tap fixes it
+  const pushOff = push === 'off';
   // Until the real prefs are in, the tiles can't show (or change) the user's choice: skeletons, or LoadError when the
   // first load failed
   const view = prefs ? 'tiles' : isError ? 'error' : 'loading';
@@ -78,23 +82,22 @@ export default function NotificationsDialog() {
     // While saving, the dialog stays open until the save settles
     if (saving) return;
     if (dirty) setConfirmDiscard(true);
-    else void close();
+    else close();
   }
 
-  async function close() {
+  function close() {
     setOpen(false);
-    // Closing counts as "seen" too, so the dialog doesn't come back on every open
-    if ((prefs?.promptedVersion ?? 0) < NOTIFICATIONS_PROMPT_VERSION) {
-      await update({ promptedVersion: NOTIFICATIONS_PROMPT_VERSION }).catch(() => {});
-    }
+    // Later isn't "seen": the dialog waits for the next session (only Opslaan marks it seen, for the user and this device)
+    useNotificationsDialogStore.getState().snooze();
   }
 
   async function save() {
     setSaving(true);
     try {
       await update({ disabledTypes: current, promptedVersion: NOTIFICATIONS_PROMPT_VERSION });
+      markDevicePrompted();
       // Always: broadcasts can't be switched off, so every device wants push
-      if (!iosInstall && isPushSupported()) {
+      if (push !== 'install' && push !== 'unsupported') {
         const result = await subscribePush(fetch);
         if (result === 'subscribed') toast.success('Meldingen opgeslagen', { description: 'Je krijgt pushmeldingen op dit apparaat.' });
         else toast.warning('Meldingen opgeslagen', { description: RESULT_MESSAGE[result] });
@@ -116,6 +119,17 @@ export default function NotificationsDialog() {
           {/* Short windows (360×640 phones, low desktop windows): the options scroll, the Later/Opslaan row stays in view.
               The 4px inset keeps the tiles' focus rings inside the scroll clip */}
           <div className="-m-1 min-h-0 flex-1 overflow-y-auto overscroll-contain p-1">
+            <Reveal>
+              {pushOff && (
+                <p className={cn(NOTICE, 'mt-0 mb-2 flex items-start gap-2.5 bg-primary-container text-on-primary-container')}>
+                  <BellOffIcon className="mt-px size-4 shrink-0" aria-hidden />
+                  <span>
+                    <strong className="block font-semibold">Pushmeldingen staan op dit apparaat nog uit</strong>
+                    Tik op <strong>Meldingen aanzetten</strong> en sta meldingen toe, dan krijg je ze ook als de app dicht is.
+                  </span>
+                </p>
+              )}
+            </Reveal>
             <label className={cn('flex items-center gap-3 rounded-2xl bg-beheer-row px-3.5 py-3 transition-opacity duration-200 motion-reduce:transition-none', locked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer')}>
               <span className="flex-1 text-sm font-semibold">Alles</span>
               <AnimatePresence mode="popLayout" initial={false}>
@@ -151,7 +165,7 @@ export default function NotificationsDialog() {
 
             <p className="mt-2.5 flex items-center gap-2 rounded-[14px] border border-dashed px-3 py-2.5 text-xs text-muted-foreground">
               <MegaphoneIcon className="size-4 shrink-0" aria-hidden />
-              Berichten van HQ krijg je altijd.
+              {push === 'on' ? 'Berichten van HQ krijg je altijd.' : 'Berichten van HQ krijg je altijd in de app; buiten de app alleen met pushmeldingen aan.'}
             </p>
 
             <Reveal>
@@ -185,7 +199,7 @@ export default function NotificationsDialog() {
               )}
             >
               <BusyIcon busy={saving} />
-              {saving ? 'Opslaan…' : 'Opslaan'}
+              {pushOff ? (saving ? 'Aanzetten…' : 'Meldingen aanzetten') : saving ? 'Opslaan…' : 'Opslaan'}
             </button>
           </div>
         </div>
@@ -200,7 +214,7 @@ export default function NotificationsDialog() {
         destructive
         onConfirm={() => {
           setConfirmDiscard(false);
-          void close();
+          close();
         }}
       />
     </>

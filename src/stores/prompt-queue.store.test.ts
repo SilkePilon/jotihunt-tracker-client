@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
-import usePromptQueueStore, { isTypingField, WORK_AREA_ATTRIBUTE, WORK_AREAS, nextPromptStep, PROMPT_GAP_MS, QUIET_MS, type PromptQueueTimes } from './prompt-queue.store';
+import usePromptQueueStore, { isTypingField, WORK_AREA_ATTRIBUTE, WORK_AREAS, nextPromptStep, PROMPT_GAP_MS, PROMPTS_PER_SESSION, QUIET_MS, type PromptQueueTimes } from './prompt-queue.store';
 
 const T = 1_000_000;
 const idle: PromptQueueTimes = {
@@ -13,6 +13,8 @@ const idle: PromptQueueTimes = {
   interactedAt: null,
   workHolds: 0,
   fieldFocused: false,
+  hidden: false,
+  shownCount: 0,
 };
 const queue = () => usePromptQueueStore.getState();
 
@@ -25,6 +27,12 @@ describe('nextPromptStep', () => {
     const times = { ...idle, waiting: { passkey: T } };
     expect(nextPromptStep(times, T)).toEqual({ waitMs: PROMPT_GAP_MS });
     expect(nextPromptStep(times, T + PROMPT_GAP_MS)).toEqual({ show: 'passkey' });
+  });
+
+  test('hidden page, or this session already had its prompt: nothing shows', () => {
+    const waiting = { notifications: T - 10_000 };
+    expect(nextPromptStep({ ...idle, waiting, hidden: true }, T)).toBeNull();
+    expect(nextPromptStep({ ...idle, waiting, shownCount: PROMPTS_PER_SESSION }, T)).toBeNull();
   });
 
   test('held (tour) or another prompt on screen: nothing shows', () => {
@@ -86,7 +94,8 @@ describe('prompt queue store', () => {
   beforeEach(() => queue().reset());
   afterEach(() => queue().reset());
 
-  test('one at a time; the next only a gap after the previous closed', () => {
+  test('one at a time, and the next waits for the next page session', () => {
+    expect(PROMPTS_PER_SESSION).toBe(1);
     queue().request('passkey', T);
     queue().request('notifications', T);
     queue().pump(T + PROMPT_GAP_MS);
@@ -95,10 +104,22 @@ describe('prompt queue store', () => {
     expect(queue().active).toBe('notifications');
     queue().done('notifications', T + 60_000);
     expect(queue().active).toBeNull();
-    queue().pump(T + 60_000 + PROMPT_GAP_MS - 1);
+    queue().pump(T + 600_000);
     expect(queue().active).toBeNull();
-    queue().pump(T + 60_000 + PROMPT_GAP_MS);
-    expect(queue().active).toBe('passkey');
+    expect(queue().waiting.passkey).toBe(T);
+  });
+
+  test('nothing shows while the page is hidden; coming back restarts the quiet window', () => {
+    queue().request('notifications', T);
+    queue().setHidden(true, T);
+    queue().pump(T + 60_000);
+    expect(queue().active).toBeNull();
+    queue().setHidden(false, T + 60_000);
+    expect(queue().interactedAt).toBe(T + 60_000);
+    queue().pump(T + 60_000 + QUIET_MS - 1);
+    expect(queue().active).toBeNull();
+    queue().pump(T + 60_000 + QUIET_MS);
+    expect(queue().active).toBe('notifications');
   });
 
   test('requests while held wait for the tour to end, then the quiet window', () => {

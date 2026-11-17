@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type FocusEvent, type KeyboardEvent, type MouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { AnimatePresence, motion, useReducedMotion, type Transition } from 'motion/react';
-import { CheckIcon, CircleXIcon, CrosshairIcon, EyeIcon, FlagIcon, LightbulbIcon, type LucideIcon } from 'lucide-react';
+import { CheckIcon, CircleXIcon, CrosshairIcon, FlagIcon, GlassesIcon, LightbulbIcon, type LucideIcon } from 'lucide-react';
 import { axisTicks, blockKeyTarget, defaultTabStop, HISTORY_WINDOW_MIN, isBlockKey, LANES, nearestBlock, type HistoryBlock, type HistoryModel, type LaneKey } from '@/lib/fox-history';
 import { COARSE_HIT_AREA } from '@/lib/hit-area';
 import { EASE_OUT } from '@/lib/motion';
@@ -24,7 +24,7 @@ const TOUCH_RADIUS = 22;
 const LANE_ICON: Record<LaneKey, { icon: LucideIcon; name: string }> = {
   status: { icon: FlagIcon, name: 'Status' },
   hint: { icon: LightbulbIcon, name: 'Hints' },
-  spot: { icon: EyeIcon, name: 'Spots' },
+  spot: { icon: GlassesIcon, name: 'Spots' },
   hunt: { icon: CrosshairIcon, name: 'Hunts' },
 };
 

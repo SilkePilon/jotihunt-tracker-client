@@ -41,10 +41,12 @@ export interface ConnectionSnapshot {
   overall: ConnectionState;
   /** Per feed path (query left off) */
   feeds: Record<string, FeedState>;
+  /** The page came back to the front with old data (see reportResume); null once a fetch succeeded or failed since */
+  resumedAt?: number | null;
 }
 
 function freshState(now = Date.now()): ConnectionSnapshot {
-  return { startedAt: now, overall: { lastSuccessAt: now, lastErrorAt: null, networkError: false }, feeds: {} };
+  return { startedAt: now, overall: { lastSuccessAt: now, lastErrorAt: null, networkError: false }, feeds: {}, resumedAt: null };
 }
 
 let state: ConnectionSnapshot = freshState();
@@ -68,6 +70,7 @@ export function reportFetchSuccess(url?: string, now = Date.now()) {
   state.overall.lastSuccessAt = now;
   // An answer came, so an earlier "no answer" no longer describes the connection
   state.overall.networkError = false;
+  state.resumedAt = null;
   anySuccess = true;
   const record = feed(url);
   if (record) record.lastSuccessAt = now;
@@ -77,6 +80,8 @@ export function reportFetchSuccess(url?: string, now = Date.now()) {
 export function reportFetchError(url?: string, now = Date.now(), network = true) {
   state.overall.lastErrorAt = now;
   state.overall.networkError = network;
+  // From here the usual stale rules say whether it's a real problem
+  state.resumedAt = null;
   const record = feed(url);
   if (record) record.lastErrorAt = now;
 }
@@ -87,6 +92,15 @@ export function connectionState(): Readonly<ConnectionState> {
 
 export function connectionSnapshot(): Readonly<ConnectionSnapshot> & { anySuccess: boolean } {
   return { ...state, anySuccess };
+}
+
+/**
+ * The page came back to the front (visibilitychange / pageshow). With data older than {@link STALE_AFTER_MS} the badge
+ * says it is catching up ("Bijwerken… gegevens 12 min oud", neutral) until the next fetch succeeds or fails: a phone
+ * unlocked after a while shows old positions for a moment, and that shouldn't look current (or like an error).
+ */
+export function reportResume(now = Date.now(), staleAfterMs = STALE_AFTER_MS) {
+  if (now - state.overall.lastSuccessAt > staleAfterMs) state.resumedAt = now;
 }
 
 /** Tests only: start over as a fresh page load. */
@@ -113,6 +127,8 @@ export interface ConnectionProblem {
   feeds: string[];
   /** No connection (the browser is offline or requests get no answer), rather than the server answering with errors */
   offline: boolean;
+  /** Not a failure: back from the background with old data, the first refresh is on its way (neutral badge) */
+  refreshing?: boolean;
 }
 
 /**
@@ -120,6 +136,7 @@ export interface ConnectionProblem {
  * - offline before anything loaded (cold offline start): at once, no age;
  * - a critical feed that failed and never loaded, for {@link NEVER_LOADED_GRACE_MS} since the start: no age;
  * - all data stale ({@link staleAge} over the overall record);
+ * - back from the background with old data and no answer yet ({@link reportResume}): `refreshing`, neutral;
  * - else, critical feeds that are stale on their own while others still refresh: named, with the oldest age.
  */
 export function connectionProblem(snapshot: ConnectionSnapshot & { anySuccess: boolean }, online: boolean, now: number, staleAfterMs = STALE_AFTER_MS): ConnectionProblem | null {
@@ -127,6 +144,7 @@ export function connectionProblem(snapshot: ConnectionSnapshot & { anySuccess: b
   const offline = !online || snapshot.overall.networkError !== false;
   const overall = staleAge(snapshot.overall, online, now, staleAfterMs);
   if (overall !== null) return { ageMs: overall, feeds: [], offline };
+  if (snapshot.resumedAt != null && online) return { ageMs: now - snapshot.overall.lastSuccessAt, feeds: [], offline: false, refreshing: true };
 
   const neverLoaded: string[] = [];
   const stale: { name: string; age: number }[] = [];
@@ -163,7 +181,8 @@ const MAX_NAMED_FEEDS = 2;
  * The badge text for a {@link ConnectionProblem}: "Geen verbinding" (offline) or "Geen actuele gegevens" (the server
  * answers with errors), "… 3 min oud", "Vossen niet bijgewerkt — 3 min oud", "Meerdere gegevens niet geladen".
  */
-export function problemLabel({ ageMs, feeds, offline }: ConnectionProblem): string {
+export function problemLabel({ ageMs, feeds, offline, refreshing }: ConnectionProblem): string {
+  if (refreshing && ageMs !== null) return `Bijwerken… gegevens ${ageText(ageMs)} oud`;
   if (feeds.length === 0) return ageMs === null ? (offline ? 'Geen verbinding' : 'Geen actuele gegevens') : staleLabel(ageMs, offline);
   const names = feeds.length > MAX_NAMED_FEEDS ? 'meerdere gegevens' : feeds.length === 1 ? feeds[0] : `${feeds[0]} en ${feeds[1]}`;
   const subject = names.charAt(0).toUpperCase() + names.slice(1);
