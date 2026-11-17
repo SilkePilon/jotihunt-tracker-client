@@ -4,7 +4,7 @@ import { SWRConfig } from 'swr';
 import { AnimatePresence } from 'motion/react';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import Map, { type MapRef } from '@/components/Map';
-import AudioUnlock, { AudioUnlockTile } from '@/components/hq/AudioUnlock';
+import AudioUnlock, { AudioUnlockBanner } from '@/components/hq/AudioUnlock';
 import FocusPulse from '@/components/hq/FocusPulse';
 import FoxBoard from '@/components/hq/FoxBoard';
 import HqEventCard from '@/components/hq/HqEventCard';
@@ -62,8 +62,8 @@ export default function Hq() {
 function HqScreen({ onUnauthorized }: { onUnauthorized: () => void }) {
   const user = useAuthUser<User>();
   // Sound needs one click per page load. The click is remembered for this tab (sessionStorage), so after a reload
-  // (an automatic update, an edition switch) the wall carries on: only when the browser blocks sound again does a small
-  // corner tile ask for a new click; the full overlay is for the very first visit.
+  // (an automatic update, an edition switch) the wall carries on: only when the browser blocks sound again does a
+  // banner at the top of the map ask for a new click; the full overlay is for the very first visit.
   const [unlockFlag, setUnlockFlag] = useState(readUnlockFlag);
   // Checked once on load (synchronous): only matters when the tab was unlocked before
   const [audio, setAudio] = useState<AudioPermission>(() => (unlockFlag ? probeAudio() : 'unknown'));
@@ -82,7 +82,7 @@ function HqScreen({ onUnauthorized }: { onUnauthorized: () => void }) {
     setUnlockFlag(true);
     setAudio('allowed');
   }, [wakeLock]);
-  // Tile shown: any click or key on the wall turns sound on too (it is a user activation all the same)
+  // Banner shown: any click or key on the wall turns sound on too (it is a user activation all the same)
   useEffect(() => {
     if (mode !== 'tile') return;
     window.addEventListener('pointerdown', unlock);
@@ -156,7 +156,7 @@ function HqScreen({ onUnauthorized }: { onUnauthorized: () => void }) {
         <ErrorBoundary name="De melding" className="absolute inset-x-4 bottom-4 z-10">
           <HqEventCard event={director.current} queued={director.queued} step={director.step} holdMs={director.holdMs} />
         </ErrorBoundary>
-        <AnimatePresence>{mode === 'tile' && <AudioUnlockTile key="audio-tile" onUnlock={unlock} />}</AnimatePresence>
+        <AnimatePresence>{mode === 'tile' && <AudioUnlockBanner key="audio-banner" onUnlock={unlock} />}</AnimatePresence>
       </div>
       <aside className="flex min-h-0 flex-col gap-2 p-3">
         <ErrorBoundary>

@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
-import { HQ_UNLOCK_KEY, hqUnlockMode, probeAudio, readUnlockFlag, writeUnlockFlag } from './hq-unlock';
+import { create } from 'zustand';
+import { HQ_UNLOCK_KEY, hqUnlockMode, probeAudio, readUnlockFlag, updateWhenNoEventCard, writeUnlockFlag } from './hq-unlock';
 
 function memoryStorage() {
   const items = new Map<string, string>();
@@ -13,7 +14,7 @@ describe('hqUnlockMode', () => {
     expect(hqUnlockMode(false, 'blocked')).toBe('overlay');
   });
 
-  test('after a reload: nothing while checking, nothing when sound may play, the corner tile when blocked', () => {
+  test('after a reload: nothing while checking, nothing when sound may play, the banner when blocked', () => {
     expect(hqUnlockMode(true, 'unknown')).toBe('checking');
     expect(hqUnlockMode(true, 'allowed')).toBe('unlocked');
     expect(hqUnlockMode(true, 'blocked')).toBe('tile');
@@ -79,5 +80,28 @@ describe('probeAudio', () => {
       }
     } as unknown as new () => { state: AudioContextState; close(): Promise<void> };
     expect(probeAudio({}, Broken)).toBe('blocked');
+  });
+});
+
+describe('updateWhenNoEventCard', () => {
+  test('no event card: updates at once', () => {
+    const store = create<{ current: string | null }>(() => ({ current: null }));
+    let updates = 0;
+    updateWhenNoEventCard(store, () => updates++);
+    expect(updates).toBe(1);
+  });
+
+  test('an event card on screen: waits for it (and the queued next one) to go, then updates once', () => {
+    const store = create<{ current: string | null }>(() => ({ current: 'hunt' }));
+    let updates = 0;
+    updateWhenNoEventCard(store, () => updates++);
+    expect(updates).toBe(0);
+    store.setState({ current: 'hint' });
+    expect(updates).toBe(0);
+    store.setState({ current: null });
+    expect(updates).toBe(1);
+    store.setState({ current: 'spot' });
+    store.setState({ current: null });
+    expect(updates).toBe(1);
   });
 });

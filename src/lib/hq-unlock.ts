@@ -5,7 +5,7 @@
  */
 export const HQ_UNLOCK_KEY = 'hq-audio-unlocked';
 
-/** What the wall shows for sound: the full overlay (never clicked), nothing yet (checking), a corner tile (blocked) or nothing */
+/** What the wall shows for sound: the full overlay (never clicked), nothing yet (checking), the "Geluid staat uit" banner (blocked, mode 'tile') or nothing */
 export type HqUnlockMode = 'overlay' | 'checking' | 'tile' | 'unlocked';
 
 /** Whether the browser lets this page play sound without a new click: 'unknown' while that is being checked */
@@ -74,4 +74,26 @@ export function probeAudio(
   } catch {
     return 'blocked';
   }
+}
+
+/** Just the part of the HQ director store an update waits on (stores/hq-director.store) */
+interface EventCardStore {
+  getState: () => { current: unknown };
+  subscribe: (listener: (state: { current: unknown }) => void) => () => void;
+}
+
+/**
+ * The wall's automatic update (main.tsx): run `update` now when no event card is on screen, else once the card (and
+ * whatever was queued behind it) has gone, so a reload never cuts an event short. Runs it at most once.
+ */
+export function updateWhenNoEventCard(store: EventCardStore, update: () => void): void {
+  if (store.getState().current === null) {
+    update();
+    return;
+  }
+  const unsubscribe = store.subscribe((state) => {
+    if (state.current !== null) return;
+    unsubscribe();
+    update();
+  });
 }
