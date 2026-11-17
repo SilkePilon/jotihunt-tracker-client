@@ -34,12 +34,12 @@ function CompactCard({ icon: Icon, label, children }: { icon: LucideIcon; label:
           type="button"
           aria-label={label}
           title={label}
-          className={cn(MAP_TILE, 'grid size-11 cursor-pointer place-items-center rounded-[14px] outline-none transition-colors hover:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring [&_svg]:size-[18px]', TRIGGER_OPEN)}
+          className={cn(MAP_TILE, 'grid size-11 cursor-pointer place-items-center rounded-xl outline-none transition-colors hover:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring [&_svg]:size-[18px]', TRIGGER_OPEN)}
         >
           <Icon aria-hidden />
         </button>
       </PopoverTrigger>
-      <PopoverContent align="end" collisionPadding={8} aria-label={label} className="w-auto rounded-[14px] bg-transparent p-0 shadow-none">
+      <PopoverContent align="end" collisionPadding={8} aria-label={label} className="w-auto rounded-xl bg-transparent p-0 shadow-none">
         <ErrorBoundary>{children(() => setOpen(false))}</ErrorBoundary>
       </PopoverContent>
     </Popover>

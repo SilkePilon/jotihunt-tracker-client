@@ -131,7 +131,7 @@ export default function AccountDialog() {
               {[0, 1].map((index) => (
                 <div key={index} className="flex flex-col gap-1.5">
                   <Skeleton className="mx-1.5 h-3.5 w-24" />
-                  <Skeleton className="h-28 w-full rounded-[18px]" />
+                  <Skeleton className="h-28 w-full rounded-2xl" />
                 </div>
               ))}
             </motion.div>

@@ -33,7 +33,7 @@ import { IconPill, Pill, Tag } from './controls/Pill';
 import TelegramAppForm from './TelegramAppForm';
 
 /** The inline confirm sits in the card as a red box */
-const CONFIRM_BOX = 'rounded-[18px] bg-destructive/12 px-3.5 py-3';
+const CONFIRM_BOX = 'rounded-2xl bg-destructive/12 px-3.5 py-3';
 
 const TAG_TONE: Record<IntegrationTone, 'ok' | 'neutral' | 'warn'> = { ok: 'ok', off: 'neutral', warn: 'warn' };
 

@@ -15,7 +15,7 @@ import { BeheerCard, CountSwap, FadeSwap, InlineConfirm } from './BeheerLayout';
 import { Pill } from './controls/Pill';
 
 /** The inline confirm sits in the card as a red box (as in KoppelingenPane) */
-const CONFIRM_BOX = 'rounded-[18px] bg-destructive/12 px-3.5 py-3';
+const CONFIRM_BOX = 'rounded-2xl bg-destructive/12 px-3.5 py-3';
 const dateFormat = new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'short', year: 'numeric' });
 
 type Action = 'refresh' | 'prefetch' | 'clear';
