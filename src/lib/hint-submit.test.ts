@@ -61,7 +61,8 @@ describe('a lost Hunt/Spot', () => {
   });
 
   test('messages', () => {
-    expect(markerLostResponseMessage('unknown')).toBe('Geen antwoord ontvangen. Controleer eerst of de marker op de kaart staat.');
+    expect(markerLostResponseMessage('unknown')).toStartWith('Geen antwoord ontvangen. Misschien is de marker toch geplaatst');
+    expect(markerLostResponseMessage('unknown')).toContain('controleer het opnieuw');
     expect(markerLostResponseMessage('absent')).toContain('niet geplaatst');
   });
 });
