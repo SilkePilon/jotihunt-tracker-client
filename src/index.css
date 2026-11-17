@@ -502,6 +502,30 @@ body.dark {
      so the native date/time picker icon is already light; inverting it made it dark on dark */
 }
 
+/* Desktop sidebar: while there is more below (data-more-below, Sidebar.tsx) its bottom 24px fade out, a hint to scroll.
+   The fade size is a registered property so it eases in and out; at 0px the mask is solid (no fade). */
+@property --sidebar-fade {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+.sidebar-scroll-fade {
+  --sidebar-fade: 0px;
+  mask-image: linear-gradient(to bottom, #000 calc(100% - var(--sidebar-fade)), transparent);
+  transition: --sidebar-fade 200ms ease-out;
+}
+
+.sidebar-scroll-fade[data-more-below] {
+  --sidebar-fade: 24px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-scroll-fade {
+    transition: none;
+  }
+}
+
 /* Onboarding tour: the progress ring around the pause button doubles as the auto-advance timer (animationend = next step) */
 @keyframes tour-ring {
   from {
