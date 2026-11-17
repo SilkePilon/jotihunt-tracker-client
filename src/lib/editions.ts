@@ -29,3 +29,15 @@ export function editionMeta(edition: EditionView): string {
 export function isArchiveError(error: unknown): boolean {
   return isAxiosError(error) && error.response?.status === 423;
 }
+
+/** After "Editie gewijzigd" shows, the page reloads this much later (time to read it) */
+export const EDITION_RELOAD_DELAY_MS = 2000;
+
+/**
+ * Pure: when to reload after another edition was shown at `changedAt`. 0 = now; a number = check again after that many
+ * ms; null = not while the user is busy (a form page or a dialog / drawer is open): check again when that changes.
+ */
+export function editionReloadWait(changedAt: number, now: number, busy: boolean): number | null {
+  if (busy) return null;
+  return Math.max(0, changedAt + EDITION_RELOAD_DELAY_MS - now);
+}

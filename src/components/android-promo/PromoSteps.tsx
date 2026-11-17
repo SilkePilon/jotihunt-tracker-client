@@ -4,10 +4,9 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { DownloadIcon, LinkIcon, TriangleAlertIcon } from 'lucide-react';
 import { CloseButton } from '@/components/ui/close-button';
 import { cookiePath, BADGE_COOKIE_DEPTH } from '@/lib/cookie-shape';
-import { appDidNotOpen } from '@/lib/android-promo';
 import { POP_SPRING, SWAP, revealTransition } from '@/lib/motion';
 import type { PromoStep } from '@/stores/android-promo.store';
-import type { PairPhase } from './pair-launch';
+import { useAppOpenCheck, type PairPhase } from './pair-launch';
 import { cn } from '@/lib/utils';
 
 const CHECK = cookiePath(72, BADGE_COOKIE_DEPTH);
@@ -104,7 +103,6 @@ export function PairStep({ phase, startedAt, onPhase, onRetry, deviceCount, refr
   const baseline = useRef<number | undefined>(undefined);
   const paired = useEffectEvent(onPaired);
   const reload = useEffectEvent(refresh);
-  const setPhase = useEffectEvent(onPhase);
   // Success = the account gained an app device since this step started
   useEffect(() => {
     if (deviceCount === undefined) return;
@@ -124,20 +122,7 @@ export function PairStep({ phase, startedAt, onPhase, onRetry, deviceCount, refr
     };
   }, []);
   // Only once the deep link was opened: no app within 2.5 s = failed; back from the app = waiting for it
-  useEffect(() => {
-    if (phase !== 'opening' || startedAt === null) return;
-    const id = window.setInterval(() => {
-      if (appDidNotOpen(startedAt, Date.now(), document.visibilityState === 'visible')) setPhase('failed');
-    }, 250);
-    const onVisible = () => {
-      if (document.visibilityState === 'visible') setPhase('waiting');
-    };
-    document.addEventListener('visibilitychange', onVisible);
-    return () => {
-      clearInterval(id);
-      document.removeEventListener('visibilitychange', onVisible);
-    };
-  }, [phase, startedAt]);
+  useAppOpenCheck(phase, startedAt, onPhase);
 
   return (
     <AnimatePresence mode="wait" initial={false}>

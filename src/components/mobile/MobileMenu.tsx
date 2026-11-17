@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { SWAP } from '@/lib/motion';
-import { BellIcon, ChevronRightIcon, CrosshairIcon, Grid3x3Icon, KeyRoundIcon, LayoutDashboardIcon, MapPinIcon, MessageSquareIcon, PawPrintIcon, PenLineIcon, SmartphoneIcon, TrophyIcon, UsersIcon } from 'lucide-react';
+import { BellIcon, ChevronRightIcon, CrosshairIcon, Grid3x3Icon, KeyRoundIcon, LayoutDashboardIcon, MapPinIcon, MessageSquareIcon, PawPrintIcon, PenLineIcon, SearchIcon, SmartphoneIcon, TrophyIcon, UsersIcon } from 'lucide-react';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import type { User } from '@/types/User';
 import SidebarHeader from '@/components/sidebar/SidebarHeader';
@@ -82,7 +82,7 @@ function MenuCard({ title, rows }: { title: string; rows: Row[] }) {
 const CounterHuntIcon = NOTIFICATION_ICON['counter-hunt'];
 
 /** Home of the phone sheet: header card + menu cards with live summaries. */
-export default function MobileMenu() {
+export default function MobileMenu({ onSearch }: { onSearch: () => void }) {
   const push = useMobileNavStore((s) => s.push);
   const { homeTeamApiId } = useAppConfig();
   const user = useAuthUser<User>();
@@ -108,6 +108,7 @@ export default function MobileMenu() {
     { key: 'foxes', icon: <PawPrintIcon className={icon} />, title: 'Vossen', meta: <FoxesSummary />, onSelect: page('foxes') },
     // A hunter's main action: right under Vossen instead of at the end of the list
     { key: 'hintEntry', icon: <PenLineIcon className={icon} />, title: 'Hint registreren', onSelect: page('hintEntry') },
+    { key: 'search', icon: <SearchIcon className={icon} />, title: 'Zoeken', meta: 'Coördinaat of groep', onSelect: onSearch, dialog: true },
     { key: 'hunts', icon: <CrosshairIcon className={icon} />, title: 'Hunts', meta: huntSyncSummary(huntSync), onSelect: page('hunts') },
     { key: 'telegram', icon: <MessageSquareIcon className={icon} />, title: 'Jotihunt-berichten', meta: telegramHeaderSummary(messages, link)?.text, onSelect: page('telegram') },
     ...(predictionEnabled !== false ? [{ key: 'predictions', icon: <MapPinIcon className={icon} />, title: 'Voorspelling', meta: predictionSummary(predictions), onSelect: page('predictions') }] : []),

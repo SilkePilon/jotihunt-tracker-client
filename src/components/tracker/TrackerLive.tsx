@@ -28,7 +28,10 @@ export default function TrackerLive({ status, savingVehicle, onVehicleChange, on
     // isolate: the link's 44px touch area (COARSE_HIT_AREA) stays above the card's background
     <div className="isolate flex flex-col items-center gap-0.5 pt-1 pb-0.5 text-center" data-tracker-state={live ? 'connected' : 'no-signal'}>
       <CookieBadge tone={live ? 'ok' : 'warn'} size={72} />
-      <p className="mt-2 text-base font-bold">{live ? 'Verbonden' : 'Geen signaal'}</p>
+      {/* Read through the status line below instead, so it isn't read twice */}
+      <p aria-hidden className="mt-2 text-base font-bold">{live ? 'Verbonden' : 'Geen signaal'}</p>
+      {/* Always mounted: a screen reader hears the tracker drop out or come back */}
+      <span role="status" className="sr-only">{live ? 'Tracker verbonden' : 'Tracker: geen signaal'}</span>
       <p className="text-xs text-muted-foreground tabular-nums">
         {live ? `Live · ${ago}` : `Laatste locatie ${ago}`} ·{' '}
         <button type="button" className={cn(inlineLinkClass, COARSE_HIT_AREA)} onClick={onRepair}>

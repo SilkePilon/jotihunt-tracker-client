@@ -47,7 +47,7 @@ function HappyHourPillView({ hour, now, measureRef }: { hour: HappyHourWindow; n
           </AnimatePresence>
         </motion.button>
       </PopoverTrigger>
-      <PopoverContent align="center" className="flex w-72 flex-col gap-2 text-sm">
+      <PopoverContent aria-label="Happy hour" align="center" className="flex w-72 flex-col gap-2 text-sm">
         <p>{happyHourExplanation(hour)}</p>
         {hour.text && <blockquote className="rounded-xl bg-beheer-row p-2 text-xs whitespace-pre-line break-words text-muted-foreground">{hour.text}</blockquote>}
       </PopoverContent>

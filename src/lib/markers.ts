@@ -1,21 +1,30 @@
 import type { Marker } from '@/types/Marker';
 import { formatClock } from '@/lib/format';
-import { formatAgo } from '@/lib/life360';
 
-/** Up to this age a marker's time reads relative ("45 min geleden"), after that as a clock time */
+/** Up to this age a marker's time also shows its age ("14:00 · 45 min geleden"), after that only the clock time */
 const RELATIVE_AGE_MS = 2 * 60 * 60_000;
 
 const amsterdamDay = new Intl.DateTimeFormat('nl-NL', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'Europe/Amsterdam' });
 const shortWeekday = new Intl.DateTimeFormat('nl-NL', { weekday: 'short', timeZone: 'Europe/Amsterdam' });
 
+/** A marker's age to the minute: "zojuist", "45 min geleden", "1 u geleden", "1 u 12 min geleden". */
+function ageLabel(ageMs: number): string {
+  const minutes = Math.floor(ageMs / 60_000);
+  if (minutes < 1) return 'zojuist';
+  if (minutes < 60) return `${minutes} min geleden`;
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return rest === 0 ? `${hours} u geleden` : `${hours} u ${rest} min geleden`;
+}
+
 /**
- * A marker's time for its popup subtitle: "45 min geleden" under 2 hours old, "10:12" earlier today, "za 10:12" on
- * another day (all in Dutch time). A time in the future (a hint hour still running) is the clock time.
+ * A marker's time for its popup subtitle: "14:00 · 45 min geleden" under 2 hours old, "10:12" earlier today,
+ * "za 10:12" on another day (all in Dutch time). A time in the future (a hint hour still running) is the clock time.
  */
 export function markerTimeLabel(time: Date | string, now: number): string {
   const at = new Date(time);
   const age = now - at.getTime();
-  if (age >= 0 && age < RELATIVE_AGE_MS) return formatAgo(at.toISOString(), now) ?? formatClock(at);
+  if (age >= 0 && age < RELATIVE_AGE_MS) return `${formatClock(at)} · ${ageLabel(age)}`;
   if (amsterdamDay.format(at) === amsterdamDay.format(now)) return formatClock(at);
   return `${shortWeekday.format(at).replace(/\.$/, '')} ${formatClock(at)}`;
 }

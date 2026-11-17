@@ -68,6 +68,7 @@ export default function TimePicker({ id, value, onChange, days, open, onOpenChan
         />
       </PopoverTrigger>
       <PopoverContent
+        aria-label="Tijd kiezen"
         align="end"
         sideOffset={6}
         collisionPadding={8}

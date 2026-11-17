@@ -1,7 +1,9 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import * as Sentry from '@sentry/react';
 import { RotateCwIcon, TriangleAlertIcon } from 'lucide-react';
+import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
+import { SWAP } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 
 type Variant = 'page' | 'section' | 'inline' | 'floating';
@@ -22,6 +24,12 @@ interface ErrorBoundaryProps {
 interface ErrorBoundaryState {
   error: Error | null;
 }
+
+/**
+ * The fallback fades in (SWAP's enter) instead of popping. Only the enter: the crashed children can't stay on screen
+ * for an exit, and "Opnieuw proberen" brings them straight back.
+ */
+const FALLBACK_ENTER = { initial: SWAP.initial, animate: SWAP.animate, transition: SWAP.transition };
 
 /** Catches a render crash in its children, so one broken part shows a message instead of white-screening the whole app. */
 export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
@@ -48,7 +56,7 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
 
     if (variant === 'page') {
       return (
-        <div role="alert" className={cn('flex h-dvh w-dvw flex-col items-center justify-center gap-4 bg-background p-6 text-center text-foreground', className)}>
+        <motion.div {...FALLBACK_ENTER} role="alert" className={cn('flex h-dvh w-dvw flex-col items-center justify-center gap-4 bg-background p-6 text-center text-foreground', className)}>
           <TriangleAlertIcon className="size-10 text-destructive" />
           <div className="max-w-sm space-y-1">
             <p className="text-lg font-semibold">Oeps! Er is iets misgegaan.</p>
@@ -58,7 +66,7 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
             <RotateCwIcon />
             Opnieuw laden
           </Button>
-        </div>
+        </motion.div>
       );
     }
 
@@ -69,31 +77,32 @@ export default class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBo
           Opnieuw proberen
         </Button>
         <Button size="sm" variant="ghost" onClick={() => window.location.reload()}>
-          Opnieuw laden
+          Pagina herladen
         </Button>
       </div>
     );
 
     if (variant === 'floating') {
       return (
-        <div role="alert" className={cn('card fixed bottom-4 left-1/2 z-[60] flex w-[min(24rem,calc(100vw-2rem))] -translate-x-1/2 flex-col gap-2 rounded-xl bg-card p-3 text-sm text-card-foreground', className)}>
+        // Above the home indicator on phones (safe area), never closer than 1rem
+        <motion.div {...FALLBACK_ENTER} role="alert" className={cn('card fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-[60] flex w-[min(24rem,calc(100vw-2rem))] -translate-x-1/2 flex-col gap-2 rounded-xl bg-card p-3 text-sm text-card-foreground', className)}>
           <p className="flex items-center gap-2 font-medium">
             <TriangleAlertIcon className="size-4 shrink-0 text-destructive" />
             {message}
           </p>
           {actions}
-        </div>
+        </motion.div>
       );
     }
 
     return (
-      <div role="alert" className={cn('flex flex-col gap-2 text-sm', variant === 'section' && 'card rounded-xl bg-card px-3 py-2 text-card-foreground', className)}>
+      <motion.div {...FALLBACK_ENTER} role="alert" className={cn('flex flex-col gap-2 text-sm', variant === 'section' && 'card rounded-xl bg-card px-3 py-2 text-card-foreground', className)}>
         <p className="flex items-center gap-2 font-medium">
           <TriangleAlertIcon className="size-4 shrink-0 text-destructive" />
           {message}
         </p>
         {actions}
-      </div>
+      </motion.div>
     );
   }
 }

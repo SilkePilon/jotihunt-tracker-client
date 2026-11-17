@@ -36,6 +36,7 @@ export default function AreaPicker({ id, value, onChange, invalid, afterPick, pl
         />
       </PopoverTrigger>
       <PopoverContent
+        aria-label="Gebied kiezen"
         align="start"
         sideOffset={6}
         collisionPadding={8}
