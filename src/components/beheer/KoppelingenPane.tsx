@@ -188,7 +188,7 @@ function IntegrationCard({ name, brand, logo, view, isError, onRetry, action, ac
       <Reveal>
         {panel && (
           <div className="pt-3">
-            <div className="rounded-[18px] bg-beheer-row p-4">{panel}</div>
+            <div className="rounded-2xl bg-beheer-row p-4">{panel}</div>
           </div>
         )}
       </Reveal>

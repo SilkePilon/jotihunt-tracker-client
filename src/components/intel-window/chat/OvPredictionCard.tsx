@@ -14,7 +14,7 @@ export default function OvPredictionCard({ prediction, mapRef }: { prediction: O
   const [open, setOpen] = useState(false);
   const { candidates, assumptions } = prediction;
   return (
-    <div className="overflow-hidden rounded-[18px] bg-beheer-row">
+    <div className="overflow-hidden rounded-2xl bg-beheer-row">
       <div className="grid gap-2 px-3 py-2.5 text-[12.5px]">
         {prediction.note && <p className="text-xs text-muted-foreground">{prediction.note}</p>}
         {candidates.length === 0 ? (

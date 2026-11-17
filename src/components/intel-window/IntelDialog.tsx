@@ -245,7 +245,7 @@ function TimelineView({ items, allItems, cells, tab, memoryRef, entrance, onSele
 /** The chat card while its chunk loads: same shell and title as IntelChat, a spinner where the conversation goes. */
 function ChatLoadingShell() {
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-2.5 rounded-[24px] bg-card p-3.5" role="status" aria-label="AI-chat laden">
+    <div className="flex min-h-0 flex-1 flex-col gap-2.5 rounded-3xl bg-card p-3.5" role="status" aria-label="AI-chat laden">
       <h3 className="mx-1 text-[15px] font-bold">Vraag de AI</h3>
       <div className="grid min-h-0 flex-1 place-items-center">
         <Loader2Icon className="size-5 animate-spin text-muted-foreground" />
@@ -270,7 +270,7 @@ function DetailView({ item, area, mapRef, entrance }: { item: IntelItem; area: s
       <div className="flex min-w-0 flex-1 flex-col">
         {/* While the chunk loads: the chat card's shell (IntelChat's root classes) with its header and a spinner; a chunk
             that can't be fetched shows a reload state in the card */}
-        <ChunkBoundary name="De AI-chat" className="rounded-[24px] bg-card">
+        <ChunkBoundary name="De AI-chat" className="rounded-3xl bg-card">
           <Suspense fallback={<ChatLoadingShell />}>
             <IntelChat item={item} mapRef={mapRef} entrance={!firstPaint} />
           </Suspense>

@@ -72,7 +72,7 @@ export default function HintMiniGrid({ mapRef }: { mapRef: RefObject<MapRef | nu
       {view === 'loading' ? (
         <motion.div key="loading" {...SWAP} className="flex flex-col gap-0.5" aria-label="Hints laden" role="status">
           {Array.from({ length: MINI_GRID_ROWS + 1 }, (_, index) => (
-            <Skeleton key={index} className="h-6 w-full rounded-[6px] md:h-4" />
+            <Skeleton key={index} className="h-6 w-full rounded-(--radius-segment) md:h-4" />
           ))}
         </motion.div>
       ) : view === 'error' ? (
@@ -109,7 +109,7 @@ export default function HintMiniGrid({ mapRef }: { mapRef: RefObject<MapRef | nu
                     onClick={() => selectCell(row.article.id, area.value, cell)}
                     className={cn(
                       // Keyboard focus: a thicker ring in the focus colour, distinct from hover (2px primary/50) and selected (2px)
-                      'flex h-6 cursor-pointer items-center justify-center rounded-[6px] outline-none transition-colors duration-200 hover:ring-2 hover:ring-primary/50 focus-visible:ring-[3px] focus-visible:ring-ring md:h-4',
+                      'flex h-6 cursor-pointer items-center justify-center rounded-(--radius-segment) outline-none transition-colors duration-200 hover:ring-2 hover:ring-primary/50 focus-visible:ring-[3px] focus-visible:ring-ring md:h-4',
                       COARSE_HIT_AREA,
                       cellClass[cell.status],
                       isSelected && 'ring-2 ring-ring hover:ring-ring',

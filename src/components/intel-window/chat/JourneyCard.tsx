@@ -24,7 +24,7 @@ export default function JourneyCard({ journey, mapRef }: { journey: OvJourneyRes
     </StopRow>
   );
   return (
-    <div className="overflow-hidden rounded-[18px] bg-beheer-row">
+    <div className="overflow-hidden rounded-2xl bg-beheer-row">
       <div className="grid gap-2 px-3 py-2.5 text-[12.5px]">
         <div className="flex min-w-0 items-center gap-2 text-[13px] font-semibold">
           <ModeIcon mode={journey.mode} />

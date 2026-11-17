@@ -341,7 +341,7 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
             void form.handleSubmit(onSubmit)(e);
         }} className="flex flex-col gap-3">
             {/* isolate: the pickers' 44px touch areas (COARSE_HIT_AREA) stay above the block's background */}
-            <div className="isolate flex flex-col gap-1 rounded-[16px] bg-beheer-row p-2.5">
+            <div className="isolate flex flex-col gap-1 rounded-2xl bg-beheer-row p-2.5">
                 <div className="mb-1 flex gap-1">
                     <Controller
                         control={form.control}

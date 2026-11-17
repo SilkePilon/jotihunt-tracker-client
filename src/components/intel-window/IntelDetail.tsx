@@ -23,7 +23,7 @@ export default function IntelDetail({ item, area, mapRef }: IntelDetailProps) {
   const count = item.kind === 'hint' ? solvedCount(item.cells) : null;
   return (
     <div className="flex flex-col gap-3">
-      <div className="rounded-[24px] bg-card px-6 pt-5 pb-[18px]">
+      <div className="rounded-3xl bg-card px-6 pt-5 pb-[18px]">
         {/* Takes focus when the item pushes in (IntelDialog), so keyboard users land on what they opened; no ring for that */}
         <h2 tabIndex={-1} data-view-focus className="text-[21px] leading-tight font-bold outline-none">
           {item.title}

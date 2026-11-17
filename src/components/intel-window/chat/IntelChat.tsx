@@ -32,7 +32,7 @@ const FADE = { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity
 /** The AI chat card right of the open item (layout B). Remounts per item (the detail view is keyed); each item has its own conversation. */
 export default function IntelChat({ item, mapRef, entrance }: IntelChatProps) {
   return (
-    <section aria-label="Vraag de AI" className="flex min-h-0 flex-1 flex-col gap-2.5 rounded-[24px] bg-card p-3.5">
+    <section aria-label="Vraag de AI" className="flex min-h-0 flex-1 flex-col gap-2.5 rounded-3xl bg-card p-3.5">
       <ChatPanel item={item} mapRef={mapRef} entrance={entrance} />
     </section>
   );

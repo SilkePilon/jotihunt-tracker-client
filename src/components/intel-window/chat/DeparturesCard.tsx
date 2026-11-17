@@ -12,7 +12,7 @@ export default function DeparturesCard({ departures: result }: { departures: OvD
   const { departures } = result;
   const rest = departures.slice(FIRST);
   return (
-    <div className="overflow-hidden rounded-[18px] bg-beheer-row">
+    <div className="overflow-hidden rounded-2xl bg-beheer-row">
       <div className="grid gap-1.5 px-3 py-2.5 text-[12.5px]">
         <div className="truncate text-[13px] font-semibold">Vertrek {result.stop.name}</div>
         {result.note && <p className="text-xs text-muted-foreground">{result.note}</p>}

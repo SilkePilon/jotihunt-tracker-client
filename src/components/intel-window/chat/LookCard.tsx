@@ -25,7 +25,7 @@ export default function LookCard({ look, mapRef }: { look: LookAtPointResult; ma
     setAttempt((count) => count + 1);
   }
   return (
-    <div className="overflow-hidden rounded-[18px] bg-beheer-row">
+    <div className="overflow-hidden rounded-2xl bg-beheer-row">
       <div className="flex gap-3 px-3 pt-3">
         <div className="size-24 shrink-0 overflow-hidden rounded-xl bg-beheer-row-high">
           <AnimatePresence mode="wait" initial={false}>
