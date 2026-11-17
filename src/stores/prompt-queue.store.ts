@@ -73,6 +73,8 @@ interface PromptQueueState extends PromptQueueTimes {
   cancel: (id: PromptId) => void;
   /** The prompt was closed: the next may follow after the gap */
   done: (id: PromptId, now?: number) => void;
+  /** Its owner went away (unmounted, e.g. on logout): leave the queue and free the turn if it is on screen */
+  release: (id: PromptId, now?: number) => void;
   setHeld: (held: boolean, now?: number) => void;
   /** A dialog or drawer opened: hold the queue until it closes */
   modalOpened: () => void;
@@ -130,6 +132,10 @@ const usePromptQueueStore = create<PromptQueueState>()((set, get) => ({
     if (get().active !== id) return;
     set({ active: null, readyAt: now + PROMPT_GAP_MS, closedAt: now });
     get().pump(now);
+  },
+  release: (id, now = Date.now()) => {
+    get().cancel(id);
+    get().done(id, now);
   },
   setHeld: (held, now = Date.now()) => {
     const wasHeld = get().held;
@@ -193,7 +199,8 @@ export default usePromptQueueStore;
 
 /**
  * Wait in the queue while `wanted` (the prompt is due and nothing of its own blocks it). True once it's this prompt's
- * turn: show it then, and call `done` when it closes.
+ * turn: show it then, and call `done` when it closes. Unmounting (logout, a 401) releases the turn, so a stale request
+ * or an active turn never carries over into the next session and blocks the queue.
  */
 export function usePromptTurn(id: PromptId, wanted: boolean): boolean {
   const turn = usePromptQueueStore((state) => state.active === id);
@@ -202,6 +209,7 @@ export function usePromptTurn(id: PromptId, wanted: boolean): boolean {
     if (wanted) queue.request(id);
     else queue.cancel(id);
   }, [id, wanted]);
+  useEffect(() => () => usePromptQueueStore.getState().release(id), [id]);
   return turn;
 }
 

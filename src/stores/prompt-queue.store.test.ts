@@ -230,6 +230,20 @@ describe('prompt queue store', () => {
     queue().cancel('notifications');
     expect(queue().active).toBe('notifications');
   });
+
+  test('release drops a waiting request and frees an active turn (its owner unmounted)', () => {
+    queue().request('passkey', T);
+    queue().release('passkey', T);
+    expect(queue().waiting.passkey).toBeUndefined();
+    queue().request('notifications', T);
+    queue().pump(T + PROMPT_GAP_MS);
+    expect(queue().active).toBe('notifications');
+    queue().release('notifications', T + PROMPT_GAP_MS);
+    expect(queue().active).toBeNull();
+    // Releasing a prompt that is neither waiting nor on screen changes nothing
+    queue().release('android-promo', T + PROMPT_GAP_MS);
+    expect(queue().closedAt).toBe(T + PROMPT_GAP_MS);
+  });
 });
 
 describe('isTypingField', () => {

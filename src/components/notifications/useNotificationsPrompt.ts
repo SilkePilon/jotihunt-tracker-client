@@ -22,8 +22,12 @@ export function useNotificationsPrompt(blocked: boolean) {
     notificationsPromptDue({ serverVersion: prefs.promptedVersion, deviceVersion: readDevicePromptedVersion(), snoozed, push: currentDevicePush() });
   const turn = usePromptTurn('notifications', due && !blocked);
 
+  // Unmounted while on screen (logout, a 401): close the dialog too, so it doesn't reopen in the next session. The turn
+  // itself is released by usePromptTurn.
   useEffect(() => {
-    if (turn) useNotificationsDialogStore.getState().setOpen(true);
+    if (!turn) return;
+    useNotificationsDialogStore.getState().setOpen(true);
+    return () => useNotificationsDialogStore.getState().setOpen(false);
   }, [turn]);
 
   // Closing the dialog (however it was opened) ends this prompt's turn

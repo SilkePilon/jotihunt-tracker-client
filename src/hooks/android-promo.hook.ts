@@ -90,6 +90,11 @@ export function useAndroidPromoAutoOpen() {
     return () => {
       offQueue();
       offPopup();
+      // Unmounted (logout, a 401): leave the queue, and if the popup is on screen as this prompt, close it and free the
+      // turn, so nothing carries over into the next session or blocks the queue
+      const queue = usePromptQueueStore.getState();
+      if (queue.active === 'android-promo') useAndroidPromoStore.setState({ open: false });
+      queue.release('android-promo');
     };
   }, []);
 }
