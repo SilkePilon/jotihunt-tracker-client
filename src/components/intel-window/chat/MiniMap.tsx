@@ -1,5 +1,5 @@
 import { useContext, useRef } from 'react';
-import Maplibre, { AttributionControl, Marker } from 'react-map-gl/maplibre';
+import Maplibre, { AttributionControl, Marker, useMap } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { AnimatePresence, motion, useInView } from 'motion/react';
 import { useDarkMode } from '@/hooks/utils/darkmode.hook';
@@ -7,7 +7,14 @@ import { materialMapStyle } from '@/lib/map-style';
 import { resolveStaticMapStyle } from '@/lib/map-styles';
 import useSettingsStore from '@/stores/settings.store';
 import type { LatLng } from '@/types/IntelChat';
+import { useDarkShields } from '@/components/layers/dark-shields';
 import { ChatScrollerContext } from './stick-to-bottom';
+
+/** The dark theme's road shields (drawn on demand, like on the big map). */
+function DarkShields() {
+  useDarkShields(useMap().current?.getMap());
+  return null;
+}
 
 /**
  * Non-interactive map in the user's map style at zoom 14 with an orange pin. The WebGL map only exists while the card is
@@ -37,6 +44,7 @@ export default function MiniMap({ point, label }: { point: LatLng; label: string
               onLoad={(event) => event.target.getContainer().querySelector('.maplibregl-ctrl-attrib')?.classList.remove('maplibregl-compact-show')}
             >
               <AttributionControl position="top-right" compact />
+              <DarkShields />
               <Marker longitude={point.lng} latitude={point.lat} anchor="center">
                 <span className="block size-3 rounded-full bg-primary ring-[6px] ring-primary/30" />
               </Marker>

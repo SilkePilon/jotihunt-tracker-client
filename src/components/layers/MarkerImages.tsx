@@ -3,6 +3,7 @@ import { useMap } from 'react-map-gl/maplibre';
 import type { Map as MaplibreMap } from 'maplibre-gl';
 import { LABEL_SCALE_VAR, labelScale, MARKER_SCALE_VAR, zoomScale } from '@/lib/zoom-scale';
 import { useMarkerImages } from './marker-icons';
+import { useDarkShields } from './dark-shields';
 
 /**
  * Keeps the zoom scale of the HTML markers in CSS variables on the map container (one listener for all of them, no
@@ -31,10 +32,14 @@ function useMarkerZoomScale(map: MaplibreMap | undefined) {
   }, [map]);
 }
 
-/** Draws the marker images (all layers' icons) whenever the map asks for one it lacks, and scales the HTML markers with the zoom. */
+/**
+ * Draws the marker images (all layers' icons) and the dark theme's road shields whenever the map asks for one it lacks,
+ * and scales the HTML markers with the zoom.
+ */
 export default function MarkerImages() {
   const map = useMap().current?.getMap();
   useMarkerImages(map);
   useMarkerZoomScale(map);
+  useDarkShields(map);
   return null;
 }

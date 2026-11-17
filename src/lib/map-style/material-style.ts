@@ -31,8 +31,40 @@ export interface MapPalette {
   onWater: string;
 }
 
-/** Road-number text on Liberty's white `road_N` shield sprites, in light and dark (Android `MapStyles.SHIELD_TEXT`). */
+/** Road-number text on Liberty's white `road_N` shield sprites (Android `MapStyles.SHIELD_TEXT`). */
 export const SHIELD_TEXT = '#191d17';
+
+/**
+ * Dark theme: Liberty's `road_N` shields are opaque white non-SDF sprites that glare on the dark map, so the style asks
+ * for `jh-dark-road_N` instead, drawn at runtime (see `components/layers/dark-shields.ts`) in these colours. The US
+ * shields keep their sprites (and {@link SHIELD_TEXT}); the Netherlands has none.
+ */
+export const DARK_SHIELD_PREFIX = 'jh-dark-road_';
+/** Road-number text on the dark shields (Android neutral N90, onSurface in dark). */
+export const SHIELD_TEXT_DARK = '#e0e4db';
+
+/** Width (CSS px) of Liberty's `road_N` sprite per ref length N = 1…6; all are {@link ROAD_SHIELD_HEIGHT} high. */
+export const ROAD_SHIELD_WIDTHS: readonly number[] = [14, 20, 25, 31, 36, 40];
+export const ROAD_SHIELD_HEIGHT = 14;
+
+/** Fill, 1px outline and text of a dark shield: a raised tonal tile, like the map's other dark surfaces. */
+export function darkShieldColours(p: MapPalette): { fill: string; outline: string; text: string } {
+  return { fill: p.surfaceContainerHighest, outline: p.outline, text: SHIELD_TEXT_DARK };
+}
+
+/** Size (CSS px) of the dark shield image `id` (`jh-dark-road_N`), undefined for any other id. */
+export function darkShieldSize(id: string): { width: number; height: number } | undefined {
+  if (!id.startsWith(DARK_SHIELD_PREFIX)) return undefined;
+  const rest = id.slice(DARK_SHIELD_PREFIX.length);
+  const n = /^[1-9]$/.test(rest) ? Number(rest) : NaN;
+  const width = ROAD_SHIELD_WIDTHS[n - 1];
+  return width === undefined ? undefined : { width, height: ROAD_SHIELD_HEIGHT };
+}
+
+/** Liberty's `["concat", "road_", …]` shield icon with the dark prefix; undefined for any other icon-image. */
+function darkShieldIcon(icon: unknown): unknown[] | undefined {
+  return Array.isArray(icon) && icon[0] === 'concat' && icon[1] === 'road_' ? ['concat', DARK_SHIELD_PREFIX, ...icon.slice(2)] : undefined;
+}
 
 /** The app's `LightStatusColors` / `DarkStatusColors` warn container (amber; Material 3 has no warn role). */
 export const WARN_CONTAINER = { light: '#ffddb8', dark: '#693c00' };
@@ -275,7 +307,7 @@ function paintFor(role: Role, p: MapPalette): { set: Paint; remove?: string[] } 
     case 'waterLabel':
       return { set: { 'text-color': p.onWater, 'text-halo-color': p.surface } };
     case 'shield':
-      // The road_N shield sprites are opaque white in both themes (not SDF, so not tintable): always dark text.
+      // The sprites are opaque white (not SDF, so not tintable): dark text. Dark-theme road_N shields: see recolour.
       return { set: { 'text-color': SHIELD_TEXT } };
     case 'label':
       return { set: { 'text-color': p.onSurfaceVariant, 'text-halo-color': p.surface } };
@@ -294,6 +326,8 @@ function recolour(layer: LayerSpecification, p: MapPalette): LayerSpecification 
   const paint: Paint = { ...loose.paint };
   for (const key of change.remove ?? []) delete paint[key];
   Object.assign(paint, change.set);
+  const darkIcon = role === 'shield' && p.dark ? darkShieldIcon(loose.layout?.['icon-image']) : undefined;
+  if (darkIcon) return { ...loose, layout: { ...loose.layout, 'icon-image': darkIcon }, paint: { ...paint, 'text-color': darkShieldColours(p).text } } as LayerSpecification;
   return { ...loose, paint } as LayerSpecification;
 }
 
