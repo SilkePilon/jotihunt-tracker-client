@@ -29,7 +29,7 @@ function InputOTPGroup({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="input-otp-group"
-      className={cn("flex items-center", className)}
+      className={cn("flex items-center gap-1.5", className)}
       {...props}
     />
   )
@@ -50,7 +50,8 @@ function InputOTPSlot({
       data-slot="input-otp-slot"
       data-active={isActive}
       className={cn(
-        "relative flex h-9 w-9 items-center justify-center border-y border-r border-input text-sm shadow-xs transition-[color,background-color,border-color,box-shadow] outline-none first:rounded-l-md first:border-l last:rounded-r-md aria-invalid:border-destructive data-[active=true]:z-10 data-[active=true]:border-ring data-[active=true]:ring-[3px] data-[active=true]:ring-ring data-[active=true]:aria-invalid:border-destructive data-[active=true]:aria-invalid:ring-destructive/20 dark:bg-input/10 dark:data-[active=true]:aria-invalid:ring-destructive/40",
+        // The TONAL_FIELD look per box: row-high fill and a 1px --input hairline; the box being typed in gets a 2px inset ring
+        "relative flex h-9 w-9 items-center justify-center rounded-lg bg-beheer-row-high text-sm shadow-[inset_0_0_0_1px_var(--input)] ring-inset transition-[color,background-color,box-shadow] outline-none aria-invalid:ring-1 aria-invalid:ring-destructive data-[active=true]:z-10 data-[active=true]:ring-2 data-[active=true]:ring-ring data-[active=true]:aria-invalid:ring-destructive",
         className
       )}
       {...props}

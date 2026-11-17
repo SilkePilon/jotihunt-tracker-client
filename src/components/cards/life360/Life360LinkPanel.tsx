@@ -35,9 +35,9 @@ export interface Life360LinkActions {
 
 export type Life360LinkView = 'unavailable' | 'unlinked' | 'email' | 'code' | 'circle';
 
-/** One joined 42px bar split by hairlines; purple inset focus ring, red when the code was wrong. */
+/** Six 42px tonal boxes (ui/input-otp); purple inset ring on the box being typed in, red when the code was wrong. */
 const OTP_SLOT =
-  'h-[42px] flex-1 font-mono text-lg font-bold first:rounded-l-lg last:rounded-r-lg data-[active=true]:border-[#7875ea] data-[active=true]:ring-2 data-[active=true]:ring-inset data-[active=true]:ring-[#7875ea]/40';
+  'h-[42px] flex-1 font-mono text-lg font-bold data-[active=true]:ring-[#7875ea]';
 
 /** Inline links ("Opnieuw sturen", "ander adres") while another request runs */
 const LINK_DISABLED = 'disabled:cursor-default disabled:text-muted-foreground disabled:no-underline disabled:opacity-60';
