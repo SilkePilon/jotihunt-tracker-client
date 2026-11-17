@@ -169,8 +169,8 @@ const TONE: Record<RowTone, string> = {
   default: 'bg-beheer-row',
   open: 'bg-beheer-row-high',
   danger: 'bg-destructive/12',
-  // motion owns the block's opacity (fold in/out), so dim the content instead
-  muted: 'bg-beheer-row [&>*]:opacity-60',
+  // Dimmed by colour only: an opacity layer over already muted text drops it below 4.5:1 (motion also owns the block's opacity)
+  muted: 'bg-beheer-row text-muted-foreground',
   // The edition everyone sees (soft orange, like primary pills)
   shown: 'bg-primary-container text-on-primary-container [&_.text-muted-foreground]:text-on-primary-container/75',
 };
