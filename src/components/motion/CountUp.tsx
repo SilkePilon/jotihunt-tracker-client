@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { animate, motion, useMotionValue, useReducedMotion, useTransform } from 'motion/react';
 import { cn } from '@/lib/utils';
+import { EASE_OUT } from '@/lib/motion';
 
 /** A whole number that rolls to its value: from `from` on mount (a count-up), then from the old value on every change */
 export default function CountUp({ value, from = value, className }: { value: number; from?: number; className?: string }) {
@@ -12,7 +13,7 @@ export default function CountUp({ value, from = value, className }: { value: num
       current.set(value);
       return;
     }
-    const controls = animate(current, value, { duration: 0.7, ease: [0.33, 1, 0.68, 1] });
+    const controls = animate(current, value, { duration: 0.7, ease: EASE_OUT });
     return () => controls.stop();
   }, [value, reduce, current]);
   return <motion.span className={cn('tabular-nums', className)}>{text}</motion.span>;

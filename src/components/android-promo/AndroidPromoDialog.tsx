@@ -9,7 +9,7 @@ import { useAppRelease, usePairingCode } from '@/hooks/app-pairing.hook';
 import { useAccount } from '@/hooks/account.hook';
 import { absoluteUrl, buildPairingUrl } from '@/lib/app-pairing';
 import { DIALOG_SHELL } from '@/lib/dialog-shell';
-import { SWAP } from '@/lib/motion';
+import { LAYOUT_SPRING, SWAP } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { useBackEntry } from '@/hooks/back-entry.hook';
 import useAndroidPromoStore from '@/stores/android-promo.store';
@@ -93,7 +93,7 @@ export default function AndroidPromoDialog() {
                 initial={{ opacity: 0, scale: 0.9, x: '-50%', y: '-46%' }}
                 animate={{ opacity: 1, scale: 1, x: '-50%', y: '-50%' }}
                 exit={{ opacity: 0, scale: 0.95, x: '-50%', y: '-48%' }}
-                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                transition={LAYOUT_SPRING}
               >
                 <DialogPrimitive.Title className="sr-only">Android-app</DialogPrimitive.Title>
                 {/* Short screens (landscape phone): the dialog stops 16px from the safe area and its content scrolls inside */}

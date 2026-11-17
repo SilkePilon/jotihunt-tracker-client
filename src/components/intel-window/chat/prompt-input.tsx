@@ -2,8 +2,7 @@ import { createContext, useContext, useLayoutEffect, useRef, type ComponentProps
 import { AnimatePresence, motion } from 'motion/react';
 import { ArrowUpIcon, Loader2Icon, SquareIcon } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { TOGGLE_SPRING } from '@/lib/intel-window';
-import { POP_SPRING } from '@/lib/motion';
+import { EASE_OUT, POP_SPRING, SOFT_SPRING } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 
 interface PromptInputContextValue {
@@ -118,7 +117,7 @@ export function ModeToggle({ on, onToggle, icon, label, tone, tooltip }: ModeTog
           on ? TOGGLE_ON[tone] : 'text-muted-foreground hover:bg-foreground/5 hover:text-foreground',
         )}
       >
-        <motion.span className="grid place-items-center [&_svg]:size-4" initial={false} animate={{ rotate: on ? 360 : 0, scale: on ? 1.08 : 1 }} transition={TOGGLE_SPRING}>
+        <motion.span className="grid place-items-center [&_svg]:size-4" initial={false} animate={{ rotate: on ? 360 : 0, scale: on ? 1.08 : 1 }} transition={SOFT_SPRING}>
           {icon}
         </motion.span>
         <AnimatePresence initial={false}>
@@ -129,7 +128,7 @@ export function ModeToggle({ on, onToggle, icon, label, tone, tooltip }: ModeTog
               initial={{ width: 0, opacity: 0, marginLeft: 0 }}
               animate={{ width: 'auto', opacity: 1, marginLeft: 6 }}
               exit={{ width: 0, opacity: 0, marginLeft: 0 }}
-              transition={{ duration: 0.28, ease: [0.2, 0, 0, 1], opacity: { duration: 0.2 } }}
+              transition={{ duration: 0.28, ease: EASE_OUT, opacity: { duration: 0.2 } }}
             >
               {label}
             </motion.span>

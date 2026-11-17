@@ -5,7 +5,7 @@ import { useAppConfig } from '@/hooks/app-config.hook';
 import { useNextHint } from '@/hooks/next-hint.hook';
 import { formatClock } from '@/lib/format';
 import { type ChartColumn, chartColumns, formatSolveTime, intelStats, type SlotBar, unreadLabel, unreadTab } from '@/lib/intel-window';
-import { EASE_OUT, LAYOUT_SPRING, SWAP } from '@/lib/motion';
+import { EASE_OUT, LAYOUT_SPRING, SOFT_SPRING, SWAP } from '@/lib/motion';
 
 import { OVERLINE } from '@/lib/menu-styles';
 import { areaOptions, cn } from '@/lib/utils';
@@ -183,7 +183,7 @@ const SolveChart = memo(function SolveChart({ slots, avgSolveMs, nextMs, entranc
                       className="flex w-full max-w-6 flex-1 origin-bottom flex-col justify-end gap-0.5"
                       initial={entrance ? { scaleY: 0 } : false}
                       animate={{ scaleY: 1 }}
-                      transition={{ type: 'spring', stiffness: 260, damping: 22, delay: 0.12 + index * 0.045 }}
+                      transition={{ ...SOFT_SPRING, delay: 0.12 + index * 0.045 }}
                     >
                       <AnimatePresence initial={false} mode="popLayout">
                         {past ? (

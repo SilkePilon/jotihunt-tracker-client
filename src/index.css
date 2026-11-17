@@ -855,22 +855,24 @@ html.flashbang::view-transition-new(root) {
   }
 }
 
-/* Vossen card OV block: the train glides between the two stations */
+/* Vossen card OV block: the train glides between the two stations. A transform on the compositor (the rail is an
+   inline-size container, so 100cqw is the rail's width), not an animated left that lays out every frame */
 @keyframes ov-ride {
   from {
-    left: 0;
+    transform: translateX(0);
   }
   to {
-    left: calc(100% - 22px);
+    transform: translateX(calc(100cqw - 22px));
   }
 }
 .ov-train {
+  left: 0;
   animation: ov-ride 6s ease-in-out infinite alternate;
 }
 @media (prefers-reduced-motion: reduce) {
   .ov-train {
     animation: none;
-    left: calc(50% - 11px);
+    transform: translateX(calc(50cqw - 11px));
   }
 }
 
@@ -957,18 +959,20 @@ html.flashbang::view-transition-new(root) {
   content: '';
   position: absolute;
   inset-block: 0;
-  left: -22px;
-  width: 22px;
-  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.4), transparent);
+  left: 0;
+  /* The block's width, with the 22px shine band at its left edge, so translateX(100%) carries the band just past the end */
+  width: 100%;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.4), transparent) 0 0 / 22px 100% no-repeat;
+  transform: translateX(-22px);
   animation: fox-history-shine 1.5s ease-in-out infinite;
 }
 @keyframes fox-history-shine {
   0% {
-    left: -22px;
+    transform: translateX(-22px);
   }
   70%,
   100% {
-    left: 100%;
+    transform: translateX(100%);
   }
 }
 /* Status word: 1.8 s sweep, then a 0.576 s pause (75.7 % of 2.376 s) */
