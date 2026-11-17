@@ -13,12 +13,14 @@ import useFollowMeStore from '@/stores/follow-me.store';
 const CENTRED_PX = 3;
 const FOLLOW_EASE_MS = 800;
 
-// User gestures that end following (MapLibre only sets originalEvent for those, never for our own camera moves)
-const GESTURE_EVENTS = ['dragstart', 'zoomstart', 'rotatestart', 'pitchstart'] as const;
+// User gestures that end following (MapLibre only sets originalEvent for those, never for our own camera moves).
+// Zooming is not one: a pinch (like the ± tiles) keeps following, the next fix re-centres at the new zoom.
+const GESTURE_EVENTS = ['dragstart', 'rotatestart', 'pitchstart'] as const;
 
 /**
  * Phones: while "Mijn locatie" follows (MyLocationButton), the map eases to every new own fix, the own tracker when it
- * is live, else the browser's position (BrowserLocationDot). Dragging, pinching or twisting the map stops following.
+ * is live, else the browser's position (BrowserLocationDot). Dragging or twisting the map stops following; pinch zoom
+ * keeps it.
  * The screen stays on meanwhile, like a navigation app.
  */
 export default function FollowMe() {
