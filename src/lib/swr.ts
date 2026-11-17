@@ -50,10 +50,10 @@ async function swrFetcher([url, authHeader]: [string, string]) {
   try {
     const data = await fetcherWithMethod(url, authHeader);
     if (!hasExpectedShape(url, data)) throw new UnexpectedResponseError(url);
-    reportFetchSuccess();
+    reportFetchSuccess(url);
     return data;
   } catch (error) {
-    reportFetchError();
+    reportFetchError(url);
     throw error;
   }
 }

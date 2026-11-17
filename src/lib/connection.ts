@@ -1,28 +1,89 @@
 /**
  * Tracks whether polled data still refreshes, for the "no connection" badge. Module state on purpose: every SWR fetch
  * reports here, and only the badge reads it (on a timer), so a successful poll doesn't re-render anything.
+ *
+ * Besides one overall record, the critical feeds (foxes, hunts, markers, positions) are tracked on their own: one
+ * successful poll elsewhere (e.g. /hunts) must not hide that /areas keeps failing.
  */
 
 /** Without a successful refresh for this long (and a failure or offline since), the data counts as stale. */
 export const STALE_AFTER_MS = 60_000;
+/** A critical feed that never loaded is flagged after failing for this long (SWR's first retries come within seconds). */
+export const NEVER_LOADED_GRACE_MS = 10_000;
 
 export interface ConnectionState {
   lastSuccessAt: number;
   lastErrorAt: number | null;
 }
 
-const state: ConnectionState = { lastSuccessAt: Date.now(), lastErrorAt: null };
-
-export function reportFetchSuccess(now = Date.now()) {
-  state.lastSuccessAt = now;
+/** One feed's record; `lastSuccessAt` null until its first successful fetch. */
+export interface FeedState {
+  lastSuccessAt: number | null;
+  lastErrorAt: number | null;
 }
 
-export function reportFetchError(now = Date.now()) {
-  state.lastErrorAt = now;
+/** The feeds whose staleness the badge reports on their own, with the word the badge uses for them. */
+export const CRITICAL_FEEDS: Record<string, string> = {
+  '/areas': 'vossen',
+  '/hunts': 'hunts',
+  '/markers': 'markers',
+  '/tracker/positions': 'posities',
+};
+
+export interface ConnectionSnapshot {
+  /** When this page started tracking (a cold start counts from here) */
+  startedAt: number;
+  overall: ConnectionState;
+  /** Per feed path (query left off) */
+  feeds: Record<string, FeedState>;
+}
+
+function freshState(now = Date.now()): ConnectionSnapshot {
+  return { startedAt: now, overall: { lastSuccessAt: now, lastErrorAt: null }, feeds: {} };
+}
+
+let state: ConnectionSnapshot = freshState();
+/** Whether any fetch has succeeded on this page yet (the overall lastSuccessAt starts at page load) */
+let anySuccess = false;
+
+/** The path part of an SWR url ("/hunts?since=…" → "/hunts"). */
+export function feedKey(url: string): string {
+  const query = url.indexOf('?');
+  return query === -1 ? url : url.slice(0, query);
+}
+
+function feed(url: string | undefined): FeedState | null {
+  if (url === undefined) return null;
+  const key = feedKey(url);
+  if (!(key in CRITICAL_FEEDS)) return null;
+  return (state.feeds[key] ??= { lastSuccessAt: null, lastErrorAt: null });
+}
+
+export function reportFetchSuccess(url?: string, now = Date.now()) {
+  state.overall.lastSuccessAt = now;
+  anySuccess = true;
+  const record = feed(url);
+  if (record) record.lastSuccessAt = now;
+}
+
+export function reportFetchError(url?: string, now = Date.now()) {
+  state.overall.lastErrorAt = now;
+  const record = feed(url);
+  if (record) record.lastErrorAt = now;
 }
 
 export function connectionState(): Readonly<ConnectionState> {
-  return state;
+  return state.overall;
+}
+
+export function connectionSnapshot(): Readonly<ConnectionSnapshot> & { anySuccess: boolean } {
+  return { ...state, anySuccess };
+}
+
+/** Tests only: start over as a fresh page load. */
+export function resetConnection(now = Date.now()) {
+  state = freshState(now);
+  anySuccess = false;
 }
 
 /**
@@ -36,9 +97,57 @@ export function staleAge({ lastSuccessAt, lastErrorAt }: ConnectionState, online
   return failedSince || !online ? age : null;
 }
 
+/** What the badge should say: data `ageMs` old (null: nothing loaded yet), for every feed or only `feeds` (badge words). */
+export interface ConnectionProblem {
+  ageMs: number | null;
+  /** Empty: the connection as a whole; else only these critical feeds are behind */
+  feeds: string[];
+}
+
+/**
+ * The problem to show, if any:
+ * - offline before anything loaded (cold offline start): at once, no age;
+ * - a critical feed that failed and never loaded, for {@link NEVER_LOADED_GRACE_MS} since the start: no age;
+ * - all data stale ({@link staleAge} over the overall record);
+ * - else, critical feeds that are stale on their own while others still refresh: named, with the oldest age.
+ */
+export function connectionProblem(snapshot: ConnectionSnapshot & { anySuccess: boolean }, online: boolean, now: number, staleAfterMs = STALE_AFTER_MS): ConnectionProblem | null {
+  if (!online && !snapshot.anySuccess) return { ageMs: null, feeds: [] };
+  const overall = staleAge(snapshot.overall, online, now, staleAfterMs);
+  if (overall !== null) return { ageMs: overall, feeds: [] };
+
+  const neverLoaded: string[] = [];
+  const stale: { name: string; age: number }[] = [];
+  for (const [key, record] of Object.entries(snapshot.feeds)) {
+    const name = CRITICAL_FEEDS[key];
+    if (!name) continue;
+    if (record.lastSuccessAt === null) {
+      if (record.lastErrorAt !== null && now - snapshot.startedAt >= NEVER_LOADED_GRACE_MS) neverLoaded.push(name);
+      continue;
+    }
+    const age = staleAge({ lastSuccessAt: record.lastSuccessAt, lastErrorAt: record.lastErrorAt }, online, now, staleAfterMs);
+    if (age !== null) stale.push({ name, age });
+  }
+  if (neverLoaded.length > 0 && !snapshot.anySuccess) return { ageMs: null, feeds: [] };
+  if (neverLoaded.length > 0) return { ageMs: null, feeds: neverLoaded };
+  if (stale.length > 0) return { ageMs: Math.max(...stale.map((entry) => entry.age)), feeds: stale.map((entry) => entry.name) };
+  return null;
+}
+
+function ageText(ageMs: number): string {
+  const minutes = Math.max(1, Math.floor(ageMs / 60_000));
+  return minutes < 60 ? `${minutes} min` : `${Math.floor(minutes / 60)} u ${minutes % 60} min`;
+}
+
 /** "Geen verbinding — gegevens 3 min oud" */
 export function staleLabel(ageMs: number): string {
-  const minutes = Math.max(1, Math.floor(ageMs / 60_000));
-  const age = minutes < 60 ? `${minutes} min` : `${Math.floor(minutes / 60)} u ${minutes % 60} min`;
-  return `Geen verbinding — gegevens ${age} oud`;
+  return `Geen verbinding — gegevens ${ageText(ageMs)} oud`;
+}
+
+/** The badge text for a {@link ConnectionProblem}: "Geen verbinding", "… gegevens 3 min oud", "Vossen niet bijgewerkt — 3 min oud". */
+export function problemLabel({ ageMs, feeds }: ConnectionProblem): string {
+  if (feeds.length === 0) return ageMs === null ? 'Geen verbinding' : staleLabel(ageMs);
+  const names = feeds.length === 1 ? feeds[0] : `${feeds.slice(0, -1).join(', ')} en ${feeds[feeds.length - 1]}`;
+  const subject = names.charAt(0).toUpperCase() + names.slice(1);
+  return ageMs === null ? `${subject} niet geladen` : `${subject} niet bijgewerkt — ${ageText(ageMs)} oud`;
 }
