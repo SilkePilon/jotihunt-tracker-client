@@ -130,7 +130,7 @@ describe('draft age', () => {
   const now = Date.parse('2026-10-18T12:00:00Z');
 
   test('keep stamps savedAt when the draft has none', () => {
-    const { savedAt: _omit, ...unstamped } = draft;
+    const unstamped = { ...draft, savedAt: undefined };
     const before = Date.now();
     store().keep(unstamped);
     expect(store().drafts[key].savedAt).toBeGreaterThanOrEqual(before);
@@ -144,7 +144,7 @@ describe('draft age', () => {
   });
 
   test('a draft from before stamps ages by its sent time; an unreadable one is dropped', () => {
-    const { savedAt: _omit, ...legacy } = draft;
+    const legacy = { ...draft, savedAt: undefined };
     // Sent 2026-10-17 12:30Z: 23.5 h before `now`
     expect(Object.keys(freshDrafts({ a: legacy }, now))).toEqual(['a']);
     expect(freshDrafts({ a: legacy }, now + DRAFT_MAX_AGE_MS)).toEqual({});
