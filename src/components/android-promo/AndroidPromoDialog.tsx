@@ -13,7 +13,6 @@ import { SWAP } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { useBackEntry } from '@/hooks/back-entry.hook';
 import useAndroidPromoStore from '@/stores/android-promo.store';
-import { useModalHold } from '@/stores/prompt-queue.store';
 import AndroidPromoHero from './AndroidPromoHero';
 import DownloadSplitButton from './DownloadSplitButton';
 import { usePairLaunch } from './pair-launch';
@@ -74,8 +73,6 @@ export default function AndroidPromoDialog() {
   };
 
   const shown = open && !!release;
-  // Opened from the split button: no other follow-up prompt opens over it (its own prompt turn is already exclusive)
-  useModalHold(shown);
 
   // Radix Dialog for the focus trap, Escape, outside click and focus restore; forceMount + asChild hand the mount and
   // unmount to AnimatePresence so the motion enter/exit stays.
