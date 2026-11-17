@@ -25,6 +25,22 @@ export function pushPermission(): NotificationPermission | 'unsupported' {
   return isPushSupported() ? Notification.permission : 'unsupported';
 }
 
+/** Push on this device: 'on' (granted), 'off' (never asked: one tap turns it on), 'blocked' (denied in the browser),
+ * 'install' (iPhone browser tab: only the home-screen app gets push) or 'unsupported'. */
+export type DevicePush = 'on' | 'off' | 'blocked' | 'install' | 'unsupported';
+
+export function devicePush(permission: NotificationPermission | 'unsupported', iosInstall: boolean): DevicePush {
+  if (iosInstall) return 'install';
+  if (permission === 'unsupported') return 'unsupported';
+  return permission === 'granted' ? 'on' : permission === 'denied' ? 'blocked' : 'off';
+}
+
+/** This device's push state (see devicePush). */
+export function currentDevicePush(): DevicePush {
+  if (typeof window === 'undefined') return 'unsupported';
+  return devicePush(pushPermission(), needsIosInstall(navigator.userAgent, isStandalone()));
+}
+
 export function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
   const padded = (base64 + '='.repeat((4 - (base64.length % 4)) % 4)).replace(/-/g, '+').replace(/_/g, '/');
   const raw = atob(padded);
@@ -72,13 +88,20 @@ export async function subscribePush(fetch: Fetch, readyTimeoutMs = SW_READY_TIME
 }
 
 /** On load: send an existing subscription again, so it belongs to the logged-in user (and survives an edition switch).
- * Quiet while an archive edition is shown: the server refuses it with 423 then. */
+ * Permission granted but no subscription (dropped by a logout, the browser or a cleared site) subscribes again, so push
+ * doesn't silently stay off on this device. Quiet while an archive edition is shown: the server refuses it with 423 then. */
 export async function resyncPush(fetch: Fetch): Promise<void> {
   if (!isPushSupported() || Notification.permission !== 'granted') return;
   try {
     const registration = await navigator.serviceWorker.getRegistration();
-    const subscription = await registration?.pushManager.getSubscription();
-    if (subscription) await fetch('/push/subscribe', 'POST', subscription.toJSON());
+    if (!registration) return;
+    let subscription = await registration.pushManager.getSubscription();
+    if (!subscription) {
+      // No permission prompt here: it's already granted, so subscribing needs no click
+      const { publicKey } = (await fetch<{ publicKey: string }>('/push/vapid-key')).data;
+      subscription = await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(publicKey) });
+    }
+    await fetch('/push/subscribe', 'POST', subscription.toJSON());
   } catch (error) {
     if (!isArchiveError(error)) console.warn('[push] resync failed', error);
   }
