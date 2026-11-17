@@ -56,8 +56,10 @@
   /* Solid red fill under white text (destructive Button, ConfirmDialog action, danger Pill): 4.8:1 */
   --destructive-fill: var(--destructive);
   --border: hsl(20 0% 90%);
-  /* Text field outlines (border-input): >= 3:1 against white so the field's boundary is visible */
-  --input: hsl(20 0% 54%);
+  /* Text field outlines (border-input): kept subtle; fields are told apart by their tonal fill, not an outline */
+  --input: hsl(20 0% 90%);
+  /* A clearly visible grey edge (open hint-grid cells, the selected segment), independent of the subtle --input */
+  --edge-strong: hsl(20 0% 54%);
   /* Focus ring: orange-700, so a solid ring is >= 3:1 against white cards, the tonal rows and primary containers
      (the orange-600 of dark mode was 2.73:1 on beheer-row-high / primary-container) */
   --ring: #c2410c;
@@ -169,8 +171,9 @@
   /* The solid red fill a step darker on the dark window: white text 8.7:1 */
   --destructive-fill: color-mix(in oklab, var(--destructive) 75%, black);
   --border: hsl(240 4% 22%);
-  /* Field outlines: >= 3:1 against the card (22% was 1.3:1); fills use bg-input/10 so they stay dark */
-  --input: hsl(240 4% 46%);
+  /* Field outlines: subtle like the borders; fields are told apart by their tonal fill */
+  --input: hsl(240 4% 22%);
+  --edge-strong: hsl(240 4% 46%);
   /* orange-500: >= 3:1 against primary-container (3.8), card (5.7) and the tonal rows (>= 4.5); orange-600 was 2.98:1 on primary-container */
   --ring: #f97316;
   --fox-ok: #9bd893;
@@ -408,13 +411,15 @@ body.dark {
 /* Beheer window: in light mode the window is a step darker than its (white) cards; rows are a tonal step above the
    card (M3 surface containers). Declared on body because the theme's `.dark` class sits on body. */
 body {
-  /* Elevation of the shared surfaces: a 1px hairline in the border colour + a soft drop shadow. Use as shadow-(--shadow-…)
+  /* Elevation of the shared surfaces: a ring (border-colour hairline; a faint dark ring for map cards and tiles) + a soft drop shadow. Use as shadow-(--shadow-…)
      (cn merges that with a caller's shadow-none; a named @theme shadow it can't). On body, not in @theme (emitted on
      :root): the theme's .dark class sits on body, so only here var(--border) resolves to the dark value.
      tile: map tiles/buttons (MAP_TILE); tooltip: tooltips; menu: menus, popovers, toasts (MENU_SURFACE); dialog:
      dialogs, map popups, HQ event card (DIALOG_SHELL); sheet: phone bottom sheet + drawers (a floating landscape
      column uses dialog) */
-  --shadow-tile: 0 0 0 1px var(--border), 0 4px 14px rgb(0 0 0 / 0.22);
+  /* Cards on the map (sidebar .card and MAP_TILE): a faint dark ring like the sidebar cards, no grey border line */
+  --shadow-card-ring: 0 0 0 2px rgb(0 0 0 / 0.1);
+  --shadow-tile: var(--shadow-card-ring), 0 4px 14px rgb(0 0 0 / 0.22);
   --shadow-tooltip: 0 0 0 1px var(--border), 0 4px 12px rgb(0 0 0 / 0.25);
   --shadow-menu: 0 0 0 1px var(--border), 0 10px 30px rgb(0 0 0 / 0.28);
   --shadow-dialog: 0 0 0 1px var(--border), 0 18px 50px rgb(0 0 0 / 0.35);
@@ -452,7 +457,7 @@ body.dark {
 
 /* Legacy outline of the sidebar/HQ cards: a 1px ring in the theme's border colour (a 2px black/10% ring vanished in dark mode) */
 .card {
-  box-shadow: 0 0 0 1px var(--border);
+  box-shadow: var(--shadow-card-ring);
 }
 
 /*

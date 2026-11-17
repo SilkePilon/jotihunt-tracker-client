@@ -50,8 +50,8 @@ function InputOTPSlot({
       data-slot="input-otp-slot"
       data-active={isActive}
       className={cn(
-        // The TONAL_FIELD look per box: row-high fill and a 1px --input hairline; the box being typed in gets a 2px inset ring
-        "relative flex h-9 w-9 items-center justify-center rounded-lg bg-beheer-row-high text-sm shadow-[inset_0_0_0_1px_var(--input)] ring-inset transition-[color,background-color,box-shadow] outline-none aria-invalid:ring-1 aria-invalid:ring-destructive data-[active=true]:z-10 data-[active=true]:ring-2 data-[active=true]:ring-ring data-[active=true]:aria-invalid:ring-destructive",
+        // The TONAL_FIELD look per box: row-high fill without an outline; the box being typed in gets a 2px inset ring
+        "relative flex h-9 w-9 items-center justify-center rounded-lg bg-beheer-row-high text-sm ring-inset transition-[color,background-color,box-shadow] outline-none aria-invalid:ring-1 aria-invalid:ring-destructive data-[active=true]:z-10 data-[active=true]:ring-2 data-[active=true]:ring-ring data-[active=true]:aria-invalid:ring-destructive",
         className
       )}
       {...props}

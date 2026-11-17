@@ -113,10 +113,9 @@ export function HuntsSyncView({ status, events, onSelect, onLoadMore, eventsFail
                   <LoadError centered message="Het hunt-logboek kon niet worden geladen." onRetry={() => onRetryEvents?.()} />
                 </motion.div>
               ) : (
-                // Rows as tall and as far apart as the log's (44px, 2px apart), so nothing jumps when it loads
-                <motion.div key="loading" className="mt-2.5 flex flex-col gap-0.5" role="status" aria-label="Logboek laden" {...SWAP}>
+                <motion.div key="loading" className="mt-2.5 flex flex-col gap-1" role="status" aria-label="Logboek laden" {...SWAP}>
                   {Array.from({ length: 3 }, (_, index) => (
-                    <Skeleton key={index} className="h-11 w-full rounded-lg" />
+                    <Skeleton key={index} className="h-6 w-full rounded-lg" />
                   ))}
                 </motion.div>
               )}
@@ -138,7 +137,7 @@ function HuntsSyncSkeleton() {
       <Skeleton className="mt-2.5 h-2.5 w-[150px] rounded-[5px]" />
       <div className="mt-2.5 flex w-full flex-col gap-0.5">
         {Array.from({ length: 3 }, (_, index) => (
-          <Skeleton key={index} className="h-11 w-full rounded-lg" />
+          <Skeleton key={index} className="h-6 w-full rounded-lg" />
         ))}
       </div>
     </div>
