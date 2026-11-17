@@ -35,7 +35,7 @@ export default function MapTooltip({ longitude, latitude, offset, offsetScale = 
   const scaledOffset = useMemo(() => scaleOffset(offset, factor), [offset, factor]);
   return (
     <Marker longitude={longitude} latitude={latitude} anchor="bottom" offset={scaledOffset} style={TOOLTIP_STYLE}>
-      <div ref={content} className="relative flex w-fit items-center gap-[7px] rounded-[10px] bg-(--map-surface) px-2.5 py-1.5 font-(family-name:--map-font) text-[12.5px] whitespace-nowrap text-(--map-on-surface) shadow-[0_0_0_1px_var(--map-hairline),0_4px_12px_rgb(0_0_0/0.5)]">
+      <div ref={content} className="relative flex w-fit items-center gap-[7px] rounded-[10px] bg-(--map-surface) px-2.5 py-1.5 font-(family-name:--map-font) text-[12.5px] whitespace-nowrap text-(--map-on-surface) shadow-(--shadow-tooltip)">
         <span className="size-2 shrink-0 rounded-full" style={{ background: color }} />
         <span className="font-semibold">{title}</span>
         {meta && <span className="text-(--map-muted) tabular-nums">{meta}</span>}

@@ -154,7 +154,7 @@ function SaveBar({ show, saving, disabled, onReset, onSave }: { show: boolean; s
               animate={{ y: 0 }}
               exit={{ y: 24 }}
               transition={SWAP_TRANSITION}
-              className="flex items-center gap-2.5 rounded-2xl border border-border bg-beheer-row-high py-2.5 pr-2.5 pl-4 shadow-lg"
+              className="flex items-center gap-2.5 rounded-2xl bg-beheer-row-high py-2.5 pr-2.5 pl-4 shadow-(--shadow-menu)"
             >
               <span className="min-w-0 flex-1 text-[13px] font-medium">Niet-opgeslagen wijzigingen</span>
               <Pill variant="ghost" disabled={saving} onClick={onReset}>

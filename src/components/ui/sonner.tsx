@@ -62,7 +62,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
         closeButtonAriaLabel: "Sluiten",
         classNames: {
           // Keeps sonner's own focus ring visible: ring-* composes with this shadow
-          toast: "border-0! shadow-[0_0_0_1px_var(--border),0_10px_30px_rgb(0_0_0/0.28)]! focus-visible:ring-[3px] focus-visible:ring-ring",
+          toast: "border-0! shadow-(--shadow-menu)! focus-visible:ring-[3px] focus-visible:ring-ring",
           description: "text-muted-foreground!",
           // The app's small buttons (h-8, 12px corners, 13px semibold, 3px focus ring) instead of sonner's 24px / 4px
           // corners; on touch an invisible ::after grows the target to 44px (the toast is its own stacking context)
