@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Layer, Source, useMap, type CircleLayerSpecification, type FillLayerSpecification, type LineLayerSpecification } from 'react-map-gl/maplibre';
 import type { MapMouseEvent } from 'maplibre-gl';
@@ -7,6 +7,7 @@ import { AnimatePresence, motion, useIsPresent } from 'motion/react';
 import { Loader2Icon, Undo2Icon } from 'lucide-react';
 import { toast } from 'sonner';
 import { Pill, IconPill } from '@/components/beheer/controls/Pill';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import Segmented, { type SegmentOption } from '@/components/beheer/controls/Segmented';
 import { useNightAreas } from '@/hooks/night-areas.hook';
 import { useIsMobile } from '@/hooks/media.hook';
@@ -29,6 +30,9 @@ const KIND_OPTIONS: SegmentOption<NightAreaKind>[] = [
   { value: 'open', label: "Open 's nachts", selectedClassName: 'bg-fox-ok-container', selectedTextClassName: 'text-fox-on-ok' },
 ];
 
+/** ConfirmDialog's close animation (data-[state=closed]:duration-150) plus a margin, before draw mode unmounts it */
+const CONFIRM_CLOSE_MS = 180;
+
 /** Back to Beheer → Algemeen (the Routes card) */
 function leave() {
   useNightDraw.getState().cancel();
@@ -46,6 +50,10 @@ export default function NightAreaDraw() {
   const { setting, save } = useNightAreas();
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
+  // Annuleren / Escape with corners drawn asks first: they can't be brought back
+  const [confirmLeave, setConfirmLeave] = useState(false);
+  const leaveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => () => clearTimeout(leaveTimer.current), []);
   const isMobile = useIsMobile();
   // Phones: the hint sits above the bottom sheet
   const sheetHeight = useSidebarStore((state) => state.sheetHeight);
@@ -94,11 +102,27 @@ export default function NightAreaDraw() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && useNightDraw.getState().active) leave();
+      // Escape inside the confirm closes only that dialog (it is still in the DOM while this listener runs)
+      if (e.key !== 'Escape' || !useNightDraw.getState().active || document.querySelector('[role="alertdialog"]')) return;
+      requestLeave();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
+
+  /** Annuleren: straight back without corners, otherwise after "Weggooien" in the confirm */
+  function requestLeave() {
+    // Already leaving after Weggooien
+    if (leaveTimer.current) return;
+    if (useNightDraw.getState().points.length) setConfirmLeave(true);
+    else leave();
+  }
+
+  /** Weggooien: let the confirm close with its animation, then leave draw mode (which unmounts it) */
+  function confirmDiscard() {
+    setConfirmLeave(false);
+    leaveTimer.current = setTimeout(leave, CONFIRM_CLOSE_MS);
+  }
 
   const data = useMemo<FeatureCollection<Polygon | LineString | Point>>(() => {
     const ring = ringFromPoints(points);
@@ -167,7 +191,7 @@ export default function NightAreaDraw() {
             <IconPill variant="soft" aria-label="Ongedaan maken" title="Ongedaan maken" disabled={!points.length || saving} onClick={undo} className="size-8">
               <Undo2Icon />
             </IconPill>
-            <Pill variant="secondary" onClick={leave} disabled={saving}>
+            <Pill variant="secondary" onClick={requestLeave} disabled={saving}>
               Annuleren
             </Pill>
             <Pill variant="primary" morphKey={saving ? 'busy' : 'idle'} disabled={!closed || saving} onClick={() => void submit()}>
@@ -213,6 +237,16 @@ export default function NightAreaDraw() {
         </>,
         document.body,
       )}
+      <ConfirmDialog
+        open={confirmLeave}
+        onOpenChange={setConfirmLeave}
+        title="Tekening weggooien?"
+        description={`Je ${points.length === 1 ? 'getekende punt gaat' : `${points.length} getekende punten gaan`} verloren. Het gebied is nog niet opgeslagen.`}
+        cancelLabel="Verder tekenen"
+        confirmLabel="Weggooien"
+        destructive
+        onConfirm={confirmDiscard}
+      />
     </>
   );
 }
