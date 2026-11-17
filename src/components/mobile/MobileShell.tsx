@@ -25,6 +25,29 @@ import MobilePage from './MobilePage';
 import ViewportDebug from './ViewportDebug';
 import { DOCK_CARD_MAX_VAR, DOCK_ID } from './DockedPopup';
 import { sheetVisibleHeight } from './sheet-motion';
+import { loadSavedPage, savePage } from '@/lib/continuity';
+import type { MobilePageId } from '@/lib/mobile-nav';
+
+/** Once per page load: leaving phone width and coming back still starts at the menu (see MobileShell) */
+let pageRestored = false;
+
+/**
+ * Session continuity: after a reload within 2 h the sheet opens on the page that was on top (at the same snap), and
+ * every change of the top page or snap is remembered for the next one.
+ */
+function usePageContinuity(topId: MobilePageId | undefined) {
+  const snap = useSidebarStore((s) => s.sheetSnap);
+  useLayoutEffect(() => {
+    if (pageRestored) return;
+    pageRestored = true;
+    const saved = loadSavedPage();
+    if (saved && useMobileNavStore.getState().stack.length === 0) useMobileNavStore.getState().push({ id: saved.id }, saved.snap);
+  }, []);
+  useEffect(() => {
+    if (!pageRestored) return;
+    savePage(topId ? { id: topId, snap } : null);
+  }, [topId, snap]);
+}
 
 /** Lowers the sheet on Back. Rendered before the page entries so its history entry sits below theirs. */
 function SheetBackEntry() {
@@ -122,6 +145,7 @@ export default function MobileShell({ mapRef }: { mapRef: RefObject<MapRef | nul
   useEffect(() => {
     leftRef.current = top?.id ?? null;
   }, [top]);
+  usePageContinuity(top?.id);
   const mounted = useHasMounted();
   const [searchOpen, setSearchOpen] = useState(false);
   // Leaving phone width unmounts the shell; the next phone visit starts at the menu
