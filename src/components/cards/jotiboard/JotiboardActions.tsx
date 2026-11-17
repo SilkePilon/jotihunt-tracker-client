@@ -80,8 +80,9 @@ export default function JotiboardActions({ counts, canUnlink, canPurge, onUnlink
                 busyLabel={step === 'purge' ? 'Verwijderen…' : 'Ontkoppelen…'}
                 // Purge (mockup delete-icon): the app's danger tint as track with a solid red fill; the label turns white where the
                 // fill has passed. red-800 in light (6.1:1 on the tint over bg-secondary; destructive-text was 4.4:1), destructive-text in dark (6.5:1)
-                className={cn('mt-2.5 h-10 rounded-lg text-[13px]', step === 'purge' ? 'bg-destructive/15 text-red-800 dark:text-destructive-text' : 'bg-zinc-800 text-white dark:shadow-[inset_0_0_0_1px_var(--input)]')}
-                fillClassName={step === 'purge' ? 'bg-destructive' : undefined}
+                // Unlink (not destructive): a tonal surface with a foreground-tinted fill
+                className={cn('mt-2.5 h-10 rounded-lg text-[13px]', step === 'purge' ? 'bg-destructive/15 text-red-800 dark:text-destructive-text' : 'bg-beheer-row-high text-foreground')}
+                fillClassName={step === 'purge' ? 'bg-destructive' : 'bg-foreground/15'}
                 filledLabelClassName={step === 'purge' ? 'text-white' : undefined}
                 onConfirm={() => void confirm(step === 'purge' ? onPurge : onUnlink)}
               >
