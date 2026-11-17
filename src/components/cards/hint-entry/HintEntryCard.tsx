@@ -244,7 +244,7 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
                 <div className="mt-0.5 flex items-center justify-between gap-2">
                     <CoordinateStatus state={coordinateState} guess={status}/>
                     <button type="button" onClick={clearCoordinates}
-                            className="inline-flex items-center gap-1.5 rounded-lg px-1 text-[11px] font-semibold text-primary outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring">
+                            className="inline-flex items-center gap-1.5 rounded-lg px-1 text-[11px] font-semibold text-primary-text outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring">
                         <EraserIcon aria-hidden className="size-3"/> Wissen
                     </button>
                 </div>

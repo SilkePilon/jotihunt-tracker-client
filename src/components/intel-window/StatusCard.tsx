@@ -204,7 +204,7 @@ function SolveChart({ slots, avgSolveMs, entrance }: { slots: SlotBar[]; avgSolv
                     <span
                       className={cn(
                         'mt-1.5 text-center text-[11px] tabular-nums transition-colors duration-300',
-                        column.kind === 'next' ? 'font-bold text-primary' : slotTime === newestPast ? 'font-bold text-foreground' : 'text-muted-foreground',
+                        column.kind === 'next' ? 'font-bold text-primary-text' : slotTime === newestPast ? 'font-bold text-foreground' : 'text-muted-foreground',
                       )}
                     >
                       {hour}

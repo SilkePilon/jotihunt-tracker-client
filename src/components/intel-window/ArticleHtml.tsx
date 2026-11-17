@@ -11,7 +11,7 @@ function ArticleHtml({ html, className }: { html: string; className?: string }) 
     <>
       <div
         className={cn(
-          'px-1 text-sm leading-relaxed break-words [&_a]:text-primary [&_a]:underline [&_img]:my-2 [&_img]:h-auto [&_img]:max-w-full [&_img]:cursor-zoom-in [&_img]:rounded-xl [&_li]:my-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&>:first-child]:mt-0 [&>:last-child]:mb-0',
+          'px-1 text-sm leading-relaxed break-words [&_a]:text-primary-text [&_a]:underline [&_img]:my-2 [&_img]:h-auto [&_img]:max-w-full [&_img]:cursor-zoom-in [&_img]:rounded-xl [&_li]:my-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&>:first-child]:mt-0 [&>:last-child]:mb-0',
           className,
         )}
         onClick={(event) => {

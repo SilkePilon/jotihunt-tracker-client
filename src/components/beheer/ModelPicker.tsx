@@ -83,7 +83,7 @@ export default function ModelPicker({ value, defaultId, models, fetchedAt, listE
                         setOpen(false);
                       }}
                     >
-                      <CheckIcon className={cn('size-4 text-primary transition-opacity', model.id !== value && 'opacity-0')} />
+                      <CheckIcon className={cn('size-4 text-primary-text transition-opacity', model.id !== value && 'opacity-0')} />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-[13px] font-semibold">{model.displayName}</span>
                         <span className="block truncate font-mono text-[11px] text-muted-foreground">{model.id}</span>

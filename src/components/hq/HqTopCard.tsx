@@ -19,7 +19,7 @@ export default function HqTopCard({ now }: { now: number }) {
         <div className="text-[2.9rem] font-bold leading-[0.9] tracking-tight tabular-nums">{formatClock(now)}</div>
         <div>
           <div className="text-sm text-muted-foreground">Volgende hint</div>
-          <div className={cn('text-[1.6rem] font-bold leading-tight tabular-nums text-primary', isNewHint && 'text-green-700 dark:text-green-400')}>{label}</div>
+          <div className={cn('text-[1.6rem] font-bold leading-tight tabular-nums text-primary-text', isNewHint && 'text-fox-ok')}>{label}</div>
         </div>
         <div className="text-right">
           <div className="text-sm text-muted-foreground tabular-nums">{status?.counts.total ?? 0} hunts</div>
@@ -28,9 +28,9 @@ export default function HqTopCard({ now }: { now: number }) {
       </div>
       {assignment && (
         <div className="flex items-baseline gap-2 border-t pt-2">
-          <span className="font-semibold text-primary">Opdracht</span>
+          <span className="font-semibold text-primary-text">Opdracht</span>
           <span className="min-w-0 flex-1 truncate">{assignment.title}</span>
-          <span className="font-semibold tabular-nums text-primary">{formatCountdown(left)}</span>
+          <span className="font-semibold tabular-nums text-primary-text">{formatCountdown(left)}</span>
         </div>
       )}
     </section>

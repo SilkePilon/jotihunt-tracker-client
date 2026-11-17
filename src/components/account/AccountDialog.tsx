@@ -175,8 +175,8 @@ export default function AccountDialog() {
                       <ActionRow
                         onClick={() => void handleAddPasskey()}
                         disabled={adding}
-                        className="text-primary"
-                        iconClassName="bg-transparent text-primary shadow-[inset_0_0_0_1.5px_var(--border)]"
+                        className="text-primary-text"
+                        iconClassName="bg-transparent text-primary-text shadow-[inset_0_0_0_1.5px_var(--border)]"
                         icon={
                           <AnimatePresence mode="popLayout" initial={false}>
                             <motion.span
