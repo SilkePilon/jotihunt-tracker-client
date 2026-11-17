@@ -27,7 +27,7 @@ function TrackerLine({ onOpen }: { onOpen: () => void }) {
       <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden className="shrink-0">
         <path d={COOKIE_16} fill={TONE_FILL[line.tone]} />
       </svg>
-      <span className={cn('truncate font-semibold', line.tone === 'warn' && 'text-status-warn-text')}>{line.text}</span>
+      <span className={cn('truncate font-semibold tabular-nums', line.tone === 'warn' && 'text-status-warn-text')}>{line.text}</span>
     </button>
   );
 }

@@ -350,7 +350,8 @@ const DEADLINE_TAG = { done: 'neutral', expired: 'danger', urgent: 'warn', calm:
 /** "nog 42 min": muted once submitted or skipped, red when expired, amber under an hour, else blue; the colour eases between them */
 export function DeadlineTag({ endTime, now, status, className }: { endTime: string; now: number; status: AssignmentStatus; className?: string }) {
   return (
-    <Tag tone={DEADLINE_TAG[deadlineTone(endTime, now, status)]} className={className}>
+    // tabular-nums: the countdown ticks every minute without the tag's width wobbling
+    <Tag tone={DEADLINE_TAG[deadlineTone(endTime, now, status)]} className={cn('tabular-nums', className)}>
       <ClockIcon />
       {deadlineLabel(endTime, now)}
     </Tag>
