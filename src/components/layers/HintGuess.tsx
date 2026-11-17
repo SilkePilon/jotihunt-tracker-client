@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import type { Feature, FeatureCollection, Polygon } from 'geojson';
 import { CheckIcon } from 'lucide-react';
@@ -13,7 +13,7 @@ import {
 import { INTEL_CLOSE_MS } from '@/lib/intel-window';
 import { cn } from '@/lib/utils';
 import useHintGuessStore from '@/stores/hint-guess.store';
-import useSidebarStore from '@/stores/sidebar.store';
+import useSidebarStore, { type SheetSnap } from '@/stores/sidebar.store';
 
 /** The map's padding ease after the phone sheet moves (Map.tsx easeTo 300 ms), plus a little slack */
 const SHEET_EASE_MS = 350;
@@ -24,6 +24,30 @@ const SHAPE_FADE_MS = 200;
 const SHAPE_FADE = { duration: SHAPE_FADE_MS, delay: 0 };
 
 type Shape = Feature<Polygon, GuessShapeProps>;
+
+/** Focus that sat in the phone sheet when lowering it made the sheet inert: where to bring it back after a pick */
+interface SheetFocus {
+  /** The snap before lowering it, to raise it back to */
+  snap: SheetSnap;
+  /** The element that had focus (a digit box) */
+  element: HTMLElement;
+}
+
+/** Whether focus is gone (body), or on a guess dot / the map: then a pick (or a dropped guess) may move it back */
+function focusIsOnMapOrLost(canvas: HTMLElement | undefined): boolean {
+  const active = document.activeElement;
+  return !active || active === document.body || active === canvas || !!active.closest('[data-guess-dot]');
+}
+
+/** Back in the raised sheet: Registreren when the filled-in hint can be sent, else the X digit boxes (or where it was). */
+function focusHintForm(saved: SheetFocus) {
+  if (!saved.element.isConnected) return;
+  const form = saved.element.closest('form');
+  const submit = form?.querySelector<HTMLButtonElement>('button[type="submit"]');
+  const x = form?.querySelector<HTMLElement>('input[id$="-x"]');
+  const target = submit && !submit.disabled ? submit : (x ?? saved.element);
+  target.focus();
+}
 
 /**
  * A shape that fades: while it is gone, the last one stays as data (at opacity 0) for the fade-out, then is dropped.
@@ -64,6 +88,9 @@ export default function HintGuess() {
     [area.data, reach.data],
   );
 
+  // Focus taken out of the lowered phone sheet, given back after the pick (below)
+  const sheetFocus = useRef<SheetFocus | null>(null);
+
   // Fly to the candidates when the guess itself changes (from Intel: once the window has closed)
   const fitKey = input ? `${input.source}|${input.x}|${input.y}|${input.area}` : '';
   useEffect(() => {
@@ -72,7 +99,21 @@ export default function HintGuess() {
     if (!bounds) return;
     // Phones: the sheet covers the map, lower it so the candidates can be tapped. The map's own padding then eases to
     // the peek height (~300 ms, an ease that would cancel our fit) and fitBounds adds its padding on top of it.
-    if (isMobile) useSidebarStore.getState().setSheetSnap('peek');
+    let focusFrame = 0;
+    if (isMobile) {
+      // The lowered sheet's body goes inert: focus in it (a digit box) would drop to the page. Hand it to the best
+      // candidate dot (or the map), and remember where it came from for after the pick
+      const active = document.activeElement;
+      const { sheetSnap, setSheetSnap } = useSidebarStore.getState();
+      if (active instanceof HTMLElement && active.closest('[data-sheet-body]')) {
+        sheetFocus.current = { snap: sheetSnap, element: active };
+        focusFrame = requestAnimationFrame(() => {
+          const dot = document.querySelector<HTMLElement>('[data-guess-dot="best"]') ?? document.querySelector<HTMLElement>('[data-guess-dot]');
+          (dot ?? map.getCanvas()).focus({ preventScroll: true });
+        });
+      }
+      setSheetSnap('peek');
+    }
     // From Intel: after the window has closed; phones: after the sheet's padding ease, whichever is later
     const intel = input.source === 'intel';
     const delay = isMobile ? Math.max(SHEET_EASE_MS, intel ? INTEL_CLOSE_MS : 0) : intel ? INTEL_CLOSE_MS : 0;
@@ -83,9 +124,25 @@ export default function HintGuess() {
         : { top: 80, right: 80, bottom: 80, left: 80 + (document.querySelector('aside')?.getBoundingClientRect().right ?? 0) };
       map.fitBounds(bounds, { padding, maxZoom: 15, duration: 1200 });
     }, delay);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      cancelAnimationFrame(focusFrame);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- refit only when the guess changes, not on every marker poll
   }, [map, fitKey]);
+
+  // The guess is gone (a dot picked, Escape, the card cleared it) while the focus handed to the map is still there or
+  // lost: raise the sheet back to where it was and, once it is no longer inert, focus the hint form again
+  useEffect(() => {
+    if (input || !sheetFocus.current) return;
+    const saved = sheetFocus.current;
+    sheetFocus.current = null;
+    if (!isMobile || !focusIsOnMapOrLost(map?.getCanvas())) return;
+    useSidebarStore.getState().setSheetSnap(saved.snap === 'peek' ? 'half' : saved.snap);
+    // After the sheet's rise; the picked digits are in the boxes by then, so Registreren knows whether it can send
+    const timer = setTimeout(() => focusHintForm(saved), SHEET_EASE_MS);
+    return () => clearTimeout(timer);
+  }, [input, isMobile, map]);
 
   // Escape takes the guess off the map, but only when nothing else used that key press: Radix dialogs/popovers close on
   // Escape in the document capture phase and preventDefault it, so this bubble-phase window listener runs after them
@@ -128,15 +185,21 @@ export default function HintGuess() {
               <motion.button
                 type="button"
                 aria-label={guess?.kind === 'points' && guess.collapsed ? 'Gebruik deze plek' : `Gebruik cijfer ${point.digit}`}
+                data-guess-dot={role}
                 initial={{ opacity: 0, scale: 0.5 }}
                 // The stagger is for entering only; dots leave together
-                // The best candidate is drawn 1.25× (scale, so the swap between best and in animates)
-                animate={{ opacity: role === 'out' ? 0.4 : 1, scale: role === 'best' ? 1.25 : 1, transition: { duration: 0.2, delay: index * 0.02 } }}
+                // The best candidate is drawn 1.25×, one out of the fox's reach 0.9× (scale, so the swaps animate); the
+                // digit keeps full contrast, only the ring and shadow step back
+                animate={{ opacity: 1, scale: role === 'best' ? 1.25 : role === 'out' ? 0.9 : 1, transition: { duration: 0.2, delay: index * 0.02 } }}
                 exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.2 } }}
                 // before: an invisible ~32 px tap target around the 22 px dot
                 className={cn(
                   "relative flex size-[22px] cursor-pointer items-center justify-center rounded-full text-[11px] font-bold tabular-nums shadow-md outline-none transition-[background-color,color,box-shadow] duration-200 before:absolute before:-inset-[5px] before:rounded-full before:content-[''] focus-visible:ring-[3px] focus-visible:ring-ring",
-                  role === 'best' ? 'bg-guess text-card ring-4 ring-guess/30' : 'bg-card text-on-guess-container ring-2 ring-guess',
+                  role === 'best'
+                    ? 'bg-guess text-card ring-4 ring-guess/30'
+                    : role === 'out'
+                      ? 'bg-card text-on-guess-container shadow-sm ring-1 ring-guess/45'
+                      : 'bg-card text-on-guess-container ring-2 ring-guess',
                 )}
               >
                 {guess?.kind === 'points' && guess.collapsed ? <CheckIcon aria-hidden className="size-3.5" /> : point.digit}
