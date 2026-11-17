@@ -20,6 +20,8 @@ export interface MarkerDraft {
   outcome: Exclude<LostResponseOutcome, 'registered'>;
   /** Offline at Registreren: nothing went out (outcome 'absent'); the dialog says so instead of "geen antwoord" */
   notSent?: boolean;
+  /** When the save gave up waiting (ms): a check sooner than LOST_RESPONSE_SETTLE_MS after it can't say 'absent' */
+  lostAt?: number;
   /** When the draft was kept (ms); `keep` stamps it. Drafts older than DRAFT_MAX_AGE_MS are dropped on load. */
   savedAt?: number;
 }
@@ -190,15 +192,16 @@ export function latestDraft(drafts: Record<string, MarkerDraft>): MarkerDraft | 
 
 /**
  * Check every kept draft against a fresh marker list (back online): the ones that did go through are cleared and
- * returned (for a toast); the rest keep their values with the new outcome ('absent'). Without a list nothing changes. Only checks, never sends anything again.
+ * returned (for a toast); the rest keep their values with the new outcome ('absent', or 'unknown' while a list read
+ * within LOST_RESPONSE_SETTLE_MS of the timeout can't rule out a late save; `checkedAt`: when the list was fetched). Without a list nothing changes. Only checks, never sends anything again.
  */
-export function settleDrafts(fresh: Marker[] | undefined): MarkerDraft[] {
+export function settleDrafts(fresh: Marker[] | undefined, checkedAt = Date.now()): MarkerDraft[] {
   // No list either: nothing learned, every draft stays as it was
   if (!fresh) return [];
   const store = useMarkerDraftStore.getState();
   const confirmed: MarkerDraft[] = [];
   for (const [key, draft] of Object.entries(store.drafts)) {
-    const outcome = lostResponseOutcome(fresh, draft.sent);
+    const outcome = lostResponseOutcome(fresh, draft.sent, draft.lostAt, checkedAt);
     if (outcome === 'registered') {
       store.clear(key);
       confirmed.push(draft);

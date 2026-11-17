@@ -158,3 +158,16 @@ describe('draft age', () => {
     expect(store().drafts).toEqual({});
   });
 });
+
+describe('settleDrafts right after a timeout', () => {
+  afterEach(() => useMarkerDraftStore.setState({ drafts: {} }));
+
+  test('a list read within 5 s of the timeout keeps the draft unknown; a later one marks it absent', () => {
+    const lostAt = 1_000_000;
+    store().keep({ ...draft, lostAt });
+    settleDrafts([], lostAt + 1000);
+    expect(store().drafts[key].outcome).toBe('unknown');
+    settleDrafts([], lostAt + 5000);
+    expect(store().drafts[key].outcome).toBe('absent');
+  });
+});
