@@ -478,9 +478,8 @@ body.dark {
     filter: invert(1);
   }
 
-  ::-webkit-calendar-picker-indicator {
-    filter: invert(1);
-  }
+  /* No invert for ::-webkit-calendar-picker-indicator: <html> has color-scheme: dark in dark mode (lib/theme-color.ts),
+     so the native date/time picker icon is already light; inverting it made it dark on dark */
 }
 
 .card {
