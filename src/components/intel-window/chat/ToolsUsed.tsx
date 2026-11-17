@@ -70,7 +70,7 @@ export default function ToolsUsed({ calls }: { calls: ChatToolCall[] }) {
                       {summary && (
                         <span className={cn('flex min-w-0 gap-1.5', error ? 'text-destructive-text' : 'items-center text-muted-foreground')}>
                           {error && <span className="mt-[6px] size-1.5 shrink-0 self-start rounded-full bg-destructive" aria-hidden />}
-                          <span className={error ? 'break-words' : 'truncate'}>{summary}</span>
+                          <span className={error ? 'min-w-0 break-words' : 'truncate'}>{summary}</span>
                         </span>
                       )}
                     </span>
