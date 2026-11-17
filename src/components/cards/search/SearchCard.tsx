@@ -1,5 +1,6 @@
 import * as React from "react"
 import {ChevronDownIcon, NavigationIcon} from "lucide-react"
+import {AnimatePresence, motion} from "motion/react"
 
 import {
     Command,
@@ -15,15 +16,24 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover"
 import {MapRef} from "@/components/Map.tsx";
+import LoadError from "@/components/LoadError";
+import {Skeleton} from "@/components/ui/skeleton";
 import {useTeams} from "@/hooks/teams.hook.ts";
 import {Team} from "@/types/Team.ts";
 import {cn} from "@/lib/utils.ts";
 import {MAP_CHIP, MAP_TILE} from "@/lib/map-chrome.ts";
 import {TRIGGER_OPEN} from "@/lib/menu-styles.ts";
+import {loadState} from "@/lib/load-state.ts";
+import {SWAP} from "@/lib/motion.ts";
+
+/** Placeholder rows while the groups load, about as wide as group names */
+const SKELETON_WIDTHS = ['70%', '55%', '80%', '62%', '48%'];
 
 export default function SearchCard({ mapRef }: { mapRef: React.RefObject<MapRef | null> }) {
     const [open, setOpen] = React.useState(false)
-    const {teams} = useTeams();
+    const {teams, isError, retry} = useTeams();
+    // A failed later poll keeps the last list; only a first load that is still running or failed replaces it
+    const state = loadState(teams, isError);
 
     function navigateToTeam(team: Team) {
         setOpen(false);
@@ -56,20 +66,36 @@ export default function SearchCard({ mapRef }: { mapRef: React.RefObject<MapRef 
                 <Command>
                     <CommandInput placeholder="Zoeken..." />
                     <CommandList>
-
-                        <CommandEmpty>Geen groepen gevonden.</CommandEmpty>
-                        <CommandGroup>
-                            {teams?.map((team) => (
-                                <CommandItem
-                                    key={team._id}
-                                    value={team.name}
-                                    onSelect={() => navigateToTeam(team)}
-                                >
-                                    {team.name}
-                                </CommandItem>
-                            ))}
-                        </CommandGroup>
-
+                        <AnimatePresence mode="wait" initial={false}>
+                            {state === 'loading' ? (
+                                <motion.div key="loading" {...SWAP} className="flex flex-col p-1" role="status" aria-label="Groepen laden">
+                                    {SKELETON_WIDTHS.map((width) => (
+                                        <div key={width} className="px-2 py-1.5">
+                                            <Skeleton className="h-5" style={{width}}/>
+                                        </div>
+                                    ))}
+                                </motion.div>
+                            ) : state === 'error' ? (
+                                <motion.div key="error" {...SWAP} className="px-2 py-5">
+                                    <LoadError centered message="Groepen konden niet worden geladen." onRetry={retry}/>
+                                </motion.div>
+                            ) : (
+                                <motion.div key="list" {...SWAP}>
+                                    <CommandEmpty>Geen groepen gevonden.</CommandEmpty>
+                                    <CommandGroup>
+                                        {teams?.map((team) => (
+                                            <CommandItem
+                                                key={team._id}
+                                                value={team.name}
+                                                onSelect={() => navigateToTeam(team)}
+                                            >
+                                                {team.name}
+                                            </CommandItem>
+                                        ))}
+                                    </CommandGroup>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </CommandList>
                 </Command>
             </PopoverContent>
