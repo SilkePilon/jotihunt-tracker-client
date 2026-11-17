@@ -60,9 +60,10 @@ function FoxChip({ fox, hidden, forbidden, popIn, open, onOpen }: FoxChipProps) 
       aria-expanded={open}
       aria-controls={open ? `fox-history-${fox.key}` : undefined}
       onClick={() => onOpen(fox.key)}
-      // Focus outline in the group's on-colour (currentColor): the orange ring is under 3:1 on the ok/warn fills
+      // Focus outline in the group's on-colour (currentColor): the orange ring is under 3:1 on the ok/warn fills. Offset,
+      // so it reads apart from the snug 1.5px ring that marks an open history
       className={cn(
-        'cursor-pointer rounded-full ring-current transition-shadow duration-200 focus-visible:outline-2 focus-visible:outline-current motion-reduce:transition-none',
+        'cursor-pointer rounded-full ring-current transition-shadow duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current motion-reduce:transition-none',
         COARSE_HIT_AREA,
         open ? 'ring-[1.5px]' : 'ring-0',
       )}
