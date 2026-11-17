@@ -1,10 +1,9 @@
-import { MarkerType } from '@/types/MarkerType';
 import type { Marker } from '@/types/Marker';
 
 /**
- * What a fresh marker list says about a hint whose Registreren got no answer (offline, timeout): the server may still
+ * What a fresh marker list says about a marker whose save got no answer (offline, timeout): the server may still
  * have saved it.
- * - 'registered': the hint is there (same area, hour and spot), so it did go through
+ * - 'registered': the marker is there (same type, area, time and spot), so it did go through
  * - 'absent': the fresh list doesn't have it
  * - 'unknown': no fresh list came either (still no connection), so it can't be told
  */
@@ -15,9 +14,9 @@ const SAME_SPOT_DEGREES = 1e-7;
 
 const timeOf = (time: Date | string | undefined) => (time === undefined ? NaN : new Date(time).getTime());
 
-/** Whether `candidate` is the hint that was sent: a hint marker in the same area, at the same hour, on the same spot. */
-export function isSameHint(candidate: Marker, sent: Marker): boolean {
-  if (candidate.type !== MarkerType.Hint || candidate.area !== sent.area) return false;
+/** Whether `candidate` is the marker that was sent: same type (hint, hunt, spot), area, time and spot. */
+export function isSameMarker(candidate: Marker, sent: Marker): boolean {
+  if (candidate.type !== sent.type || candidate.area !== sent.area) return false;
   const at = timeOf(candidate.time);
   if (Number.isNaN(at) || at !== timeOf(sent.time)) return false;
   const [lng, lat] = candidate.location?.coordinates ?? [];
@@ -26,13 +25,13 @@ export function isSameHint(candidate: Marker, sent: Marker): boolean {
 }
 
 /**
- * Check a hint whose Registreren got no answer against a freshly fetched marker list.
+ * Check a marker whose save got no answer against a freshly fetched marker list.
  * @param fresh The list fetched after the failure; undefined when that fetch failed too
- * @param sent The hint that was sent
+ * @param sent The marker that was sent
  */
 export function lostResponseOutcome(fresh: Marker[] | undefined, sent: Marker): LostResponseOutcome {
   if (!fresh) return 'unknown';
-  return fresh.some((marker) => isSameHint(marker, sent)) ? 'registered' : 'absent';
+  return fresh.some((marker) => isSameMarker(marker, sent)) ? 'registered' : 'absent';
 }
 
 /** The inline error under Registreren for a hint that got no answer and wasn't confirmed ('registered' shows a toast). */
@@ -40,6 +39,13 @@ export function lostResponseMessage(outcome: Exclude<LostResponseOutcome, 'regis
   return outcome === 'unknown'
     ? 'Geen antwoord ontvangen. Controleer eerst of de hint op de kaart staat voordat je opnieuw registreert; je invoer blijft staan.'
     : 'Geen antwoord ontvangen en de hint staat niet op de kaart: hij is niet geregistreerd. Je invoer blijft staan, probeer het opnieuw.';
+}
+
+/** The Hunt/Spot dialog's inline error for a marker that got no answer and wasn't confirmed ('registered' closes it). */
+export function markerLostResponseMessage(outcome: Exclude<LostResponseOutcome, 'registered'>): string {
+  return outcome === 'unknown'
+    ? 'Geen antwoord ontvangen. Controleer eerst of de marker op de kaart staat.'
+    : 'Geen antwoord ontvangen en de marker staat niet op de kaart: hij is niet geplaatst. Probeer het opnieuw.';
 }
 
 /** The hint form's fields */
