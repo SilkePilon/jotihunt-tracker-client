@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Loader2Icon } from 'lucide-react';
 import { AlertDialog as AlertDialogPrimitive } from 'radix-ui';
 import {
   AlertDialog,
@@ -10,6 +9,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import BusyIcon from '@/components/motion/BusyIcon';
 import { DIALOG_ACTION, DIALOG_ACTION_CANCEL } from '@/lib/dialog-shell';
 import { cn } from '@/lib/utils';
 
@@ -22,6 +22,8 @@ const CONTENT =
 const HEADER = 'place-items-start gap-1.5 text-left';
 /** Looks like disabled (aria-disabled keeps the focus) */
 const BUSY = 'aria-disabled:pointer-events-none aria-disabled:opacity-50';
+/** Phones: 44px tall touch targets */
+const COARSE = 'pointer-coarse:h-11';
 const DESTRUCTIVE = 'dark:bg-[color-mix(in_oklab,var(--destructive)_75%,black)] dark:hover:bg-[color-mix(in_oklab,var(--destructive)_65%,black)]';
 
 interface ConfirmDialogProps {
@@ -80,14 +82,14 @@ export default function ConfirmDialog({ open, onOpenChange, title, description, 
           <AlertDialogPrimitive.Cancel asChild>
             {/* aria-disabled, not disabled, while busy: disabling the focused button would drop the focus out of the dialog.
                 Clicks are ignored: onOpenChange above refuses to close while busy. */}
-            <Button variant="outline" className={cn(DIALOG_ACTION_CANCEL, BUSY)} aria-disabled={busy || undefined}>
+            <Button variant="outline" className={cn(DIALOG_ACTION_CANCEL, COARSE, BUSY)} aria-disabled={busy || undefined}>
               {cancelLabel}
             </Button>
           </AlertDialogPrimitive.Cancel>
           <AlertDialogPrimitive.Action asChild>
             <Button
               variant={destructive ? 'destructive' : 'default'}
-              className={cn(DIALOG_ACTION, destructive && DESTRUCTIVE, BUSY)}
+              className={cn(DIALOG_ACTION, COARSE, destructive && DESTRUCTIVE, BUSY)}
               aria-disabled={busy || undefined}
               aria-busy={busy || undefined}
               onClick={(event) => {
@@ -96,8 +98,13 @@ export default function ConfirmDialog({ open, onOpenChange, title, description, 
                 void confirm();
               }}
             >
-              {busy && <Loader2Icon className="animate-spin" />}
-              {confirmLabel}
+              {/* The spinner takes the label's place (which keeps its width): the button doesn't change size or shift */}
+              <span className="relative inline-flex items-center justify-center">
+                <span className={cn('transition-opacity duration-150 motion-reduce:transition-none', busy && 'opacity-0')}>{confirmLabel}</span>
+                <span className="absolute inset-0 flex items-center justify-center">
+                  <BusyIcon busy={busy} />
+                </span>
+              </span>
             </Button>
           </AlertDialogPrimitive.Action>
         </AlertDialogFooter>
