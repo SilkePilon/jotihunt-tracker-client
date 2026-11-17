@@ -8,6 +8,7 @@ import {
   formatLastUpdate,
   formatSpeed,
   isActive,
+  isTrackerLive,
   isVehicle,
   notConfiguredText,
   sectionTransition,
@@ -170,4 +171,23 @@ describe('trackerPeekLine', () => {
   test('never paired', () => expect(trackerPeekLine({ ...base, connected: false, stats: {} }, now)).toEqual({ tone: 'warn', text: 'Koppel je telefoon' }));
   test('invalid lastUpdate omits the age', () =>
     expect(trackerPeekLine({ ...base, connected: true, stats: { lastUpdate: 'not-a-date' } }, now)).toEqual({ tone: 'ok', text: 'Verbonden · in de auto' }));
+});
+
+describe('isTrackerLive', () => {
+  const now = Date.parse('2026-10-17T14:41:00Z');
+  const base = { configured: true as const, qrUrl: '', deepLink: '', osmandUrl: '', uniqueId: 'x', vehicle: 'car' as const };
+  test('connected and a recent update: live', () => {
+    expect(isTrackerLive({ ...base, connected: true, stats: { lastUpdate: '2026-10-17T14:40:00Z' } }, now)).toBe(true);
+  });
+  test('connected by the server but the last update is older than the window: not live, peek says Geen signaal', () => {
+    const stale = { ...base, connected: true, stats: { lastUpdate: '2026-10-17T14:30:00Z' } };
+    expect(isTrackerLive(stale, now)).toBe(false);
+    expect(trackerPeekLine(stale, now)).toEqual({ tone: 'warn', text: 'Geen signaal · 11 min' });
+  });
+  test('connected without a readable time trusts the server; not connected or not configured is never live', () => {
+    expect(isTrackerLive({ ...base, connected: true, stats: {} }, now)).toBe(true);
+    expect(isTrackerLive({ ...base, connected: false, stats: { lastUpdate: '2026-10-17T14:40:00Z' } }, now)).toBe(false);
+    expect(isTrackerLive({ configured: false, reason: 'api_missing', connected: false }, now)).toBe(false);
+    expect(isTrackerLive(undefined, now)).toBe(false);
+  });
 });
