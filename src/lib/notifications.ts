@@ -136,3 +136,15 @@ export function mergeFeed(seen: Set<string>, incoming: AppNotification[]): AppNo
   while (seen.size > SEEN_LIMIT) seen.delete(seen.values().next().value as string);
   return fresh;
 }
+
+/**
+ * Without push on this device, notifications too old to alert (a backgrounded tab or a locked phone resuming) would be
+ * gone without a trace: one quiet summary toast instead, "N meldingen gemist · nieuwste: …", with the newest one's
+ * Openen action. Null when there is nothing missed.
+ */
+export function missedSummary(missed: readonly AppNotification[], openers: ToastOpeners): { title: string; action?: { label: string; onClick: () => void } } | null {
+  if (missed.length === 0) return null;
+  const newest = missed.reduce((best, notification) => (new Date(notification.createdAt).getTime() > new Date(best.createdAt).getTime() ? notification : best));
+  const count = missed.length === 1 ? '1 melding gemist' : `${missed.length} meldingen gemist`;
+  return { title: `${count} · nieuwste: ${newest.title}`, action: toastAction(newest, openers) };
+}

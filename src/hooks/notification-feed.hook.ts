@@ -3,8 +3,9 @@ import { toast } from 'sonner';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
 import { isUnauthorized } from '@/lib/session';
 import { fetcherWithMethod } from '@/lib/swr';
-import { isRecent, mergeFeed, pickSound, shouldAlert, toastAction, toastKind, type AppNotification } from '@/lib/notifications';
+import { isRecent, mergeFeed, missedSummary, pickSound, shouldAlert, toastAction, toastKind, type AppNotification } from '@/lib/notifications';
 import { playNotificationSound } from '@/lib/notification-sounds';
+import { currentDevicePush } from '@/lib/push';
 import { showHighlightToast } from '@/components/notifications/HighlightToast';
 import { useNotificationPrefs } from '@/hooks/notification-prefs.hook';
 import useSettingsStore from '@/stores/settings.store';
@@ -13,7 +14,8 @@ import { revalidateHappyHour, revalidateTelegramViews } from '@/hooks/telegram.h
 const POLL_MS = 5000;
 /** Re-ask this far back each poll: a notification can be stored just after a poll read the server time. */
 const OVERLAP_MS = 20_000;
-/** Older notifications were already pushed to the phone (e.g. a backgrounded tab resuming): mark them seen without alerting. */
+/** Older notifications were already pushed to the phone (e.g. a backgrounded tab resuming): mark them seen without alerting
+ * (without push on this device: one "gemist" summary toast instead). */
 const MAX_ALERT_AGE_MS = 60_000;
 
 interface FeedOptions {
@@ -73,7 +75,13 @@ export function useNotificationFeed({ respectPreferences = true, toasts = true, 
         // Same for a happy hour: the pill appears, starts or goes right away
         if (fresh.some((n) => n.type === 'happy-hour')) revalidateHappyHour();
         const options = latest.current;
-        const alertable = fresh.filter((n) => isRecent(n, response.serverTime, MAX_ALERT_AGE_MS) && (!options.respectPreferences || shouldAlert(n.type, options.disabledTypes)));
+        const wanted = fresh.filter((n) => !options.respectPreferences || shouldAlert(n.type, options.disabledTypes));
+        const alertable = wanted.filter((n) => isRecent(n, response.serverTime, MAX_ALERT_AGE_MS));
+        // No push here, so nothing reached this device while the tab slept: say what was missed, quietly and once
+        if (options.toasts && currentDevicePush() !== 'on') {
+          const missed = missedSummary(wanted.filter((n) => !alertable.includes(n)), options);
+          if (missed) toast.info(missed.title, { id: 'missed-notifications', duration: 15_000, action: missed.action });
+        }
         if (alertable.length === 0) return;
         // One sound per poll, for the most important notification: several at once would play on top of each other
         const sound = pickSound(alertable);

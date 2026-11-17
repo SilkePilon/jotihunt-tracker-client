@@ -1,5 +1,5 @@
 import { describe, expect, mock, test } from 'bun:test';
-import { NOTIFICATION_OPTIONS, sameTypes, setAllTypes, toggleType, isSilent, isRecent, mergeFeed, pickPrimary, pickSound, shouldAlert, soundKey, toastAction, toastKind, type AppNotification } from './notifications';
+import { NOTIFICATION_OPTIONS, sameTypes, setAllTypes, toggleType, isSilent, isRecent, mergeFeed, missedSummary, pickPrimary, pickSound, shouldAlert, soundKey, toastAction, toastKind, type AppNotification } from './notifications';
 
 const n = (overrides: Partial<AppNotification>): AppNotification => ({ id: '1', type: 'hint', title: 't', body: '', urgent: false, data: {}, createdAt: '2026-10-17T20:00:00Z', ...overrides });
 
@@ -158,4 +158,28 @@ test('sameTypes compares disabled lists as sets', () => {
   expect(sameTypes(['hint', 'hint'], ['hint'])).toBe(true);
   expect(sameTypes(['hint'], [])).toBe(false);
   expect(sameTypes(['hint'], ['article'])).toBe(false);
+});
+
+describe('missedSummary', () => {
+  const at = (id: string, type: AppNotification['type'], createdAt: string, data: AppNotification['data'] = {}): AppNotification => ({ id, type, title: `Titel ${id}`, body: '', urgent: false, data, createdAt });
+
+  test('nothing missed: no toast', () => {
+    expect(missedSummary([], {})).toBeNull();
+  });
+
+  test('counts them and names the newest, with its Openen action', () => {
+    const openArticle = mock(() => {});
+    const summary = missedSummary(
+      [at('a', 'fox-status', '2026-10-17T10:00:00Z'), at('b', 'hint', '2026-10-17T10:05:00Z', { articleId: 7 }), at('c', 'article', '2026-10-17T10:01:00Z', { articleId: 3 })],
+      { openArticle },
+    );
+    expect(summary?.title).toBe('3 meldingen gemist · nieuwste: Titel b');
+    summary?.action?.onClick();
+    expect(openArticle).toHaveBeenCalledWith(7);
+  });
+
+  test('one missed reads singular; no action when the newest has nothing to open', () => {
+    const summary = missedSummary([at('a', 'fox-status', '2026-10-17T10:00:00Z')], { openArticle: () => {} });
+    expect(summary).toEqual({ title: '1 melding gemist · nieuwste: Titel a', action: undefined });
+  });
 });
