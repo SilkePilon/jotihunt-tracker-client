@@ -12,6 +12,8 @@ interface ChunkBoundaryProps {
   /** E.g. "Beheer", for the message */
   name: string;
   className?: string;
+  /** Only catch failed chunk downloads; any other crash goes on to the next boundary up (e.g. the page ErrorBoundary) */
+  chunksOnly?: boolean;
   children: ReactNode;
 }
 
@@ -30,13 +32,15 @@ export default class ChunkBoundary extends Component<ChunkBoundaryProps, { error
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error(`[ChunkBoundary: ${this.props.name}]`, error, info.componentStack);
     // A failed download is the network, not a bug; a real crash still goes to Sentry
-    if (!isChunkLoadError(error)) Sentry.captureException(error, { tags: { boundary: this.props.name }, contexts: { react: { componentStack: info.componentStack ?? '' } } });
+    // (chunksOnly passes it on: the parent boundary reports it)
+    if (!isChunkLoadError(error) && !this.props.chunksOnly) Sentry.captureException(error, { tags: { boundary: this.props.name }, contexts: { react: { componentStack: info.componentStack ?? '' } } });
   }
 
   render() {
     const { error } = this.state;
     if (!error) return this.props.children;
     const chunk = isChunkLoadError(error);
+    if (this.props.chunksOnly && !chunk) throw error;
     return (
       <motion.div role="alert" className={cn('flex min-h-0 flex-1 flex-col items-center justify-center gap-3 p-6 text-center', this.props.className)} {...SWAP}>
         <div className="grid size-10 place-items-center rounded-xl bg-beheer-row-high text-muted-foreground">
