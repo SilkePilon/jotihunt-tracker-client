@@ -3,12 +3,12 @@ import {toast} from "sonner"
 import {lazy, Suspense, useEffect, useMemo, useRef, useState} from 'react';
 import {mutate, SWRConfig, type SWRConfiguration} from 'swr';
 import Map, {MapRef} from './components/Map';
-import PWAPrompt from 'react-ios-pwa-prompt';
 import {Loader2Icon} from 'lucide-react';
 import BeheerDialog from './components/beheer/BeheerDialog';
 import IntelDialog from './components/intel-window/IntelDialog';
 import EditionReloader from '@/components/EditionReloader';
 import AddPasskeyPrompt from './components/AddPasskeyPrompt';
+import IosInstallPrompt from './components/IosInstallPrompt';
 import ErrorBoundary from './components/ErrorBoundary';
 import StaleDataBadge from './components/StaleDataBadge';
 import PopupAnnouncer from './components/map/popup/PopupAnnouncer';
@@ -82,7 +82,7 @@ export default function Layout() {
     const tour = useTourAutoStart();
     // Like the tour, the notifications prompt only opens on the map page
     useNotificationsPrompt(tour.pending || pathname !== '/');
-    // The follow-up prompts (Meldingen, Android app, passkey) wait for the tour, then come one at a time
+    // The follow-up prompts (Meldingen, Android app, iOS install, passkey) wait for the tour, then come one at a time
     usePromptQueueHold(tour.pending);
 
     // Which SWR keys are failing, and whether the error toast is up. Mutable, not state: every poll passes through here.
@@ -196,18 +196,8 @@ export default function Layout() {
             <ErrorBoundary name="De rondleiding" variant="floating">
                 <TourOverlay mapRef={mapRef}/>
             </ErrorBoundary>
-            {/* Held back until the onboarding tour is done so they don't overlap */}
-            {!tour.pending && (
-                <PWAPrompt
-                    promptOnVisit={1}
-                    appIconPath="/icon_maskable.png"
-                    copyTitle="Installeer als app"
-                    copySubtitle="Jotihunt Tracker"
-                    copyDescription="Deze website kan als app geïnstalleerd worden. Volg de onderstaande instructies om deze app te installeren."
-                    copyShareStep='Druk op de "Deel" knop in de menubalk'
-                    copyAddToHomeScreenStep='Druk op "Zet op beginscherm"'
-                />
-            )}
+            {/* iOS "Installeer als app": a follow-up prompt, after the tour and one at a time with the others */}
+            <IosInstallPrompt/>
         </SWRConfig>
     );
 }
