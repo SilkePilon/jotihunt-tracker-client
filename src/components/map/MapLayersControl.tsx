@@ -36,6 +36,7 @@ export default function MapLayersControl({ position = 'bottom-right' }: { positi
       </PopoverTrigger>
       {/* A work area for the prompt queue's quiet window (also covered by the shared popover-content selector) */}
       <PopoverContent
+        aria-label="Kaartstijl en lagen"
         {...{ [WORK_AREA_ATTRIBUTE]: '' }}
         side="left"
         align="end"

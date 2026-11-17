@@ -68,7 +68,7 @@ export default function SearchCard({ mapRef, onDone, fluid }: { mapRef: React.Re
                     <ChevronDownIcon data-chevron className="size-4 shrink-0 opacity-50" />
                 </button>
             </PopoverTrigger>
-            <PopoverContent className="w-(--radix-popover-trigger-width) p-3">
+            <PopoverContent aria-label="Groep zoeken" className="w-(--radix-popover-trigger-width) p-3">
                 <Command label="Groep zoeken">
                     <CommandInput placeholder="Zoeken…" />
                     <CommandList>
