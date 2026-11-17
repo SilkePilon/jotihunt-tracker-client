@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 import { MarkerType } from '@/types/MarkerType';
-import useMarkerDraftStore, { draftForType, type MarkerDraft } from './marker-draft.store';
+import useMarkerDraftStore, { draftElsewhere, draftKey, keyOfDraft, sameMarkerValues, type MarkerDraft } from './marker-draft.store';
 
 const day = new Date('2026-10-17T00:00:00Z');
 const time = new Date('2026-10-17T12:30:00Z');
@@ -12,29 +12,59 @@ const draft: MarkerDraft = {
   sent: { type: MarkerType.Hunt, area: 'Alpha', time, location: { type: 'Point', coordinates: [5.9, 52.1] } },
   outcome: 'unknown',
 };
+const key = draftKey(MarkerType.Hunt, 52.1, 5.9);
 const store = () => useMarkerDraftStore.getState();
 
 describe('marker draft store', () => {
-  afterEach(() => store().clear());
+  afterEach(() => useMarkerDraftStore.setState({ drafts: {} }));
 
-  test('keeps an unconfirmed save until cleared', () => {
+  test('keeps an unconfirmed save under its type and pin until cleared', () => {
     store().keep(draft);
-    expect(store().draft).toEqual(draft);
-    store().clear();
-    expect(store().draft).toBeNull();
+    expect(store().drafts[key]).toEqual(draft);
+    store().clear(key);
+    expect(store().drafts).toEqual({});
   });
 
   test('update changes the kept values, and does nothing without a draft', () => {
-    store().update({ area: 'Bravo' });
-    expect(store().draft).toBeNull();
+    store().update(key, { area: 'Bravo' });
+    expect(store().drafts).toEqual({});
     store().keep(draft);
-    store().update({ area: 'Bravo', outcome: 'absent' });
-    expect(store().draft).toEqual({ ...draft, area: 'Bravo', outcome: 'absent' });
+    store().update(key, { area: 'Bravo', outcome: 'absent' });
+    expect(store().drafts[key]).toEqual({ ...draft, area: 'Bravo', outcome: 'absent' });
   });
 
-  test('a draft only restores into a dialog of the same marker type', () => {
-    expect(draftForType(draft, MarkerType.Hunt)).toBe(draft);
-    expect(draftForType(draft, MarkerType.Spot)).toBeNull();
-    expect(draftForType(null, MarkerType.Hunt)).toBeNull();
+  test('a draft only restores at the same pin and marker type', () => {
+    expect(keyOfDraft(draft)).toBe(key);
+    // ~1 m apart (float round-trips) still matches; another pin or type doesn't
+    expect(draftKey(MarkerType.Hunt, 52.100001, 5.900004)).toBe(key);
+    expect(draftKey(MarkerType.Hunt, 52.1001, 5.9)).not.toBe(key);
+    expect(draftKey(MarkerType.Spot, 52.1, 5.9)).not.toBe(key);
+  });
+
+  test('drafts at different pins are kept side by side', () => {
+    const other = { ...draft, sent: { ...draft.sent, location: { type: 'Point', coordinates: [6.0, 52.2] } } };
+    store().keep(draft);
+    store().keep(other);
+    expect(Object.keys(store().drafts)).toHaveLength(2);
+    store().clear(key);
+    expect(Object.values(store().drafts)).toEqual([other]);
+  });
+
+  test('draftElsewhere finds a draft of the same type at another pin', () => {
+    const here = draftKey(MarkerType.Hunt, 52.2, 6.0);
+    expect(draftElsewhere({}, MarkerType.Hunt, here)).toBeNull();
+    expect(draftElsewhere({ [key]: draft }, MarkerType.Hunt, here)).toBe(draft);
+    expect(draftElsewhere({ [key]: draft }, MarkerType.Hunt, key)).toBeNull();
+    expect(draftElsewhere({ [key]: draft }, MarkerType.Spot, here)).toBeNull();
+  });
+
+  test('sameMarkerValues compares area, day and time to the minute', () => {
+    const values = { area: 'Alpha', day, time };
+    expect(sameMarkerValues(values, { ...values })).toBe(true);
+    // Seconds don't count: the form's time is HH:MM
+    expect(sameMarkerValues(values, { ...values, time: new Date(time.getTime() + 20_000) })).toBe(true);
+    expect(sameMarkerValues(values, { ...values, area: 'Bravo' })).toBe(false);
+    expect(sameMarkerValues(values, { ...values, time: new Date(time.getTime() + 60_000) })).toBe(false);
+    expect(sameMarkerValues(values, { ...values, day: new Date(day.getTime() + 86_400_000) })).toBe(false);
   });
 });
