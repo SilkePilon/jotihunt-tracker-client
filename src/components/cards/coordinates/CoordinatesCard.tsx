@@ -10,7 +10,8 @@ import {isInNetherlands} from "@/lib/netherlands.ts";
 import {MAP_CHIP, MAP_TILE} from "@/lib/map-chrome.ts";
 import {SWAP_TRANSITION} from "@/lib/motion.ts";
 
-export default function CoordinatesCard({ mapRef }: { mapRef: React.RefObject<MapRef | null> }) {
+/** `onDone`: after showing a valid coordinate, e.g. to close the md popover that holds this card */
+export default function CoordinatesCard({ mapRef, onDone }: { mapRef: React.RefObject<MapRef | null>; onDone?: () => void }) {
 
     const [inputValue, setInputValue] = useState("");
     // Shown under the field until the next edit (no toast: it belongs to this field)
@@ -40,6 +41,7 @@ export default function CoordinatesCard({ mapRef }: { mapRef: React.RefObject<Ma
 
         mapRef.current?.markPoint({ lng, lat } as LngLat);
         setError(null);
+        onDone?.();
     }
 
     function onChange(event: React.ChangeEvent<HTMLInputElement>) {

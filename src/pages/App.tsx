@@ -5,23 +5,72 @@ import Sidebar from '@/components/sidebar/Sidebar';
 import { tourTarget } from '@/components/tour/targets';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import HappyHourPill from '@/components/happy-hour/HappyHourPill';
+import { NavigationIcon, SearchIcon, type LucideIcon } from 'lucide-react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { MAP_TILE } from '@/lib/map-chrome';
+import { TRIGGER_OPEN } from '@/lib/menu-styles';
+import { cn } from '@/lib/utils';
+
+const WIDE_QUERY = '(min-width: 1024px)';
+
+/** md–lg: a 44 px map tile whose popover holds the full card (the card is its own surface, so the popover has none) */
+function CompactCard({ icon: Icon, label, children }: { icon: LucideIcon; label: string; children: (close: () => void) => ReactNode }) {
+  const [open, setOpen] = useState(false);
+  // Widening to lg hides this tile and shows the full cards; a popover left open would hang from a hidden trigger
+  useEffect(() => {
+    if (!open) return;
+    const media = window.matchMedia(WIDE_QUERY);
+    const onChange = () => media.matches && setOpen(false);
+    media.addEventListener('change', onChange);
+    return () => media.removeEventListener('change', onChange);
+  }, [open]);
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label={label}
+          title={label}
+          className={cn(MAP_TILE, 'grid size-11 cursor-pointer place-items-center rounded-[14px] outline-none transition-colors hover:bg-beheer-row focus-visible:ring-[3px] focus-visible:ring-ring [&_svg]:size-[18px]', TRIGGER_OPEN)}
+        >
+          <Icon aria-hidden />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end" collisionPadding={8} aria-label={label} className="w-auto rounded-[14px] bg-transparent p-0 shadow-none">
+        <ErrorBoundary>{children(() => setOpen(false))}</ErrorBoundary>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 function App() {
   const { mapRef } = useOutlet();
 
   return (
     <>
-      {/* Desktop only: on phones the map stays free (search via the sidebar, groups via the map) */}
-      <div className="absolute right-2 top-2 z-30 hidden gap-2 md:flex" {...tourTarget('cards.topRight')}>
-        <div>
-          <ErrorBoundary>
-            <CoordinatesCard mapRef={mapRef} />
-          </ErrorBoundary>
+      {/* Desktop only: on phones the map stays free (search via the sidebar, groups via the map). Between md and lg the
+          two 300 px cards would slide under the 320 px sidebar, so they fold into two icon tiles that open the same card */}
+      <div className="absolute top-[max(0.5rem,env(safe-area-inset-top))] right-[max(0.5rem,env(safe-area-inset-right))] z-30 hidden md:block" {...tourTarget('cards.topRight')}>
+        <div className="hidden gap-2 lg:flex">
+          <div>
+            <ErrorBoundary>
+              <CoordinatesCard mapRef={mapRef} />
+            </ErrorBoundary>
+          </div>
+          <div>
+            <ErrorBoundary>
+              <SearchCard mapRef={mapRef} />
+            </ErrorBoundary>
+          </div>
         </div>
-        <div>
-          <ErrorBoundary>
-            <SearchCard mapRef={mapRef} />
-          </ErrorBoundary>
+        <div className="flex gap-2 lg:hidden">
+          <CompactCard icon={SearchIcon} label="Zoek op coördinaat">
+            {(close) => <CoordinatesCard mapRef={mapRef} onDone={close} />}
+          </CompactCard>
+          <CompactCard icon={NavigationIcon} label="Snel navigeren naar groep">
+            {(close) => <SearchCard mapRef={mapRef} onDone={close} />}
+          </CompactCard>
         </div>
       </div>
       {/*

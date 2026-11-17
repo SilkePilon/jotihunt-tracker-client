@@ -29,7 +29,8 @@ import {SWAP} from "@/lib/motion.ts";
 /** Placeholder rows while the groups load, about as wide as group names */
 const SKELETON_WIDTHS = ['70%', '55%', '80%', '62%', '48%'];
 
-export default function SearchCard({ mapRef }: { mapRef: React.RefObject<MapRef | null> }) {
+/** `onDone`: after flying to a group, e.g. to close the md popover that holds this card */
+export default function SearchCard({ mapRef, onDone }: { mapRef: React.RefObject<MapRef | null>; onDone?: () => void }) {
     const [open, setOpen] = React.useState(false)
     const {teams, isError, retry} = useTeams();
     // A failed later poll keeps the last list; only a first load that is still running or failed replaces it
@@ -41,6 +42,7 @@ export default function SearchCard({ mapRef }: { mapRef: React.RefObject<MapRef 
             center: [team.location.coordinates[0], team.location.coordinates[1]],
             zoom: 14,
         });
+        onDone?.();
     }
 
     return (
