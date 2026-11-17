@@ -20,12 +20,13 @@ export default function UnreachableCard({ onRetry }: { onRetry: () => Promise<un
   }
 
   return (
-    <div role="alert" className={cn(AUTH_CARD, 'flex w-full max-w-sm flex-col items-center gap-3 p-7 text-center')}>
+    <div className={cn(AUTH_CARD, 'flex w-full max-w-sm flex-col items-center gap-3 p-7 text-center')}>
       <div className="flex size-10 items-center justify-center rounded-lg bg-beheer-row-high">
         <WifiOffIcon className="size-5 text-muted-foreground" />
       </div>
       <h1 className="text-lg font-bold tracking-tight">Server niet bereikbaar</h1>
-      <p className="text-sm/relaxed text-muted-foreground">Controleer je verbinding en probeer opnieuw. Je link is niet verlopen.</p>
+      {/* Only the explanation is the alert: AuthSwap focuses the heading, and the retry button stays out of it */}
+      <p role="alert" className="text-sm/relaxed text-muted-foreground">Controleer je verbinding en probeer opnieuw. Je link is niet verlopen.</p>
       <Button variant="outline" className="mt-1 w-full" onClick={() => void retry()} {...busyProps(busy)}>
         {busy ? <Loader2Icon className="animate-spin" /> : <RotateCwIcon />}
         Opnieuw proberen
