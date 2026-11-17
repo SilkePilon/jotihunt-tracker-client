@@ -1,9 +1,10 @@
-import { memo, useState, type UIEvent } from 'react';
+import { memo, use, useEffect, useRef, useState, type UIEvent } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { formatClock } from '@/lib/format';
 import { huntEventParts, huntEventRowLabel, huntEventTime } from '@/lib/hunt-sync';
 import { Loader2Icon } from 'lucide-react';
 import LoadError from '@/components/LoadError';
+import { SidebarSectionVariantContext } from '@/components/sidebar/section-variant';
 import { REVEAL_TRANSITION, revealTransition, SWAP } from '@/lib/motion';
 import { getColorFromArea } from '@/lib/utils';
 import type { HuntSyncEvent } from '@/types/HuntSync';
@@ -32,15 +33,31 @@ export default function HuntSyncLog({ events, onSelect, onLoadMore, loadingMore 
     exit: { height: 0, opacity: 0, transition: revealTransition(reduced, 'exit') },
     transition: revealTransition(reduced, 'enter'),
   };
+  // A phone page: no box of its own, the sheet body scrolls; a sentinel after the last row loads older lines
+  const page = use(SidebarSectionVariantContext) === 'page';
   function onScroll(event: UIEvent<HTMLDivElement>) {
     const element = event.currentTarget;
     if (element.scrollHeight - element.scrollTop - element.clientHeight < LOAD_MORE_PX) onLoadMore();
   }
+  const sentinel = useRef<HTMLDivElement>(null);
+  const onLoadMoreRef = useRef(onLoadMore);
+  useEffect(() => {
+    onLoadMoreRef.current = onLoadMore;
+  });
+  const count = events.length;
+  useEffect(() => {
+    const element = sentinel.current;
+    if (!page || !element || count === 0) return;
+    // Observed again after every page, so a sentinel that is still in view (short list) asks for the next one
+    const observer = new IntersectionObserver((entries) => entries.some((entry) => entry.isIntersecting) && onLoadMoreRef.current(), { rootMargin: `0px 0px ${LOAD_MORE_PX}px 0px` });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [page, count]);
 
   if (events.length === 0) return <p className="mt-2.5 text-center text-xs text-muted-foreground">Nog geen hunts binnengekomen</p>;
 
   return (
-    <div className="-mx-1 mt-2.5 max-h-[220px] overflow-y-auto px-1" onScroll={onScroll} data-hunt-sync-log>
+    <div className={page ? '-mx-1 mt-2.5 px-1' : '-mx-1 mt-2.5 max-h-[220px] overflow-y-auto px-1'} onScroll={page ? undefined : onScroll} data-hunt-sync-log>
       <ul className="flex flex-col">
         <AnimatePresence initial={false}>
           {events.map((event) => (
@@ -69,6 +86,7 @@ export default function HuntSyncLog({ events, onSelect, onLoadMore, loadingMore 
           )}
         </AnimatePresence>
       </ul>
+      {page && <div ref={sentinel} aria-hidden className="h-px" />}
     </div>
   );
 }
@@ -110,7 +128,7 @@ const LogRow = memo(function LogRow({ event, onSelect }: { event: HuntSyncEvent;
       disabled={!located}
       // At least 44px tall for every pointer (a comfortable target with a mouse too); the event in 14px text, the
       // time column a little wider for its larger tabular digits
-      className="relative isolate grid min-h-11 w-full grid-cols-[40px_1fr] items-center gap-x-2 rounded-lg p-1 text-left text-sm transition-colors duration-200 enabled:cursor-pointer enabled:hover:bg-beheer-row focus-visible:bg-beheer-row focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset disabled:cursor-default"
+      className="relative isolate grid min-h-11 w-full grid-cols-[40px_1fr] items-center gap-x-2 rounded-lg p-1 text-left text-sm transition-colors duration-200 enabled:cursor-pointer enabled:hover:bg-beheer-row focus-visible:bg-beheer-row focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset disabled:cursor-default"
       onClick={() => onSelect(event)}
       aria-label={huntEventRowLabel(event, formatClock(huntEventTime(event)), located)}
     >
