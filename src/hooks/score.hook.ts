@@ -1,6 +1,6 @@
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
 import useSWR from 'swr';
-import { apiErrorStatus } from '@/lib/api-error';
+import { apiErrorStatus, isNetworkError } from '@/lib/api-error';
 import { reportFetchError, reportFetchSuccess } from '@/lib/connection';
 import { normalizeScore, SCORE_NOT_CONFIGURED } from '@/lib/score';
 import { fetcherWithMethod } from '@/lib/swr';
@@ -17,7 +17,7 @@ async function fetchScore([url, authHeader]: [string, string]): Promise<ScoreSta
     return score;
   } catch (error) {
     if (apiErrorStatus(error) === 404) return SCORE_NOT_CONFIGURED;
-    reportFetchError();
+    reportFetchError(undefined, Date.now(), isNetworkError(error));
     throw error;
   }
 }
