@@ -24,7 +24,7 @@ export default function HuntResultBar({ counts }: { counts: HuntSyncStatus['coun
   const room = BAR_WIDTH - GAP * Math.max(0, visible - 1);
 
   return (
-    <div className="mt-2.5 flex items-center justify-center gap-2" aria-label={SEGMENTS.map((segment, index) => `${values[index]} ${segment.label}`).join(', ')}>
+    <div className="mt-2.5 flex items-center justify-center gap-2" role="img" aria-label={SEGMENTS.map((segment, index) => `${values[index]} ${segment.label}`).join(', ')}>
       <div className={cn('flex h-2.5 overflow-hidden rounded-[5px] transition-colors', sum === 0 && 'bg-secondary')} style={{ width: BAR_WIDTH }}>
         {SEGMENTS.map((segment, index) => {
           const value = values[index];

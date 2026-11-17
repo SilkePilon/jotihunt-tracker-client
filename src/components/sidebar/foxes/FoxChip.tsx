@@ -95,7 +95,8 @@ function FoxChip({ fox, hidden, forbidden, popIn, open, onOpen }: FoxChipProps) 
           </AnimatePresence>
         </span>
         {fox.name}
-        {since !== null && <span className="tabular-nums opacity-80">{since}</span>}
+        {/* Dimmed chips (hidden / forbidden) are dim enough already: a second dim would drop the time under 4.5:1 */}
+        {since !== null && <span className={cn('tabular-nums', !hidden && !forbidden && 'opacity-80')}>{since}</span>}
       </span>
     </motion.button>
   );
