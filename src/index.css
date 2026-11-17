@@ -908,3 +908,39 @@ html.flashbang::view-transition-new(root) {
     --tw-exit-blur: 0 !important;
   }
 }
+
+/* Reduced motion: vaul drawers (ResponsiveDialog on phones, the other bottom drawers) slide in and out over 500ms with
+   keyframes vaul injects itself, ignoring the setting. Swap the open/close slide for a short fade. Only the
+   data-state animations change: dragging (inline transforms) and the snap back after a drag keep working.
+   !important: vaul's injected <style> lands after this stylesheet with more specific selectors. */
+@keyframes vaul-reduced-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes vaul-reduced-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-vaul-drawer][data-state='open'],
+  [data-vaul-overlay][data-state='open'] {
+    animation-name: vaul-reduced-fade-in !important;
+    animation-duration: 150ms !important;
+    animation-timing-function: ease-out !important;
+  }
+  [data-vaul-drawer][data-state='closed'],
+  [data-vaul-overlay][data-state='closed'] {
+    animation-name: vaul-reduced-fade-out !important;
+    animation-duration: 150ms !important;
+    animation-timing-function: ease-in !important;
+    animation-fill-mode: forwards !important;
+  }
+}
