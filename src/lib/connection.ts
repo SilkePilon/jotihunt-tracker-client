@@ -10,6 +10,11 @@
 export const STALE_AFTER_MS = 60_000;
 /** A critical feed that never loaded is flagged after failing for this long (SWR's first retries come within seconds). */
 export const NEVER_LOADED_GRACE_MS = 10_000;
+/**
+ * Requests that got no answer at all (phone between masts, server unreachable) flag the data after this long instead of
+ * {@link STALE_AFTER_MS}: a phone whose browser still claims to be online shouldn't look current for a full minute.
+ */
+export const NETWORK_STALE_AFTER_MS = 20_000;
 
 export interface ConnectionState {
   lastSuccessAt: number;
@@ -141,18 +146,28 @@ export interface ConnectionProblem {
 
 /**
  * The problem to show, if any:
- * - offline before anything loaded (cold offline start): at once, no age;
+ * - the browser is offline: at once ("Geen verbinding", with the age once the data is over {@link STALE_AFTER_MS} old);
+ * - requests got no answer since the last success, for over {@link NETWORK_STALE_AFTER_MS}: the same;
  * - a critical feed that failed and never loaded, for {@link NEVER_LOADED_GRACE_MS} since the start: no age;
  * - all data stale ({@link staleAge} over the overall record);
  * - back from the background with old data and no answer yet ({@link reportResume}): `refreshing`, neutral;
  * - else, critical feeds that are stale on their own while others still refresh: named, with the oldest age.
  */
 export function connectionProblem(snapshot: ConnectionSnapshot & { anySuccess: boolean }, online: boolean, now: number, staleAfterMs = STALE_AFTER_MS): ConnectionProblem | null {
-  if (!online && !snapshot.anySuccess) return { ageMs: null, feeds: [], offline: true };
-  const offline = !online || snapshot.overall.networkError !== false;
+  const sinceSuccess = now - snapshot.overall.lastSuccessAt;
+  // The age only once it is worth naming: "Geen verbinding" alone while the data is still recent
+  const shownAge = snapshot.anySuccess && sinceSuccess > staleAfterMs ? sinceSuccess : null;
+  // The browser knows it is offline (SWR stops polling then): say so at once
+  if (!online) return { ageMs: shownAge, feeds: [], offline: true };
+  const offline = snapshot.overall.networkError !== false;
+  // Requests got no answer since the last success: flagged sooner than plain staleness
+  const { lastSuccessAt, lastErrorAt } = snapshot.overall;
+  if (snapshot.overall.networkError === true && lastErrorAt !== null && lastErrorAt >= lastSuccessAt && sinceSuccess > Math.min(NETWORK_STALE_AFTER_MS, staleAfterMs)) {
+    return { ageMs: shownAge, feeds: [], offline: true };
+  }
   const overall = staleAge(snapshot.overall, online, now, staleAfterMs);
   if (overall !== null) return { ageMs: overall, feeds: [], offline };
-  if (snapshot.resumedAt != null && online) return { ageMs: now - snapshot.overall.lastSuccessAt, feeds: [], offline: false, refreshing: true };
+  if (snapshot.resumedAt != null) return { ageMs: now - snapshot.overall.lastSuccessAt, feeds: [], offline: false, refreshing: true };
 
   const neverLoaded: string[] = [];
   const stale: { name: string; age: number }[] = [];
