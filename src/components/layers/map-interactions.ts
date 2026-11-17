@@ -228,7 +228,7 @@ export function useLayerInteractions(map: MaplibreMap | undefined, layerIds: rea
 
 /**
  * The feature whose popup is open. `opened` changes on every click, so clicking a feature always (re)mounts its
- * popup: the open popup closes itself on that same map click (closeOnClick), and `close` ignores that.
+ * popup: the open popup closes itself on that same map click (MapPopup listens for map clicks), and `close` ignores that.
  */
 export function usePopupSelection<T>() {
   const [active, setActive] = useState<{ id: T; opened: number }>();

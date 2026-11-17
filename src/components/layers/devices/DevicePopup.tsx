@@ -35,7 +35,7 @@ export default function DevicePopup({ position, icon, onClose }: DevicePopupProp
   const age = formatDistanceToNow(position.fixTime, { locale: nl, addSuffix: true });
 
   return (
-    <MapPopup longitude={lng} latitude={lat} onClose={onClose} offset={POPUP_OFFSET}>
+    <MapPopup longitude={lng} latitude={lat} onClose={onClose} offset={POPUP_OFFSET} offsetScale="label">
       <PopupHeader
         icon={
           <PopupIcon background={palette.secondaryContainer} color={palette.onSecondaryContainer}>

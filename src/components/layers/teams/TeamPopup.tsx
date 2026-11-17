@@ -61,7 +61,7 @@ export default function TeamPopup({ team, onClose, setTeamArea }: TeamPopupProps
   const address = `${team.street} ${team.houseNumber}${team.housenumberAddition ? ` ${team.housenumberAddition}` : ''}, ${team.city}`;
 
   return (
-    <MapPopup longitude={lng} latitude={lat} onClose={onClose} offset={POPUP_OFFSET}>
+    <MapPopup longitude={lng} latitude={lat} onClose={onClose} offset={POPUP_OFFSET} offsetScale="icon">
       <PopupHeader
         icon={<TeamLogo name={team.name} logoUrl={team.logoUrl} className="size-9 rounded-[11px] border-0 shadow-none" />}
         title={team.name}

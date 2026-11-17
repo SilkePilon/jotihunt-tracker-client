@@ -20,6 +20,7 @@ export default function MarkerTooltip({ marker }: { marker: FoxMarker }) {
       longitude={lng}
       latitude={lat}
       offset={marker.type === MarkerType.Hint ? HINT_TOOLTIP_OFFSET : TOOLTIP_OFFSET}
+      offsetScale="label"
       color={getColorFromArea(marker.area)}
       title={capitalizeFirstLetter(marker.type)}
       meta={joinParts(capitalizeFirstLetter(marker.area), formatClock(marker.time), locationNote)}

@@ -32,7 +32,7 @@ export default function Life360Popup({ member, location, linkStale, now, onClose
   const battery = `${formatBattery(location.battery ?? undefined)}${location.charging ? ' (laadt)' : ''}`;
 
   return (
-    <MapPopup longitude={location.lon} latitude={location.lat} onClose={onClose} offset={POPUP_OFFSET}>
+    <MapPopup longitude={location.lon} latitude={location.lat} onClose={onClose} offset={POPUP_OFFSET} offsetScale="icon">
       <PopupHeader
         icon={<Life360Avatar member={member} size={36} />}
         title={member.name}

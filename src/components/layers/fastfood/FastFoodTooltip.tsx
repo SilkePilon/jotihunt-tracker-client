@@ -13,6 +13,7 @@ export default function FastFoodTooltip({ restaurant, nowMs }: { restaurant: Fas
       longitude={lng}
       latitude={lat}
       offset={TOOLTIP_OFFSET}
+      offsetScale="icon"
       color={BRAND_DOT[restaurant.brand]}
       title={[BRAND_LABEL[restaurant.brand], restaurant.branch].filter(Boolean).join(' ')}
       meta={fastfoodStatus(restaurant.intervals, nowMs).short}

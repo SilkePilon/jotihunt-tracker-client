@@ -67,7 +67,7 @@ export default function MarkerPopup({ marker, onClose, deleteMarker }: MarkerPop
   }
 
   return (
-    <MapPopup longitude={lng} latitude={lat} onClose={onClose} offset={marker.type === MarkerType.Hint ? HINT_POPUP_OFFSET : POPUP_OFFSET}>
+    <MapPopup longitude={lng} latitude={lat} onClose={onClose} offset={marker.type === MarkerType.Hint ? HINT_POPUP_OFFSET : POPUP_OFFSET} offsetScale="label">
       <PopupHeader
         icon={
           <PopupIcon shape="square" background={getColorFromArea(marker.area)} color="#1a1a1a">
