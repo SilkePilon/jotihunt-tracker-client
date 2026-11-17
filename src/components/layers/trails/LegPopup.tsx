@@ -91,11 +91,6 @@ export default function LegPopup({ leg, longitude, latitude, onClose, onSetMode 
           <Swap text={flipLabel(leg)} />
         </button>
       </PopupActions>
-      <PopupActions className="mt-2">
-        <MarkerRegistration lat={latitude} lng={longitude} />
-      </PopupActions>
-      {/* The flip and Hunt/Spot are greyed out in an archive edition: say why */}
-      <ArchiveReadOnlyNote className="pt-2 text-(--map-muted)" />
       <AnimatePresence initial={false}>
         {leg.manual && (
           <motion.div key="reset" className="overflow-hidden" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0, transition: revealTransition(reduced, 'exit') }} transition={revealTransition(reduced, 'enter')}>
@@ -110,6 +105,12 @@ export default function LegPopup({ leg, longitude, latitude, onClose, onSetMode 
           </motion.div>
         )}
       </AnimatePresence>
+      {/* Under the flip's "Terug naar automatisch", which belongs to it */}
+      <PopupActions className="mt-2">
+        <MarkerRegistration lat={latitude} lng={longitude} />
+      </PopupActions>
+      {/* The flip and Hunt/Spot are greyed out in an archive edition: say why */}
+      <ArchiveReadOnlyNote className="pt-2 text-(--map-muted)" />
     </MapPopup>
   );
 }
