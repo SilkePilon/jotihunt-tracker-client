@@ -9,13 +9,21 @@ import { cn } from '@/lib/utils';
 
 const CHECK_MS = 5000;
 
+/** Where the badge sits: over the map right of the sidebar / above the sheet (app), or over the HQ wall's map column */
+const PLACEMENT = {
+  app: 'top-[calc(env(safe-area-inset-top)+8px)] md:top-[calc(env(safe-area-inset-top)+52px)] left-1/2 max-w-[min(calc(100vw-32px),420px)] md:left-[calc(50%+164px)] md:max-w-[min(calc(100vw-360px),420px)] shell-mobile:top-[calc(env(safe-area-inset-top)+8px)] shell-mobile:left-[calc(var(--sheet-side,0px)_+_(100vw_-_var(--sheet-side,0px))_/_2)] shell-mobile:max-w-[min(calc(100vw_-_var(--sheet-side,0px)_-_32px),420px)]',
+  // The wall's map is the left 58% of the screen (Hq.tsx grid 58fr / 42fr): centred over it, 16px from the top
+  wall: 'top-[16px] left-[29vw] max-w-[calc(58vw-32px)]',
+} as const;
+
 /**
  * Small notice when polled data hasn't refreshed for a while (offline, server down, hung requests), or when one of the
  * critical feeds (vossen, hunts, …) keeps failing while the rest refreshes; gone after the next successful poll.
  * Offline before anything loaded shows at once. Screen readers get a separate, always-mounted polite region without the
  * age, so the first problem is read out and a ticking age is not re-announced every minute.
+ * `wall`: the HQ wall, centred over its map column instead of the app's map area.
  */
-export default function StaleDataBadge() {
+export default function StaleDataBadge({ wall = false }: { wall?: boolean }) {
   const [label, setLabel] = useState<string | null>(null);
   // 'neutral': back from the background with old data, catching up (not an error)
   const [tone, setTone] = useState<'error' | 'neutral'>('error');
@@ -77,9 +85,12 @@ export default function StaleDataBadge() {
             // 320px sidebar (left 8px + 320px, like the happy-hour pill in App.tsx), so it never covers the sidebar, and
             // below the search / coordinates row (lib/top-stack.ts DESKTOP_PILL_TOP, 52px; the pill stacks under it)
             // Phones: centred over the map; held sideways that is the part right of the sheet column (--sheet-side, set
-            // by BottomSheet; 0px upright, so plain centred)
+            // by BottomSheet; 0px upright, so plain centred). The HQ wall: over its map column (PLACEMENT.wall)
             style={{ x: '-50%' }}
-            className="pointer-events-none fixed left-1/2 top-[calc(env(safe-area-inset-top)+8px)] md:top-[calc(env(safe-area-inset-top)+52px)] z-50 flex w-max max-w-[min(calc(100vw-32px),420px)] items-center md:left-[calc(50%+164px)] md:max-w-[min(calc(100vw-360px),420px)] shell-mobile:top-[calc(env(safe-area-inset-top)+8px)] shell-mobile:left-[calc(var(--sheet-side,0px)_+_(100vw_-_var(--sheet-side,0px))_/_2)] shell-mobile:max-w-[min(calc(100vw_-_var(--sheet-side,0px)_-_32px),420px)] gap-2 rounded-full bg-fox-error-container py-1.5 pr-3.5 pl-2.5 text-body font-bold text-fox-on-error shadow-(--shadow-tile)"
+            className={cn(
+              'pointer-events-none fixed z-50 flex w-max items-center gap-2 rounded-full bg-fox-error-container py-1.5 pr-3.5 pl-2.5 text-body font-bold text-fox-on-error shadow-(--shadow-tile)',
+              PLACEMENT[wall ? 'wall' : 'app'],
+            )}
           >
             {/* Round tonal pill like the happy-hour pill: dark red on the light red container (7.2:1, both themes). Neutral tone: a tonal layer over the error fill (under the content, in the badge's own stacking context),
                 faded in and out, so swapping tone animates and the shell keeps one look */}
