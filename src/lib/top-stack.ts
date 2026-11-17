@@ -2,7 +2,7 @@
  * Everything that stacks at the top centre of the map, laid out from measured heights so nothing overlaps: on phones the
  * offline badge (fixed under the safe area, one or two lines), the happy-hour pill below it, an admin's night-area
  * drawing toolbar below those status messages, and the toasts below all of them (8px gaps). Desktop keeps toasts at
- * the bottom right and the badge clear of the pill; only the drawing toolbar moves below the pill there.
+ * the bottom right; there the badge, the pill and the drawing toolbar stack below the search / coordinates row.
  */
 
 /** Measured heights in px; 0 when not shown. */
@@ -26,8 +26,9 @@ export const PILL_MIN_TOP = 40;
 export const TOOLBAR_MIN_TOP = 12;
 /** Phones: where toasts start with nothing above them (under a one-line badge) */
 export const TOAST_MIN_TOP = 48;
-/** Desktop: the pill's top (under the search / coordinates row) and the drawing toolbar's highest top */
+/** Desktop: the first status row's top (under the search / coordinates row): the badge, or the pill without one */
 export const DESKTOP_PILL_TOP = 52;
+/** Desktop: the drawing toolbar's highest top */
 export const DESKTOP_TOOLBAR_MIN_TOP = 56;
 
 export interface PhoneTopStack {
@@ -47,9 +48,23 @@ export function phoneTopStack({ badge, pill, toolbar }: TopStackHeights): PhoneT
   return { pillTop, toolbarTop, toastTop: Math.max(TOAST_MIN_TOP, next) };
 }
 
-/** Desktop: the drawing toolbar's top in px, below the pill while that is shown. */
-export function desktopToolbarTop(pill: number): number {
-  return pill ? Math.max(DESKTOP_TOOLBAR_MIN_TOP, DESKTOP_PILL_TOP + pill + GAP) : DESKTOP_TOOLBAR_MIN_TOP;
+export interface DesktopTopStack {
+  badgeTop: number;
+  pillTop: number;
+  toolbarTop: number;
+}
+
+/** Desktop: each item's top in px, below the search / coordinates row: the badge, the pill under it, then the toolbar. */
+export function desktopTopStack({ badge, pill }: Pick<TopStackHeights, 'badge' | 'pill'>): DesktopTopStack {
+  const badgeTop = DESKTOP_PILL_TOP;
+  const pillTop = badge ? badgeTop + badge + GAP : DESKTOP_PILL_TOP;
+  const next = pill ? pillTop + pill + GAP : badge ? badgeTop + badge + GAP : 0;
+  return { badgeTop, pillTop, toolbarTop: Math.max(DESKTOP_TOOLBAR_MIN_TOP, next) };
+}
+
+/** Desktop: the drawing toolbar's top in px, below the pill (and the badge) while they are shown. */
+export function desktopToolbarTop(pill: number, badge = 0): number {
+  return desktopTopStack({ badge, pill }).toolbarTop;
 }
 
 /** A top in px below the safe area, as CSS */

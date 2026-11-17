@@ -8,7 +8,7 @@ import { usePublishTopHeight } from '@/stores/top-stack.store';
 import { happyHourExplanation, happyHourPill, happyHourPillText, happyHourWindow, type HappyHourWindow } from '@/lib/happy-hour';
 
 /**
- * Amber pill (flat): "Happy hour · 2× punten · nog 34 min"; tap for the explanation and the bot's message. The amber is
+ * Amber pill (shadow-md over the map, like the offline badge): "Happy hour · 2× punten · nog 34 min"; tap for the explanation and the bot's message. The amber is
  * happy hour's own colour (also its toast and notification tile), deliberately not a fox status token.
  */
 function HappyHourPillView({ hour, now, measureRef }: { hour: HappyHourWindow; now: number; measureRef: (node: HTMLElement | null) => void }) {
@@ -30,7 +30,7 @@ function HappyHourPillView({ hour, now, measureRef }: { hour: HappyHourWindow; n
           layout
           // Set as a style so motion corrects the corners while the width animates
           style={{ borderRadius: 9999 }}
-          className="pointer-events-auto flex cursor-pointer items-center gap-2 bg-happy-hour py-1.5 pr-3.5 pl-2.5 text-[13px] font-bold whitespace-nowrap text-on-happy-hour outline-none focus-visible:ring-[3px] focus-visible:ring-ring"
+          className="pointer-events-auto flex cursor-pointer items-center gap-2 bg-happy-hour py-1.5 pr-3.5 pl-2.5 text-[13px] font-bold whitespace-nowrap text-on-happy-hour shadow-md outline-none focus-visible:ring-[3px] focus-visible:ring-ring"
           data-happy-hour={hour.state}
         >
           <motion.span layout="position" className="grid place-items-center">

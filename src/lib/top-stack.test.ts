@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { desktopToolbarTop, phoneToastOffset, phoneTopStack } from './top-stack';
+import { desktopToolbarTop, desktopTopStack, phoneToastOffset, phoneTopStack } from './top-stack';
 
 const NONE = { badge: 0, pill: 0, toolbar: 0 };
 
@@ -43,6 +43,22 @@ describe('desktopToolbarTop', () => {
   test('below the pill while it is shown', () => {
     expect(desktopToolbarTop(0)).toBe(56);
     expect(desktopToolbarTop(32)).toBe(92);
+  });
+
+  test('below the badge too', () => {
+    expect(desktopToolbarTop(0, 30)).toBe(90);
+    expect(desktopToolbarTop(32, 30)).toBe(130);
+  });
+});
+
+describe('desktopTopStack', () => {
+  test('nothing shown: badge and pill both at the first row under the search / coordinates cards', () => {
+    expect(desktopTopStack({ badge: 0, pill: 0 })).toEqual({ badgeTop: 52, pillTop: 52, toolbarTop: 56 });
+  });
+
+  test('the pill stacks under the badge (8px gap)', () => {
+    expect(desktopTopStack({ badge: 30, pill: 32 })).toEqual({ badgeTop: 52, pillTop: 90, toolbarTop: 130 });
+    expect(desktopTopStack({ badge: 0, pill: 32 }).pillTop).toBe(52);
   });
 });
 

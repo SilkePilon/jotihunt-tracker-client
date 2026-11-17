@@ -21,7 +21,7 @@ export default function StaleDataBadge() {
   const [tone, setTone] = useState<'error' | 'neutral'>('error');
   // Strings, so a check that finds the same problem doesn't re-render
   const [announcement, setAnnouncement] = useState('');
-  // Phones: the happy-hour pill, the drawing toolbar and toasts stack below the badge (one or two lines, lib/top-stack.ts)
+  // The happy-hour pill, the drawing toolbar and (phones) toasts stack below the badge (one or two lines, lib/top-stack.ts)
   const measureRef = usePublishTopHeight('badge', label !== null);
 
   useEffect(() => {
@@ -74,9 +74,10 @@ export default function StaleDataBadge() {
             exit={{ opacity: 0, y: -8 }}
             transition={SWAP_TRANSITION}
             // Centred through motion's x, since motion owns the transform. md+: centred over the map area right of the
-            // 320px sidebar (left 8px + 320px, like the happy-hour pill in App.tsx), so it never covers the sidebar
+            // 320px sidebar (left 8px + 320px, like the happy-hour pill in App.tsx), so it never covers the sidebar, and
+            // below the search / coordinates row (lib/top-stack.ts DESKTOP_PILL_TOP, 52px; the pill stacks under it)
             style={{ x: '-50%' }}
-            className="pointer-events-none fixed left-1/2 top-[calc(env(safe-area-inset-top)+8px)] z-50 flex w-max max-w-[min(calc(100vw-32px),420px)] items-center md:left-[calc(50%+164px)] md:max-w-[min(calc(100vw-360px),420px)] gap-2 rounded-full bg-fox-error-container py-1.5 pr-3.5 pl-2.5 text-[13px] font-bold text-fox-on-error shadow-md"
+            className="pointer-events-none fixed left-1/2 top-[calc(env(safe-area-inset-top)+8px)] md:top-[calc(env(safe-area-inset-top)+52px)] z-50 flex w-max max-w-[min(calc(100vw-32px),420px)] items-center md:left-[calc(50%+164px)] md:max-w-[min(calc(100vw-360px),420px)] gap-2 rounded-full bg-fox-error-container py-1.5 pr-3.5 pl-2.5 text-[13px] font-bold text-fox-on-error shadow-md"
           >
             {/* Round tonal pill like the happy-hour pill: dark red on the light red container (7.2:1, both themes). Neutral tone: a tonal layer over the error fill (under the content, in the badge's own stacking context),
                 faded in and out, so swapping tone animates and the shell keeps one look */}

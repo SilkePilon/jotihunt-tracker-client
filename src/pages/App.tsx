@@ -10,7 +10,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { MAP_TILE } from '@/lib/map-chrome';
 import { TRIGGER_OPEN } from '@/lib/menu-styles';
-import { belowSafeArea, phoneTopStack } from '@/lib/top-stack';
+import { belowSafeArea, desktopTopStack, phoneTopStack } from '@/lib/top-stack';
 import { cn } from '@/lib/utils';
 import useTopStackStore from '@/stores/top-stack.store';
 
@@ -48,8 +48,9 @@ function CompactCard({ icon: Icon, label, children }: { icon: LucideIcon; label:
 
 function App() {
   const { mapRef } = useOutlet();
-  // Phones: under the offline badge, lower while it wraps to two lines (lib/top-stack.ts)
+  // Under the offline badge, lower while it wraps to two lines (lib/top-stack.ts); desktop: under the search row and the badge
   const pillTop = useTopStackStore((state) => phoneTopStack(state.heights).pillTop);
+  const pillTopMd = useTopStackStore((state) => desktopTopStack(state.heights).pillTop);
 
   return (
     <>
@@ -79,13 +80,13 @@ function App() {
       </div>
       {/*
         Centred over the map: right of the 320 px sidebar on desktop (half of its 328 px = 164 px) and under the
-        search / coordinates row; on phones under the offline badge and the attribution button. The drawing toolbar and
-        phone toasts start below it while it is shown (lib/top-stack.ts: keep DESKTOP_PILL_TOP in sync with the 52px here).
+        search / coordinates row (and the offline badge, which sits there too); on phones under the offline badge and the
+        attribution button. The drawing toolbar and phone toasts start below it while it is shown (lib/top-stack.ts).
         Eases to its new place when the badge above it comes, goes or wraps.
       */}
       <div
-        style={{ '--pill-top': belowSafeArea(pillTop) } as React.CSSProperties}
-        className="pointer-events-none absolute top-(--pill-top) left-1/2 z-30 -translate-x-1/2 transition-[top] duration-300 ease-out motion-reduce:transition-none md:top-[52px] md:left-[calc(50%+164px)]"
+        style={{ '--pill-top': belowSafeArea(pillTop), '--pill-top-md': `${pillTopMd}px` } as React.CSSProperties}
+        className="pointer-events-none absolute top-(--pill-top) left-1/2 z-30 -translate-x-1/2 transition-[top] duration-300 ease-out motion-reduce:transition-none md:top-(--pill-top-md) md:left-[calc(50%+164px)]"
       >
         <ErrorBoundary variant="inline">
           <HappyHourPill />
