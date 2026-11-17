@@ -199,12 +199,19 @@ function Row({ item, now, onSelect }: { item: IntelItem; now: number; onSelect: 
   return (
     <button
       type="button"
+      // IntelDialog puts focus back on this row when the item it opened is closed again
+      data-id={item.id}
       onClick={() => onSelect(item.id)}
       className="flex w-full items-center gap-3 bg-(--row-bg) px-3.5 py-[11px] text-left outline-none transition-colors [--row-bg:var(--card)] hover:[--row-bg:var(--beheer-row)] focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset"
     >
       <KindTile kind={item.kind} unread={item.unread} done={done} />
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-bold">{item.title}</span>
+        <span className="block truncate text-sm font-bold">
+          {item.title}
+          {/* The dot and the check on the tile are visual only */}
+          {item.unread && <span className="sr-only">, ongelezen</span>}
+          {done && <span className="sr-only">, afgerond</span>}
+        </span>
         <span className="mt-0.5 block truncate text-xs text-muted-foreground">
           <span className="tabular-nums">{formatClock(item.publishAt)}</span>
           <RowMeta item={item} now={now} />
@@ -230,7 +237,7 @@ function KindTile({ kind, unread, done }: { kind: IntelKind; unread: boolean; do
         {unread && (
           <motion.span
             key="unread"
-            aria-label="ongelezen"
+            aria-hidden
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
