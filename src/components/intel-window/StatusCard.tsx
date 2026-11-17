@@ -88,7 +88,8 @@ function NextHintTile({ next }: { next: ReturnType<typeof useNextHint> }) {
     <div
       className={cn(
         'flex flex-col gap-1.5 rounded-[18px] p-3 transition-colors duration-300',
-        urgent ? 'bg-destructive/15 text-destructive dark:text-red-300' : 'bg-primary-container text-orange-800 dark:text-orange-200',
+        // M3 tonal pairs, so text keeps its contrast in both themes
+        urgent ? 'bg-fox-error-container text-fox-on-error' : 'bg-primary-container text-on-primary-container',
       )}
     >
       <span className={LABEL}>Volgende hint</span>
