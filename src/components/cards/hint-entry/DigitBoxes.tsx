@@ -26,7 +26,11 @@ interface DigitBoxesProps {
 export default function DigitBoxes({ id, label, bad, onChange, onComplete, ...field }: DigitBoxesProps) {
   return (
     <div className="grid grid-cols-[16px_1fr] items-center gap-1">
-      <label htmlFor={id} className="text-xs font-bold text-muted-foreground">{label}</label>
+      <label htmlFor={id} className="text-xs font-bold text-muted-foreground">
+        {label}
+        {/* Only "X" / "Y" is visible; the field's full name says what goes in */}
+        <span className="sr-only">-coördinaat (RD, 6 cijfers, ? voor onbekend)</span>
+      </label>
       <OTPInput
         id={id}
         autoComplete="off"
