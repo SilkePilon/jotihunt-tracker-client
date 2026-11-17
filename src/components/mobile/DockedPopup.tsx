@@ -4,6 +4,7 @@ import { motion } from 'motion/react';
 import { useMap } from 'react-map-gl/maplibre';
 import { CloseButton } from '@/components/ui/close-button';
 import { useBackEntry } from '@/hooks/back-entry.hook';
+import { useRestoreFocus } from '@/hooks/restore-focus.hook';
 import { EASE_OUT } from '@/lib/motion';
 
 export const DOCK_ID = 'map-popup-dock';
@@ -80,18 +81,8 @@ export default function DockedPopup({ longitude, latitude, onClose, children }: 
   useEffect(() => {
     map?.easeTo({ center, duration: 500 });
   }, [map, center]);
-  // Focus goes back where it came from (else the map) once the card is gone. Only when focus was lost with the card
-  // (it sits on <body> then); a tap elsewhere that moved focus keeps it there.
-  const [opener] = useState(() => (document.activeElement instanceof HTMLElement && document.activeElement !== document.body ? document.activeElement : null));
-  useEffect(
-    () => () => {
-      const active = document.activeElement;
-      if (active && active !== document.body && active.isConnected) return;
-      const target = opener?.isConnected ? opener : map?.getCanvas();
-      target?.focus({ preventScroll: true });
-    },
-    [map, opener],
-  );
+  // Focus goes back where it came from (else the map) once the card is gone, unless a tap elsewhere already moved it
+  useRestoreFocus(() => map?.getCanvas());
 
   if (!dock) return null;
   return createPortal(
