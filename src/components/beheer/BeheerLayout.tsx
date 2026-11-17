@@ -1,9 +1,9 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { ChevronDownIcon, Loader2Icon, TriangleAlertIcon } from 'lucide-react';
+import LoadError from '@/components/LoadError';
 import AutoHeight from '@/components/motion/AutoHeight';
 import Reveal from '@/components/motion/Reveal';
-import { Skeleton } from '@/components/ui/skeleton';
 import { useIsMobile } from '@/hooks/media.hook';
 import { REVEAL_TRANSITION, SWAP, SWAP_TRANSITION } from '@/lib/motion';
 import { cn } from '@/lib/utils';
@@ -346,17 +346,15 @@ export function InlineConfirm({ title, description, confirmLabel, confirmIcon, o
   );
 }
 
-/** Stands in for a pane's cards while their data loads. */
-export function BeheerSkeleton({ groups = 1 }: { groups?: number }) {
+// In its own small module, so the Beheer window's loading fallback (outside the lazy chunk) can use it too
+export { BeheerSkeleton } from './BeheerSkeleton';
+
+/** A pane whose data failed to load (nothing to show yet): a card with the problem and "Opnieuw proberen". */
+export function BeheerLoadError({ message, onRetry }: { message: string; onRetry: () => unknown }) {
   return (
-    <div className="flex flex-col gap-3.5">
-      {Array.from({ length: groups }, (_, index) => (
-        <div key={index} className="flex flex-col gap-3 rounded-3xl bg-card p-4">
-          <Skeleton className="mx-1 h-5 w-28 bg-beheer-row-high" />
-          <Skeleton className="h-28 w-full rounded-2xl bg-beheer-row" />
-        </div>
-      ))}
-    </div>
+    <section className="rounded-3xl bg-card p-4">
+      <LoadError className="px-1 text-[13px]" message={message} onRetry={onRetry} />
+    </section>
   );
 }
 

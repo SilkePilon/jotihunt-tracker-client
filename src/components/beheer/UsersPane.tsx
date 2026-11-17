@@ -1,7 +1,7 @@
 import { useRef, useState, type KeyboardEvent } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { toast } from 'sonner';
-import { CheckIcon, LinkIcon, Loader2Icon, PencilIcon, ShieldIcon, ShieldOffIcon, Trash2Icon } from 'lucide-react';
+import { CheckIcon, LinkIcon, Loader2Icon, PencilIcon, ShieldIcon, ShieldOffIcon, TicketIcon, Trash2Icon } from 'lucide-react';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import Reveal from '@/components/motion/Reveal';
 import { useAdmin, type UserChanges } from '@/hooks/admin.hook';
@@ -14,7 +14,8 @@ import { formatClock } from '@/lib/format';
 import { SWAP } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import type { User } from '@/types/User';
-import { BeheerCard, BeheerExpandableRow, BeheerPane, BeheerRows, BeheerSkeleton, InlineConfirm } from './BeheerLayout';
+import useAdminStore from '@/stores/admin.store';
+import { BeheerCard, BeheerExpandableRow, BeheerLoadError, BeheerPane, BeheerRow, BeheerRows, BeheerSkeleton, InlineConfirm } from './BeheerLayout';
 import { Pill, Tag } from './controls/Pill';
 
 /** The pane's card gap (gap-3.5), so a card folding away doesn't leave a gap behind */
@@ -26,7 +27,8 @@ const LINK_DONE_MS = 1800;
 /** Beheer → Gebruikers (G3): admins and members; tap a row for herstel-link, rename, admin and delete. */
 export default function UsersPane() {
   const me = useAuthUser<User>();
-  const { users, isError, updateUser, deleteUser, createRecoveryLink } = useAdmin();
+  const { users, isError, retry, updateUser, deleteUser, createRecoveryLink } = useAdmin();
+  const openDialog = useAdminStore((state) => state.openDialog);
   const now = useNow(true, SLOW_CLOCK_TICK_MS);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -36,18 +38,22 @@ export default function UsersPane() {
   const view = users ? 'content' : isError ? 'error' : 'loading';
   const { admins, members } = splitUsers(users ?? []);
 
-  // Users whose admin change is on its way: a second tap meanwhile is ignored
+  // Users whose admin change is on its way: their button is disabled and spins (the ref also stops a double tap
+  // within the same render)
   const adminSaving = useRef(new Set<string>());
+  const [adminBusy, setAdminBusy] = useState<ReadonlySet<string>>(new Set());
 
   async function toggleAdmin(user: User) {
     if (adminSaving.current.has(user._id)) return;
     adminSaving.current.add(user._id);
+    setAdminBusy(new Set(adminSaving.current));
     try {
       const error = await updateUser(user._id, { admin: !user.admin });
       if (error) toast.error(apiErrorMessage(error, 'Opslaan is mislukt.'));
       else toast.success(user.admin ? `${user.name} is geen admin meer` : `${user.name} is nu admin`);
     } finally {
       adminSaving.current.delete(user._id);
+      setAdminBusy(new Set(adminSaving.current));
     }
   }
 
@@ -162,9 +168,14 @@ export default function UsersPane() {
         </Pill>
         {!isMe && (
           <>
-            <Pill onClick={() => void toggleAdmin(user)}>
-              {user.admin ? <ShieldOffIcon /> : <ShieldIcon />}
-              {user.admin ? 'Geen admin meer' : 'Admin maken'}
+            <Pill
+              morphKey={adminBusy.has(user._id) ? 'busy' : user.admin ? 'revoke' : 'grant'}
+              disabled={adminBusy.has(user._id)}
+              aria-busy={adminBusy.has(user._id)}
+              onClick={() => void toggleAdmin(user)}
+            >
+              {adminBusy.has(user._id) ? <Loader2Icon className="animate-spin" /> : user.admin ? <ShieldOffIcon /> : <ShieldIcon />}
+              {adminBusy.has(user._id) ? 'Opslaan…' : user.admin ? 'Geen admin meer' : 'Admin maken'}
             </Pill>
             <Pill variant="danger-outline" onClick={() => setDeletingId(user._id)}>
               <Trash2Icon />
@@ -185,9 +196,9 @@ export default function UsersPane() {
           </motion.div>
         )}
         {view === 'error' && (
-          <motion.p key="error" className="text-sm text-muted-foreground" {...SWAP}>
-            Kan de gebruikers niet laden.
-          </motion.p>
+          <motion.div key="error" {...SWAP}>
+            <BeheerLoadError message="Kan de gebruikers niet laden." onRetry={retry} />
+          </motion.div>
         )}
         {view === 'content' && (
           <motion.div key="content" className="flex flex-col gap-3.5" {...SWAP}>
@@ -199,13 +210,19 @@ export default function UsersPane() {
                 </BeheerCard>
               )}
             </Reveal>
-            <Reveal gap={CARD_GAP}>
-              {members.length > 0 && (
-                <BeheerCard title="Leden" count={members.length}>
-                  <BeheerRows>{members.map(row)}</BeheerRows>
-                </BeheerCard>
-              )}
-            </Reveal>
+            <BeheerCard title="Leden" count={members.length}>
+              <BeheerRows>
+                {members.map(row)}
+                {members.length === 0 && (
+                  <BeheerRow key="empty" title={<span className="font-normal text-muted-foreground">Nog geen leden.</span>} meta="Nieuwe mensen komen binnen via een invite-link.">
+                    <Pill variant="primary" onClick={() => openDialog('invites')}>
+                      <TicketIcon />
+                      Invite maken
+                    </Pill>
+                  </BeheerRow>
+                )}
+              </BeheerRows>
+            </BeheerCard>
           </motion.div>
         )}
       </AnimatePresence>

@@ -2,7 +2,10 @@ import { lazy, type ReactNode, RefObject, Suspense, useEffect, useLayoutEffect, 
 import { AnimatePresence, motion, useIsPresent, useReducedMotion } from 'motion/react';
 import { useSWRConfig } from 'swr';
 import { MapRef } from '@/components/Map';
+import ChunkBoundary from '@/components/ChunkBoundary';
 import ResponsiveDialog from '@/components/ResponsiveDialog';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Loader2Icon } from 'lucide-react';
 import { useArticles } from '@/hooks/articles.hook';
 import { useAssignments } from '@/hooks/assignments.hook';
 import { useHintBoard } from '@/hooks/hints.hook';
@@ -12,6 +15,7 @@ import { useReadState } from '@/hooks/read-state.hook';
 import { DIALOG_SHELL } from '@/lib/dialog-shell';
 import { keepOpenWhileEditing } from '@/lib/inline-edit';
 import { PUSH, buildIntelItems, filterByTab, unreadCount } from '@/lib/intel-window';
+import { loadState, type LoadState } from '@/lib/load-state';
 import { cn } from '@/lib/utils';
 import useIntelStore from '@/stores/intel.store';
 import type { HintCell } from '@/types/HintCell';
@@ -75,7 +79,7 @@ export default function IntelDialog({ mapRef }: { mapRef: RefObject<MapRef | nul
 function IntelWindow({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
   const tab = useIntelStore((state) => state.tab);
   const area = useIntelStore((state) => state.area);
-  const { articles } = useArticles();
+  const { articles, error: articlesError, retry: retryArticles } = useArticles();
   const { board } = useHintBoard({ live: true });
   const cells = useMemo(() => board?.cells ?? [], [board]);
   const { assignments } = useAssignments();
@@ -140,7 +144,17 @@ function IntelWindow({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
             {selected ? (
               <DetailView item={selected} area={area} mapRef={mapRef} entrance={!mounted} />
             ) : (
-              <TimelineView items={shown} allItems={items} cells={cells} tab={tab} memoryRef={timelineScroll} entrance={!mounted} onSelect={select} />
+              <TimelineView
+                items={shown}
+                allItems={items}
+                cells={cells}
+                tab={tab}
+                memoryRef={timelineScroll}
+                entrance={!mounted}
+                onSelect={select}
+                status={loadState(articles, articlesError)}
+                onRetry={retryArticles}
+              />
             )}
           </PushView>
         </AnimatePresence>
@@ -180,10 +194,12 @@ interface TimelineViewProps {
   /** Read on mount: the window just opened (the cards stagger in, the status card counts up); later the timeline just comes back */
   entrance: boolean;
   onSelect: (id: number) => void;
+  status: LoadState;
+  onRetry: () => unknown;
 }
 
 /** The scrolling timeline (remembers its scroll position per tab) and the status card. */
-function TimelineView({ items, allItems, cells, tab, memoryRef, entrance, onSelect }: TimelineViewProps) {
+function TimelineView({ items, allItems, cells, tab, memoryRef, entrance, onSelect, status, onRetry }: TimelineViewProps) {
   const ref = useRef<HTMLDivElement>(null);
   // Before the first paint: back to where the list was (same tab only)
   useLayoutEffect(() => {
@@ -206,10 +222,23 @@ function TimelineView({ items, allItems, cells, tab, memoryRef, entrance, onSele
         }}
         className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto [scrollbar-gutter:stable]"
       >
-        <IntelTimeline items={items} tab={tab} entrance={entrance} onSelect={onSelect} />
+        <IntelTimeline items={items} tab={tab} entrance={entrance} onSelect={onSelect} status={status} onRetry={onRetry} />
       </div>
       {/* Stats over every kind, whatever the tab */}
       <StatusCard items={allItems} cells={cells} entrance={entrance} />
+    </div>
+  );
+}
+
+/** The chat card while its chunk loads: same shell and title as IntelChat, a spinner where the conversation goes. */
+function ChatLoadingShell() {
+  return (
+    <div className="flex min-h-0 flex-1 flex-col gap-2.5 rounded-[24px] bg-card p-3.5" role="status" aria-label="AI-chat laden">
+      <h3 className="mx-1 text-[15px] font-bold">Vraag de AI</h3>
+      <div className="grid min-h-0 flex-1 place-items-center">
+        <Loader2Icon className="size-5 animate-spin text-muted-foreground" />
+      </div>
+      <Skeleton className="h-[92px] w-full rounded-[20px] bg-beheer-row-high" />
     </div>
   );
 }
@@ -227,10 +256,13 @@ function DetailView({ item, area, mapRef, entrance }: { item: IntelItem; area: s
         <IntelDetail item={item} area={area} mapRef={mapRef} />
       </div>
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* While the chunk loads: the chat card's empty shell (IntelChat's root classes) */}
-        <Suspense fallback={<div className="flex min-h-0 flex-1 flex-col rounded-[24px] bg-card p-3.5" />}>
-          <IntelChat item={item} mapRef={mapRef} entrance={!firstPaint} />
-        </Suspense>
+        {/* While the chunk loads: the chat card's shell (IntelChat's root classes) with its header and a spinner; a chunk
+            that can't be fetched shows a reload state in the card */}
+        <ChunkBoundary name="De AI-chat" className="rounded-[24px] bg-card">
+          <Suspense fallback={<ChatLoadingShell />}>
+            <IntelChat item={item} mapRef={mapRef} entrance={!firstPaint} />
+          </Suspense>
+        </ChunkBoundary>
       </div>
     </div>
   );

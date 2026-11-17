@@ -1,7 +1,7 @@
 import {Outlet, useLocation, useNavigate} from 'react-router';
 import {toast} from "sonner"
 import {lazy, Suspense, useEffect, useMemo, useRef, useState} from 'react';
-import {SWRConfig, type SWRConfiguration} from 'swr';
+import {mutate, SWRConfig, type SWRConfiguration} from 'swr';
 import Map, {MapRef} from './components/Map';
 import PWAPrompt from 'react-ios-pwa-prompt';
 import BeheerDialog from './components/beheer/BeheerDialog';
@@ -27,7 +27,7 @@ import {resyncPush} from '@/lib/push';
 import type {OutletContextType} from '@/hooks/outlet.hook.ts';
 import TourOverlay from './components/tour/TourOverlay';
 import {useTourAutoStart} from './components/tour/useTour';
-import {createFetchErrorToastState} from '@/lib/fetch-error-toast';
+import {createFetchErrorToastState, fetchErrorToastText} from '@/lib/fetch-error-toast';
 import AndroidPromoAutoOpen from './components/android-promo/AndroidPromoAutoOpen';
 
 const QrConfirmDrawer = lazy(() => import('./components/auth/QrConfirmDrawer'));
@@ -76,12 +76,17 @@ export default function Layout() {
             sessionExpired();
             return;
         }
+        // The technical details are for the console (Sentry has its own capture); the user gets short Dutch copy
+        console.warn(`[SWR] ${key} failed`, error);
         // One toast per outage, and not again within a minute when the connection flaps
         if (!errorToast.error(key)) return;
-        toast.error("Oeps! Er is iets misgegaan.", {
+        const {title, description} = fetchErrorToastText(error);
+        toast.error(title, {
             id: FETCH_ERROR_TOAST_ID,
             duration: Infinity,
-            description: 'Er is een fout opgetreden bij het ophalen van de data, probeer het later opnieuw. (Foutmelding: ' + (error instanceof Error ? error.message : String(error)) + ')',
+            description,
+            // Refetch everything now instead of waiting for the next polls; the toast goes once the failing keys load
+            action: {label: 'Opnieuw', onClick: () => void mutate(() => true)},
         })
     }
 

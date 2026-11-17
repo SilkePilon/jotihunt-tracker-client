@@ -10,6 +10,7 @@ import { chipSinceText } from '@/lib/fox-history';
 import { FOX_STATUS_TEXT, sameSidebarFox, type SidebarFox } from '@/lib/fox-status';
 import { FORBIDDEN_AREA_NOTE } from '@/lib/huntable-areas';
 import { LAYOUT_SPRING, POP, POP_SPRING } from '@/lib/motion';
+import { COARSE_HIT_AREA } from '@/lib/hit-area';
 import { cn, getColorFromArea } from '@/lib/utils';
 
 const ago = (time: Date | string) => formatDistanceToNow(new Date(time), { locale: nl, addSuffix: true });
@@ -61,6 +62,7 @@ function FoxChip({ fox, hidden, forbidden, popIn, open, onOpen }: FoxChipProps) 
       onClick={() => onOpen(fox.key)}
       className={cn(
         'cursor-pointer rounded-full ring-current transition-shadow duration-200 focus-visible:outline-2 focus-visible:outline-ring motion-reduce:transition-none',
+        COARSE_HIT_AREA,
         open ? 'ring-[1.5px]' : 'ring-0',
       )}
     >

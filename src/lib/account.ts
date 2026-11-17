@@ -89,3 +89,8 @@ export function deviceMeta(device: AccountDevice, now: number): string {
 export function orderSessions(sessions: AccountSession[]): AccountSession[] {
   return [...sessions].sort((a, b) => Number(b.current) - Number(a.current) || Date.parse(b.lastUsedAt) - Date.parse(a.lastUsedAt));
 }
+
+/** The "Uitloggen op dit apparaat?" consequence line; without a passkey it warns how hard getting back in is. */
+export function logoutDescription(noPasskey: boolean): string {
+  return noPasskey ? 'Je hebt nog geen passkey: daarna kom je alleen weer binnen met een QR-code of een herstel-link.' : 'Je moet daarna opnieuw inloggen.';
+}

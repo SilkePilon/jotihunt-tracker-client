@@ -26,7 +26,7 @@ import { copyToClipboard, writeClipboard } from '@/lib/clipboard';
 import { TRIGGER_OPEN } from '@/lib/menu-styles';
 import { POP, SWAP } from '@/lib/motion';
 import { cn } from '@/lib/utils';
-import { BeheerCard, BeheerPane, BeheerRow, BeheerRows, BeheerSkeleton, RowFrame } from './BeheerLayout';
+import { BeheerCard, BeheerLoadError, BeheerPane, BeheerRow, BeheerRows, BeheerSkeleton, RowFrame } from './BeheerLayout';
 import { IconPill, Pill, Tag } from './controls/Pill';
 import WhatsAppLogo from './WhatsAppLogo';
 import InlineError from '@/components/InlineError';
@@ -89,7 +89,7 @@ function Picker({ label, value, options, onChange, disabled }: { label: string; 
 
 /** Beheer → Invites (I5): make invite links; share (WhatsApp), copy, QR or stop the active ones; the stopped ones of the last 24 h. */
 export default function InvitesPane() {
-  const { invites, error: loadError, create, revoke } = useInvites(true);
+  const { invites, error: loadError, retry, create, revoke } = useInvites(true);
   const now = useNow(true, SLOW_CLOCK_TICK_MS);
 
   const [expiry, setExpiry] = useState<InviteExpiry>(DEFAULT_EXPIRY);
@@ -241,9 +241,9 @@ export default function InvitesPane() {
           </motion.div>
         )}
         {view === 'error' && (
-          <motion.p key="error" className="text-sm text-muted-foreground" {...SWAP}>
-            Kan de invites niet laden.
-          </motion.p>
+          <motion.div key="error" {...SWAP}>
+            <BeheerLoadError message="Kan de invites niet laden." onRetry={retry} />
+          </motion.div>
         )}
         {view === 'content' && (
           <motion.div key="content" className="flex flex-col gap-3.5" {...SWAP}>

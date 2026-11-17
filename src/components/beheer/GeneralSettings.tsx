@@ -16,7 +16,7 @@ import { POP, REVEAL_TRANSITION, SWAP_TRANSITION } from '@/lib/motion';
 import { VEHICLE_ICONS, VEHICLE_OPTIONS } from '@/lib/tracker';
 import { cn, getColorFromArea } from '@/lib/utils';
 import type { Vehicle } from '@/types/Tracker';
-import { BeheerCard, BeheerSkeleton, WarnBar } from './BeheerLayout';
+import { BeheerCard, BeheerLoadError, BeheerSkeleton, WarnBar } from './BeheerLayout';
 import { Pill, Tag } from './controls/Pill';
 
 /** Text inputs and select triggers: 36px, 12px corners, tonal fill */
@@ -215,13 +215,7 @@ export default function GeneralSettings() {
 
   const config = admin.config;
   if (!config) {
-    return admin.isError ? (
-      <BeheerCard title="Hunt">
-        <p className="mx-1 text-sm text-muted-foreground">De instellingen konden niet worden geladen.</p>
-      </BeheerCard>
-    ) : (
-      <BeheerSkeleton groups={2} />
-    );
+    return admin.isError ? <BeheerLoadError message="De instellingen konden niet worden geladen." onRetry={admin.retry} /> : <BeheerSkeleton groups={2} />;
   }
 
   const saved = draftFrom(config);

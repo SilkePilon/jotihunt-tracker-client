@@ -10,8 +10,11 @@ import { cn } from '@/lib/utils';
 import type { IntelKind } from '@/types/Intel';
 import { ModeToggle, PromptInput, PromptInputAction, PromptInputActions, PromptInputTextarea, SendButton } from './prompt-input';
 import { useChatModes } from './useIntelChat';
+import useChatDraftStore from '@/stores/chat-draft.store';
 
 interface ChatInputProps {
+  /** The item's article id: its draft (text, image) is kept in a store, so closing the window or switching items keeps it */
+  itemId: number;
   kind: IntelKind;
   /** A turn is running: the send button stops it; typing goes on */
   busy: boolean;
@@ -24,9 +27,13 @@ interface ChatInputProps {
 type ChatImage = { status: 'loading' } | { status: 'ready'; url: string; name: string };
 
 /** T1 prompt box: one image (paperclip, paste while focused, drop), textarea, Web and Denk diep (kept per user), send ↔ stop */
-export default function ChatInput({ kind, busy, disabled, onSend, onStop }: ChatInputProps) {
-  const [value, setValue] = useState('');
-  const [image, setImage] = useState<ChatImage | null>(null);
+export default function ChatInput({ itemId, kind, busy, disabled, onSend, onStop }: ChatInputProps) {
+  const draft = useChatDraftStore((state) => state.drafts[itemId]);
+  const value = draft?.text ?? '';
+  const setValue = (text: string) => useChatDraftStore.getState().setText(itemId, text);
+  // While a picked image is being shrunk; once ready it lives in the draft
+  const [imageLoading, setImageLoading] = useState(false);
+  const image: ChatImage | null = imageLoading ? { status: 'loading' } : draft?.image ? { status: 'ready', ...draft.image } : null;
   const [dragging, setDragging] = useState(false);
   const [modes, setMode] = useChatModes();
   const fileInput = useRef<HTMLInputElement>(null);
@@ -41,34 +48,38 @@ export default function ChatInput({ kind, busy, disabled, onSend, onStop }: Chat
       return;
     }
     const id = ++attachId.current;
-    setImage({ status: 'loading' });
+    setImageLoading(true);
     try {
       const url = await prepareChatImage(file, CHAT_IMAGE_MAX_SIDE, CHAT_IMAGE_QUALITY);
       if (id !== attachId.current) return;
       if (dataUrlBytes(url) > CHAT_IMAGE_MAX_BYTES) {
-        setImage(null);
+        useChatDraftStore.getState().setImage(itemId, null);
         toast.error('Afbeelding is te groot, ook na verkleinen');
         return;
       }
-      setImage({ status: 'ready', url, name: file.name || 'afbeelding.jpg' });
+      useChatDraftStore.getState().setImage(itemId, { url, name: file.name || 'afbeelding.jpg' });
     } catch {
       if (id !== attachId.current) return;
-      setImage(null);
+      useChatDraftStore.getState().setImage(itemId, null);
       toast.error('Afbeelding lezen mislukt');
+    } finally {
+      if (id === attachId.current) setImageLoading(false);
     }
   }
 
   function clearImage() {
     attachId.current++;
-    setImage(null);
+    setImageLoading(false);
+    useChatDraftStore.getState().setImage(itemId, null);
   }
 
   function submit() {
     if (!ready) return;
     const file: FileUIPart | undefined = image?.status === 'ready' ? { type: 'file', mediaType: 'image/jpeg', url: image.url, filename: image.name } : undefined;
     onSend(value.trim(), file);
-    setValue('');
-    clearImage();
+    // Sent: the draft goes (a send that fails for lack of a connection puts it back, see useIntelChat)
+    attachId.current++;
+    useChatDraftStore.getState().clear(itemId);
   }
 
   return (

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { AxiosError, AxiosHeaders } from 'axios';
-import { classifyPasskeyError, inviteGoneReason, PASSKEY_MESSAGES } from './passkey';
+import { classifyPasskeyError, inviteGoneReason, isLinkGone, PASSKEY_MESSAGES, unsupportedLoginText } from './passkey';
 
 function httpError(status: number | undefined, data: unknown = {}) {
   const error = new AxiosError('fail');
@@ -47,5 +47,23 @@ describe('inviteGoneReason', () => {
     expect(inviteGoneReason(httpError(undefined))).toBeNull();
     expect(inviteGoneReason(Object.assign(new Error('x'), { name: 'NotAllowedError' }))).toBeNull();
     expect(inviteGoneReason(httpError(410, { reason: 'weird' }))).toBe('unknown');
+  });
+});
+
+describe('isLinkGone', () => {
+  test('only 404 and 410 mean the link is gone', () => {
+    expect(isLinkGone(httpError(404))).toBe(true);
+    expect(isLinkGone(httpError(410, { reason: 'expired' }))).toBe(true);
+    expect(isLinkGone(httpError(500))).toBe(false);
+    expect(isLinkGone(httpError(undefined))).toBe(false);
+    expect(isLinkGone(new Error('x'))).toBe(false);
+  });
+});
+
+describe('unsupportedLoginText', () => {
+  test('points at the QR code where this device shows it, and at a herstel-link', () => {
+    expect(unsupportedLoginText(true)).toContain('hieronder');
+    expect(unsupportedLoginText(false)).toContain('hiernaast');
+    expect(unsupportedLoginText(true)).toContain('herstel-link');
   });
 });

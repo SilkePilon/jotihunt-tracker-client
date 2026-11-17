@@ -2,7 +2,9 @@ import { RefObject, useCallback } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import type { MapRef } from '@/components/Map';
 import FadeText from '@/components/motion/FadeText';
+import LoadError from '@/components/LoadError';
 import Reveal from '@/components/motion/Reveal';
+import { Skeleton } from '@/components/ui/skeleton';
 import SidebarSection from '@/components/sidebar/SidebarSection';
 import CookieBadge from '@/components/tracker/CookieBadge';
 import { useHuntEvents, useHuntSync } from '@/hooks/hunt-sync.hook';
@@ -58,13 +60,18 @@ interface HuntsSyncViewProps {
   events: HuntSyncEvent[] | undefined;
   onSelect: (event: HuntSyncEvent) => void;
   onLoadMore: () => void;
+  /** The log's first page failed (nothing to show yet) */
+  eventsFailed?: boolean;
+  loadingMore?: boolean;
+  pageFailed?: boolean;
+  onRetryEvents?: () => unknown;
 }
 
 /**
  * The card's content (mockup C v3): cookie, title, sync line, result bar and sync log. Stays mounted across the sync
  * states: only the badge pops, the texts fade, and the bar + log fold away while there's no jotihunt.nl login.
  */
-export function HuntsSyncView({ status, events, onSelect, onLoadMore }: HuntsSyncViewProps) {
+export function HuntsSyncView({ status, events, onSelect, onLoadMore, eventsFailed = false, loadingMore, pageFailed, onRetryEvents }: HuntsSyncViewProps) {
   const now = useNow(true);
   const view = huntSyncView(status);
   const linked = view !== 'unlinked';
@@ -92,13 +99,23 @@ export function HuntsSyncView({ status, events, onSelect, onLoadMore }: HuntsSyn
         {linked && (
           <>
             <HuntResultBar counts={status.counts} />
-            {events !== undefined && (
-              <AnimatePresence mode="wait" initial={false}>
+            <AnimatePresence mode="wait" initial={false}>
+              {events !== undefined ? (
                 <motion.div key={events.length === 0 ? 'empty' : 'log'} {...SWAP}>
-                  <HuntSyncLog events={events} onSelect={onSelect} onLoadMore={onLoadMore} />
+                  <HuntSyncLog events={events} onSelect={onSelect} onLoadMore={onLoadMore} loadingMore={loadingMore} pageFailed={pageFailed} onRetryPage={onRetryEvents} />
                 </motion.div>
-              </AnimatePresence>
-            )}
+              ) : eventsFailed ? (
+                <motion.div key="failed" className="mt-2.5" {...SWAP}>
+                  <LoadError centered message="Het hunt-logboek kon niet worden geladen." onRetry={() => onRetryEvents?.()} />
+                </motion.div>
+              ) : (
+                <motion.div key="loading" className="mt-2.5 flex flex-col gap-1" role="status" aria-label="Logboek laden" {...SWAP}>
+                  {Array.from({ length: 3 }, (_, index) => (
+                    <Skeleton key={index} className="h-6 w-full rounded-lg" />
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </>
         )}
       </Reveal>
@@ -106,11 +123,28 @@ export function HuntsSyncView({ status, events, onSelect, onLoadMore }: HuntsSyn
   );
 }
 
+/** Stands in for the card while the status loads, at the size of the linked card (badge, title, line, bar, log). */
+function HuntsSyncSkeleton() {
+  return (
+    <div className="flex flex-col items-center gap-0.5 pt-1" role="status" aria-label="Hunts laden">
+      <Skeleton className="rounded-full" style={{ width: BADGE_SIZE, height: BADGE_SIZE }} />
+      <Skeleton className="mt-2 h-5 w-32" />
+      <Skeleton className="mt-1 h-3.5 w-44" />
+      <Skeleton className="mt-2.5 h-2.5 w-[150px] rounded-[5px]" />
+      <div className="mt-2.5 flex w-full flex-col gap-1">
+        {Array.from({ length: 3 }, (_, index) => (
+          <Skeleton key={index} className="h-6 w-full rounded-lg" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /** Sidebar "Hunts": the jotihunt.nl sync status and log; clicking a log line flies the map to that hunt. */
 export default function HuntsSyncCard({ mapRef }: { mapRef: RefObject<MapRef | null> }) {
-  const { status, isError } = useHuntSync();
+  const { status, isError, retry } = useHuntSync();
   const linked = status?.configured === true;
-  const { events, loadMore } = useHuntEvents(linked);
+  const { events, loadMore, isError: eventsFailed, loadingMore, pageFailed, retry: retryEvents } = useHuntEvents(linked);
   const setSheetSnap = useSidebarStore((state) => state.setSheetSnap);
   const showFocus = useHuntFocusStore((state) => state.show);
 
@@ -127,11 +161,30 @@ export default function HuntsSyncCard({ mapRef }: { mapRef: RefObject<MapRef | n
 
   return (
     <SidebarSection id="hunts" title="Hunts" summary={huntSyncSummary(status)}>
-      {status ? (
-        <HuntsSyncView status={status} events={linked ? events : []} onSelect={flyTo} onLoadMore={loadMore} />
-      ) : (
-        isError && <p className="text-xs text-muted-foreground">Hunt-status ophalen is mislukt.</p>
-      )}
+      <AnimatePresence mode="wait" initial={false}>
+        {status ? (
+          <motion.div key="status" {...SWAP}>
+            <HuntsSyncView
+              status={status}
+              events={linked ? events : []}
+              onSelect={flyTo}
+              onLoadMore={loadMore}
+              eventsFailed={eventsFailed}
+              loadingMore={loadingMore}
+              pageFailed={pageFailed}
+              onRetryEvents={retryEvents}
+            />
+          </motion.div>
+        ) : isError ? (
+          <motion.div key="error" {...SWAP}>
+            <LoadError message="Hunt-status ophalen is mislukt." onRetry={retry} />
+          </motion.div>
+        ) : (
+          <motion.div key="loading" {...SWAP}>
+            <HuntsSyncSkeleton />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </SidebarSection>
   );
 }

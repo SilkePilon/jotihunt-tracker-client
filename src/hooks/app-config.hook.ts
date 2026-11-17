@@ -52,6 +52,7 @@ export function useAdminConfig() {
   return {
     config: data,
     isError: !!error,
+    retry: () => mutate(),
     saveGeneral: (patch: GeneralPatch) => send('/admin/config/general', 'PUT', patch),
     saveSecret: (name: SecretName, value: string) => send(`/admin/config/secrets/${name}`, 'PUT', { value }),
     clearSecret: (name: SecretName) => send(`/admin/config/secrets/${name}`, 'DELETE'),

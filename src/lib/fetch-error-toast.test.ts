@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test';
-import { createFetchErrorToastState, ERROR_TOAST_COOLDOWN_MS, FAILING_KEY_STALE_MS } from './fetch-error-toast';
+import { createFetchErrorToastState, ERROR_TOAST_COOLDOWN_MS, FAILING_KEY_STALE_MS, fetchErrorToastText } from './fetch-error-toast';
+import { AxiosError, AxiosHeaders, type AxiosResponse } from 'axios';
 
 describe('fetch error toast', () => {
   test('one endpoint failing while others load: shown once, not cleared by other endpoints', () => {
@@ -40,5 +41,15 @@ describe('fetch error toast', () => {
     expect(state.error('/dialog-only', 0)).toBe(true);
     expect(state.success('/markers', FAILING_KEY_STALE_MS)).toBe(false);
     expect(state.success('/markers', FAILING_KEY_STALE_MS + 1)).toBe(true);
+  });
+});
+
+describe('fetchErrorToastText', () => {
+  test('no answer: about the connection; an answer: about the server; never the raw message', () => {
+    expect(fetchErrorToastText(new AxiosError('Network Error', 'ERR_NETWORK')).title).toBe('Geen verbinding met de server');
+    const response = { data: {}, status: 500, statusText: '', headers: {}, config: { headers: new AxiosHeaders() } } as AxiosResponse;
+    const serverError = fetchErrorToastText(new AxiosError('Request failed with status code 500', 'ERR_BAD_RESPONSE', undefined, undefined, response));
+    expect(serverError.title).toBe('Gegevens laden mislukt');
+    expect(serverError.description).not.toContain('status code');
   });
 });

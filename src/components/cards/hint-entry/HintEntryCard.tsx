@@ -1,6 +1,11 @@
 import {Controller, useForm, useWatch} from 'react-hook-form';
 import {Button} from '../../ui/button.tsx';
-import {EraserIcon, Pin} from 'lucide-react';
+import {EraserIcon, Loader2Icon, Pin} from 'lucide-react';
+import {AnimatePresence, motion} from 'motion/react';
+import InlineError from '@/components/InlineError';
+import Reveal from '@/components/motion/Reveal';
+import {SWAP} from '@/lib/motion';
+import useHintDraftStore, {EMPTY_HINT_DRAFT} from '@/stores/hint-draft.store';
 import {useMarkers} from '@/hooks/markers.hook.ts';
 import {toast} from 'sonner';
 import {MapRef} from '@/components/Map.tsx';
@@ -13,7 +18,7 @@ import {useAppConfig} from '@/hooks/app-config.hook';
 import {useEdition} from '@/hooks/edition.hook';
 import {isInNetherlands} from '@/lib/netherlands';
 import {fromRD, isPlausibleRD} from '@/lib/rd';
-import {apiErrorMessage} from '@/lib/api-error';
+import {apiErrorMessage, isNetworkError} from '@/lib/api-error';
 import AreaPicker from './AreaPicker';
 import TimePicker from './TimePicker';
 import DigitBoxes from './DigitBoxes';
@@ -21,6 +26,7 @@ import CoordinateStatus, {type CoordinateState} from './CoordinateStatus';
 import {buildHintHours, groupByDay, isFreeHour} from './hint-times';
 import {SOFT_PRIMARY_BUTTON} from '@/lib/tonal-button';
 import {fieldsResolver, nonEmptyString, oneOf, stringOfLength} from '@/lib/form-resolver';
+import {COARSE_HIT_AREA} from '@/lib/hit-area';
 import {type GuessStatus, guessStatus, hasWildcard, parseGuess} from '@/lib/hint-guess';
 import useHintGuessStore from '@/stores/hint-guess.store';
 
@@ -49,15 +55,18 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
 
     const form = useForm<FormValues>({
         resolver: formResolver,
-        defaultValues: {
-            area: '',
-            time: '',
-            x: '',
-            y: '',
-        },
+        // The draft from before (the phone page was left, or the page reloaded) comes back
+        defaultValues: useHintDraftStore.getState().draft,
     });
     const selectedArea = useWatch({control: form.control, name: 'area'});
     const [timeValue, xValue, yValue] = useWatch({control: form.control, name: ['time', 'x', 'y']});
+    // What the last Registreren attempt ran into when no answer came (offline); the draft stays either way
+    const [submitError, setSubmitError] = useState<string | null>(null);
+
+    // Every change goes to the draft store, so leaving the page doesn't lose what was typed
+    useEffect(() => {
+        useHintDraftStore.getState().save({area: selectedArea, time: timeValue, x: xValue, y: yValue});
+    }, [selectedArea, timeValue, xValue, yValue]);
 
     // A '?' in a box is an unknown digit: the candidates go on the map (lib/hint-guess.ts) and Registreren waits
     const wildcard = hasWildcard(xValue ?? '', yValue ?? '');
@@ -167,9 +176,11 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
             type: MarkerType.Hint,
         };
 
+        setSubmitError(null);
         const error = await createMarker(marker);
         if (!error) {
-            form.reset();
+            form.reset(EMPTY_HINT_DRAFT);
+            useHintDraftStore.getState().clear();
             toast.success('Hint geregistreerd!', {
                 description: 'De hint is succesvol geregistreerd.'
             });
@@ -178,12 +189,17 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
                 duration: 2000,
                 zoom: 12,
             });
+        } else if (isNetworkError(error)) {
+            // The typed hint stays in the form (and the draft): one tap on Registreren once there is a connection
+            setSubmitError('Geen verbinding: de hint is niet geregistreerd. Je invoer blijft staan, probeer het opnieuw zodra je verbinding hebt.');
         } else {
             toast.error('Fout bij registreren hint.', {
                 description: apiErrorMessage(error, 'Er is een fout opgetreden bij het registreren van de hint.')
             });
         }
     }
+
+    const submitting = form.formState.isSubmitting;
 
     /** Wissen: empty both coordinates. */
     function clearCoordinates() {
@@ -242,17 +258,26 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
                     {coordinateField('x', 'X', () => document.getElementById(`${fieldId}-y`)?.focus())}
                     {coordinateField('y', 'Y', () => setTimeout(() => document.getElementById(submitId)?.focus()))}
                 </div>
-                <div className="mt-0.5 flex items-center justify-between gap-2">
+                <div className="isolate mt-0.5 flex items-center justify-between gap-2">
                     <CoordinateStatus state={coordinateState} guess={status}/>
                     <button type="button" onClick={clearCoordinates}
-                            className="inline-flex items-center gap-1.5 rounded-lg px-1 text-[11px] font-semibold text-primary-text outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring">
+                            className={`${COARSE_HIT_AREA} inline-flex items-center gap-1.5 rounded-lg px-1 text-xs font-semibold text-primary-text md:text-[11px] outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring`}>
                         <EraserIcon aria-hidden className="size-3"/> Wissen
                     </button>
                 </div>
             </div>
-            <Button id={submitId} type="submit" className={`${SOFT_PRIMARY_BUTTON} h-11 text-[15px]`} disabled={!canSubmit || form.formState.isSubmitting || readOnly}>
-                <Pin data-icon="inline-start"/> Registreren
+            <Button id={submitId} type="submit" className={`${SOFT_PRIMARY_BUTTON} h-11 text-[15px]`} disabled={!canSubmit || submitting || readOnly}
+                    aria-busy={submitting}>
+                <AnimatePresence mode="popLayout" initial={false}>
+                    <motion.span key={submitting ? 'busy' : 'idle'} className="inline-flex items-center gap-2" {...SWAP}>
+                        {submitting ? <Loader2Icon className="animate-spin"/> : <Pin/>}
+                        {submitting ? 'Registreren…' : 'Registreren'}
+                    </motion.span>
+                </AnimatePresence>
             </Button>
+            <Reveal gap={12}>
+                {submitError && <InlineError role="alert">{submitError}</InlineError>}
+            </Reveal>
         </form>
     );
 }

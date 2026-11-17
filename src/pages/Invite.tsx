@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { KeyRoundIcon, Link2OffIcon, Loader2Icon, UsersIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,10 @@ import AuthSwap from '@/components/auth/AuthSwap';
 import WelcomeCard from '@/components/auth/WelcomeCard';
 import Reveal from '@/components/motion/Reveal';
 import { fetchInvite, passkeysSupported, registerWithInvite, registerWithInviteWithoutPasskey, type InviteInfo } from '@/lib/auth-api';
-import { classifyPasskeyError, INVITE_REASON_TEXT, inviteGoneReason, PASSKEY_MESSAGES, type InviteReason } from '@/lib/passkey';
+import { classifyPasskeyError, INVITE_REASON_TEXT, inviteGoneReason, isLinkGone, PASSKEY_MESSAGES, SESSION_NOT_STORED, type InviteReason } from '@/lib/passkey';
+import UnreachableCard from '@/components/auth/UnreachableCard';
+import { AnimatePresence, motion } from 'motion/react';
+import { SWAP } from '@/lib/motion';
 import { useStartSession } from '@/hooks/start-session.hook';
 import InlineError from '@/components/InlineError';
 import { useAppConfig } from '@/hooks/app-config.hook';
@@ -40,20 +43,38 @@ export default function Invite() {
   const { code = '' } = useParams();
   const startSession = useStartSession();
   const [invite, setInvite] = useState<InviteInfo | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  /** The invite couldn't be checked (no answer, server error): retry, it isn't "gone" */
+  const [unreachable, setUnreachable] = useState(false);
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   /** Why the server refused the signup (410); the invite info loaded earlier is stale then */
   const [goneReason, setGoneReason] = useState<InviteReason | null>(null);
   const [done, setDone] = useState<{ name: string; withPasskey: boolean } | null>(null);
+  /** The account was made but the session wasn't stored: the form stays with the error, the button goes to login */
+  const [signupDone, setSignupDone] = useState(false);
+  const navigate = useNavigate();
   const supported = passkeysSupported();
 
+  const load = useCallback(
+    () =>
+      fetchInvite(code).then(
+        (info) => {
+          setInvite(info);
+          setUnreachable(false);
+        },
+        (failure) => {
+          // A 410 here still names why; 404 is already an invalid invite. Anything else: not reachable, not expired.
+          const reason = isLinkGone(failure) ? (inviteGoneReason(failure) ?? 'unknown') : null;
+          if (reason) setGoneReason(reason);
+          else setUnreachable(true);
+        },
+      ),
+    [code],
+  );
   useEffect(() => {
-    fetchInvite(code)
-      .then(setInvite)
-      .catch((failure) => setLoadError(PASSKEY_MESSAGES[classifyPasskeyError(failure)]));
-  }, [code]);
+    void load();
+  }, [load]);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -66,8 +87,14 @@ export default function Invite() {
     setError(null);
     try {
       const result = supported ? await registerWithInvite(code, trimmed) : await registerWithInviteWithoutPasskey(code, trimmed);
-      startSession(result);
-      setDone({ name: result.user.name, withPasskey: (result.user.passkeyCount ?? 0) > 0 });
+      const withPasskey = (result.user.passkeyCount ?? 0) > 0;
+      // The account exists now; a browser that won't keep the session must not show the welcome (or a retry that makes a second account)
+      if (!startSession(result)) {
+        setError(withPasskey ? SESSION_NOT_STORED.withPasskey : SESSION_NOT_STORED.withoutPasskey);
+        setSignupDone(true);
+        return;
+      }
+      setDone({ name: result.user.name, withPasskey });
     } catch (failure) {
       const reason = inviteGoneReason(failure);
       if (reason) setGoneReason(reason);
@@ -80,9 +107,9 @@ export default function Invite() {
   let scene: string;
   let content: ReactNode;
   if (done) [scene, content] = ['done', <WelcomeCard name={done.name} withPasskey={done.withPasskey} />];
-  else if (loadError) [scene, content] = ['invalid', <InvalidCard text={loadError} />];
-  else if (!invite) [scene, content] = ['loading', <Skeleton className="h-72 w-full max-w-[760px] rounded-xl" />];
   else if (goneReason) [scene, content] = ['invalid', <InvalidCard text={INVITE_REASON_TEXT[goneReason]} />];
+  else if (unreachable) [scene, content] = ['unreachable', <UnreachableCard onRetry={load} />];
+  else if (!invite) [scene, content] = ['loading', <Skeleton className="h-72 w-full max-w-[760px] rounded-xl" />];
   else if (!invite.valid) [scene, content] = ['invalid', <InvalidCard text={INVITE_REASON_TEXT[invite.reason ?? 'unknown']} />];
   else [scene, content] = ['form', renderForm(invite)];
 
@@ -120,9 +147,19 @@ export default function Invite() {
             </label>
             <Input id="invite-name" value={name} maxLength={40} autoComplete="nickname" placeholder="Je naam" onChange={(event) => setName(event.target.value)} />
           </div>
-          <Button type="submit" size="lg" className="w-full" disabled={busy}>
-            {busy ? <Loader2Icon className="animate-spin" /> : supported && <KeyRoundIcon />}
-            {supported ? 'Account maken met passkey' : 'Account maken'}
+          <Button type={signupDone ? 'button' : 'submit'} size="lg" className="w-full" disabled={busy} onClick={signupDone ? () => navigate('/login') : undefined}>
+            <AnimatePresence mode="popLayout" initial={false}>
+              <motion.span key={signupDone ? 'login' : 'signup'} className="inline-flex items-center gap-2" {...SWAP}>
+                {signupDone ? (
+                  'Naar inloggen'
+                ) : (
+                  <>
+                    {busy ? <Loader2Icon className="animate-spin" /> : supported && <KeyRoundIcon />}
+                    {supported ? 'Account maken met passkey' : 'Account maken'}
+                  </>
+                )}
+              </motion.span>
+            </AnimatePresence>
           </Button>
           <Reveal gap={16}>
             {error && (

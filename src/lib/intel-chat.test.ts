@@ -387,6 +387,8 @@ describe('chatErrorKind', () => {
   test('a 200 with { error } (fetcherWithMethod throws Error(error)) and anything else', () => {
     expect(chatErrorKind(new Error('ai_unavailable'))).toBe('ai_unavailable');
     expect(chatErrorKind(new Error('Failed to fetch'))).toBe('other');
+    expect(chatErrorKind(new TypeError('Failed to fetch'))).toBe('offline');
+    expect(chatErrorKind(new AxiosError('Network Error', 'ERR_NETWORK'))).toBe('offline');
     expect(chatErrorKind(undefined)).toBe('other');
   });
 });
