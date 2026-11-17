@@ -1,6 +1,6 @@
 import { type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { animate, motion, useTransform } from 'motion/react';
+import { animate, motion, useReducedMotion, useTransform } from 'motion/react';
 import { computeSnapHeights, grabLabel, nextSnap, rubberBand, settleSnap, type SnapHeights } from '@/lib/sheet-snaps';
 import useSidebarStore from '@/stores/sidebar.store';
 import useViewportStore from '@/stores/viewport.store';
@@ -56,9 +56,18 @@ export default function BottomSheet({ peek, children, onHeights }: { peek: React
   // only once the collapse finishes, so content never vanishes mid-gesture. Growing uses the settled height at once.
   const [layoutHeight, setLayoutHeight] = useState(0);
   const animId = useRef(0);
+  // Reduced motion: a snap change that isn't the end of a drag (grab tap, a page opening, the keyboard) jumps there
+  // instead of springing; a released drag still springs on from the finger
+  const reduceMotion = useReducedMotion();
+  const releasing = useRef(false);
 
-  const springTo = useCallback((target: number) => {
+  const springTo = useCallback((target: number, instant = false) => {
     const id = ++animId.current;
+    if (instant) {
+      sheetVisibleHeight.jump(target);
+      setLayoutHeight(target);
+      return { stop: () => {} };
+    }
     const controls = animate(sheetVisibleHeight, target, SPRING);
     controls.then(() => {
       if (animId.current === id) setLayoutHeight(target);
@@ -86,10 +95,11 @@ export default function BottomSheet({ peek, children, onHeights }: { peek: React
 
   const settled = heights[snap];
   useEffect(() => {
-    const controls = springTo(settled);
+    const controls = springTo(settled, !!reduceMotion && !releasing.current);
+    releasing.current = false;
     setSheetHeight(settled);
     return () => controls.stop();
-  }, [settled, setSheetHeight, springTo]);
+  }, [settled, setSheetHeight, springTo, reduceMotion]);
   useEffect(() => () => setSheetHeight(0), [setSheetHeight]);
 
   const y = useTransform(sheetVisibleHeight, (h) => heights.full - h);
@@ -193,7 +203,10 @@ export default function BottomSheet({ peek, children, onHeights }: { peek: React
     if (!d.moved) return;
     const target = settleSnap(sheetVisibleHeight.get(), d.velocity, heights);
     if (target === snap) springTo(heights[target]);
-    else setSnap(target);
+    else {
+      releasing.current = true;
+      setSnap(target);
+    }
   }
 
   return (
