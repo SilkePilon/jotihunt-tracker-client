@@ -1,9 +1,11 @@
 import Settings from '@/components/Settings';
+import { cn } from '@/lib/utils';
 import { useAppConfig } from '@/hooks/app-config.hook';
 import { apiAssetUrl } from '@/lib/app-config';
 import { useStartTour } from '@/components/tour/useTour';
 import EditionBadge from './EditionBadge';
 import ThemeToggle from './ThemeToggle';
+import { HEADER_BUTTON_START } from './header-button';
 
 export default function SidebarHeader() {
   const startTour = useStartTour();
@@ -20,7 +22,7 @@ export default function SidebarHeader() {
       <EditionBadge />
       {/* Joined tonal group: 2px seam, 12px outer and 6px inner corners */}
       <div className="flex shrink-0 gap-0.5">
-        <ThemeToggle className="rounded-l-lg rounded-r-[6px]" />
+        <ThemeToggle className={cn(HEADER_BUTTON_START, 'rounded-l-lg rounded-r-[6px]')} />
         <Settings onReplayTour={() => startTour('replay')} />
       </div>
     </div>

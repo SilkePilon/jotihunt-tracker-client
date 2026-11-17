@@ -1,6 +1,13 @@
 /**
- * One half of the joined tonal button group in the sidebar header (theme + settings); the caller sets the corners.
- * Phones: a 44px-tall hit area (::after, vertical only so the two halves don't overlap).
+ * One half of the joined tonal button group in the sidebar header (theme + settings); the caller sets the corners and
+ * adds HEADER_BUTTON_START or HEADER_BUTTON_END. Touch: a 44×44 hit area (::after) — 6px above and below, and the 10px
+ * extra width only outward (left of the theme half, right of the settings half), so the two never overlap.
  */
 export const HEADER_BUTTON =
-  'relative grid h-8 w-[34px] max-md:after:absolute max-md:after:-inset-y-1.5 max-md:after:inset-x-0 shrink-0 cursor-pointer place-items-center bg-beheer-row text-foreground outline-none transition-[background-color,color,border-radius] duration-200 hover:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring motion-reduce:transition-none';
+  'relative grid h-8 w-[34px] pointer-coarse:after:absolute pointer-coarse:after:-inset-y-1.5 pointer-coarse:after:left-0 pointer-coarse:after:right-0 pointer-coarse:after:content-[\'\'] shrink-0 cursor-pointer place-items-center bg-beheer-row text-foreground outline-none transition-[background-color,color,border-radius] duration-200 hover:bg-beheer-row-high focus-visible:ring-[3px] focus-visible:ring-ring motion-reduce:transition-none';
+
+/** The group's left half: its touch area grows to the left (over the header's 8px gap, nothing interactive there) */
+export const HEADER_BUTTON_START = 'pointer-coarse:after:-left-2.5';
+
+/** The group's right half: its touch area grows to the right (into the header card's 12px padding) */
+export const HEADER_BUTTON_END = 'pointer-coarse:after:-right-2.5';
