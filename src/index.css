@@ -435,9 +435,9 @@ body.dark {
   background: var(--map-surface) !important;
   color: var(--map-on-surface);
   font-family: var(--map-font);
-  font-size: 13px;
+  font-size: var(--text-body);
   line-height: 1.35;
-  border-radius: 24px !important;
+  border-radius: var(--radius-3xl) !important;
   padding: 14px;
   box-shadow: var(--shadow-dialog);
 }
