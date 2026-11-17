@@ -66,7 +66,7 @@ export default function Sources({ sources }: { sources: ChatSource[] }) {
   );
 }
 
-const ROW = 'flex w-full items-center gap-2.5 px-3 py-2 text-left text-[12.5px] font-semibold outline-none transition-colors hover:bg-beheer-row-high focus-visible:bg-beheer-row-high focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset';
+const ROW = 'flex w-full items-center gap-2.5 px-3 py-2 text-left text-caption font-semibold outline-none transition-colors hover:bg-beheer-row-high focus-visible:bg-beheer-row-high focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset';
 
 /** One site; rows are split by the card colour (as the Account dialog's rows) */
 function SiteRow({ group }: { group: SourceGroup }) {
@@ -76,7 +76,7 @@ function SiteRow({ group }: { group: SourceGroup }) {
     <>
       <Favicon site={group.site} />
       <span className="min-w-0 flex-1 truncate">{group.site}</span>
-      {count > 1 && <span className="rounded-md bg-beheer-row-high px-1.5 text-[10.5px] font-bold text-muted-foreground tabular-nums">{count}</span>}
+      {count > 1 && <span className="rounded-md bg-beheer-row-high px-1.5 text-label font-bold text-muted-foreground tabular-nums">{count}</span>}
     </>
   );
   return (

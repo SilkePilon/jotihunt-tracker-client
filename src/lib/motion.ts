@@ -57,8 +57,11 @@ export const SWAP = liveSwapPreset(() => prefersReducedMotion);
 
 export const POP_SPRING: Transition = { type: 'spring', stiffness: 420, damping: 24 };
 
-/** Layout moves (chips and bar segments sliding to their new place) */
+/** Layout moves (chips and bar segments sliding to their new place) and small custom dialogs settling in */
 export const LAYOUT_SPRING: Transition = { type: 'spring', stiffness: 380, damping: 34 };
+
+/** A softer, slower spring: the prompt box toggles turning, chart bars growing in (spread it to add a delay) */
+export const SOFT_SPRING: Transition = { type: 'spring', stiffness: 260, damping: 25 };
 
 /** Badges and the avatar circle */
 export const POP = {

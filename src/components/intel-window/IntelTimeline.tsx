@@ -364,7 +364,7 @@ export function DeadlineTag({ endTime, now, status, className }: { endTime: stri
 export function KindTag({ kind }: { kind: IntelKind }) {
   return (
     <span
-      className="shrink-0 rounded-lg px-2 py-0.5 text-[11px] font-bold"
+      className="shrink-0 rounded-lg px-2 py-0.5 text-label font-bold"
       style={{ color: KIND_COLOR[kind], backgroundColor: KIND_CONTAINER[kind] }}
     >
       {KIND_LABEL[kind]}

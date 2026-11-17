@@ -220,7 +220,7 @@ export default function FoxesCard({ mapRef }: { mapRef?: RefObject<MapRef | null
     <motion.div className="flex flex-col" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={SWAP_TRANSITION}>
       <FoxStatusBar foxes={foxes} size="full" isForbidden={isForbidden} />
       {/* Wraps instead of overflowing when a fifth group (OV) joins on a narrow sidebar */}
-      <div className="mt-1.5 mb-2.5 flex flex-wrap justify-between gap-x-2 gap-y-0.5 text-xs text-muted-foreground desk:text-[11px]">
+      <div className="mt-1.5 mb-2.5 flex flex-wrap justify-between gap-x-2 gap-y-0.5 text-xs text-muted-foreground desk:text-label">
         {/* layout: the entries slide aside when the lock entry pops in or out */}
         <AnimatePresence initial={false} mode="popLayout">
           {legendGroups(counts).map((group) => (

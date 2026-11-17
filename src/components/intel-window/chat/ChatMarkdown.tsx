@@ -26,7 +26,7 @@ function ChatMarkdown({ text, className }: { text: string; className?: string })
   return (
     <div
       className={cn(
-        'text-[13px] leading-[1.55] break-words [&_a]:text-primary-text [&_a]:underline [&_code]:rounded-md [&_code]:bg-beheer-row-high [&_code]:px-1 [&_code]:font-mono [&_code]:text-xs [&_h1]:my-2 [&_h1]:text-[15px] [&_h1]:font-bold [&_h2]:my-2 [&_h2]:text-sm [&_h2]:font-bold [&_h3]:my-1.5 [&_h3]:font-semibold [&_li]:my-0.5 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-1.5 [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:bg-beheer-row-high [&_pre]:p-2.5 [&_del]:opacity-60 [&_strong]:font-semibold [&_td]:border-t [&_td]:border-border/60 [&_td]:px-2.5 [&_td]:py-1.5 [&_td]:align-top [&_th]:px-2.5 [&_th]:py-1.5 [&_th]:text-left [&_th]:font-semibold [&_ul]:list-disc [&_ul]:pl-5 [&>:first-child]:mt-0 [&>:last-child]:mb-0',
+        'text-body leading-[1.55] break-words [&_a]:text-primary-text [&_a]:underline [&_code]:rounded-md [&_code]:bg-beheer-row-high [&_code]:px-1 [&_code]:font-mono [&_code]:text-xs [&_h1]:my-2 [&_h1]:text-[15px] [&_h1]:font-bold [&_h2]:my-2 [&_h2]:text-sm [&_h2]:font-bold [&_h3]:my-1.5 [&_h3]:font-semibold [&_li]:my-0.5 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-1.5 [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:bg-beheer-row-high [&_pre]:p-2.5 [&_del]:opacity-60 [&_strong]:font-semibold [&_td]:border-t [&_td]:border-border/60 [&_td]:px-2.5 [&_td]:py-1.5 [&_td]:align-top [&_th]:px-2.5 [&_th]:py-1.5 [&_th]:text-left [&_th]:font-semibold [&_ul]:list-disc [&_ul]:pl-5 [&>:first-child]:mt-0 [&>:last-child]:mb-0',
         className,
       )}
     >

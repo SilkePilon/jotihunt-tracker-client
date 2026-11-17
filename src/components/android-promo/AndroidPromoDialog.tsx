@@ -9,7 +9,7 @@ import { useAppRelease, usePairingCode } from '@/hooks/app-pairing.hook';
 import { useAccount } from '@/hooks/account.hook';
 import { absoluteUrl, buildPairingUrl } from '@/lib/app-pairing';
 import { DIALOG_SHELL } from '@/lib/dialog-shell';
-import { SWAP } from '@/lib/motion';
+import { LAYOUT_SPRING, SWAP } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import { useBackEntry } from '@/hooks/back-entry.hook';
 import useAndroidPromoStore from '@/stores/android-promo.store';
@@ -93,7 +93,7 @@ export default function AndroidPromoDialog() {
                 initial={{ opacity: 0, scale: 0.9, x: '-50%', y: '-46%' }}
                 animate={{ opacity: 1, scale: 1, x: '-50%', y: '-50%' }}
                 exit={{ opacity: 0, scale: 0.95, x: '-50%', y: '-48%' }}
-                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                transition={LAYOUT_SPRING}
               >
                 <DialogPrimitive.Title className="sr-only">Android-app</DialogPrimitive.Title>
                 {/* Short screens (landscape phone): the dialog stops 16px from the safe area and its content scrolls inside */}
@@ -105,7 +105,7 @@ export default function AndroidPromoDialog() {
                           <AndroidPromoHero onClose={() => close('later')} />
                           <div className="px-5 pb-4 pt-[18px]">
                             <b className="block text-xl leading-tight">De Jotihunt-app voor Android</b>
-                            <p className="mb-3 mt-1.5 text-[13.5px] text-muted-foreground">Je telefoon als tracker, ook als het scherm uit is.</p>
+                            <p className="mb-3 mt-1.5 text-body text-muted-foreground">Je telefoon als tracker, ook als het scherm uit is.</p>
                             <FeatureChips />
                             <DownloadSplitButton version={release.versionName} onDownload={download} onLater={() => close('later')} onNever={never} />
                           </div>
@@ -157,7 +157,7 @@ function FeatureChips() {
   return (
     <div className="mb-4 flex flex-wrap gap-1.5">
       {chips.map(({ icon: Icon, label, bg, fg }) => (
-        <span key={label} className="inline-flex h-8 items-center gap-1.5 rounded-full pl-2 pr-3 text-[12.5px] font-semibold" style={{ background: bg, color: fg }}>
+        <span key={label} className="inline-flex h-8 items-center gap-1.5 rounded-full pl-2 pr-3 text-caption font-semibold" style={{ background: bg, color: fg }}>
           <Icon className="size-4" /> {label}
         </span>
       ))}

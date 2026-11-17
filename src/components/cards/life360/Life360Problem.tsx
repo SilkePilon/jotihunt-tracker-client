@@ -53,7 +53,7 @@ export default function Life360Problem({ status, onSendCode }: Life360ProblemPro
         {busy ? <Loader2Icon className="animate-spin" /> : <Life360Logo className="size-5" />}
         Stuur nieuwe code
       </Button>
-      <p className="mt-1.5 max-w-full truncate text-xs text-muted-foreground desk:text-[11px]">
+      <p className="mt-1.5 max-w-full truncate text-xs text-muted-foreground desk:text-label">
         naar <b className="font-semibold text-foreground">{status.email}</b>
       </p>
       {error && <InlineError>{error}</InlineError>}

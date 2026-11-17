@@ -35,9 +35,9 @@ export interface Life360LinkActions {
 
 export type Life360LinkView = 'unavailable' | 'unlinked' | 'email' | 'code' | 'circle';
 
-/** One joined 42px bar split by hairlines; purple inset focus ring, red when the code was wrong. */
+/** Six 42px tonal boxes (ui/input-otp); purple inset ring on the box being typed in, red when the code was wrong. */
 const OTP_SLOT =
-  'h-[42px] flex-1 font-mono text-lg font-bold first:rounded-l-lg last:rounded-r-lg data-[active=true]:border-[#7875ea] data-[active=true]:ring-2 data-[active=true]:ring-inset data-[active=true]:ring-[#7875ea]/40';
+  'h-[42px] flex-1 font-mono text-lg font-bold data-[active=true]:ring-[#7875ea]';
 
 /** Inline links ("Opnieuw sturen", "ander adres") while another request runs */
 const LINK_DISABLED = 'disabled:cursor-default disabled:text-muted-foreground disabled:no-underline disabled:opacity-60';
@@ -91,10 +91,10 @@ function TokenFallback({ busy, blocked, onSubmit }: { busy: boolean; blocked: bo
 
   return (
     <Collapsible className="flex flex-col">
-      <CollapsibleTrigger className={cn(inlineLinkClass, 'self-start text-xs font-normal text-muted-foreground desk:text-[11px]')}>Lukt het niet? Plak token</CollapsibleTrigger>
+      <CollapsibleTrigger className={cn(inlineLinkClass, 'self-start text-xs font-normal text-muted-foreground desk:text-label')}>Lukt het niet? Plak token</CollapsibleTrigger>
       <CollapsibleContent>
         <form className="flex flex-col gap-2 pt-2" onSubmit={submit}>
-          <p className="text-xs leading-snug text-muted-foreground desk:text-[11px]">
+          <p className="text-xs leading-snug text-muted-foreground desk:text-label">
             Log in op life360.com en kopieer de cookie <b className="font-semibold text-foreground">LIFE360_AUTH_TOKEN</b>.
           </p>
           <Input
@@ -178,7 +178,7 @@ function EmailStep({
           <BusyIcon busy={pending === 'code'} />
           Stuur code
         </Button>
-        <p className="text-xs leading-snug text-muted-foreground desk:text-[11px]">Life360 mailt een code van 6 cijfers. Gebruik een apart account, niet je eigen.</p>
+        <p className="text-xs leading-snug text-muted-foreground desk:text-label">Life360 mailt een code van 6 cijfers. Gebruik een apart account, niet je eigen.</p>
       </form>
       <TokenFallback busy={pending === 'token'} blocked={!!pending} onSubmit={(token) => run('token', () => settle(() => onSubmitToken(token)))} />
     </div>
@@ -295,7 +295,7 @@ function CodeStep({
         </Button>
       )}
       <Reveal gap={8}>{resendError && <InlineError>{resendError}</InlineError>}</Reveal>
-      <p className="flex items-center justify-between gap-2 text-xs text-muted-foreground desk:text-[11px]">
+      <p className="flex items-center justify-between gap-2 text-xs text-muted-foreground desk:text-label">
         {/* After a wrong code the "Stuur nieuwe code" button already carries the countdown */}
         {error ? (
           <span />
@@ -338,7 +338,7 @@ function CircleStep({ circles, onChooseCircle, onCancel }: { circles: Life360Cir
               key={circle.id}
               value={circle.id}
               className={cn(
-                'flex cursor-pointer items-center gap-2.5 rounded-lg border px-2.5 py-2 text-left text-[13px] outline-none transition-[border-color,opacity,box-shadow] focus-visible:ring-[3px] focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60',
+                'flex cursor-pointer items-center gap-2.5 rounded-lg border px-2.5 py-2 text-left text-body outline-none transition-[border-color,opacity,box-shadow] focus-visible:ring-[3px] focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60',
                 checked && 'border-[#7875ea]',
               )}
             >

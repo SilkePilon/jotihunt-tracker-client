@@ -66,11 +66,6 @@
   /* Tiles: the map's square icon tiles, search and coordinate rows, tonal note boxes, picker buttons. Used as
      rounded-(--radius-tile) like the segment radius above */
   --radius-tile: 14px;
-  --chart-1: hsl(12 76% 61%);
-  --chart-2: hsl(173 58% 39%);
-  --chart-3: hsl(197 37% 24%);
-  --chart-4: hsl(43 74% 66%);
-  --chart-5: hsl(27 87% 67%);
   /* Vossen card: M3 status roles of the map markers (marker-style.ts) + a cooldown blue */
   --fox-ok: #2f6b2c;
   --fox-ok-container: #b7f2ae;
@@ -126,6 +121,14 @@
   --status-ok-text: #166534;
   /* Informational small text (Pill info tone, Intel meta "info"): sky-800, >= 5:1 on the sky tint and the tonal rows */
   --status-info-text: #075985;
+  /* Score categories (lib/score.ts: Punten bar segments + legend squares, hunt result bar). Hints is amber-600 in light:
+     yellow-500 was 1.9:1 on white, a legend square needs >= 3:1 (this is 3.2:1) */
+  --score-hunts: var(--color-orange-500);
+  --score-counter-hunts: var(--color-purple-500);
+  --score-assignments: var(--color-blue-500);
+  --score-photo: var(--color-teal-500);
+  --score-hints: var(--color-amber-600);
+  --score-penalty: var(--color-red-500);
   /* Intel kinds (hint orange, opdracht blue, nieuws purple): the -800 shades as text/icons on their own tonal tile
      (>= 6:1); the tile is the kind's 400 shade over the card, as in dark mode */
   --intel-hint: #9a3412;
@@ -160,11 +163,6 @@
   --input: hsl(240 4% 46%);
   /* orange-500: >= 3:1 against primary-container (3.8), card (5.7) and the tonal rows (>= 4.5); orange-600 was 2.98:1 on primary-container */
   --ring: #f97316;
-  --chart-1: hsl(220 70% 50%);
-  --chart-2: hsl(160 60% 45%);
-  --chart-3: hsl(30 80% 55%);
-  --chart-4: hsl(280 65% 60%);
-  --chart-5: hsl(340 75% 55%);
   --fox-ok: #9bd893;
   --fox-ok-container: #1e5120;
   --fox-on-ok-container: #b7f2ae;
@@ -202,6 +200,8 @@
   --status-ok-text: #4ade80;
   /* sky-300: >= 6.2:1 on the sky tint and the tonal rows */
   --status-info-text: #7dd3fc;
+  /* yellow-500 reads on the dark card (the light theme's amber-600 is darker than it needs to be) */
+  --score-hints: var(--color-yellow-500);
   --intel-hint: #fb923c;
   --intel-assignment: #60a5fa;
   --intel-news: #c084fc;
@@ -231,11 +231,6 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
   --color-fox-ok: var(--fox-ok);
   --color-fox-warn: var(--fox-warn);
   --color-fox-cooldown: var(--fox-cooldown);
@@ -280,11 +275,25 @@
   --color-beheer-window: var(--beheer-window);
   --color-beheer-row: var(--beheer-row);
   --color-beheer-row-high: var(--beheer-row-high);
+  --color-score-hunts: var(--score-hunts);
+  --color-score-counter-hunts: var(--score-counter-hunts);
+  --color-score-assignments: var(--score-assignments);
+  --color-score-photo: var(--score-photo);
+  --color-score-hints: var(--score-hints);
+  --color-score-penalty: var(--score-penalty);
+
+  /* Named type scale for the off-Tailwind sizes (text-label / text-caption / text-body; text-xs 12px, text-sm 14px and
+     up stay Tailwind's). label: overlines, meta and tags on the desktop shell; caption: secondary lines; body: the
+     desktop body text of rows, dialogs and cards. Sizes only: callers add leading. */
+  --text-label: 11px;
+  --text-caption: 12.5px;
+  --text-body: 13px;
 
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
-  /* Fixed (not size-relative) so every badge/pill/chip has identical corners at any size. */
+  /* 8px corners of the rounded-rectangle chips: the sidebar edition badge (EditionBadge) and the prediction chips
+     (PredictionList). Status tags are full pills (rounded-full), not this. */
   --radius-badge: 8px;
 
   /* Sidebar sections: height slides in 200 ms with Material's standard decelerate curve */
@@ -849,22 +858,24 @@ html.flashbang::view-transition-new(root) {
   }
 }
 
-/* Vossen card OV block: the train glides between the two stations */
+/* Vossen card OV block: the train glides between the two stations. A transform on the compositor (the rail is an
+   inline-size container, so 100cqw is the rail's width), not an animated left that lays out every frame */
 @keyframes ov-ride {
   from {
-    left: 0;
+    transform: translateX(0);
   }
   to {
-    left: calc(100% - 22px);
+    transform: translateX(calc(100cqw - 22px));
   }
 }
 .ov-train {
+  left: 0;
   animation: ov-ride 6s ease-in-out infinite alternate;
 }
 @media (prefers-reduced-motion: reduce) {
   .ov-train {
     animation: none;
-    left: calc(50% - 11px);
+    transform: translateX(calc(50cqw - 11px));
   }
 }
 
@@ -951,18 +962,20 @@ html.flashbang::view-transition-new(root) {
   content: '';
   position: absolute;
   inset-block: 0;
-  left: -22px;
-  width: 22px;
-  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.4), transparent);
+  left: 0;
+  /* The block's width, with the 22px shine band at its left edge, so translateX(100%) carries the band just past the end */
+  width: 100%;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.4), transparent) 0 0 / 22px 100% no-repeat;
+  transform: translateX(-22px);
   animation: fox-history-shine 1.5s ease-in-out infinite;
 }
 @keyframes fox-history-shine {
   0% {
-    left: -22px;
+    transform: translateX(-22px);
   }
   70%,
   100% {
-    left: 100%;
+    transform: translateX(100%);
   }
 }
 /* Status word: 1.8 s sweep, then a 0.576 s pause (75.7 % of 2.376 s) */

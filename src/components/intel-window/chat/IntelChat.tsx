@@ -86,7 +86,7 @@ function ChatPanel({ item, mapRef, entrance }: IntelChatProps) {
             <Loader2Icon className="size-5 animate-spin text-muted-foreground" aria-label="Gesprek laden…" />
           </motion.div>
         ) : scene === 'load-error' ? (
-          <motion.div key="load-error" {...FADE} initial={mounted ? FADE.initial : false} className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 text-[13px] text-muted-foreground">
+          <motion.div key="load-error" {...FADE} initial={mounted ? FADE.initial : false} className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 text-body text-muted-foreground">
             Gesprek laden mislukt
             <Pill onClick={chat.reload}>
               <RotateCcwIcon />
@@ -121,7 +121,7 @@ function ChatHeader({ kind, action }: { kind: IntelKind; action?: ReactNode }) {
   return (
     <div className="mx-1 flex items-center gap-2">
       <h3 className="text-[15px] font-bold">Vraag de AI</h3>
-      <span className="ml-auto rounded-lg bg-beheer-row-high px-2 py-0.5 text-[11.5px] font-semibold text-muted-foreground">{CONTEXT_LABEL[kind]}</span>
+      <span className="ml-auto rounded-lg bg-beheer-row-high px-2 py-0.5 text-label font-semibold text-muted-foreground">{CONTEXT_LABEL[kind]}</span>
       {action}
     </div>
   );
@@ -169,7 +169,7 @@ function turnErrorMessage(chat: IntelChatState): string {
 
 function ErrorRow({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
-    <div className="mx-1 flex items-center gap-2 rounded-xl bg-destructive/12 py-1.5 pr-1.5 pl-3 text-[12.5px] text-destructive-text">
+    <div className="mx-1 flex items-center gap-2 rounded-xl bg-destructive/12 py-1.5 pr-1.5 pl-3 text-caption text-destructive-text">
       <span className="flex-1">{message}</span>
       <Pill variant="danger-soft" onClick={onRetry}>
         <RotateCcwIcon />
@@ -184,14 +184,14 @@ function ChatFooter({ chat, itemId, kind, busy }: { chat: IntelChatState; itemId
   return (
     <AnimatePresence mode="wait" initial={false}>
       {chat.unavailable ? (
-        <motion.div key="off" {...SWAP} className="rounded-[20px] bg-beheer-row-high px-3.5 py-3 text-[13px] text-muted-foreground">
+        <motion.div key="off" {...SWAP} className="rounded-[20px] bg-beheer-row-high px-3.5 py-3 text-body text-muted-foreground">
           AI is niet ingesteld
         </motion.div>
       ) : (
         <motion.div key="input" className="flex flex-col" {...SWAP}>
           <Reveal>
             {chat.sendFailed && (
-              <p role="alert" className="mx-1 mb-2 rounded-xl bg-destructive/12 px-3 py-1.5 text-[12.5px] text-destructive-text">
+              <p role="alert" className="mx-1 mb-2 rounded-xl bg-destructive/12 px-3 py-1.5 text-caption text-destructive-text">
                 {chat.sendFailed}
               </p>
             )}

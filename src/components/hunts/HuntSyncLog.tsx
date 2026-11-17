@@ -148,7 +148,7 @@ const LogRow = memo(function LogRow({ event, onSelect }: { event: HuntSyncEvent;
         {!located && (
           <motion.span
             key="pending"
-            className="col-start-2 overflow-hidden text-[11.5px] text-muted-foreground pointer-coarse:text-xs"
+            className="col-start-2 overflow-hidden text-label text-muted-foreground pointer-coarse:text-xs"
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}

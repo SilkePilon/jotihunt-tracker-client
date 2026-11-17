@@ -48,7 +48,7 @@ export default class ChunkBoundary extends Component<ChunkBoundaryProps, { error
         </div>
         <div className="max-w-xs space-y-1">
           <p className="text-[15px] font-bold">{this.props.name} kon niet worden geladen</p>
-          <p className="text-[13px] text-muted-foreground">{chunk ? 'Controleer je verbinding en laad de app opnieuw.' : 'Er ging iets mis. Laad de app opnieuw.'}</p>
+          <p className="text-body text-muted-foreground">{chunk ? 'Controleer je verbinding en laad de app opnieuw.' : 'Er ging iets mis. Laad de app opnieuw.'}</p>
         </div>
         <Button variant="ghost" className={cn(TONAL_BUTTON, 'px-4')} onClick={() => window.location.reload()}>
           <RotateCwIcon />

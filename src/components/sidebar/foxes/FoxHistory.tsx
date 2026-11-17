@@ -151,12 +151,12 @@ export default function FoxHistory({ fox, hidden, forbidden = false, onToggleHid
 
   return (
     <div className="rounded-2xl bg-card p-2.5 text-foreground">
-      <div className="mx-0.5 flex items-baseline justify-between text-[12.5px] font-medium">
+      <div className="mx-0.5 flex items-baseline justify-between text-caption font-medium">
         <span className="inline-flex min-w-0 items-center gap-1.5">
           <span aria-hidden className="size-[7px] shrink-0 rounded-full" style={{ backgroundColor: getColorFromArea(fox.area.name) }} />
           <span className="truncate">{fox.name}</span>
         </span>
-        <span className="shrink-0 text-xs font-normal text-muted-foreground desk:text-[11px]">laatste 3 uur</span>
+        <span className="shrink-0 text-xs font-normal text-muted-foreground desk:text-label">laatste 3 uur</span>
       </div>
 
       {/* Status line: the word shimmers and swaps (fade + blur-up) when the status changes */}

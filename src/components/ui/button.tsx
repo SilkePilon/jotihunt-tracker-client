@@ -1,8 +1,9 @@
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
-import { cn } from "cn"
+import { cn } from "@/lib/cn"
 import { Slot } from "radix-ui"
 import { COARSE_HIT_AREA, ICON_XS_HIT_AREA } from "@/lib/hit-area"
+import { TONAL_HOVER } from "@/lib/tonal-button"
 
 /** Every size and variant: 12px corners and semibold labels, like the app's tonal buttons */
 const buttonVariants = cva(
@@ -16,7 +17,7 @@ const buttonVariants = cva(
           "bg-destructive text-white hover:bg-[color-mix(in_oklab,var(--destructive)_88%,black)] focus-visible:ring-destructive dark:bg-destructive/60 dark:hover:bg-destructive/70",
         // Secondary action: the grey tonal sidebar button (TONAL_BUTTON) without border or shadow
         outline:
-          "border-0 bg-beheer-row-high text-foreground shadow-none hover:bg-[color-mix(in_oklab,var(--foreground)_14%,var(--card))] hover:text-foreground",
+          `border-0 bg-beheer-row-high text-foreground shadow-none ${TONAL_HOVER} hover:text-foreground`,
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost:

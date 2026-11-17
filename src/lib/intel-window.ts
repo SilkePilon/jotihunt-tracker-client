@@ -326,9 +326,6 @@ export const CHAT_MESSAGE = {
   transition: { duration: 0.3, ease: EASE_OUT },
 } satisfies { initial: TargetAndTransition; animate: TargetAndTransition; exit: TargetAndTransition; transition: Transition };
 
-/** Prompt box toggles: the icon turns once and grows a little when switched on */
-export const TOGGLE_SPRING: Transition = { type: 'spring', stiffness: 260, damping: 25 };
-
 /** The chat's empty state: its parts stagger in 70 ms apart; custom = delay in seconds before the first */
 export const CHAT_EMPTY: Variants = {
   hidden: {},

@@ -37,9 +37,9 @@ export function PopupRow({ icon, label, title, meta, trailing, tone = 'default' 
       <div className="min-w-0 flex-1">
         {/* Label and meta: at least 12px on phones, the compact sizes from md */}
         {label && <div className={cn(OVERLINE, 'text-(--map-muted)')}>{label}</div>}
-        <div className="truncate text-[13px] font-semibold tabular-nums">{title}</div>
+        <div className="truncate text-body font-semibold tabular-nums">{title}</div>
         {/* Full tone colour in light mode: at 80% the meta drops under 4.5:1 on the tinted rows */}
-        {meta && <div className={cn('truncate text-xs tabular-nums desk:text-[11.5px]', toned ? 'dark:opacity-80' : 'text-(--map-muted)')}>{meta}</div>}
+        {meta && <div className={cn('truncate text-xs tabular-nums desk:text-label', toned ? 'dark:opacity-80' : 'text-(--map-muted)')}>{meta}</div>}
       </div>
       {trailing && <div className="-mr-1.5 flex shrink-0 items-center gap-1 text-(--map-on-surface-variant)">{trailing}</div>}
     </div>

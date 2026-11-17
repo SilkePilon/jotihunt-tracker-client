@@ -45,8 +45,8 @@ export default function AssignmentProposalCard({ proposal }: { proposal: Assignm
 
   return (
     <div className="overflow-hidden rounded-2xl bg-beheer-row">
-      <div className="grid gap-1.5 px-3 py-2.5 text-[12.5px]">
-        <div className="truncate text-[13px] font-semibold">{proposal.title}</div>
+      <div className="grid gap-1.5 px-3 py-2.5 text-caption">
+        <div className="truncate text-body font-semibold">{proposal.title}</div>
         {proposal.status && (
           <Row name="Status">
             <Tag tone="primary">{ASSIGNMENT_STATUS_LABELS[proposal.status]}</Tag>

@@ -49,7 +49,7 @@ const draftPlace = (draft: MarkerDraft) => {
 const sentValues = (draft: MarkerDraft): MarkerDraftValues => ({ area: draft.sent.area, day: draft.sent.time, time: draft.sent.time });
 
 /** A dashed info line above the fields (like the HQ line in Meldingen) */
-const NOTE = 'flex items-start gap-2 rounded-[14px] border border-dashed px-3 py-2.5 text-xs text-muted-foreground';
+const NOTE = 'flex items-start gap-2 rounded-(--radius-tile) border border-dashed px-3 py-2.5 text-xs text-muted-foreground';
 
 /** The Hunt button's full name and the Hunt dialog's title: it marks our own hunt on the map */
 const HUNT_ACTION_LABEL = 'Hunt markeren op kaart';

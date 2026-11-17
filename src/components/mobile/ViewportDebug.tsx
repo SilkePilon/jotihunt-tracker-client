@@ -27,7 +27,7 @@ export default function ViewportDebug({ snaps }: { snaps: Record<string, number>
     ...Object.entries(snaps).map(([k, v]) => [`h.${k}`, v] as [string, number]),
   ];
   return (
-    <div className="pointer-events-none fixed left-2 top-[calc(env(safe-area-inset-top)+8px)] z-[100] rounded-lg bg-black/75 px-2 py-1 font-mono text-[10.5px] leading-tight text-white">
+    <div className="pointer-events-none fixed left-2 top-[calc(env(safe-area-inset-top)+8px)] z-[100] rounded-lg bg-black/75 px-2 py-1 font-mono text-label leading-tight text-white">
       {rows.map(([k, v]) => (
         <div key={k}>
           {k}: {v}

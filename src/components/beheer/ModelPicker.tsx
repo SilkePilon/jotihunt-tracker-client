@@ -11,6 +11,7 @@ import { apiErrorMessage } from '@/lib/api-error';
 import type { GeminiModelInfo } from '@/lib/app-config';
 import { TRIGGER_OPEN } from '@/lib/menu-styles';
 import { SWAP_TRANSITION } from '@/lib/motion';
+import { TONAL_HOVER } from '@/lib/tonal-button';
 import { cn } from '@/lib/utils';
 
 const GROUP_TITLE: Record<GeminiModelInfo['group'], string> = { alias: 'Aliassen', latest: 'Nieuwste versie', older: 'Ouder' };
@@ -63,7 +64,8 @@ export default function ModelPicker({ value, defaultId, models, fetchedAt, listE
           aria-label={`Model voor ${label}`}
           aria-busy={saving || undefined}
           className={cn(
-            'inline-flex h-[34px] w-[190px] shrink-0 items-center justify-between gap-2 rounded-xl bg-beheer-row-high pr-2.5 pl-3 text-[12.5px] font-semibold outline-none transition-colors hover:bg-beheer-row-high/70 focus-visible:ring-[3px] focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50',
+            'inline-flex h-[34px] w-[190px] shrink-0 items-center justify-between gap-2 rounded-xl bg-beheer-row-high pr-2.5 pl-3 text-caption font-semibold outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50',
+            TONAL_HOVER,
             TRIGGER_OPEN,
             className,
           )}
@@ -88,7 +90,7 @@ export default function ModelPicker({ value, defaultId, models, fetchedAt, listE
           <CommandList className="max-h-72">
             {loading ? (
               <div role="status" aria-label="Modellen laden…" className="flex flex-col gap-1 p-1">
-                <span className="px-1 pb-1 text-xs desk:text-[11.5px] text-muted-foreground">Modellen laden…</span>
+                <span className="px-1 pb-1 text-xs desk:text-label text-muted-foreground">Modellen laden…</span>
                 {Array.from({ length: 4 }, (_, index) => (
                   <div key={index} className="flex items-center gap-2 px-1 py-1.5">
                     <Skeleton className="size-4 rounded" />
@@ -118,8 +120,8 @@ export default function ModelPicker({ value, defaultId, models, fetchedAt, listE
                     >
                       <CheckIcon className={cn('size-4 text-primary-text transition-opacity', model.id !== value && 'opacity-0')} />
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[13px] font-semibold">{model.displayName}</span>
-                        <span className="block truncate font-mono text-xs desk:text-[11px] text-muted-foreground">{model.id}</span>
+                        <span className="block truncate text-body font-semibold">{model.displayName}</span>
+                        <span className="block truncate font-mono text-xs desk:text-label text-muted-foreground">{model.id}</span>
                       </span>
                       {model.id === defaultId && <span className="rounded-md bg-primary-container px-1.5 text-xs desk:text-[10px] font-extrabold text-on-primary-container">standaard</span>}
                     </CommandItem>
@@ -133,7 +135,7 @@ export default function ModelPicker({ value, defaultId, models, fetchedAt, listE
           type="button"
           onClick={() => void refresh()}
           disabled={refreshing}
-          className="mt-2 flex w-full items-center gap-1.5 rounded-(--radius-tile) bg-beheer-row px-3 py-2 text-left text-xs desk:text-[11.5px] text-muted-foreground transition-colors hover:bg-beheer-row-high hover:text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring"
+          className="mt-2 flex w-full items-center gap-1.5 rounded-(--radius-tile) bg-beheer-row px-3 py-2 text-left text-xs desk:text-label text-muted-foreground transition-colors hover:bg-beheer-row-high hover:text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring"
         >
           <RefreshCwIcon className={cn('size-3.5 shrink-0', refreshing && 'animate-spin')} />
           {listError ? 'Lijst niet beschikbaar · opnieuw proberen' : `Lijst van Google${fetchedAt ? ` · ${formatAgo(fetchedAt, now)}` : ''}`}

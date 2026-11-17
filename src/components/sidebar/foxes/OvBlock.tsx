@@ -91,7 +91,7 @@ function OvRow({ fox, hidden, forbidden, popIn, now, open, onOpen }: OvRowProps)
           <span className={cn('shrink-0 font-semibold tabular-nums', !hidden && !forbidden && 'opacity-80')}>{duration}</span>
         </span>
         {/* Rail: dashed track between two stations, the train glides back and forth (still with reduced motion) */}
-        <span aria-hidden className="relative mt-1.5 block h-[18px]">
+        <span aria-hidden className="@container relative mt-1.5 block h-[18px]">
           <span className="absolute inset-x-0 top-2 border-t-2 border-dashed border-fox-ov/55" />
           <span className="absolute top-1 left-0 size-2.5 rounded-full border-2 border-fox-ov bg-card" />
           <span className="absolute top-1 right-0 size-2.5 rounded-full border-2 border-fox-ov bg-card" />

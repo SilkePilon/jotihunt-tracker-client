@@ -1,6 +1,7 @@
 import { useMemo, useRef } from 'react';
 import { Marker, useMap } from 'react-map-gl/maplibre';
 import { offsetScaleAt, scaleOffset, type OffsetScale } from '@/lib/zoom-scale';
+import { TOOLTIP_SURFACE } from '@/lib/menu-styles';
 import { POPUP_FADE_MS, TOOLTIP_LINGER_MS, useMapElementFade } from './map-fade';
 
 // Never catches the pointer itself
@@ -35,11 +36,11 @@ export default function MapTooltip({ longitude, latitude, offset, offsetScale = 
   const scaledOffset = useMemo(() => scaleOffset(offset, factor), [offset, factor]);
   return (
     <Marker longitude={longitude} latitude={latitude} anchor="bottom" offset={scaledOffset} style={TOOLTIP_STYLE}>
-      <div ref={content} className="relative flex w-fit items-center gap-[7px] rounded-md bg-(--map-surface) px-2.5 py-1.5 font-(family-name:--map-font) text-[12.5px] whitespace-nowrap text-(--map-on-surface) shadow-(--shadow-tooltip)">
+      <div ref={content} className={`relative flex w-fit items-center gap-[7px] bg-(--map-surface) font-(family-name:--map-font) whitespace-nowrap text-(--map-on-surface) ${TOOLTIP_SURFACE}`}>
         <span className="size-2 shrink-0 rounded-full" style={{ background: color }} />
         <span className="font-semibold">{title}</span>
         {meta && <span className="text-(--map-muted) tabular-nums">{meta}</span>}
-        <span className="absolute top-full left-1/2 size-2 -translate-x-1/2 -translate-y-1 rotate-45 rounded-[1px] bg-(--map-surface)" />
+        <span className="absolute top-full left-1/2 size-2 -translate-x-1/2 -translate-y-1 rotate-45 rounded-[1px] bg-(--map-surface) shadow-[1px_1px_0_0_var(--border)]" />
       </div>
     </Marker>
   );

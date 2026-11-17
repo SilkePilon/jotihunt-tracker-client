@@ -17,6 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/auth.hook';
 import { useNow } from '@/hooks/now.hook';
 import { addPasskey, approveQrLogin, denyQrLogin, scanQrLogin, type QrScan } from '@/lib/auth-api';
+import { TONAL_HOVER } from '@/lib/tonal-button';
 import { BADGE_COOKIE_DEPTH, cookiePath } from '@/lib/cookie-shape';
 import { DIALOG_SHELL } from '@/lib/dialog-shell';
 import { joinParts } from '@/lib/format';
@@ -38,7 +39,7 @@ const AUTO_CLOSE_MS = 1800;
 
 /** 48 px, rounded-xl like Beheer */
 const PRIMARY = 'h-12 w-full rounded-xl text-[15px] font-semibold';
-const SECONDARY = 'h-12 w-full rounded-xl bg-beheer-row-high text-[15px] font-semibold text-foreground hover:bg-beheer-row-high/70';
+const SECONDARY = `h-12 w-full rounded-xl bg-beheer-row-high text-[15px] font-semibold text-foreground ${TONAL_HOVER}`;
 
 const BADGE = 48;
 
@@ -46,7 +47,7 @@ const BADGE = 48;
 function ReadyMeta({ where, name }: { where: string; name: string | undefined }) {
   if (!where && !name) return null;
   return (
-    <p className="text-[13.5px] text-muted-foreground">
+    <p className="text-body text-muted-foreground">
       {where}
       {where && name ? ' · ' : null}
       {name ? (
@@ -252,7 +253,7 @@ export default function QrConfirmDrawer({ code, onClose }: { code: string; onClo
                 <ProblemBadge />
                 <div className="min-w-0">
                   <h2 className="text-lg font-bold">Dat lukte niet</h2>
-                  <p className="text-[13px] text-muted-foreground">{view.problem.message}</p>
+                  <p className="text-body text-muted-foreground">{view.problem.message}</p>
                 </div>
               </div>
               <div className="mt-1 flex flex-col gap-2">

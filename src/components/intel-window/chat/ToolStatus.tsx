@@ -17,7 +17,7 @@ export default function ToolStatus({ label }: { label: string | null }) {
       </span>
       <Reveal>
         {label && (
-          <div className="mx-1 flex items-center gap-2 py-0.5 text-[12.5px]" aria-hidden>
+          <div className="mx-1 flex items-center gap-2 py-0.5 text-caption" aria-hidden>
             <Loader2Icon className="size-3.5 shrink-0 animate-spin text-fox-warn" />
             <span className="relative min-w-0">
               <AnimatePresence mode="popLayout" initial={false}>

@@ -31,12 +31,12 @@ export default function LookCard({ look, mapRef }: { look: LookAtPointResult; ma
           <AnimatePresence mode="wait" initial={false}>
             {failed ? (
               // Nothing to zoom: the reason and a retry instead of a dead zoom button
-              <motion.div key="failed" className="flex size-full flex-col items-center justify-center gap-1.5 p-2 text-center text-[11.5px] text-muted-foreground" {...SWAP}>
+              <motion.div key="failed" className="flex size-full flex-col items-center justify-center gap-1.5 p-2 text-center text-label text-muted-foreground" {...SWAP}>
                 Luchtfoto niet beschikbaar
                 <button
                   type="button"
                   onClick={retry}
-                  className="inline-flex h-6 items-center gap-1 rounded-lg bg-beheer-row px-2 text-[11.5px] font-semibold text-foreground outline-none transition-colors hover:bg-[color-mix(in_oklab,var(--foreground)_10%,var(--card))] focus-visible:ring-[3px] focus-visible:ring-ring"
+                  className="inline-flex h-6 items-center gap-1 rounded-lg bg-beheer-row px-2 text-label font-semibold text-foreground outline-none transition-colors hover:bg-[color-mix(in_oklab,var(--foreground)_10%,var(--card))] focus-visible:ring-[3px] focus-visible:ring-ring"
                 >
                   <RotateCwIcon className="size-3" />
                   Opnieuw
@@ -68,7 +68,7 @@ export default function LookCard({ look, mapRef }: { look: LookAtPointResult; ma
         <Description text={look.description} />
       </div>
       <ImageLightbox src={look.imageUrl} alt={`Luchtfoto bij ${point.label}`} open={zoom} onOpenChange={setZoom} />
-      <div className="grid gap-1.5 px-3 py-2.5 text-[12.5px]">
+      <div className="grid gap-1.5 px-3 py-2.5 text-caption">
         <Row name="RD">
           <span className="font-mono tabular-nums">{point.rdText}</span>
         </Row>
@@ -104,7 +104,7 @@ function Description({ text }: { text: string }) {
         animate={{ height: open || !overflows ? 'auto' : CLAMP_PX }}
         transition={SWAP_TRANSITION}
       >
-        <p ref={ref} className="text-[12.5px] leading-5 break-words whitespace-pre-wrap text-muted-foreground">
+        <p ref={ref} className="text-caption leading-5 break-words whitespace-pre-wrap text-muted-foreground">
           {text}
         </p>
       </motion.div>

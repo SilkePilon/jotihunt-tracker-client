@@ -41,14 +41,14 @@ export function DownloadingStep({ href, onNext }: { href: string; onNext: () => 
         </span>
         <div className="min-w-0">
           <b className="block text-[17px]">Download gestart</b>
-          <span className="text-[13px] text-muted-foreground">Staat hij klaar in je meldingen of Downloads? Ga dan verder.</span>
+          <span className="text-body text-muted-foreground">Staat hij klaar in je meldingen of Downloads? Ga dan verder.</span>
         </div>
       </div>
       <div className="mt-3.5 flex flex-col gap-2">
         <button type="button" onClick={onNext} className="h-12 rounded-xl bg-primary-container font-semibold text-on-primary-container outline-none focus-visible:ring-[3px] focus-visible:ring-ring">
           Verder
         </button>
-        <a href={href} download className="grid h-10 place-items-center rounded-xl text-[13.5px] font-semibold text-muted-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring">
+        <a href={href} download className="grid h-10 place-items-center rounded-xl text-body font-semibold text-muted-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring">
           Niets gebeurd? Opnieuw downloaden
         </a>
       </div>
@@ -60,10 +60,10 @@ export function InstallStep({ onPair, onRedownload }: { onPair: () => void; onRe
   return (
     <>
       <b className="block text-[17px]">Installeer de app</b>
-      <p className="mb-3 mt-1 text-[13.5px] text-muted-foreground">
+      <p className="mb-3 mt-1 text-body text-muted-foreground">
         Tik op de download-melding en dan op <b className="text-foreground">Installeren</b>.
       </p>
-      <div className="flex gap-2.5 rounded-(--radius-tile) bg-[color-mix(in_oklab,#f59e0b_16%,var(--card))] px-3 py-2.5 text-[12.5px]">
+      <div className="flex gap-2.5 rounded-(--radius-tile) bg-warn-container px-3 py-2.5 text-caption">
         <TriangleAlertIcon className="size-5 shrink-0 text-status-warn-text" />
         <div>
           Vraagt Android om toestemming? Kies <b>Instellingen → Toestaan van deze bron</b> voor Chrome, en ga terug.
@@ -73,7 +73,7 @@ export function InstallStep({ onPair, onRedownload }: { onPair: () => void; onRe
         <button type="button" onClick={onPair} className="flex h-12 items-center justify-center gap-2 rounded-xl bg-primary-container font-semibold text-on-primary-container outline-none focus-visible:ring-[3px] focus-visible:ring-ring">
           <LinkIcon className="size-5" /> Geïnstalleerd, koppel nu
         </button>
-        <button type="button" onClick={onRedownload} className="h-10 rounded-xl text-[13.5px] font-semibold text-muted-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring">
+        <button type="button" onClick={onRedownload} className="h-10 rounded-xl text-body font-semibold text-muted-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring">
           Opnieuw downloaden
         </button>
       </div>
@@ -130,7 +130,7 @@ export function PairStep({ phase, startedAt, onPhase, onRetry, deviceCount, refr
         {phase === 'failed' || phase === 'error' ? (
           <div className="flex flex-col gap-2 py-2 text-center">
             <b>{phase === 'failed' ? 'App ging niet open?' : 'Kon geen koppelcode maken'}</b>
-            <span className="text-[13px] text-muted-foreground">{phase === 'failed' ? 'Installeer hem eerst.' : 'Controleer je verbinding.'}</span>
+            <span className="text-body text-muted-foreground">{phase === 'failed' ? 'Installeer hem eerst.' : 'Controleer je verbinding.'}</span>
             <div className="mt-2 flex gap-2">
               {phase === 'failed' && (
                 <button type="button" onClick={onBack} className="h-11 flex-1 rounded-xl bg-beheer-row-high font-semibold outline-none focus-visible:ring-[3px] focus-visible:ring-ring">Terug</button>
@@ -142,9 +142,9 @@ export function PairStep({ phase, startedAt, onPhase, onRetry, deviceCount, refr
           <div className="flex flex-col items-center gap-3 py-4">
             <span className="size-[22px] animate-spin rounded-full border-[3px] border-beheer-row-high border-t-primary" />
             <b>{phase === 'opening' ? 'App openen…' : 'Wachten op de app…'}</b>
-            <span className="text-[12.5px] text-muted-foreground">De app opent vanzelf</span>
+            <span className="text-caption text-muted-foreground">De app opent vanzelf</span>
             {phase === 'waiting' && (
-              <button type="button" onClick={onRetry} className="h-10 rounded-xl px-4 text-[13.5px] font-semibold text-muted-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring">
+              <button type="button" onClick={onRetry} className="h-10 rounded-xl px-4 text-body font-semibold text-muted-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring">
                 Opnieuw proberen
               </button>
             )}
@@ -190,7 +190,7 @@ export function DoneStep({ onClose }: { onClose: () => void }) {
         </motion.svg>
         <b className="mt-2 text-lg">App gekoppeld</b>
         {/* Pairing only adds the device; the tracker is live once the app has its permissions and tracking is started */}
-        <span className="text-[13px] text-muted-foreground">
+        <span className="text-body text-muted-foreground">
           Rond in de app <b className="text-foreground">Bijna klaar</b> af (locatie: <b className="text-foreground">Altijd toestaan</b>) en tik op{' '}
           <b className="text-foreground">Start tracking</b>. Dan sta je live op de kaart.
         </span>

@@ -32,7 +32,7 @@ function HappyHourPillView({ hour, now, measureRef }: { hour: HappyHourWindow; n
           layout
           // Set as a style so motion corrects the corners while the width animates
           style={{ borderRadius: 9999 }}
-          className={cn(COARSE_HIT_AREA, "pointer-events-auto flex cursor-pointer items-center gap-2 bg-happy-hour py-1.5 pr-3.5 pl-2.5 text-[13px] font-bold whitespace-nowrap text-on-happy-hour shadow-(--shadow-tile) outline-none focus-visible:ring-[3px] focus-visible:ring-ring")}
+          className={cn(COARSE_HIT_AREA, "pointer-events-auto flex cursor-pointer items-center gap-2 bg-happy-hour py-1.5 pr-3.5 pl-2.5 text-body font-bold whitespace-nowrap text-on-happy-hour shadow-(--shadow-tile) outline-none focus-visible:ring-[3px] focus-visible:ring-ring")}
           data-happy-hour={hour.state}
         >
           <motion.span layout="position" className="grid place-items-center">

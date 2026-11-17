@@ -89,7 +89,7 @@ export default function JotiboardCard({ status, isError, onRetry, onLink, onSetS
               <div className="flex flex-col items-center gap-2">
                 <JotiboardLoggedOutHeader />
                 <JotiboardLoginForm fixedUsername={username} submitLabel="Opnieuw inloggen" onSubmit={onLink} hideNote />
-                <p className="-mt-1 text-xs text-muted-foreground desk:text-[11px]">
+                <p className="-mt-1 text-xs text-muted-foreground desk:text-label">
                   als <b className="font-semibold text-foreground">{username}</b>
                 </p>
               </div>

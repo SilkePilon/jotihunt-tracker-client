@@ -83,7 +83,7 @@ function QrStep({ url, expiresAt, onCancel }: { url?: string; expiresAt?: string
           )}
         </div>
       </div>
-      <p className="text-xs leading-snug text-muted-foreground desk:text-[11px]">De server kan alle chats van dit account lezen, maar gebruikt alleen berichten van @Jotihunt_bot.</p>
+      <p className="text-xs leading-snug text-muted-foreground desk:text-label">De server kan alle chats van dit account lezen, maar gebruikt alleen berichten van @Jotihunt_bot.</p>
     </div>
   );
 }

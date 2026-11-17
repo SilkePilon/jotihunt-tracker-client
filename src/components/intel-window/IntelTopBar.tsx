@@ -47,7 +47,7 @@ export default function IntelTopBar({ unread, detail, onBack }: { unread: Partia
               onClick={() => setTab(value)}
               className={cn(
                 COARSE_HIT_AREA,
-                'flex h-8 items-center gap-1.5 rounded-[9px] px-3 text-[13px] font-semibold outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring',
+                'flex h-8 items-center gap-1.5 rounded-[9px] px-3 text-body font-semibold outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring',
                 active ? 'text-foreground' : 'text-muted-foreground hover:text-foreground',
               )}
             >

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { ScoreStatus } from '@/types/Score';
-import { formatDelta, formatPenalty, normalizeScore, SCORE_NOT_CONFIGURED, scoreBarSegments, scoreDelta, scoreFailing, scoreFailingLine, scoreKnown, scoreLegend, scoreLine, scoreSummary } from './score';
+import { formatDelta, formatPenalty, normalizeScore, SCORE_CATEGORIES, SCORE_NOT_CONFIGURED, scoreBarSegments, scoreDelta, scoreFailing, scoreFailingLine, scoreKnown, scoreLegend, scoreLine, scoreSummary } from './score';
 
 const NOW = Date.parse('2026-10-17T21:45:00Z');
 const ago = (ms: number) => new Date(NOW - ms).toISOString();
@@ -143,5 +143,11 @@ describe('lines', () => {
     expect(scoreSummary(score())).toBe('145 pnt');
     expect(scoreSummary(score({ total: null }))).toBeUndefined();
     expect(scoreSummary(undefined)).toBeUndefined();
+  });
+});
+
+describe('SCORE_CATEGORIES', () => {
+  test('fills use the --score-* theme tokens, not the raw palette', () => {
+    for (const { fill } of Object.values(SCORE_CATEGORIES)) expect(fill).toMatch(/^bg-score-[a-z-]+$/);
   });
 });

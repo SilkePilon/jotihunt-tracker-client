@@ -3,6 +3,7 @@ import { AnimatePresence, motion, useReducedMotion, type Transition } from 'moti
 import { CheckIcon, CircleXIcon, CrosshairIcon, FlagIcon, GlassesIcon, LightbulbIcon, type LucideIcon } from 'lucide-react';
 import { axisTicks, blockKeyTarget, defaultTabStop, HISTORY_WINDOW_MIN, isBlockKey, LANES, nearestBlock, type HistoryBlock, type HistoryModel, type LaneKey } from '@/lib/fox-history';
 import { COARSE_HIT_AREA } from '@/lib/hit-area';
+import { TOOLTIP_SURFACE } from '@/lib/menu-styles';
 import { EASE_OUT } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 
@@ -409,7 +410,7 @@ export default function FoxHistoryTimeline({ model, playKey, play = true }: { mo
         />
 
         {/* Axis */}
-        <div aria-hidden className="relative text-xs text-muted-foreground desk:text-[10.5px] tabular-nums" style={{ height: AXIS }}>
+        <div aria-hidden className="relative text-xs text-muted-foreground desk:text-label tabular-nums" style={{ height: AXIS }}>
           <span className="absolute top-1 whitespace-nowrap" style={{ left: x(0) }}>
             {ticks[0]}
           </span>
@@ -427,7 +428,7 @@ export default function FoxHistoryTimeline({ model, playKey, play = true }: { mo
             <motion.div
               key="card"
               aria-hidden
-              className="pointer-events-none absolute z-[6] rounded-[14px] bg-popover px-[11px] py-[9px] text-xs text-popover-foreground shadow-(--shadow-tooltip)"
+              className={`pointer-events-none absolute z-[6] bg-popover text-popover-foreground ${TOOLTIP_SURFACE}`}
               style={{ width: CARD_W }}
               initial={{ opacity: 0, y: 3, left: card.left, top: card.top }}
               animate={{ opacity: 1, y: 0, left: card.left, top: card.top }}
@@ -440,7 +441,7 @@ export default function FoxHistoryTimeline({ model, playKey, play = true }: { mo
             >
               <AnimatePresence mode="popLayout" initial={false}>
                 <motion.div key={activeBlock.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={reduced ? { duration: 0 } : { duration: 0.16, ease: ENTER }}>
-                  <div className="text-[13px] font-medium">{activeBlock.card.title}</div>
+                  <div className="text-body font-medium">{activeBlock.card.title}</div>
                   <div className="mt-0.5 text-muted-foreground tabular-nums">{activeBlock.card.meta}</div>
                   {activeBlock.card.note && <div className="mt-1 text-muted-foreground">{activeBlock.card.note}</div>}
                 </motion.div>
@@ -451,7 +452,7 @@ export default function FoxHistoryTimeline({ model, playKey, play = true }: { mo
       </div>
 
       {/* Legend */}
-      <div aria-hidden className="col-span-2 mx-0.5 mt-1 flex flex-wrap gap-x-2.5 gap-y-1 text-xs text-muted-foreground desk:text-[10.5px]">
+      <div aria-hidden className="col-span-2 mx-0.5 mt-1 flex flex-wrap gap-x-2.5 gap-y-1 text-xs text-muted-foreground desk:text-label">
         {LEGEND.map(({ label, style }) => (
           <span key={label} className="inline-flex items-center gap-1">
             <i className="inline-block h-1.5 w-2.5 rounded-[2px]" style={style} />

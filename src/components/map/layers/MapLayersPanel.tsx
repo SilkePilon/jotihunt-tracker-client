@@ -91,7 +91,7 @@ function StyleBar() {
                 draggable={false}
                 className="relative aspect-[1.3] w-full rounded-[9px] object-cover transition-transform duration-200 motion-safe:group-hover:scale-[1.04]"
               />
-              <span className={cn('relative text-xs transition-colors desk:text-[11px]', selected ? 'font-semibold text-on-primary-container' : 'text-muted-foreground')}>{style.label}</span>
+              <span className={cn('relative text-xs transition-colors desk:text-label', selected ? 'font-semibold text-on-primary-container' : 'text-muted-foreground')}>{style.label}</span>
             </RadioGroupPrimitive.Item>
           );
         })}
@@ -108,7 +108,7 @@ function LayerRowView({ row }: { row: LayerRow }) {
       <RowFrame className="hover:bg-beheer-row-high">
         <label className="flex cursor-pointer items-center gap-2.5 px-3 py-2">
           <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-          <span className="flex-1 text-[13px] font-semibold">{row.label}</span>
+          <span className="flex-1 text-body font-semibold">{row.label}</span>
           <BeheerSwitch checked={row.checked} onCheckedChange={row.toggle} />
         </label>
       </RowFrame>
@@ -118,7 +118,7 @@ function LayerRowView({ row }: { row: LayerRow }) {
     <RowFrame>
       <div className="flex items-center gap-2.5 px-3 py-2">
         <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-        <span className="flex-1 text-[13px] font-semibold">{row.label}</span>
+        <span className="flex-1 text-body font-semibold">{row.label}</span>
         <div className="flex gap-0.5 rounded-[9px] bg-card p-0.5">
           {row.parts.map((part) => (
             <button
@@ -163,7 +163,7 @@ function FoodButton({ toggle }: { toggle: FoodToggle }) {
         {/* 2px smaller than on the 28px marker: the white rim sits inside this tile's box */}
         <img src={BRAND_LOGO_URL[toggle.brand]} alt="" width={FASTFOOD_LOGO_WIDTH[toggle.brand] - 2} draggable={false} />
       </span>
-      <span className="text-xs font-semibold desk:text-[11px]">{toggle.label}</span>
+      <span className="text-xs font-semibold desk:text-label">{toggle.label}</span>
     </button>
   );
 }

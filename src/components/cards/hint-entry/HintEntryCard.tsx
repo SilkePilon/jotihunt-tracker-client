@@ -419,7 +419,7 @@ export default function HintEntryCard({mapRef}: { mapRef: React.RefObject<MapRef
                     <CoordinateStatus state={coordinateState} guess={status} missing={missingPickText(selectedArea, timeValue)}
                                       inside={typedLocation && !outsideNetherlands ? previousHintText(markersLoaded ? markers : undefined, selectedArea, timeValue, [typedLocation[0], typedLocation[1]]) : null}/>
                     <button type="button" onClick={clearCoordinates}
-                            className={`${COARSE_HIT_AREA} inline-flex items-center gap-1.5 rounded-lg px-1 text-xs font-semibold text-primary-text desk:text-[11px] outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring`}>
+                            className={`${COARSE_HIT_AREA} inline-flex items-center gap-1.5 rounded-lg px-1 text-xs font-semibold text-primary-text desk:text-label outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring`}>
                         <EraserIcon aria-hidden className="size-3"/> Wissen
                     </button>
                 </div>

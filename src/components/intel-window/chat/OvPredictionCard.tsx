@@ -15,7 +15,7 @@ export default function OvPredictionCard({ prediction, mapRef }: { prediction: O
   const { candidates, assumptions } = prediction;
   return (
     <div className="overflow-hidden rounded-2xl bg-beheer-row">
-      <div className="grid gap-2 px-3 py-2.5 text-[12.5px]">
+      <div className="grid gap-2 px-3 py-2.5 text-caption">
         {prediction.note && <p className="text-xs text-muted-foreground">{prediction.note}</p>}
         {candidates.length === 0 ? (
           <p className="text-muted-foreground">Geen kandidaten</p>
@@ -31,7 +31,7 @@ export default function OvPredictionCard({ prediction, mapRef }: { prediction: O
             <MoreToggle open={open} onToggle={() => setOpen(!open)} more="Aannames" less="Aannames verbergen" />
             <Reveal>
               {open && (
-                <ul className="list-disc space-y-0.5 pt-1 pl-4 text-[11.5px] text-muted-foreground">
+                <ul className="list-disc space-y-0.5 pt-1 pl-4 text-label text-muted-foreground">
                   {assumptions.map((assumption, index) => (
                     <li key={index}>{assumption}</li>
                   ))}
@@ -51,7 +51,7 @@ function CandidateRow({ rank, candidate, mapRef }: { rank: number; candidate: Ov
   return (
     <li className="grid gap-1.5 rounded-xl bg-beheer-row-high/60 p-2">
       <div className="flex min-w-0 items-start gap-2">
-        <span className="grid size-5 shrink-0 place-items-center rounded-full bg-ai-think-container text-[11px] font-extrabold text-ai-on-think tabular-nums">{rank}</span>
+        <span className="grid size-5 shrink-0 place-items-center rounded-full bg-ai-think-container text-label font-extrabold text-ai-on-think tabular-nums">{rank}</span>
         <span className="min-w-0 flex-1 font-semibold break-words">{candidate.via}</span>
         <span className="shrink-0 font-semibold tabular-nums">{ovClock(candidate.atTime)}</span>
       </div>
@@ -60,12 +60,12 @@ function CandidateRow({ rank, candidate, mapRef }: { rank: number; candidate: Ov
         <Tag tone="neutral">{area.area ? areaLabel(area.area) : 'onbekend gebied'}</Tag>
         {area.area && area.method !== 'hull' && <Tag tone="warn">schatting</Tag>}
       </div>
-      {candidate.why && <p className="pl-7 text-[11.5px] text-muted-foreground line-clamp-2">{candidate.why}</p>}
+      {candidate.why && <p className="pl-7 text-label text-muted-foreground line-clamp-2">{candidate.why}</p>}
       <div className="flex items-center gap-2 pl-7">
         <div className="h-1 flex-1 overflow-hidden rounded-full bg-beheer-row" role="meter" aria-label="Score" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(score * 100)}>
           <motion.div className="h-full origin-left rounded-full bg-ai-on-think/70" initial={{ scaleX: 0 }} animate={{ scaleX: score }} transition={{ duration: 0.5, ease: EASE_OUT }} />
         </div>
-        <span className="w-8 shrink-0 text-right text-[11px] text-muted-foreground tabular-nums">{Math.round(score * 100)}%</span>
+        <span className="w-8 shrink-0 text-right text-label text-muted-foreground tabular-nums">{Math.round(score * 100)}%</span>
       </div>
       <div className="flex flex-wrap gap-1.5 pl-7">
         <ShowOnMapPill point={candidate.point} mapRef={mapRef} />

@@ -16,9 +16,9 @@ export default function SiteSubmissionCard({ site }: { site: AssignmentSite }) {
         </a>
       )}
       {site.answerText && (
-        <p className="mt-2.5 rounded-2xl bg-beheer-row px-3.5 py-2.5 font-mono text-[13px] font-semibold break-words whitespace-pre-line">{site.answerText}</p>
+        <p className="mt-2.5 rounded-2xl bg-beheer-row px-3.5 py-2.5 font-mono text-body font-semibold break-words whitespace-pre-line">{site.answerText}</p>
       )}
-      <div className="mx-1 mt-2.5 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[13px]">
+      <div className="mx-1 mt-2.5 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-body">
         <FadeSwap className={site.judged ? 'font-semibold' : 'text-muted-foreground'}>{site.judgement ?? 'Nog niet beoordeeld'}</FadeSwap>
         {site.judged && site.points !== null && <span className="font-semibold text-status-ok-text tabular-nums">{site.points} pt</span>}
         {site.rating !== null && (

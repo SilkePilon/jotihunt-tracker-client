@@ -43,7 +43,7 @@ export default function HuntResultBar({ counts }: { counts: HuntSyncStatus['coun
           );
         })}
       </div>
-      <div className="inline-flex gap-2 text-xs font-semibold desk:text-[11.5px] tabular-nums" aria-hidden>
+      <div className="inline-flex gap-2 text-xs font-semibold desk:text-label tabular-nums" aria-hidden>
         {SEGMENTS.map((segment, index) => (
           <span key={segment.key} className="inline-flex items-center gap-[3px]" title={segment.label}>
             <segment.Icon className={cn('size-3 shrink-0', segment.text)} strokeWidth={3} />
