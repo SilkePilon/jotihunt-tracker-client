@@ -1,3 +1,5 @@
+import {isNetworkError} from '@/lib/api-error';
+
 /** Not again within this time after the last error toast, when the connection flaps */
 export const ERROR_TOAST_COOLDOWN_MS = 60_000;
 /**
@@ -42,4 +44,12 @@ export function createFetchErrorToastState() {
             return wasShown;
         },
     };
+}
+
+/** The fetch-error toast's Dutch copy; the technical details go to the console (and Sentry), not to the user. */
+export function fetchErrorToastText(error: unknown): {title: string; description: string} {
+    if (isNetworkError(error)) {
+        return {title: 'Geen verbinding met de server', description: 'Controleer je verbinding. We proberen het automatisch opnieuw.'};
+    }
+    return {title: 'Gegevens laden mislukt', description: 'De server gaf een fout. We proberen het automatisch opnieuw.'};
 }
