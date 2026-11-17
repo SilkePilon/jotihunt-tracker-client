@@ -4,6 +4,7 @@ import { cn } from "@/lib/cn"
 import { Slot } from "radix-ui"
 import { COARSE_HIT_AREA, ICON_XS_HIT_AREA } from "@/lib/hit-area"
 import { TONAL_HOVER } from "@/lib/tonal-button"
+import { isAriaDisabled } from "@/lib/busy"
 
 /** Every size and variant: 12px corners and semibold labels, like the app's tonal buttons */
 const buttonVariants = cva(
@@ -47,11 +48,22 @@ const buttonVariants = cva(
   }
 )
 
+/**
+ * aria-disabled (a busy control, lib/busy.ts) only stops the pointer (pointer-events: none). Enter/Space still fire a
+ * click, so it is stopped here, before any onClick (the button's own, an asChild child's, a parent's) or a default
+ * action (a form submit, a link) runs: the same as a native disabled button.
+ */
+function blockClick(event: React.MouseEvent) {
+  event.preventDefault()
+  event.stopPropagation()
+}
+
 function Button({
   className,
   variant = "default",
   size = "default",
   asChild = false,
+  onClickCapture,
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
@@ -66,6 +78,7 @@ function Button({
       data-size={size}
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
+      onClickCapture={isAriaDisabled(props["aria-disabled"]) ? blockClick : onClickCapture}
     />
   )
 }

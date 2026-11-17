@@ -10,3 +10,8 @@ export const BUSY_CLASSES = 'aria-disabled:pointer-events-none aria-disabled:opa
 export function busyProps(busy: boolean): { 'aria-disabled': true | undefined; 'aria-busy': true | undefined } {
   return { 'aria-disabled': busy || undefined, 'aria-busy': busy || undefined };
 }
+
+/** Whether an `aria-disabled` prop value disables the control (true or "true"; React passes both through) */
+export function isAriaDisabled(value: boolean | 'true' | 'false' | undefined): boolean {
+  return value === true || value === 'true';
+}
