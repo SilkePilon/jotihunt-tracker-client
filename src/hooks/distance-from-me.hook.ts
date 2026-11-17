@@ -1,37 +1,9 @@
-import { useEffect, useState } from 'react';
 import { useDevices } from '@/hooks/devices.hook';
 import { useNow } from '@/hooks/now.hook';
+import { useGrantedBrowserPosition } from '@/hooks/granted-position.hook';
 import { useTrackerStatus } from '@/hooks/tracker.hook';
 import { formatDistanceFromMe } from '@/lib/format';
-import { OWN_POSITION_FRESH_MS, distanceMetres, ownDeviceId, ownTrackerPosition, type LatLng } from '@/lib/own-position';
-
-/** The browser's position, only when location access was already granted: never prompts. */
-function useGrantedBrowserPosition(): LatLng | undefined {
-  const [position, setPosition] = useState<LatLng>();
-
-  useEffect(() => {
-    if (!('geolocation' in navigator) || !navigator.permissions) return;
-    let cancelled = false;
-    let watchId: number | undefined;
-    navigator.permissions
-      .query({ name: 'geolocation' })
-      .then((status) => {
-        if (cancelled || status.state !== 'granted') return;
-        watchId = navigator.geolocation.watchPosition(
-          (fix) => setPosition({ lat: fix.coords.latitude, lng: fix.coords.longitude }),
-          () => setPosition(undefined),
-          { maximumAge: 60_000 },
-        );
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-      if (watchId !== undefined) navigator.geolocation.clearWatch(watchId);
-    };
-  }, []);
-
-  return position;
-}
+import { OWN_POSITION_FRESH_MS, distanceMetres, ownDeviceId, ownTrackerPosition } from '@/lib/own-position';
 
 /** "2,4 km van jou" from the own tracker (fix under a minute old) or an already-granted browser position; undefined otherwise. */
 export function useDistanceFromMe(lat: number, lng: number): string | undefined {

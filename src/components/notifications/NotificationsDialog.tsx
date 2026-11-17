@@ -155,7 +155,7 @@ export default function NotificationsDialog() {
               </motion.div>
             </AnimatePresence>
 
-            <p className="mt-2.5 flex items-center gap-2 rounded-[14px] border border-dashed px-3 py-2.5 text-xs text-muted-foreground">
+            <p className="mt-2.5 flex items-center gap-2 rounded-(--radius-tile) border border-dashed px-3 py-2.5 text-xs text-muted-foreground">
               <MegaphoneIcon className="size-4 shrink-0" aria-hidden />
               {push === 'on' ? 'Berichten van HQ krijg je altijd.' : 'Berichten van HQ krijg je altijd in de app; buiten de app alleen met pushmeldingen aan.'}
             </p>

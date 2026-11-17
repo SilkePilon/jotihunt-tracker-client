@@ -62,7 +62,7 @@ export default function SearchCard({ mapRef, onDone, fluid }: { mapRef: React.Re
                     aria-keyshortcuts="/"
                     className={cn(
                         MAP_TILE,
-                        "group flex h-11 items-center gap-2.5 rounded-[14px] pr-3 pl-1.5 text-left transition-colors hover:bg-beheer-row focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:outline-none",
+                        "group flex h-11 items-center gap-2.5 rounded-(--radius-tile) pr-3 pl-1.5 text-left transition-colors hover:bg-beheer-row focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:outline-none",
                         fluid ? "w-full" : "w-[300px]",
                         TRIGGER_OPEN,
                     )}

@@ -63,7 +63,7 @@ export function InstallStep({ onPair, onRedownload }: { onPair: () => void; onRe
       <p className="mb-3 mt-1 text-[13.5px] text-muted-foreground">
         Tik op de download-melding en dan op <b className="text-foreground">Installeren</b>.
       </p>
-      <div className="flex gap-2.5 rounded-[14px] bg-[color-mix(in_oklab,#f59e0b_16%,var(--card))] px-3 py-2.5 text-[12.5px]">
+      <div className="flex gap-2.5 rounded-(--radius-tile) bg-[color-mix(in_oklab,#f59e0b_16%,var(--card))] px-3 py-2.5 text-[12.5px]">
         <TriangleAlertIcon className="size-5 shrink-0 text-status-warn-text" />
         <div>
           Vraagt Android om toestemming? Kies <b>Instellingen → Toestaan van deze bron</b> voor Chrome, en ga terug.

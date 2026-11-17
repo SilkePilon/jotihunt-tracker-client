@@ -60,7 +60,7 @@ function openGroupSearch() {
         card.click();
         return;
     }
-    const tile = [...document.querySelectorAll<HTMLElement>('button[aria-label="Snel navigeren naar groep"]')].find(isShown);
+    const tile = [...document.querySelectorAll<HTMLElement>('[data-group-search-tile]')].find(isShown);
     if (!tile) return;
     tile.click();
     let frames = 0;

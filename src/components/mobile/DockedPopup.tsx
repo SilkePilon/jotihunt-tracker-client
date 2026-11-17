@@ -10,6 +10,7 @@ import { ownsKey } from '@/lib/focus';
 import { EASE_OUT, LAYOUT_SPRING } from '@/lib/motion';
 import { useDockRow } from '@/hooks/dock-row.hook';
 import { currentPhonePadding, pointHiddenByDock, setPaddingInPlace } from '@/lib/dock-camera';
+import useFollowMeStore from '@/stores/follow-me.store';
 import useSidebarStore from '@/stores/sidebar.store';
 import useViewportStore from '@/stores/viewport.store';
 
@@ -145,15 +146,20 @@ export default function DockedPopup({
     const instance = map.getMap();
     const container = instance.getContainer();
     const padding = currentPhonePadding(container.clientHeight);
+    // This ease bypasses the map ref that ends following: stop it here, or FollowMe's catch-up would pull the own
+    // position back under the card
     if (!padding) {
+      useFollowMeStore.getState().stop();
       map.easeTo({ center, duration: 500 });
       return;
     }
     // Only a point the card (or sheet, or notch) would hide is brought into view; a tapped point that stays visible
     // keeps its place on screen, so every tap doesn't slide the map around
     const size = { width: container.clientWidth, height: container.clientHeight };
-    if (pointHiddenByDock(instance.project(center), size, padding, useViewportStore.getState().safeTop)) map.easeTo({ center, duration: 500, padding });
-    else setPaddingInPlace(instance, padding);
+    if (pointHiddenByDock(instance.project(center), size, padding, useViewportStore.getState().safeTop)) {
+      useFollowMeStore.getState().stop();
+      map.easeTo({ center, duration: 500, padding });
+    } else setPaddingInPlace(instance, padding);
   }, [map, center, dock]);
   // A map tap closes it like the desktop popup (instead of a second "Gekozen locatie" card stacking up); the exit
   // ghost animates it away. Added after the tap that opened it and after the layers' own click handlers, so tapping

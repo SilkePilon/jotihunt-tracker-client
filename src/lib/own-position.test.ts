@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { OWN_POSITION_FRESH_MS, distanceMetres, ownDeviceId, ownTrackerPosition } from './own-position';
+import { OWN_POSITION_FRESH_MS, OWN_POSITION_LIVE_MS, distanceMetres, ownDeviceId, ownTrackerPosition } from './own-position';
 import type { Device } from '@/types/Device';
 import type { Position } from '@/types/Position';
 
@@ -52,6 +52,13 @@ describe('ownTrackerPosition', () => {
     expect(ownTrackerPosition(positions, 7, NOW)).toEqual({ lat: 52.1, lng: 5.8 });
     expect(ownTrackerPosition(positions, 7, NOW, OWN_POSITION_FRESH_MS)).toBeUndefined();
     expect(ownTrackerPosition([position(7, '2026-10-17T11:59:30Z')], 7, NOW, OWN_POSITION_FRESH_MS)).toEqual({ lat: 52.1, lng: 5.8 });
+  });
+
+  test('locate and follow only trust a fix under 20 s; a 30 s old one is still fresh for the dot', () => {
+    const positions = [position(7, '2026-10-17T11:59:30Z')];
+    expect(ownTrackerPosition(positions, 7, NOW, OWN_POSITION_LIVE_MS)).toBeUndefined();
+    expect(ownTrackerPosition(positions, 7, NOW, OWN_POSITION_FRESH_MS)).toEqual({ lat: 52.1, lng: 5.8 });
+    expect(ownTrackerPosition([position(7, '2026-10-17T11:59:45Z')], 7, NOW, OWN_POSITION_LIVE_MS)).toEqual({ lat: 52.1, lng: 5.8 });
   });
 
   test('"where I am now" outlasts the slowest app heartbeat (120 s Zuinig) plus the 30 s poll', () => {

@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 /** Tile in a picker grid; picked = orange tonal fill with a primary ring, taken = crossed out. */
 export function pickerTileClass(selected: boolean, taken = false): string {
   return cn(
-    'flex items-center justify-center gap-1.5 rounded-[14px] text-[13px] font-semibold outline-none transition-[background-color,color,box-shadow] duration-150 focus-visible:ring-[3px] focus-visible:ring-ring',
+    'flex items-center justify-center gap-1.5 rounded-(--radius-tile) text-[13px] font-semibold outline-none transition-[background-color,color,box-shadow] duration-150 focus-visible:ring-[3px] focus-visible:ring-ring',
     selected
       ? 'bg-primary-container text-on-primary-container shadow-[inset_0_0_0_2px_var(--primary)]'
       : 'bg-beheer-row hover:bg-beheer-row-high',

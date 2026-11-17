@@ -25,14 +25,15 @@ import MobilePage from './MobilePage';
 import ViewportDebug from './ViewportDebug';
 import { DOCK_CARD_MAX_VAR, DOCK_ID } from './DockedPopup';
 import { sheetVisibleHeight } from './sheet-motion';
-import { loadSavedPage, savePage } from '@/lib/continuity';
+import { loadSavedPage, restoredSnap, savePage } from '@/lib/continuity';
 import type { MobilePageId } from '@/lib/mobile-nav';
 
 /** Once per page load: leaving phone width and coming back still starts at the menu (see MobileShell) */
 let pageRestored = false;
 
 /**
- * Session continuity: after a reload within 2 h the sheet opens on the page that was on top (at the same snap), and
+ * Session continuity: after a reload within 2 h the sheet opens on the page that was on top (at its snap, capped at
+ * half so the map isn't covered), and
  * every change of the top page or snap is remembered for the next one.
  */
 function usePageContinuity(topId: MobilePageId | undefined) {
@@ -41,7 +42,7 @@ function usePageContinuity(topId: MobilePageId | undefined) {
     if (pageRestored) return;
     pageRestored = true;
     const saved = loadSavedPage();
-    if (saved && useMobileNavStore.getState().stack.length === 0) useMobileNavStore.getState().push({ id: saved.id }, saved.snap);
+    if (saved && useMobileNavStore.getState().stack.length === 0) useMobileNavStore.getState().push({ id: saved.id }, restoredSnap(saved.snap));
   }, []);
   useEffect(() => {
     if (!pageRestored) return;

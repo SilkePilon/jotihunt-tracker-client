@@ -13,7 +13,7 @@ export default function AndroidPromoHero({ onClose }: { onClose: () => void }) {
       <div className="absolute bottom-[-40px] left-1/2 h-[200px] w-[130px] -translate-x-1/2 -rotate-6 overflow-hidden rounded-[22px] bg-muted shadow-[0_0_0_5px_#111,0_14px_30px_rgb(0_0_0/.4)]" aria-hidden>
         <span className="absolute left-10 top-10 size-[22px] rounded-lg" style={{ background: p.okContainer, boxShadow: `0 0 0 2px ${p.surfaceContainerLowest}` }} />
         <span className="absolute left-20 top-20 size-[22px] rounded-full bg-primary" style={{ boxShadow: `0 0 0 2px ${p.surfaceContainerLowest}` }} />
-        <div className="absolute inset-x-2 bottom-[46px] h-11 rounded-[14px] bg-card p-[7px]">
+        <div className="absolute inset-x-2 bottom-[46px] h-11 rounded-(--radius-tile) bg-card p-[7px]">
           <div className="flex gap-0.5">
             {BAR.map((k, i) => (
               <i key={i} className="h-1.5 flex-1 rounded-sm" style={{ background: fill[k] }} />
