@@ -8,8 +8,13 @@
 
 /** OpenFreeMap glyph ranges and sprites: versioned paths that never change, so served from the cache first */
 export const OPENFREEMAP_STATIC = /^https:\/\/tiles\.openfreemap\.org\/(fonts|sprites)\//;
-/** OpenFreeMap vector tiles, TileJSON and the shaded-relief raster */
-export const OPENFREEMAP_TILES = /^https:\/\/tiles\.openfreemap\.org\/(planet|natural_earth)(\/|$)/;
+/**
+ * OpenFreeMap TileJSON (the source `url`s): it names the current tile version, and an old version's tiles go away, so
+ * the network goes first (a stale copy only when it doesn't answer in time)
+ */
+export const OPENFREEMAP_TILEJSON = /^https:\/\/tiles\.openfreemap\.org\/(planet|natural_earth)$/;
+/** OpenFreeMap vector tiles and the shaded-relief raster (versioned paths under the TileJSON) */
+export const OPENFREEMAP_TILES = /^https:\/\/tiles\.openfreemap\.org\/(planet|natural_earth)\//;
 /** PDOK raster tiles (Satelliet luchtfoto, Buitenkaart BRT) */
 export const PDOK_TILES = /^https:\/\/service\.pdok\.nl\/.+\/wmts\//;
 
@@ -23,6 +28,11 @@ export const MAP_RUNTIME_CACHING = [
     urlPattern: OPENFREEMAP_STATIC,
     handler: 'CacheFirst' as const,
     options: { cacheName: 'map-static', expiration: { maxEntries: 500, maxAgeSeconds: 30 * DAY_S, purgeOnQuotaError: true }, cacheableResponse },
+  },
+  {
+    urlPattern: OPENFREEMAP_TILEJSON,
+    handler: 'NetworkFirst' as const,
+    options: { cacheName: 'map-tilejson', networkTimeoutSeconds: 3, expiration: { maxEntries: 10, maxAgeSeconds: 30 * DAY_S, purgeOnQuotaError: true }, cacheableResponse },
   },
   {
     urlPattern: OPENFREEMAP_TILES,
