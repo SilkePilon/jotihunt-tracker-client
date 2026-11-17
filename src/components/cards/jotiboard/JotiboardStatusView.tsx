@@ -53,7 +53,7 @@ export function JotiboardLinked({ status, view, disabled, onSetSync }: { status:
         {jotiboardSyncLine(status, now)}
       </FadeText>
       <label className={cn('mt-3 flex w-full cursor-pointer items-center justify-between gap-3 px-2.5 py-2', JOTIBOARD_BLOCK)}>
-        <span className="text-body font-medium">Automatisch synchroniseren</span>
+        <span className="text-body font-semibold">Automatisch synchroniseren</span>
         <BeheerSwitch checked={status.syncEnabled} disabled={disabled} aria-disabled={busy || undefined} aria-busy={busy || undefined} onCheckedChange={(checked) => void toggle(checked)} />
       </label>
     </div>

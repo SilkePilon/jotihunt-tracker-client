@@ -158,7 +158,7 @@ function SaveBar({ show, saving, disabled, onReset, onSave }: { show: boolean; s
               transition={SWAP_TRANSITION}
               className="flex items-center gap-2.5 rounded-2xl bg-beheer-row-high py-2.5 pr-2.5 pl-4 shadow-(--shadow-menu)"
             >
-              <span className="min-w-0 flex-1 text-body font-medium">Niet-opgeslagen wijzigingen</span>
+              <span className="min-w-0 flex-1 text-body font-semibold">Niet-opgeslagen wijzigingen</span>
               <Pill variant="ghost" disabled={saving} onClick={onReset}>
                 Terugzetten
               </Pill>

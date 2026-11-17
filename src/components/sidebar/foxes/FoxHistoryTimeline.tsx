@@ -441,7 +441,7 @@ export default function FoxHistoryTimeline({ model, playKey, play = true }: { mo
             >
               <AnimatePresence mode="popLayout" initial={false}>
                 <motion.div key={activeBlock.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={reduced ? { duration: 0 } : { duration: 0.16, ease: ENTER }}>
-                  <div className="text-body font-medium">{activeBlock.card.title}</div>
+                  <div className="text-body font-semibold">{activeBlock.card.title}</div>
                   <div className="mt-0.5 text-muted-foreground tabular-nums">{activeBlock.card.meta}</div>
                   {activeBlock.card.note && <div className="mt-1 text-muted-foreground">{activeBlock.card.note}</div>}
                 </motion.div>
