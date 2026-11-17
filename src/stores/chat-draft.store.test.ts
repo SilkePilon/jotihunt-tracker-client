@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test } from 'bun:test';
-import useChatDraftStore from './chat-draft.store';
+import useChatDraftStore, { mergeDrafts } from './chat-draft.store';
 
 const store = () => useChatDraftStore.getState();
 
@@ -16,12 +16,25 @@ describe('chat draft store', () => {
     expect(store().drafts[2]?.text).toBe('Ander item');
   });
 
-  test('restore puts an unsent question back, but never over something new', () => {
-    store().restore(1, { text: 'Niet verstuurd' });
+  test('restore puts an unsent question back', () => {
+    expect(store().restore(1, { text: 'Niet verstuurd' })).toEqual({ merged: false, imageDropped: false });
     expect(store().drafts[1]?.text).toBe('Niet verstuurd');
+  });
+
+  test('restore puts the unsent question above something typed since, and keeps its image when none is attached', () => {
     store().setText(2, 'Al nieuw getypt');
-    store().restore(2, { text: 'Oud' });
-    expect(store().drafts[2]?.text).toBe('Al nieuw getypt');
+    expect(store().restore(2, { text: 'Oud', image: { url: 'data:a', name: 'a.jpg' } })).toEqual({ merged: true, imageDropped: false });
+    expect(store().drafts[2]).toEqual({ text: 'Oud\nAl nieuw getypt', image: { url: 'data:a', name: 'a.jpg' } });
+  });
+
+  test('restore keeps a newer image and says the old one was dropped', () => {
+    store().setImage(3, { url: 'data:new', name: 'b.jpg' });
+    expect(store().restore(3, { text: 'Oud', image: { url: 'data:old', name: 'a.jpg' } })).toEqual({ merged: true, imageDropped: true });
+    expect(store().drafts[3]).toEqual({ text: 'Oud', image: { url: 'data:new', name: 'b.jpg' } });
+  });
+
+  test('mergeDrafts does not double a question that is already there', () => {
+    expect(mergeDrafts({ text: 'Vraag' }, { text: 'Vraag\nmeer' }).draft.text).toBe('Vraag\nmeer');
   });
 
   test('emptying the text without an image drops the draft', () => {

@@ -8,7 +8,7 @@ import type { MapRef } from '@/components/Map';
 import { useHasMounted } from '@/hooks/has-mounted.hook';
 import Reveal from '@/components/motion/Reveal';
 import { apiErrorMessage } from '@/lib/api-error';
-import { BUSY_MESSAGE, OFFLINE_SEND_MESSAGE, CONTEXT_LABEL, answerAnnouncement, chatStatusLabel, lastUserMessageId } from '@/lib/intel-chat';
+import { BUSY_MESSAGE, CONTEXT_LABEL, answerAnnouncement, chatStatusLabel, lastUserMessageId } from '@/lib/intel-chat';
 import { CHAT_EMPTY_ENTRANCE_DELAY, CHAT_MESSAGE } from '@/lib/intel-window';
 import { POP, SWAP } from '@/lib/motion';
 import type { IntelItem, IntelKind } from '@/types/Intel';
@@ -186,7 +186,7 @@ function ChatFooter({ chat, itemId, kind, busy }: { chat: IntelChatState; itemId
           <Reveal>
             {chat.sendFailed && (
               <p role="alert" className="mx-1 mb-2 rounded-xl bg-destructive/12 px-3 py-1.5 text-[12.5px] text-destructive-text">
-                {OFFLINE_SEND_MESSAGE}
+                {chat.sendFailed}
               </p>
             )}
           </Reveal>

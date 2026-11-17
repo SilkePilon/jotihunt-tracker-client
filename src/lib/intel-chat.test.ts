@@ -48,6 +48,8 @@ import {
   toolTone,
   webSources,
   groupSources,
+  offlineSendMessage,
+  OFFLINE_SEND_MESSAGE,
 } from './intel-chat';
 
 const point = {
@@ -537,5 +539,13 @@ describe('answerAnnouncement', () => {
     expect(answerAnnouncement([])).toBe('');
     expect(answerAnnouncement([user('u1')])).toBe('');
     expect(answerAnnouncement([assistant({ type: 'text', text: '  ' })])).toBe('');
+  });
+});
+
+describe('offlineSendMessage', () => {
+  test('says where the question went and when its image has to be added again', () => {
+    expect(offlineSendMessage({ merged: false, imageDropped: false })).toBe(OFFLINE_SEND_MESSAGE);
+    expect(offlineSendMessage({ merged: true, imageDropped: false })).toContain('bovenaan');
+    expect(offlineSendMessage({ merged: true, imageDropped: true })).toContain('afbeelding opnieuw');
   });
 });

@@ -4,7 +4,7 @@ import { DefaultChatTransport, type FileUIPart, type UIMessage } from 'ai';
 import useAuthHeader from 'react-auth-kit/hooks/useAuthHeader';
 import useAuthUser from 'react-auth-kit/hooks/useAuthUser';
 import { toast } from 'sonner';
-import { RATE_LIMIT_MESSAGE, chatErrorKind, chatRequestBody, fetchRetryingBusy } from '@/lib/intel-chat';
+import { RATE_LIMIT_MESSAGE, chatErrorKind, chatRequestBody, fetchRetryingBusy, offlineSendMessage } from '@/lib/intel-chat';
 import { fetcherWithMethod, useAuthSWR } from '@/lib/swr';
 import useIntelChatStore, { DEFAULT_CHAT_MODES } from '@/stores/intel-chat.store';
 import type { ChatModes } from '@/types/IntelChat';
@@ -33,8 +33,8 @@ export function useIntelChat(articleId: number) {
   const history = useAuthSWR<{ messages: UIMessage[]; running?: boolean }>(path, { revalidateOnFocus: false });
   const { mutate } = history;
   const [postUnavailable, setPostUnavailable] = useState(false);
-  /** The last question could not be sent (no connection): it went back into the prompt box */
-  const [sendFailed, setSendFailed] = useState(false);
+  /** The last question could not be sent (no connection): the notice saying where it went back into the prompt box */
+  const [sendFailed, setSendFailed] = useState<string | null>(null);
   /** What the last send carried, to put back into the prompt box when it never reached the server */
   const lastSent = useRef<ChatDraft | null>(null);
 
@@ -67,8 +67,7 @@ export function useIntelChat(articleId: number) {
           return index === -1 ? current : current.slice(0, index);
         });
         chatRef.current?.clearError();
-        useChatDraftStore.getState().restore(articleId, draft);
-        setSendFailed(true);
+        setSendFailed(offlineSendMessage(useChatDraftStore.getState().restore(articleId, draft)));
       }
     },
     // Keep the cached history in step, so coming back to this item shows the whole conversation at once. An errored
@@ -108,7 +107,7 @@ export function useIntelChat(articleId: number) {
     sendFailed,
     send(text: string, image?: FileUIPart) {
       touched.current = true;
-      setSendFailed(false);
+      setSendFailed(null);
       lastSent.current = { text, image: image ? { url: image.url, name: image.filename ?? 'afbeelding.jpg' } : undefined };
       void sendMessage(image ? { text, files: [image] } : { text });
     },
