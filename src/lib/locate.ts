@@ -77,6 +77,14 @@ export function huntHereVisible(following: boolean, located: { at: number } | nu
 }
 
 /**
+ * The browser-location dot's watchPosition options: GPS precision only while the map follows you; in the grace time
+ * after following ended (BrowserLocationDot) a cheaper network/Wi-Fi fix is enough for the dot.
+ */
+export function browserDotWatchOptions(following: boolean): PositionOptions {
+  return { enableHighAccuracy: following, maximumAge: 10_000 };
+}
+
+/**
  * Where "Hunt hier" marks: the own position now, like following (live tracker, browser, recent tracker), else the spot
  * the last locate found.
  */
