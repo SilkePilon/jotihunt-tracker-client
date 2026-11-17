@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from 'bun:test';
 import { MarkerType } from '@/types/MarkerType';
-import useMarkerDraftStore, { draftCounts, draftElsewhere, draftKey, keyOfDraft, latestDraft, pendingDraftLine, reopenDraft, reviveDraftDates, sameMarkerValues, settleDrafts, type MarkerDraft } from './marker-draft.store';
+import useMarkerDraftStore, { DRAFT_MAX_AGE_MS, draftCounts, freshDrafts, draftElsewhere, draftKey, keyOfDraft, latestDraft, pendingDraftLine, reopenDraft, reviveDraftDates, sameMarkerValues, settleDrafts, type MarkerDraft } from './marker-draft.store';
 
 const day = new Date('2026-10-17T00:00:00Z');
 const time = new Date('2026-10-17T12:30:00Z');
@@ -11,6 +11,7 @@ const draft: MarkerDraft = {
   time,
   sent: { type: MarkerType.Hunt, area: 'Alpha', time, location: { type: 'Point', coordinates: [5.9, 52.1] } },
   outcome: 'unknown',
+  savedAt: 1,
 };
 const key = draftKey(MarkerType.Hunt, 52.1, 5.9);
 const store = () => useMarkerDraftStore.getState();
@@ -121,5 +122,39 @@ describe('kept drafts outside the dialog', () => {
     // Other strings stay strings
     expect(reviveDraftDates('area', 'Alpha')).toBe('Alpha');
     expect(reviveDraftDates('time', 'not a date')).toBe('not a date');
+  });
+});
+
+describe('draft age', () => {
+  afterEach(() => useMarkerDraftStore.setState({ drafts: {} }));
+  const now = Date.parse('2026-10-18T12:00:00Z');
+
+  test('keep stamps savedAt when the draft has none', () => {
+    const { savedAt: _omit, ...unstamped } = draft;
+    const before = Date.now();
+    store().keep(unstamped);
+    expect(store().drafts[key].savedAt).toBeGreaterThanOrEqual(before);
+  });
+
+  test('freshDrafts drops drafts older than 48 h', () => {
+    const recent = { ...draft, savedAt: now - DRAFT_MAX_AGE_MS };
+    const old = { ...draft, savedAt: now - DRAFT_MAX_AGE_MS - 1 };
+    expect(freshDrafts({ a: recent, b: old }, now)).toEqual({ a: recent });
+    expect(freshDrafts(undefined, now)).toEqual({});
+  });
+
+  test('a draft from before stamps ages by its sent time; an unreadable one is dropped', () => {
+    const { savedAt: _omit, ...legacy } = draft;
+    // Sent 2026-10-17 12:30Z: 23.5 h before `now`
+    expect(Object.keys(freshDrafts({ a: legacy }, now))).toEqual(['a']);
+    expect(freshDrafts({ a: legacy }, now + DRAFT_MAX_AGE_MS)).toEqual({});
+    const broken = { ...legacy, sent: { ...legacy.sent, time: 'nonsense' as unknown as Date } };
+    expect(freshDrafts({ a: broken }, now)).toEqual({});
+  });
+
+  test('clearAll drops every draft', () => {
+    store().keep(draft);
+    store().clearAll();
+    expect(store().drafts).toEqual({});
   });
 });
