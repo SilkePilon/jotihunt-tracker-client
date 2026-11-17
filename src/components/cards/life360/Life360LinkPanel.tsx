@@ -2,6 +2,7 @@ import { FormEvent, useId, useState } from 'react';
 import InlineError from '@/components/InlineError';
 import { REGEXP_ONLY_DIGITS } from 'input-otp';
 import { XIcon } from 'lucide-react';
+import { RadioGroup as RadioGroupPrimitive } from 'radix-ui';
 import BusyIcon from '@/components/motion/BusyIcon';
 import Reveal from '@/components/motion/Reveal';
 import { inlineLinkClass } from '@/components/tracker/styles';
@@ -322,25 +323,25 @@ function CircleStep({ circles, onChooseCircle, onCancel }: { circles: Life360Cir
   return (
     <form className="flex flex-col gap-2" data-life360-state="circle" onSubmit={submit}>
       <Header title="Welke cirkel?" onCancel={() => void run('cancel', onCancel)} disabled={!!pending} cancelling={pending === 'cancel'} />
-      <div role="radiogroup" aria-label="Life360-cirkel" className="flex flex-col gap-1.5">
+      {/* One Tab stop, arrow keys choose (Radix radio group) */}
+      <RadioGroupPrimitive.Root aria-label="Life360-cirkel" value={selected} onValueChange={setSelected} disabled={!!pending} className="flex flex-col gap-1.5">
         {circles.map((circle) => {
           const checked = circle.id === selected;
           return (
-            <button
+            <RadioGroupPrimitive.Item
               key={circle.id}
-              type="button"
-              role="radio"
-              aria-checked={checked}
-              disabled={!!pending}
-              onClick={() => setSelected(circle.id)}
-              className={cn('flex cursor-pointer items-center gap-2.5 rounded-lg border px-2.5 py-2 text-left text-[13px] transition-[border-color,opacity] disabled:cursor-not-allowed disabled:opacity-60', checked && 'border-[#7875ea]')}
+              value={circle.id}
+              className={cn(
+                'flex cursor-pointer items-center gap-2.5 rounded-lg border px-2.5 py-2 text-left text-[13px] outline-none transition-[border-color,opacity,box-shadow] focus-visible:ring-[3px] focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60',
+                checked && 'border-[#7875ea]',
+              )}
             >
               <span aria-hidden className={cn('size-4 shrink-0 rounded-full border-[1.5px] border-zinc-400', checked && 'border-[5px] border-[#7875ea]')} />
               <span className="min-w-0 flex-1 truncate">{circle.name}</span>
-            </button>
+            </RadioGroupPrimitive.Item>
           );
         })}
-      </div>
+      </RadioGroupPrimitive.Root>
       <Reveal gap={8}>{error && <InlineError>{error}</InlineError>}</Reveal>
       <Button
         type="submit"

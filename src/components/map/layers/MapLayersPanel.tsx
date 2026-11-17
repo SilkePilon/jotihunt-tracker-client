@@ -1,4 +1,5 @@
 import { motion } from 'motion/react';
+import { RadioGroup as RadioGroupPrimitive } from 'radix-ui';
 import materialLightThumb from '@/assets/map-styles/material-light.webp';
 import materialDarkThumb from '@/assets/map-styles/material-dark.webp';
 import streetsThumb from '@/assets/map-styles/streets.webp';
@@ -15,13 +16,19 @@ import { cn } from '@/lib/utils';
 import useSettingsStore from '@/stores/settings.store';
 import { MapStyle } from '@/types/MapStyle';
 
-/** '' = automatic: the Material map, light or dark with the theme. Thumbnails show Wageningen at z13. */
-const STYLES: { value: MapStyle | ''; label: string; name: string; thumb: string; darkThumb?: string }[] = [
-  { value: '', label: 'Auto', name: 'Automatisch', thumb: materialLightThumb, darkThumb: materialDarkThumb },
-  { value: MapStyle.Streets, label: 'Straten', name: 'Straten', thumb: streetsThumb },
-  { value: MapStyle.Outdoors, label: 'Outdoor', name: 'Outdoor', thumb: outdoorsThumb },
-  { value: MapStyle.Satellite, label: 'Satelliet', name: 'Satelliet', thumb: satelliteThumb },
+/**
+ * '' = automatic: the Material map, light or dark with the theme. Thumbnails show Wageningen at z13. `name` (when set)
+ * is the accessible name; it starts with the visible label, so voice control can still say "Auto".
+ */
+const STYLES: { value: MapStyle | ''; label: string; name?: string; thumb: string; darkThumb?: string }[] = [
+  { value: '', label: 'Auto', name: 'Auto, licht of donker met het thema', thumb: materialLightThumb, darkThumb: materialDarkThumb },
+  { value: MapStyle.Streets, label: 'Straten', thumb: streetsThumb },
+  { value: MapStyle.Outdoors, label: 'Outdoor', thumb: outdoorsThumb },
+  { value: MapStyle.Satellite, label: 'Satelliet', thumb: satelliteThumb },
 ];
+
+/** Radix radio values can't be empty: the automatic style's '' goes through this one */
+const AUTO_VALUE = 'auto';
 
 const GROUP_TITLE = 'mx-1 mt-3 mb-1.5 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase';
 
@@ -53,7 +60,7 @@ export default function MapLayersPanel({ fetchLife360 }: { fetchLife360: boolean
   );
 }
 
-/** Four styles in one tonal track; the soft-orange pick slides to the chosen one. */
+/** Four styles in one tonal track; the soft-orange pick slides to the chosen one. A radio group: one Tab stop, arrow keys choose. */
 function StyleBar() {
   const mapStyle = useSettingsStore((state) => state.mapStyle);
   const setMapStyle = useSettingsStore((state) => state.setMapStyle);
@@ -61,17 +68,19 @@ function StyleBar() {
   return (
     <section>
       <h3 className="mx-1 mb-2 text-[15px] font-bold">Kaartstijl</h3>
-      <div role="radiogroup" aria-label="Kaartstijl" className="grid grid-cols-4 gap-1 rounded-2xl bg-beheer-row p-1">
+      <RadioGroupPrimitive.Root
+        aria-label="Kaartstijl"
+        value={mapStyle || AUTO_VALUE}
+        onValueChange={(value) => setMapStyle((value === AUTO_VALUE ? '' : value) as MapStyle)}
+        className="grid grid-cols-4 gap-1 rounded-2xl bg-beheer-row p-1"
+      >
         {STYLES.map((style) => {
           const selected = mapStyle === style.value;
           return (
-            <button
-              key={style.value || 'auto'}
-              type="button"
-              role="radio"
-              aria-checked={selected}
+            <RadioGroupPrimitive.Item
+              key={style.value || AUTO_VALUE}
+              value={style.value || AUTO_VALUE}
               aria-label={style.name}
-              onClick={() => setMapStyle(style.value as MapStyle)}
               className="group relative flex flex-col items-center gap-1 rounded-xl p-1 outline-none focus-visible:ring-[3px] focus-visible:ring-ring"
             >
               {selected && <motion.span layoutId="map-style-pick" aria-hidden className="absolute inset-0 rounded-xl bg-primary-container" transition={POP_SPRING} />}
@@ -82,10 +91,10 @@ function StyleBar() {
                 className="relative aspect-[1.3] w-full rounded-[9px] object-cover transition-transform duration-200 group-hover:scale-[1.04]"
               />
               <span className={cn('relative text-[11px] transition-colors', selected ? 'font-semibold text-on-primary-container' : 'text-muted-foreground')}>{style.label}</span>
-            </button>
+            </RadioGroupPrimitive.Item>
           );
         })}
-      </div>
+      </RadioGroupPrimitive.Root>
     </section>
   );
 }
