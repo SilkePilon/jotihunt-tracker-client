@@ -4,7 +4,7 @@ import { PauseIcon } from 'lucide-react';
 import FadeText from '@/components/motion/FadeText';
 import Reveal from '@/components/motion/Reveal';
 import CookieBadge from '@/components/tracker/CookieBadge';
-import { Switch } from '@/components/ui/switch';
+import BeheerSwitch from '@/components/beheer/controls/BeheerSwitch';
 import { useNow } from '@/hooks/now.hook';
 import { jotiboardSyncLine } from '@/lib/jotiboard';
 import { POP } from '@/lib/motion';
@@ -52,7 +52,7 @@ export function JotiboardLinked({ status, view, disabled, onSetSync }: { status:
       </FadeText>
       <label className={cn('mt-3 flex w-full cursor-pointer items-center justify-between gap-3 px-2.5 py-2', JOTIBOARD_BLOCK)}>
         <span className="text-[13px] font-medium">Automatisch synchroniseren</span>
-        <Switch checked={status.syncEnabled} disabled={busy || disabled} onCheckedChange={(checked) => void toggle(checked)} className="data-[state=checked]:bg-green-600" />
+        <BeheerSwitch checked={status.syncEnabled} disabled={busy || disabled} onCheckedChange={(checked) => void toggle(checked)} className="data-[state=checked]:bg-green-600" />
       </label>
     </div>
   );

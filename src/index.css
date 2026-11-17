@@ -31,7 +31,8 @@
   --destructive: hsl(0 72.2% 50.6%);
   --destructive-foreground: hsl(60 9.1% 97.8%);
   --border: hsl(20 0% 90%);
-  --input: hsl(20 0% 90%);
+  /* Text field outlines (border-input): >= 3:1 against white so the field's boundary is visible */
+  --input: hsl(20 0% 54%);
   /* Focus ring: the darker orange of dark mode, so a solid ring is >= 3:1 against white cards */
   --ring: hsl(20.5 90.2% 48.2%);
   --radius: 0.75rem;
