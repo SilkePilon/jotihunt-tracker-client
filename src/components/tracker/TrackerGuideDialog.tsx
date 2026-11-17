@@ -105,7 +105,7 @@ export default function TrackerGuideDialog({ open, onOpenChange, status }: Track
           <Step number={firstCommonStep + 1} icon={ToggleRightIcon} title='Zet de schakelaar "Continu volgen" (Service status) aan.' />
           <Step number={firstCommonStep + 2} icon={CircleCheckIcon} title='Wacht tot hieronder "Verbonden" verschijnt.'>
             <div
-              className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm"
+              className="flex items-center gap-2 rounded-2xl bg-beheer-row px-3 py-2 text-sm"
               data-tracker-live-status={status.connected ? 'connected' : 'waiting'}
             >
               {status.connected ? (

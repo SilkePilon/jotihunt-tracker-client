@@ -136,7 +136,7 @@ export default function Invite() {
           <GroupLogo url={invite.group.logoUrl} className="size-11 md:size-20" />
           <div>
             <p className="text-xs text-muted-foreground md:text-sm">{invite.invitedBy ? `${invite.invitedBy} nodigt je uit voor` : 'Je bent uitgenodigd voor'}</p>
-            <h1 className="text-lg font-bold leading-tight md:text-2xl">{invite.group.name}</h1>
+            <h1 className="text-xl font-bold leading-tight md:text-2xl">{invite.group.name}</h1>
             <p className="flex items-center gap-1.5 text-xs text-muted-foreground md:mt-1 md:justify-center">
               <UsersIcon className="hidden size-3.5 md:block" />
               {counts}
