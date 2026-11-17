@@ -34,7 +34,7 @@ function TrackerLine({ onOpen }: { onOpen: () => void }) {
     onOpen();
   };
   return (
-    <button type="button" onClick={open} className={cn('flex min-h-9 items-center gap-2 text-left text-body outline-none focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset rounded-md', COARSE_HIT_AREA)}>
+    <button type="button" onClick={open} className={cn('flex min-h-9 items-center gap-2 text-left text-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset rounded-md', COARSE_HIT_AREA)}>
       <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden className="shrink-0">
         <path d={COOKIE_16} fill={TONE_FILL[line.tone]} />
       </svg>
@@ -43,8 +43,8 @@ function TrackerLine({ onOpen }: { onOpen: () => void }) {
   );
 }
 
-/** Rough px per character of the 12px legend (a little wide, so a borderline fit falls back rather than overflowing) */
-const LEGEND_CHAR_PX = 7;
+/** Rough px per character of the 13px legend (a little wide, so a borderline fit falls back rather than overflowing) */
+const LEGEND_CHAR_PX = 7.6;
 
 /** Width of an element, kept up to date (0 until measured). */
 function useWidth<T extends HTMLElement>() {
@@ -93,7 +93,8 @@ function PeekLegend({ foxes, counts, hidden }: { foxes: SidebarFox[]; counts: Re
   // No room for it: the initials as before
   const showTime = mode === 'initials' && !!cooldown && (initialsChars + timeChars) * LEGEND_CHAR_PX <= width;
   return (
-    <span ref={ref} className="relative block h-4 text-xs text-muted-foreground tabular-nums">
+    // Phone-legible: body size, the labels in the foreground colour too (not muted), on an 18px line
+    <span ref={ref} className="relative block h-[18px] text-body leading-[18px] text-foreground tabular-nums">
       <AnimatePresence initial={false}>
         {/* Cross-fades when the layout changes or the hidden entry comes or goes */}
         <LegendLayer key={`${mode}:${showTime}:${hidden > 0}`} className={cn('absolute inset-0 flex items-center whitespace-nowrap', mode === 'initials' ? 'gap-3' : 'justify-between')}>
@@ -132,8 +133,8 @@ function PeekLegend({ foxes, counts, hidden }: { foxes: SidebarFox[]; counts: Re
 
 /**
  * Always-visible top of the phone sheet: own tracker line + Vossen status bar with legend. The fox part always takes
- * the bar's height (h-8: 10px bar + 6px gap + 16px legend), loading or empty too, so the peek (and the map above it)
- * doesn't shift when the areas come in.
+ * the bar's height (34px: 10px bar + 6px gap + 18px legend), loading or empty too, so the peek (and the map above it)
+ * doesn't shift when the areas come in. The peek's height is measured (BottomSheet), so these sizes need no constant.
  */
 export default function PeekStrip() {
   const foxes = useSidebarFoxes();
@@ -150,8 +151,8 @@ export default function PeekStrip() {
     <div {...tourTarget('mobile.peek')} className="isolate flex flex-col gap-2 pr-[max(1rem,env(safe-area-inset-right))] pb-3 pl-[max(1rem,env(safe-area-inset-left))] landscape-phone:px-4">
       <TrackerLine onOpen={() => push({ id: 'tracking' })} />
       {/* An unconfirmed Hunt / Spot: named here, a tap reopens it */}
-      <DraftPendingLine gap={8} />
-      <div className="relative h-8">
+      <DraftPendingLine gap={8} className="text-sm" />
+      <div className="relative h-[34px]">
         <AnimatePresence initial={false}>
           <motion.div key={scene} className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={SWAP_TRANSITION}>
             {scene === 'bar' && foxes && counts ? (
@@ -165,11 +166,11 @@ export default function PeekStrip() {
               <div className="flex flex-col gap-1.5" role="status" aria-label="Vossen laden">
                 {/* The default row-high fill sits a step below the beheer-window sheet in both themes (oklab L ~0.91 vs 0.95 in light) */}
                 <Skeleton className="h-2.5 w-full rounded-md" />
-                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-[18px] w-full" />
               </div>
             ) : (
               // A failed load: the tap fetches the areas again (and opens Vossen, like the tracker line)
-              <button type="button" onClick={() => { if (scene === 'error') void retry(); push({ id: 'foxes' }); }} className={cn('flex h-full w-full items-center text-left text-xs text-muted-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset rounded-md', COARSE_HIT_AREA)}>
+              <button type="button" onClick={() => { if (scene === 'error') void retry(); push({ id: 'foxes' }); }} className={cn('flex h-full w-full items-center text-left text-body text-muted-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset rounded-md', COARSE_HIT_AREA)}>
                 {scene === 'error' ? 'Vossen niet geladen — tik voor opnieuw' : 'Nog geen vossen'}
               </button>
             )}

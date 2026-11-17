@@ -9,6 +9,7 @@ import useMarkerDraftStore, { latestDraft, pendingDraftLine, reopenDraft } from 
  * the error tone; folds in and away. A tap reopens the dialog at the latest draft's pin (MarkerRegistrationHost flies
  * the map there). The phone's peek strip (same row as the tracker line) and the laptop sidebar header show it.
  * @param gap The parent's flex gap in px (Reveal: folded away it takes no space)
+ * @param className Its text size (the peek's tracker line size, the sidebar header's body size) and spacing
  */
 export default function DraftPendingLine({ gap = 0, className }: { gap?: number; className?: string }) {
   const drafts = useMarkerDraftStore((state) => state.drafts);
@@ -23,7 +24,7 @@ export default function DraftPendingLine({ gap = 0, className }: { gap?: number;
             if (draft) reopenDraft(draft);
           }}
           className={cn(
-            'flex min-h-9 w-full items-center gap-2 rounded-md text-left text-body font-semibold text-destructive-text outline-none focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset',
+            'flex min-h-9 w-full items-center gap-2 rounded-md text-left font-semibold text-destructive-text outline-none focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-inset',
             COARSE_HIT_AREA,
             className,
           )}

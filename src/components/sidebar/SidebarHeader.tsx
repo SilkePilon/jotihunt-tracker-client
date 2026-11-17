@@ -40,7 +40,7 @@ export default function SidebarHeader({ className }: { className?: string }) {
         </div>
       </div>
       {/* Laptop: an unconfirmed Hunt / Spot is named under the header (phones: the peek strip), a click reopens it */}
-      {!isMobile && <DraftPendingLine className="mt-1" />}
+      {!isMobile && <DraftPendingLine className="mt-1 text-body" />}
     </div>
   );
 }
