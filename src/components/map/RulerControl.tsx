@@ -60,18 +60,27 @@ export default function Ruler({position = 'bottom-right', onActivate, onDeactiva
         };
     }, [mapRef, onActivate, onDeactivate]);
 
-    // A toggle: aria-pressed follows the ruler (also when it's switched off by `disabled` or Escape)
+    // A toggle: aria-pressed follows the ruler (also when it's switched off by `disabled` or Escape); Escape on it switches it off
     useEffect(() => {
         const map = mapRef?.getMap() as unknown as CustomEventMap | undefined;
         const button = control.button;
         if (!map || !button) return;
         const sync = () => button.setAttribute('aria-pressed', String(control.isActive));
+        // Escape on the toggle itself switches the ruler off too (on the map it already does), focus stays on the button
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key !== 'Escape' || !control.isActive) return;
+            e.preventDefault();
+            e.stopPropagation();
+            control.deactivate();
+        };
         sync();
         map.on('ruler.on', sync);
         map.on('ruler.off', sync);
+        button.addEventListener('keydown', onKeyDown);
         return () => {
             map.off('ruler.on', sync);
             map.off('ruler.off', sync);
+            button.removeEventListener('keydown', onKeyDown);
         };
     }, [mapRef, control]);
 
