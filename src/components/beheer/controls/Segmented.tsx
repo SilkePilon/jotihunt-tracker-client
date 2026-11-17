@@ -2,6 +2,7 @@ import { useId, type ReactNode } from 'react';
 import { motion } from 'motion/react';
 import { ToggleGroup as ToggleGroupPrimitive } from 'radix-ui';
 import { POP_SPRING } from '@/lib/motion';
+import { COARSE_HIT_AREA } from '@/lib/hit-area';
 import { cn } from '@/lib/utils';
 
 export interface SegmentOption<T extends string> {
@@ -35,7 +36,8 @@ export default function Segmented<T extends string>({ value, options, onChange, 
       onValueChange={(next) => next && onChange(next as T)}
       aria-label={label}
       disabled={disabled}
-      className={cn('inline-flex max-w-full flex-wrap gap-0.5 rounded-lg bg-beheer-row p-[3px]', className)}
+      // isolate: the segments' 44px touch areas (COARSE_HIT_AREA) stay above the group's background
+      className={cn('isolate inline-flex max-w-full flex-wrap gap-0.5 rounded-lg bg-beheer-row p-[3px]', className)}
     >
       {options.map((option) => {
         const selected = option.value === value;
@@ -44,7 +46,8 @@ export default function Segmented<T extends string>({ value, options, onChange, 
             key={option.value}
             value={option.value}
             className={cn(
-              'relative inline-flex h-[30px] items-center rounded-[9px] px-3 text-[12.5px] font-semibold outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring disabled:opacity-50 [&_svg]:size-3.5 [&_svg]:shrink-0',
+              COARSE_HIT_AREA,
+              'inline-flex h-[30px] items-center rounded-[9px] px-3 text-[12.5px] font-semibold outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring disabled:opacity-50 [&_svg]:size-3.5 [&_svg]:shrink-0',
               selected ? (option.selectedTextClassName ?? 'text-foreground') : 'text-muted-foreground hover:text-foreground',
             )}
           >

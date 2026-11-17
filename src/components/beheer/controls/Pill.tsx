@@ -2,10 +2,15 @@ import type { ComponentProps, ReactNode } from 'react';
 import { AnimatePresence, motion, type HTMLMotionProps } from 'motion/react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { SWAP_TRANSITION } from '@/lib/motion';
+import { COARSE_HIT_AREA } from '@/lib/hit-area';
 import { cn } from '@/lib/utils';
 
+// Both sizes are under 44px: COARSE_HIT_AREA grows the touch area on phones (give the row/card `isolate`)
 const pill = cva(
-  "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg font-semibold whitespace-nowrap outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  [
+    COARSE_HIT_AREA,
+    "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg font-semibold whitespace-nowrap outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  ],
   {
     variants: {
       variant: {
@@ -16,9 +21,10 @@ const pill = cva(
         'danger-outline':
           'text-destructive-text shadow-[inset_0_0_0_1.5px_color-mix(in_oklab,var(--destructive)_60%,transparent)] hover:bg-destructive/10',
         danger: 'bg-destructive text-white hover:bg-destructive/90',
-        success: 'bg-green-500/20 text-green-700 dark:text-green-300',
+        success: 'bg-green-500/20 text-green-800 dark:text-green-300',
         warn: 'bg-amber-700 text-white hover:bg-amber-700/90',
-        whatsapp: 'bg-[#25D366]/15 text-[#128C7E] hover:bg-[#25D366]/25 dark:text-[#4ade80]',
+        // teal-800 / green-800: >= 4.5:1 on their tinted fills in light mode (green-700 and WhatsApp's #128C7E were below)
+        whatsapp: 'bg-[#25D366]/15 text-teal-800 hover:bg-[#25D366]/25 dark:text-[#4ade80]',
       },
       size: {
         sm: 'h-8 px-3 text-[12.5px]',
@@ -72,7 +78,10 @@ export function Pill({ variant, size, className, children, morphKey, style, type
 }
 
 const iconPill = cva(
-  "inline-grid size-[34px] shrink-0 place-items-center rounded-lg outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4",
+  [
+    COARSE_HIT_AREA,
+    "inline-grid size-[34px] shrink-0 place-items-center rounded-lg outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4",
+  ],
   {
     variants: {
       variant: {

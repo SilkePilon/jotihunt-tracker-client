@@ -125,7 +125,8 @@ export function BeheerCard({ title, count, description, right, onToggle, open = 
   }
 
   return (
-    <section className={cn('rounded-3xl bg-card p-4', className)}>
+    // isolate: the pills' 44px touch areas on phones (COARSE_HIT_AREA) stay above the card's background
+    <section className={cn('isolate rounded-3xl bg-card p-4', className)}>
       {header}
       {onToggle ? (
         <Reveal>{open && <div className="pt-3">{children}</div>}</Reveal>
@@ -176,7 +177,8 @@ const TONE: Record<RowTone, string> = {
 export function RowFrame({ tone = 'default', className, children }: { tone?: RowTone; className?: string; children: ReactNode }) {
   return (
     <motion.div
-      className={cn('overflow-hidden rounded-md transition-colors duration-200 first:rounded-t-2xl last:rounded-b-2xl', TONE[tone], className)}
+      // isolate: the pills' 44px touch areas on phones (COARSE_HIT_AREA) stay above the block's background
+      className={cn('isolate overflow-hidden rounded-md transition-colors duration-200 first:rounded-t-2xl last:rounded-b-2xl', TONE[tone], className)}
       initial={{ opacity: 0, height: 0 }}
       animate={{ opacity: 1, height: 'auto' }}
       exit={{ opacity: 0, height: 0 }}
