@@ -151,9 +151,9 @@ export default function PeekStrip() {
               </button>
             ) : scene === 'loading' ? (
               <div className="flex flex-col gap-1.5" role="status" aria-label="Vossen laden">
-                {/* The sheet is beheer-window, which the default accent fill all but matches in the light theme */}
-                <Skeleton className="h-2.5 w-full rounded-md bg-card" />
-                <Skeleton className="h-4 w-full bg-card" />
+                {/* The default row-high fill sits a step below the beheer-window sheet in both themes (oklab L ~0.91 vs 0.95 in light) */}
+                <Skeleton className="h-2.5 w-full rounded-md" />
+                <Skeleton className="h-4 w-full" />
               </div>
             ) : (
               // A failed load: the tap fetches the areas again (and opens Vossen, like the tracker line)
