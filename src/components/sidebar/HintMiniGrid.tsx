@@ -21,8 +21,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 const MINI_GRID_ROWS = 4;
 
 const cellClass: Record<HintCell['status'], string> = {
-  solved: 'bg-green-500',
-  open: 'bg-muted',
+  solved: 'bg-fox-ok',
+  // A 1px inset outline in the input colour: bg-muted alone is near-invisible on the sidebar card
+  open: 'bg-muted inset-ring inset-ring-input',
   none: 'border border-dashed border-muted-foreground/50',
 };
 
@@ -95,7 +96,7 @@ export default function HintMiniGrid({ mapRef }: { mapRef: RefObject<MapRef | nu
               {areaOptions.map((area) => {
                 const cell = row.cells[area.value];
                 if (!cell) return <span key={area.value} className="h-6 md:h-4" />;
-                const label = `${area.label} · ${statusLabel[cell.status]}`;
+                const label = `Hint ${formatClock(row.article.publishAt)}, ${area.label} · ${statusLabel[cell.status]}`;
                 const isSelected = isMobile && selected?.articleId === row.article.id && selected.area === area.value;
                 return (
                   <button
@@ -109,7 +110,7 @@ export default function HintMiniGrid({ mapRef }: { mapRef: RefObject<MapRef | nu
                       'flex h-6 cursor-pointer items-center justify-center rounded-[6px] transition-colors duration-200 hover:ring-2 hover:ring-primary/50 md:h-4',
                       COARSE_HIT_AREA,
                       cellClass[cell.status],
-                      isSelected && 'ring-2 ring-primary hover:ring-primary',
+                      isSelected && 'ring-2 ring-ring hover:ring-ring',
                     )}
                   >
                     {/* No hint for this area: a dash, so it can't be read as an open (grey) cell */}
