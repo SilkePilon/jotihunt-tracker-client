@@ -92,7 +92,8 @@ export default function PickedLocationPopup({ lat, lng, onClose }: { lat: number
           <CoordRows lat={lat} lng={lng} />
           <PopupActions>
             <RouteAction lat={lat} lng={lng} compact />
-            <MarkerRegistration lat={lat} lng={lng} />
+            {/* Registered here: the point is done, the popup goes once the dialog has closed */}
+            <MarkerRegistration lat={lat} lng={lng} onRegistered={onClose} />
           </PopupActions>
           {/* Hunt/Spot are greyed out in an archive edition: say why */}
           <ArchiveReadOnlyNote className="pt-2 text-(--map-muted)" />

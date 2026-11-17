@@ -80,7 +80,8 @@ function OwnLocationPopup({ lng, lat, accuracy, onClose }: { lng: number; lat: n
         subtitle={accuracy !== null && Number.isFinite(accuracy) ? `Tot op ± ${Math.round(accuracy)} m nauwkeurig` : undefined}
       />
       <PopupActions>
-        <MarkerRegistration lat={lat} lng={lng} />
+        {/* Registered here: the popup goes once the dialog has closed */}
+        <MarkerRegistration lat={lat} lng={lng} onRegistered={onClose} />
       </PopupActions>
       {/* Hunt/Spot are greyed out in an archive edition: say why */}
       <ArchiveReadOnlyNote className="pt-2 text-(--map-muted)" />

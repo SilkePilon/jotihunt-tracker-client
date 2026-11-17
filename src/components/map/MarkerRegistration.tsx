@@ -65,8 +65,12 @@ const formResolver = fieldsResolver<FormValues>({
   time: validDate('Geen geldige tijd.'),
 });
 
-/** Hunt / Spot buttons (fragment children, for inside `PopupActions`) plus the dialog to register a marker at this point. */
-export default function MarkerRegistration({ lat, lng }: { lat: number; lng: number }) {
+/**
+ * Hunt / Spot buttons (fragment children, for inside `PopupActions`) plus the dialog to register a marker at this point.
+ * `onRegistered` fires once the dialog has closed (its exit animation done) after a successful save, e.g. to close a
+ * popup whose only job was this point.
+ */
+export default function MarkerRegistration({ lat, lng, onRegistered }: { lat: number; lng: number; onRegistered?: () => void }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [markerType, setMarkerType] = useState<MarkerType>();
   // The pin the dialog registers at: this popup's point, or another pin's unconfirmed save picked up with "Hervat"
@@ -93,6 +97,8 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   // Verwerpen folds away with the draft: focus goes to the first field instead of back to it
   const discardedRef = useRef(false);
+  // The dialog closed because the marker was registered: onRegistered once it has slid / faded out
+  const registeredRef = useRef(false);
   // Phones dock the popup with these buttons over the sheet: no follow-up prompt while it's open (the dialog holds itself)
   useWorkHold(useIsMobile());
   // An archive edition is read-only: no new markers
@@ -146,6 +152,7 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
     if (values.area) void form.trigger('area');
     setTarget({ lat, lng });
     setMarkerType(markerType);
+    registeredRef.current = false;
     setDialogOpen(true);
   }
 
@@ -185,6 +192,7 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
         toast.success(`Vorige ${noun.toLowerCase()} geregistreerd — je nieuwe invoer is nog niet opgeslagen`, { description: 'Bevestigd na verbindingsherstel.', duration: 10000 });
         return;
       }
+      registeredRef.current = true;
       setDialogOpen(false);
       toast.success(`${noun} geregistreerd`, { description: 'Bevestigd na verbindingsherstel.' });
       return;
@@ -261,6 +269,7 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
       toast.success(`Vorige ${noun.toLowerCase()} geregistreerd — je nieuwe invoer is nog niet opgeslagen`, { description: lateNote, duration: 10000 });
       return;
     }
+    registeredRef.current = true;
     setDialogOpen(false);
     toast.success(`${noun} geregistreerd`, { description: lateNote });
   }
@@ -463,6 +472,11 @@ export default function MarkerRegistration({ lat, lng }: { lat: number; lng: num
       <ResponsiveDialog
         open={dialogOpen}
         onClose={close}
+        onClosed={() => {
+          if (!registeredRef.current) return;
+          registeredRef.current = false;
+          onRegistered?.();
+        }}
         // A Hunt here is our own marking, not the official hunt (that comes in from jotihunt.nl): the title says so
         title={markerType === MarkerType.Hunt ? HUNT_ACTION_LABEL : `${capitalizeFirstLetter(markerType ?? '')} registreren`}
         description={markerType === MarkerType.Spot ? 'Je hebt de vos hier gezien.' : 'Eigen markering op de kaart. Officiële hunts komen vanzelf binnen van jotihunt.nl.'}
