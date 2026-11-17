@@ -185,7 +185,7 @@ function ChatFooter({ chat, itemId, kind, busy }: { chat: IntelChatState; itemId
   return (
     <AnimatePresence mode="wait" initial={false}>
       {chat.unavailable ? (
-        <motion.div key="off" {...SWAP} className="rounded-[20px] bg-beheer-row-high px-3.5 py-3 text-body text-muted-foreground">
+        <motion.div key="off" {...SWAP} className="rounded-(--radius-panel) bg-beheer-row-high px-3.5 py-3 text-body text-muted-foreground">
           AI is niet ingesteld
         </motion.div>
       ) : (

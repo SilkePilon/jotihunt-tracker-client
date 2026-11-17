@@ -57,11 +57,11 @@ export default function Segmented<T extends string>({ value, options, onChange, 
             value={option.value}
             className={cn(
               COARSE_HIT_AREA,
-              'inline-flex h-[30px] items-center rounded-[9px] px-3 text-caption font-semibold outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring disabled:opacity-50 group-aria-disabled/segmented:pointer-events-none group-aria-disabled/segmented:opacity-50 [&_svg]:size-3.5 [&_svg]:shrink-0',
+              'inline-flex h-[30px] items-center rounded-(--radius-inner) px-3 text-caption font-semibold outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring disabled:opacity-50 group-aria-disabled/segmented:pointer-events-none group-aria-disabled/segmented:opacity-50 [&_svg]:size-3.5 [&_svg]:shrink-0',
               selected ? (option.selectedTextClassName ?? 'text-foreground') : 'text-muted-foreground hover:text-foreground',
             )}
           >
-            {selected && <motion.span layoutId={`${id}-selected`} aria-hidden className={cn('absolute inset-0 rounded-[9px] transition-colors', option.selectedClassName ?? SEGMENT_THUMB)} transition={POP_SPRING} />}
+            {selected && <motion.span layoutId={`${id}-selected`} aria-hidden className={cn('absolute inset-0 rounded-(--radius-inner) transition-colors', option.selectedClassName ?? SEGMENT_THUMB)} transition={POP_SPRING} />}
             <span className="relative inline-flex items-center gap-1.5">
               {option.icon}
               {option.label}

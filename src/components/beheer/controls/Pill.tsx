@@ -53,7 +53,7 @@ type PillProps = Omit<HTMLMotionProps<'button'>, 'children'> &
     busy?: boolean;
   };
 
-/** Beheer's text button: a full pill. */
+/** Beheer's text button, 8px corners. */
 export function Pill({ variant, size, className, children, morphKey, style, busy, onClick, type = 'button', 'aria-disabled': ariaDisabled, ...props }: PillProps) {
   const inert = busy || ariaDisabled === true || ariaDisabled === 'true';
   return (
@@ -110,7 +110,7 @@ const iconPill = cva(
   },
 );
 
-/** Round 34px icon button; always give it an aria-label. */
+/** 34px icon button with 8px corners; always give it an aria-label. */
 export function IconPill({ variant, className, type = 'button', ...props }: ComponentProps<'button'> & VariantProps<typeof iconPill> & { 'aria-label': string }) {
   return <button type={type} className={cn(iconPill({ variant }), className)} {...props} />;
 }

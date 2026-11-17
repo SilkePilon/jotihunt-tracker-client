@@ -65,9 +65,15 @@
   /* Inner corners of segmented rows (Beheer rows, menu rows, phone menu: M3 segmented list, outer ends 16px). Used as
      rounded-(--radius-segment), which tailwind-merge still lets a caller's rounded-* override */
   --radius-segment: 6px;
-  /* Tiles: the map's square icon tiles, search and coordinate rows, tonal note boxes, picker buttons. Used as
+  /* The tighter inner corners of the map's segmented button stacks (zoom, my location / fullscreen / ruler) */
+  --radius-segment-tight: 4px;
+  /* Tiles: search and coordinate rows, the command list rows, tonal note boxes, picker buttons. Used as
      rounded-(--radius-tile) like the segment radius above */
   --radius-tile: 14px;
+  /* Inner controls inside a tile or track: segmented tabs and their thumb, the Bekijk button, map style thumbnails */
+  --radius-inner: 9px;
+  /* Intel panels: the chat input, the AI-off note and the summary skeleton */
+  --radius-panel: 20px;
   /* Vossen card: M3 status roles of the map markers (marker-style.ts) + a cooldown blue */
   --fox-ok: #2f6b2c;
   --fox-ok-container: #b7f2ae;
@@ -458,7 +464,7 @@ body.dark {
   @apply flex flex-col gap-0.5 overflow-visible! rounded-none! border-0! bg-transparent! shadow-none!;
 
   > button {
-    @apply size-10! rounded-[4px]! bg-card! shadow-(--shadow-tile)! transition-colors! duration-150! hover:bg-beheer-row-high!;
+    @apply size-10! rounded-(--radius-segment-tight)! bg-card! shadow-(--shadow-tile)! transition-colors! duration-150! hover:bg-beheer-row-high!;
   }
 
   > button:first-child {
@@ -539,15 +545,15 @@ body.dark {
 
 /* My location + fullscreen + ruler read as one stack */
 .maplibregl-ctrl-group:has(> .maplibregl-ctrl-geolocate) > button {
-  @apply rounded-t-xl! rounded-b-[4px]!;
+  @apply rounded-t-xl! rounded-b-(--radius-segment-tight)!;
 }
 
 .maplibregl-ctrl-group:has(> .maplibregl-ctrl-fullscreen, > .maplibregl-ctrl-shrink) > button {
-  @apply rounded-[4px]!;
+  @apply rounded-(--radius-segment-tight)!;
 }
 
 .maplibregl-ctrl-group.mapbox-ctrl-ruler > button {
-  @apply rounded-t-[4px]! rounded-b-xl!;
+  @apply rounded-t-(--radius-segment-tight)! rounded-b-xl!;
 }
 
 .maplibregl-ctrl-bottom-right .maplibregl-ctrl {

@@ -250,7 +250,7 @@ function ChatLoadingShell() {
       <div className="grid min-h-0 flex-1 place-items-center">
         <Loader2Icon className="size-5 animate-spin text-muted-foreground" />
       </div>
-      <Skeleton className="h-[92px] w-full rounded-[20px] bg-beheer-row-high" />
+      <Skeleton className="h-[92px] w-full rounded-(--radius-panel) bg-beheer-row-high" />
     </div>
   );
 }

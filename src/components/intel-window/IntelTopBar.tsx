@@ -47,12 +47,12 @@ export default function IntelTopBar({ unread, detail, onBack }: { unread: Partia
               onClick={() => setTab(value)}
               className={cn(
                 COARSE_HIT_AREA,
-                'flex h-8 items-center gap-1.5 rounded-[9px] px-3 text-body font-semibold outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring',
+                'flex h-8 items-center gap-1.5 rounded-(--radius-inner) px-3 text-body font-semibold outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring',
                 active ? 'text-foreground' : 'text-muted-foreground hover:text-foreground',
               )}
             >
               {active && (
-                <motion.span layoutId="intel-tab" className={cn('absolute inset-0 rounded-[9px]', SEGMENT_THUMB)} transition={POP_SPRING} />
+                <motion.span layoutId="intel-tab" className={cn('absolute inset-0 rounded-(--radius-inner)', SEGMENT_THUMB)} transition={POP_SPRING} />
               )}
               <span className="relative">{LABELS[value]}</span>
               <AnimatePresence>{unread[value] && <motion.span key="dot" {...POP} aria-hidden className="relative size-[7px] rounded-full bg-primary-fill" />}</AnimatePresence>

@@ -34,7 +34,7 @@ interface PromptInputProps extends Omit<ComponentProps<'div'>, 'onSubmit'> {
 export function PromptInput({ value, onValueChange, onSubmit, maxHeight = 160, disabled = false, className, children, ...props }: PromptInputProps) {
   return (
     <PromptInputContext.Provider value={{ value, setValue: onValueChange, maxHeight, onSubmit, disabled }}>
-      <div className={cn('rounded-[20px] bg-beheer-row-high p-1.5 transition-shadow duration-200 focus-within:ring-[3px] focus-within:ring-ring', className)} {...props}>
+      <div className={cn('rounded-(--radius-panel) bg-beheer-row-high p-1.5 transition-shadow duration-200 focus-within:ring-[3px] focus-within:ring-ring', className)} {...props}>
         {children}
       </div>
     </PromptInputContext.Provider>
