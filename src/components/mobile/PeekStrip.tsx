@@ -19,9 +19,10 @@ const TONE_FILL = { ok: 'var(--status-ok-dot)', warn: 'var(--status-warn-dot)', 
 
 /** Own tracker line; ticks every second for the age, on its own so the fox bar does not re-render with it. */
 function TrackerLine({ onOpen }: { onOpen: () => void }) {
-  const { status } = useTrackerStatus();
+  const { status, isError } = useTrackerStatus();
   const now = useNow(true);
-  const line = trackerPeekLine(status, now);
+  // A failed first load says so; the tap opens the tracker page, whose LoadError retries
+  const line = trackerPeekLine(status, now, isError);
   return (
     <button type="button" onClick={onOpen} className={cn('flex min-h-9 items-center gap-2 text-left text-[13.5px]', COARSE_HIT_AREA)}>
       <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden className="shrink-0">
