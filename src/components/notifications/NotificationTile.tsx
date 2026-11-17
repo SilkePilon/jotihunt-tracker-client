@@ -12,19 +12,22 @@ interface NotificationTileProps {
   description: string;
   on: boolean;
   onToggle: () => void;
+  /** Saving or read-only: shows the state but can not be toggled */
+  disabled?: boolean;
 }
 
 /** Toggle tile in the Meldingen dialog: light orange with a check badge when on, tonal grey when off. */
-export default function NotificationTile({ icon: Icon, label, short, description, on, onToggle }: NotificationTileProps) {
+export default function NotificationTile({ icon: Icon, label, short, description, on, onToggle, disabled }: NotificationTileProps) {
   return (
     <button
       type="button"
       aria-pressed={on}
       title={description}
       onClick={onToggle}
+      disabled={disabled}
       className={cn(
-        'relative flex min-h-[104px] cursor-pointer flex-col items-start gap-2 rounded-2xl p-3 text-left outline-none transition-[background-color,color,filter] duration-200 focus-visible:ring-[3px] focus-visible:ring-ring motion-reduce:transition-none',
-        on ? 'bg-(--map-selected-bg) text-(--map-selected-fg) hover:brightness-[.97]' : 'bg-beheer-row text-muted-foreground hover:bg-beheer-row-high',
+        'relative flex min-h-[104px] cursor-pointer flex-col items-start gap-2 rounded-2xl p-3 text-left outline-none transition-[background-color,color,filter,opacity] duration-200 focus-visible:ring-[3px] focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none',
+        on ? 'bg-(--map-selected-bg) text-(--map-selected-fg) enabled:hover:brightness-[.97]' : 'bg-beheer-row text-muted-foreground enabled:hover:bg-beheer-row-high',
       )}
     >
       <Icon className="size-5" aria-hidden />
