@@ -71,9 +71,16 @@ describe('markerTimeLabel', () => {
   // Saturday 17 October 2026, 14:00 in Amsterdam (CEST, UTC+2)
   const now = Date.parse('2026-10-17T12:00:00Z');
 
-  test('under 2 hours old: relative', () => {
-    expect(markerTimeLabel('2026-10-17T11:15:00Z', now)).toBe('45 min geleden');
-    expect(markerTimeLabel(new Date('2026-10-17T10:01:00Z'), now)).toBe('1 uur geleden');
+  test('under 2 hours old: clock time and age to the minute', () => {
+    expect(markerTimeLabel('2026-10-17T11:15:00Z', now)).toBe('13:15 · 45 min geleden');
+    expect(markerTimeLabel(new Date('2026-10-17T10:48:00Z'), now)).toBe('12:48 · 1 u 12 min geleden');
+    expect(markerTimeLabel('2026-10-17T11:00:00Z', now)).toBe('13:00 · 1 u geleden');
+    expect(markerTimeLabel('2026-10-17T11:59:30Z', now)).toBe('13:59 · zojuist');
+    expect(markerTimeLabel('2026-10-17T10:00:01Z', now)).toBe('12:00 · 1 u 59 min geleden');
+  });
+
+  test('2 hours or older today: only the clock time', () => {
+    expect(markerTimeLabel('2026-10-17T10:00:00Z', now)).toBe('12:00');
   });
 
   test('older today: the clock time', () => {
