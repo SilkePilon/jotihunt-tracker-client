@@ -17,7 +17,7 @@ export default function BeheerSwitch({ className, ...props }: ComponentProps<typ
       )}
       {...props}
     >
-      <SwitchPrimitive.Thumb className="pointer-events-none block size-3 translate-x-[7px] rounded-full bg-muted-foreground transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none data-[state=checked]:size-5 data-[state=checked]:translate-x-[21px] data-[state=checked]:bg-white" />
+      <SwitchPrimitive.Thumb className="pointer-events-none block size-3 translate-x-[7px] rounded-full bg-muted-foreground transition-[translate,width,height,background-color] duration-200 ease-[cubic-bezier(0.2,0,0,1)] motion-reduce:transition-none data-[state=checked]:size-5 data-[state=checked]:translate-x-[21px] data-[state=checked]:bg-white" />
     </SwitchPrimitive.Root>
   );
 }
