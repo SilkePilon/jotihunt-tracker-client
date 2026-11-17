@@ -29,7 +29,7 @@ export default function ResetNorthButton({ mapRef }: { mapRef: RefObject<MapRef 
           {...POP}
           className={cn(
             MAP_TILE,
-            'pointer-events-auto mr-[env(safe-area-inset-right)] grid size-12 shrink-0 place-items-center self-end rounded-2xl outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring active:bg-beheer-row-high [&_svg]:size-5',
+            'pointer-events-auto grid size-12 shrink-0 place-items-center self-end rounded-2xl outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring active:bg-beheer-row-high [&_svg]:size-5',
           )}
         >
           <CompassIcon />
