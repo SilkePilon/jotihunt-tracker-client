@@ -45,12 +45,32 @@ describe('placeCard', () => {
     const target = { x: 0, y: 40, width: 390, height: 60 };
     expect(placeCard({ target, card: { width: 366, height: 180 }, viewport: phone, isMobile: true })).toEqual({ x: 12, y: 652 });
   });
+
+  test('mobile: docks inside the safe areas (notch at the top, home indicator at the bottom)', () => {
+    const phone = { width: 390, height: 844 };
+    const safe = { top: 47, bottom: 34 };
+    const low = { x: 0, y: 600, width: 390, height: 100 };
+    const high = { x: 0, y: 40, width: 390, height: 60 };
+    expect(placeCard({ target: low, card: { width: 366, height: 180 }, viewport: phone, isMobile: true, safe }).y).toBe(59);
+    // 844 - 34 - 180 - 12
+    expect(placeCard({ target: high, card: { width: 366, height: 180 }, viewport: phone, isMobile: true, safe }).y).toBe(618);
+  });
+
+  test('mobile: never above the top safe area when the card is taller than the room', () => {
+    const phone = { width: 390, height: 300 };
+    const target = { x: 0, y: 40, width: 390, height: 60 };
+    expect(placeCard({ target, card: { width: 366, height: 400 }, viewport: phone, isMobile: true, safe: { top: 20, bottom: 20 } }).y).toBe(32);
+  });
 });
 
 describe('phonePanelMaxHeight', () => {
   test('stops above the docked card, its gap and the spotlight padding', () => {
     // card top = 800 - 200 - 12 = 588; minus gap 12, padding 8 and the panel's top offset 12
     expect(phonePanelMaxHeight(800, 200, 8)).toBe(556);
+  });
+
+  test('the docked card sits above the bottom safe area, so the panel stops higher', () => {
+    expect(phonePanelMaxHeight(800, 200, 8, 34)).toBe(522);
   });
 
   test('never negative on a tiny screen', () => {
