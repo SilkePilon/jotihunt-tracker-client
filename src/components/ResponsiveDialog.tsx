@@ -67,8 +67,9 @@ export default function ResponsiveDialog({ open, onClose, title, description, ch
           <Drawer.Content
             // Escape inside an inline editor cancels the edit instead of closing the drawer
             onEscapeKeyDown={keepOpenWhileEditing}
-            // Same surface as the phone's bottom sheet (BottomSheet.tsx): 24px top corners, no border, soft upward shadow
-            className={cn('fixed inset-x-0 bottom-0 z-50 flex flex-col', compact ? 'max-h-[92dvh]' : 'h-[92dvh]', 'rounded-t-3xl border-0 bg-background shadow-[0_-6px_30px_rgb(0_0_0/.25)] outline-none', drawerClassName)}
+            // Same surface as the phone's bottom sheet (BottomSheet.tsx): 24px top corners, no border, soft upward shadow,
+            // bg-beheer-window. Dialogs whose rows are tuned for the card (Account, Kaart & lagen, Meldingen) pass bg-card.
+            className={cn('fixed inset-x-0 bottom-0 z-50 flex flex-col', compact ? 'max-h-[92dvh]' : 'h-[92dvh]', 'rounded-t-3xl border-0 bg-beheer-window shadow-[0_-6px_30px_rgb(0_0_0/.25)] outline-none', drawerClassName)}
           >
             <Drawer.Handle className="mx-auto mb-1 mt-2" />
             <div className={hideHeader ? 'sr-only' : 'px-4 pr-14 pb-3 pt-1'}>

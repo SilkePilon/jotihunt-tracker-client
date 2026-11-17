@@ -87,7 +87,7 @@ export default function NotificationsDialog() {
   }
 
   return (
-    <ResponsiveDialog open={open} onClose={() => void close()} title="Meldingen" description="Tik aan waarvoor je een melding en geluid wilt." className={cn(DIALOG_SHELL, 'bg-card p-5 sm:max-w-sm')} compact onClosed={() => setDisabled(null)}>
+    <ResponsiveDialog open={open} onClose={() => void close()} title="Meldingen" description="Tik aan waarvoor je een melding en geluid wilt." className={cn(DIALOG_SHELL, 'bg-card p-5 sm:max-w-sm')} drawerClassName="bg-card" compact onClosed={() => setDisabled(null)}>
       <div className="flex flex-col">
         <label className="flex cursor-pointer items-center gap-3 rounded-2xl bg-beheer-row px-3.5 py-3">
           <span className="flex-1 text-sm font-semibold">Alles</span>
