@@ -181,11 +181,12 @@ function TimelineList({ start, direction, children }: { start: 'hidden' | 'push'
 
 const KIND_ICON: Record<IntelKind, LucideIcon> = { news: MegaphoneIcon, assignment: ClipboardListIcon, hint: LightbulbIcon };
 
+// Small text: the 700 shades keep >= 4.5:1 on the light rows (600/500 were 3.3-3.7:1)
 const META_TONE: Record<MetaTone, string> = {
   muted: '',
-  ok: 'text-green-600 dark:text-green-400',
-  info: 'text-blue-500 dark:text-blue-400',
-  warn: 'text-amber-600 dark:text-amber-400',
+  ok: 'text-green-700 dark:text-green-400',
+  info: 'text-blue-700 dark:text-blue-400',
+  warn: 'text-amber-700 dark:text-amber-300',
   danger: 'text-red-600 dark:text-red-400',
 };
 

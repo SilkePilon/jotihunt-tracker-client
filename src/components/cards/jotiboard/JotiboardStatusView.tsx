@@ -45,7 +45,7 @@ export function JotiboardLinked({ status, view, disabled, onSetSync }: { status:
       <FadeText swapKey={TITLE[view]} className="mt-2 text-base font-bold">
         {TITLE[view]}
       </FadeText>
-      <Reveal gap={2}>{view === 'failing' && status.lastError && <p className="text-xs font-medium text-amber-600 dark:text-amber-400">{status.lastError}</p>}</Reveal>
+      <Reveal gap={2}>{view === 'failing' && status.lastError && <p className="text-xs font-medium text-amber-700 dark:text-amber-300">{status.lastError}</p>}</Reveal>
       {/* Keyed on the view, so the ticking "… geleden" doesn't fade every second */}
       <FadeText swapKey={view} className="text-xs text-muted-foreground tabular-nums">
         {jotiboardSyncLine(status, now)}

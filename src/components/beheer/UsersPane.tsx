@@ -128,7 +128,7 @@ export default function UsersPane() {
         }
         meta={
           <>
-            <span className={cn(!user.passkeyCount && 'text-amber-600 dark:text-amber-400')}>{passkeyText(user.passkeyCount)}</span> · {userActivity(user, now)}
+            <span className={cn(!user.passkeyCount && 'text-amber-700 dark:text-amber-300')}>{passkeyText(user.passkeyCount)}</span> · {userActivity(user, now)}
           </>
         }
         confirm={

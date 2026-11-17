@@ -447,9 +447,9 @@ function AreaBody({ cell, label, onSave, onClear, mapRef }: { cell: HintCell; la
 
 function PreviewLine({ preview }: { preview: NonNullable<AnswerPreview> }) {
   if (preview.kind === 'text') return <span className="text-muted-foreground">Tekst-antwoord, geen marker</span>;
-  if (preview.kind === 'invalid') return <span className="text-amber-600 dark:text-amber-300">⚠ Geen geldige RD-coördinaat: cijfers omgedraaid?</span>;
+  if (preview.kind === 'invalid') return <span className="text-amber-700 dark:text-amber-300">⚠ Geen geldige RD-coördinaat: cijfers omgedraaid?</span>;
   const { x, y, lat, lng } = preview.rd;
-  if (preview.kind === 'outside') return <span className="text-amber-600 dark:text-amber-300">⚠ RD {x} {y} ligt buiten het speelgebied: cijfers omgedraaid?</span>;
+  if (preview.kind === 'outside') return <span className="text-amber-700 dark:text-amber-300">⚠ RD {x} {y} ligt buiten het speelgebied: cijfers omgedraaid?</span>;
   return (
     <span className="text-muted-foreground tabular-nums">
       <span className="text-green-600 dark:text-green-300">✓</span> RD {x} {y} · {lat.toFixed(4)} N, {lng.toFixed(4)} E
@@ -460,7 +460,7 @@ function PreviewLine({ preview }: { preview: NonNullable<AnswerPreview> }) {
 /** The preview line for an answer with unknown digits: how many candidates, and a button to see them on the map. */
 function GuessLine({ status, onShow }: { status: GuessStatus; onShow?: () => void }) {
   return (
-    <span className={cn('flex flex-wrap items-center gap-2', status.tone === 'warn' ? 'text-amber-600 dark:text-amber-300' : 'text-on-guess-container')}>
+    <span className={cn('flex flex-wrap items-center gap-2', status.tone === 'warn' ? 'text-amber-700 dark:text-amber-300' : 'text-on-guess-container')}>
       <AnimatePresence mode="wait" initial={false}>
         {/* No status.action: the map instruction is for the card, here the button shows the candidates */}
         <motion.span key={status.text} {...SWAP}>
