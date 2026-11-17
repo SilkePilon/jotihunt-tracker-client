@@ -14,7 +14,7 @@ export default function TelegramSection() {
   const user = useAuthUser<User>();
   const isAdmin = !!user?.admin;
   const { messages, linked, link: connection, isError, retry } = useTelegramMessages();
-  const { status, link, submitPassword, unlink, refresh } = useTelegramAdmin(isAdmin);
+  const { status, isError: statusError, retry: retryStatus, link, submitPassword, unlink, refresh } = useTelegramAdmin(isAdmin);
 
   // The QR scan (or password) completes on the server; the admin poll notices it: refresh the "linked" views
   const state = status?.state;
@@ -34,6 +34,8 @@ export default function TelegramSection() {
   const admin: TelegramAdminProps | undefined = isAdmin
     ? {
         status,
+        isError: statusError,
+        onRetry: retryStatus,
         onLink: async () => {
           try {
             await link();

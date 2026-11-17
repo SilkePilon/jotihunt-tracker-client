@@ -15,6 +15,9 @@ import TelegramLinkPanel, { type TelegramLinkActions } from './TelegramLinkPanel
 export interface TelegramAdminProps extends TelegramLinkActions {
   /** undefined while loading */
   status: TelegramAdminStatus | undefined;
+  /** The status' first load failed */
+  isError: boolean;
+  onRetry: () => Promise<unknown> | unknown;
   /** Log the linked account out; resolves to true on success */
   onUnlink: () => Promise<boolean>;
 }
@@ -37,6 +40,7 @@ export default function TelegramCard({ messages, loadState, onRetry, admin }: Te
   const status = admin?.status;
   const linking = !!status && status.state !== 'linked';
   const linkedAccount = status?.state === 'linked' ? status.account : undefined;
+  const footer = !admin ? null : !status ? (admin.isError ? 'error' : 'loading') : status.state === 'linked' ? 'linked' : null;
 
   async function unlink() {
     if (await admin?.onUnlink()) setConfirmOpen(false);
@@ -73,29 +77,43 @@ export default function TelegramCard({ messages, loadState, onRetry, admin }: Te
           </motion.p>
         ) : null}
       </AnimatePresence>
-      {admin && status?.state === 'linked' && (
-        <>
-          <div className="h-px bg-border" />
-          <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-            <span className="min-w-0 truncate">
-              {status.connected === false ? 'Geen verbinding via' : 'Luistert via'} <b className="font-semibold text-foreground">{linkedAccount?.name ?? 'Telegram'}</b>
-            </span>
-            <button type="button" className={cn(inlineLinkClass, 'disabled:cursor-default disabled:text-muted-foreground disabled:no-underline')} disabled={readOnly} onClick={() => setConfirmOpen(true)}>
-              ontkoppelen
-            </button>
-          </div>
-          {status.connected === false && status.lastError && <p className="-mt-2 text-[11px] leading-snug text-muted-foreground">{status.lastError}</p>}
-          <ConfirmDialog
-            open={confirmOpen}
-            onOpenChange={setConfirmOpen}
-            title="Telegram ontkoppelen?"
-            description="De server logt uit bij Telegram. Tegenhunts worden dan niet meer automatisch gemeld, tot iemand opnieuw koppelt."
-            confirmLabel="Ontkoppelen"
-            destructive
-            onConfirm={unlink}
-          />
-        </>
-      )}
+      {/* The admin footer. The status' first load shows a footer-sized placeholder (most of the game it ends up "Luistert via …") or a retry */}
+      <AnimatePresence mode="wait" initial={false}>
+        {footer && (
+          <motion.div key={footer} {...SWAP} className="flex flex-col gap-3">
+            <div className="h-px bg-border" />
+            {footer === 'error' && admin && <LoadError message="Telegram-status ophalen is mislukt." onRetry={admin.onRetry} />}
+            {footer === 'loading' && (
+              <div className="flex items-center justify-between gap-2 py-0.5" role="status" aria-label="Telegram-status laden">
+                <Skeleton className="h-3 w-36" />
+                <Skeleton className="h-3 w-16" />
+              </div>
+            )}
+            {footer === 'linked' && status?.state === 'linked' && (
+              <>
+                <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                  <span className="min-w-0 truncate">
+                    {status.connected === false ? 'Geen verbinding via' : 'Luistert via'} <b className="font-semibold text-foreground">{linkedAccount?.name ?? 'Telegram'}</b>
+                  </span>
+                  <button type="button" className={cn(inlineLinkClass, 'disabled:cursor-default disabled:text-muted-foreground disabled:no-underline')} disabled={readOnly} onClick={() => setConfirmOpen(true)}>
+                    ontkoppelen
+                  </button>
+                </div>
+                {status.connected === false && status.lastError && <p className="-mt-2 text-[11px] leading-snug text-muted-foreground">{status.lastError}</p>}
+              </>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <ConfirmDialog
+        open={confirmOpen && status?.state === 'linked'}
+        onOpenChange={setConfirmOpen}
+        title="Telegram ontkoppelen?"
+        description="De server logt uit bij Telegram. Tegenhunts worden dan niet meer automatisch gemeld, tot iemand opnieuw koppelt."
+        confirmLabel="Ontkoppelen"
+        destructive
+        onConfirm={unlink}
+      />
     </div>
   );
 }

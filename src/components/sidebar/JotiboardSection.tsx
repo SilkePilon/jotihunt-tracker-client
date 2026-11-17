@@ -11,7 +11,7 @@ import SidebarSection from './SidebarSection';
 export default function JotiboardSection() {
   const user = useAuthUser<User>();
   const isAdmin = !!user?.admin;
-  const { status, isError, link, unlink, setSyncEnabled, purge } = useJotiboardAdmin(isAdmin);
+  const { status, isError, retry, link, unlink, setSyncEnabled, purge } = useJotiboardAdmin(isAdmin);
 
   if (!isAdmin) return null;
 
@@ -20,6 +20,7 @@ export default function JotiboardSection() {
       <JotiboardCard
         status={status}
         isError={isError}
+        onRetry={retry}
         onLink={async (username, password) => {
           try {
             await link(username, password);

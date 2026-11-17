@@ -64,5 +64,5 @@ export function useTelegramAdmin(enabled: boolean) {
   /** Re-read the status now (e.g. the messages say the link is gone). */
   const refresh = () => void mutate();
 
-  return { status: data, isError: !!error, link, submitPassword, unlink, refresh };
+  return { status: data, isError: !!error, retry: () => mutate(), link, submitPassword, unlink, refresh };
 }

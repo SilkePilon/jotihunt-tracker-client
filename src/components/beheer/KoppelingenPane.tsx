@@ -9,6 +9,7 @@ import Life360LinkPanel, { type Life360LinkView } from '@/components/cards/life3
 import Life360Logo from '@/components/cards/life360/Life360Logo';
 import TelegramLinkPanel from '@/components/cards/telegram/TelegramLinkPanel';
 import TelegramLogo from '@/components/cards/telegram/TelegramLogo';
+import LoadError from '@/components/LoadError';
 import Reveal from '@/components/motion/Reveal';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAdminConfig } from '@/hooks/app-config.hook';
@@ -25,7 +26,7 @@ import { POP } from '@/lib/motion';
 import { cn } from '@/lib/utils';
 import type { Life360LinkedStatus } from '@/types/Life360';
 import type { TelegramAdminStatus } from '@/types/Telegram';
-import { BeheerCard, BeheerPane, FadeSwap, InlineConfirm, WarnBar } from './BeheerLayout';
+import { BeheerCard, BeheerPane, InlineConfirm, WarnBar } from './BeheerLayout';
 import BuildingsCard from './BuildingsCard';
 import { IconPill, Pill, Tag } from './controls/Pill';
 import TelegramAppForm from './TelegramAppForm';
@@ -99,6 +100,8 @@ interface IntegrationCardProps {
   logo: ReactNode;
   view: IntegrationView | undefined;
   isError: boolean;
+  /** Refetch the status after a failed first load */
+  onRetry: () => Promise<unknown> | unknown;
   /** Koppelen / Ontkoppelen (null for none) and a key that changes with it */
   action: ReactNode;
   actionKey: string;
@@ -118,7 +121,7 @@ interface IntegrationCardProps {
 }
 
 /** K1: one card per integration — logo, name + status pill, "gekoppeld als …", sync line, amber problem bar, confirm, link steps. */
-function IntegrationCard({ name, brand, logo, view, isError, action, actionKey, syncAction, footer, warning, onRelink, readOnly, confirm, panel }: IntegrationCardProps) {
+function IntegrationCard({ name, brand, logo, view, isError, onRetry, action, actionKey, syncAction, footer, warning, onRelink, readOnly, confirm, panel }: IntegrationCardProps) {
   return (
     <BeheerCard>
       <div className="flex items-center gap-3">
@@ -140,7 +143,11 @@ function IntegrationCard({ name, brand, logo, view, isError, action, actionKey, 
               )}
             </AnimatePresence>
           </div>
-          <FadeSwap className="text-[12.5px] text-muted-foreground">{view ? view.line : isError ? 'Status ophalen is mislukt.' : <Skeleton className="mt-1 h-3 w-40" />}</FadeSwap>
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div key={view ? `line:${view.line}` : isError ? 'error' : 'loading'} className="text-[12.5px] text-muted-foreground" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+              {view ? view.line : isError ? <LoadError className="mt-1 text-[12.5px]" message="Status ophalen is mislukt." onRetry={onRetry} /> : <Skeleton className="mt-1 h-3 w-40" />}
+            </motion.div>
+          </AnimatePresence>
         </div>
         <AnimatePresence mode="popLayout" initial={false}>
           {action && (
@@ -441,6 +448,7 @@ export default function KoppelingenPane({ mapRef }: { mapRef: RefObject<MapRef |
         logo={<TelegramLogo className="size-[22px]" />}
         view={telegramView}
         isError={telegram.isError}
+        onRetry={telegram.retry}
         action={telegramAction}
         actionKey={telegramView?.canUnlink ? 'unlink' : 'link'}
         footer={
@@ -509,6 +517,7 @@ export default function KoppelingenPane({ mapRef }: { mapRef: RefObject<MapRef |
         logo={<Life360Logo className="size-[22px]" />}
         view={life360Card}
         isError={life360.isError}
+        onRetry={life360.retry}
         action={life360Action}
         actionKey={life360Card?.canUnlink ? 'unlink' : 'link'}
         syncAction={life360Status?.state === 'linked' && <RefreshButton status={life360Status} disabled={readOnly} onRefresh={refreshLife360} />}
@@ -553,6 +562,7 @@ export default function KoppelingenPane({ mapRef }: { mapRef: RefObject<MapRef |
         logo={<JotiboardLogo className="size-[22px]" />}
         view={jotiboardCard}
         isError={jotiboard.isError}
+        onRetry={jotiboard.retry}
         action={jotiboardAction}
         actionKey={jotiboardCard?.canUnlink ? 'unlink' : 'link'}
         // The server state doesn't change on relink (as Life360's does): hide "Opnieuw koppelen" while the form is open
