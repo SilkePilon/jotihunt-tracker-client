@@ -17,6 +17,15 @@ describe('stepsForPlatform', () => {
   });
 });
 
+describe('phone wording', () => {
+  test('bodyMobile replaces the body on phones only, as the same object every call', () => {
+    const tour: TourStep[] = [{ ...base, id: 'sounds', target: null, body: 'Klik op Volgende', bodyMobile: 'Tik op Volgende' }];
+    expect(stepsForPlatform(tour, 'mobile')[0].body).toBe('Tik op Volgende');
+    expect(stepsForPlatform(tour, 'desktop')[0].body).toBe('Klik op Volgende');
+    expect(stepsForPlatform(tour, 'mobile')[0]).toBe(stepsForPlatform(tour, 'mobile')[0]);
+  });
+});
+
 describe('section order per platform', () => {
   const section = (id: string, target: TourStep['target']): TourStep => ({ ...base, id, target });
   const tour: TourStep[] = [

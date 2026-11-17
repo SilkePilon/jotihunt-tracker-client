@@ -35,7 +35,7 @@ export const TOUR_STEPS: TourStep[] = [
     id: 'map',
     target: 'map',
     title: 'De kaart',
-    body: `Hier zie je de deelnemende groepen, de vossen per deelgebied en waar onze hunters rijden. Straks tik of klik je op de kaart om de coördinaten van een plek te zien. ${TAP_OR_CLICK_TO_CONTINUE}`,
+    body: `Hier zie je de deelnemende groepen, de vossen per deelgebied en waar onze hunters rijden. Straks tik of klik je op de kaart om de coördinaten van een plek te zien en daar een hunt of spot te registreren. ${TAP_OR_CLICK_TO_CONTINUE}`,
     actions: [sheetSnap('peek'), flyToOverview()],
   },
   {
@@ -65,7 +65,7 @@ export const TOUR_STEPS: TourStep[] = [
     id: 'foxes',
     target: { desktop: 'sidebar.foxes', mobile: 'menu.foxes' },
     title: 'Vossen',
-    body: `De status van elk deelgebied: rood, oranje of groen. Straks tik of klik je op een vos voor zijn laatste 3 uur; daar kun je hem ook op de kaart verbergen. ${TAP_OR_CLICK_TO_CONTINUE}`,
+    body: `De status van elk deelgebied in kleur: groen = actief, oranje = onderweg, rood = inactief, blauw = cooldown na een hunt en paars = met het OV. Straks tik of klik je op een vos voor zijn laatste 3 uur; daar kun je hem ook op de kaart verbergen. ${TAP_OR_CLICK_TO_CONTINUE}`,
     actions: [sheetSnap('full'), pointAtSection('foxes')],
   },
   {
@@ -138,6 +138,7 @@ export const TOUR_STEPS: TourStep[] = [
     target: 'tour.panel',
     title: 'Meldingen en geluiden',
     body: 'Bij elke soort melding hoort een eigen geluid. Speel ze hier af, zodat je onderweg zonder te kijken weet wat er gebeurt. Welke meldingen je krijgt, kies je in Instellingen → Meldingen. Klik op Volgende als je klaar bent.',
+    bodyMobile: 'Bij elke soort melding hoort een eigen geluid. Speel ze hier af, zodat je onderweg zonder te kijken weet wat er gebeurt. Welke meldingen je krijgt, kies je in Instellingen → Meldingen. Tik op Volgende als je klaar bent.',
     actions: [sheetSnap('peek')],
     panel: NotificationSoundsPanel,
   },

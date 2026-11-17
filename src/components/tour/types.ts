@@ -28,6 +28,8 @@ export interface TourStep {
   title: string;
   /** Dutch */
   body: string;
+  /** Phone wording when it differs ("Tik op Volgende" instead of "Klik"); stepsForPlatform puts it in `body` */
+  bodyMobile?: string;
   /** Run in order when the step is entered; undone in reverse when it is left */
   actions?: TourAction[];
   /** Overrides the length-based duration */
