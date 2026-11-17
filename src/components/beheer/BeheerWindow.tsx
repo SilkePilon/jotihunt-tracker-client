@@ -2,6 +2,8 @@ import { useState, type RefObject } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { ArrowLeftIcon, ExternalLinkIcon, MapPinIcon, MegaphoneIcon, MonitorIcon, PlugIcon, SlidersHorizontalIcon, SparklesIcon, UserPlusIcon, UsersIcon } from 'lucide-react';
 import type { MapRef } from '@/components/Map';
+import ViewFocus from '@/components/motion/ViewFocus';
+import { useHasMounted } from '@/hooks/has-mounted.hook';
 import { useIsMobile } from '@/hooks/media.hook';
 import { PANE_SLIDE, PANE_SLIDE_TRANSITION, SWAP } from '@/lib/motion';
 import useAdminStore, { type AdminDialogId } from '@/stores/admin.store';
@@ -75,6 +77,7 @@ export default function BeheerWindow({ mapRef }: BeheerWindowProps) {
     setPhoneView('list');
   }
 
+  const mounted = useHasMounted();
   const pane = <SectionPane section={section} mapRef={mapRef} />;
   const hqTrailing = <ExternalLinkIcon className="ml-auto size-3.5 shrink-0" />;
 
@@ -92,27 +95,31 @@ export default function BeheerWindow({ mapRef }: BeheerWindowProps) {
             exit="exit"
             transition={PANE_SLIDE_TRANSITION}
           >
-            <div className="px-3 pt-1 pb-3 text-lg font-bold">Beheer</div>
-            {SECTIONS.map(({ id, title, icon }) => (
-              <NavItem key={id} icon={icon} title={title} onClick={() => select(id)} className="h-12 text-foreground" />
-            ))}
-            <NavItem icon={MonitorIcon} title="HQ-scherm" trailing={hqTrailing} onClick={openHq} className="mt-auto h-12 text-foreground" />
+            <ViewFocus enabled={mounted} target={(root) => root.querySelector(`[data-nav-id="${section}"]`)}>
+              <h2 className="px-3 pt-1 pb-3 text-lg font-bold">Beheer</h2>
+              {SECTIONS.map(({ id, title, icon }) => (
+                <NavItem key={id} data-nav-id={id} icon={icon} title={title} onClick={() => select(id)} className="h-12 text-foreground" />
+              ))}
+              <NavItem icon={MonitorIcon} title="HQ-scherm" trailing={hqTrailing} onClick={openHq} className="mt-auto h-12 text-foreground" />
+            </ViewFocus>
           </motion.div>
         ) : (
           <motion.div key="pane" className="flex min-h-0 flex-1 flex-col" custom={direction} variants={PANE_SLIDE} initial="enter" animate="center" exit="exit" transition={PANE_SLIDE_TRANSITION}>
-            <div className="flex items-center gap-2 pb-3">
-              <IconPill aria-label="Terug" onClick={back}>
-                <ArrowLeftIcon />
-              </IconPill>
-              <span className="text-lg font-bold">{titleOf(section)}</span>
-            </div>
-            <div className="min-h-0 flex-1 overflow-y-auto pb-4">
-              <AnimatePresence mode="wait" initial={false}>
-                <motion.div key={section} {...SWAP}>
-                  {pane}
-                </motion.div>
-              </AnimatePresence>
-            </div>
+            <ViewFocus enabled={mounted} target={(root) => root.querySelector('[data-view-back]')}>
+              <div className="flex items-center gap-2 pb-3">
+                <IconPill aria-label="Terug" data-view-back onClick={back}>
+                  <ArrowLeftIcon />
+                </IconPill>
+                <h2 className="text-lg font-bold">{titleOf(section)}</h2>
+              </div>
+              <div className="min-h-0 flex-1 overflow-y-auto pb-4">
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.div key={section} {...SWAP}>
+                    {pane}
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+            </ViewFocus>
           </motion.div>
         )}
       </AnimatePresence>
@@ -122,7 +129,7 @@ export default function BeheerWindow({ mapRef }: BeheerWindowProps) {
   return (
     <div className="grid min-h-0 flex-1 grid-cols-[220px_1fr] grid-rows-[minmax(0,1fr)]">
       <nav className="flex flex-col gap-0.5 px-3 py-[18px]" aria-label="Beheer">
-        <div className="px-3 pt-0.5 pb-3.5 text-[17px] font-bold">Beheer</div>
+        <h2 className="px-3 pt-0.5 pb-3.5 text-[17px] font-bold">Beheer</h2>
         {SECTIONS.map(({ id, title, icon }) => (
           <NavItem key={id} icon={icon} title={title} active={id === section} indicatorId="beheer-nav-active" onClick={() => openDialog(id)} />
         ))}

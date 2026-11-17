@@ -37,6 +37,8 @@ function MenuCard({ title, rows }: { title: string; rows: Row[] }) {
           <button
             key={row.key}
             type="button"
+            // MobileShell puts focus back on this row when the page it opened is popped
+            data-nav-id={row.key}
             onClick={row.onSelect}
             className="flex min-h-14 items-center gap-3 rounded-md bg-beheer-row px-3 py-2.5 text-left transition-colors first:rounded-t-2xl last:rounded-b-2xl active:bg-beheer-row-high"
           >

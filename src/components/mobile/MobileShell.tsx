@@ -3,6 +3,8 @@ import { AnimatePresence, motion, useTransform } from 'motion/react';
 import type { MapRef } from '@/components/Map';
 import { useViewportInsets } from '@/hooks/viewport-insets.hook';
 import { useBackEntry } from '@/hooks/back-entry.hook';
+import { useHasMounted } from '@/hooks/has-mounted.hook';
+import ViewFocus from '@/components/motion/ViewFocus';
 import useSidebarStore from '@/stores/sidebar.store';
 import useMobileNavStore from '@/stores/mobile-nav.store';
 import { PANE_SLIDE, PANE_SLIDE_TRANSITION } from '@/lib/motion';
@@ -72,6 +74,13 @@ export default function MobileShell({ mapRef }: { mapRef: RefObject<MapRef | nul
   const viewKey = top ? `${stack.length}:${top.id}` : 'menu';
   const viewsRef = useRef<HTMLDivElement>(null);
   useViewScroll(viewsRef, stack.length, viewKey);
+  // The page on top until this render: a pop back to the menu puts focus on the row that opened it. Effects run
+  // child-first, so the arriving view still reads the previous top here.
+  const leftRef = useRef<string | null>(null);
+  useEffect(() => {
+    leftRef.current = top?.id ?? null;
+  }, [top]);
+  const mounted = useHasMounted();
   // Leaving phone width unmounts the shell; the next phone visit starts at the menu
   useEffect(() => () => useMobileNavStore.getState().reset(), []);
 
@@ -94,7 +103,9 @@ export default function MobileShell({ mapRef }: { mapRef: RefObject<MapRef | nul
         <div ref={viewsRef} className="relative">
           <AnimatePresence initial={false} custom={direction} mode="popLayout">
             <motion.div key={viewKey} data-view={viewKey} custom={direction} variants={PANE_SLIDE} initial="enter" animate="center" exit="exit" transition={PANE_SLIDE_TRANSITION}>
-              {top ? <MobilePage page={top} depth={stack.length} mapRef={mapRef} /> : <MobileMenu />}
+              <ViewFocus enabled={mounted} target={(root) => (top ? root.querySelector('[data-view-back]') : root.querySelector(`[data-nav-id="${leftRef.current}"]`))}>
+                {top ? <MobilePage page={top} depth={stack.length} mapRef={mapRef} /> : <MobileMenu />}
+              </ViewFocus>
             </motion.div>
           </AnimatePresence>
         </div>
