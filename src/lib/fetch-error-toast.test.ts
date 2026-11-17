@@ -12,6 +12,19 @@ describe('fetch error toast', () => {
     }
   });
 
+  test('failingKeys lists only the keys failing now (what Opnieuw refetches)', () => {
+    const state = createFetchErrorToastState();
+    expect(state.failingKeys(0)).toEqual([]);
+    expect(state.showing()).toBe(false);
+    state.error('/tracker/me', 0);
+    state.error('/markers', 1);
+    expect(state.showing()).toBe(true);
+    state.success('/markers', 2);
+    expect(state.failingKeys(3)).toEqual(['/tracker/me']);
+    // A key that stopped failing long ago (unmounted) is not refetched
+    expect(state.failingKeys(FAILING_KEY_STALE_MS + 1)).toEqual([]);
+  });
+
   test('cleared only once every failing key loads again', () => {
     const state = createFetchErrorToastState();
     expect(state.error('/tracker/me', 0)).toBe(true);
