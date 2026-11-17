@@ -10,20 +10,38 @@ import { endsFollowing, FOLLOW_GESTURE_EVENTS, type FollowGestureEvent } from '@
 import { followTarget } from '@/lib/locate';
 import { OWN_POSITION_FRESH_MS, OWN_POSITION_LIVE_MS, ownDeviceId, ownTrackerPosition } from '@/lib/own-position';
 import useBrowserLocationStore from '@/stores/browser-location.store';
-import useFollowMeStore from '@/stores/follow-me.store';
+import useFollowMeStore, { followIdle } from '@/stores/follow-me.store';
+import usePromptQueueStore from '@/stores/prompt-queue.store';
+import { toast } from 'sonner';
 
 /** Closer than this (px) to the centre counts as centred: no ease for float noise or a fix that didn't move */
 const CENTRED_PX = 3;
 const FOLLOW_EASE_MS = 800;
 const FRESHNESS_TICK_MS = 5000;
 const FOLLOW_WATCH: PositionOptions = { enableHighAccuracy: true, maximumAge: 10_000 };
+/** How often following checks whether it has run idle (FOLLOW_IDLE_MS) */
+const IDLE_CHECK_MS = 30_000;
+/** sessionStorage flag: the "Scherm blijft aan" note was shown in this tab */
+const SCREEN_ON_NOTE_KEY = 'follow-screen-on-note';
+
+/** Whether the "Scherm blijft aan" note was already shown in this tab; marks it shown. Storage blocked: every time. */
+function firstFollowInSession(): boolean {
+  try {
+    if (sessionStorage.getItem(SCREEN_ON_NOTE_KEY)) return false;
+    sessionStorage.setItem(SCREEN_ON_NOTE_KEY, '1');
+  } catch {
+    // No storage: say it (once per start is better than never)
+  }
+  return true;
+}
 
 /**
  * Phones: while "Mijn locatie" follows (MyLocationButton), the map eases to every new own fix: the own tracker when its
  * fix is under 20 s old, else the browser's position (when access is already granted, or BrowserLocationDot's), else a
  * tracker fix under 150 s. Dragging, twisting or arrow-key panning the map stops following;
  * zooming (pinch, wheel, +/-) keeps it, the next fix re-centres at the new zoom (lib/follow-gesture.ts).
- * The screen stays on meanwhile, like a navigation app.
+ * The screen stays on meanwhile, like a navigation app (said once per tab, with Stoppen); after 10 minutes without a
+ * touch on the map or the sheet following ends, so a forgotten phone doesn't burn its battery.
  */
 export default function FollowMe() {
   const map = useMap().current?.getMap();
@@ -44,6 +62,28 @@ export default function FollowMe() {
   const target = useMemo(() => (lat === undefined || lng === undefined ? undefined : { lat, lng }), [lat, lng]);
 
   useWakeLock(following);
+
+  // The first time in this tab: the screen stays on, with a way out
+  useEffect(() => {
+    if (!following || !firstFollowInSession()) return;
+    toast.info('Scherm blijft aan zolang je locatie gevolgd wordt', {
+      id: 'follow-screen-on',
+      action: { label: 'Stoppen', onClick: () => useFollowMeStore.getState().stop() },
+    });
+  }, [following]);
+
+  // Battery: no touch, key or wheel on the map or the sheet for 10 minutes ends following (and the wake lock)
+  useEffect(() => {
+    if (!following) return;
+    const check = () => {
+      const { startedAt } = useFollowMeStore.getState();
+      if (!followIdle(startedAt, usePromptQueueStore.getState().interactedAt, Date.now())) return;
+      useFollowMeStore.getState().stop();
+      toast.info('Locatie volgen gestopt', { description: '10 minuten niets aangeraakt; het scherm mag weer uit.' });
+    };
+    const interval = setInterval(check, IDLE_CHECK_MS);
+    return () => clearInterval(interval);
+  }, [following]);
 
   // A user gesture ends following
   useEffect(() => {
