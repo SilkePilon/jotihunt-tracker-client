@@ -69,7 +69,12 @@ export default function CoordinatesCard({ mapRef, onDone }: { mapRef: React.RefO
                     aria-label="Coördinaat"
                     aria-invalid={!!error || undefined}
                     aria-describedby={error ? errorId : undefined}
-                    placeholder="Zoek op coördinaat..."
+                    placeholder="Zoek op coördinaat…"
+                    // Coordinates, not words: no autofill, spelling marks, capitals; the keyboard's enter key says search
+                    autoComplete="off"
+                    spellCheck={false}
+                    autoCapitalize="off"
+                    enterKeyHint="search"
                     onChange={onChange}
                     value={inputValue}
                     className="min-w-0 flex-1 bg-transparent text-base outline-none md:text-sm placeholder:text-muted-foreground"
