@@ -1,4 +1,5 @@
 import type { RasterLayerSpecification, StyleSpecification } from 'maplibre-gl';
+import { darkStreetsStyle } from '@/lib/map-style';
 import { MapStyle } from '@/types/MapStyle';
 
 // Free, token-less map sources. See docs in the migration report for why
@@ -136,12 +137,13 @@ export function getHybridSatelliteStyle(): Promise<StyleSpecification> {
  * rendered immediately (synchronously, no network round-trip on the critical
  * path). For 'satellite' this is the raster-only fallback; call
  * {@link getHybridSatelliteStyle} to upgrade to the hybrid style with labels (pass that through {@link themeRasters}).
- * @param dark Dark theme: the raster styles get {@link DARK_RASTER_PAINT}
+ * @param dark Dark theme: the raster styles get {@link DARK_RASTER_PAINT}; streets is the darkened Liberty copy
  */
 export function resolveStaticMapStyle(id: MapStyle, dark = false): string | StyleSpecification {
   switch (id) {
     case MapStyle.Streets:
-      return OPENFREEMAP_LIBERTY_URL;
+      // Dark: the bundled Liberty copy with a darkening pass and the dark road shields; light: Liberty itself
+      return dark ? darkStreetsStyle() : OPENFREEMAP_LIBERTY_URL;
     case MapStyle.Outdoors:
       return themeRasters(OUTDOORS_STYLE, dark);
     case MapStyle.Satellite:

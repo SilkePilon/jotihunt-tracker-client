@@ -62,7 +62,7 @@ export function darkShieldSize(id: string): { width: number; height: number } | 
 }
 
 /** Liberty's `["concat", "road_", …]` shield icon with the dark prefix; undefined for any other icon-image. */
-function darkShieldIcon(icon: unknown): unknown[] | undefined {
+export function darkShieldIcon(icon: unknown): unknown[] | undefined {
   return Array.isArray(icon) && icon[0] === 'concat' && icon[1] === 'road_' ? ['concat', DARK_SHIELD_PREFIX, ...icon.slice(2)] : undefined;
 }
 

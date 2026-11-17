@@ -1,5 +1,6 @@
 import type { StyleSpecification } from 'maplibre-gl';
 import libertyJson from './liberty.json';
+import { darkLibertyStyle } from './dark-liberty';
 import { mapPalette, materialStyle } from './material-style';
 
 /**
@@ -15,4 +16,11 @@ const cache: Partial<Record<'light' | 'dark', StyleSpecification>> = {};
 export function materialMapStyle(dark: boolean): StyleSpecification {
   const key = dark ? 'dark' : 'light';
   return (cache[key] ??= materialStyle(LIBERTY, mapPalette(dark)));
+}
+
+let darkStreets: StyleSpecification | undefined;
+
+/** "Straten" in the dark theme: the bundled Liberty copy darkened (see dark-liberty.ts); built once. */
+export function darkStreetsStyle(): StyleSpecification {
+  return (darkStreets ??= darkLibertyStyle(LIBERTY));
 }
