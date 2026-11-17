@@ -160,6 +160,9 @@ export default function Layout() {
                 <AddPasskeyPrompt/>
                 {/* Here and not on the map page: hunts registered while another page is open are announced too */}
             </ErrorBoundary>
+            {/* Landmark for screen readers around the page (with the sidebar's "Zijbalk" aside) and the map; <main> is
+                unstyled and not positioned, so nothing moves */}
+            <main>
             {/* Page heading for screen readers, before the sidebar's section headings (h2) in the outlet */}
             <h1 className="sr-only">Jotihunt Tracker</h1>
             <ErrorBoundary name="Deze pagina" variant="floating">
@@ -167,8 +170,6 @@ export default function Layout() {
             </ErrorBoundary>
             {/* After the outlet: at the same z-index the later element is on top */}
             <StaleDataBadge/>
-            {/* Landmark for screen readers; <main> is unstyled, so the map's layout is unchanged */}
-            <main>
                 {/* Always mounted: map popups announce "<titel> geopend" here */}
                 <PopupAnnouncer/>
                 <ErrorBoundary name="De kaart" className="mx-auto mt-[40dvh] w-fit">
